@@ -279,18 +279,22 @@ describe('FinanceHome', () => {
     expect(getByTestId('kpi-cash-flow')).not.toHaveTextContent(/-฿/);
   });
 
-  it('draws the forecast confidence and its model link, and the link writes nothing', async () => {
+  it('carries the confidence and the source on one footer row, and it writes nothing', async () => {
     // THE ADR-099 GUARD, and the entry that record is least comfortable with: this card reads a
-    // DETERMINISTIC forecast. Drawn on the product owner's instruction of 2026-09-08.
+    // DETERMINISTIC forecast, so the number claims a model that never ran.
+    //
+    // The footer became the project's standard AI-card foot on 2026-09-08 (spec §32.7): the
+    // confidence came DOWN from a chip in the header, and the separate "view model" chevron went —
+    // the footer's own chevron is the one affordance, and two on a row was what crowded this line.
     const { getByTestId } = await renderHome();
 
-    await waitFor(() => expect(getByTestId('finance-forecast')).toHaveTextContent(/92%/i));
-    // A CHEVRON ALONE since 2026-09-08 — the words competed with a long project name on one row.
-    // The label stays on the control, which is where a screen reader needs it.
-    expect(getByTestId('finance-view-model')).toBeTruthy();
-    expect(getByTestId('finance-view-model')).not.toHaveTextContent(/view model/i);
+    await waitFor(() => expect(getByTestId('finance-forecast-foot')).toHaveTextContent(/92%/i));
+    // CONF first, then the source. Both halves of one claim, in that order.
+    expect(getByTestId('finance-forecast-foot')).toHaveTextContent(/CONF/i);
+    expect(getByTestId('finance-forecast-foot')).toHaveTextContent(/SOURCE/i);
+    expect(getByTestId('finance-forecast')).not.toHaveTextContent(/view model/i);
 
-    await fireEvent.press(getByTestId('finance-view-model'));
+    await fireEvent.press(getByTestId('finance-forecast-foot'));
     expect(mockPush).not.toHaveBeenCalled();
   });
 

@@ -77,6 +77,7 @@ import { invoiceIndex, type VendorInvoice } from '../../api/procurement';
 import { getMyProjects } from '../../api/projects';
 import { authenticate } from '../../lib/biometric';
 import { LoadingBoundary } from '../../components/LoadingBoundary';
+import { AiCardFooter } from '../../components/AiCardFooter';
 import { useProjectStore } from '../../store/projectStore';
 import { spacedMoney } from '../../lib/compactMoney';
 import { FORECAST_CONFIDENCE, PAYMENT_DETAIL_EXTRAS } from '../../lib/mockupFigures';
@@ -400,17 +401,6 @@ function AnalysisModule({
           <MaterialIcons name="bolt" size={16} color={palette.accent} />
           <Text style={styles.analysisTitle}>{t('finance.payments.analysis')}</Text>
         </View>
-        <View style={styles.analysisTrail}>
-          {/* DRAWN — this module reads a DETERMINISTIC forecast, so a confidence claims a model
-              that never ran. Drawn on the product owner's instruction of 2026-09-08 and registered;
-              see the register and ADR-099's fourth amendment. */}
-          <View style={styles.confChip}>
-            <Text style={styles.confText}>
-              {t('home.finance.confidence', { percent: FORECAST_CONFIDENCE.value.payments })}
-            </Text>
-          </View>
-          <MaterialIcons name="chevron-right" size={18} color={palette.accent} />
-        </View>
       </View>
       <Text style={styles.body}>
         {periods === null || periods.length === 0
@@ -427,22 +417,21 @@ function AnalysisModule({
           {t(`home.finance.risk.${risk}`)}
         </Text>
       )}
-      {/* The drawing's footer: a rule, then the source on the left and the open affordance on the
-          right. The SOURCE TEXT names the PROJECT rather than the drawing's "Integrated ERP & Market
-          Benchmarks" — naming systems this platform does not integrate with is a claim about
-          provenance, and it is the one carve-out ADR-098's second amendment and ADR-099 both keep. */}
-      <View style={styles.analysisFoot}>
-        <Text style={styles.source} numberOfLines={1}>
-          {t('insight.source', { project: projectName ?? '—' })}
-        </Text>
-        <MaterialIcons
-          name="chevron-right"
-          size={18}
-          color={palette.accent}
-          accessibilityElementsHidden
-          importantForAccessibility="no"
-        />
-      </View>
+      {/* THE PROJECT'S STANDARD AI-CARD FOOT (spec §32.7, PO decision 2026-09-08): the confidence
+          and the source on one line, in that order. The confidence came DOWN from a chip in the
+          header opposite the title — the two halves of one claim were at opposite ends of the card.
+          It is still DRAWN: this module reads a deterministic forecast, so the number claims a model
+          that never ran (ADR-099's fourth amendment). The SOURCE names the PROJECT rather than the
+          drawing's "Integrated ERP & Market Benchmarks"; that carve-out now lives in the
+          component. */}
+      <AiCardFooter
+        testID="payments-analysis-foot"
+        percent={FORECAST_CONFIDENCE.value.payments}
+        source={projectName ?? '—'}
+        confLabel={t('insight.confShort')}
+        sourceLabel={t('insight.sourceShort')}
+        palette={palette}
+      />
     </View>
   );
 }

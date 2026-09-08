@@ -201,15 +201,19 @@ describe('OrdersScreen', () => {
     expect(queryByTestId('order-item-po-1')).toBeNull();
   });
 
-  it('counts the whole tenant in the header, not the page it rendered', async () => {
+  it('counts the whole tenant on the All chip, not the page it rendered', async () => {
+    // The heading and its "42 active orders" line came off on 2026-09-08 — the tab bar names the
+    // screen and the chip carries the number. THE SERVER'S TOTAL SURVIVED THE REMOVAL, which is
+    // what this asserts: one row on screen, 42 in the tenant, and the chip says 42.
     client.get.mockImplementation((path: string) =>
       path === '/procurement/purchase-orders'
         ? Promise.resolve({ items: [po()], total: 42 })
         : route()(path),
     );
-    const { getByTestId } = await renderScreen();
+    const { getByTestId, queryByTestId } = await renderScreen();
 
-    await waitFor(() => expect(getByTestId('orders-count')).toHaveTextContent(/42/));
+    await waitFor(() => expect(getByTestId('order-filter-ALL')).toHaveTextContent(/\(42\)/));
+    expect(queryByTestId('orders-count')).toBeNull();
   });
 
   it('says so when there are no orders', async () => {

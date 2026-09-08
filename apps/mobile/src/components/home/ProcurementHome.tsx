@@ -46,9 +46,8 @@ import {
   listDeliveries,
 } from '../../api/procurement';
 import { PROC_ACTIVITY_FEED } from '../../lib/mockupFigures';
-import { ProjectPicker } from '../ProjectPicker';
 import { ProcurementInsight } from '../ProcurementInsight';
-import { getMyProjects, type MyProject } from '../../api/projects';
+import { listProjects, type TenantProject } from '../../api/projects';
 import { usePalette, type Palette } from '../../theme/usePalette';
 import { fontFamily, radius, spacing, typography } from '../../theme/tokens';
 import { Screen, KpiRegion } from './HomeKit';
@@ -91,7 +90,7 @@ export default function ProcurementHome() {
   const styles = makeStyles(palette);
   const t = useT();
   const [counts, setCounts] = useState<Counts>(EMPTY);
-  const [projects, setProjects] = useState<MyProject[]>([]);
+  const [projects, setProjects] = useState<TenantProject[]>([]);
   const [insightProject, setInsightProject] = useState('');
   const [loading, setLoading] = useState(true);
   // Honest load progress: four independent fetches, counted as each settles (Rule 40).
@@ -141,10 +140,15 @@ export default function ProcurementHome() {
       .catch(() => {
         /* offline */
       });
-    const mine = step(getMyProjects())
-      .then(setProjects)
+    // `GET /projects`, not `/projects/mine`: this role is a member of no project — it buys for the
+    // whole tenant — so "which are mine" answers nothing. The first is what the analysis reads.
+    const mine = step(listProjects())
+      .then((rows) => {
+        setProjects(rows);
+        if (rows[0] !== undefined) setInsightProject(rows[0].project_id);
+      })
       .catch(() => {
-        /* offline — the picker stays empty and the panel stays idle */
+        /* offline — the panel stays idle rather than naming a project it could not fetch */
       });
     void Promise.allSettled([requests, pipeline, deliveries, mine]).then(() => setLoading(false));
   }, []);
@@ -177,7 +181,17 @@ export default function ProcurementHome() {
                   style={[styles.tile, { borderLeftColor: tone }]}
                 >
                   <View style={styles.tileHead}>
-                    <Text style={styles.tileLabel} numberOfLines={2}>
+                    {/* ONE LINE (PO 2026-09-08). At two, "PRs awaiting approval" wrapped and that
+                        tile stood a row taller than the three beside it, breaking the bento grid.
+                        Two things hold it: the English label was shortened to say the same thing in
+                        fewer words, and `adjustsFontSizeToFit` shrinks whatever a translation makes
+                        longer rather than wrapping or clipping it. Thai is already short enough. */}
+                    <Text
+                      style={styles.tileLabel}
+                      numberOfLines={1}
+                      adjustsFontSizeToFit
+                      minimumFontScale={0.75}
+                    >
                       {t(`home.procurement.tiles.${tile.key}`)}
                     </Text>
                     <MaterialIcons name={tile.icon} size={20} color={tone} />
@@ -196,7 +210,12 @@ export default function ProcurementHome() {
           </View>
         </KpiRegion>
 
-        <ProjectPicker selectedId={insightProject} onSelect={setInsightProject} />
+        {/* NO PROJECT PICKER ROW (PO decision 2026-09-08). The drawing has none, and the four tiles
+            above count the whole tenant — a row of project chips under them invited the reading that
+            they did not. The analysis below IS per project, because
+            `/ai/reports/procurement-summary` is, so it takes the tenant's first project and NAMES IT
+            in its own footer, which is where a reader finds out which one. Same shape as the FINANCE
+            cash-flow card: advice has to be about somewhere. */}
         <ProcurementInsight projectId={insightProject} projectLabel={projectName} />
 
         {/* DRAWN, entire — see PROC_ACTIVITY_FEED in the register. Kept because the drawing's shape is

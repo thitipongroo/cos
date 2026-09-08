@@ -103,17 +103,23 @@ describe('InsightPanel', () => {
 
   // ── HOW SURE, AND HOW BAD ────────────────────────────────────────────────────────────────────
 
-  // A band with the number beside it, never a bare percentage: the band is the platform's own
-  // reading of what that number means, and 92% on its own invites the reader to supply their own.
-  it('reports the confidence as a band and a number', async () => {
+  // A BAND AT THE TOP, THE NUMBER AT THE FOOT — split across the card since 2026-09-08, when the
+  // project's standard AI-card footer landed. The band is the platform's own reading of what the
+  // number means and still leads; the number moved down beside the SOURCE, because "this confident"
+  // and "from this" are one sentence and were sitting at opposite ends of the card. Neither half was
+  // dropped, which is what these two assertions are for.
+  it('leads with the band and prints the number in the standard footer', async () => {
     const { utils } = renderPanel();
     const { getByTestId } = await utils;
 
     await fireEvent.press(getByTestId('insight-run'));
 
     await waitFor(() => expect(getByTestId('insight-confidence')).toBeTruthy());
-    expect(String(getByTestId('insight-confidence').props.children)).toBeTruthy();
-    expect(within(getByTestId('insight-confidence'))).toContain('92%');
+    expect(within(getByTestId('insight-confidence'))).toContain('High');
+    expect(within(getByTestId('insight-confidence'))).not.toContain('92%');
+    expect(within(getByTestId('insight-foot'))).toContain('92%');
+    // …and the source travels with it, in that order.
+    expect(within(getByTestId('insight-foot'))).toContain('SOURCE');
   });
 
   // The gateway's own verdict outranks the number: a report the gateway called low-confidence is
@@ -418,16 +424,22 @@ describe('InsightPanel', () => {
   // variant where the confidence NUMBER leads instead of the band word, so these tests are the
   // record of that exception rather than a check that a style prop arrived.
 
-  it('leads the executive chip with the number, and the other variants with the band', async () => {
+  it('leads EVERY variant with the band now, executive included', async () => {
+    // THE EXECUTIVE EXCEPTION IS GONE (PO decision 2026-09-08). It was the one variant whose chip
+    // led with the number instead of the band word, because its drawing put "CONF: 94%" there. The
+    // project's standard AI-card footer moved the number to the foot of every card, beside the
+    // source — so there is no longer a chip for a number to lead, and one fewer exception to carry.
+    // The number did not vanish: the footer assertion below is where it went.
     const exec = await renderPanel({ variant: 'executive', autoRun: true }).utils;
     await waitFor(() => expect(exec.getByTestId('insight-confidence')).toBeTruthy());
-    expect(exec.getByTestId('insight-confidence')).toHaveTextContent(/92/);
-    // The band word is what must NOT be there — that is the whole difference from `plain`.
-    expect(exec.getByTestId('insight-confidence')).not.toHaveTextContent(/confidence/i);
+    expect(exec.getByTestId('insight-confidence')).toHaveTextContent(/confidence/i);
+    expect(exec.getByTestId('insight-confidence')).not.toHaveTextContent(/92/);
+    expect(exec.getByTestId('insight-foot')).toHaveTextContent(/92%/);
 
     const plain = await renderPanel({ autoRun: true }).utils;
     await waitFor(() => expect(plain.getByTestId('insight-confidence')).toBeTruthy());
     expect(plain.getByTestId('insight-confidence')).toHaveTextContent(/confidence/i);
+    expect(plain.getByTestId('insight-foot')).toHaveTextContent(/92%/);
   });
 
   it('keeps the band WORD on the executive chip when there is no number to lead with', async () => {

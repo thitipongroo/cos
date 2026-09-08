@@ -144,3 +144,22 @@ export async function refreshProjectsCache(): Promise<void> {
     );
   }
 }
+
+/** A project in the tenant, for a screen that works across all of them rather than one. */
+export interface TenantProject {
+  project_id: string;
+  project_name: string;
+}
+
+/**
+ * Every project in the tenant, by name.
+ *
+ * `GET /projects`, NOT `GET /projects/mine`. The `mine` route reads `projects.project_members`, and
+ * a PROCUREMENT_OFFICER is a member of none — verified against the seeded database, 0 rows — because
+ * the role buys for the whole tenant rather than being staffed onto a site. The tenant list carries
+ * no `@Roles` and is open to any authenticated caller (`project.controller.ts` `@Get()`).
+ */
+export async function listProjects(): Promise<TenantProject[]> {
+  const res = await get<{ items?: TenantProject[] }>('/projects');
+  return res.items ?? [];
+}

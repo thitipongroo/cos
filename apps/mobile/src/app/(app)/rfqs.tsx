@@ -55,6 +55,7 @@ import {
 import { usePalette, useIsDark, type Palette } from '../../theme/usePalette';
 import { fontFamily, radius, spacing, typography } from '../../theme/tokens';
 import { makeQueueStyles, QueueChip } from '../../components/procurement/QueueKit';
+import { AiCardFooter } from '../../components/AiCardFooter';
 
 /**
  * The chips, in the order the drawing puts them and the RFQ's own lifecycle runs.
@@ -213,28 +214,23 @@ export default function RfqsScreen(): React.JSX.Element {
                 <MaterialIcons name="auto-awesome" size={16} color={p.accent} />
                 <Text style={styles.bannerTitle}>{t('procurement.rfqs.analysis')}</Text>
               </View>
-              <View style={styles.confChip}>
-                <Text style={styles.confText}>
-                  {t('home.finance.confidence', { percent: RFQ_RECOMMENDATION.value.reliability })}
-                </Text>
-              </View>
             </View>
             <Text style={styles.body}>
               {t('procurement.rfqs.analysisBody', { percent: RFQ_PRICE_DELTA.value[0] })}
             </Text>
-            <View style={styles.bannerFoot}>
-              <MaterialIcons name="storage" size={13} color={p.muted} />
-              <Text style={styles.source} numberOfLines={1} ellipsizeMode="tail">
-                {t('procurement.rfqs.source')}
-              </Text>
-              <MaterialIcons
-                name="chevron-right"
-                size={18}
-                color={p.accent}
-                accessibilityElementsHidden
-                importantForAccessibility="no"
-              />
-            </View>
+            {/* THE PROJECT'S STANDARD AI-CARD FOOT (PO decision 2026-09-08) — one line carrying the
+                confidence and the source together, in that order. It replaced a confidence chip up
+                in the header, opposite the title: the two halves of one claim were at opposite ends
+                of the card. See components/AiCardFooter.tsx. */}
+            <AiCardFooter
+              testID="rfq-analysis-foot"
+              percent={RFQ_RECOMMENDATION.value.reliability}
+              // The VALUE carries no label of its own — the component writes "SOURCE:".
+              source={t('procurement.rfqs.source')}
+              confLabel={t('insight.confShort')}
+              sourceLabel={t('insight.sourceShort')}
+              palette={p}
+            />
           </View>
 
           {visible.length === 0 ? (

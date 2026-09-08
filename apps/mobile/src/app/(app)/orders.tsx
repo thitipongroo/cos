@@ -232,18 +232,10 @@ export default function OrdersScreen(): React.JSX.Element {
 
   return (
     <View testID="orders-screen" style={styles.page}>
-      <View style={styles.hero}>
-        {/* The TITLE step, not hero — a tab screen draws no hero-sized page title. */}
-        <Text style={styles.heroTitle} accessibilityRole="header" numberOfLines={1}>
-          {t('procurement.orders.title')}
-        </Text>
-        <Text testID="orders-count" style={styles.heroSub}>
-          {total === null
-            ? t('procurement.orders.subtitle')
-            : t('procurement.orders.active', { count: total })}
-        </Text>
-      </View>
-
+      {/* NO TITLE AND NO COUNT ROW (PO decision 2026-09-08). The tab bar already names this screen
+          "Orders", and the All chip already carries the count — a heading and a total above them
+          said both things a second time and cost two rows of a phone. The count is still fetched
+          and is still the SERVER's, not the page's; it prints inside the All chip. */}
       <View style={styles.search}>
         <MaterialIcons name="search" size={20} color={p.muted} />
         <TextInput
@@ -268,7 +260,9 @@ export default function OrdersScreen(): React.JSX.Element {
               key={s === '' ? 'ALL' : s}
               testID={`order-filter-${s === '' ? 'ALL' : s}`}
               label={s === '' ? t('procurement.orders.all') : t(`procurement.orders.status.${s}`)}
-              count={counts[s] ?? 0}
+              // The All chip carries the SERVER's total, which is the tenant; the rest count the
+              // rows on screen. That difference is why `total` is still fetched at all.
+              count={s === '' ? (total ?? counts[s] ?? 0) : (counts[s] ?? 0)}
               on={filter === s}
               onPress={() => setFilter(s)}
               styles={styles}
@@ -377,16 +371,24 @@ const OrderCard = memo(function OrderCard({
       onPress={() => onOpen(po.po_id)}
       style={[styles.card, { borderLeftColor: tone }]}
     >
-      <View style={styles.cardHead}>
-        <View style={styles.cardHeadText}>
-          <View style={styles.numberRow}>
-            <Text style={styles.number}>{`#${po.po_number}`}</Text>
-            <View style={[styles.statusPill, { borderColor: `${tone}66` }]}>
-              <Text style={[styles.statusText, { color: tone }]}>
-                {t(`procurement.orders.status.${po.status}`)}
-              </Text>
-            </View>
-          </View>
+      {/* TWO FULL-WIDTH ROWS, not a left column beside a right one (PO 2026-09-08). The status had
+          to sit against the CARD's trailing edge, and inside a `flex: 1` text column its right edge
+          is the middle of the card. So the head is two rows that each span the whole width:
+            number ............................. amount  ›
+            vendor · project ................... STATUS
+          ONE LINE FOR THE NUMBER, at the label step. `#PO-SKV45-FORMWORK` wrapped onto two rows
+          beside the amount and left the card ragged; the type steps down but NOT below the amount
+          beside it, which is the floor the instruction set — an order is identified by its number,
+          so it may not read as fine print. */}
+      <View style={styles.headRow}>
+        <Text style={styles.number} numberOfLines={1} ellipsizeMode="middle">
+          {`#${po.po_number}`}
+        </Text>
+        <Text style={styles.amount}>{spacedMoney(new Decimal(po.total_amount), 'THB')}</Text>
+        <MaterialIcons name="chevron-right" size={20} color={palette.muted} />
+      </View>
+      <View style={styles.headRow}>
+        <View style={styles.whoRow}>
           {/* REAL — the vendor index, one request for the screen. Nothing is drawn where a vendor
               record is missing; the line simply does not render. */}
           {vendorName === null ? null : (
@@ -394,16 +396,17 @@ const OrderCard = memo(function OrderCard({
               {vendorName}
             </Text>
           )}
-        </View>
-        <View style={styles.amountCol}>
-          <Text style={styles.amount}>{spacedMoney(new Decimal(po.total_amount), 'THB')}</Text>
           {projectName === null ? null : (
             <Text style={styles.project} numberOfLines={1}>
               {projectName}
             </Text>
           )}
         </View>
-        <MaterialIcons name="chevron-right" size={20} color={palette.muted} />
+        <View style={[styles.statusPill, { borderColor: `${tone}66` }]}>
+          <Text style={[styles.statusText, { color: tone }]}>
+            {t(`procurement.orders.status.${po.status}`)}
+          </Text>
+        </View>
       </View>
 
       {/* THE STAGE, NOT A PERCENTAGE — see the header note. Three segments, filled to where the
@@ -459,11 +462,20 @@ function makeStyles(p: Palette) {
   return StyleSheet.create({
     // The chrome every queue screen wears — see components/procurement/QueueKit.tsx.
     ...makeQueueStyles(p),
-    number: { color: p.text, fontFamily: fontFamily.bold, fontSize: typography.body.fontSize },
-    vendor: { color: p.muted, fontFamily: fontFamily.regular, fontSize: 12, marginTop: 2 },
-    amountCol: { alignItems: 'flex-end' },
+    // The LABEL step, one down from body — and the amount beside it is `typography.label` too, so
+    // this is the floor the instruction set: never smaller than the money.
+    number: {
+      flex: 1,
+      color: p.text,
+      fontFamily: fontFamily.bold,
+      fontSize: typography.label.fontSize,
+    },
+    headRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
+    // The two names share what the status pill leaves; the vendor gives way first.
+    whoRow: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
+    vendor: { flexShrink: 1, color: p.muted, fontFamily: fontFamily.regular, fontSize: 12 },
     amount: { color: p.text, fontFamily: fontFamily.bold, fontSize: typography.label.fontSize },
-    project: { color: p.muted, fontFamily: fontFamily.regular, fontSize: 10, marginTop: 2 },
+    project: { flexShrink: 1, color: p.muted, fontFamily: fontFamily.regular, fontSize: 10 },
     stageRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: spacing.xs },
     // 4px high, radius half its height. `badgeRadius.spec.ts` lists it: its NAME contains "tag"
     // (s-TAG-e) so the guard's pattern matches it, and it is not a badge.

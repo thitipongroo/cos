@@ -348,6 +348,13 @@ async function main() {
     await find(byId('home-screen'), 'procurement Home', 20);
     // Four requests in flight: purchase requests, RFQs + orders, deliveries, projects.
     await delay(5000);
+    // THE ANALYSIS IS NOT RUN BY THIS SCRIPT, and that was tried before it was ruled out. Pressing
+    // "Generate report" calls `/ai/reports/procurement-summary`; the AI gateway is a Python service
+    // with its own venv (`scripts/ci/setup-python-envs.sh`) and is not part of the docker stack this
+    // capture needs, so the press returns a failure and the card photographs as "The report was not
+    // produced." The IDLE state — "no report has been generated for this project yet" — is what a
+    // working deployment shows before anyone asks for one, and it is the honest frame. Bring the
+    // gateway up and the same run photographs real model output; nothing here needs changing.
     // Pinned like the other three: the button is a sibling of the scroller, not the last row of it.
     // It was the last row until the first capture caught it cut in half by the bottom nav.
     await stitchFull(

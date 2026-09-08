@@ -68,6 +68,7 @@ import {
   type ProjectBudgetResponse,
 } from '../../api/finance';
 import { LoadingBoundary } from '../../components/LoadingBoundary';
+import { AiCardFooter } from '../../components/AiCardFooter';
 import { ProjectContextBar } from '../../components/ProjectContextBar';
 import { useProjectStore } from '../../store/projectStore';
 import { compactMoneyLabel, spacedMoney } from '../../lib/compactMoney';
@@ -436,20 +437,17 @@ function ForecastModule({
           THE SOURCE TEXT NAMES THE PROJECT, not the drawing's "ERP & Schedule" — naming systems
           this platform does not integrate with is a claim about provenance, and it is the carve-out
           ADR-098's second amendment and ADR-099 both keep. */}
-      <View style={styles.forecastFoot}>
-        <View style={styles.footItem}>
-          <MaterialIcons name="analytics" size={13} color={palette.muted} />
-          <Text style={styles.source}>
-            {t('finance.budget.conf', { percent: FORECAST_CONFIDENCE.value.budget })}
-          </Text>
-        </View>
-        <View style={[styles.footItem, styles.footItemWide]}>
-          <MaterialIcons name="storage" size={13} color={palette.muted} />
-          <Text style={styles.source} numberOfLines={1} ellipsizeMode="tail">
-            {t('insight.source', { project: projectName ?? '—' })}
-          </Text>
-        </View>
-      </View>
+      {/* THE PROJECT'S STANDARD AI-CARD FOOT (spec §32.7, PO decision 2026-09-08). This card had
+          the shape first — CONF and SOURCE on one line — and now shares the component every AI card
+          uses, so the next change to the pattern reaches all of them at once. */}
+      <AiCardFooter
+        testID="budget-forecast-foot"
+        percent={FORECAST_CONFIDENCE.value.budget}
+        source={projectName ?? '—'}
+        confLabel={t('insight.confShort')}
+        sourceLabel={t('insight.sourceShort')}
+        palette={palette}
+      />
       {/* Drawn — there is no deep forecast report and no contract review screen. */}
       <Pressable
         testID="budget-deep-report"

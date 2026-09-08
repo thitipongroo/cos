@@ -72,6 +72,7 @@ import { getCashflowForecast, listPayments, type PaymentRow } from '../../api/fi
 import { invoiceIndex, type VendorInvoice } from '../../api/procurement';
 import { useProjectStore } from '../../store/projectStore';
 import { compactMoneyLabel, spacedMoney } from '../../lib/compactMoney';
+import { AiCardFooter } from '../AiCardFooter';
 import { countSettled } from '../../lib/loadingState';
 import { APPROVALS_TREND, FINANCE_BURN_RATE, FORECAST_CONFIDENCE } from '../../lib/mockupFigures';
 import { useT } from '../../i18n';
@@ -287,18 +288,7 @@ export default function FinanceHome(): React.JSX.Element {
               <MaterialIcons name="insights" size={18} color={p.accent} />
               <Text style={styles.forecastTitle}>{t('home.finance.forecastTitle')}</Text>
             </View>
-            <View style={styles.headTrail}>
-              {/* DRAWN, and it is the entry ADR-099 is least comfortable with — this card reads a
-                  DETERMINISTIC forecast, so a confidence claims a model that never ran. Drawn on
-                  the product owner's instruction of 2026-09-08 and registered; see the register and
-                  ADR-099's fourth amendment. */}
-              <View style={styles.confChip}>
-                <Text style={styles.confText}>
-                  {t('home.finance.confidence', { percent: FORECAST_CONFIDENCE.value.home })}
-                </Text>
-              </View>
-              <MaterialIcons name="chevron-right" size={18} color={p.accent} />
-            </View>
+            <MaterialIcons name="chevron-right" size={18} color={p.accent} />
           </View>
           <Text style={styles.body}>
             {periods === null || periods.length === 0
@@ -312,31 +302,28 @@ export default function FinanceHome(): React.JSX.Element {
                     week: shortfallWeek + 1,
                   })}
           </Text>
-          {/* The drawing's footer: a rule, then the source on the left and the model link on the
-              right. The SOURCE TEXT stays the project's name rather than the drawing's "ERP &
-              Milestone data" — naming systems this platform does not integrate with is the one
-              carve-out ADR-098's second amendment and ADR-099 both keep. */}
-          <View style={styles.forecastFoot}>
-            <View style={styles.sourceRow}>
-              <MaterialIcons name="storage" size={13} color={p.muted} />
-              <Text style={styles.source} numberOfLines={1}>
-                {t('insight.source', { project: active?.projectName ?? '—' })}
-              </Text>
-            </View>
-            {/* Drawn — there is no model to open. It says so on tap.
-                A CHEVRON ALONE (PO 2026-09-08): the words and a long project name were competing
-                for the same row and ran together. The label survives on the control for a screen
-                reader, which is where it was doing the real work anyway. */}
-            <Pressable
-              testID="finance-view-model"
-              accessibilityRole="button"
-              accessibilityLabel={t('home.finance.viewModel')}
-              onPress={() => soon('home.finance.viewModel')}
-              style={styles.modelLink}
-            >
-              <MaterialIcons name="chevron-right" size={18} color={p.accent} />
-            </Pressable>
-          </View>
+          {/* THE PROJECT'S STANDARD AI-CARD FOOT (spec §32.7, PO decision 2026-09-08): the
+              confidence and the source on one line, the confidence first. It came DOWN from a chip
+              in the header opposite the title.
+
+              IT IS DRAWN, and it is the entry ADR-099 is least comfortable with: this card reads a
+              DETERMINISTIC forecast, so the number claims a model that never ran (fourth
+              amendment). The SOURCE names the project rather than the drawing's "ERP & Milestone
+              data" — the carve-out now lives in the component.
+
+              THE "VIEW MODEL" CONTROL WENT WITH THE CHANGE. It was a chevron beside the source
+              opening a "coming soon" for a model that does not exist; the footer's own chevron is
+              the one affordance, and two of them on one row was what crowded this line in the first
+              place. */}
+          <AiCardFooter
+            testID="finance-forecast-foot"
+            percent={FORECAST_CONFIDENCE.value.home}
+            source={active?.projectName ?? '—'}
+            confLabel={t('insight.confShort')}
+            sourceLabel={t('insight.sourceShort')}
+            onPress={() => soon('home.finance.viewModel')}
+            palette={p}
+          />
         </View>
 
         {/* ── Priority approval queue ────────────────────────────────────────────────────── */}

@@ -620,7 +620,9 @@
     "bandLow": "Low confidence — check before acting",
     "bandUnknown": "Confidence not reported",
     "recommendation": "Recommendation",
-    "risk": "Risk flagged"
+    "risk": "Risk flagged",
+    "confShort": "CONF",
+    "sourceShort": "SOURCE"
   },
   "more": {
     "title": "More",
@@ -745,7 +747,7 @@
       "committedSpend": "Total committed spend",
       "urgentRfqs": "RFQs closing within 24h",
       "tiles": {
-        "requests": "PRs awaiting approval",
+        "requests": "PRs to approve",
         "rfqs": "RFQs in progress",
         "awaitingPo": "Awaiting PO",
         "deliveries": "Deliveries today"
@@ -1553,7 +1555,7 @@
       "sortDue": "By due date",
       "sortIssued": "By issue date",
       "matching": "3-way matching",
-      "source": "Source: vendor invoices and purchase orders",
+      "source": "vendor invoices and purchase orders",
       "matchScore": "{percent}% match",
       "dueOn": "Due {date}",
       "overdue": "Overdue {date}",
@@ -1584,7 +1586,7 @@
       },
       "analysis": "Price comparison",
       "analysisBody": "The lowest quote on this queue sits {percent} under the estimate. Close the award before the market moves.",
-      "source": "Source: RFQs and their quotations",
+      "source": "RFQs and their quotations",
       "demand": "Required: {qty}",
       "remaining": "{hours}h remaining",
       "closed": "Deadline passed",
@@ -1647,7 +1649,10 @@
       },
       "logistics": "Logistics watch",
       "logisticsBody": "Traffic is running {speed}; arrivals are trending {minutes} minutes late. Warn the site so the pour queue can be moved.",
-      "receivedAt": "Received {when}"
+      "receivedAt": "Received {when}",
+      "highAlert": "High alert",
+      "avgSpeed": "Average speed: {speed}",
+      "route": "GPS route"
     }
   },
   "notifications": {

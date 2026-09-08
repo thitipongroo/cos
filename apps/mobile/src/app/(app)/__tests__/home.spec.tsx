@@ -22,6 +22,9 @@ jest.mock('../../../api/projects', () => ({
   getMyProjects: jest.fn(async () => [
     { project_id: 'proj-1', project_code: 'RVT-01', project_name: 'Riverside Tower' },
   ]),
+  // ProcurementHome reads the TENANT list, not the caller's own: that role is a member of no
+  // project, so `mine` answers nothing for it (2026-09-08).
+  listProjects: jest.fn(async () => [{ project_id: 'proj-1', project_name: 'Riverside Tower' }]),
   getProjectProgress: jest.fn(async () => ({ progress_percent: 42 })),
   getProjectPhases: jest.fn(async () => []),
 }));

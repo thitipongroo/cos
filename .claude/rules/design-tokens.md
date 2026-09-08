@@ -404,6 +404,23 @@ Core components (React Native — implement in apps/mobile/):
                         omits the key entirely; both render the same. Full contract: spec §32.7
                         "Drawer Profile Block"; NavigationDrawer.spec.tsx pins the sequence, because
                         a reordered block renders perfectly and nothing else would ever see it.
+  <AiCardFooter />      THE PROJECT'S STANDARD FOOT FOR AN AI CARD (PO decision 2026-09-08). One
+                        line, this order, no other:
+                          ⌾ CONF: 94%  |  ⌾ SOURCE: THE SUKHUMVIT 45 RESIDENCES            >
+                        THE CONFIDENCE LIVES HERE, NOT IN THE HEADER. It used to be a chip opposite
+                        the title — where 09_finance and 10_proc_officer both draw it — which put
+                        the two halves of one claim at opposite ends of the card. "This confident"
+                        and "from this" are one sentence. The header keeps the title and any state
+                        chip. "CONF" not "CONFIDENCE": the row must hold two labels, two values and
+                        a chevron in a phone's width, and the SOURCE is the half that must survive.
+                        A NULL CONFIDENCE DRAWS NO CONF HALF — never "CONF: —", never a zero: a card
+                        whose figures are deterministic has no confidence to report (ADR-099 third
+                        amendment). THE SOURCE NAMES SOMETHING THIS REPO HAS — a project, a record
+                        set — never a system it does not; that carve-out (ADR-098 amendment 2) now
+                        lives in the component so the next AI card inherits it.
+                        <InsightPanel /> keeps the BAND WORD as its header chip (PAIR guidance,
+                        lib/aiConfidence.ts); the executive variant's "number leads" exception ended
+                        with this decision. Full contract: spec §32.7 "AI Card Footer".
   <PhotoCapture />      Camera + gallery grid, inline annotation, offline queue
   <VoiceNoteButton />   Hold-to-record, waveform animation, auto-transcription
   <SyncPill />          Top-bar glyph carrying EVERY sync state, offline included.

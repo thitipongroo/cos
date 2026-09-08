@@ -64,6 +64,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import type { AiReport } from '../api/ai';
 import { decodeJwtPayload } from '../lib/jwt';
 import { confidenceBand, confidencePercent } from '../lib/aiConfidence';
+import { AiCardFooter } from './AiCardFooter';
 import { insightAdvice } from '../lib/insightAdvice';
 import { useAuthStore } from '../store/authStore';
 import { useT } from '../i18n';
@@ -313,11 +314,12 @@ export function InsightPanel({
                   executive && { color: bandTone },
                 ]}
               >
-                {percent === null
-                  ? t(BAND_LABEL[band])
-                  : executive
-                    ? t('insight.conf', { value: percent })
-                    : `${t(BAND_LABEL[band])} · ${String(percent)}%`}
+                {/* THE BAND WORD ALONE SINCE 2026-09-08. The percentage moved to the card's foot,
+                    beside the source, under the project's standard AI-card footer — the two halves
+                    of one claim ("this confident, from this") now sit together instead of at
+                    opposite ends of the card. What stays here is the QUALITATIVE reading, which is
+                    what Google PAIR's guidance says should lead; the number is one line below. */}
+                {t(BAND_LABEL[band])}
               </Text>
             </View>
           ) : null}
@@ -407,13 +409,14 @@ export function InsightPanel({
           name wrapped this footer onto two rows and pushed the card taller than the drawing's. The
           other variants keep wrapping — their source line is body-sized rather than a caps footer,
           and truncating a name a manager is reading to identify a project is a worse trade there. */}
-      <Text
-        style={[styles.source, executive && styles.sourceExecutive]}
-        numberOfLines={executive ? 1 : undefined}
-        ellipsizeMode="tail"
-      >
-        {t('insight.source', { project: projectLabel ?? projectId })}
-      </Text>
+      <AiCardFooter
+        testID="insight-foot"
+        percent={percent}
+        source={projectLabel ?? projectId}
+        confLabel={t('insight.confShort')}
+        sourceLabel={t('insight.sourceShort')}
+        palette={p}
+      />
     </View>
   );
 }

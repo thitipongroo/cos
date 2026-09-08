@@ -71,6 +71,7 @@ import {
   type VendorInvoice,
 } from '../../api/procurement';
 import { LoadingBoundary } from '../../components/LoadingBoundary';
+import { AiCardFooter } from '../../components/AiCardFooter';
 import { spacedMoney } from '../../lib/compactMoney';
 import { DELIVERY_GRN, INVOICE_DISCREPANCY, THREE_WAY_MATCH } from '../../lib/mockupFigures';
 import { useT, useI18n } from '../../i18n';
@@ -449,15 +450,6 @@ function MatchingBanner({
           <MaterialIcons name="bolt" size={16} color={palette.accent} />
           <Text style={styles.bannerTitle}>{t('finance.invoices.matching')}</Text>
         </View>
-        {/* DRAWN, and the register's most uncomfortable entry: three-way matching does not exist
-            in `backend/src` at all, so this is a confidence on a process that never ran rather than
-            on a calculation dressed as one. Drawn on the product owner's instruction of 2026-09-08
-            and registered with the banner it belongs to. */}
-        <View style={styles.confChip}>
-          <Text style={styles.confText}>
-            {t('home.finance.confidence', { percent: THREE_WAY_MATCH.value.confidence })}
-          </Text>
-        </View>
       </View>
       <Text style={styles.body}>{THREE_WAY_MATCH.value.summary}</Text>
 
@@ -471,19 +463,20 @@ function MatchingBanner({
           the screen a reader believes. Same carve-out as ADR-098's second amendment, applied a
           fourth time. What is named instead is true: the list above is the procurement invoice and
           purchase-order records, fetched at `listVendorInvoices` and `poIndex`. */}
-      <View style={styles.bannerFoot}>
-        <MaterialIcons name="storage" size={13} color={palette.muted} />
-        <Text style={styles.bannerSource} numberOfLines={1} ellipsizeMode="tail">
-          {t('finance.invoices.source')}
-        </Text>
-        <MaterialIcons
-          name="chevron-right"
-          size={18}
-          color={palette.accent}
-          accessibilityElementsHidden
-          importantForAccessibility="no"
-        />
-      </View>
+      {/* THE PROJECT'S STANDARD AI-CARD FOOT (spec §32.7, PO decision 2026-09-08). The confidence
+          came down from a chip in the header opposite the title. IT IS THE REGISTER'S MOST
+          UNCOMFORTABLE ENTRY and stays so: three-way matching does not exist in `backend/src` at
+          all, so this is a confidence on a process that never ran. */}
+      <AiCardFooter
+        testID="invoices-matching-foot"
+        percent={THREE_WAY_MATCH.value.confidence}
+        // The VALUE carries no label of its own: `<AiCardFooter />` writes the "SOURCE:" —
+        // both did for one capture and the frame read "SOURCE: Source: vendor invoices".
+        source={t('finance.invoices.source')}
+        confLabel={t('insight.confShort')}
+        sourceLabel={t('insight.sourceShort')}
+        palette={palette}
+      />
     </View>
   );
 }

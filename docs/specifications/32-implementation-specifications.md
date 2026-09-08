@@ -1448,6 +1448,49 @@ route sets a position, so it arrives by seed or HR import, and an app running ag
 older than migration `20260908000001` receives no such key at all. Both render the same way. A
 placeholder here would be the drawn line returning under another name, which is what ADR-101 ended.
 
+#### AI Card Footer (`<AiCardFooter />`)
+
+The foot of every AI card, and **the project's standard for one** (product-owner decision
+2026-09-08). One line, in this order and no other:
+
+```text
+⌾ CONF: 94%  |  ⌾ SOURCE: THE SUKHUMVIT 45 RESIDENCES                    ›
+```
+
+| Element    | Rule                                                                                                 |
+| ---------- | ------------------------------------------------------------------------------------------------------ |
+| Confidence | `verified` glyph + `CONF: {n}%`, success ink. **Omitted entirely when the card has no model behind it** |
+| Separator  | A drawn 1px rule, not a `\|` character — a pipe between two labels reads as a table column             |
+| Source     | `storage` glyph + `SOURCE: {name}`, muted, `flex: 1`, one line, tail ellipsis                        |
+| Chevron    | Trailing, accent, hidden from the accessibility tree — the row's own label already says the source    |
+
+**THE CONFIDENCE LIVES HERE, NOT IN THE HEADER.** It used to sit as a chip opposite the card's title,
+which is where `09_finance` and `10_proc_officer` both draw it, and that put the two halves of one
+claim at opposite ends of the card: how much the model believes itself at the top, what it read at
+the bottom. They are one sentence — "this confident, from this" — and a reader deciding whether to
+act wants them together. The header keeps the title and whatever state chip the card carries.
+
+**"CONF", not "CONFIDENCE".** The row holds two labels, two values and a chevron inside a phone's
+width, and the source is the half that must survive: a confidence with no provenance is a number
+about nothing. The source gets the remaining space and the ellipsis.
+
+**The band word still leads, and it is not the number.** `<InsightPanel />` keeps the qualitative
+reading — High / Medium / Low confidence — as its header chip, per the Google PAIR guidance
+`lib/aiConfidence.ts` records. The footer carries the figure. **The `executive` variant's exception
+ended with this decision**: it was the one variant whose chip led with the number, and there is no
+longer a chip for a number to lead.
+
+**A null confidence draws no CONF half at all** — never "CONF: —", never a zero. A card whose
+figures are deterministic has no confidence to report; the FINANCE cash-flow forecast is the case on
+record (ADR-099, third amendment), and printing one would claim a model that never ran.
+
+**The source names something this repository has** — a project, a set of records — never a system it
+does not. Both mockup sets foot their AI cards with integrations that do not exist ("Integrated ERP
+& Market Benchmarks", "e-GP Benchmark", "ERP DB & Central OCR Ledger"). A provenance line is the one
+piece of drawn text that changes how much of the card a reader believes; that carve-out is
+ADR-098's second amendment, and it now lives in the component so the next AI card inherits it rather
+than re-deciding it.
+
 #### Photo Annotation (`<PhotoAnnotation />`)
 
 Mark up a site photo — the "inline annotation" `<PhotoCapture />` above has always specified but has

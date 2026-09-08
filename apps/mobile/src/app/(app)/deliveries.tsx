@@ -181,14 +181,9 @@ export default function DeliveriesScreen() {
   if (mode === 'list') {
     return (
       <View testID="deliveries-screen" style={listStyles.page}>
-        <View style={listStyles.hero}>
-          {/* The TITLE step, not hero — a tab screen draws no hero-sized page title. */}
-          <Text style={listStyles.heroTitle} accessibilityRole="header" numberOfLines={1}>
-            {t('procurement.deliveries.title')}
-          </Text>
-          <Text style={listStyles.heroSub}>{t('procurement.deliveries.subtitle')}</Text>
-        </View>
-
+        {/* NO TITLE AND NO SUBTITLE (PO decision 2026-09-08). The tab bar already names this
+            screen, and the three tiles under it say what is arriving and what has been received
+            better than a sentence does. Two rows of a phone, returned to the queue. */}
         {/* The drawing's three telemetry tiles. RECEIVED IS REAL — it is how many delivery rows
             this tenant holds. THE OTHER TWO ARE DRAWN, and so is the on-time rate:
             `procurement.deliveries` has no status column, so the table can say "this arrived" and
@@ -222,10 +217,24 @@ export default function DeliveriesScreen() {
 
         {/* DRAWN in full — no GPS feed, no carrier telemetry, no driver record. See
             DELIVERY_TELEMETRY in the register. */}
+        {/* THE DRAWING'S SHAPE, ELEMENT FOR ELEMENT (`04_deliveries/01_po_delivery`): a tinted
+            square plate holding the warning glyph, the title beside it, the alert level as a pill at
+            the trailing edge, the sentence, then a footer rule carrying the average speed on the
+            left and the route control on the right.
+
+            EVERY FIGURE ON IT IS DRAWN and is registered — there is no GPS feed, no carrier
+            telemetry and no promised arrival to be late against. See DELIVERY_TELEMETRY. */}
         <View testID="delivery-alert" style={listStyles.alert}>
           <View style={listStyles.alertHead}>
-            <MaterialIcons name="warning" size={16} color={p.warning} />
-            <Text style={listStyles.alertTitle}>{t('procurement.deliveries.logistics')}</Text>
+            <View style={listStyles.alertPlate}>
+              <MaterialIcons name="warning" size={16} color={p.warning} />
+            </View>
+            <Text style={[listStyles.alertTitle, listStyles.alertTitleFlex]} numberOfLines={1}>
+              {t('procurement.deliveries.logistics')}
+            </Text>
+            <View style={listStyles.alertChip}>
+              <Text style={listStyles.alertChipText}>{t('procurement.deliveries.highAlert')}</Text>
+            </View>
           </View>
           <Text style={listStyles.alertBody}>
             {t('procurement.deliveries.logisticsBody', {
@@ -233,6 +242,27 @@ export default function DeliveriesScreen() {
               speed: DELIVERY_TELEMETRY.value.avgSpeed,
             })}
           </Text>
+          <View style={listStyles.alertFoot}>
+            <View style={listStyles.alertSpeed}>
+              <View style={listStyles.alertDot} />
+              <Text style={listStyles.alertSpeedText} numberOfLines={1}>
+                {t('procurement.deliveries.avgSpeed', {
+                  speed: DELIVERY_TELEMETRY.value.avgSpeed,
+                })}
+              </Text>
+            </View>
+            <Pressable
+              testID="delivery-route"
+              accessibilityRole="button"
+              accessibilityLabel={t('procurement.deliveries.route')}
+              onPress={() => setMode('list')}
+              style={listStyles.alertAction}
+            >
+              <MaterialIcons name="navigation" size={14} color={p.accent} />
+              <Text style={listStyles.alertActionText}>{t('procurement.deliveries.route')}</Text>
+              <MaterialIcons name="arrow-forward" size={14} color={p.accent} />
+            </Pressable>
+          </View>
         </View>
 
         <LoadingBoundary
@@ -511,6 +541,7 @@ function makeListStyles(p: Palette) {
       backgroundColor: p.surface,
     },
     alertHead: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
+    alertTitleFlex: { flex: 1 },
     alertTitle: {
       color: p.warning,
       fontFamily: fontFamily.semibold,
@@ -518,7 +549,50 @@ function makeListStyles(p: Palette) {
       letterSpacing: 0.8,
       textTransform: 'uppercase',
     },
+    alertPlate: {
+      width: 24,
+      height: 24,
+      alignItems: 'center',
+      justifyContent: 'center',
+      // A 24px square plate: `plateRadius(24)` is below the 28px floor, so it takes `md`.
+      borderRadius: radius.md,
+      borderWidth: 1,
+      borderColor: `${p.warning}55`,
+      backgroundColor: `${p.warning}26`,
+    },
+    alertChip: {
+      paddingHorizontal: spacing.xs,
+      paddingVertical: 2,
+      borderRadius: radius.xl,
+      borderWidth: 1,
+      borderColor: `${p.warning}55`,
+    },
+    alertChipText: { color: p.warning, fontFamily: fontFamily.semibold, fontSize: 10 },
     alertBody: { color: p.text, fontFamily: fontFamily.regular, fontSize: 11 },
+    alertFoot: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: spacing.xs,
+      borderTopWidth: 1,
+      borderTopColor: `${p.border}`,
+      paddingTop: spacing.xs,
+    },
+    alertSpeed: { flexDirection: 'row', alignItems: 'center', gap: 6, flexShrink: 1 },
+    // A 6px dot: a circle, half its width, which is what 999 marks.
+    alertDot: { width: 6, height: 6, borderRadius: 999, backgroundColor: p.warning },
+    alertSpeedText: { color: p.muted, fontFamily: fontFamily.regular, fontSize: 10 },
+    alertAction: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+      paddingHorizontal: spacing.sm,
+      paddingVertical: 6,
+      borderRadius: radius.xl,
+      borderWidth: 1,
+      borderColor: `${p.accent}66`,
+    },
+    alertActionText: { color: p.accent, fontFamily: fontFamily.semibold, fontSize: 10 },
     listContent: { gap: spacing.sm, paddingBottom: spacing.xl },
     deliveryNumber: {
       color: p.text,
