@@ -146,4 +146,13 @@ export interface InvoiceRow {
   status: 'RECEIVED' | 'VERIFIED' | 'APPROVED' | 'PAID' | 'DISPUTED';
   file_id: string | null;
   note?: string | null; // G-M14 (optional for back-compat with pre-migration rows)
+  /**
+   * The vendor's name — JOINED IN from `procurement.vendors`, not a column of `invoices`
+   * (2026-09-08). Optional on the type because the rows that carry it come from the two read
+   * queries; the writes below build an `InvoiceRow` from the table alone.
+   *
+   * Nullable because the join is tenant-scoped and LEFT — see `findInvoices` for why an inner join
+   * would be the wrong trade here.
+   */
+  vendor_name?: string | null;
 }

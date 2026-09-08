@@ -1410,6 +1410,37 @@ tree: the defect is in what a screen passes, and a redundantly-titled card rende
 Do **not** implement on mobile: tables (use cards), navigation deeper than 3 levels,
 modal-on-modal (use bottom sheets), dropdowns with 50+ items (add search).
 
+#### Drawer Profile Block
+
+The card at the head of `<NavigationDrawer />`, and **the project's standard for showing who is
+signed in** (product-owner decision 2026-09-08). One drawer serves every role, so this is every
+role's block; there is no per-role variant and no second shape anywhere in the app.
+
+Its order, top to bottom:
+
+| Line         | Source                                                  | Notes                                                    |
+| ------------ | ------------------------------------------------------- | -------------------------------------------------------- |
+| Avatar       | `platform.users.photo_url`, initials otherwise          | Leading, centred against the three text lines            |
+| **Name**     | `auth.displayName`, `drawer.member` otherwise           | Body size, semibold, one line                            |
+| **Position** | DRAWN — see ADR-099                                     | 11px, muted. No table carries a job title                |
+| **Id**       | `workforce.workers.employee_code`, short UUID otherwise | Caption size, **monospaced**, muted                      |
+| Status       | `platform.users.mfa_enabled` + the sync state           | Own inset row on `--cos-dark-bg`, cloud glyph, 11px      |
+
+**The order is the specification, not an accident of layout.** It descends by how often a line is
+read: a name identifies at a glance, a position gives that name meaning, an id is looked up perhaps
+twice a year. `NavigationDrawer.spec.tsx` pins the sequence, because a reordered block renders
+perfectly — nothing throws and no query fails, so the sequence is its own only witness.
+
+**NO ROLE TAG.** The name line carried the role enum as a chip (`FINANCE`, `SITE_ENGINEER`) until
+2026-09-08 and it was removed by product-owner decision: the position line directly below already
+says what this person does in the words a person uses, and the enum said it a second time in the
+words the system uses. The drawings show the chip (`09_finance/05_profile/01_fn_navigation_drawer`
+is the most explicit); this is a COMPOSITION ruling and ADR-085 gives it to the implementation.
+
+**The position line is drawn, and that is a known cost.** `PROFILE_JOB_TITLE` in the register is one
+string for the whole app, so every role's drawer reads the same position. Removing the role chip
+took away the only line that varied per role. Recorded rather than hidden — see ADR-099.
+
 #### Photo Annotation (`<PhotoAnnotation />`)
 
 Mark up a site photo — the "inline annotation" `<PhotoCapture />` above has always specified but has

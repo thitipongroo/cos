@@ -313,6 +313,22 @@ export class FinanceRepository {
   // Cast through the enum, not `::text`, mirroring the billing filter below: `status` is
   // `finance."PaymentStatus"`, so comparing it to a bare parameter has no operator. An unknown value
   // is rejected by Postgres as an invalid enum input rather than silently matching nothing.
+  //
+  // VENDOR AND INVOICE NUMBER ARE JOINED IN (2026-09-08). The payment row is all UUIDs, and every
+  // screen that lists a payment names who it is to; the alternative was one invoice fetch per row
+  // on the FINANCE approval queue. Additive, so QM-9 holds: an older client parses the response
+  // unchanged. The COUNT below is deliberately NOT joined — it counts payments, and a left join
+  // cannot change that count, so joining there would be work for nothing.
+  //
+  // BOTH JOINS ARE LEFT, and that is load-bearing. `finance.payments.invoice_id` carries no foreign
+  // key to `procurement.invoices` — different schemas, written by different services — so a payment
+  // can point at an invoice row that is not there. An INNER join would silently drop that payment
+  // out of the approval queue, and a payment queue that hides a payment is worse than one that
+  // shows it without a name. Both columns are nullable and the screens print an em dash.
+  //
+  // The tenant predicate stays on the payment AND is repeated in each join condition. RLS is the
+  // real boundary (ADR-031) and both joined tables carry their own RESTRICTIVE policy, so this is
+  // the app-layer filter master §Never calls "secondary defence-in-depth, not a replacement".
   async findPayments(params: {
     project_id?: string;
     status?: string;

@@ -384,6 +384,22 @@ Core components (React Native — implement in apps/mobile/):
                         precedence as every other sync indicator — and since 2026-08-20 that is
                         enforced rather than asserted: both pills read useSyncPillView, so the
                         precedence exists once and only the presentation is each pill's own.
+  Drawer profile block  THE PROJECT'S STANDARD FOR SHOWING WHO IS SIGNED IN (PO decision
+                        2026-09-08). The card at the head of <NavigationDrawer />, in this order and
+                        no other: AVATAR · NAME · POSITION · ID · STATUS. One drawer serves every
+                        role, so this is every role's block — there is no per-role variant.
+                        Descending by how often a line is read: a name identifies at a glance, a
+                        position gives it meaning, an id is looked up perhaps twice a year.
+                        NO ROLE TAG. The name line carried the role enum as a chip until 2026-09-08
+                        and it was removed: the position line below already says what the person
+                        does, in the words a person uses. The drawings show the chip — 09_finance/
+                        05_profile/01_fn_navigation_drawer most explicitly — and this is a
+                        COMPOSITION ruling, which ADR-085 gives to the implementation.
+                        The position is DRAWN (PROFILE_JOB_TITLE, ADR-099) and is ONE STRING FOR THE
+                        WHOLE APP, so every role reads the same one; removing the chip took away the
+                        only line that varied per role. Full contract: spec §32.7 "Drawer Profile
+                        Block"; NavigationDrawer.spec.tsx pins the sequence, because a reordered
+                        block renders perfectly and nothing else would ever see it.
   <PhotoCapture />      Camera + gallery grid, inline annotation, offline queue
   <VoiceNoteButton />   Hold-to-record, waveform animation, auto-transcription
   <SyncPill />          Top-bar glyph carrying EVERY sync state, offline included.

@@ -273,7 +273,77 @@ paths:
             format: uuid
       responses:
         '200':
-          description: Budget detail
+          description: >-
+            The project budget, its allocation lines, and the variance between what was allocated
+            and what has been committed plus spent. Schema documented 2026-09-08 (the endpoint is
+            unchanged; only the description was a bare line before) because the mobile budget screen
+            reads it: `lines` carry an ALLOCATION and no actual, which is why a category's spend has
+            to come from `/finance/cost-transactions` grouped by `budget_line_id`.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  budget:
+                    type: object
+                    properties:
+                      budget_id:
+                        type: string
+                        format: uuid
+                      project_id:
+                        type: string
+                        format: uuid
+                      total_budget_amount:
+                        type: string
+                        description: DECIMAL string
+                      total_budget_currency:
+                        type: string
+                        example: THB
+                      allocated_amount:
+                        type: string
+                        description: DECIMAL string - the sum of the lines below
+                      committed_amount:
+                        type: string
+                        description: DECIMAL string
+                      actual_amount:
+                        type: string
+                        description: DECIMAL string
+                      variance_alert_threshold:
+                        type: string
+                        description: DECIMAL string
+                  lines:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        line_id:
+                          type: string
+                          format: uuid
+                        budget_id:
+                          type: string
+                          format: uuid
+                        project_id:
+                          type: string
+                          format: uuid
+                        line_name:
+                          type: string
+                        allocated_amount:
+                          type: string
+                          description: DECIMAL string. There is no actual on a line.
+                        currency_code:
+                          type: string
+                          example: THB
+                        boq_category_id:
+                          type: [string, 'null']
+                          format: uuid
+                          description: >-
+                            Foreign key to the BOQ category. It is a UUID, not a short cost code -
+                            no code column exists anywhere in the schema.
+                  variance_percentage:
+                    type: string
+                    description: DECIMAL string - (actual + committed - allocated) / allocated x 100
+        '404':
+          description: No budget has been set for this project
         '401':
           description: Unauthenticated — missing or invalid bearer token
     post:
@@ -379,7 +449,58 @@ paths:
             maximum: 100
       responses:
         '200':
-          description: Paginated cost transactions
+          description: >-
+            One page of recorded costs, ordered `transaction_date DESC, recorded_at DESC`. Schema
+            documented 2026-09-08 because the mobile budget screen sums these by `budget_line_id`
+            to get a category's spend - `finance.budget_lines` carries only an allocation. A caller
+            doing that MUST walk every page: a sum over page one is a sum over the most recent
+            rows, which understates every category.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        transaction_id:
+                          type: string
+                          format: uuid
+                        project_id:
+                          type: string
+                          format: uuid
+                        source_type:
+                          type: string
+                          enum: [PURCHASE_ORDER, INVOICE, ADJUSTMENT]
+                        source_id:
+                          type: string
+                          format: uuid
+                        budget_line_id:
+                          type: [string, 'null']
+                          format: uuid
+                          description: >-
+                            Set by `resolveBudgetLine` when a source's BOQ items map to a line;
+                            null when none of them do. Such a cost belongs to the project total
+                            and to no category.
+                        amount:
+                          type: string
+                          description: DECIMAL string
+                        currency_code:
+                          type: string
+                          example: THB
+                        transaction_date:
+                          type: string
+                          format: date
+                        description:
+                          type: [string, 'null']
+                  total:
+                    type: integer
+                  page:
+                    type: integer
+                  limit:
+                    type: integer
         '401':
           description: Unauthenticated — missing or invalid bearer token
   /finance/payments:
@@ -419,7 +540,47 @@ paths:
             default: 20
       responses:
         '200':
-          description: Payments list
+          description: >-
+            Payments list — the payment's own columns and nothing else. A payment names its invoice
+            by `invoice_id` only: finance may not query `procurement.*` (master PHASE 7 line 3216),
+            so a caller that needs the vendor's name or the invoice number reads
+            `GET /procurement/vendor-invoices`, which carries both, and matches on `invoice_id`.
+            A join here was written on 2026-09-08 and reverted the same day for that reason.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        payment_id:
+                          type: string
+                          format: uuid
+                        invoice_id:
+                          type: string
+                          format: uuid
+                        project_id:
+                          type: string
+                          format: uuid
+                        amount:
+                          type: string
+                          description: DECIMAL string
+                        currency_code:
+                          type: string
+                          example: THB
+                        payment_date:
+                          type: string
+                          format: date
+                        payment_reference:
+                          type: [string, 'null']
+                        status:
+                          type: string
+                          enum: [PENDING, PROCESSED, FAILED]
+                  total:
+                    type: integer
         '401':
           description: Unauthenticated — missing or invalid bearer token
     post:

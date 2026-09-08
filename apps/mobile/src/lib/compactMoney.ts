@@ -50,6 +50,16 @@ const BILLION = new Decimal(1_000_000_000);
 /** Options for the two functions below. */
 export interface CompactMoneyOptions {
   /**
+   * Put the minus sign AFTER the currency symbol — `฿ -712,524.00`, not `-฿712,524.00`.
+   *
+   * Off by default, because `formatMoney`'s accounting convention puts the sign first and that is
+   * what every invoice-shaped surface in this product prints. It is on for the FINANCE dashboard's
+   * KPI tiles (PO decision 2026-09-08): those sit in a row where every other figure starts with the
+   * symbol, and a negative one starting with `-` broke the column. It also forces the symbol/figure
+   * gap on an UNSCALED amount, which the default path deliberately leaves to `formatMoney`.
+   */
+  signAfterSymbol?: boolean;
+  /**
    * The largest magnitude the figure may be scaled to. Defaults to `billion`.
    *
    * `million` keeps ฿1,213,000,000 as `฿ 1,213 M` instead of promoting it to `฿ 1.21 B`. The
@@ -81,9 +91,20 @@ export function compactMoney(
   const value = amount instanceof Decimal ? amount : toDecimal(amount);
   const magnitude = value.abs();
 
+  const symbolFor = currencySymbol(currency);
+  const gapFor = symbolFor.endsWith(' ') ? '' : ' ';
+
   if (magnitude.lessThan(MILLION)) {
     // Unscaled amounts keep `formatMoney`'s exact output — that is the invoice format, and an
-    // amount someone acts on must read the same everywhere it appears.
+    // amount someone acts on must read the same everywhere it appears. The one exception is a
+    // caller that asked for the symbol to lead; see `signAfterSymbol`.
+    if (options.signAfterSymbol === true) {
+      const minus = value.isNegative() ? '-' : '';
+      return {
+        text: formatMoney(magnitude, currency).replace(symbolFor, `${symbolFor}${gapFor}${minus}`),
+        scale: 'none',
+      };
+    }
     return { text: formatMoney(value, currency), scale: 'none' };
   }
 
@@ -100,14 +121,22 @@ export function compactMoney(
   }
 
   // Sign in front of the symbol, matching `formatMoney` — that is how a credit reads in accounting.
+  // `signAfterSymbol` moves it behind, for the one surface that asked; see the option.
   const sign = scaled.isNegative() ? '-' : '';
   // An unrecognised code already ends in a space (`formatMoney` prints "XAF 1,234.50"), so it must
   // not gain a second one.
-  const symbol = currencySymbol(currency);
-  const gap = symbol.endsWith(' ') ? '' : ' ';
+  const symbol = symbolFor;
+  const gap = gapFor;
   // Grouped, so a capped figure reads `฿ 1,213 M` rather than `฿ 1213 M`. A no-op below a thousand,
   // which is every figure the uncapped path can produce.
-  return { text: `${sign}${symbol}${gap}${group(scaled.abs().toString())}`, scale };
+  const figure = group(scaled.abs().toString());
+  return {
+    text:
+      options.signAfterSymbol === true
+        ? `${symbol}${gap}${sign}${figure}`
+        : `${sign}${symbol}${gap}${figure}`,
+    scale,
+  };
 }
 
 /**

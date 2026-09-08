@@ -110,6 +110,32 @@ describe('MONEY_SCALE_KEY', () => {
     expect(spacedMoney('1234.5', 'XAF')).toBe('XAF 1,234.50');
   });
 
+  // ─── signAfterSymbol (PO decision 2026-09-08) ─────────────────────────────
+
+  it('puts the minus behind the symbol when the caller asks, and spaces an unscaled amount', () => {
+    // The FINANCE dashboard's KPI tiles sit in a row where every other figure starts with the
+    // symbol; a negative one starting with `-` broke the column. The default path leaves an
+    // unscaled amount exactly as formatMoney wrote it, so this branch has to add the gap itself.
+    expect(compactMoney('-712524', 'THB', { signAfterSymbol: true }).text).toBe('฿ -712,524.00');
+    expect(compactMoney('712524', 'THB', { signAfterSymbol: true }).text).toBe('฿ 712,524.00');
+  });
+
+  it('does the same to a scaled figure', () => {
+    expect(compactMoney('-1240000', 'THB', { signAfterSymbol: true }).text).toBe('฿ -1.24');
+    expect(compactMoney('1240000', 'THB', { signAfterSymbol: true }).text).toBe('฿ 1.24');
+  });
+
+  it('leaves the accounting order alone by default, on both paths', () => {
+    // The invoice-shaped surfaces keep formatMoney's convention; this option is opt-in.
+    expect(compactMoney('-712524', 'THB').text).toBe('-฿712,524.00');
+    expect(compactMoney('-1240000', 'THB').text).toBe('-฿ 1.24');
+  });
+
+  it('gives an unrecognised code no second space under the option either', () => {
+    // `formatMoney` prints "XAF 1,234.50" — the code already ends in a space.
+    expect(compactMoney('-1234.5', 'XAF', { signAfterSymbol: true }).text).toBe('XAF -1,234.50');
+  });
+
   it('takes a Decimal as readily as a string', () => {
     expect(spacedMoney(toDecimal('0.5'))).toBe('฿ 0.50');
   });

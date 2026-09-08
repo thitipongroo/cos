@@ -28,12 +28,17 @@
 
 import { Injectable, OnModuleDestroy } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
-import { Decimal } from '@cos/financial';
+import {
+  firstShortfallWeek,
+  gradeCashflowRisk,
+  projectedShortfall,
+  type CashflowRiskLevel,
+} from '@cos/financial';
 import { createLogger } from '@cos/logger';
 import { createPrismaClient } from '../../shared/prisma/create-prisma-client';
 import { EventOutboxService } from '../../shared/events/event-outbox.service';
 import { ScheduledJobLockService } from '../../shared/scheduling/scheduled-job-lock.service';
-import { buildForecast, type CashflowPeriod } from './finance.service';
+import { buildForecast } from './finance.service';
 import type { CashflowDueRow } from './finance.rows';
 
 const logger = createLogger('cashflow-risk');
@@ -44,32 +49,14 @@ export const CASHFLOW_RISK_JOB = 'finance-cashflow-risk';
 /** Comfortably longer than a sweep over every project; well under the daily schedule. */
 export const CASHFLOW_RISK_LEASE_SECONDS = 900;
 
-export type RiskLevel = 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
-
-/**
- * The risk level for a forecast, or null when the money never runs out inside the horizon.
- *
- * Exported and pure so the boundaries are testable without a database. The bands are inclusive of
- * their lower bound and read in weeks-from-now, matching how the buckets are numbered.
- */
-export function gradeCashflowRisk(periods: CashflowPeriod[]): RiskLevel | null {
-  const firstNegative = periods.findIndex((p) => new Decimal(p.cumulative_net).isNegative());
-  if (firstNegative === -1) return null;
-  if (firstNegative <= 1) return 'CRITICAL';
-  if (firstNegative <= 4) return 'HIGH';
-  if (firstNegative <= 8) return 'MEDIUM';
-  return 'LOW';
-}
-
-/** The deepest the hole gets across the horizon, as a positive amount. Zero when it never opens. */
-export function projectedShortfall(periods: CashflowPeriod[]): Decimal {
-  let worst = new Decimal(0);
-  for (const p of periods) {
-    const c = new Decimal(p.cumulative_net);
-    if (c.lessThan(worst)) worst = c;
-  }
-  return worst.negated();
-}
+// BOTH READERS MOVED TO `@cos/financial` ON 2026-09-08, and are re-exported here so every existing
+// importer and its tests keep working unchanged. The FINANCE mobile home shows the same judgement to
+// the person this sweep raises the alert for — the drawing's "Projected shortfall of X in week N" is
+// these two functions — and a rule written twice is a rule that drifts. The header of
+// `packages/@cos/financial/src/cashflow.ts` carries the reasoning; `buildForecast` did NOT move,
+// because it reads repository-shaped rows and no client builds a forecast.
+export type RiskLevel = CashflowRiskLevel;
+export { gradeCashflowRisk, projectedShortfall, firstShortfallWeek };
 
 interface ProjectRow {
   project_id: string;

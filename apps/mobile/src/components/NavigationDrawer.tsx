@@ -22,6 +22,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter, usePathname } from 'expo-router';
 import { drawerSectionFor, SHARED_LINKS, type DrawerLink } from '../lib/drawerLinks';
+import { getMe } from '../api/users';
+import { PROFILE_JOB_TITLE } from '../lib/mockupFigures';
 import { useUiStore } from '../store/uiStore';
 import { useAuthStore } from '../store/authStore';
 import { useI18n } from '../i18n';
@@ -60,6 +62,34 @@ export function NavigationDrawer(): React.JSX.Element | null {
   const { visible, overflow } = drawerSectionFor(role);
   // Collapsed on open, every time: the drawer is a fresh glance, not a place with remembered state.
   const [expanded, setExpanded] = useState(false);
+
+  /**
+   * The two fields of the profile zone that the session token does not carry.
+   *
+   * `GET /users/me` returns both: `employee_code` (the employer's own id, null for office roles)
+   * and `mfa_enabled`. Fetched once when the drawer first opens rather than on mount — the drawer
+   * renders nothing while closed, so a request on mount would be for a panel nobody has asked for.
+   * A failure leaves both null and the zone falls back to the short UUID and no MFA line, which is
+   * what it drew before this existed.
+   */
+  const [me, setMe] = useState<{ employeeCode: string | null; mfaEnabled: boolean } | null>(null);
+
+  useEffect(() => {
+    if (!open || me !== null) return;
+    let cancelled = false;
+    getMe()
+      .then((row) => {
+        if (!cancelled) {
+          setMe({ employeeCode: row.employee_code ?? null, mfaEnabled: row.mfa_enabled === true });
+        }
+      })
+      .catch(() => {
+        /* offline — the zone keeps the short UUID and says nothing about a factor it cannot see */
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [open, me]);
 
   // -DRAWER_WIDTH = off-screen left; 0 = open. Backdrop fades 0→1 in step.
   const slide = useRef(new Animated.Value(-DRAWER_WIDTH)).current;
@@ -159,25 +189,49 @@ export function NavigationDrawer(): React.JSX.Element | null {
         <View testID="drawer-profile-card" style={styles.profileCard}>
           <View style={styles.profileRow}>
             <Avatar variant="dark" />
+            {/* THE PROJECT'S PROFILE BLOCK, and its order is the standard (PO decision
+                2026-09-08): AVATAR · NAME · WHAT THEY DO · WHO THEY ARE · STATUS. Descending by how
+                often it is read — a name identifies at a glance, a position gives it meaning, an id
+                is looked up perhaps twice a year, and the status line is the account's own. One
+                drawer serves every role, so this order is every role's; spec §32.7 "Drawer Profile
+                Block" is the authority and `NavigationDrawer.spec.tsx` pins the sequence, because a
+                reordered block renders perfectly and no snapshot-free test would otherwise see it.
+
+                NO ROLE TAG. The name line carried a `FINANCE` / `SITE_ENGINEER` chip until
+                2026-09-08 and it was removed on the product owner's instruction: the position line
+                below already says what this person does, in words a person uses, and an enum
+                shouted beside their name says it a second time in words the system uses. */}
             <View style={darkScreen.fill}>
               <Text style={styles.profileName} numberOfLines={1}>
                 {displayName ?? t('drawer.member')}
               </Text>
-              <Text style={styles.profileRole} numberOfLines={1}>
-                {role ?? ''}
+              {/* DRAWN — no table carries a job title: `platform.users` has none and
+                  `workforce.workers` has `trade_type`, which is a site trade rather than a
+                  position. See the register. It sits directly under the name, where the position a
+                  reader needs to place someone belongs. */}
+              <Text testID="drawer-job-title" style={styles.profileTitle} numberOfLines={1}>
+                {PROFILE_JOB_TITLE.value}
               </Text>
-              {/* `ID: <SHORT>` in a monospaced face, as the mockup draws it. The mockup's own
-                  "SW-9281" is an employee-code scheme this product does not mint — `user_id` is a
-                  UUID — so shortId() renders the real one at a length a person can read out (PO
-                  2026-08-09: "use a short UUID for now"). It is a display aid, never a key. */}
+              {/* `ID: <CODE>` in a monospaced face, as the mockup draws it — an id is read character
+                  by character, and a proportional face makes 0/O and 1/l ambiguous exactly there.
+                  THE CODE IS REAL WHERE THERE IS ONE: `workforce.workers.employee_code`, returned
+                  by `GET /users/me`. Office roles have no worker record and legitimately have no
+                  code, so those fall back to a short form of the UUID (PO 2026-08-09, "use a short
+                  UUID for now"). A display aid either way, never a key. */}
               <Text testID="drawer-user-id" style={styles.profileId} numberOfLines={1}>
-                {t('profile.main.userId')}: {shortId(userId)}
+                {t('profile.main.userId')}: {me?.employeeCode ?? shortId(userId)}
               </Text>
             </View>
           </View>
           <View style={styles.statusRow}>
             <MaterialIcons name="cloud-done" size={16} color={darkColors.success} />
-            <Text style={styles.statusText}>{t('drawer.online')}</Text>
+            {/* REAL: `platform.users.mfa_enabled`. Said only when the answer is known and true —
+                an account with no second factor gets the plain online line rather than a claim. */}
+            <Text style={styles.statusText}>
+              {me?.mfaEnabled === true
+                ? `${t('drawer.mfaVerified')} • ${t('drawer.online')}`
+                : t('drawer.online')}
+            </Text>
           </View>
         </View>
 
@@ -285,6 +339,7 @@ const styles = StyleSheet.create({
   },
   profileRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   profileName: {
+    flexShrink: 1,
     fontFamily: fontFamily.semibold,
     fontSize: typography.body.fontSize,
     color: darkColors.text,
@@ -296,13 +351,10 @@ const styles = StyleSheet.create({
     fontFamily: 'monospace',
     color: darkColors.muted,
   },
-  profileRole: {
-    fontFamily: fontFamily.medium,
+  profileTitle: {
+    fontFamily: fontFamily.regular,
     fontSize: 11,
-    letterSpacing: 0.5,
     color: darkColors.muted,
-    textTransform: 'uppercase',
-    marginTop: 2,
   },
   statusRow: {
     flexDirection: 'row',

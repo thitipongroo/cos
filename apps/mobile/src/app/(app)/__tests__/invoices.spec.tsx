@@ -1,30 +1,94 @@
-// Behaviour of the FINANCE vendor-invoice list, pinned before the row-memoization refactor.
+// Behaviour of the FINANCE AP queue.
 //
-// Two things here depend on identity rather than text: tapping a row must open THAT invoice's
-// detail, and the status filter must re-query. Both are what a mis-keyed memo quietly breaks.
+// REWRITTEN 2026-09-08 with the screen (mockup 09_finance/04_invoices/01_fn_invoice). It pinned a
+// wrapped row of raw status chips over a list of invoice numbers; the drawing gives the screen a
+// scrolling filter row with counts, a matching banner, and cards an AP clerk acts on.
+//
+// WHAT THESE ASSERT, beyond the rendering:
+//   · the chip COUNTS come from the server's own total, not from the rows this screen received —
+//     the endpoint caps a page at 100, so a count over the page is a count of the page
+//   · Approve is offered only from RECEIVED/VERIFIED and Dispute only outside PAID/DISPUTED, which
+//     are the exact guards `procurement.service.ts` answers 422 on
+//   · "Over PO" is measured against the purchase order's own `total_amount` and is silent when the
+//     invoice is within it
+//   · the detail and its note SURVIVED the redraw — the drawing has neither, and ADR-085 keeps
+//     composition outside a mockup's authority
 
-import { render, fireEvent, waitFor, within } from '@testing-library/react-native';
+import { render, fireEvent, waitFor } from '@testing-library/react-native';
+import { Alert } from 'react-native';
 import { I18nProvider } from '../../../i18n';
 import InvoicesScreen from '../invoices';
 
 jest.mock('../../../api/client', () => ({ get: jest.fn(), post: jest.fn() }));
 
-// eslint-disable-next-line @typescript-eslint/no-require-imports
+/* eslint-disable @typescript-eslint/no-require-imports */
 const client = require('../../../api/client') as { get: jest.Mock; post: jest.Mock };
+/* eslint-enable @typescript-eslint/no-require-imports */
 
-const ROW_A = { vendor_invoice_id: 'vi-1', invoice_number: 'INV-0001', status: 'RECEIVED' };
-const ROW_B = { vendor_invoice_id: 'vi-2', invoice_number: 'INV-0002', status: 'APPROVED' };
+function invoice(id: string, over: Record<string, unknown> = {}) {
+  return {
+    invoice_id: id,
+    po_id: `po-${id}`,
+    vendor_id: 'v-1',
+    invoice_number: `INV-2026-${id}`,
+    amount: '450000.0000',
+    currency_code: 'THB',
+    invoice_date: '2026-04-01',
+    due_date: '2026-04-15',
+    status: 'VERIFIED' as const,
+    vendor_name: 'Siam Concrete',
+    ...over,
+  };
+}
 
-const DETAIL_A = {
-  invoice_id: 'vi-1',
-  invoice_number: 'INV-0001',
-  amount: '2500.0000',
-  currency_code: 'THB',
-  status: 'RECEIVED',
-  due_date: '2026-09-01T00:00:00Z',
-  po_id: 'po-77',
-  note: '',
+function po(id: string, over: Record<string, unknown> = {}) {
+  return {
+    po_id: `po-${id}`,
+    po_number: `PO-2026-${id}`,
+    vendor_id: 'v-1',
+    project_id: 'proj-1',
+    status: 'PARTIALLY_DELIVERED',
+    total_amount: '450000.0000',
+    currency_code: 'THB',
+    updated_at: '2026-04-01T00:00:00Z',
+    ...over,
+  };
+}
+
+/** Counts keyed by status, for the five `limit=1` requests the chips make. */
+const COUNTS: Record<string, number> = {
+  RECEIVED: 5,
+  VERIFIED: 6,
+  DISPUTED: 2,
+  APPROVED: 1,
+  PAID: 0,
 };
+
+/**
+ * The default wiring.
+ *
+ * `limit=1` is the count request and answers with a total only; anything else is the visible list.
+ */
+function route(rows: unknown[] = [invoice('941')], pos: unknown[] = [po('941')]) {
+  return (path: string, params?: Record<string, string>) => {
+    if (path.startsWith('/procurement/vendor-invoices/')) {
+      return Promise.resolve({ ...invoice('941'), note: 'chase the vendor' });
+    }
+    if (path.startsWith('/procurement/vendor-invoices')) {
+      if (params?.limit === '1') {
+        return Promise.resolve({ items: [], total: COUNTS[params.status ?? ''] ?? 0 });
+      }
+      const visible = params?.status
+        ? (rows as Array<{ status: string }>).filter((r) => r.status === params.status)
+        : rows;
+      return Promise.resolve({ items: visible, total: visible.length });
+    }
+    if (path.startsWith('/procurement/purchase-orders')) {
+      return Promise.resolve({ items: pos, total: pos.length });
+    }
+    return Promise.resolve({ items: [] });
+  };
+}
 
 function renderScreen() {
   return render(
@@ -35,359 +99,312 @@ function renderScreen() {
 }
 
 describe('InvoicesScreen', () => {
+  let alert: jest.SpyInstance;
+
   beforeEach(() => {
     client.get.mockReset();
     client.post.mockReset();
-    client.post.mockResolvedValue(undefined);
+    client.get.mockImplementation(route());
+    client.post.mockResolvedValue({});
+    alert = jest.spyOn(Alert, 'alert').mockImplementation(() => undefined);
   });
 
-  it('renders one row per vendor invoice', async () => {
-    client.get.mockResolvedValue({ items: [ROW_A, ROW_B] });
+  afterEach(() => alert.mockRestore());
 
-    const { getAllByTestId, getByText } = await renderScreen();
-
-    await waitFor(() => expect(getAllByTestId('invoice-item')).toHaveLength(2));
-    expect(getByText('INV-0001')).toBeTruthy();
-    expect(getByText('INV-0002')).toBeTruthy();
-  });
-
-  it('opens the detail of the invoice that was tapped', async () => {
-    client.get.mockImplementation((path: string) =>
-      path.startsWith('/procurement/vendor-invoices/')
-        ? Promise.resolve(DETAIL_A)
-        : Promise.resolve({ items: [ROW_A, ROW_B] }),
-    );
-
-    const { getByText, getByTestId } = await renderScreen();
-
-    await waitFor(() => expect(getByText('INV-0001')).toBeTruthy());
-    await fireEvent.press(getByText('INV-0001'));
-
-    await waitFor(() => expect(getByTestId('invoice-detail')).toBeTruthy());
-    expect(client.get).toHaveBeenCalledWith('/procurement/vendor-invoices/vi-1');
-  });
-
-  it('re-queries with a status filter when one is chosen', async () => {
-    client.get.mockResolvedValue({ items: [ROW_A] });
-
+  it('counts each chip from the SERVER, not from the rows it received', async () => {
+    // One invoice comes back in the list; the DISPUTED chip must still say 2.
     const { getByTestId } = await renderScreen();
 
-    await waitFor(() => expect(client.get).toHaveBeenCalledWith('/procurement/vendor-invoices'));
-
-    await fireEvent.press(getByTestId('filter-APPROVED'));
-
-    await waitFor(() =>
-      expect(client.get).toHaveBeenCalledWith('/procurement/vendor-invoices?status=APPROVED'),
-    );
+    await waitFor(() => expect(getByTestId('filter-DISPUTED')).toHaveTextContent(/\(2\)/));
+    expect(getByTestId('filter-VERIFIED')).toHaveTextContent(/\(6\)/);
+    // All is the five statuses summed, because every invoice is in exactly one.
+    expect(getByTestId('filter-ALL')).toHaveTextContent(/\(14\)/);
   });
 
-  it('renders the screen with no rows when the request fails offline', async () => {
-    client.get.mockRejectedValue(new Error('offline'));
-
-    const { getByTestId, queryAllByTestId } = await renderScreen();
-
-    await waitFor(() => expect(getByTestId('invoices-screen')).toBeTruthy());
-    expect(queryAllByTestId('invoice-item')).toHaveLength(0);
-  });
-
-  // ── NAMING AN INVOICE ────────────────────────────────────────────────────────────────────────
-  //
-  // A FALLBACK CHAIN, not a placeholder. `invoice_number` is what the vendor put on the paper and
-  // what finance quotes back to them; the two ids are what the row can still be identified by when
-  // the number has not been recorded. Only a row with none of the three takes the em dash — and a
-  // dash is not a name, which is why such a row also opens nothing.
-
-  it('names an invoice by the number on the paper', async () => {
-    respond([ROW_A]);
-
-    const { getByText } = await renderScreen();
-
-    await waitFor(() => expect(getByText('INV-0001')).toBeTruthy());
-  });
-
-  it('falls back to the vendor id when there is no number', async () => {
-    respond([{ vendor_invoice_id: 'vi-9', status: 'RECEIVED' }]);
-
-    const { getByText } = await renderScreen();
-
-    await waitFor(() => expect(getByText('vi-9')).toBeTruthy());
-  });
-
-  it('falls back to the invoice id when there is neither', async () => {
-    respond([{ invoice_id: 'inv-9', status: 'RECEIVED' }]);
-
-    const { getByText } = await renderScreen();
-
-    await waitFor(() => expect(getByText('inv-9')).toBeTruthy());
-  });
-
-  // A ROW WITH NO ID OPENS NOTHING, AND SAYS SO. That is the difference between a control that is
-  // unavailable and one that is broken — and on a list of money owed, a row that silently swallows
-  // a tap reads as the app losing the invoice.
-  it('says a row with no identity is unavailable rather than letting it fail silently', async () => {
-    respond([{ invoice_number: 'INV-0003', status: 'RECEIVED' }]);
-
-    const { getByTestId } = await renderScreen();
-    await waitFor(() => expect(getByTestId('invoice-item')).toBeTruthy());
-
-    expect(getByTestId('invoice-item').props.accessibilityState.disabled).toBe(true);
-
-    await fireEvent.press(getByTestId('invoice-item'));
-
-    // One call — the list fetch. No detail was requested.
-    expect(client.get).toHaveBeenCalledTimes(1);
-  });
-
-  // The row is READ ALOUD by the same name it shows: without it a screen reader announces the status
-  // chip, so every invoice in the list is called "RECEIVED".
-  it('is spoken by the name it shows', async () => {
-    respond([ROW_A]);
-
-    const { getByTestId } = await renderScreen();
-
-    await waitFor(() => expect(getByTestId('invoice-item')).toBeTruthy());
-    expect(getByTestId('invoice-item').props.accessibilityLabel).toBe('INV-0001');
-  });
-
-  // No status is no chip, rather than an empty one — a blank chip reads as a status that failed to
-  // load, on the field that decides whether this invoice has been paid.
-  it('shows no status chip on a row that carries no status', async () => {
-    respond([{ vendor_invoice_id: 'vi-1', invoice_number: 'INV-0001' }]);
-
-    const { getByTestId, getByText } = await renderScreen();
-
-    await waitFor(() => expect(getByText('INV-0001')).toBeTruthy());
-    // SCOPED TO THE ROW: every status word is also a filter chip at the top of this screen, so an
-    // unscoped query finds the chip and the test would pass whatever the row drew.
-    expect(within(getByTestId('invoice-item')).queryByText('RECEIVED')).toBeNull();
-  });
-
-  it('shows the status chip on a row that carries one', async () => {
-    respond([ROW_A]);
-
-    const { getByTestId } = await renderScreen();
-
-    await waitFor(() => expect(getByTestId('invoice-item')).toBeTruthy());
-    expect(within(getByTestId('invoice-item')).getByText('RECEIVED')).toBeTruthy();
-  });
-
-  // ── THE FILTER ───────────────────────────────────────────────────────────────────────────────
-
-  // A RADIO, not a row of buttons: exactly one filter is in force and the list below belongs to it,
-  // so a screen reader has to be able to say which.
-  it('says which filter is in force', async () => {
-    respond([ROW_A]);
-
-    const { getByTestId } = await renderScreen();
-    await waitFor(() => expect(getByTestId('filter-ALL')).toBeTruthy());
-
-    expect(getByTestId('filter-ALL').props.accessibilityRole).toBe('radio');
-    expect(getByTestId('filter-ALL').props.accessibilityState.selected).toBe(true);
-
-    await fireEvent.press(getByTestId('filter-PAID'));
-
-    expect(getByTestId('filter-PAID').props.accessibilityState.selected).toBe(true);
-    expect(getByTestId('filter-ALL').props.accessibilityState.selected).toBe(false);
-  });
-
-  it.each(['RECEIVED', 'VERIFIED', 'APPROVED', 'PAID', 'DISPUTED'])(
-    'queries for %s when that chip is chosen',
-    async (status) => {
-      respond([ROW_A]);
-
-      const { getByTestId } = await renderScreen();
-      await waitFor(() => expect(getByTestId(`filter-${status}`)).toBeTruthy());
-
-      await fireEvent.press(getByTestId(`filter-${status}`));
-
-      await waitFor(() =>
-        expect(client.get).toHaveBeenLastCalledWith(
-          `/procurement/vendor-invoices?status=${status}`,
-        ),
-      );
-    },
-  );
-
-  // ALL sends NO status parameter rather than an empty one: `?status=` is a filter for invoices
-  // whose status is the empty string, which is not what "all" means.
-  it('drops the parameter entirely on ALL, rather than sending an empty one', async () => {
-    respond([ROW_A]);
-
-    const { getByTestId } = await renderScreen();
-    await waitFor(() => expect(getByTestId('filter-PAID')).toBeTruthy());
-
-    await fireEvent.press(getByTestId('filter-PAID'));
-    await waitFor(() => expect(client.get).toHaveBeenCalledTimes(2));
-
-    await fireEvent.press(getByTestId('filter-ALL'));
-
-    await waitFor(() =>
-      expect(client.get).toHaveBeenLastCalledWith('/procurement/vendor-invoices'),
-    );
-  });
-
-  // ── THE DETAIL ───────────────────────────────────────────────────────────────────────────────
-
-  it('shows the figures an invoice is chased on', async () => {
-    respond([ROW_A], DETAIL_A);
-
-    const { getByTestId, getByText, getAllByText } = await renderScreen();
-    await waitFor(() => expect(getByTestId('invoice-item')).toBeTruthy());
-
-    await fireEvent.press(getByTestId('invoice-item'));
-
-    await waitFor(() => expect(getByTestId('invoice-detail')).toBeTruthy());
-    // The DATE ONLY, not the timestamp: `due_date` arrives as an instant and a due date is a day.
-    expect(getByText('2026-09-01')).toBeTruthy();
-    // The PO it belongs to, because an invoice with no order behind it is the one finance queries.
-    expect(getByText('po-77')).toBeTruthy();
-    expect(getAllByText('INV-0001').length).toBeGreaterThan(0);
-  });
-
-  it('goes back to the list', async () => {
-    respond([ROW_A], DETAIL_A);
-
-    const { getByTestId } = await renderScreen();
-    await waitFor(() => expect(getByTestId('invoice-item')).toBeTruthy());
-    await fireEvent.press(getByTestId('invoice-item'));
-    await waitFor(() => expect(getByTestId('invoice-detail')).toBeTruthy());
-
-    await fireEvent.press(getByTestId('invoice-back'));
-
-    await waitFor(() => expect(getByTestId('invoices-screen')).toBeTruthy());
-  });
-
-  // STAY ON THE LIST when the detail cannot be fetched: a half-empty detail screen is worse than the
-  // list the reader can still work from.
-  it('stays on the list when the detail cannot be fetched', async () => {
-    client.get.mockImplementation((path: string) =>
-      path.includes('/vendor-invoices/')
+  it('shows no number at all on a chip whose count could not be read', async () => {
+    // A zero it did not get would read as "nothing is disputed", which is a different claim.
+    client.get.mockImplementation((path: string, params?: Record<string, string>) =>
+      path.startsWith('/procurement/vendor-invoices') && params?.status === 'DISPUTED'
         ? Promise.reject(new Error('offline'))
-        : Promise.resolve({ items: [ROW_A] }),
+        : route()(path, params),
     );
+    const { getByTestId } = await renderScreen();
 
-    const { getByTestId, queryByTestId } = await renderScreen();
-    await waitFor(() => expect(getByTestId('invoice-item')).toBeTruthy());
-
-    await fireEvent.press(getByTestId('invoice-item'));
-
-    await waitFor(() => expect(client.get).toHaveBeenCalledTimes(2));
-    expect(queryByTestId('invoice-detail')).toBeNull();
-    expect(getByTestId('invoices-screen')).toBeTruthy();
+    await waitFor(() => expect(getByTestId('filter-VERIFIED')).toHaveTextContent(/6/));
+    expect(getByTestId('filter-DISPUTED')).not.toHaveTextContent(/\d/);
   });
 
-  // ── THE NOTE ─────────────────────────────────────────────────────────────────────────────────
-  //
-  // ONLINE-ONLY (G-M14): `post` throws offline rather than queuing. A note is a comment on someone
-  // else's bill, and a queued one could land days later against an invoice that has since been paid
-  // or disputed — so the user is told at once and can retry.
-
-  it('opens the note field with whatever note the invoice already carries', async () => {
-    respond([ROW_A], { ...DETAIL_A, note: 'Waiting on the delivery docket' });
-
+  it('sends the chosen status to the server rather than filtering the page', async () => {
     const { getByTestId } = await renderScreen();
-    await waitFor(() => expect(getByTestId('invoice-item')).toBeTruthy());
-    await fireEvent.press(getByTestId('invoice-item'));
 
-    await waitFor(() => expect(getByTestId('invoice-note-input')).toBeTruthy());
-    expect(getByTestId('invoice-note-input').props.value).toBe('Waiting on the delivery docket');
-  });
+    await waitFor(() => expect(getByTestId('invoice-item-941')).toBeTruthy());
+    await fireEvent.press(getByTestId('filter-DISPUTED'));
 
-  it('opens empty on an invoice with no note', async () => {
-    respond([ROW_A], { ...DETAIL_A, note: null });
-
-    const { getByTestId } = await renderScreen();
-    await waitFor(() => expect(getByTestId('invoice-item')).toBeTruthy());
-    await fireEvent.press(getByTestId('invoice-item'));
-
-    await waitFor(() => expect(getByTestId('invoice-note-input')).toBeTruthy());
-    expect(getByTestId('invoice-note-input').props.value).toBe('');
-  });
-
-  it('saves the note against the invoice it is on', async () => {
-    respond([ROW_A], DETAIL_A);
-
-    const { getByTestId } = await renderScreen();
-    await waitFor(() => expect(getByTestId('invoice-item')).toBeTruthy());
-    await fireEvent.press(getByTestId('invoice-item'));
-    await waitFor(() => expect(getByTestId('invoice-note-input')).toBeTruthy());
-
-    await fireEvent.changeText(getByTestId('invoice-note-input'), '  Query raised with vendor  ');
-    await fireEvent.press(getByTestId('save-note-button'));
-
-    await waitFor(() => expect(client.post).toHaveBeenCalledTimes(1));
-    // Trimmed, and against the invoice's OWN id — not the vendor id the row was keyed by.
-    expect(client.post).toHaveBeenCalledWith('/procurement/vendor-invoices/vi-1/note', {
-      note: 'Query raised with vendor',
+    await waitFor(() => {
+      const list = client.get.mock.calls.filter(
+        (c) =>
+          String(c[0]) === '/procurement/vendor-invoices' &&
+          (c[1] as Record<string, string>)?.limit !== '1',
+      );
+      expect(list.at(-1)?.[1]).toEqual({ page: '1', limit: '100', status: 'DISPUTED' });
     });
   });
 
-  it('confirms the note was saved', async () => {
-    respond([ROW_A], DETAIL_A);
-
+  it('names the PO by its number, resolved once for the page', async () => {
     const { getByTestId } = await renderScreen();
-    await waitFor(() => expect(getByTestId('invoice-item')).toBeTruthy());
-    await fireEvent.press(getByTestId('invoice-item'));
-    await waitFor(() => expect(getByTestId('save-note-button')).toBeTruthy());
 
+    await waitFor(() => expect(getByTestId('invoice-item-941')).toHaveTextContent(/#PO-2026-941/));
+    expect(
+      client.get.mock.calls.filter((c) => String(c[0]).startsWith('/procurement/purchase-orders')),
+    ).toHaveLength(1);
+  });
+
+  it('does not label the card with the order delivery state', async () => {
+    // "Invoiced", "Partly delivered" and the rest came off the PO and were real. They came off the
+    // card on the product owner's instruction of 2026-09-08: the card is a decision to approve or
+    // dispute, and the order's own progress is not part of it. The `poStatus` messages went with
+    // them — nothing else read those keys.
+    const { getByTestId, queryByTestId } = await renderScreen();
+
+    await waitFor(() => expect(getByTestId('invoice-item-941')).toBeTruthy());
+    expect(queryByTestId('invoice-po-status-941')).toBeNull();
+    expect(getByTestId('invoice-item-941')).not.toHaveTextContent(/Partly delivered/i);
+    // The PO reference itself stays — that is what the clerk matches against.
+    expect(getByTestId('invoice-item-941')).toHaveTextContent(/#PO-2026-941/);
+  });
+
+  it('measures Over PO against the order total, and stays silent when within it', async () => {
+    // 473,400 against a 450,000 order is +5.2%.
+    client.get.mockImplementation(route([invoice('812', { amount: '473400.0000' })], [po('812')]));
+    const { getByTestId } = await renderScreen();
+
+    await waitFor(() => expect(getByTestId('invoice-item-812')).toHaveTextContent(/\+5\.2%/));
+
+    client.get.mockImplementation(route());
+    const second = await renderScreen();
+    await waitFor(() => expect(second.getByTestId('invoice-item-941')).toBeTruthy());
+    expect(second.getByTestId('invoice-item-941')).not.toHaveTextContent(/Over PO/);
+  });
+
+  it('offers Approve only where the server would accept it', async () => {
+    // RECEIVED and VERIFIED approve; APPROVED and PAID do not — `procurement.service.ts` answers
+    // 422 on the rest, and a button that cannot work should not be under the reader's finger.
+    client.get.mockImplementation(
+      route(
+        [
+          invoice('a', { status: 'RECEIVED' }),
+          invoice('b', { status: 'APPROVED' }),
+          invoice('c', { status: 'PAID' }),
+        ],
+        [po('a'), po('b'), po('c')],
+      ),
+    );
+    const { getByTestId, queryByTestId } = await renderScreen();
+
+    await waitFor(() => expect(getByTestId('invoice-approve-a')).toBeTruthy());
+    expect(queryByTestId('invoice-approve-b')).toBeNull();
+    expect(queryByTestId('invoice-approve-c')).toBeNull();
+    // Dispute is the inverse pair: everything but PAID and DISPUTED.
+    expect(getByTestId('invoice-dispute-b')).toBeTruthy();
+    expect(queryByTestId('invoice-dispute-c')).toBeNull();
+  });
+
+  it('approves against the invoice that was pressed, then re-reads the list', async () => {
+    const { getByTestId } = await renderScreen();
+
+    await waitFor(() => expect(getByTestId('invoice-approve-941')).toBeTruthy());
+    const before = client.get.mock.calls.length;
+    await fireEvent.press(getByTestId('invoice-approve-941'));
+
+    await waitFor(() =>
+      expect(client.post).toHaveBeenCalledWith('/procurement/vendor-invoices/941/approve', {}),
+    );
+    // Not optimistic: approving moves the row into another chip, so the redraw is the server's.
+    await waitFor(() => expect(client.get.mock.calls.length).toBeGreaterThan(before));
+  });
+
+  it('says the write failed rather than pretending it queued', async () => {
+    // §17.4 keeps vendor invoices online-only, so `post` throws instead of enqueuing.
+    client.post.mockRejectedValue(new Error('offline'));
+    const { getByTestId } = await renderScreen();
+
+    await waitFor(() => expect(getByTestId('invoice-dispute-941')).toBeTruthy());
+    await fireEvent.press(getByTestId('invoice-dispute-941'));
+
+    await waitFor(() => expect(alert).toHaveBeenCalled());
+    expect(alert.mock.calls[0]?.[1]).toMatch(/offline/i);
+  });
+
+  it('sorts by due date, and swaps to the issue date when asked', async () => {
+    client.get.mockImplementation(
+      route(
+        [
+          invoice('late', { due_date: '2026-05-30', invoice_date: '2026-01-01' }),
+          invoice('soon', { due_date: '2026-04-01', invoice_date: '2026-03-01' }),
+        ],
+        [po('late'), po('soon')],
+      ),
+    );
+    const { getByTestId, getAllByTestId } = await renderScreen();
+
+    await waitFor(() => expect(getByTestId('invoice-item-soon')).toBeTruthy());
+    const order = () => getAllByTestId(/^invoice-item-/).map((n) => n.props.testID);
+    expect(order()).toEqual(['invoice-item-soon', 'invoice-item-late']);
+
+    await fireEvent.press(getByTestId('invoices-sort'));
+    expect(order()).toEqual(['invoice-item-late', 'invoice-item-soon']);
+  });
+
+  it('draws the whole matching banner, confidence included', async () => {
+    // THE ADR-099 GUARD, and the register's most uncomfortable entry: three-way matching does not
+    // exist in backend/src AT ALL, so this is a confidence on a process that never ran rather than
+    // on a calculation dressed as one. Drawn on the product owner's instruction of 2026-09-08.
+    const { getByTestId } = await renderScreen();
+
+    await waitFor(() => expect(getByTestId('invoices-matching')).toHaveTextContent(/98%/));
+    expect(getByTestId('invoices-matching')).toHaveTextContent(/96%/);
+    // The references carry their own prefixes — "PO #PO-2026-882" said it twice (PO 2026-09-08).
+    expect(getByTestId('invoices-matching')).toHaveTextContent(/#PO-2026-882/);
+    expect(getByTestId('invoices-matching')).not.toHaveTextContent(/PO #PO/);
+    // The per-card score and the GRN are drawn too, and stay put whatever the API returns.
+    expect(getByTestId('invoice-item-941')).toHaveTextContent(/99% match/);
+    expect(getByTestId('invoice-item-941')).toHaveTextContent(/#GRN-1049/);
+  });
+
+  it('foots the banner with a source that names records this repository has', async () => {
+    // `01-fn-invoice` foots the card "แหล่งข้อมูล: ERP DB & Central OCR Ledger". NEITHER EXISTS
+    // HERE, and a provenance line is the one piece of drawn text that changes how much of the
+    // screen a reader believes — so the drawn figures above it keep the drawing's shape while the
+    // source names what actually served them. ADR-098's second amendment, applied a fourth time.
+    const { getByTestId } = await renderScreen();
+
+    await waitFor(() =>
+      expect(getByTestId('invoices-matching')).toHaveTextContent(
+        /vendor invoices and purchase orders/i,
+      ),
+    );
+    expect(getByTestId('invoices-matching')).not.toHaveTextContent(/OCR|ERP/i);
+  });
+
+  it('brackets every chip count, including All', async () => {
+    const { getByTestId } = await renderScreen();
+
+    await waitFor(() => expect(getByTestId('filter-ALL')).toHaveTextContent(/\(14\)/));
+    expect(getByTestId('filter-DISPUTED')).toHaveTextContent(/\(2\)/);
+  });
+
+  it('shows the discrepancy box only on a disputed invoice', async () => {
+    client.get.mockImplementation(
+      route([invoice('812', { status: 'DISPUTED' }), invoice('941')], [po('812'), po('941')]),
+    );
+    const { getByTestId, queryByTestId } = await renderScreen();
+
+    await waitFor(() => expect(getByTestId('invoice-discrepancy-812')).toBeTruthy());
+    expect(queryByTestId('invoice-discrepancy-941')).toBeNull();
+  });
+
+  it('keeps the detail and its note that the drawing has no room for', async () => {
+    // ADR-085: a mockup is authoritative for style, not composition. `GET .../:id` and
+    // `POST .../note` are reviewed working capability and a redraw does not remove them.
+    const { getByTestId } = await renderScreen();
+
+    await waitFor(() => expect(getByTestId('invoice-item-941')).toBeTruthy());
+    await fireEvent.press(getByTestId('invoice-open-941'));
+
+    await waitFor(() => expect(getByTestId('invoice-detail')).toBeTruthy());
+    expect(getByTestId('invoice-note-input').props.value).toBe('chase the vendor');
+    expect(getByTestId('invoice-detail')).toHaveTextContent(/#PO-2026-941/);
+
+    await fireEvent.changeText(getByTestId('invoice-note-input'), 'called, awaiting credit note');
     await fireEvent.press(getByTestId('save-note-button'));
 
+    await waitFor(() =>
+      expect(client.post).toHaveBeenCalledWith('/procurement/vendor-invoices/941/note', {
+        note: 'called, awaiting credit note',
+      }),
+    );
     await waitFor(() => expect(getByTestId('note-saved')).toBeTruthy());
   });
 
-  // NO FABRICATED CONFIRMATION. A "saved" line over a note that never left the device would be the
-  // worst outcome here: the user closes the screen believing the vendor query is on record.
-  it('confirms nothing when the save failed', async () => {
-    respond([ROW_A], DETAIL_A);
-    client.post.mockRejectedValue(new Error('offline'));
-
+  it('stays on the list when the detail cannot be fetched', async () => {
+    client.get.mockImplementation((path: string, params?: Record<string, string>) =>
+      path.startsWith('/procurement/vendor-invoices/')
+        ? Promise.reject(new Error('offline'))
+        : route()(path, params),
+    );
     const { getByTestId, queryByTestId } = await renderScreen();
-    await waitFor(() => expect(getByTestId('invoice-item')).toBeTruthy());
-    await fireEvent.press(getByTestId('invoice-item'));
-    await waitFor(() => expect(getByTestId('save-note-button')).toBeTruthy());
 
-    await fireEvent.press(getByTestId('save-note-button'));
+    await waitFor(() => expect(getByTestId('invoice-item-941')).toBeTruthy());
+    await fireEvent.press(getByTestId('invoice-open-941'));
 
-    await waitFor(() => expect(client.post).toHaveBeenCalledTimes(1));
-    expect(queryByTestId('note-saved')).toBeNull();
-    // And the note is still in the field, so the retry costs nothing to type again.
-    expect(getByTestId('invoice-note-input')).toBeTruthy();
+    await waitFor(() => expect(queryByTestId('invoice-detail')).toBeNull());
+    expect(getByTestId('invoices-list')).toBeTruthy();
   });
 
-  // ── THE EMPTY AND FAILED STATES ──────────────────────────────────────────────────────────────
-
-  it('says the list is empty rather than showing nothing at all', async () => {
-    respond([]);
-
-    const { getByText } = await renderScreen();
-
-    await waitFor(() => expect(getByText('No invoices')).toBeTruthy());
-  });
-
-  it('reads a bare array as well as an items envelope', async () => {
-    client.get.mockResolvedValue([ROW_A, ROW_B]);
-
-    const { getAllByTestId } = await renderScreen();
-
-    await waitFor(() => expect(getAllByTestId('invoice-item')).toHaveLength(2));
-  });
-
-  // The boundary settles on a failed fetch: a skeleton left standing forever reads as "still
-  // loading" to someone who is simply offline and will not be told otherwise.
-  it('settles into an empty list when the fetch fails', async () => {
-    client.get.mockRejectedValue(new Error('offline'));
-
+  it('says the list is truncated rather than letting it read as the whole filter', async () => {
+    client.get.mockImplementation((path: string, params?: Record<string, string>) => {
+      if (path.startsWith('/procurement/vendor-invoices') && params?.limit === '100') {
+        return Promise.resolve({ items: [invoice('941')], total: 340 });
+      }
+      return route()(path, params);
+    });
     const { getByTestId } = await renderScreen();
 
-    await waitFor(() => expect(getByTestId('invoices-list')).toBeTruthy());
+    await waitFor(() => expect(getByTestId('invoices-truncated')).toHaveTextContent(/340/));
+  });
+
+  it('says the list is empty rather than showing nothing at all', async () => {
+    client.get.mockImplementation(route([], []));
+    const { getByTestId } = await renderScreen();
+
+    await waitFor(() => expect(getByTestId('invoices-empty')).toBeTruthy());
+  });
+
+  it('settles into an empty list when the fetch fails offline', async () => {
+    client.get.mockImplementation(() => Promise.reject(new Error('offline')));
+    const { getByTestId } = await renderScreen();
+
+    await waitFor(() => expect(getByTestId('invoices-empty')).toBeTruthy());
+  });
+
+  it('draws the two scan controls, and neither of them writes', async () => {
+    const { getByTestId } = await renderScreen();
+
+    await waitFor(() => expect(getByTestId('invoice-scan')).toBeTruthy());
+    await fireEvent.press(getByTestId('invoice-scan'));
+    await fireEvent.press(getByTestId('invoice-scan-icon'));
+
+    expect(alert).toHaveBeenCalledTimes(2);
+    expect(alert.mock.calls[0]?.[1]).toMatch(/does not exist yet/i);
+    expect(client.post).not.toHaveBeenCalled();
+  });
+
+  it('draws the chat control on a disputed invoice, and it writes nothing', async () => {
+    client.get.mockImplementation(route([invoice('812', { status: 'DISPUTED' })], [po('812')]));
+    const { getByTestId } = await renderScreen();
+
+    await waitFor(() => expect(getByTestId('invoice-chat-812')).toBeTruthy());
+    await fireEvent.press(getByTestId('invoice-chat-812'));
+
+    expect(alert).toHaveBeenCalled();
+    expect(client.post).not.toHaveBeenCalled();
+  });
+
+  it('counts what is due now, and says nothing when nothing is', async () => {
+    // Compared as date strings — `due_date` is a Postgres DATE, and parsing it into a Date would
+    // put it at midnight UTC and shift a Bangkok reader's "today".
+    // Dates are literal rather than relative to the clock: one long past, one far enough ahead
+    // that the assertion cannot rot into passing for the wrong reason.
+    client.get.mockImplementation(
+      route(
+        [invoice('old', { due_date: '2020-01-01' }), invoice('later', { due_date: '2099-01-01' })],
+        [po('old'), po('later')],
+      ),
+    );
+    const { getByTestId } = await renderScreen();
+
+    await waitFor(() => expect(getByTestId('invoices-screen')).toHaveTextContent(/1 due now/));
+    expect(getByTestId('invoice-item-old')).toHaveTextContent(/Overdue/);
+    expect(getByTestId('invoice-item-later')).not.toHaveTextContent(/Overdue/);
   });
 });
-
-/** The list, and optionally the detail behind a row. */
-function respond(rows: unknown[], detail?: unknown) {
-  client.get.mockImplementation((path: string) =>
-    path.includes('/vendor-invoices/')
-      ? Promise.resolve(detail ?? {})
-      : Promise.resolve({ items: rows }),
-  );
-}

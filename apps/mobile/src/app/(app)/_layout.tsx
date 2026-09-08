@@ -98,11 +98,22 @@ export default function AppLayout() {
           <ProjectContextBar /> renders NOTHING when nothing is chosen — so without this the bar the
           drawings put at the top of every one of the role's screens would simply be absent, and the
           Incidents/Checklists/Permits screens would have no project to scope their queries to.
+          FINANCE JOINED ON 2026-09-08, third instance of the identical fault and found the same
+          way — by writing the capture script and realising what it would photograph. Two of the
+          role's four screens are project-scoped: `09_finance/01_home/01_fn_dashboard` and
+          `09_finance/03_budget/01_fn_budget` both open with the switcher, the cash-flow forecast is
+          `GET /finance/cashflow-forecast/:projectId`, and the budget is
+          `GET /finance/budget/:projectId`. Nothing but this sheet ever writes `projectStore`, so
+          without it the bar rendered nothing, Home's forecast card read "choose a project" with no
+          way to, and Budget said "select a project" as its permanent state. The other two screens —
+          Payments and Invoices — are tenant-wide AP queues and are unaffected either way; the sheet
+          is closeable, so answering it is not a toll on reaching them.
           Every OTHER role still picks per screen (the managers' panels), and making them all answer
           up front would still be inventing a flow no drawing asks for. */}
       {role === CosRole.SITE_WORKER ||
       role === CosRole.SITE_ENGINEER ||
-      role === CosRole.SAFETY_OFFICER ? (
+      role === CosRole.SAFETY_OFFICER ||
+      role === CosRole.FINANCE ? (
         <SelectProjectSheet />
       ) : null}
     </View>

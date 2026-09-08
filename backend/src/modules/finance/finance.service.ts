@@ -16,7 +16,7 @@ import {
 import { REQUEST } from '@nestjs/core';
 import type { Request } from 'express';
 import { randomUUID } from 'crypto';
-import { Decimal, sumDecimals } from '@cos/financial';
+import { Decimal, sumDecimals, type CashflowPeriod } from '@cos/financial';
 import { EventOutboxService } from '../../shared/events/event-outbox.service';
 import { createLogger } from '@cos/logger';
 import { buildOutboxEvent } from '../../shared/outbox/outbox.types';
@@ -65,15 +65,11 @@ const DEFAULT_BILLING_PM_APPROVAL_MAX = new Decimal(
 const FORECAST_WEEKS = 13;
 const MS_PER_WEEK = 7 * 24 * 60 * 60 * 1000;
 
-/** One period bucket in a direct-method cash flow forecast. */
-export interface CashflowPeriod {
-  period_start: string;
-  period_end: string;
-  inflow: string;
-  outflow: string;
-  net_flow: string;
-  cumulative_net: string;
-}
+// `CashflowPeriod` MOVED TO `@cos/financial` on 2026-09-08 with the two functions that read a
+// finished forecast, and is re-exported so nothing that imported it from here had to change. The
+// type crossed the boundary because the mobile app now renders one; the BUILDING of a forecast did
+// not, and `buildForecast` below stays where the repository rows are.
+export type { CashflowPeriod };
 
 /**
  * The 13-week direct-method forecast, as a pure function.

@@ -134,42 +134,47 @@ describe('HomeScreen role dispatch', () => {
     expect(getByTestId('exec-home-dismiss')).toBeTruthy();
   });
 
-  it('gives FINANCE the payment and invoice KPIs', async () => {
+  // REWRITTEN 2026-09-08 with the screen (mockup 09_finance/01_home/01_fn_dashboard). It asserted
+  // `kpi-pending-payments` and `kpi-overdue-invoices`, which were the two-count version's markers;
+  // the drawing this screen now implements leads with what the approvals are WORTH, adds the cash
+  // position and the forecast, and lists the queue itself. The overdue-invoice tile went with the
+  // rewrite, and `/analytics/executive` with it — this screen no longer reads that endpoint at all.
+  it('gives FINANCE the approvals dashboard its mockup draws', async () => {
     const { getByTestId } = await renderHome(CosRole.FINANCE);
 
-    await waitFor(() => expect(getByTestId('kpi-pending-payments')).toBeTruthy());
-    expect(getByTestId('kpi-overdue-invoices')).toBeTruthy();
+    await waitFor(() => expect(getByTestId('kpi-pending-approvals')).toBeTruthy());
+    expect(getByTestId('kpi-cash-flow')).toBeTruthy();
+    expect(getByTestId('kpi-burn-rate')).toBeTruthy();
+    expect(getByTestId('finance-forecast')).toBeTruthy();
+  });
+
+  it('asks the SERVER for pending payments, never filters the page it got', async () => {
+    // The endpoint pages at 20 and a tenant holds more, so a total computed over page one is a
+    // total of page one — the defect `finance.repository.ts` records against its own query, on a
+    // screen whose headline figure is that total. Asserted on the URL, because a filtered page and
+    // a filtered query produce the same number whenever the tenant is small enough to fit.
+    await renderHome(CosRole.FINANCE);
 
     await waitFor(() =>
       expect(pathsCalled().some((p) => p.startsWith('/finance/payments'))).toBe(true),
     );
+    // The status rides in `get()`'s SECOND argument, not in the path — `api/analytics.ts` builds its
+    // ids into the URL, this one does not — so the assertion reads the params rather than the string.
+    const call = client.get.mock.calls.find((c) => String(c[0]).startsWith('/finance/payments'));
+    expect(call?.[1]).toEqual({ status: 'PENDING' });
   });
 
-  it('asks the analytics endpoint for FINANCE by project id, never bare', async () => {
-    // The whole defect this screen carried until 2026-09-06: `GET /analytics/executive` with no
-    // `projectIds` answers 200 with [], so the overdue-invoice tile printed a confident 0. Asserted
-    // on the URL rather than on the tile, because the tile reads 0 in both the broken and the
-    // "genuinely nothing overdue" case — only the request tells them apart.
-    await renderHome(CosRole.FINANCE);
-
-    await waitFor(() =>
-      expect(pathsCalled().some((p) => p.startsWith('/analytics/executive'))).toBe(true),
+  it('shows an em dash rather than a zero it could not verify', async () => {
+    // A zero here would read as "nothing is waiting for approval" on a finance dashboard. Losing
+    // the queue must produce the placeholder, not a number.
+    client.get.mockImplementation((path: string) =>
+      path.startsWith('/finance/payments')
+        ? Promise.reject(new Error('offline'))
+        : Promise.resolve({ items: [] }),
     );
-    const call = pathsCalled().find((p) => p.startsWith('/analytics/executive')) ?? '';
-    expect(call).toContain('projectIds=proj-1');
-  });
-
-  it('shows an em dash for FINANCE rather than a zero it could not verify', async () => {
-    // A zero here would read as "nothing is overdue" on a finance dashboard. Losing the project list
-    // must produce the placeholder, not a number.
-    /* eslint-disable @typescript-eslint/no-require-imports */
-    const projectsApi = require('../../../api/projects') as { getMyProjects: jest.Mock };
-    /* eslint-enable @typescript-eslint/no-require-imports */
-    projectsApi.getMyProjects.mockImplementationOnce(() => Promise.reject(new Error('offline')));
 
     const { getByTestId } = await renderHome(CosRole.FINANCE);
-    await waitFor(() => expect(getByTestId('kpi-overdue-invoices')).toHaveTextContent(/—/));
-    expect(pathsCalled().some((p) => p.startsWith('/analytics/executive'))).toBe(false);
+    await waitFor(() => expect(getByTestId('kpi-pending-approvals')).toHaveTextContent(/—/));
   });
 
   it('gives PROCUREMENT_OFFICER the RFQ, order and delivery KPIs', async () => {

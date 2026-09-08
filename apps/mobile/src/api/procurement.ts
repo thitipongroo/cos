@@ -168,3 +168,130 @@ export async function approvePurchaseOrder(
 ): Promise<void> {
   await post(`/procurement/purchase-orders/${encodeURIComponent(poId)}/approve`, { tier });
 }
+
+/**
+ * One vendor invoice (`GET /procurement/vendor-invoices`).
+ *
+ * `vendor_name` is LEFT-joined from `procurement.vendors` by the backend change of 2026-09-08. It
+ * is optional on this type and nullable in it, for two different reasons: optional because an app
+ * pointed at an older deployment parses the response either way (QM-9), nullable because the join
+ * is tenant-scoped and a screen must render an em dash rather than a blank where a name should be.
+ */
+export interface VendorInvoice {
+  invoice_id: string;
+  po_id: string;
+  vendor_id: string;
+  invoice_number: string;
+  amount: string;
+  currency_code: string;
+  invoice_date: string;
+  due_date: string;
+  status: 'RECEIVED' | 'VERIFIED' | 'APPROVED' | 'PAID' | 'DISPUTED';
+  vendor_name?: string | null;
+}
+
+/** The largest page `parseLimit` in `procurement.controller.ts` will grant. */
+const INVOICE_PAGE = 100;
+
+/** What `GET /procurement/vendor-invoices` answers with. `total` counts the FILTER, not the page. */
+export interface VendorInvoicePage {
+  items: VendorInvoice[];
+  total: number;
+}
+
+/**
+ * Vendor invoices — one page, narrowed by status on the SERVER.
+ *
+ * WHY THE PAYMENT QUEUE READS THIS AT ALL. `finance.payments` names its invoice by `invoice_id` and
+ * carries nothing a person can read, and finance may not query `procurement.*` — master §PHASE 7
+ * line 3216, held by `tests/architecture/connectivity.spec.ts` and
+ * `tests/conformance/finance/05-constraints.spec.ts`. A cross-schema join was written into
+ * `GET /finance/payments` on 2026-09-08 and reverted the same day when those two suites caught it;
+ * the join now lives here, and the screens match on `invoice_id`.
+ *
+ * ONE REQUEST PER PAGE, not one per row. The alternative — `GET /procurement/vendor-invoices/:id`
+ * for each row drawn — is the N+1 fan-out the portfolio summary endpoint exists to avoid.
+ *
+ * `total` IS THE COUNT OF THE FILTER and comes from the server's own `COUNT(*)`, so a caller that
+ * wants "how many are disputed" asks for `{ status: 'DISPUTED', limit: 1 }` and reads it, rather
+ * than counting the rows it happened to receive.
+ */
+export async function listVendorInvoices(
+  opts: { status?: string; limit?: number } = {},
+): Promise<VendorInvoicePage> {
+  const query: Record<string, string> = {
+    page: '1',
+    limit: String(opts.limit ?? INVOICE_PAGE),
+  };
+  if (opts.status !== undefined) query.status = opts.status;
+  const res = await get<{ items?: VendorInvoice[]; total?: number } | VendorInvoice[]>(
+    '/procurement/vendor-invoices',
+    query,
+  );
+  const items = Array.isArray(res) ? res : (res.items ?? []);
+  return { items, total: Array.isArray(res) ? items.length : (res.total ?? items.length) };
+}
+
+/**
+ * `invoice_id` → the invoice, for the screens that draw a payment.
+ *
+ * Returns an EMPTY map when the request fails rather than throwing: a payment queue that cannot
+ * name its vendors is still a payment queue, and the alternative is a screen that shows nothing
+ * because a decorative lookup was offline.
+ */
+export async function invoiceIndex(): Promise<Map<string, VendorInvoice>> {
+  try {
+    const { items } = await listVendorInvoices();
+    return new Map(items.map((row) => [row.invoice_id, row]));
+  } catch {
+    return new Map();
+  }
+}
+
+/**
+ * `po_id` → the purchase order, for the screens that draw an invoice.
+ *
+ * An invoice carries `po_id` and no readable reference, exactly as a payment carries `invoice_id`.
+ * This is what turns it into "#PO-2026-882", and it is also where the invoice screen gets the two
+ * figures the drawing puts beside that reference: the PO's `status` (its "ส่งมอบบางส่วน") and its
+ * `total_amount` (its "Over PO +5.2%"). Both are real columns; neither needed drawing.
+ *
+ * Empty on failure, for the reason above.
+ */
+export async function poIndex(): Promise<Map<string, PurchaseOrderRow>> {
+  try {
+    const res = await get<Paged<PurchaseOrderRow> | PurchaseOrderRow[]>(
+      '/procurement/purchase-orders',
+      { page: '1', limit: String(INVOICE_PAGE) },
+    );
+    const rows = Array.isArray(res) ? res : (res.items ?? []);
+    return new Map(rows.map((row) => [row.po_id, row]));
+  } catch {
+    return new Map();
+  }
+}
+
+/**
+ * Approve a vendor invoice — `RECEIVED`/`VERIFIED` → `APPROVED`.
+ *
+ * The server refuses any other starting status with a 422 (`procurement.service.ts`), so the screen
+ * offers the button only from those two rather than letting a reader press something that cannot
+ * work.
+ *
+ * NOT queued offline, for the same reason `approvePurchaseOrder` is not: §17.4 puts vendor invoices
+ * in the online-required set, `SYNC_PUSHABLE_ENTITY_TYPES` has no case for them, and `post` throws
+ * rather than promising a replay `/sync/push` would reject.
+ */
+export async function approveVendorInvoice(invoiceId: string): Promise<void> {
+  await post(`/procurement/vendor-invoices/${encodeURIComponent(invoiceId)}/approve`, {});
+}
+
+/**
+ * Raise a dispute — anything except `PAID` or already `DISPUTED` → `DISPUTED`.
+ *
+ * The endpoint takes NO body. The DTO with a `reason` belongs to the PO dispute, not this one —
+ * read from the controller, not assumed. Online-only, as above.
+ */
+export async function disputeVendorInvoice(invoiceId: string): Promise<void> {
+  await post(`/procurement/vendor-invoices/${encodeURIComponent(invoiceId)}/dispute`, {});
+}

@@ -864,13 +864,31 @@ export class ProcurementRepository {
     const rows = await this.db.run(
       (prisma) =>
         prisma.$queryRaw<InvoiceRow[]>`
-        SELECT * FROM procurement.invoices
-        WHERE invoice_id = ${invoice_id}::uuid AND tenant_id = ${this.tenantId}::uuid`,
+        SELECT i.*, v.vendor_name
+        FROM procurement.invoices i
+        LEFT JOIN procurement.vendors v
+          ON v.vendor_id = i.vendor_id AND v.tenant_id = i.tenant_id
+        WHERE i.invoice_id = ${invoice_id}::uuid AND i.tenant_id = ${this.tenantId}::uuid`,
     );
     return rows[0] ?? null;
   }
 
-  // Tenant-wide vendor-invoice list (AIP-132 AP queue); optional po_id / status filters.
+  /**
+   * Tenant-wide vendor-invoice list (AIP-132 AP queue); optional po_id / status filters.
+   *
+   * CARRIES `vendor_name` SINCE 2026-09-08. Every screen that lists an invoice or a payment shows
+   * who is being paid, and `invoices` holds only a `vendor_id`. The join belongs HERE, in the
+   * service that owns both tables: finance may not read `procurement.*` (master §PHASE 7 line 3216,
+   * held by tests/architecture/connectivity.spec.ts and tests/conformance/finance/05-constraints
+   * .spec.ts), so the AP queue on the phone resolves a payment's vendor through this endpoint
+   * rather than through a cross-schema join that would make the two services deployable only
+   * together.
+   *
+   * LEFT, not inner. `invoices.vendor_id` is `NOT NULL REFERENCES vendors (vendor_id)`, so a row is
+   * always there — but the join is also tenant-scoped, and an inner join would silently drop an
+   * invoice whose vendor row carried a different tenant_id. An AP queue that hides an invoice is
+   * worse than one that shows it without a name.
+   */
   async findInvoices(params: {
     po_id?: string;
     status?: string;
@@ -881,11 +899,14 @@ export class ProcurementRepository {
     const rows = await this.db.run(
       (prisma) =>
         prisma.$queryRaw<InvoiceRow[]>`
-        SELECT * FROM procurement.invoices
-        WHERE tenant_id = ${this.tenantId}::uuid
-          AND (${params.po_id ?? null}::uuid IS NULL OR po_id = ${params.po_id ?? null}::uuid)
-          AND (${params.status ?? null}::text IS NULL OR status = ${params.status ?? null}::text)
-        ORDER BY invoice_date DESC
+        SELECT i.*, v.vendor_name
+        FROM procurement.invoices i
+        LEFT JOIN procurement.vendors v
+          ON v.vendor_id = i.vendor_id AND v.tenant_id = i.tenant_id
+        WHERE i.tenant_id = ${this.tenantId}::uuid
+          AND (${params.po_id ?? null}::uuid IS NULL OR i.po_id = ${params.po_id ?? null}::uuid)
+          AND (${params.status ?? null}::text IS NULL OR i.status = ${params.status ?? null}::text)
+        ORDER BY i.invoice_date DESC
         LIMIT ${params.limit} OFFSET ${offset}`,
     );
     const countRows = await this.db.run(

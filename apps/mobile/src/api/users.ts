@@ -12,6 +12,23 @@ export interface Me {
   /** File-service URL of the profile photo. Null → clients render initials (§11 platform.users). */
   photo_url: string | null;
   role: string;
+  /**
+   * `platform.users.mfa_enabled` — whether this account has a second factor enrolled.
+   *
+   * Declared 2026-09-08. The endpoint has always returned it (`user.service.ts` `getMe` selects it
+   * by name); this type simply did not say so. OPTIONAL for QM-9: an app pointed at an older
+   * deployment parses the response either way, and the drawer draws nothing rather than claiming
+   * a factor that may not exist.
+   */
+  mfa_enabled?: boolean;
+  /**
+   * `workforce.workers.employee_code` — the employer's own identifier for the person.
+   *
+   * NULL IS THE COMMON CASE for the roles that read finance screens, and `user.service.ts` says so
+   * in as many words: the worker link only exists for site workers, and office roles legitimately
+   * have no code. Callers fall back to a short form of the UUID rather than showing a gap.
+   */
+  employee_code?: string | null;
 }
 
 export async function getMe(): Promise<Me> {

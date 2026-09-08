@@ -11,16 +11,36 @@
 // condition is unchanged and is the reason the count is worth stating: every one of them is here,
 // and the register is the only place a reader has to look.
 //
+// EXTENDED AGAIN 2026-09-08 for the FINANCE set (`mockup/mobile/09_finance/`), under the standing
+// rule the product owner gave that day: draw what the mockup draws, mark it COMING SOON in a code
+// comment and never on screen, and put a "coming soon" dialog behind an action that has no process.
+// Eight entries — APPROVALS_TREND, FINANCE_BURN_RATE, PAYMENT_DETAIL_EXTRAS, BUDGET_CATEGORY_CODE,
+// THREE_WAY_MATCH, DELIVERY_GRN, INVOICE_DISCREPANCY, PROFILE_JOB_TITLE — taking the register to
+// twenty-nine. The file is no longer executive-only; the heading above says EXECUTIVE because that
+// is where it started.
+//
+// THE FINANCE SET PUT MORE BACK THAN IT ADDED. Four figures were about to be drawn and turned out
+// to be columns: the invoice screen's PO reference, its "partly delivered" and its "Over PO +5.2%"
+// (`procurement.purchase_orders`), and the drawer's employee id (`workforce.workers.employee_code`,
+// returned by `GET /users/me`). Reading the migration before writing the entry is the whole
+// procedure.
+//
 // That condition is the point of this file:
 //   · grep `mockupFigures` and you have the complete set, with nothing scattered across screens
 //   · deleting this module and fixing the type errors is how the decision is reversed
 //   · each entry names what has to exist before it can go
 //
-// WHAT MAY NEVER HAPPEN HERE. No value in this file may be presented as a model output. The AI
-// panels on these screens call the real endpoints and print the model's own text and its own
-// confidence; a fabricated confidence standing beside a real one is the case spec §22.3 is most
-// explicit about. `HOME_KPI_CONFIDENCE` below is the one confidence-shaped value, and it belongs to
-// a KPI card that makes no AI claim at all.
+// WHAT MAY NEVER HAPPEN HERE — AMENDED 2026-09-08, AND THE AMENDMENT IS THE POINT. This note used
+// to say that no value in this file may be presented as a model output, with `HOME_KPI_CONFIDENCE`
+// as the one confidence-shaped exception because its card makes no AI claim. `FORECAST_CONFIDENCE`
+// breaks that: it sits under an `insights` glyph on a card reading a DETERMINISTIC forecast. It is
+// here on the product owner's explicit instruction of 2026-09-08, under the standing rule that the
+// mockups are built as drawn, and ADR-099's fourth amendment records the reversal.
+//
+// WHAT STILL HOLDS: a fabricated confidence may never stand BESIDE a real one. Where a screen calls
+// a real endpoint the model's own text and its own confidence are what it prints — the executive
+// AI panels, and the risk feed whose drawn cards are displaced entirely the moment a report
+// arrives.
 //
 // The REAL halves of these screens are not here and must not be moved here: the portfolio budget and
 // per-project variance (`GET /analytics/executive`), active incidents (`GET /safety/incidents`), the
@@ -265,6 +285,199 @@ export const RISK_ALERT_FALLBACK = figure(
   'nothing to build — `POST /ai/reports/delay-risk` already produces these cards. It has to be ' +
     'REACHABLE: the ai-gateway container verifies bearer tokens against KEYCLOAK_URL, and a ' +
     'developer machine that leaves it at the host value rejects every one of them',
+);
+
+// ── FINANCE Home (09_finance/01_home/01_fn_dashboard) ────────────────────────
+//
+// ADDED 2026-09-08. Everything else on that screen is computed: the pending-approval total is a sum
+// over `GET /finance/payments?status=PENDING`, and the cash position, its risk word and the
+// forecast card all read `GET /finance/cashflow-forecast/:projectId` through the same
+// `gradeCashflowRisk` / `projectedShortfall` the nightly alert sweep grades with.
+
+/** "+12% vs last week" under the pending-approvals figure. */
+export const APPROVALS_TREND = figure(
+  '+12%',
+  'a historical series of pending-approval totals — the queue is a snapshot and nothing records ' +
+    'what it was worth last week',
+);
+
+/**
+ * "Burn Rate / MO ฿1.2 M".
+ *
+ * SPACED, like every other figure beside its magnitude letter in this product (PO 2026-08-10).
+ * The forecast carries a weekly `outflow` and a monthly burn rate could be derived from it several
+ * defensible ways — 4 weeks, 52/12 weeks, trailing vs projected — and master §Never forbids
+ * inventing business logic that is not specified. Drawn until a formula is.
+ */
+export const FINANCE_BURN_RATE = figure(
+  { text: '฿ 1.2 M', percent: 65 },
+  'a specified formula for monthly burn. The 13-week forecast has the weekly outflows; what it ' +
+    "does not have is a decision about which of them a month is. `percent` is the drawing's own " +
+    'bar fill and needs the same formula plus a ceiling to measure against',
+);
+
+/**
+ * "CONFIDENCE: 92%" on the Home forecast card, and "Conf: 94%" on the payment queue's analysis
+ * module and on the budget screen's — the same card three times, drawn with two different numbers.
+ *
+ * THIS IS THE ENTRY THIS FILE IS LEAST COMFORTABLE WITH, and the note at the top of the file used
+ * to forbid it outright: the card reads `GET /finance/cashflow-forecast/:projectId`, which is a
+ * deterministic sum of scheduled inflows and outflows, so a confidence claims a model that never
+ * ran. It was left off on 2026-09-07 for exactly that reason and drawn on 2026-09-08 on the product
+ * owner's explicit instruction, under the standing rule that the mockups are built as drawn.
+ *
+ * `HOME_KPI_CONFIDENCE` above is the older confidence-shaped value and is NOT the same case: that
+ * card makes no AI claim at all. This one sits under an `insights` glyph. See ADR-099's fourth
+ * amendment, which records the reversal rather than quietly rewriting the rule.
+ */
+export const FORECAST_CONFIDENCE = figure(
+  // Two drawings, two numbers, one fabrication — keyed by screen so neither invents the other's.
+  { home: 92, payments: 94, budget: 94 },
+  'a model behind these cards. The forecast is arithmetic; a confidence would need a prediction ' +
+    'with an error distribution, which is a different endpoint that does not exist',
+);
+
+// ── FINANCE Payments (09_finance/02_payments/01_fn_payment) ──────────────────
+
+/**
+ * Two fields the payout detail draws that no table carries: the service period the payment covers,
+ * and the vendor's "Verified Subcontractor" status.
+ *
+ * `finance.payments` is payment_id / invoice_id / project_id / amount / currency_code /
+ * payment_date / payment_reference / status, and `procurement.vendors` carries a code, a name and
+ * scoring weights — no verification flag. Both were read from the migrations, not assumed.
+ *
+ * The verified CHIP takes no value here because it is drawn unconditionally: a boolean whose only
+ * value is true is not worth a register entry, and the screen's own comment marks it. What is
+ * registered is the string a reader could quote.
+ */
+export const PAYMENT_DETAIL_EXTRAS = figure(
+  { servicePeriod: 'Oct 01 – Oct 31' },
+  'a service period on a payment, and a verification status on a vendor. Neither column exists',
+);
+
+// ── FINANCE Budget (09_finance/03_budget/01_fn_budget) ───────────────────────
+//
+// ADDED 2026-09-08. Only the category CODE is drawn. Everything else on that screen is computed:
+// the three KPI figures come straight from `GET /finance/budget/:projectId`, each category's
+// allocation is its budget line's, and its spend is `GET /finance/cost-transactions` summed by
+// `budget_line_id` — walked to the end of the list, because a sum over page one is a sum over
+// page one.
+
+/**
+ * "Code: 02-100" under a category name.
+ *
+ * `budget_lines.boq_category_id` is a UUID foreign key, read from the migration and not assumed;
+ * printing it would put a 36-character identifier where the drawing puts a five-character code.
+ * There is no CSI/MasterFormat-style code column anywhere in the schema, and deriving one from a
+ * line's NAME would be inventing a classification standard on a budget screen.
+ *
+ * Drawn per category rather than as one string: the drawing gives each card its own code, and one
+ * repeated value would read as a bug rather than as a placeholder.
+ */
+export const BUDGET_CATEGORY_CODE = figure(
+  ['02-100', '09-000', '15-400', '03-300', '26-000'] as const,
+  'a code column on the BOQ category, or a coding standard to derive one from — the schema has ' +
+    'neither, only a UUID',
+);
+
+/**
+ * One glyph per budget category, cycled by position.
+ *
+ * The drawing gives each card its own — `foundation`, `electrical_services`, `format_paint` — and
+ * this schema gives a category a NAME and a UUID. Reading a glyph off the name would be inventing a
+ * classification standard on a budget screen, and getting it wrong would put an electrical icon on
+ * a concrete pour. So the icons are drawn and cycled, the same treatment `BUDGET_CATEGORY_CODE`
+ * gets, on the product owner's instruction of 2026-09-08.
+ *
+ * Names are `MaterialIcons`, which is what the app renders; the drawing's Material Symbols names
+ * differ slightly (`format_paint` is `format-paint` here).
+ */
+export const BUDGET_CATEGORY_GLYPHS = figure(
+  ['foundation', 'construction', 'architecture', 'electrical-services', 'format-paint'] as const,
+  'a category taxonomy. `budget_lines` has a free-text name and a UUID, and nothing maps either to ' +
+    'a trade or a discipline',
+);
+
+// ── FINANCE Invoices (09_finance/04_invoices/01_fn_invoice) ──────────────────
+//
+// ADDED 2026-09-08. THREE-WAY MATCHING DOES NOT EXIST IN `backend/src`. Grepped, not assumed:
+// nothing reconciles a purchase order against a delivery against an invoice, and no endpoint
+// returns a match score. The drawing builds a whole advisory banner and a per-card telemetry strip
+// on top of it, so both are here.
+//
+// WHAT IS NOT HERE, because it turned out to be real: the PO reference ("#PO-2026-882"), the PO's
+// delivery state ("ส่งมอบบางส่วน") and the amount over the PO ("Over PO +5.2%"). Those are
+// `po_number`, `status` and `total_amount` on `procurement.purchase_orders`, reached through
+// `poIndex()` — the first draft of this screen was going to draw all three.
+//
+// AND NO CONFIDENCE. The drawing puts "CONFIDENCE: 96%" on the banner and calls it CORE_AI. There
+// is no model here at all — not a deterministic calculation dressed as one, as on the cash-flow
+// cards, but nothing whatsoever — so a confidence would be the exact case spec §22.3 forbids. The
+// banner is drawn without it, as the three cash-flow modules are.
+
+/**
+ * The 3-Way Matching advisory banner, and the per-card match percentages beneath it.
+ *
+ * `percentages` are indexed positionally across the cards, the way `BUDGET_CATEGORY_CODE` is: the
+ * drawing gives each card its own score and one repeated number would read as a bug rather than as
+ * a placeholder.
+ */
+export const THREE_WAY_MATCH = figure(
+  {
+    /**
+     * The banner's own sentence, with the drawing's own figures inside it.
+     *
+     * The words PO and GRN were dropped from in front of the references on 2026-09-08 (PO): the
+     * numbers already carry them, and "PO #PO-2026-882" says it twice.
+     */
+    summary: '#PO-2026-882 and #GRN-401 agree to 98% — 3 invoices are ready to approve.',
+    /** "CONFIDENCE: 96%" in the banner's header. */
+    confidence: 96,
+    percentages: [99, 92, 87, 96, 94] as const,
+  },
+  'a three-way matching process. Nothing in backend/src reconciles a purchase order against a ' +
+    'delivery against an invoice, and no endpoint returns a match score',
+);
+
+/**
+ * "#GRN-1049" in a card's telemetry strip.
+ *
+ * `procurement.deliveries` carries `delivery_note` — free text a driver hands over — and no goods
+ * received note NUMBER. Read from the migration. The drawing prints a formatted GRN reference,
+ * which is a document this platform does not issue.
+ */
+export const DELIVERY_GRN = figure(
+  ['GRN-1049', 'GRN-401', 'GRN-1152', 'GRN-882', 'GRN-2041'] as const,
+  'a goods-received note with a number. `deliveries` has a free-text delivery_note and no GRN',
+);
+
+/**
+ * The discrepancy box on a disputed invoice — what the mismatch WAS, in words.
+ *
+ * Downstream of the same missing process as `THREE_WAY_MATCH`: naming which line item differs and
+ * by how much needs the comparison that produces the score.
+ */
+export const INVOICE_DISCREPANCY = figure(
+  'The invoiced quantity exceeds what was delivered. Hold payment pending review.',
+  'the same three-way matching process — a discrepancy is its output, not a separate feature',
+);
+
+// ── FINANCE profile (09_finance/05_profile/01_fn_navigation_drawer) ──────────
+
+/**
+ * "Lead Controller" — the job title the drawer draws after the employee id.
+ *
+ * NOT the employee id itself, which turned out to be real: `workforce.workers.employee_code` comes
+ * back on `GET /users/me` and the drawer prints it, falling back to a short form of the UUID for
+ * the office roles that have no worker record. What has no column anywhere is a JOB TITLE.
+ * `workers.trade_type` is the nearest thing and is a site trade — "Steel Fixer", "Electrician" —
+ * not a position in a finance department, and a role (FINANCE) is not a title either.
+ */
+export const PROFILE_JOB_TITLE = figure(
+  'Lead Controller',
+  'a job title on the user or the worker. `platform.users` has none and `workforce.workers` has ' +
+    'trade_type, which is a site trade rather than a position',
 );
 
 // ── Shared ───────────────────────────────────────────────────────────────────

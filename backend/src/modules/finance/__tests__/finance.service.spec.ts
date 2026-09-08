@@ -154,6 +154,8 @@ const paymentRow: PaymentRow = {
   status: 'PENDING',
   recorded_by: 'user-uuid-001',
   created_at: new Date(),
+  // Joined in from procurement since 2026-09-08, and LEFT-joined — null is the shape a payment
+  // takes when its invoice row is missing, which is what this fixture stands for.
 };
 
 // ── Setup ──────────────────────────────────────────────────────────────────

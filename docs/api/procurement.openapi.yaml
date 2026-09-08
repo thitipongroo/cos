@@ -524,6 +524,14 @@ components:
         file_id:
           type: [string, 'null']
           format: uuid
+        vendor_name:
+          type: [string, 'null']
+          description: >-
+            The vendor's name, LEFT-joined from `procurement.vendors` on the read paths (added
+            2026-09-08 — additive, so no version bump per QM-2). Present on GET responses and
+            absent from the rows a write returns. The join lives here, in the service that owns
+            both tables: finance may not query `procurement.*` (master PHASE 7 line 3216), so the
+            mobile AP queue resolves a payment's vendor through this endpoint by `invoice_id`.
     ErrorResponse:
       type: object
       properties:
@@ -1545,6 +1553,7 @@ paths:
           required: false
           schema:
             type: string
+            enum: [RECEIVED, VERIFIED, APPROVED, PAID, DISPUTED]
         - name: page
           in: query
           required: false
@@ -1554,12 +1563,20 @@ paths:
         - name: limit
           in: query
           required: false
+          description: >-
+            Clamped to 1..100 by `parseLimit` in procurement.controller.ts; a larger value is
+            silently reduced to 100 rather than rejected.
           schema:
             type: integer
             default: 20
+            minimum: 1
+            maximum: 100
       responses:
         '200':
-          description: Vendor invoices for the tenant
+          description: >-
+            One page of vendor invoices. `total` is the server's own COUNT(*) over the FILTER, not
+            over the page, so a caller wanting "how many are disputed" asks with
+            `status=DISPUTED&limit=1` and reads it rather than counting rows.
           content:
             application/json:
               schema:

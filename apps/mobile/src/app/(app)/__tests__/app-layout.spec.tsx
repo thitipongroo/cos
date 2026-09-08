@@ -142,8 +142,11 @@ describe('AppLayout', () => {
     await waitFor(() => expect(useOfflineStore.getState().localDbStatus).toBe('FULL'));
   });
 
-  // The three field roles answer the site question up front; the managers pick per screen.
-  it.each([CosRole.SITE_WORKER, CosRole.SITE_ENGINEER, CosRole.SAFETY_OFFICER])(
+  // The three field roles answer the site question up front, and FINANCE joined them on 2026-09-08:
+  // two of its four screens are project-scoped and nothing but this sheet writes `projectStore`, so
+  // without it the Active Project bar rendered nothing and the Budget screen's permanent state was
+  // "select a project" with no way to. The managers still pick per screen.
+  it.each([CosRole.SITE_WORKER, CosRole.SITE_ENGINEER, CosRole.SAFETY_OFFICER, CosRole.FINANCE])(
     'mounts the project picker for %s',
     async (role) => {
       useAuthStore.setState({ role } as never);
@@ -154,7 +157,7 @@ describe('AppLayout', () => {
     },
   );
 
-  it.each([CosRole.PROJECT_MANAGER, CosRole.TENANT_ADMIN, CosRole.FINANCE])(
+  it.each([CosRole.PROJECT_MANAGER, CosRole.TENANT_ADMIN, CosRole.PROC_MANAGER])(
     'does not mount it for %s, who picks per screen',
     async (role) => {
       useAuthStore.setState({ role } as never);

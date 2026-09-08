@@ -1,7 +1,8 @@
 # ADR-099: The EXECUTIVE screens print the mockup's own figures where the platform has no source
 
 **Date:** 2026-09-05
-**Amended:** 2026-09-07 — extended to the two screens the replaced mockup set added
+**Amended:** 2026-09-07 — extended to the two screens the replaced mockup set added; 2026-09-08 —
+the FINANCE set, then a drawn confidence on a deterministic card
 **Status:** Accepted
 **Deciders:** Product Owner
 **Tags:** mobile | data
@@ -262,3 +263,196 @@ Keycloak had been missed.
 `RISK_ALERT_CATEGORIES` and `RISK_ALERT_FALLBACK`. The per-card confidence on the REAL path is the
 report's own field and is not registered; the drawing's second body line appears on the drawn cards
 only, never beside a model's finding.
+
+## Amendment — 2026-09-08: the FINANCE set, and the four figures that turned out to be columns
+
+`mockup/mobile/09_finance/` was implemented over 2026-09-07/08 — Home, Payments, Budget, Invoices
+and the profile drawer. It falls under the standing rule the product owner gave on 2026-09-08:
+
+> การ implement ui สร้างเหมือนกับ mockup ทุกอย่าง … ถ้าสิ่งใดเป็นการเติมมาเกินจริง โดยที่ codebase
+> ยังไม่มี process นี้ ให้ comment ใน code ไว้ว่า coming soon
+>
+> คำว่า "coming soon" ให้ comment ไว้ใน code อย่างเดียว ไม่ต้อง display แต่ถ้าเป็น action
+> ก็แสดง popup แสดง "comming soon"
+
+— draw what the drawing draws; mark what has no process behind it as COMING SOON **in a code comment
+and never on screen**; put a "coming soon" dialog behind an action that leads nowhere.
+
+### What was added — eight entries, taking the register from twenty-one to twenty-nine
+
+| Entry                   | Screen   | What it stands in for                                                                                               |
+| ----------------------- | -------- | ------------------------------------------------------------------------------------------------------------------- |
+| `APPROVALS_TREND`       | Home     | "+12% vs last week" — the approval queue is a snapshot; nothing records last week's total                           |
+| `FINANCE_BURN_RATE`     | Home     | "฿ 1.2 M / MO" — the forecast has weekly outflows and no decision about which of them a month is                    |
+| `PAYMENT_DETAIL_EXTRAS` | Payments | a service period on a payment, and a "verified subcontractor" flag on a vendor. Neither column exists               |
+| `BUDGET_CATEGORY_CODE`  | Budget   | "Code: 02-100" — `budget_lines.boq_category_id` is a UUID and no coding standard exists to derive a short code from |
+| `THREE_WAY_MATCH`       | Invoices | the whole advisory banner and every per-card match percentage                                                       |
+| `DELIVERY_GRN`          | Invoices | "#GRN-1049" — `deliveries` carries a free-text `delivery_note` and no goods-received note number                    |
+| `INVOICE_DISCREPANCY`   | Invoices | the sentence naming which line differs — the output of the matching that does not exist                             |
+| `PROFILE_JOB_TITLE`     | Drawer   | "Lead Controller" — no table carries a job title                                                                    |
+
+### THREE-WAY MATCHING DOES NOT EXIST, and it is the largest thing this register has ever held
+
+The other twenty-eight entries are figures beside real data. `THREE_WAY_MATCH` is a whole feature:
+nothing in `backend/src` reconciles a purchase order against a delivery against an invoice, and no
+endpoint returns a score. Grepped, not assumed. It is drawn because the drawing builds a banner and
+a three-column telemetry strip on top of it and the standing rule says to draw it, and it is flagged
+here as the entry a reader should be most suspicious of.
+
+### Its confidence is NOT drawn, and this is the strongest form of that refusal so far
+
+The drawing labels the banner CORE_AI and prints "CONFIDENCE: 96%". The third amendment above drew a
+confidence-shaped value once — `HOME_KPI_CONFIDENCE` — on a card that makes no AI claim, and refused
+one on the cash-flow modules because those read a deterministic calculation and a percentage would
+claim a model that never ran.
+
+**Here nothing ran at all.** Not a calculation dressed as a model — no process whatsoever. A
+percentage beside it would be the case spec §22.3 forbids outright, so it is not drawn, and neither
+is the banner's "แหล่งข้อมูล: ERP DB & Central OCR Ledger". The same refusal applied to the three
+cash-flow modules on Home, Payments and Budget: all three read
+`GET /finance/cashflow-forecast/:projectId` through `projectedShortfall` / `gradeCashflowRisk`, all
+three name the project instead of a source, and none carries a confidence.
+
+### FOUR FIGURES CAME OFF THE LIST BEFORE THEY REACHED IT
+
+The first draft of the Invoices screen was going to draw the PO reference, the "ส่งมอบบางส่วน"
+delivery state and "Over PO +5.2%"; the first draft of the drawer was going to draw the employee id.
+All four are real:
+
+| Drawn in the first draft | What it actually is                                                            |
+| ------------------------ | ------------------------------------------------------------------------------ |
+| `#PO-2026-882`           | `procurement.purchase_orders.po_number`                                        |
+| ส่งมอบบางส่วน            | that row's `status` — `PARTIALLY_DELIVERED` is a value of its CHECK constraint |
+| Over PO +5.2%            | the invoice amount against that row's `total_amount`, in decimal.js            |
+| `ID: FI-04281`           | `workforce.workers.employee_code`, returned by `GET /users/me`                 |
+
+Reading the migration before writing the register entry is the whole procedure, and it is worth
+stating because this register grows more easily than it shrinks. The employee id keeps its UUID
+fallback: `user.service.ts` says null is the COMMON case there — office roles, finance included,
+have no worker record — so the drawer shows a short form of the UUID rather than a gap.
+
+### The three obligations are unchanged
+
+Every entry names what has to exist before it can go; every one lives in
+`apps/mobile/src/lib/mockupFigures.ts` and nowhere else; and each is guarded by a test that fails if
+the screen ever starts tracking real data instead — `budget.spec.tsx` on the category code,
+`invoices.spec.tsx` on the banner, the GRN and the score, `NavigationDrawer.spec.tsx` on the job
+title, `finance-home.spec.tsx` on the trend and the burn rate.
+
+## Amendment — 2026-09-08 (second): a confidence ON a card that reads a deterministic forecast
+
+The three cash-flow modules shipped on 2026-09-07/08 without the `CONFIDENCE: 92%` their drawings
+put on them, and the reasoning was recorded twice — in this ADR's third amendment and on each
+screen. It was this:
+
+> The forecast is a deterministic sum of scheduled inflows and outflows. A confidence beside it
+> claims a model that never ran, which is the case spec §22.3 is most explicit about.
+
+**The product owner looked at the captured Home frame on 2026-09-08 and directed that the chip be
+drawn**, together with the drawing's `chevron_right`, its `View Model` link and the rule above its
+source line. That is the standing rule of the same day applied consistently — build the mockups as
+drawn; mark what has no process behind it COMING SOON in a code comment, never on screen; put a
+dialog behind an action that leads nowhere. `View Model` opens that dialog.
+
+### What this changes in the rule, and what it does not
+
+`FORECAST_CONFIDENCE` is registered like every other drawn figure and is the ONLY one on a card that
+carries an `insights` glyph. The line this file used to hold — _no value in this register may be
+presented as a model output_ — no longer holds without qualification, and the register's own header
+now says so rather than reading as though the rule were intact.
+
+**What still holds, and is the part worth defending:** a fabricated confidence may never stand
+BESIDE a real one. Where a screen calls a real model endpoint it prints the model's own text and the
+model's own confidence — the executive AI panels, and the risk feed whose drawn cards are displaced
+entirely the moment `POST /ai/reports/delay-risk` answers. Nothing here loosens that.
+
+### The one thing that was NOT taken from the drawing
+
+`Source: ERP & Milestone data`. The footer keeps naming the PROJECT the figures came from. Naming
+integrations this platform does not have is a claim about provenance rather than about a quantity,
+and it is the carve-out ADR-098's second amendment and this record have both kept from the start.
+The product owner's correction asked for the rule above that line and the model link beside it, and
+both are there.
+
+### The register is at thirty
+
+`FORECAST_CONFIDENCE`. `FINANCE_BURN_RATE` also grew a second field the same day — the drawing's
+progress bar under that tile has no more behind it than the figure above it, so the bar's fill is
+part of the same entry rather than a new one.
+
+## Amendment — 2026-09-08 (third): the invoices banner gets a source, and it is not the drawing's
+
+The product owner asked for two changes to `01-fn-invoice` on 2026-09-08: the matching banner was
+missing the source line the drawing foots it with, and the "Invoiced" label under each invoice card
+was to come off. The second is not a register matter — that label read a REAL column,
+`purchase_orders.status`, and it went because the card is a decision to approve or dispute and the
+order's own delivery progress is not part of that decision. The `finance.invoices.poStatus.*`
+messages went with it; nothing else read them.
+
+### The first one is, and it is the line this record has refused four times
+
+The drawing foots the banner `แหล่งข้อมูล: ERP DB & Central OCR Ledger`. There is no ERP integration
+in this repository and no OCR ledger; `/ai/transcribe` is the only thing in the AI gateway that
+reads a document at all, and nothing calls it from this screen. Every other card in the FINANCE set
+foots with the PROJECT its figures came from — the carve-out ADR-098's second amendment opened and
+this record has applied on Home, on Payments and on Budget.
+
+It is applied a fourth time here. What the banner now says is
+`Source: vendor invoices and purchase orders`, which is true of the list above it: those rows are
+`listVendorInvoices` and `poIndex`, both `procurement`. The drawn figures in the banner keep the
+drawing's shape; the sentence that says where they came from does not.
+
+### Why a provenance line is treated differently from a figure
+
+A drawn quantity is one wrong number on a screen the reader is already scanning. A drawn source is a
+claim about the whole card — it tells the reader which of the numbers above it to trust, and naming
+a system that does not exist makes every drawn figure on that card read as fetched. The register
+holds figures. It does not hold provenance, and after this amendment it still does not.
+
+### The chevron moved rather than multiplied
+
+`01-fn-invoice` has exactly one chevron on this card and puts it in the footer. The 2026-09-08
+instruction that added a confidence and a chevron to the banner had put both in the header, which
+left the drawing's footer empty and its one control duplicated once the footer arrived. The header
+keeps the confidence; the footer takes the source and the chevron.
+
+### The register is unchanged at thirty
+
+`THREE_WAY_MATCH` gained no field. The source is an i18n message like any other sentence on the
+screen, because it is not drawn — that is the whole point of the amendment.
+
+## Amendment — 2026-09-08 (fourth): the role chip left, and the drawn line is now alone
+
+`01-fn-navigation-drawer` was corrected on 2026-09-08: the `FINANCE` chip beside the name came off,
+and the position and id lines swapped so the block reads NAME · POSITION · ID. Spec §32.7 "Drawer
+Profile Block" carries the composition; this record carries the consequence.
+
+### `PROFILE_JOB_TITLE` was a second opinion, and it is now the only one
+
+The chip printed `auth.role` — real, per-account, and the one line in the block that differed
+between a FINANCE user and a SITE_ENGINEER. `PROFILE_JOB_TITLE` is a single registered string,
+`Lead Controller`, rendered unconditionally for everybody. While the chip was there the drawn line
+sat beside a real one and could be read against it. It no longer can: **every role's drawer now says
+Lead Controller and nothing on the block contradicts it.**
+
+That is a widening, and it is written here rather than left to be discovered. The entry was added on
+2026-09-08 for the FINANCE set and was never scoped to it — the same defect existed the moment it
+was wired, and removing the chip is what made it visible.
+
+### It was not fixed by inventing seven more
+
+The obvious repair is a title per role. That is seven more fabricated positions, in a register whose
+whole purpose is to keep the count of them known and falling, to cover a gap in
+`platform.users` — which has no title column, no `position`, and no join that carries one.
+`workforce.workers.trade_type` is the nearest real field and it is a SITE TRADE, not an office
+position; putting "Electrician" under a controller's name would be worse than one wrong title.
+
+### What would end it
+
+A `position` (or `job_title`) column on `platform.users`, surfaced by `GET /users/me` beside
+`employee_code`. Until then the line is drawn, it is the same for everyone, and both facts are
+recorded in the spec section, in the component's own comment and here.
+
+### The register is unchanged at thirty
+
+No entry added. `PROFILE_JOB_TITLE` changed neither value nor shape — only what stands next to it.

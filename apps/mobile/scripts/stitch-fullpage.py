@@ -23,7 +23,8 @@
 # page. Pass `--sticky N` (pixels, measured from TOP) and those rows join the fixed top bar: kept
 # once, and excluded from both the comparison and the appended content.
 #
-# Usage: python stitch-fullpage.py OUT.png TOP BOT [--fab X0,Y0,X1,Y1] [--sticky N] shot0.png ...
+# Usage: python stitch-fullpage.py OUT.png TOP BOT [--fab X0,Y0,X1,Y1] [--sticky N]
+#                                  [--max-scroll N] shot0.png ...
 import sys
 import numpy as np
 from PIL import Image
@@ -34,6 +35,23 @@ sticky = 0
 if '--sticky' in argv:
     i = argv.index('--sticky')
     sticky = int(argv[i + 1])
+    del argv[i:i + 2]
+
+# How far one swipe may have moved the page. It also sets the comparison window, and the two pull
+# against each other: WIN = content_h - MAX_SCROLL, so a generous MAX_SCROLL leaves a SHORT window,
+# and a short window on a page of near-identical rows can match at a whole-card offset — stitching a
+# duplicate in and dropping whatever sat between it and its twin.
+#
+# 1400 is the default every script has used and it stays the default. `--max-scroll` lowers it for a
+# caller that swipes shorter on purpose: the FINANCE budget screen is a column of cards that differ
+# by one line of text, and at 1400 the 596-row window spans under two of them. Two runs there
+# duplicated a category and swallowed the "Category breakdown" heading between the copies. Lower it
+# only alongside a shorter swipe — if the page moves further than MAX_SCROLL the measurement
+# saturates and the stitch gets worse, not better.
+max_scroll = 1400
+if '--max-scroll' in argv:
+    i = argv.index('--max-scroll')
+    max_scroll = int(argv[i + 1])
     del argv[i:i + 2]
 
 if '--fab' in argv:
@@ -57,13 +75,27 @@ top_bar = shots[0][:CTOP]
 bottom_nav = shots[-1][BOT:]
 content_h = BOT - CTOP
 
-MAX_SCROLL = 1400
+MAX_SCROLL = max_scroll
 WIN = content_h - MAX_SCROLL          # fixed comparison window (rows), large → no periodic false match
 def cont(s): return s[CTOP:BOT]
 def gray_ds(a): return a.mean(axis=2)[::3, ::4]
+def gray_fine(a): return a.mean(axis=2)[:, ::4]   # every ROW, every 4th column
 
-def measure(prev_g, c_g):
-    """How far the page scrolled between two shots, in pixels (0 = did not move)."""
+def measure(prev_c, c_c):
+    """How far the page scrolled between two shots, in pixels (0 = did not move).
+
+    TWO PASSES, AND THE SECOND ONE IS NOT OPTIONAL. The coarse pass walks the search range in
+    steps of 3 on rows downsampled 3:1 — fast, and enough to say which card is which. It is NOT
+    enough to place the join: a true scroll of 530 is only ever offered 528 or 531, so the answer
+    is routinely 1-2px out. The join is then cross-faded over 48 rows, and a 48-row blend of two
+    frames 2px apart is a GHOST — a grey band straight through whatever text sits on the cut. That
+    is what printed a bar across "INV-R9CT-CONC..." on `01-fn-invoice`, and it is the same defect
+    every time: not a wrong card, a wrong offset.
+
+    So the second pass re-measures at FULL vertical resolution, one pixel at a time, within +/-4 of
+    the coarse answer. Aligned exactly, the feather blends identical pixels and disappears.
+    """
+    prev_g, c_g = gray_ds(prev_c), gray_ds(c_c)
     top_win = c_g[:win_rows]
     best_scroll, best_sad = 0, None
     for scroll in range(0, MAX_SCROLL + 1, 3):
@@ -74,6 +106,19 @@ def measure(prev_g, c_g):
         sad = np.abs(seg - top_win).mean()
         if best_sad is None or sad < best_sad:
             best_sad, best_scroll = sad, scroll
+    if best_scroll < 8:
+        return best_scroll, best_sad
+
+    prev_f, c_f = gray_fine(prev_c), gray_fine(c_c)
+    fine_win = c_f[:WIN]
+    lo, hi = max(0, best_scroll - 4), min(MAX_SCROLL, best_scroll + 4)
+    for scroll in range(lo, hi + 1):
+        seg = prev_f[scroll:scroll + WIN]
+        if seg.shape[0] != WIN:
+            break
+        sad = np.abs(seg - fine_win).mean()
+        if sad < best_sad:
+            best_sad, best_scroll = sad, scroll
     return best_scroll, best_sad
 
 
@@ -81,8 +126,8 @@ win_rows = WIN // 3                    # window height in downsampled rows
 
 if fab is not None:
     x0, y0, x1, y1 = fab
-    grays = [gray_ds(cont(s)) for s in shots]
-    scrolls = [0] + [measure(grays[i - 1], grays[i])[0] for i in range(1, len(shots))]
+    conts = [cont(s) for s in shots]
+    scrolls = [0] + [measure(conts[i - 1], conts[i])[0] for i in range(1, len(shots))]
     # The LAST shot that actually contributes rows keeps its button — that is the one that ends up
     # at the bottom of the stitched page, which is where a floating button belongs. Every earlier
     # contributor is repaired from its successor.
@@ -121,14 +166,12 @@ if fab is not None:
 
 prev = cont(shots[0])
 base = prev.copy()
-prev_g = gray_ds(prev)
 for idx, s in enumerate(shots[1:], 1):
     c = cont(s)
-    c_g = gray_ds(c)
-    best_scroll, best_sad = measure(prev_g, c_g)
+    best_scroll, best_sad = measure(prev, c)
     if best_scroll < 8:
         print(f"  shot {idx}: bottom reached (scroll~{best_scroll}, sad={best_sad:.1f}) — skip")
-        prev, prev_g = c, c_g
+        prev = c
         continue
     overlap = content_h - best_scroll
     # Feather the join: base's bottom `feather` rows are the SAME content as the current shot's
@@ -139,12 +182,30 @@ for idx, s in enumerate(shots[1:], 1):
     if feather > 0:
         band_base = base[-feather:].astype(np.float32)
         band_cur = c[overlap - feather:overlap].astype(np.float32)
-        alpha = np.linspace(0.0, 1.0, feather, dtype=np.float32)[:, None, None]
-        base[-feather:] = (band_base * (1.0 - alpha) + band_cur * alpha).astype(np.uint8)
+        # THE CROSS-FADE IS CHECKED, NOT ASSUMED. Its premise is that these two bands hold the SAME
+        # pixels, so the blend is invisible and only the seam goes. Where the premise fails the
+        # blend is the artifact: half of one frame over half of another prints a grey band through
+        # whatever text sits on the cut. It failed on `01-fn-invoice`, where the rows under a docked
+        # footer are static padding in the base shot and a card title in the current one.
+        #
+        # So: fade only across the rows that agree, and take the CURRENT shot outright from the
+        # first row that does not. The current shot is the one with genuine pixels there — the base
+        # tail may be repaired, padded or chrome — and the rows appended below it come from that
+        # same shot, so there is nothing to blend towards anyway.
+        disagree = np.nonzero(np.abs(band_base - band_cur).mean(axis=(1, 2)) > 4.0)[0]
+        cut = int(disagree[0]) if disagree.size else feather
+        alpha = np.ones(feather, dtype=np.float32)
+        if cut > 0:
+            alpha[:cut] = np.linspace(0.0, 1.0, cut, dtype=np.float32)
+        if cut < feather:
+            print(f"  shot {idx}: shots differ from feather row {cut}/{feather} — taking this one")
+        base[-feather:] = (
+            band_base * (1.0 - alpha[:, None, None]) + band_cur * alpha[:, None, None]
+        ).astype(np.uint8)
     new_part = c[overlap:]
     base = np.vstack([base, new_part])
     print(f"  shot {idx}: scroll={best_scroll} sad={best_sad:.1f} +{new_part.shape[0]}px (feather {feather})")
-    prev, prev_g = c, c_g
+    prev = c
 
 final = np.vstack([top_bar, base, bottom_nav])
 

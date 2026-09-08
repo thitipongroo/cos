@@ -2299,3 +2299,100 @@ inside the row BELOW it, which at the foot of this drawer is LOG OUT. The script
 node, tapped a different one, signed the session out, and failed several steps later pointing
 nowhere near the cause. `hasRealBounds()` in that script is the guard; anything that scrolls to reach
 a target needs it.
+
+## Finance — four tabs, seven screens — [`09-finance/`](09-finance/)
+
+Captured 2026-09-08 against the seeded tenant by
+[`capture-android-finance.mjs`](../../../apps/mobile/scripts/capture-android-finance.mjs), as
+`+66811000011`, Pimchanok Thongchai.
+
+**THIS IS THE FIRST ROLE HERE THAT SIGNS IN THROUGH PATH B, and it has to.** Measured against a
+running realm: `POST /auth/otp/verify` as `+66811000011` answers **503 COS-AUTH-503**, and the
+backend log carries Keycloak's own reason — _"This role must sign in with email and password."_ The
+realm's `direct-grant-mfa` flow denies direct grant where the `role` attribute matches
+`^(TENANT_ADMIN|FINANCE)$`, which is
+[ADR-067](../../architecture/adr/067-mfa-enforcement-keycloak-native.md) as amended on 2026-08-22:
+**privileged roles are Path B only, by product-owner decision of 2026-08-21.** The same request as
+`+66811000001` (EXECUTIVE) answers 200 with a token, so every other script here is unaffected.
+
+So this script taps `office-login-button`, drives Keycloak's own page in the system browser
+(Authorization Code + PKCE) and comes back through `cos://oauth2redirect`. Three things it learned
+the hard way, all recorded in its header:
+
+- **Chrome's first-run pages cover the login.** One tap on `signin_fre_dismiss_button` clears them;
+  without it the run fails with "browser username field never appeared", which reads like a bad
+  selector.
+- **Chrome publishes each input's HTML `id` as its `resource-id`** — `username`, `password`,
+  `kc-login`, `otp` — so the realm's own markup is what the script matches on, not visible text.
+- **Only the first field is ever tapped.** The keyboard covers the password input (y≈1435-1575, the
+  keyboard's top edge at ≈1400), so everything after the first field is reached with TAB and the
+  form is submitted with ENTER. Tapping the password field's own reported centre hits the keyboard,
+  the password is never typed, and Keycloak answers "Invalid username or password" — which looks
+  like a wrong credential rather than a missed tap.
+
+**The second factor is provisioned, not bypassed.** Path B for this role puts the account through
+the privileged-role OTP subflow, and a seeded account with only a password answers a correct
+password with `302 → required-action?execution=CONFIGURE_TOTP`.
+`backend/prisma/provision-keycloak-demo.ts` now gives every role in its `MFA_ROLES` set a TOTP
+credential, and the capture computes codes from the same secret (`COS_CAPTURE_TOTP_SECRET`). No
+realm setting changes and no exemption is added — the demo tenant simply now HAS what the realm
+already required. Two traps are recorded there: `partialImport` with `OVERWRITE` replaces the whole
+account, so the representation must carry the identity and the password as well as the new
+credential; and Keycloak signs with `secret.getBytes()`, so a client must use the stored value's raw
+bytes rather than base32-decoding it.
+
+**The bar did not change for this role.** `Home | Payments | Budget | Invoices` was already in
+`roleTabs.ts` and in `context/phases/phase-10-mobile-offline-engine.md:192`, and
+[`mockup/mobile/09_finance/`](../../../mockup/mobile/09_finance) agrees, so unlike the EXECUTIVE set
+there was no navigation decision to take (product-owner decision 2026-09-08). Profile is no role's
+tab (§32.7); the drawer holds it.
+
+| Folder                                    | What is in the frame                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| ----------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [`01-Home/`](09-finance/01-Home/)         | The dashboard (`01`): the pending-approval total, summed in `decimal.js` over `GET /finance/payments?status=PENDING` — filtered by the SERVER, so it counts the tenant and not the page; the cash-flow tile and its risk word; the drawn burn rate; the 13-week forecast card; the priority approval queue with per-row Review and Approve.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| [`02-Payments/`](09-finance/02-Payments/) | The approval queue (`01`): the PENDING count, the MFA chip, vendor cards, the analysis module, the drawn FAB. The detail (`02`): vendor, amount, project, invoice reference, the biometric note and the Approve / Dispute pair. **Approve is not pressed in the capture** — it is a real `PATCH /finance/payments/:id/approve`, so a run that pressed it would spend a demo payment and leave the queue one shorter than the last capture.                                                                                                                                                                                                                                                                                                                                                                                                               |
+| [`03-Budget/`](09-finance/03-Budget/)     | The project budget (`01`): Total / Actual Spent / Remaining from `GET /finance/budget/:projectId`, with both percentages taken against the TOTAL (the drawing's own arithmetic — 84.2 / 124.5 = 68%); the forecast module; the category breakdown, whose per-line spend is `GET /finance/cost-transactions` summed by `budget_line_id`. That endpoint pages at 100 and the client walks it to the end: a sum over page one is a sum over page one, and when the walk hits its cap the screen says the figure is partial instead of showing it as the spend to date.                                                                                                                                                                                                                                                                                      |
+| [`04-Invoices/`](09-finance/04-Invoices/) | The AP queue (`01`): filter chips whose counts come from the server's own `COUNT(*)` (one `limit=1` request per status, read for its `total`) rather than from the rows on screen; the drawn 3-way-matching banner, footed with a source that names the RECORDS behind the list rather than the drawing's "ERP DB & Central OCR Ledger" (ADR-099, third amendment of 2026-09-08); invoice cards carrying the vendor, the PO number and the amount over the PO — the PO's delivery state came off the card the same day, since the card is a decision to approve or dispute and the order's own progress is not part of it. Approve and Dispute appear only where the server would accept them — `RECEIVED`/`VERIFIED` for one, anything but `PAID`/`DISPUTED` for the other, which are the exact states `procurement.service.ts` answers 422 outside of. |
+| [`05-Drawer/`](09-finance/05-Drawer/)     | The navigation drawer (`01`) — an OVERLAY opened from the TopBar, not a fifth tab; its rows derive from the §6.4 matrix via [`lib/drawerLinks.ts`](../../../apps/mobile/src/lib/drawerLinks.ts). Its profile zone shows the role as a tag, the employee code from `workforce.workers` where the account has one, and "MFA verified" only when `platform.users.mfa_enabled` is true. Account settings (`02`), pushed from the Settings row: MFA, biometric, Change PIN, language, notification preferences, theme, version.                                                                                                                                                                                                                                                                                                                               |
+
+**The project picker is answered before anything else in this run, and that is new.**
+`<SelectProjectSheet />` was mounted for `FINANCE` on 2026-09-08 — the third role to join it, after
+`SITE_ENGINEER` (2026-08-12) and `SAFETY_OFFICER` (2026-08-13), and for the identical reason both of
+those did. Two of the four screens are project-scoped (`GET /finance/cashflow-forecast/:projectId`
+and `GET /finance/budget/:projectId`) and nothing but that sheet writes `projectStore`, so without
+it the Active Project bar rendered nothing, Home's forecast card read "choose a project" with no way
+to, and Budget's permanent state was "select a project". Writing this capture script is what
+surfaced it — the same way the other two were found.
+
+**Eight figures in these frames did not come from the backend.** They are listed in
+[ADR-099](../../architecture/adr/099-mockup-figures-without-a-data-source.md)'s 2026-09-08 amendment
+and live in one module, [`lib/mockupFigures.ts`](../../../apps/mobile/src/lib/mockupFigures.ts):
+the "+12% vs last week" delta and the burn rate on Home; the payment detail's service period and its
+"verified subcontractor" chip; the budget's "Code: 02-100"; on Invoices the ENTIRE 3-way-matching
+banner, every per-card match percentage and GRN reference, and the discrepancy sentence on a disputed
+card; and the drawer's "Lead Controller". **Three-way matching does not exist in `backend/src`** —
+nothing reconciles a purchase order against a delivery against an invoice, and no endpoint returns a
+score — which makes that banner the largest single thing the register has ever held.
+
+**No confidence appears anywhere in these frames, and the drawings put one on four cards.** Three of
+those cards read the 13-week cash-flow forecast, which is a deterministic sum of scheduled inflows
+and outflows: a percentage beside it would claim a model that never ran. The fourth is the matching
+banner, where nothing ran at all. Same carve-out ADR-098's second amendment and ADR-099 record — the
+card names the PROJECT its figures came from instead of a source it cannot vouch for.
+
+**Everything else in these frames is live data** from the seeded tenant: the approval queue and its
+total, the cash-flow forecast and its risk grade, the budget and every category's allocation, the
+per-category spend, the invoice list and its filter counts, and every invoice's vendor, PO number,
+delivery state and amount-over-PO. Four figures that the first draft was going to draw turned out to
+be columns and are live — the PO reference, the PO's delivery state, "Over PO +5.2%" and the drawer's
+employee id.
+
+**A payment does not name its own vendor, and these frames show the workaround.** `finance.payments`
+carries `invoice_id` and nothing readable, and finance may not query `procurement.*` — master §PHASE
+7 line 3216, guarded by `tests/architecture/connectivity.spec.ts` and
+`tests/conformance/finance/05-constraints.spec.ts`. A join into `GET /finance/payments` was written
+on 2026-09-08 and reverted the same day when both suites caught it; the join now lives in
+`GET /procurement/vendor-invoices` and the screens match on `invoice_id`
+([ADR-100](../../architecture/adr/100-vendor-name-joins-in-procurement.md)). If the vendor-invoice
+request fails, the queue still lists every payment with an em dash where a name would be — so a
+frame full of em dashes means procurement was unreachable, not that the queue is broken.

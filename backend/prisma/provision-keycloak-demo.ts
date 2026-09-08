@@ -27,6 +27,42 @@ const ADMIN_USER = process.env['KEYCLOAK_ADMIN_USER'] ?? 'admin';
 const ADMIN_PW = process.env['KEYCLOAK_ADMIN_PASSWORD'] ?? 'cos_keycloak_admin';
 const DEMO_PASSWORD = process.env['DEMO_USER_PASSWORD'] ?? 'Ekachai@2026';
 
+/**
+ * The roles the realm refuses to let in through Path A, and therefore the ones a seeded demo
+ * environment has to give a second factor to.
+ *
+ * `construction-os-realm.json` binds a `direct-grant-mfa` flow whose `conditional-user-attribute`
+ * matches `role` against this same regex and then DENIES (ADR-067 as amended 2026-08-22, product
+ * owner 2026-08-21). Those accounts sign in through Path B — browser, Authorization Code + PKCE —
+ * and Path B puts them through the privileged-role OTP subflow. With no `otp` credential Keycloak
+ * answers a correct password with `302 → required-action?execution=CONFIGURE_TOTP`, which a person
+ * can complete and a script cannot.
+ *
+ * So a demo account for one of these roles is not usable until it HAS the factor. Provisioning it
+ * here is what makes `capture-android-finance.mjs` — and any Detox flow that ever needs a
+ * privileged session — able to run at all.
+ */
+const MFA_ROLES = new Set(['TENANT_ADMIN', 'FINANCE']);
+
+/**
+ * The TOTP secret those accounts get — a RAW string, fixed.
+ *
+ * FIXED ON PURPOSE AND DEV-ONLY. A capture script has to be able to compute a valid code without a
+ * human reading a QR, so the secret has to be knowable; a random one written to stdout would have
+ * to be carried by hand into every run. It is the same reasoning that puts a literal
+ * `DEMO_PASSWORD` above it. Both belong to a seeded local tenant and neither exists anywhere a
+ * deployment runs — this script refuses a non-localhost Keycloak for that reason.
+ *
+ * NOT BASE32. Keycloak stores this value verbatim and signs with `secret.getBytes()`; the base32
+ * string it shows a user for manual entry is `Base32.encode(secret.getBytes())`, one encoding
+ * further out. A client computing codes from it must use the same raw bytes — see `totpNow` in
+ * `apps/mobile/scripts/capture-android-finance.mjs`, which decoded it as base32 at first and got
+ * "Invalid authenticator code" for its trouble.
+ *
+ * `COS_DEMO_TOTP_SECRET` overrides it where someone wants a different one.
+ */
+const DEMO_TOTP_SECRET = process.env['COS_DEMO_TOTP_SECRET'] ?? 'JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP';
+
 // cos-backend client secret (Direct-Grant client) — from the imported realm file.
 function backendClientSecret(): string {
   const realm = JSON.parse(
@@ -117,7 +153,83 @@ async function findByEmail(token: string, email: string): Promise<KcUser | undef
   return (await searchUsers(token, { email })).find((x) => x.email?.toLowerCase() === wanted);
 }
 
-async function upsertKeycloakUser(token: string, tenantId: string, u: DemoUser): Promise<string> {
+/**
+ * Give a privileged demo account the TOTP credential its sign-in flow requires.
+ *
+ * Keycloak has no "add an OTP credential" admin endpoint — `PUT /users/{id}` ignores the
+ * `credentials` array entirely — so this goes through `partialImport`, which is the one admin route
+ * that accepts an arbitrary credential type.
+ *
+ * `partialImport` WITH `OVERWRITE` REPLACES THE WHOLE ACCOUNT, and that is the trap in this
+ * function. The first version sent only `{ id, username, enabled, credentials: [otp] }` and
+ * Keycloak did exactly what it was asked: it replaced the user with that, discarding the email, the
+ * name, the PASSWORD, and — worst — the `tenant_id` / `user_id` / `role` attributes that every JWT
+ * claim is mapped from. The account then failed to log in at all, and would have carried no role if
+ * it had. So the representation below is COMPLETE: the same identity the caller just applied, plus
+ * BOTH credentials.
+ *
+ * The user's `id` is sent back unchanged so the account keeps the identifier
+ * `platform.users.keycloak_user_id` holds; an import that minted a new one would silently break
+ * every session lookup for that user.
+ *
+ * Idempotent: an account that already carries an `otp` credential is left alone, because
+ * overwriting would invalidate whatever authenticator is already paired with it.
+ */
+async function ensureTotp(
+  token: string,
+  userId: string,
+  username: string,
+  identity: Record<string, unknown>,
+): Promise<'added' | 'kept'> {
+  const existing = await fetch(`${KC}/admin/realms/${REALM}/users/${userId}/credentials`, {
+    headers: { authorization: `Bearer ${token}` },
+  });
+  if (existing.ok) {
+    const creds = (await existing.json()) as Array<{ type?: string }>;
+    if (creds.some((c) => c.type === 'otp')) return 'kept';
+  }
+
+  const res = await fetch(`${KC}/admin/realms/${REALM}/partialImport`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', authorization: `Bearer ${token}` },
+    body: JSON.stringify({
+      ifResourceExists: 'OVERWRITE',
+      users: [
+        {
+          id: userId,
+          username,
+          ...identity,
+          credentials: [
+            { type: 'password', value: DEMO_PASSWORD, temporary: false },
+            {
+              type: 'otp',
+              // Both fields are JSON-in-a-string; that is Keycloak's own storage shape, not a
+              // quirk of this call. The credentialData must match the realm's OTP policy —
+              // HmacSHA1 / 6 digits / 30s — or a code computed from the secret will not verify.
+              secretData: JSON.stringify({ value: DEMO_TOTP_SECRET }),
+              credentialData: JSON.stringify({
+                subType: 'totp',
+                digits: 6,
+                period: 30,
+                algorithm: 'HmacSHA1',
+              }),
+            },
+          ],
+        },
+      ],
+    }),
+  });
+  if (!res.ok) {
+    throw new Error(`otp credential for ${username} failed: ${res.status} ${await res.text()}`);
+  }
+  return 'added';
+}
+
+async function upsertKeycloakUser(
+  token: string,
+  tenantId: string,
+  u: DemoUser,
+): Promise<{ id: string; identity: Record<string, unknown>; username: string }> {
   const [firstName, ...rest] = u.display_name.split(' ');
   const lastName = rest.join(' ') || firstName;
   // '' is not an email. Treated as one it becomes an empty search parameter (see searchUsers) and, in
@@ -156,7 +268,7 @@ async function upsertKeycloakUser(token: string, tenantId: string, u: DemoUser):
   if (create.status === 201) {
     const created = await findByUsername(token, username);
     if (!created) throw new Error(`created ${username} but it cannot be found again`);
-    return created.id;
+    return { id: created.id, identity, username };
   }
   if (create.status !== 409) {
     throw new Error(`create ${username} failed: ${create.status} ${await create.text()}`);
@@ -167,14 +279,24 @@ async function upsertKeycloakUser(token: string, tenantId: string, u: DemoUser):
   // and deleted whatever the search handed back.
 
   // (a) The username is taken — the ordinary re-run. Nothing to remove: re-apply the profile so a
-  // stale tenant/role attribute or a forgotten password is corrected in place. `username` is left out
-  // of the PUT because it already matches and this realm sets editUsernameAllowed=false.
+  // stale tenant/role attribute or a forgotten password is corrected in place.
+  //
+  // `username` IS SENT, and the comment that used to stand here was wrong twice. It said the field
+  // was "left out of the PUT because it already matches and this realm sets
+  // editUsernameAllowed=false" — but `construction-os-realm.json` sets `editUsernameAllowed: true`,
+  // and Keycloak 26 rejects a user PUT with no username outright:
+  //
+  //   update +66811000008 failed: 400 {"errorMessage":"User name is missing"}
+  //
+  // That aborted the whole run on 2026-09-08 at the first already-existing account, so every user
+  // after it kept whatever password it last had — which is how a demo account came to refuse the
+  // documented DEMO_PASSWORD. Sending the same username back is a no-op rename and is accepted.
   const byUsername = await findByUsername(token, username);
   if (byUsername) {
     const put = await fetch(`${KC}/admin/realms/${REALM}/users/${byUsername.id}`, {
       method: 'PUT',
       headers: { 'content-type': 'application/json', authorization: `Bearer ${token}` },
-      body: JSON.stringify(identity),
+      body: JSON.stringify({ username, ...identity }),
     });
     if (!put.ok) throw new Error(`update ${username} failed: ${put.status} ${await put.text()}`);
     const pw = await fetch(`${KC}/admin/realms/${REALM}/users/${byUsername.id}/reset-password`, {
@@ -183,7 +305,7 @@ async function upsertKeycloakUser(token: string, tenantId: string, u: DemoUser):
       body: JSON.stringify({ type: 'password', value: DEMO_PASSWORD, temporary: false }),
     });
     if (!pw.ok) throw new Error(`reset-password ${username} failed: ${pw.status}`);
-    return byUsername.id;
+    return { id: byUsername.id, identity, username };
   }
 
   // (b) The username is free, so the email is what collided: an account provisioned before the
@@ -220,7 +342,7 @@ async function upsertKeycloakUser(token: string, tenantId: string, u: DemoUser):
   }
   const renamed = await findByUsername(token, username);
   if (!renamed) throw new Error(`user ${username} not found after recreate`);
-  return renamed.id;
+  return { id: renamed.id, identity, username };
 }
 
 // Logs in with the USERNAME (the phone number for every seeded user that has one), not the email:
@@ -264,9 +386,13 @@ async function main(): Promise<void> {
 
   const token = await adminToken();
   for (const u of users) {
-    const kcId = await upsertKeycloakUser(token, tenantId, u);
+    const { id: kcId, identity, username } = await upsertKeycloakUser(token, tenantId, u);
     await prisma.$executeRaw`UPDATE platform.users SET keycloak_user_id = ${kcId} WHERE user_id = ${u.user_id}::uuid`;
-    logger.info({ login: u.phone_number ?? u.email, role: u.role, kcId }, 'provisioned');
+    // A privileged role cannot sign in at all without a second factor — see MFA_ROLES. The identity
+    // is handed through because the import that carries the factor REPLACES the account; see
+    // ensureTotp for what a partial representation costs.
+    const otp = MFA_ROLES.has(u.role) ? await ensureTotp(token, kcId, username, identity) : 'n/a';
+    logger.info({ login: u.phone_number ?? u.email, role: u.role, kcId, otp }, 'provisioned');
   }
 
   // Prove real login for two representative users (office role + site role).
