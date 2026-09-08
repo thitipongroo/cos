@@ -1,117 +1,330 @@
+// ── PROCUREMENT_OFFICER — the four queues, the vendor analysis, and what just happened ──────────
+//
+// Implements mockup/mobile/10_proc_officer/01_home/01_po_dashboard.
+//
+// REBUILT 2026-09-08 for that drawing. What was here was five stacked KPI tiles — committed spend,
+// open RFQs, RFQs closing within 24h, POs awaiting acknowledgment, deliveries — and the drawing is a
+// 2x2 bento of the four QUEUES this role works: requests to approve, RFQs running, awards waiting on
+// a purchase order, deliveries arriving today. Each tile is a stage of the same pipeline, in order.
+//
+// WHAT IS REAL, AND WHERE FROM.
+//   PR awaiting approval   `GET /procurement/purchase-requests?status=SUBMITTED`, the server's own
+//                          `total`. SUBMITTED is the one state that means waiting on a person —
+//                          DRAFT is a request nobody has sent. The set is declared in
+//                          `backend/src/modules/procurement/procurement.rows.ts`.
+//   RFQs in progress       PUBLISHED + EVALUATED, two counts from the same endpoint.
+//   Awaiting PO            AWARDED or EVALUATED RFQs whose `rfq_id` appears on no purchase order.
+//                          Computed here from two lists this screen already fetches, because that
+//                          is what "the award is decided, the order is not open yet" is.
+//   Deliveries today       `delivered_at` on today's date, over `GET /procurement/deliveries`.
+//   The analysis module    `<ProcurementInsight />` — genuine model output from
+//                          `/ai/reports/procurement-summary`, with its own confidence and the
+//                          project it read. It is not dressed up here and not faked when idle.
+//
+// THE SOURCE LINE NAMES THE PROJECT, NOT THE DRAWING'S SYSTEMS. `01_po_dashboard` foots its analysis
+// card "แหล่งข้อมูล: Integrated ERP & Market Benchmarks". Neither exists in this repository. Every
+// other card in the app names the project its figures came from instead — the carve-out ADR-098's
+// second amendment opened, applied here for the fifth time.
+//
+// WHAT IS DRAWN: the activity feed, entire (`PROC_ACTIVITY_FEED` in the register). There is no
+// activity endpoint for this role; `platform.audit_logs` records field changes for TENANT_ADMIN and
+// nothing aggregates procurement events into a feed.
+//
+// THE FAB DRAWS AND SAYS SO. `POST /procurement/rfqs` and `POST /procurement/purchase-orders` both
+// exist, but a create FORM is a screen this drawing does not contain, so the button opens the
+// "coming soon" dialog rather than a half-built sheet (the `more.tsx` convention, PO 2026-09-04).
+
 import { useEffect, useState } from 'react';
-import { View } from 'react-native';
-import { get } from '../../api/client';
+import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { MaterialIcons } from '@expo/vector-icons';
 import { useT } from '../../i18n';
-import { formatMoney } from '@cos/financial';
+import { useComingSoon } from '../../lib/useComingSoon';
 import {
-  committedSpend,
-  openRfqCount,
-  urgentRfqCount,
-  type SpendRow,
-  type DeadlineRow,
-} from '../../lib/procurementKpi';
+  listPurchaseRequests,
+  listRfqs,
+  listPurchaseOrders,
+  listDeliveries,
+} from '../../api/procurement';
+import { PROC_ACTIVITY_FEED } from '../../lib/mockupFigures';
 import { ProjectPicker } from '../ProjectPicker';
 import { ProcurementInsight } from '../ProcurementInsight';
-import { useHomeStyles, KpiCard, Screen, asList, KpiRegion, countLabel } from './HomeKit';
+import { getMyProjects, type MyProject } from '../../api/projects';
+import { usePalette, type Palette } from '../../theme/usePalette';
+import { fontFamily, radius, spacing, typography } from '../../theme/tokens';
+import { Screen, KpiRegion } from './HomeKit';
 
-// ── PROCUREMENT — open RFQs · POs awaiting ack · deliveries ───────────────────
+/** The four queues, in the order the drawing lays them out and the work happens in. */
+type TileKey = 'requests' | 'rfqs' | 'awaitingPo' | 'deliveries';
+
+interface Counts {
+  requests: number | null;
+  rfqs: number | null;
+  awaitingPo: number | null;
+  deliveries: number | null;
+}
+
+const EMPTY: Counts = { requests: null, rfqs: null, awaitingPo: null, deliveries: null };
+
+const TILES: Array<{
+  key: TileKey;
+  icon: React.ComponentProps<typeof MaterialIcons>['name'];
+  tone: keyof Pick<Palette, 'warning' | 'accent' | 'muted' | 'success'>;
+}> = [
+  { key: 'requests', icon: 'assignment-late', tone: 'warning' },
+  { key: 'rfqs', icon: 'request-quote', tone: 'accent' },
+  { key: 'awaitingPo', icon: 'pending-actions', tone: 'muted' },
+  { key: 'deliveries', icon: 'local-shipping', tone: 'success' },
+];
+
+/** Same day in the device's own timezone — a delivery "today" is today where the reader is. */
+function isToday(iso: string, now: Date): boolean {
+  const d = new Date(iso);
+  return (
+    d.getFullYear() === now.getFullYear() &&
+    d.getMonth() === now.getMonth() &&
+    d.getDate() === now.getDate()
+  );
+}
+
 export default function ProcurementHome() {
-  const styles = useHomeStyles();
+  const palette = usePalette();
+  const styles = makeStyles(palette);
   const t = useT();
-  const [openRfqs, setOpenRfqs] = useState<number | null>(null);
-  const [urgentRfqs, setUrgentRfqs] = useState<number | null>(null);
-  const [awaitingAck, setAwaitingAck] = useState<number | null>(null);
-  const [spend, setSpend] = useState<string | null>(null);
-  const [deliveries, setDeliveries] = useState<number | null>(null);
-  // The Insights panel's report endpoint is project-scoped, so the dashboard asks which project
-  // (PO decision 2026-08-10). Empty until chosen — the panel stays idle rather than picking one.
+  const [counts, setCounts] = useState<Counts>(EMPTY);
+  const [projects, setProjects] = useState<MyProject[]>([]);
   const [insightProject, setInsightProject] = useState('');
-  // First-load flag: true until all three remote KPI fetches settle (offline failures included).
   const [loading, setLoading] = useState(true);
-  // Honest load progress: three independent fetches, counted as each lands (Rule 40).
+  // Honest load progress: four independent fetches, counted as each settles (Rule 40).
   const [settled, setSettled] = useState(0);
-  const LOAD_STEPS = 3;
+  const LOAD_STEPS = 4;
 
   useEffect(() => {
-    // The urgency window IS defined now — `lib/approvalUrgency.ts`, 24 hours — and RFQs carry a real
-    // `deadline` column, so "closing soon" is measured rather than approximated by the open count.
     const now = new Date();
-    const rfqsFetch = get<{ items?: DeadlineRow[] } | DeadlineRow[]>('/procurement/rfqs')
-      .then((res) => {
-        const rows = asList(res);
-        setOpenRfqs(openRfqCount(rows));
-        setUrgentRfqs(urgentRfqCount(rows, now));
-      })
-      .catch(() => {
-        /* offline — keep last */
-      });
-    // "POs awaiting acknowledgment" = status SENT (sent to vendor, not yet ACKNOWLEDGED).
-    // The same response also carries committed spend — summed with decimal.js, never `+` on numbers
-    // (lib/procurementKpi.ts), and from ONE request rather than a second round trip.
-    const posFetch = get<{ items?: SpendRow[] } | SpendRow[]>('/procurement/purchase-orders')
-      .then((res) => {
-        const rows = asList(res);
-        setAwaitingAck(rows.filter((p) => p.status === 'SENT').length);
-        setSpend(formatMoney(committedSpend(rows)));
-      })
-      .catch(() => {
-        /* offline — keep last */
-      });
-    const deliveriesFetch = get<{ items?: unknown[] } | unknown[]>('/procurement/deliveries')
-      .then((res) => setDeliveries(asList(res).length))
-      .catch(() => {
-        /* offline — keep last */
-      });
+    // `then(ok, fail)` rather than `finally`, and the difference is not style: `finally` returns a
+    // NEW promise that rejects when its subject does, and discarding it with `void` leaves an
+    // unhandled rejection on every offline fetch. The two-argument form settles either way.
     const step = <T,>(p: Promise<T>): Promise<T> => {
-      void p.finally(() => setSettled((n) => n + 1));
+      const bump = (): void => setSettled((n) => n + 1);
+      p.then(bump, bump);
       return p;
     };
-    void Promise.allSettled([step(rfqsFetch), step(posFetch), step(deliveriesFetch)]).then(() =>
-      setLoading(false),
-    );
+    const requests = step(listPurchaseRequests('SUBMITTED'))
+      .then((r) => setCounts((c) => ({ ...c, requests: r.total })))
+      .catch(() => {
+        /* offline — the tile keeps its dash rather than claiming a zero */
+      });
+    // Both RFQ counts and the awaiting-PO answer come from these two lists, so they are fetched once
+    // and read three ways rather than asked for three times.
+    const pipeline = step(Promise.all([listRfqs(), listPurchaseOrders()]))
+      .then(([rfqRes, poRes]) => {
+        const running = rfqRes.items.filter(
+          (r) => r.status === 'PUBLISHED' || r.status === 'EVALUATED',
+        ).length;
+        const ordered = new Set(
+          poRes.items.map((p) => (p as { rfq_id?: string }).rfq_id).filter(Boolean),
+        );
+        const awaitingPo = rfqRes.items.filter(
+          (r) => (r.status === 'AWARDED' || r.status === 'EVALUATED') && !ordered.has(r.rfq_id),
+        ).length;
+        setCounts((c) => ({ ...c, rfqs: running, awaitingPo }));
+      })
+      .catch(() => {
+        /* offline */
+      });
+    const deliveries = step(listDeliveries())
+      .then((r) =>
+        setCounts((c) => ({
+          ...c,
+          deliveries: r.items.filter((d) => isToday(d.delivered_at, now)).length,
+        })),
+      )
+      .catch(() => {
+        /* offline */
+      });
+    const mine = step(getMyProjects())
+      .then(setProjects)
+      .catch(() => {
+        /* offline — the picker stays empty and the panel stays idle */
+      });
+    void Promise.allSettled([requests, pipeline, deliveries, mine]).then(() => setLoading(false));
   }, []);
 
+  const soon = useComingSoon();
+
+  const projectName = projects.find((p) => p.project_id === insightProject)?.project_name;
+
   return (
-    <Screen testID="home-screen">
-      <KpiRegion loading={loading} settled={settled} steps={LOAD_STEPS}>
-        {/* The mockup's full-width spend tile. A dash until the request settles — never a 0, which
-            would read as "nothing is committed" rather than "not loaded". */}
-        <View style={styles.kpiRow}>
-          <KpiCard
-            testID="kpi-committed-spend"
-            value={spend ?? '—'}
-            label={t('home.procurement.committedSpend')}
-          />
+    // THE PAGE SCROLLS AND THE BUTTON DOES NOT. `<Screen />` without `scroll` is a plain flex View,
+    // so the feed and the button below it were clipped by the bottom nav — the first capture caught
+    // the FAB cut in half. The button is a sibling of the scroller, pinned, which is also what the
+    // drawing shows.
+    <View style={styles.root}>
+      <Screen testID="home-screen" scroll>
+        <KpiRegion loading={loading} settled={settled} steps={LOAD_STEPS}>
+          {/* The drawing's 2x2 bento. Two per row, each with its own accent strip, glyph, count and
+              the chevron that says the tile opens something. */}
+          <View style={styles.bento}>
+            {TILES.map((tile) => {
+              const value = counts[tile.key];
+              const tone = palette[tile.tone];
+              return (
+                <Pressable
+                  key={tile.key}
+                  testID={`kpi-${tile.key}`}
+                  accessibilityRole="button"
+                  accessibilityLabel={t(`home.procurement.tiles.${tile.key}`)}
+                  onPress={() => soon(`home.procurement.tiles.${tile.key}`)}
+                  style={[styles.tile, { borderLeftColor: tone }]}
+                >
+                  <View style={styles.tileHead}>
+                    <Text style={styles.tileLabel} numberOfLines={2}>
+                      {t(`home.procurement.tiles.${tile.key}`)}
+                    </Text>
+                    <MaterialIcons name={tile.icon} size={20} color={tone} />
+                  </View>
+                  <View style={styles.tileFoot}>
+                    {/* An em dash, never a 0, until the request settles: "not loaded" and "none" are
+                        different answers and a queue tile stating the second one is a lie. */}
+                    <Text style={[styles.tileValue, { color: tone }]}>
+                      {value === null ? '—' : String(value)}
+                    </Text>
+                    <MaterialIcons name="chevron-right" size={18} color={tone} />
+                  </View>
+                </Pressable>
+              );
+            })}
+          </View>
+        </KpiRegion>
+
+        <ProjectPicker selectedId={insightProject} onSelect={setInsightProject} />
+        <ProcurementInsight projectId={insightProject} projectLabel={projectName} />
+
+        {/* DRAWN, entire — see PROC_ACTIVITY_FEED in the register. Kept because the drawing's shape is
+            the point of the screen's lower half, and marked here rather than on screen. */}
+        <View style={styles.feed}>
+          <View style={styles.feedHead}>
+            <View style={styles.feedTitleRow}>
+              <MaterialIcons name="history" size={18} color={palette.accent} />
+              <Text style={styles.feedTitle}>{t('home.procurement.activity')}</Text>
+            </View>
+            <Pressable
+              testID="activity-view-all"
+              accessibilityRole="button"
+              accessibilityLabel={t('home.procurement.viewAll')}
+              onPress={() => soon('home.procurement.activity')}
+              style={styles.feedAll}
+            >
+              <Text style={styles.feedAllText}>{t('home.procurement.viewAll')}</Text>
+              <MaterialIcons name="chevron-right" size={14} color={palette.accent} />
+            </Pressable>
+          </View>
+          {PROC_ACTIVITY_FEED.value.map((row) => (
+            <View key={row.title} testID={`activity-${row.icon}`} style={styles.row}>
+              <View style={styles.rowPlate}>
+                <MaterialIcons name={row.icon} size={20} color={palette.accent} />
+              </View>
+              <View style={styles.rowBody}>
+                <Text style={styles.rowTitle} numberOfLines={1}>
+                  {row.title}
+                </Text>
+                <Text style={styles.rowMeta} numberOfLines={1}>
+                  {row.meta}
+                </Text>
+              </View>
+              <MaterialIcons name="chevron-right" size={20} color={palette.muted} />
+            </View>
+          ))}
         </View>
-        <View style={styles.kpiRow}>
-          <KpiCard
-            testID="kpi-open-rfqs"
-            value={countLabel(openRfqs)}
-            label={t('home.procurement.openRfqs')}
-          />
-          <KpiCard
-            testID="kpi-urgent-rfqs"
-            value={countLabel(urgentRfqs)}
-            label={t('home.procurement.urgentRfqs')}
-          />
-        </View>
-        <View style={styles.kpiRow}>
-          <KpiCard
-            testID="kpi-awaiting-ack"
-            value={countLabel(awaitingAck)}
-            label={t('home.procurement.awaitingAck')}
-          />
-        </View>
-        <View style={styles.kpiRow}>
-          <KpiCard
-            testID="kpi-deliveries"
-            value={countLabel(deliveries)}
-            label={t('home.procurement.deliveries')}
-          />
-        </View>
-      </KpiRegion>
-      <ProjectPicker selectedId={insightProject} onSelect={setInsightProject} />
-      <ProcurementInsight projectId={insightProject} />
-    </Screen>
+      </Screen>
+
+      {/* The drawing's create button. It draws and says so — see the header note. */}
+      <Pressable
+        testID="procurement-fab"
+        accessibilityRole="button"
+        accessibilityLabel={t('home.procurement.create')}
+        onPress={() => soon('home.procurement.create')}
+        style={styles.fab}
+      >
+        <MaterialIcons name="add" size={28} color={palette.onPrimary} />
+      </Pressable>
+    </View>
   );
+}
+
+function makeStyles(p: Palette) {
+  return StyleSheet.create({
+    root: { flex: 1, backgroundColor: p.bg },
+    bento: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+    tile: {
+      // Two per row: half the width, less half the gap.
+      flexBasis: '48%',
+      flexGrow: 1,
+      minHeight: 108,
+      justifyContent: 'space-between',
+      gap: spacing.sm,
+      padding: spacing.sm,
+      borderRadius: radius.lg,
+      borderWidth: 1,
+      borderColor: p.border,
+      borderLeftWidth: 4,
+      backgroundColor: p.surface,
+    },
+    tileHead: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.xs },
+    tileLabel: {
+      flex: 1,
+      color: p.muted,
+      fontFamily: fontFamily.medium,
+      fontSize: typography.label.fontSize,
+    },
+    tileFoot: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between' },
+    tileValue: { fontFamily: fontFamily.bold, fontSize: 32, lineHeight: 34 },
+    feed: { gap: spacing.sm },
+    feedHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+    feedTitleRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, flexShrink: 1 },
+    feedTitle: {
+      color: p.text,
+      fontFamily: fontFamily.semibold,
+      fontSize: typography.title.fontSize,
+    },
+    feedAll: { flexDirection: 'row', alignItems: 'center', gap: 2 },
+    feedAllText: { color: p.accent, fontFamily: fontFamily.medium, fontSize: 11 },
+    row: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+      minHeight: 64,
+      padding: spacing.sm,
+      borderRadius: radius.lg,
+      borderWidth: 1,
+      borderColor: p.border,
+      backgroundColor: p.surface,
+    },
+    rowPlate: {
+      width: 36,
+      height: 36,
+      alignItems: 'center',
+      justifyContent: 'center',
+      // A circle, not a plate on the radius scale — the drawing rounds it fully.
+      borderRadius: 999,
+      backgroundColor: `${p.accent}22`,
+    },
+    rowBody: { flex: 1 },
+    rowTitle: {
+      color: p.text,
+      fontFamily: fontFamily.medium,
+      fontSize: typography.label.fontSize,
+    },
+    rowMeta: { color: p.muted, fontFamily: fontFamily.regular, fontSize: 11, marginTop: 2 },
+    fab: {
+      position: 'absolute',
+      right: spacing.md,
+      bottom: spacing.md,
+      width: 56,
+      height: 56,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderRadius: 999,
+      backgroundColor: p.primary,
+    },
+  });
 }

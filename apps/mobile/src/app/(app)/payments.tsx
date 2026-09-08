@@ -81,6 +81,7 @@ import { useProjectStore } from '../../store/projectStore';
 import { spacedMoney } from '../../lib/compactMoney';
 import { FORECAST_CONFIDENCE, PAYMENT_DETAIL_EXTRAS } from '../../lib/mockupFigures';
 import { useT, useI18n } from '../../i18n';
+import { useComingSoon } from '../../lib/useComingSoon';
 import type { TranslateFn } from '../../i18n';
 import {
   fontFamily,
@@ -191,12 +192,7 @@ export default function PaymentsScreen(): React.JSX.Element {
     [busy, t],
   );
 
-  const soon = useCallback(
-    (labelKey: string) => {
-      Alert.alert(t(labelKey), t('more.comingSoon'));
-    },
-    [t],
-  );
+  const soon = useComingSoon();
 
   const renderItem = useCallback(
     ({ item }: { item: PaymentRow }) => (

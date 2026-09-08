@@ -74,6 +74,7 @@ import { LoadingBoundary } from '../../components/LoadingBoundary';
 import { spacedMoney } from '../../lib/compactMoney';
 import { DELIVERY_GRN, INVOICE_DISCREPANCY, THREE_WAY_MATCH } from '../../lib/mockupFigures';
 import { useT, useI18n } from '../../i18n';
+import { useComingSoon } from '../../lib/useComingSoon';
 import type { TranslateFn } from '../../i18n';
 import { fontFamily, radius, spacing, touchTarget, typography } from '../../theme/tokens';
 import { usePalette, useIsDark, type Palette } from '../../theme/usePalette';
@@ -150,12 +151,7 @@ export default function InvoicesScreen(): React.JSX.Element {
     void loadContext();
   }, [loadContext]);
 
-  const soon = useCallback(
-    (labelKey: string) => {
-      Alert.alert(t(labelKey), t('more.comingSoon'));
-    },
-    [t],
-  );
+  const soon = useComingSoon();
 
   /**
    * Approve or dispute, then refresh both the list and the counts.

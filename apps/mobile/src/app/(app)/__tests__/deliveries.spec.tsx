@@ -17,9 +17,24 @@ const client = require('../../../api/client') as {
   post: jest.Mock;
 };
 
+// THE REAL COLUMN SET. This fixture carried `{ delivery_id, status }` until 2026-09-08, and
+// `procurement.deliveries` has no status column — the old row rendered a `<StatusChip />` from a
+// field the API cannot send. What is here now is what the table actually holds.
 const DELIVERIES = [
-  { delivery_id: 'del-11111111-aaaa', status: 'PENDING' },
-  { delivery_id: 'del-22222222-bbbb', status: 'RECEIVED' },
+  {
+    delivery_id: 'del-11111111-aaaa',
+    po_id: 'po-1',
+    delivery_note: 'DN-0001',
+    delivered_at: '2026-09-01T03:30:00.000Z',
+    notes: null,
+  },
+  {
+    delivery_id: 'del-22222222-bbbb',
+    po_id: 'po-2',
+    delivery_note: null,
+    delivered_at: '2026-09-02T03:30:00.000Z',
+    notes: null,
+  },
 ];
 
 const POS = [
@@ -45,6 +60,21 @@ function renderScreen() {
   );
 }
 
+/**
+ * Render, then open the RECORD FORM.
+ *
+ * The screen gained the drawing's queue on 2026-09-08 and opens on it; the form these tests were
+ * written for is one tap away, behind the FAB. Every assertion below is unchanged — the form is
+ * unchanged — and this helper is the whole difference the restructure made to them.
+ */
+async function renderForm() {
+  const view = await renderScreen();
+  await waitFor(() => expect(view.getByTestId('delivery-fab')).toBeTruthy());
+  await fireEvent.press(view.getByTestId('delivery-fab'));
+  await waitFor(() => expect(view.getByTestId('delivery-record-screen')).toBeTruthy());
+  return view;
+}
+
 describe('DeliveriesScreen', () => {
   beforeEach(() => {
     client.get.mockReset();
@@ -52,21 +82,54 @@ describe('DeliveriesScreen', () => {
     client.post.mockReset();
   });
 
-  it('renders one row per recorded delivery', async () => {
+  it('opens on the queue, one card per recorded delivery', async () => {
     mockEndpoints();
 
-    const { getAllByTestId, getByText } = await renderScreen();
+    const { getByTestId } = await renderScreen();
 
-    await waitFor(() => expect(getAllByTestId('delivery-item')).toHaveLength(2));
-    // The row shows the first 8 characters of the delivery id.
-    expect(getByText('del-1111')).toBeTruthy();
-    expect(getByText('del-2222')).toBeTruthy();
+    await waitFor(() => expect(getByTestId('delivery-item-del-11111111-aaaa')).toBeTruthy());
+    expect(getByTestId('delivery-item-del-22222222-bbbb')).toBeTruthy();
+    // The record form is NOT what the screen opens on any more.
+    expect(getByTestId('deliveries-screen')).toBeTruthy();
+  });
+
+  it('counts what was received and draws the other two tiles as figures', async () => {
+    // RECEIVED is the row count and is real. IN TRANSIT and ON TIME are DRAWN, because
+    // `procurement.deliveries` has no status column and nothing records a promised arrival — see
+    // DELIVERY_STATUS in the register. The point of this test is that the real one moves with the
+    // data and the drawn ones do not.
+    mockEndpoints();
+
+    const { getByTestId } = await renderScreen();
+
+    await waitFor(() => expect(getByTestId('delivery-tile-received')).toHaveTextContent(/2/));
+    expect(getByTestId('delivery-tile-transit')).toBeTruthy();
+    expect(getByTestId('delivery-tile-ontime')).toBeTruthy();
+  });
+
+  it('names the purchase order each delivery was recorded against', async () => {
+    mockEndpoints();
+
+    const { getByTestId } = await renderScreen();
+
+    // `po_id` on the delivery, named from the PO list the screen already fetches for its picker.
+    await waitFor(() =>
+      expect(getByTestId('delivery-item-del-11111111-aaaa')).toHaveTextContent(/PO-0001/),
+    );
+  });
+
+  it('goes into the record form and back out again', async () => {
+    mockEndpoints();
+
+    const view = await renderForm();
+    await fireEvent.press(view.getByTestId('delivery-record-back'));
+    await waitFor(() => expect(view.getByTestId('deliveries-screen')).toBeTruthy());
   });
 
   it('offers a picker option per open purchase order', async () => {
     mockEndpoints();
 
-    const { getByTestId } = await renderScreen();
+    const { getByTestId } = await renderForm();
 
     await waitFor(() => expect(getByTestId('po-option-po-1')).toBeTruthy());
     expect(getByTestId('po-option-po-2')).toBeTruthy();
@@ -75,7 +138,7 @@ describe('DeliveriesScreen', () => {
   it('fetches the line items of the purchase order that was picked', async () => {
     mockEndpoints();
 
-    const { getByTestId } = await renderScreen();
+    const { getByTestId } = await renderForm();
 
     await waitFor(() => expect(getByTestId('po-option-po-2')).toBeTruthy());
     await fireEvent.press(getByTestId('po-option-po-2'));
@@ -85,13 +148,17 @@ describe('DeliveriesScreen', () => {
     );
   });
 
-  it('renders the screen with no rows when the requests fail offline', async () => {
+  it('renders the queue with no cards when the requests fail offline', async () => {
+    // Offline must leave the screen standing and empty, not blank and not crashed. Asserted on the
+    // LIST, which is where the screen opens — the form is unreachable in this state anyway, since
+    // its PO picker has nothing to pick.
     client.get.mockRejectedValue(new Error('offline'));
 
     const { getByTestId, queryAllByTestId } = await renderScreen();
 
     await waitFor(() => expect(getByTestId('deliveries-screen')).toBeTruthy());
     expect(queryAllByTestId('delivery-item')).toHaveLength(0);
+    expect(getByTestId('deliveries-empty')).toBeTruthy();
   });
 
   // ── RECORDING A DELIVERY ─────────────────────────────────────────────────────────────────────
@@ -108,7 +175,7 @@ describe('DeliveriesScreen', () => {
   it('gives each delivery its own identity, in the payload and in the queue', async () => {
     mockEndpoints();
 
-    const { getByTestId } = await renderScreen();
+    const { getByTestId } = await renderForm();
     await waitFor(() => expect(getByTestId('po-option-po-1')).toBeTruthy());
     await fireEvent.press(getByTestId('po-option-po-1'));
 
@@ -135,7 +202,7 @@ describe('DeliveriesScreen', () => {
   it('gives a second delivery on the same order a different identity', async () => {
     mockEndpoints();
 
-    const { getByTestId } = await renderScreen();
+    const { getByTestId } = await renderForm();
     await waitFor(() => expect(getByTestId('po-option-po-1')).toBeTruthy());
     await fireEvent.press(getByTestId('po-option-po-1'));
 
@@ -157,7 +224,7 @@ describe('DeliveriesScreen', () => {
       { line_id: 'l-2', description: 'Rebar 16mm', quantity: '200', unit: 'kg' },
     ]);
 
-    const { getByTestId } = await renderScreen();
+    const { getByTestId } = await renderForm();
     await waitFor(() => expect(getByTestId('po-option-po-1')).toBeTruthy());
     await fireEvent.press(getByTestId('po-option-po-1'));
     await waitFor(() => expect(getByTestId('delivery-qty-l-1')).toBeTruthy());
@@ -178,7 +245,7 @@ describe('DeliveriesScreen', () => {
       { line_id: 'l-1', description: 'Ready-mix concrete C30', quantity: '40', unit: 'm3' },
     ]);
 
-    const { getByTestId } = await renderScreen();
+    const { getByTestId } = await renderForm();
     await waitFor(() => expect(getByTestId('po-option-po-1')).toBeTruthy());
     await fireEvent.press(getByTestId('po-option-po-1'));
     await waitFor(() => expect(getByTestId('delivery-qty-l-1')).toBeTruthy());
@@ -201,7 +268,7 @@ describe('DeliveriesScreen', () => {
       return Promise.resolve({ items: [] });
     });
 
-    const { getByTestId } = await renderScreen();
+    const { getByTestId } = await renderForm();
     await waitFor(() => expect(getByTestId('po-option-po-1')).toBeTruthy());
     await fireEvent.press(getByTestId('po-option-po-1'));
 
@@ -220,7 +287,7 @@ describe('DeliveriesScreen', () => {
   it('omits the note entirely when none was written', async () => {
     mockEndpoints();
 
-    const { getByTestId } = await renderScreen();
+    const { getByTestId } = await renderForm();
     await waitFor(() => expect(getByTestId('po-option-po-1')).toBeTruthy());
     await fireEvent.press(getByTestId('po-option-po-1'));
 
@@ -235,7 +302,7 @@ describe('DeliveriesScreen', () => {
   it('confirms the delivery was recorded, and empties the form', async () => {
     mockEndpoints();
 
-    const { getByTestId } = await renderScreen();
+    const { getByTestId } = await renderForm();
     await waitFor(() => expect(getByTestId('po-option-po-1')).toBeTruthy());
     await fireEvent.press(getByTestId('po-option-po-1'));
 
@@ -253,7 +320,7 @@ describe('DeliveriesScreen', () => {
   it('shows no form until a purchase order is picked', async () => {
     mockEndpoints();
 
-    const { getByTestId, queryByTestId } = await renderScreen();
+    const { getByTestId, queryByTestId } = await renderForm();
     await waitFor(() => expect(getByTestId('po-option-po-1')).toBeTruthy());
 
     expect(queryByTestId('record-delivery-button')).toBeNull();
@@ -265,7 +332,7 @@ describe('DeliveriesScreen', () => {
   it('says which purchase order the form belongs to', async () => {
     mockEndpoints();
 
-    const { getByTestId } = await renderScreen();
+    const { getByTestId } = await renderForm();
     await waitFor(() => expect(getByTestId('po-option-po-1')).toBeTruthy());
 
     expect(getByTestId('po-option-po-1').props.accessibilityRole).toBe('radio');
@@ -284,7 +351,7 @@ describe('DeliveriesScreen', () => {
       { line_id: 'l-1', description: 'Ready-mix concrete C30', quantity: '40', unit: 'm3' },
     ]);
 
-    const { getByTestId } = await renderScreen();
+    const { getByTestId } = await renderForm();
     await waitFor(() => expect(getByTestId('po-option-po-1')).toBeTruthy());
     await fireEvent.press(getByTestId('po-option-po-1'));
     await waitFor(() => expect(getByTestId('delivery-qty-l-1')).toBeTruthy());
@@ -307,7 +374,7 @@ describe('DeliveriesScreen', () => {
       return Promise.resolve({ items: [] });
     });
 
-    const { getByText, queryByText } = await renderScreen();
+    const { getByText, queryByText } = await renderForm();
 
     await waitFor(() => expect(getByText('9f8a1234')).toBeTruthy());
     expect(queryByText('9f8a1234-0000-4000-8000-abcdefabcdef')).toBeNull();
@@ -320,7 +387,7 @@ describe('DeliveriesScreen', () => {
       { line_id: 'l-1', description: 'Ready-mix concrete C30', quantity: '40', unit: 'm3' },
     ]);
 
-    const { getByTestId, getByText } = await renderScreen();
+    const { getByTestId, getByText } = await renderForm();
     await waitFor(() => expect(getByTestId('po-option-po-1')).toBeTruthy());
     await fireEvent.press(getByTestId('po-option-po-1'));
 
@@ -342,7 +409,7 @@ describe('DeliveriesScreen', () => {
       return Promise.resolve({ items: [] });
     });
 
-    const { getByTestId, getByText } = await renderScreen();
+    const { getByTestId, getByText } = await renderForm();
     await waitFor(() => expect(getByTestId('po-option-po-1')).toBeTruthy());
     await fireEvent.press(getByTestId('po-option-po-1'));
 

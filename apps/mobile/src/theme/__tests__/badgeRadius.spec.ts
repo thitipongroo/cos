@@ -26,6 +26,12 @@ const SRC = join(__dirname, '..', '..');
  * dumping ground.
  */
 const CIRCLES: Readonly<Record<string, string>> = {
+  // NOT A BADGE AT ALL — a false positive the pattern cannot avoid. The regex looks for a name
+  // containing `tag`, and "s-TAG-e" does. `stageSeg` is one segment of the Orders screen's
+  // three-part delivery stepper (`app/(app)/orders.tsx`): a 4px-high bar whose radius is half its
+  // height, which is the same "999 means a circle, not a capsule" case as the dots below it. Listed
+  // here rather than renamed, because the style is named after what it is.
+  stageSeg: '4px-high stepper segment, radius half its height',
   extBadgeDot: '22px dot on an external-app tile',
   chipDot: '8px state dot inside a sync-queue chip',
   statusBadgeDot: '6px dot beside a user status',

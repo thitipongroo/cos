@@ -50,7 +50,7 @@
 // a dialog — never as a label on screen.
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { View, Text, Pressable, ScrollView, RefreshControl, StyleSheet, Alert } from 'react-native';
+import { View, Text, Pressable, ScrollView, RefreshControl, StyleSheet } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import {
   Decimal,
@@ -77,6 +77,7 @@ import {
   FORECAST_CONFIDENCE,
 } from '../../lib/mockupFigures';
 import { useT } from '../../i18n';
+import { useComingSoon } from '../../lib/useComingSoon';
 import type { TranslateFn } from '../../i18n';
 import {
   fontFamily,
@@ -147,12 +148,7 @@ export default function BudgetScreen(): React.JSX.Element {
     void load();
   }, [load]);
 
-  const soon = useCallback(
-    (labelKey: string) => {
-      Alert.alert(t(labelKey), t('more.comingSoon'));
-    },
-    [t],
-  );
+  const soon = useComingSoon();
 
   const currency = budget?.budget.total_budget_currency ?? 'THB';
   const spend = useMemo(() => summariseSpend(costs, currency), [costs, currency]);

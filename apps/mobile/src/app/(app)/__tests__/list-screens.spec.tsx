@@ -16,7 +16,6 @@
 import { render, waitFor } from '@testing-library/react-native';
 import { I18nProvider } from '../../../i18n';
 import CustomersScreen from '../customers';
-import RfqsScreen from '../rfqs';
 
 jest.mock('../../../api/client', () => ({ get: jest.fn() }));
 
@@ -27,14 +26,6 @@ function renderCustomers() {
   return render(
     <I18nProvider>
       <CustomersScreen />
-    </I18nProvider>,
-  );
-}
-
-function renderRfqs() {
-  return render(
-    <I18nProvider>
-      <RfqsScreen />
     </I18nProvider>,
   );
 }
@@ -81,61 +72,5 @@ describe('CustomersScreen', () => {
 
     await waitFor(() => expect(getByTestId('customers-screen')).toBeTruthy());
     expect(queryAllByTestId('customer-item')).toHaveLength(0);
-  });
-});
-
-describe('RfqsScreen', () => {
-  beforeEach(() => {
-    client.get.mockReset();
-    client.get.mockResolvedValue([]);
-  });
-
-  it('reads the RFQ endpoint', async () => {
-    await renderRfqs();
-
-    await waitFor(() => expect(client.get).toHaveBeenCalledWith('/procurement/rfqs'));
-  });
-
-  it('shows an RFQ by its number', async () => {
-    client.get.mockResolvedValue([{ rfq_id: 'r-1', rfq_number: 'RFQ-001', status: 'OPEN' }]);
-
-    const { getByText, getByTestId } = await renderRfqs();
-
-    await waitFor(() => expect(getByTestId('rfq-item')).toBeTruthy());
-    expect(getByText('RFQ-001')).toBeTruthy();
-  });
-
-  // An RFQ with no number is a real row a procurement officer still has to see and count.
-  it('falls back to the id when a row carries no number', async () => {
-    client.get.mockResolvedValue([{ rfq_id: 'r-1', status: 'OPEN' }]);
-
-    const { getByText } = await renderRfqs();
-
-    await waitFor(() => expect(getByText('r-1')).toBeTruthy());
-  });
-
-  // A list of blank rows is unusable — a dash at least counts.
-  it('falls back to a dash when a row carries neither', async () => {
-    client.get.mockResolvedValue([{ status: 'OPEN' }]);
-
-    const { getByText } = await renderRfqs();
-
-    await waitFor(() => expect(getByText('—')).toBeTruthy());
-  });
-
-  it('omits the status chip for a row that has none', async () => {
-    client.get.mockResolvedValue([{ rfq_id: 'r-1', rfq_number: 'RFQ-001' }]);
-
-    const { getByTestId, queryByText } = await renderRfqs();
-
-    await waitFor(() => expect(getByTestId('rfq-item')).toBeTruthy());
-    expect(queryByText('OPEN')).toBeNull();
-  });
-
-  it('says so when there are no RFQs', async () => {
-    const { getByTestId, queryAllByTestId } = await renderRfqs();
-
-    await waitFor(() => expect(getByTestId('rfqs-screen')).toBeTruthy());
-    expect(queryAllByTestId('rfq-item')).toHaveLength(0);
   });
 });

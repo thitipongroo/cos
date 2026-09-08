@@ -743,7 +743,16 @@
       "awaitingAck": "POs awaiting ack",
       "deliveries": "Deliveries",
       "committedSpend": "Total committed spend",
-      "urgentRfqs": "RFQs closing within 24h"
+      "urgentRfqs": "RFQs closing within 24h",
+      "tiles": {
+        "requests": "PRs awaiting approval",
+        "rfqs": "RFQs in progress",
+        "awaitingPo": "Awaiting PO",
+        "deliveries": "Deliveries today"
+      },
+      "activity": "Recent activity",
+      "viewAll": "View all",
+      "create": "Create"
     },
     "pm": {
       "title": "Project Overview",
@@ -1563,13 +1572,62 @@
   "procurement": {
     "rfqs": {
       "title": "RFQs",
-      "empty": "No RFQs"
+      "empty": "No RFQs",
+      "subtitle": "Requests for quotation you are running",
+      "searchPlaceholder": "Search RFQ or project",
+      "all": "All",
+      "status": {
+        "PUBLISHED": "Open",
+        "EVALUATED": "Evaluated",
+        "AWARDED": "Awarded",
+        "CANCELLED": "Cancelled"
+      },
+      "analysis": "Price comparison",
+      "analysisBody": "The lowest quote on this queue sits {percent} under the estimate. Close the award before the market moves.",
+      "source": "Source: RFQs and their quotations",
+      "demand": "Required: {qty}",
+      "remaining": "{hours}h remaining",
+      "closed": "Deadline passed",
+      "award": "Award",
+      "viewQuotes": "View quotes",
+      "compare": "Compare specifications",
+      "savings": "Savings target",
+      "savingsBody": "Saved this month: THB {amount} ({percent} average)",
+      "create": "New RFQ"
     },
     "orders": {
       "title": "Purchase Orders",
       "empty": "No purchase orders",
       "lineItems": "Line items",
-      "noLines": "No line items"
+      "noLines": "No line items",
+      "subtitle": "Orders you are running",
+      "active": "{count, plural, one {# active order} other {# active orders}}",
+      "searchPlaceholder": "Search by number or vendor",
+      "all": "All",
+      "status": {
+        "DRAFT": "Draft",
+        "PENDING_APPROVAL": "Pending",
+        "APPROVED": "Approved",
+        "SENT": "Sent",
+        "ACKNOWLEDGED": "Acknowledged",
+        "PARTIALLY_DELIVERED": "Partly delivered",
+        "FULLY_DELIVERED": "Delivered",
+        "INVOICED": "Invoiced",
+        "PAID": "Paid",
+        "DISPUTED": "Disputed"
+      },
+      "stage": {
+        "0": "Ordered",
+        "1": "Delivered",
+        "2": "Invoiced"
+      },
+      "recorded": "{count, plural, one {# delivery recorded} other {# deliveries recorded}}",
+      "delayAlert": "Delay alert",
+      "delayBody": "{count} orders risk a {hours}-hour delay from congestion at {place}.",
+      "approve": "Approve",
+      "approveFailed": "The approval did not go through. Orders cannot be approved offline.",
+      "decline": "Decline",
+      "create": "New order"
     },
     "deliveries": {
       "title": "Deliveries",
@@ -1580,7 +1638,16 @@
       "empty": "No deliveries",
       "selectPo": "Select a purchase order",
       "ordered": "Ordered {qty} {unit}",
-      "linesOffline": "PO lines unavailable (offline) — note-only record"
+      "linesOffline": "PO lines unavailable (offline) — note-only record",
+      "subtitle": "What is arriving and what has been received",
+      "tiles": {
+        "received": "Received",
+        "transit": "In transit",
+        "onTime": "On time"
+      },
+      "logistics": "Logistics watch",
+      "logisticsBody": "Traffic is running {speed}; arrivals are trending {minutes} minutes late. Warn the site so the pour queue can be moved.",
+      "receivedAt": "Received {when}"
     }
   },
   "notifications": {

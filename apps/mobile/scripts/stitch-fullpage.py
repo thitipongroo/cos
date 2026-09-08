@@ -124,6 +124,21 @@ def measure(prev_c, c_c):
 
 win_rows = WIN // 3                    # window height in downsampled rows
 
+# A PAGE THAT DID NOT SCROLL NEEDS NO FAB HANDLING AT ALL, and doing it anyway draws the button
+# twice. The erase recovers what is behind a fixed control from a LATER shot — so on a page that
+# fits one viewport there is no later shot to recover from, the button stays where it is, and the
+# composite below then pastes a second one over the page. That is what put a blue quarter-circle
+# beside the real button on `01-po-delivery`. Measured, not assumed: if every pairwise scroll is
+# below the 8px floor the stitch loop already treats as "bottom reached", nothing moved.
+if fab is not None:
+    conts_probe = [cont(s) for s in shots]
+    moved = any(
+        measure(conts_probe[i - 1], conts_probe[i])[0] >= 8 for i in range(1, len(shots))
+    )
+    if not moved:
+        print("  fab: page fits one viewport — left where it is, drawn once by the shot itself")
+        fab = None
+
 if fab is not None:
     x0, y0, x1, y1 = fab
     conts = [cont(s) for s in shots]

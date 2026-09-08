@@ -103,6 +103,15 @@ export async function fetchVendorScore(vendorId: string): Promise<VendorScore> {
 
 interface Paged<T> {
   items?: T[];
+  /**
+   * The server's own count of rows matching the filter, not the length of this page.
+   *
+   * Declared 2026-09-08. `listAll*` in `procurement.service.ts` has always returned it beside
+   * `items`; this type simply did not say so, and a chip counting `items.length` on a paged list
+   * counts the page. OPTIONAL for QM-9 — an older deployment omits it and the caller falls back to
+   * the rows it actually has.
+   */
+  total?: number;
 }
 
 export interface PurchaseOrderRow {
@@ -294,4 +303,133 @@ export async function approveVendorInvoice(invoiceId: string): Promise<void> {
  */
 export async function disputeVendorInvoice(invoiceId: string): Promise<void> {
   await post(`/procurement/vendor-invoices/${encodeURIComponent(invoiceId)}/dispute`, {});
+}
+
+// ── PROCUREMENT_OFFICER screens (mockup/mobile/10_proc_officer) ──────────────────────────────────
+//
+// ONE PAGE OF 100 IS THE WHOLE TENANT HERE, and that is measured rather than hoped: the seeded
+// tenant holds 45 RFQs, 42 purchase orders, 55 purchase requests and 32 deliveries, and the
+// controller's `parseLimit` caps at 100 (`procurement.controller.ts:58`). Asking for 100 is
+// therefore one request per list, not a page of one. If a tenant ever exceeds it the screens show
+// the first 100 and the `total` beside them will not agree with the rows — which is visible, unlike
+// a silently truncated list.
+
+/** `procurement.purchase_requests`. The status set is declared in `procurement.rows.ts`. */
+export interface PurchaseRequestRow {
+  pr_id: string;
+  pr_number: string;
+  project_id: string;
+  status: 'DRAFT' | 'SUBMITTED' | 'APPROVED' | 'REJECTED' | 'PO_CREATED';
+  required_date: string | null;
+  created_at: string;
+}
+
+/** `procurement.deliveries`. NOTE WHAT IS ABSENT: there is no status column on this table. */
+export interface DeliveryRow {
+  delivery_id: string;
+  po_id: string;
+  delivery_note: string | null;
+  delivered_at: string;
+  notes: string | null;
+}
+
+// THERE IS NO WAY TO COUNT AN RFQ'S QUOTATIONS FROM A LIST, and this is where that was found out.
+//
+// `GET /procurement/rfqs/:rfqId/quotations` reads like one — it is a `@Get`, its summary says
+// "Compare quotations for an RFQ (sorted by price ASC)", and a `fetchRfqQuotations` was written
+// against it on 2026-09-08 to put a real "3 quotes received" on every RFQ card.
+//
+// IT IS NOT A READ. `ProcurementService.compareQuotations` asserts the RFQ is `CLOSED`, throws 422
+// if it holds no quotations, and then **marks the lowest one selected**
+// (`markQuotationSelected`). It is a step of the award workflow wearing a GET.
+//
+// Calling it once per row would have thrown 422 for every RFQ not in `CLOSED` — which is why the
+// first capture showed a column of zeros — and, on any RFQ that WAS closed, would have silently
+// awarded it by rendering a list. Nothing was mutated: the seeded tenant holds no CLOSED RFQ, so
+// all 45 calls threw. The function and its row type went the same day.
+//
+// What would make the count real: a read-only `GET` returning quotations for an RFQ, or a count on
+// the RFQ list itself. Until then the card shows what it can prove.
+
+function page<T>(res: Paged<T> | T[]): { items: T[]; total: number } {
+  if (Array.isArray(res)) return { items: res, total: res.length };
+  const items = res.items ?? [];
+  return { items, total: typeof res.total === 'number' ? res.total : items.length };
+}
+
+const LIMIT = 100;
+
+export async function listPurchaseRequests(status?: string): Promise<{
+  items: PurchaseRequestRow[];
+  total: number;
+}> {
+  return page(
+    await get<Paged<PurchaseRequestRow> | PurchaseRequestRow[]>('/procurement/purchase-requests', {
+      limit: String(LIMIT),
+      ...(status === undefined ? {} : { status }),
+    }),
+  );
+}
+
+export async function listRfqs(status?: string): Promise<{ items: RfqRow[]; total: number }> {
+  return page(
+    await get<Paged<RfqRow> | RfqRow[]>('/procurement/rfqs', {
+      limit: String(LIMIT),
+      ...(status === undefined ? {} : { status }),
+    }),
+  );
+}
+
+export async function listPurchaseOrders(status?: string): Promise<{
+  items: PurchaseOrderRow[];
+  total: number;
+}> {
+  return page(
+    await get<Paged<PurchaseOrderRow> | PurchaseOrderRow[]>('/procurement/purchase-orders', {
+      limit: String(LIMIT),
+      ...(status === undefined ? {} : { status }),
+    }),
+  );
+}
+
+export async function listDeliveries(): Promise<{ items: DeliveryRow[]; total: number }> {
+  return page(
+    await get<Paged<DeliveryRow> | DeliveryRow[]>('/procurement/deliveries', {
+      limit: String(LIMIT),
+    }),
+  );
+}
+
+/**
+ * `vendor_id` -> `vendor_name`, for the screens that list an order or a delivery.
+ *
+ * WHY THIS AND NOT A BACKEND JOIN. The FINANCE round added `vendor_name` to the vendor-invoice
+ * query (ADR-100) because finance may not read procurement's tables at all. These screens ARE
+ * procurement, and `GET /procurement/vendors/directory` already returns every active vendor with its
+ * name — so one request builds the index and no schema surface is added for it.
+ *
+ * ONE REQUEST FOR THE WHOLE SCREEN, not one per row.
+ */
+export async function vendorIndex(): Promise<Map<string, string>> {
+  const rows = await fetchVendorDirectory();
+  return new Map(rows.map((v) => [v.vendor_id, v.vendor_name]));
+}
+
+/**
+ * `project_id` -> `project_name`, for the screens that name the project on a card.
+ *
+ * `GET /projects`, NOT `GET /projects/mine`, and the difference is the whole point. `mine` reads
+ * `projects.project_members`, and **the seeded procurement officer is a member of none** — verified
+ * against the database, 0 rows — which is not a seeding gap: this role buys for the whole tenant and
+ * is not staffed onto sites. Asking "which projects am I on" returned nothing and the first capture
+ * came back with no project named anywhere.
+ *
+ * The tenant list carries no `@Roles` and is open to any authenticated caller
+ * (`project.controller.ts` `@Get()`), which is the right question for a cross-project queue.
+ */
+export async function projectNameIndex(): Promise<Map<string, string>> {
+  const res = await get<{ items?: Array<{ project_id: string; project_name: string }> }>(
+    '/projects',
+  );
+  return new Map((res.items ?? []).map((p) => [p.project_id, p.project_name] as const));
 }

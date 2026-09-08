@@ -493,3 +493,85 @@ boundary rather than an oversight.
 Thirty-one before, thirty after — counted, not recalled:
 `grep -c "^export const [A-Z_]* = figure(" apps/mobile/src/lib/mockupFigures.ts`. The header comment
 in that file records the deletion beside the eight entries the FINANCE set added four days earlier.
+
+## Amendment — 2026-09-08 (sixth): the PROCUREMENT_OFFICER set, and the six figures that were columns
+
+`mockup/mobile/10_proc_officer/` — six drawings: a dashboard, RFQs, orders, deliveries, the drawer
+and a settings sheet. The register goes from thirty entries to forty.
+
+### What was added — ten entries
+
+| Entry                 | Screen     | What it draws                                                     |
+| --------------------- | ---------- | ----------------------------------------------------------------- |
+| `PROC_ACTIVITY_FEED`  | Home       | The two "recent activity" rows                                    |
+| `RFQ_MATERIAL`        | RFQs       | The material title and quantity on every card                     |
+| `RFQ_PRICE_DELTA`     | RFQs       | "−4.2%" against the estimate                                      |
+| `RFQ_RECOMMENDATION`  | RFQs       | The recommended vendor, 94/100, 98% on time                       |
+| `PROC_SAVINGS`        | RFQs       | The savings target and its "+12% MoM"                             |
+| `PO_DELAY_ALERT`      | Orders     | "3 POs at risk of a 72-hour delay at Port of Rayong"              |
+| `DELIVERY_STATUS`     | Deliveries | Every status pill, the in-transit and due tiles, the on-time rate |
+| `DELIVERY_GRN_NUMBER` | Deliveries | The goods-receipt numbers                                         |
+| `DELIVERY_TELEMETRY`  | Deliveries | Road position, distance, driver, plate, average speed             |
+| `DELIVERY_SIGNOFF`    | Deliveries | The inspector's signature and the 60/60 count                     |
+
+### `procurement.deliveries` has no status column, and that is one entry rather than six
+
+The largest single entry here is `DELIVERY_STATUS`, and it is worth reading as one fact rather than
+as a list. The table is `delivery_id, po_id, tenant_id, delivery_note, delivered_at, received_by,
+notes`. **A row exists once someone records a delivery.** So the table can say "this arrived" and has
+no way to say "this is on its way" — which makes TRANSIT, INSPECTION and COMPLETED, the in-transit
+tile, the due tile and the on-time percentage all the same missing column, not six missing figures.
+A status column plus a promised arrival time deletes the entry whole.
+
+### FIVE FIGURES CAME OFF THE LIST BEFORE THEY REACHED IT
+
+This set put back more than any before it, and each one is worth naming because each was about to be
+drawn:
+
+- **every vendor name on an order and a delivery** — `GET /procurement/vendors/directory` already
+  returns every active vendor, so one request builds a client-side index. **No backend join**,
+  unlike the FINANCE invoice case of the same week (ADR-100): that screen is finance and may not
+  read procurement's tables; this one IS procurement
+- **the RFQ countdown** — `procurement.rfqs.deadline` is a real `timestamptz`, so "18h remaining" is
+  measured
+- **a purchase order's ETA** — `purchase_orders.delivery_date`, and nothing is drawn where it is null
+- **the project name on every card** — `getMyProjects()`, indexed client-side
+- **purchase requests awaiting approval** — real the moment the seed grew `SUBMITTED` rows
+
+### THE DELIVERY PERCENTAGE WAS REFUSED RATHER THAN DRAWN, and that is the notable decision
+
+`03_orders/01_po_order` puts "Delivery Progress · 65%" and a filled bar on every order card. The
+figure is COMPUTABLE — `delivery_items.quantity_received` against `po_line_items.quantity` — and
+reaching both for one row costs two requests, 84 for the seeded tenant, on a screen that renders in
+one.
+
+It was not added to this register. The card shows the STAGE the order is genuinely at, from its own
+status and its own delivery count, and **prints no number at all**. Drawing a 65% would have been the
+easy option and would have put a fabricated MEASUREMENT on a purchasing screen — a percentage reads
+as counted in a way a status word does not. An aggregate endpoint returning received-against-ordered
+per PO is what would put the bar back with a number on it.
+
+### A SIXTH WAS ATTEMPTED, WAS WRONG, AND IS WORTH MORE THAN THE FIVE ABOVE
+
+The quotation count per RFQ was going to be the sixth. `GET /procurement/rfqs/:rfqId/quotations`
+looks exactly like its source: a `@Get`, summary "Compare quotations for an RFQ (sorted by price
+ASC)", `@Roles(...READ_ROLES)`. A per-row fetch was written against it and the first capture came
+back with a column of zeros.
+
+**It is not a read.** `ProcurementService.compareQuotations` asserts the RFQ is `CLOSED`, throws 422
+when it holds no quotations, and then **marks the lowest one selected**. It is a step of the award
+workflow wearing a GET. The zeros were 45 rejected calls; on a tenant holding a CLOSED RFQ, opening
+the list would have awarded it.
+
+Nothing was mutated — the seeded tenant has no CLOSED RFQ — and the call came out the same day.
+**Neither the count nor the lowest price was moved into this register in its place.** A figure nobody
+can fetch is not one to invent on a screen whose job is to say how much interest an RFQ has attracted;
+the card shows what it can prove. A read-only quotations endpoint, or a count on the RFQ list, brings
+both back as real.
+
+The lesson generalises past this entry: reading a route's decorator is not reading the route.
+
+### The register is at forty
+
+Counted, not recalled: `grep -c "^export const [A-Z_]* = figure(" apps/mobile/src/lib/mockupFigures.ts`.
+Thirty before, ten added, none removed.

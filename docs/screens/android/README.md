@@ -2396,3 +2396,56 @@ on 2026-09-08 and reverted the same day when both suites caught it; the join now
 ([ADR-100](../../architecture/adr/100-vendor-name-joins-in-procurement.md)). If the vendor-invoice
 request fails, the queue still lists every payment with an em dash where a name would be — so a
 frame full of em dashes means procurement was unreachable, not that the queue is broken.
+
+## Procurement Officer — four tabs, six screens — [`10-proc-officer/`](10-proc-officer/)
+
+`mockup/mobile/10_proc_officer/` — the role that turns a request into an order and receives what
+arrives. Captured 2026-09-08 as `+66811000005` (Nattapong Wongchai, department Procurement) over
+**Path A, phone OTP**: `MFA_ROLES` in `provision-keycloak-demo.ts` is `{TENANT_ADMIN, FINANCE}` and
+this role is in neither, so the browser-driven flow the FINANCE frames needed does not apply here.
+
+The bar is `Home · RFQs · Orders · Deliveries` and was already so — `roleTabs.ts` has given this role
+those four since the 2026-08-10 decision, and the drawings agree with it, so no navigation changed.
+
+| Directory                                          | What the frames show                                                                                                                                                                                                                                                                                                                                                              |
+| -------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [`01-Home/`](10-proc-officer/01-Home/)             | The dashboard (`01`): the 2×2 queue bento — purchase requests awaiting approval, RFQs running, awards with no order open yet, deliveries arriving today — over the vendor-analysis module and the drawn activity feed.                                                                                                                                                            |
+| [`02-RFQs/`](10-proc-officer/02-RFQs/)             | The RFQ queue (`01`): search, status chips with bracketed counts, the price-comparison banner, and a card per RFQ carrying its project, its deadline countdown and the action its own state allows. **No quote count** — see below.                                                                                                                                               |
+| [`03-Orders/`](10-proc-officer/03-Orders/)         | The purchase orders (`01`): search, status chips, the drawn delay alert, and a card per order with the vendor, the money, the project and the stage the delivery has genuinely reached. Approve appears only on `PENDING_APPROVAL`, which is the one state `POST /purchase-orders/:poId/approve` accepts, and **is not pressed in the capture** — it would spend a demo approval. |
+| [`04-Deliveries/`](10-proc-officer/04-Deliveries/) | The delivery queue (`01`): the received count over two drawn tiles, the drawn logistics alert, and a card per recorded delivery naming the order it was received against. The RECORD FORM (`02`) is behind the card's own button — pick a purchase order, enter the quantity received per line, attach photos, submit offline-queued.                                             |
+| [`05-Drawer/`](10-proc-officer/05-Drawer/)         | The navigation drawer (`01`) and account settings (`02`) — the shared components every role gets, not a per-role copy.                                                                                                                                                                                                                                                            |
+
+**The delivery cards carry no percentage, and that is the deliberate part of these frames.**
+`03_orders/01_po_order` draws "Delivery Progress · 65%" on every order. The number is computable —
+`delivery_items.quantity_received` against `po_line_items.quantity` — at two requests per row, 84 for
+this tenant, on a screen that renders in one. So the card shows the STAGE from the order's own status
+and prints no number. A percentage reads as counted in a way a status word does not, and a drawn one
+would have been a fabricated measurement on a purchasing screen.
+
+**Ten figures in these frames are drawn** and are listed in
+[ADR-099](../../architecture/adr/099-mockup-figures-without-a-data-source.md)'s sixth amendment: the
+activity feed, the RFQ material titles and price deltas, the vendor recommendation, the savings
+target, the delay alert, and — the biggest single one — every delivery status pill, because
+`procurement.deliveries` has no status column at all. A row exists once someone records a delivery,
+so the table can say "this arrived" and cannot say "this is on its way".
+
+**The RFQ cards carry no quote count, and the reason is a defect worth knowing about.**
+`GET /procurement/rfqs/:rfqId/quotations` is a `@Get` whose summary reads "Compare quotations for an
+RFQ", and a per-row fetch was written against it. It is not a read: `compareQuotations` asserts the
+RFQ is `CLOSED`, 422s on one with no quotations, and **marks the lowest one selected**. Opening the
+list would have awarded every closed RFQ in the tenant. The seeded tenant holds none, so all 45 calls
+threw and nothing was mutated — a column of zeros in the first capture was what said so. The call was
+removed and no figure was drawn in its place.
+
+**Everything else is live data** from the seeded tenant: the four queue counts, every RFQ number,
+status and deadline, every order's number, status, amount and vendor, every delivery's note, date and
+purchase order, and both project names. Five figures the first draft was going to draw turned out to
+be reachable and are live — the vendor names, the RFQ countdown, the order ETAs, the project names,
+and the pending-request count.
+
+**The drawer does not match its drawing, on purpose.** `01_po_navigation_drawer` lists the four
+bottom-tab destinations again and adds a materials Marketplace and a site Stock ledger; neither
+exists. The app's drawer is one shared `<NavigationDrawer />` whose per-role link set
+`drawerLinks.ts` derives from spec §6.4 — projects, reports, material requests, tasks, invoices,
+vendors and budget for this role — and a mockup's menu is not re-exported over it (product-owner
+decision 2026-09-07). ADR-085: style is the drawing's, composition is not.

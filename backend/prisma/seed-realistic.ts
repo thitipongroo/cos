@@ -882,6 +882,11 @@ async function seedProject(tx: Tx, p: SeedProject): Promise<void> {
     `DELETE FROM procurement.quotations WHERE rfq_id IN (SELECT rfq_id FROM procurement.rfqs WHERE project_id = '${pid}')`,
   );
   await tx.$executeRawUnsafe(`DELETE FROM procurement.rfqs WHERE project_id = '${pid}'`);
+  // pr_line_items before purchase_requests, as po_line_items goes before purchase_orders above.
+  // Nothing wrote this table until 2026-09-08, which is why it was missing from both wipe paths.
+  await tx.$executeRawUnsafe(
+    `DELETE FROM procurement.pr_line_items WHERE pr_id IN (SELECT pr_id FROM procurement.purchase_requests WHERE project_id = '${pid}')`,
+  );
   await tx.$executeRawUnsafe(
     `DELETE FROM procurement.purchase_requests WHERE project_id = '${pid}'`,
   );
@@ -1067,6 +1072,50 @@ async function seedProject(tx: Tx, p: SeedProject): Promise<void> {
                 ${po.paid ? 'PROCESSED' : 'PENDING'}::finance."PaymentStatus", ${U('fin')}::uuid)
         ON CONFLICT (payment_id) DO UPDATE SET status = EXCLUDED.status`;
     }
+  }
+  // ── Purchase requests that are genuinely AWAITING APPROVAL ──────────────────────────────────
+  //
+  // Added 2026-09-08 (PO decision) for the same reason the pending `finance.payments` rows above
+  // exist: a queue that is always empty cannot be photographed doing its job. Every purchase request
+  // seeded by the loop above is `PO_CREATED`, because each one is the first link of a finished
+  // PR -> RFQ -> PO -> delivery chain, so the PROCUREMENT_OFFICER home tile that counts requests
+  // awaiting approval read 0 on a fully seeded database.
+  //
+  // THESE STOP AT `SUBMITTED` AND HAVE NOTHING BEHIND THEM. No RFQ, no purchase order, no delivery,
+  // no cost transaction — a request awaiting approval has not been ordered yet, and that is the
+  // whole point of the state. The alternative, flipping a finished chain's PR back to `SUBMITTED`,
+  // would leave a "pending" request sitting on top of a paid order; the Orders screen renders that
+  // same order and the contradiction would be on screen in two tabs at once.
+  //
+  // `SUBMITTED`, NOT `DRAFT`. The status set is declared in TypeScript rather than as a database
+  // enum — `procurement.rows.ts` `PurchaseRequestRow['status']` is
+  // DRAFT | SUBMITTED | APPROVED | REJECTED | PO_CREATED — and a draft is a request nobody has sent.
+  // Only a submitted one is waiting on a person.
+  //
+  // THEY CARRY LINE ITEMS, and this seed had never written `procurement.pr_line_items` at all. A
+  // request with no lines renders as an empty card, and that table is also the only real source in
+  // the schema for the material name the RFQ screen shows (`rfqs` carries no description column).
+  const pendingPrDefs: { key: string; mat: string; qty: number; due: number }[] = [
+    { key: 'pend1', mat: 'db12', qty: 18, due: 21 },
+    { key: 'pend2', mat: 'ply', qty: 640, due: 14 },
+    { key: 'pend3', mat: 'conduit', qty: 1200, due: 30 },
+  ];
+  // Two on most projects, three on the longest-running one, so the tenant-wide count is neither
+  // round nor uniform. Dated from the project's own start like every other row in this file — a
+  // fixed calendar anchor would put a request before the project it belongs to existed.
+  const pendingCount = spanDays > 80 ? 3 : 2;
+  for (const [prIndex, pr] of pendingPrDefs.slice(0, pendingCount).entries()) {
+    const prId = uid(`pr-pending/${p.key}/${pr.key}`);
+    const material = MATERIALS.find((m) => m.key === pr.mat)!;
+    // Raised recently — a request that has been waiting since the project started would read as
+    // forgotten rather than as pending.
+    const raisedAt = addDays(TODAY, -(prIndex * 3 + 2));
+    await tx.$executeRaw`INSERT INTO procurement.purchase_requests (pr_id, project_id, tenant_id, pr_number, status, requested_by, required_date, created_at, updated_at)
+      VALUES (${prId}::uuid, ${pid}::uuid, ${TENANT_ID}::uuid, ${`PR-${p.code}-${pr.key.toUpperCase()}`}, 'SUBMITTED', ${U('proc')}::uuid, ${addDays(TODAY, pr.due)}::date, ${raisedAt}::timestamptz, ${raisedAt}::timestamptz)
+      ON CONFLICT (pr_id) DO UPDATE SET status = EXCLUDED.status`;
+    await tx.$executeRaw`INSERT INTO procurement.pr_line_items (line_id, pr_id, tenant_id, material_id, description, quantity, unit, sort_order)
+      VALUES (${uid(`prli/${p.key}/${pr.key}`)}::uuid, ${prId}::uuid, ${TENANT_ID}::uuid, ${M(pr.mat)}::uuid, ${material.name}, ${pr.qty}, ${material.unit}, 1)
+      ON CONFLICT (line_id) DO NOTHING`;
   }
   // Progress claims — งวดงาน, what a project of this size has actually certified and paid to date
   // beyond the handful of material orders above. Typed `INVOICE`, which is what a certified progress
@@ -1618,9 +1667,18 @@ async function wipeTenant(tx: Tx): Promise<void> {
     'procurement.purchase_orders',
     'procurement.quotations',
     'procurement.rfqs',
+    'procurement.pr_line_items',
     'procurement.purchase_requests',
     'site_ops.issues',
     'site_ops.inspections',
+    // AFTER inspections, which reference a checklist, and it must be in this list at all: the seed
+    // CREATES site_ops.safety_checklists (see seedSafety below) and never removed them, while
+    // `safety_checklists_project_id_fkey` is ON DELETE RESTRICT. So the very last statement of the
+    // wipe — DELETE FROM projects.projects — failed on the second run of this file against any
+    // database, and because the whole wipe is one transaction, EVERYTHING it had just deleted came
+    // back and nothing new was written. The seed reported a Prisma error and left the database
+    // exactly as it found it. Added 2026-09-08.
+    'site_ops.safety_checklists',
     'site_ops.incidents',
     'site_ops.material_consumptions',
     'site_ops.permits',

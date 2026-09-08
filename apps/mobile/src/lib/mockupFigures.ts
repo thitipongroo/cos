@@ -496,3 +496,145 @@ export const UNBUILT_MORE_TILES = figure(
   ['strategicBim', 'carbon', 'globalMap'] as const,
   'the BIM integration, a carbon endpoint, and project coordinates — one per tile',
 );
+
+// ── PROCUREMENT_OFFICER (10_proc_officer) ────────────────────────────────────
+//
+// EXTENDED 2026-09-08 for `mockup/mobile/10_proc_officer/`, under the same standing rule: draw what
+// the mockup draws, mark it COMING SOON in a code comment and never on screen.
+//
+// THIS SET PUT MORE BACK THAN IT ADDED, harder than the FINANCE one did. Six figures were about to
+// be drawn and turned out to be reachable:
+//   · the quotation count per RFQ      `GET /procurement/rfqs/:rfqId/quotations`
+//   · every vendor name on an order    `GET /procurement/vendors/directory`, indexed client-side
+//   · delivery progress per PO         `delivery_items.quantity_received` / `po_line_items.quantity`
+//   · the RFQ countdown                `procurement.rfqs.deadline` is a real column
+//   · a PO's ETA                       `procurement.purchase_orders.delivery_date`
+//   · requests awaiting approval       real once the seed grew `SUBMITTED` rows (PO 2026-09-08)
+// What is below is what remains after those.
+
+/**
+ * The home activity feed — "ปูนซีเมนต์ถึงไซต์ A แล้ว · 10 นาทีที่แล้ว · ทะเบียนรถ TRK-842".
+ *
+ * There is no activity or audit feed for this role. `platform.audit_logs` exists and is a
+ * TENANT_ADMIN surface — it records who changed what, not "a delivery arrived" — and nothing
+ * aggregates procurement events into a reverse-chronological list.
+ */
+export const PROC_ACTIVITY_FEED = figure(
+  [
+    { icon: 'where-to-vote', title: 'Cement delivered to Site A', meta: '10 min ago · TRK-842' },
+    { icon: 'fact-check', title: 'PO-2024-001 approved', meta: '45 min ago · Regional Director' },
+  ] as const,
+  'an activity endpoint for this role — audit_logs records field changes, not procurement events',
+);
+
+/**
+ * The material and quantity on an RFQ card — "เหล็กเส้นข้ออ้อย SD40 DB25 · 120 ตัน".
+ *
+ * `procurement.rfqs` carries `rfq_number`, `status`, `deadline` and `pr_id` — NO description and no
+ * quantity. The words exist one table away in `pr_line_items.description`, seeded since 2026-09-08,
+ * and no endpoint reaches them from an RFQ: `GET /procurement/purchase-requests` returns the request
+ * rows alone. THIS ONE IS CHEAP TO DELETE — a line-items join on that endpoint, or `pr_id` resolved
+ * on the RFQ list, and the register loses an entry.
+ */
+export const RFQ_MATERIAL = figure(
+  [
+    { title: 'Deformed Steel Bar SD40 DB25', qty: '120 TON' },
+    { title: 'Ready-Mixed Concrete C35/45', qty: '850 M3' },
+    { title: 'HDPE Conduit and Fittings', qty: 'Class 1 set' },
+    { title: 'Film-Faced Plywood Formwork 15mm', qty: '640 M2' },
+    { title: 'Portland Cement Type 1', qty: '2,400 BAG' },
+  ] as const,
+  'the RFQ list to carry its request line items — the words are in pr_line_items already',
+);
+
+/**
+ * The lowest quoted price on an open RFQ and how far under the estimate it sits.
+ *
+ * The quotations are REAL and their `total_amount` is real, so the lowest of them is computable —
+ * but "−4.2%" is against a BASELINE ESTIMATE, and no table holds one. `boq.boq_items` carries rates
+ * for the bill of quantities, not a procurement estimate per RFQ.
+ */
+export const RFQ_PRICE_DELTA = figure(
+  ['-4.2%', '-1.8%', '-6.0%'] as const,
+  'an estimate per RFQ to compare the quotes against — the BOQ rate is not one',
+);
+
+/**
+ * "แนะนำ: บจก. ซีแพค · ความน่าเชื่อถือ 94/100 · ส่งมอบตรงเวลา 98%".
+ *
+ * A REAL SCORE EXISTS and is deliberately not used here: `GET /procurement/vendors/:vendorId/score`
+ * computes from delivery, dispute and quotation history. What has no source is the RECOMMENDATION —
+ * nothing ranks vendors against one RFQ's requirement — and the on-time percentage, which the
+ * scorecard folds into one grade rather than reporting on its own.
+ */
+export const RFQ_RECOMMENDATION = figure(
+  { onTimePercent: 98, reliability: 94 },
+  'a per-RFQ vendor ranking, and an on-time rate the scorecard does not report separately',
+);
+
+/** "เป้าหมายประหยัดงบ · เดือนมีนาคม ประหยัดได้ ฿412,000 (เฉลี่ย 3.8%) · +12% MoM". */
+export const PROC_SAVINGS = figure(
+  { amount: '412,000', percent: '3.8%', delta: '+12% MoM' },
+  'a savings target and a monthly series to measure it — neither is recorded anywhere',
+);
+
+/**
+ * The Orders screen's delay alert — "3 POs are at risk of 72-hour delay due to logistical
+ * congestion at Port of Rayong".
+ *
+ * No model produces this, and nothing in the platform knows about a port. `/ai/reports/*` has a
+ * procurement summary and it is a text summary of spend, not a logistics risk feed.
+ */
+export const PO_DELAY_ALERT = figure(
+  { count: 3, hours: 72, place: 'Port of Rayong' },
+  'a logistics risk model with carrier or port telemetry behind it',
+);
+
+/**
+ * EVERY DELIVERY STATUS ON THE DELIVERIES SCREEN — TRANSIT · INSPECTION · COMPLETED — and the three
+ * telemetry tiles above them.
+ *
+ * `procurement.deliveries` is `delivery_id, po_id, tenant_id, delivery_note, delivered_at,
+ * received_by, notes`. THERE IS NO STATUS COLUMN AT ALL. A row exists once someone records the
+ * delivery, so the table can say "this arrived" and cannot say "this is on its way" — which makes
+ * every pill on that screen, and the in-transit and due tiles, one drawn set rather than several.
+ * The on-time percentage goes with them: nothing records a promised arrival to measure against.
+ */
+export const DELIVERY_STATUS = figure(
+  {
+    pills: ['TRANSIT', 'INSPECTION', 'COMPLETED'] as const,
+    inTransit: 6,
+    due: 3,
+    onTimePercent: '98.2%',
+  },
+  'a status column on procurement.deliveries, and a promised arrival time to measure against',
+);
+
+/** The GRN number printed on a completed delivery — "#GRN-2026-0412". */
+export const DELIVERY_GRN_NUMBER = figure(
+  ['GRN-2026-0412', 'GRN-2026-0408', 'GRN-2026-0399'] as const,
+  'goods-receipt notes — §20.7.3 defines /procurement/grn and no table backs it yet',
+);
+
+/**
+ * The live logistics block on a delivery card: road position, remaining distance, driver and plate,
+ * and the average speed in the alert above it.
+ */
+export const DELIVERY_TELEMETRY = figure(
+  {
+    place: 'Sirat Expressway (km 14)',
+    remainingKm: '8.4',
+    driver: 'Somchai W.',
+    plate: '70-4921',
+    fleet: 'SCG Logistics Fleet #04',
+    avgSpeed: '18 km/h',
+    delayMinutes: 45,
+  },
+  'vehicle telemetry — no GPS feed, no driver record and no fleet integration exists',
+);
+
+/** "ตรวจรับโดย: วิศวกรเอกชัย ภ. (เซ็นกำกับแล้ว) · ครบ 60/60 ท่อน" on a completed delivery. */
+export const DELIVERY_SIGNOFF = figure(
+  { inspector: 'Ekachai P.', signed: true, counted: '60/60' },
+  'a signature record on a delivery — received_by holds a user id and nothing about a signature',
+);

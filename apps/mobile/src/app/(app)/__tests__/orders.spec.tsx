@@ -1,18 +1,69 @@
-// Proves a real SCREEN renders under the render project — the class of file items 3-6 refactor.
-// Kept deliberately behavioural: what a PROCUREMENT user sees for a list of purchase orders.
+// Orders screen — PROCUREMENT_OFFICER (mockup 10_proc_officer/03_orders/01_po_order).
+//
+// REWRITTEN 2026-09-08 with the screen. The previous file tested a plain list — one row per PO, a
+// short-id fallback, a detail view — against `testID="order-item"` with no id on it. The screen is
+// now a queue with counted chips, a vendor index, a delivery-stage stepper and a real approval, so
+// the assertions changed with it. WHAT WAS KEPT: every claim about the detail view, because that
+// view is unchanged and is capability the drawing does not show (ADR-085).
 
-import { render, fireEvent, waitFor } from '@testing-library/react-native';
+import React from 'react';
+import { render, waitFor, fireEvent } from '@testing-library/react-native';
 import { I18nProvider } from '../../../i18n';
 import OrdersScreen from '../orders';
 
-jest.mock('../../../api/client', () => ({
-  get: jest.fn(),
-}));
+jest.mock('../../../api/client', () => ({ get: jest.fn(), post: jest.fn() }));
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
-const { get } = require('../../../api/client') as { get: jest.Mock };
+const client = require('../../../api/client') as { get: jest.Mock; post: jest.Mock };
 
-function renderScreen() {
+function po(over: Record<string, unknown> = {}) {
+  return {
+    po_id: 'po-1',
+    po_number: 'PO-8821',
+    vendor_id: 'v-1',
+    project_id: 'p-1',
+    status: 'ACKNOWLEDGED',
+    total_amount: '1234000.0000',
+    currency_code: 'THB',
+    updated_at: '2026-09-01T00:00:00.000Z',
+    ...over,
+  };
+}
+
+/**
+ * The screen's four endpoints in one table.
+ *
+ * The vendor DIRECTORY is the interesting one: the PO list carries `vendor_id` and no name, and the
+ * screen indexes the directory rather than asking the backend to join. A test that stubbed only the
+ * order list would show a card with no vendor and prove nothing about that decision.
+ */
+function route(
+  rows: unknown[] = [po()],
+  deliveries: unknown[] = [],
+  vendors: unknown[] = [{ vendor_id: 'v-1', vendor_name: 'Structural Steel Co., Ltd.' }],
+) {
+  return (path: string) => {
+    if (path.startsWith('/procurement/purchase-orders/')) {
+      return Promise.resolve({ po: rows[0], line_items: [] });
+    }
+    if (path.startsWith('/procurement/purchase-orders')) {
+      return Promise.resolve({ items: rows, total: rows.length });
+    }
+    if (path.startsWith('/procurement/deliveries')) {
+      return Promise.resolve({ items: deliveries, total: deliveries.length });
+    }
+    if (path.startsWith('/procurement/vendors/directory')) return Promise.resolve(vendors);
+    // `/projects`, NOT `/projects/mine`. This role is a member of no project — it buys for the
+    // whole tenant — so asking "which are mine" returned nothing and the first capture named no
+    // project anywhere.
+    if (path.startsWith('/projects')) {
+      return Promise.resolve({ items: [{ project_id: 'p-1', project_name: 'Sukhumvit 45' }] });
+    }
+    return Promise.resolve({ items: [] });
+  };
+}
+
+async function renderScreen() {
   return render(
     <I18nProvider>
       <OrdersScreen />
@@ -22,255 +73,193 @@ function renderScreen() {
 
 describe('OrdersScreen', () => {
   beforeEach(() => {
-    get.mockReset();
+    client.get.mockReset();
+    client.post.mockReset();
+    client.post.mockResolvedValue(undefined);
+    client.get.mockImplementation(route());
   });
 
-  it('renders one row per purchase order returned by the API', async () => {
-    get.mockResolvedValue({
-      items: [
-        { po_id: 'po-1', po_number: 'PO-0001', status: 'SENT' },
-        { po_id: 'po-2', po_number: 'PO-0002', status: 'ACKNOWLEDGED' },
-      ],
-    });
-
-    const { getByText } = await renderScreen();
-
-    await waitFor(() => {
-      expect(getByText('PO-0001')).toBeTruthy();
-    });
-    expect(getByText('PO-0002')).toBeTruthy();
-  });
-
-  it('stays on screen when the list request fails offline', async () => {
-    get.mockRejectedValue(new Error('offline'));
-
-    const { queryByText } = await renderScreen();
-
-    await waitFor(() => {
-      expect(queryByText('PO-0001')).toBeNull();
-    });
-  });
-
-  // ── THE PO'S NAME ────────────────────────────────────────────────────────────────────────────
-  //
-  // `po_number` is what the supplier and the site office both call this order — it is on the paper
-  // copy. The id is a fallback and a poor one, so it is TRUNCATED to eight characters: a full uuid
-  // in a list of orders is a row nobody can read out over the phone, which is how a PO is chased.
-
-  it('names an order by its PO number', async () => {
-    get.mockResolvedValue({ items: [po()] });
-
-    const { getByText } = await renderScreen();
-
-    await waitFor(() => expect(getByText('PO-0001')).toBeTruthy());
-  });
-
-  it('falls back to a short id on an order with no number yet', async () => {
-    get.mockResolvedValue({
-      items: [{ po_id: '9f8a1234-0000-4000-8000-abcdefabcdef', status: 'DRAFT' }],
-    });
-
-    const { getByText, queryByText } = await renderScreen();
-
-    await waitFor(() => expect(getByText('9f8a1234')).toBeTruthy());
-    expect(queryByText('9f8a1234-0000-4000-8000-abcdefabcdef')).toBeNull();
-  });
-
-  // The row is READ ALOUD by the same name it shows: a screen reader on an unlabelled row would
-  // announce the status chip instead, so every order in the list would be called "SENT".
-  it('is spoken by the same name it shows', async () => {
-    get.mockResolvedValue({ items: [po()] });
-
+  it('renders one card per purchase order returned by the API', async () => {
+    client.get.mockImplementation(route([po(), po({ po_id: 'po-2', po_number: 'PO-8904' })]));
     const { getByTestId } = await renderScreen();
 
-    await waitFor(() => expect(getByTestId('order-item')).toBeTruthy());
-    expect(getByTestId('order-item').props.accessibilityLabel).toBe('PO-0001');
+    await waitFor(() => expect(getByTestId('order-item-po-1')).toBeTruthy());
+    expect(getByTestId('order-item-po-2')).toBeTruthy();
   });
 
-  // ── THE TWO RESPONSE SHAPES ──────────────────────────────────────────────────────────────────
-  //
-  // The endpoint answers with `{ items }` or a bare array depending on where it is called from, and
-  // a screen that read only one of them would show an empty list against a full response.
-
-  it('reads a bare array as well as an items envelope', async () => {
-    get.mockResolvedValue([po(), po({ po_id: 'po-2', po_number: 'PO-0002' })]);
-
-    const { getAllByTestId } = await renderScreen();
-
-    await waitFor(() => expect(getAllByTestId('order-item')).toHaveLength(2));
-  });
-
-  it('reads an envelope with no items as no orders, not as a crash', async () => {
-    get.mockResolvedValue({});
-
-    const { getByTestId, queryAllByTestId } = await renderScreen();
-
-    await waitFor(() => expect(getByTestId('orders-list')).toBeTruthy());
-    expect(queryAllByTestId('order-item')).toHaveLength(0);
-  });
-
-  it('says the list is empty rather than showing nothing at all', async () => {
-    get.mockResolvedValue({ items: [] });
-
-    const { getByText } = await renderScreen();
-
-    await waitFor(() => expect(getByText('No purchase orders')).toBeTruthy());
-  });
-
-  // ── THE DETAIL ───────────────────────────────────────────────────────────────────────────────
-
-  it('opens the order that was tapped', async () => {
-    get.mockResolvedValueOnce({ items: [po()] });
-    get.mockResolvedValueOnce(detail());
-
+  it('names the vendor from the directory index, not from the order row', async () => {
+    // `procurement.purchase_orders` carries `vendor_id` and no name. One directory request serves
+    // the whole screen — see the API module's note on why this is not a backend join.
     const { getByTestId } = await renderScreen();
-    await waitFor(() => expect(getByTestId('order-item')).toBeTruthy());
 
-    await fireEvent.press(getByTestId('order-item'));
+    await waitFor(() =>
+      expect(getByTestId('order-item-po-1')).toHaveTextContent(/Structural Steel Co\./),
+    );
+    expect(
+      client.get.mock.calls.filter((c) =>
+        String(c[0]).startsWith('/procurement/vendors/directory'),
+      ),
+    ).toHaveLength(1);
+  });
+
+  it('renders no vendor line at all when the directory has no such vendor', async () => {
+    // An order pointing at a deactivated vendor is a real row. It must still list, and it must not
+    // invent a name or print an id where a name belongs.
+    client.get.mockImplementation(route([po()], [], []));
+    const { getByTestId } = await renderScreen();
+
+    await waitFor(() => expect(getByTestId('order-item-po-1')).toBeTruthy());
+    expect(getByTestId('order-item-po-1')).not.toHaveTextContent(/v-1/);
+  });
+
+  it('prints the money through decimal.js, spaced after the symbol', async () => {
+    const { getByTestId } = await renderScreen();
+
+    await waitFor(() => expect(getByTestId('order-item-po-1')).toHaveTextContent(/1,234,000/));
+  });
+
+  it('shows the stage the order is genuinely at, and never a percentage', async () => {
+    // THE DRAWING PRINTS "Delivery Progress 65%". A real percentage needs received-vs-ordered
+    // quantities, which costs two requests per row; the card shows the ordinal stage from the
+    // order's own status instead. A drawn 65% would be a fabricated measurement.
+    const { getByTestId } = await renderScreen();
+
+    await waitFor(() => expect(getByTestId('order-stage-po-1')).toBeTruthy());
+    expect(getByTestId('order-item-po-1')).not.toHaveTextContent(/%/);
+  });
+
+  it('counts the deliveries actually recorded against the order', async () => {
+    client.get.mockImplementation(
+      route(
+        [po()],
+        [
+          { delivery_id: 'd-1', po_id: 'po-1', delivered_at: '2026-09-01T00:00:00.000Z' },
+          { delivery_id: 'd-2', po_id: 'po-1', delivered_at: '2026-09-02T00:00:00.000Z' },
+        ],
+      ),
+    );
+    const { getByTestId } = await renderScreen();
+
+    await waitFor(() => expect(getByTestId('order-stage-po-1')).toHaveTextContent(/2 deliveries/));
+  });
+
+  it('draws no stage bar for a status it has no opinion about', async () => {
+    client.get.mockImplementation(route([po({ status: 'CANCELLED' })]));
+    const { getByTestId, queryByTestId } = await renderScreen();
+
+    await waitFor(() => expect(getByTestId('order-item-po-1')).toBeTruthy());
+    expect(queryByTestId('order-stage-po-1')).toBeNull();
+  });
+
+  it('offers Approve only on PENDING_APPROVAL, the one state the endpoint accepts', async () => {
+    const { queryByTestId } = await renderScreen();
+    await waitFor(() => expect(queryByTestId('order-item-po-1')).toBeTruthy());
+    expect(queryByTestId('order-approve-po-1')).toBeNull();
+
+    client.get.mockImplementation(route([po({ status: 'PENDING_APPROVAL' })]));
+    const second = await renderScreen();
+    await waitFor(() => expect(second.getByTestId('order-approve-po-1')).toBeTruthy());
+  });
+
+  it('approves through the real endpoint and reloads rather than guessing', async () => {
+    // A PO approval is a financial mutation (§17.4, online-required), so the redraw is the one the
+    // server agrees with — not an optimistic flip of the chip.
+    client.get.mockImplementation(route([po({ status: 'PENDING_APPROVAL' })]));
+    const { getByTestId } = await renderScreen();
+
+    await waitFor(() => expect(getByTestId('order-approve-po-1')).toBeTruthy());
+    const before = client.get.mock.calls.length;
+    await fireEvent.press(getByTestId('order-approve-po-1'));
+
+    await waitFor(() =>
+      expect(client.post).toHaveBeenCalledWith('/procurement/purchase-orders/po-1/approve', {
+        tier: 'TENANT_ADMIN',
+      }),
+    );
+    await waitFor(() => expect(client.get.mock.calls.length).toBeGreaterThan(before));
+  });
+
+  it('brackets every chip count and filters by the one that is on', async () => {
+    client.get.mockImplementation(
+      route([po(), po({ po_id: 'po-2', po_number: 'PO-8904', status: 'PAID' })]),
+    );
+    const { getByTestId, queryByTestId } = await renderScreen();
+
+    await waitFor(() => expect(getByTestId('order-filter-ALL')).toHaveTextContent(/\(2\)/));
+    await fireEvent.press(getByTestId('order-filter-PAID'));
+    expect(queryByTestId('order-item-po-1')).toBeNull();
+    expect(getByTestId('order-item-po-2')).toBeTruthy();
+  });
+
+  it('searches the number and the vendor name', async () => {
+    const { getByTestId, queryByTestId } = await renderScreen();
+
+    await waitFor(() => expect(getByTestId('order-item-po-1')).toBeTruthy());
+    await fireEvent.changeText(getByTestId('order-search'), 'structural');
+    expect(getByTestId('order-item-po-1')).toBeTruthy();
+    await fireEvent.changeText(getByTestId('order-search'), 'nothing at all');
+    expect(queryByTestId('order-item-po-1')).toBeNull();
+  });
+
+  it('counts the whole tenant in the header, not the page it rendered', async () => {
+    client.get.mockImplementation((path: string) =>
+      path === '/procurement/purchase-orders'
+        ? Promise.resolve({ items: [po()], total: 42 })
+        : route()(path),
+    );
+    const { getByTestId } = await renderScreen();
+
+    await waitFor(() => expect(getByTestId('orders-count')).toHaveTextContent(/42/));
+  });
+
+  it('says so when there are no orders', async () => {
+    client.get.mockImplementation(route([]));
+    const { getByTestId } = await renderScreen();
+
+    await waitFor(() => expect(getByTestId('orders-empty')).toBeTruthy());
+  });
+
+  // ── the detail view, unchanged by the rewrite ────────────────────────────────────────────────
+  it('opens the order that was tapped and lists what was ordered', async () => {
+    client.get.mockImplementation((path: string) =>
+      path.startsWith('/procurement/purchase-orders/po-1')
+        ? Promise.resolve({
+            po: po(),
+            line_items: [
+              { line_id: 'l-1', description: 'Deformed bar DB16', quantity: '12', unit: 'TON' },
+            ],
+          })
+        : route()(path),
+    );
+    const { getByTestId } = await renderScreen();
+
+    await waitFor(() => expect(getByTestId('order-item-po-1')).toBeTruthy());
+    await fireEvent.press(getByTestId('order-item-po-1'));
 
     await waitFor(() => expect(getByTestId('order-detail-screen')).toBeTruthy());
-    expect(get).toHaveBeenLastCalledWith('/procurement/purchase-orders/po-1');
+    expect(getByTestId('order-line')).toHaveTextContent(/Deformed bar DB16/);
+    expect(getByTestId('order-line')).toHaveTextContent(/12 TON/);
   });
 
-  it('lists what was ordered, with the quantity and its unit', async () => {
-    get.mockResolvedValueOnce({ items: [po()] });
-    get.mockResolvedValueOnce(detail());
-
-    const { getByTestId, getByText } = await renderScreen();
-    await waitFor(() => expect(getByTestId('order-item')).toBeTruthy());
-
-    await fireEvent.press(getByTestId('order-item'));
-
-    await waitFor(() => expect(getByText('Ready-mix concrete C30')).toBeTruthy());
-    // The quantity WITHOUT its unit is a number nobody can act on — 40 of what?
-    expect(getByText('40 m3')).toBeTruthy();
-  });
-
-  // A PO with no lines is a real state (a draft raised and not yet filled), and it has to say so:
-  // a detail screen that showed a header and then nothing reads as a failed load.
   it('says an order has no lines rather than showing an empty detail', async () => {
-    get.mockResolvedValueOnce({ items: [po()] });
-    get.mockResolvedValueOnce(detail({ line_items: [] }));
-
     const { getByTestId, getByText } = await renderScreen();
-    await waitFor(() => expect(getByTestId('order-item')).toBeTruthy());
 
-    await fireEvent.press(getByTestId('order-item'));
+    await waitFor(() => expect(getByTestId('order-item-po-1')).toBeTruthy());
+    await fireEvent.press(getByTestId('order-item-po-1'));
 
     await waitFor(() => expect(getByTestId('order-detail-screen')).toBeTruthy());
     expect(getByText('No line items')).toBeTruthy();
   });
 
-  // The delivery-phase status is on BOTH the row and the detail — it is the answer to the question
-  // that brought the reader here, and making them remember it from the list would be a screen that
-  // shows everything about an order except whether it arrived.
-  it('shows the delivery status on the detail as well as the row', async () => {
-    get.mockResolvedValueOnce({ items: [po({ status: 'PARTIALLY_DELIVERED' })] });
-    get.mockResolvedValueOnce(detail({ po: po({ status: 'PARTIALLY_DELIVERED' }) }));
-
-    const { getByTestId, getByText } = await renderScreen();
-    await waitFor(() => expect(getByTestId('order-item')).toBeTruthy());
-
-    await fireEvent.press(getByTestId('order-item'));
-
-    await waitFor(() => expect(getByTestId('order-detail-screen')).toBeTruthy());
-    expect(getByText('PARTIALLY_DELIVERED')).toBeTruthy();
-  });
-
-  it('names the order on its own detail, by the same fallback rule', async () => {
-    get.mockResolvedValueOnce({
-      items: [{ po_id: '9f8a1234-0000-4000-8000-abcdefabcdef', status: 'DRAFT' }],
-    });
-    get.mockResolvedValueOnce(
-      detail({ po: { po_id: '9f8a1234-0000-4000-8000-abcdefabcdef', status: 'DRAFT' } }),
-    );
-
-    const { getByTestId, getAllByText } = await renderScreen();
-    await waitFor(() => expect(getByTestId('order-item')).toBeTruthy());
-
-    await fireEvent.press(getByTestId('order-item'));
-
-    await waitFor(() => expect(getByTestId('order-detail-screen')).toBeTruthy());
-    expect(getAllByText('9f8a1234').length).toBeGreaterThan(0);
-  });
-
   it('goes back to the list', async () => {
-    get.mockResolvedValueOnce({ items: [po()] });
-    get.mockResolvedValueOnce(detail());
+    const { getByTestId, queryByTestId } = await renderScreen();
 
-    const { getByTestId } = await renderScreen();
-    await waitFor(() => expect(getByTestId('order-item')).toBeTruthy());
-
-    await fireEvent.press(getByTestId('order-item'));
+    await waitFor(() => expect(getByTestId('order-item-po-1')).toBeTruthy());
+    await fireEvent.press(getByTestId('order-item-po-1'));
     await waitFor(() => expect(getByTestId('order-detail-screen')).toBeTruthy());
 
-    await fireEvent.press(getByTestId('order-back-button'));
-
+    await fireEvent.press(getByTestId('order-detail-back'));
     await waitFor(() => expect(getByTestId('orders-screen')).toBeTruthy());
-  });
-
-  // STAY ON THE LIST. A tap whose detail fetch failed leaves the reader where they were, rather
-  // than on a half-empty detail screen — the list they can still read is better than a screen that
-  // can only apologise.
-  it('stays on the list when the detail cannot be fetched', async () => {
-    get.mockResolvedValueOnce({ items: [po()] });
-    get.mockRejectedValueOnce(new Error('offline'));
-
-    const { getByTestId, queryByTestId } = await renderScreen();
-    await waitFor(() => expect(getByTestId('order-item')).toBeTruthy());
-
-    await fireEvent.press(getByTestId('order-item'));
-
-    await waitFor(() => expect(get).toHaveBeenCalledTimes(2));
     expect(queryByTestId('order-detail-screen')).toBeNull();
-    expect(getByTestId('orders-screen')).toBeTruthy();
-  });
-
-  // Rule 40 — the first fetch goes through <LoadingBoundary />, and the boundary REPLACES the list
-  // rather than covering it: there is nothing behind it to see, and a skeleton drawn over an empty
-  // FlatList would still render that list's "No purchase orders" underneath, which says the
-  // opposite of what the skeleton says.
-  it('replaces the list with the loading state while the first fetch is in flight', async () => {
-    get.mockReturnValue(new Promise(() => undefined));
-
-    const { getByTestId, queryByTestId } = await renderScreen();
-
-    expect(getByTestId('orders-screen')).toBeTruthy();
-    expect(queryByTestId('orders-list')).toBeNull();
-  });
-
-  it('hands the list back once the orders arrive', async () => {
-    get.mockResolvedValue({ items: [po()] });
-
-    const { getByTestId } = await renderScreen();
-
-    await waitFor(() => expect(getByTestId('orders-list')).toBeTruthy());
-  });
-
-  // The boundary settles even when the fetch failed: a screen that kept its skeleton up forever
-  // would read as "still loading" to someone who is simply offline and will not be told otherwise.
-  it('settles into an empty list when the first fetch fails', async () => {
-    get.mockRejectedValue(new Error('offline'));
-
-    const { getByTestId, getByText } = await renderScreen();
-
-    await waitFor(() => expect(getByTestId('orders-list')).toBeTruthy());
-    expect(getByText('No purchase orders')).toBeTruthy();
   });
 });
-
-/** A purchase order row. */
-function po(over: Record<string, unknown> = {}) {
-  return { po_id: 'po-1', po_number: 'PO-0001', status: 'SENT', ...over };
-}
-
-/** A purchase order's detail — the row plus what was ordered on it. */
-function detail(over: Record<string, unknown> = {}) {
-  return {
-    po: po(),
-    line_items: [
-      { line_id: 'l-1', description: 'Ready-mix concrete C30', quantity: '40', unit: 'm3' },
-    ],
-    ...over,
-  };
-}

@@ -177,25 +177,47 @@ describe('HomeScreen role dispatch', () => {
     await waitFor(() => expect(getByTestId('kpi-pending-approvals')).toHaveTextContent(/—/));
   });
 
-  it('gives PROCUREMENT_OFFICER the RFQ, order and delivery KPIs', async () => {
+  it('gives PROCUREMENT_OFFICER the four queue tiles the drawing lays out', async () => {
+    // REBUILT 2026-09-08 for `10_proc_officer/01_home/01_po_dashboard`. The tiles were committed
+    // spend, open RFQs, RFQs closing within 24h, POs awaiting ack and deliveries; the drawing is a
+    // 2x2 bento of the four QUEUES — requests to approve, RFQs running, awards with no order open
+    // yet, deliveries arriving today.
     const { getByTestId } = await renderHome(CosRole.PROCUREMENT_OFFICER);
 
-    await waitFor(() => expect(getByTestId('kpi-open-rfqs')).toBeTruthy());
-    expect(getByTestId('kpi-awaiting-ack')).toBeTruthy();
+    await waitFor(() => expect(getByTestId('kpi-requests')).toBeTruthy());
+    expect(getByTestId('kpi-rfqs')).toBeTruthy();
+    expect(getByTestId('kpi-awaitingPo')).toBeTruthy();
     expect(getByTestId('kpi-deliveries')).toBeTruthy();
 
     await waitFor(() =>
-      expect(pathsCalled().some((p) => p.startsWith('/procurement/rfqs'))).toBe(true),
+      expect(pathsCalled().some((p) => p.startsWith('/procurement/purchase-requests'))).toBe(true),
     );
+    expect(pathsCalled().some((p) => p.startsWith('/procurement/rfqs'))).toBe(true);
     expect(pathsCalled().some((p) => p.startsWith('/procurement/purchase-orders'))).toBe(true);
     expect(pathsCalled().some((p) => p.startsWith('/procurement/deliveries'))).toBe(true);
+  });
+
+  it('shows a dash on a queue tile whose request was lost, never a zero', async () => {
+    // "Not loaded" and "none" are different answers, and on a screen whose whole job is to say what
+    // is waiting, a 0 the request never returned states the second one. Losing the queue must
+    // produce the placeholder.
+    client.get.mockImplementation((path: string) =>
+      path.startsWith('/procurement/purchase-requests')
+        ? Promise.reject(new Error('offline'))
+        : Promise.resolve({ items: [] }),
+    );
+
+    const { getByTestId } = await renderHome(CosRole.PROCUREMENT_OFFICER);
+    await waitFor(() => expect(getByTestId('kpi-requests')).toHaveTextContent(/—/));
+    // …while a tile whose own request DID land keeps its real zero.
+    expect(getByTestId('kpi-deliveries')).toHaveTextContent(/0/);
   });
 
   it('gives PROC_MANAGER the same home as PROCUREMENT_OFFICER', async () => {
     const { getByTestId } = await renderHome(CosRole.PROC_MANAGER);
 
-    await waitFor(() => expect(getByTestId('kpi-open-rfqs')).toBeTruthy());
-    expect(getByTestId('kpi-awaiting-ack')).toBeTruthy();
+    await waitFor(() => expect(getByTestId('kpi-requests')).toBeTruthy());
+    expect(getByTestId('kpi-awaitingPo')).toBeTruthy();
   });
 
   it('gives PROJECT_MANAGER the project KPIs and the blockers panel', async () => {
