@@ -1,0 +1,299 @@
+<!DOCTYPE html><html class="dark" lang="th" style=""><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport">
+<title>Navigation Drawer - ผู้จัดการฝ่ายจัดซื้อ (Procurement Manager Mobile)</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com" rel="preconnect">
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect">
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&amp;family=Noto+Sans+Thai:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            "surface": "#031427",
+            "surface-dim": "#031427",
+            "surface-bright": "#2a3a4f",
+            "surface-container-lowest": "#000f21",
+            "surface-container-low": "#0b1c30",
+            "surface-container": "#102034",
+            "surface-container-high": "#1b2b3f",
+            "surface-container-highest": "#26364a",
+            "background": "#031427",
+            "cos-navy": "#0B1020",
+            "cos-blue": "#2563EB",
+            "cos-cyan": "#06B6D4",
+            "cos-gray": "#64748B",
+            "cos-white": "#F8FAFC",
+            "primary": "#2563EB",
+            "primary-container": "#1d4ed8",
+            "on-surface": "#d3e4fe",
+            "on-surface-variant": "#94a3b8",
+            "outline": "#434655",
+            "outline-variant": "rgba(67, 70, 85, 0.4)",
+            "mobile-primary": "#0066FF",
+            "mobile-success": "#00C853",
+            "mobile-warning": "#FF9500",
+            "mobile-danger": "#FF3B30",
+            "mobile-offline": "#8E8E93",
+            "mobile-syncing": "#FFD60A",
+            "mobile-synced": "#00C853"
+          },
+          fontFamily: {
+            sans: ['"Inter Tight"', '"Noto Sans Thai"', 'sans-serif'],
+          }
+        }
+      }
+    };
+  </script>
+<style>
+    body {
+      font-family: 'Inter Tight', 'Noto Sans Thai', sans-serif;
+      -webkit-tap-highlight-color: transparent;
+      overscroll-behavior-y: contain;
+    }
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+    }
+    .material-symbols-outlined.fill-1 {
+      font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+    }
+    .scrollbar-none::-webkit-scrollbar {
+      display: none;
+    }
+    .scrollbar-none {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+  </style>
+</head>
+<body class="bg-background text-on-surface antialiased flex justify-center min-h-screen">
+<!-- Mobile Container (Max 430px) simulating Modal Drawer Overlay -->
+<div class="relative w-full min-h-screen bg-background overflow-hidden flex shadow-2xl w-[390px]">
+<!-- Background Backdrop (dimmed underlying screen view) -->
+<div class="absolute inset-0 bg-[#000f21]/80 backdrop-blur-sm z-10 pointer-events-auto"></div>
+<!-- Navigation Drawer Sidebar Panel (Left to Right) -->
+<aside class="relative z-20 h-screen bg-surface-container-low border-r border-outline-variant flex flex-col justify-between shadow-2xl overflow-y-auto scrollbar-none">
+<!-- Top Section: Header & Profile -->
+<div class="flex flex-col">
+<!-- Drawer Header Branding Bar -->
+<div class="px-5 py-4 border-b border-outline-variant/60 flex items-center justify-between bg-surface-container-lowest/80">
+<div class="flex items-center gap-2.5">
+<div class="w-8 h-8 rounded-lg bg-surface-container flex items-center justify-center p-1 border border-outline-variant/50">
+<img alt="COS Icon" class="w-full h-full object-contain" src="https://lh3.googleusercontent.com/aida/AEtjO1WpCU0vjtPZa-fAk-iB7r9LO1-40MZQNHKDMe9y3D6aOWq583of4ac-kMpLo9wm8QyLgqXcjkzYJXC8dDWsgfMCTpxjpp7kdnrXBbL1jjBhGYVKfKBhbMkcwzYlTYP8jX2Vllf5i5UXEFuj6LD9iqeb6UuuGmDUtv26ieOz9SR4QJazrhoTzYzIsqpNwTTYFoo3NSrf8rQqToK44tFPOOOhFc0Znvmhl2fC578QfMPnaQS85lBV_xxGqLFkc2FMQ5qmXCOYdspavA">
+</div>
+<div>
+<div class="flex items-center gap-1.5">
+<span class="text-[13px] font-extrabold tracking-wider text-cos-white uppercase leading-none">CONSTRUCTION OS</span>
+</div>
+<span class="text-[10px] text-cos-cyan tracking-widest uppercase font-semibold">PROCUREMENT MGR</span>
+</div>
+</div>
+<button aria-label="Close Drawer" class="w-9 h-9 rounded-lg bg-surface-container-high/60 border border-outline-variant/40 flex items-center justify-center text-on-surface-variant active:scale-95 transition-transform hover:text-white">
+<span class="material-symbols-outlined text-[20px]">close</span>
+</button>
+</div>
+<!-- Manager Profile & Active Role Card (Clickable) -->
+<div class="p-4 mx-3 my-3 rounded-xl bg-surface-container border border-outline-variant/50 shadow-md relative overflow-hidden group active:scale-[0.99] transition-all">
+<div class="absolute -right-8 -top-8 w-24 h-24 bg-cos-blue/10 rounded-full blur-xl pointer-events-none"></div>
+<div class="flex items-center gap-3">
+<div class="relative w-12 h-12 rounded-full overflow-hidden border-2 border-cos-blue/60 shrink-0 bg-surface-container-high">
+<img alt="Procurement Manager Avatar" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida/AEtjO1W4jo9bz7Xo86hO8X1VhD_2OoSm3Jg9p8isOlp0ZcHBPFbqgyLUxfttMN258vrepni1pj4MHgY0UPkgtt-TNCRfem7BPpgiF_jPzP7B40b5TafMdZE9pteUb1POu1F361PBXG49Gp7telPZJxPp-hqDMDXVkX6PZUhWSf5fC_PqOcOmXVAg-kZ8P8PlzCXBTpGixSlwS6mB-KMFNVbDyNQDqTaGGeZaujq8cYwJ-AvKX9yfzYNY6q1TCuw">
+<div class="absolute bottom-0 right-0 w-3 h-3 bg-mobile-success rounded-full border-2 border-surface-container"></div>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex items-center justify-between gap-1">
+<h2 class="text-[15px] font-bold text-white truncate leading-snug">วิภาดา ภัทรเดชากุล</h2>
+<span class="material-symbols-outlined text-[16px] text-on-surface-variant">arrow_forward_ios</span>
+</div>
+<p class="text-[12px] text-on-surface-variant truncate">ผู้จัดการฝ่ายจัดซื้อ</p>
+<div class="flex items-center gap-2 mt-1.5">
+<span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-cos-cyan/15 text-cos-cyan text-[10px] font-semibold border border-cos-cyan/30">
+<span class="w-1.5 h-1.5 rounded-full bg-cos-cyan animate-pulse"></span>
+                  วงเงินอนุมัติ ฿5.0M
+                </span>
+<span class="inline-flex items-center gap-1 text-[10px] text-mobile-success font-medium">
+<span class="material-symbols-outlined text-[12px] fill-1 text-mobile-success">check_circle</span>
+                  SYNCED
+                </span>
+</div>
+</div>
+</div>
+</div>
+<!-- Section 1: Core Navigation (Filtered for Procurement Manager) -->
+<div class="px-3 pt-1">
+<div class="px-3 pb-1.5 text-[11px] font-bold text-on-surface-variant/80 uppercase tracking-wider flex items-center justify-between">
+<span class="">เมนูหลัก</span>
+
+</div>
+<nav class="space-y-1">
+<!-- 1. Procurement Dashboard -->
+<a class="flex items-center justify-between px-3 py-2.5 rounded-lg bg-primary/10 border-l-4 border-cos-blue text-white font-semibold transition-all" href="#">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-cos-blue fill-1 text-[22px]">dashboard</span>
+<span class="text-[14px]">Dashboard</span>
+</div>
+<span class="w-2 h-2 rounded-full bg-cos-blue"></span>
+</a>
+<!-- 2. RFQs & Bidding -->
+<a class="flex items-center justify-between px-3 py-2.5 rounded-lg text-on-surface hover:bg-surface-container hover:text-white transition-all active:scale-[0.98]" href="#">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-on-surface-variant text-[22px]">request_quote</span>
+<span class="text-[14px]">ใบขอเสนอราคา</span>
+</div>
+<span class="px-2 py-0.5 text-[11px] font-bold rounded-full bg-surface-container-highest text-cos-white border border-outline-variant/40">12</span>
+</a>
+<!-- 3. Purchase Orders (PO Master) -->
+<a class="flex items-center justify-between px-3 py-2.5 rounded-lg text-on-surface hover:bg-surface-container hover:text-white transition-all active:scale-[0.98]" href="#">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-on-surface-variant text-[22px]">receipt_long</span>
+<span class="text-[14px]">ใบสั่งซื้อ</span>
+</div>
+<span class="px-2 py-0.5 text-[11px] font-bold rounded-full bg-surface-container-highest text-cos-white border border-outline-variant/40">28</span>
+</a>
+<!-- 4. Approvals Queue (High Priority) -->
+<a class="flex items-center justify-between px-3 py-2.5 rounded-lg text-on-surface hover:bg-surface-container hover:text-white transition-all active:scale-[0.98]" href="#">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-mobile-warning text-[22px]">fact_check</span>
+<div class="flex flex-col">
+<span class="text-[14px]">รอการอนุมัติ</span>
+</div>
+</div>
+<span class="px-2 py-0.5 text-[11px] font-bold rounded-full bg-mobile-warning/20 text-mobile-warning border border-mobile-warning/40">3 ด่วน</span>
+</a>
+<!-- 5. Material Deliveries & GRN -->
+<a class="flex items-center justify-between px-3 py-2.5 rounded-lg text-on-surface hover:bg-surface-container hover:text-white transition-all active:scale-[0.98]" href="#">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-on-surface-variant text-[22px]">local_shipping</span>
+<span class="text-[14px]">การส่งมอบ</span>
+</div>
+<span class="px-2 py-0.5 text-[11px] font-medium rounded-full bg-surface-container-high text-on-surface-variant">วันนี้ 4</span>
+</a>
+<!-- 6. Vendor Master & Directory -->
+<a class="flex items-center justify-between px-3 py-2.5 rounded-lg text-on-surface hover:bg-surface-container hover:text-white transition-all active:scale-[0.98]" href="#">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-on-surface-variant text-[22px]">storefront</span>
+<span class="text-[14px]">ทำเนียบคู่ค้า</span>
+</div>
+<span class="text-[11px] text-mobile-success font-medium">99 TS</span>
+</a>
+<!-- 7. WMS / Inventory Registry [MVP+] -->
+<a class="flex items-center justify-between px-3 py-2.5 rounded-lg text-on-surface hover:bg-surface-container hover:text-white transition-all active:scale-[0.98]" href="#">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-on-surface-variant text-[22px]">warehouse</span>
+<span class="text-[14px]">คลังวัสดุโครงการ</span>
+</div>
+<span class="text-[10px] text-cos-cyan bg-cos-cyan/10 px-1.5 py-0.5 rounded border border-cos-cyan/20">MVP+</span>
+</a>
+</nav>
+</div>
+<!-- Section 2: Strategic & Market Modules -->
+<div class="px-3 pt-3 mt-2 border-t border-outline-variant/40">
+<div class="px-3 pb-1.5 text-[11px] font-bold text-on-surface-variant/80 uppercase tracking-wider flex items-center justify-between">
+<span class="">กลยุทธ์ &amp; ตลาด</span>
+</div>
+<nav class="space-y-1">
+<!-- Material Marketplace [P3] -->
+<a class="flex items-center justify-between px-3 py-2.5 rounded-lg text-on-surface hover:bg-surface-container hover:text-white transition-all active:scale-[0.98]" href="#">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-cos-cyan text-[22px]">shopping_cart</span>
+<span class="text-[14px]">ตลาดวัสดุ</span>
+</div>
+<span class="text-[10px] text-on-surface-variant bg-surface-container px-1.5 py-0.5 rounded">P3</span>
+</a>
+<!-- Central Reference Prices (ราคากลาง) [MVP+] -->
+<a class="flex items-center justify-between px-3 py-2.5 rounded-lg text-on-surface hover:bg-surface-container hover:text-white transition-all active:scale-[0.98]" href="#">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-on-surface-variant text-[22px]">price_check</span>
+<span class="text-[14px]">ดัชนีราคากลาง</span>
+</div>
+<span class="text-[10px] text-mobile-success font-semibold">กรมบัญชีกลาง</span>
+</a>
+<!-- AI Sourcing Intelligence -->
+<a class="flex items-center justify-between px-3 py-2.5 rounded-lg text-on-surface hover:bg-surface-container hover:text-white transition-all active:scale-[0.98]" href="#">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-cos-cyan text-[22px]">psychology</span>
+<span class="text-[14px]">วิเคราะห์ราคา</span>
+</div>
+<span class="text-[10px] bg-cos-cyan/15 text-cos-cyan px-1.5 py-0.5 rounded font-bold">98% Acc</span>
+</a>
+</nav>
+</div>
+<!-- Section 3: Communication & Collaboration -->
+<div class="px-3 pt-3 mt-2 border-t border-outline-variant/40">
+<div class="px-3 pb-1.5 text-[11px] font-bold text-on-surface-variant/80 uppercase tracking-wider">
+<span class="">การประสานงาน</span>
+</div>
+<nav class="space-y-1">
+<!-- Chat Hub -->
+<a class="flex items-center justify-between px-3 py-2.5 rounded-lg text-on-surface hover:bg-surface-container hover:text-white transition-all active:scale-[0.98]" href="#">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-on-surface-variant text-[22px]">forum</span>
+<span class="text-[14px]">แชท</span>
+</div>
+<span class="w-5 h-5 rounded-full bg-mobile-primary text-white text-[10px] font-bold flex items-center justify-center">5</span>
+</a>
+<!-- Vendor Dispute Resolution -->
+<a class="flex items-center justify-between px-3 py-2.5 rounded-lg text-on-surface hover:bg-surface-container hover:text-white transition-all active:scale-[0.98]" href="#">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-on-surface-variant text-[22px]">gavel</span>
+<span class="text-[14px]">ข้อพิพาทใบแจ้งหนี้</span>
+</div>
+<span class="text-[11px] text-mobile-danger font-medium">1 เคส</span>
+</a>
+</nav>
+</div>
+<!-- Section 4: System & Governance (Mandatory Standard Items) -->
+<div class="px-3 pt-3 mt-2 border-t border-outline-variant/40">
+<div class="px-3 pb-1.5 text-[11px] font-bold text-on-surface-variant/80 uppercase tracking-wider">
+<span class="">การตั้งค่า</span>
+</div>
+<nav class="space-y-1">
+<!-- Procurement Settings (Thresholds, Workflows) -->
+<a class="flex items-center justify-between px-3 py-2.5 rounded-lg text-on-surface hover:bg-surface-container hover:text-white transition-all active:scale-[0.98]" href="#">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-on-surface-variant text-[22px]">settings</span>
+<span class="text-[14px]">Settings</span>
+</div>
+<span class="material-symbols-outlined text-[16px] text-cos-gray">chevron_right</span>
+</a>
+<!-- Mandatory Standard Item: Privacy Policy -->
+<a class="flex items-center justify-between px-3 py-2.5 rounded-lg text-on-surface hover:bg-surface-container hover:text-white transition-all active:scale-[0.98]" href="#">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-on-surface-variant text-[22px]">policy</span>
+<span class="text-[14px]">นโยบายความเป็นส่วนตัว (Privacy Policy)</span>
+</div>
+<span class="material-symbols-outlined text-[16px] text-cos-gray">chevron_right</span>
+</a>
+<!-- Support Center -->
+
+</nav>
+</div>
+</div>
+<!-- Bottom Section: Quick Switcher, Sync Telemetry & Logout -->
+<div class="p-3 mt-4 border-t border-outline-variant/60 bg-surface-container-lowest/90">
+<!-- Active Tenant Status Tile -->
+
+<!-- System Version & Log Out CTA -->
+<div class="flex items-center justify-between pt-1 px-1">
+<div class="flex flex-col">
+
+
+</div>
+<button class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-mobile-danger/10 text-mobile-danger text-[12px] font-bold border border-mobile-danger/30 active:scale-95 transition-transform hover:bg-mobile-danger hover:text-white">
+<span class="material-symbols-outlined text-[16px]">logout</span>
+<span class="">ออกจากระบบ</span>
+</button>
+</div>
+</div>
+</aside>
+<!-- Tap Target to Dismiss Overlay (Clicking Right Side Dim Area) -->
+<div aria-label="Dismiss Drawer by clicking outside" class="flex-1 h-full z-20 cursor-pointer"></div>
+</div>
+
+
+
+
+</body></html>

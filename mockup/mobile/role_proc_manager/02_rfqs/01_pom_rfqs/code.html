@@ -1,0 +1,353 @@
+<!DOCTYPE html><html class="dark" lang="en" style=""><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>Construction OS - Procurement Approvals</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-container-highest": "#26364a",
+                        "inverse-primary": "#0053db",
+                        "background": "#031427",
+                        "sync-active": "#FFD60A",
+                        "secondary": "#4cd7f6",
+                        "on-error-container": "#ffdad6",
+                        "tertiary": "#c1c5dc",
+                        "surface-container-high": "#1b2b3f",
+                        "surface-container": "#102034",
+                        "error-container": "#93000a",
+                        "tertiary-fixed-dim": "#c1c5dc",
+                        "outline": "#8d90a0",
+                        "primary-fixed-dim": "#b4c5ff",
+                        "on-primary-fixed-variant": "#003ea8",
+                        "surface-container-low": "#0b1c30",
+                        "on-primary-fixed": "#00174b",
+                        "surface-container-lowest": "#000f21",
+                        "surface-tint": "#b4c5ff",
+                        "on-secondary": "#003640",
+                        "secondary-fixed": "#acedff",
+                        "mobile-warning": "#FF9500",
+                        "inverse-surface": "#d3e4fe",
+                        "dark-surface": "#0F172A",
+                        "on-secondary-fixed": "#001f26",
+                        "on-primary-container": "#eeefff",
+                        "on-surface": "#d3e4fe",
+                        "tertiary-container": "#686c80",
+                        "on-secondary-fixed-variant": "#004e5c",
+                        "on-primary": "#002a78",
+                        "on-tertiary-fixed-variant": "#414658",
+                        "on-secondary-container": "#00424e",
+                        "on-background": "#d3e4fe",
+                        "tertiary-fixed": "#dee1f9",
+                        "on-tertiary": "#2b3041",
+                        "surface": "#031427",
+                        "on-error": "#690005",
+                        "surface-bright": "#2a3a4f",
+                        "sync-pending": "#94A3B8",
+                        "on-tertiary-fixed": "#161b2b",
+                        "mobile-primary": "#0066FF",
+                        "primary-container": "#2563eb",
+                        "primary": "#b4c5ff",
+                        "error": "#ffb4ab",
+                        "inverse-on-surface": "#213145",
+                        "mobile-success": "#00C853",
+                        "primary-fixed": "#dbe1ff",
+                        "secondary-container": "#03b5d3",
+                        "dark-bg": "#020617",
+                        "on-surface-variant": "#c3c6d7",
+                        "surface-variant": "#26364a",
+                        "outline-variant": "#434655",
+                        "surface-dim": "#031427",
+                        "secondary-fixed-dim": "#4cd7f6",
+                        "on-tertiary-container": "#eeefff",
+                        "mobile-danger": "#FF3B30"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "space-1": "4px",
+                        "base": "4px",
+                        "touch-target": "52px",
+                        "web-margin": "32px",
+                        "space-4": "16px",
+                        "space-2": "8px",
+                        "edge-mobile": "24px",
+                        "space-3": "12px",
+                        "safe-bottom": "env(safe-area-inset-bottom, 24px)"
+                    },
+                    "fontFamily": {
+                        "h1-web": ["Inter Tight"],
+                        "body-mobile": ["Inter Tight"],
+                        "hero-mobile": ["Inter Tight"],
+                        "label-mobile": ["Inter Tight"],
+                        "body-web": ["Inter Tight"],
+                        "tiny-web": ["Inter Tight"],
+                        "h2-web": ["Inter Tight"],
+                        "display-web": ["Inter Tight"]
+                    },
+                    "fontSize": {
+                        "h1-web": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+                        "h1-web-mobile": ["20px", { "lineHeight": "28px", "fontWeight": "600" }],
+                        "body-mobile": ["17px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "hero-mobile": ["28px", { "lineHeight": "34px", "fontWeight": "700" }],
+                        "label-mobile": ["13px", { "lineHeight": "18px", "fontWeight": "600" }],
+                        "body-web": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+                        "tiny-web": ["11px", { "lineHeight": "12px", "letterSpacing": "0.05em", "fontWeight": "500" }],
+                        "h2-web": ["20px", { "lineHeight": "28px", "fontWeight": "600" }],
+                        "display-web": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .pb-safe { padding-bottom: calc(1rem + env(safe-area-inset-bottom)); }
+        .h-touch-target { height: 52px; }
+        .px-edge-mobile { padding-left: 24px; padding-right: 24px; }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-surface antialiased min-h-screen pb-[96px] selection:bg-primary-container selection:text-on-primary-container">
+<!-- TopAppBar -->
+<header class="bg-surface dark:bg-surface w-full top-0 sticky z-50 bg-surface-dim dark:bg-surface-dim"><div class="flex justify-between items-center px-edge-mobile h-touch-target w-full z-50 border-b border-outline-variant/20 bg-surface/95 backdrop-blur-md">
+<div class="flex items-center gap-space-2 text-primary">
+<div class="w-8 h-8 rounded-lg bg-primary-container/20 border border-primary-container/40 flex items-center justify-center text-primary-fixed shadow-sm">
+<span class="material-symbols-outlined text-[20px]" style="font-variation-settings: &quot;FILL&quot; 1;">construction</span>
+</div>
+<div class="flex flex-col">
+<span class="font-h1-web text-h1-web-mobile font-bold tracking-tight text-on-surface leading-none">CONSTRUCTION OS</span>
+
+</div>
+</div>
+<button type="button" class="flex items-center gap-1.5 px-3 py-1 rounded-full bg-surface-container-highest border border-outline-variant/30 hover:border-outline-variant/60 active:scale-95 transition-all cursor-pointer group shadow-sm" title="แตะเพื่อตรวจสอบสถานะเชื่อมต่อ (Tap to check sync)">
+<div class="w-2 h-2 rounded-full bg-sync-active shadow-[0_0_8px_rgba(255,214,10,0.8)] animate-pulse"></div>
+<span class="font-tiny-web text-tiny-web text-on-surface font-semibold uppercase tracking-wider group-hover:text-primary transition-colors">SYNCED</span>
+<span class="material-symbols-outlined text-[14px] text-on-surface-variant group-hover:text-primary transition-colors">sync</span>
+</button>
+</div>
+<div class="flex items-center justify-between px-edge-mobile py-2 bg-surface-container-low border-b border-outline-variant/10 text-on-surface">
+<button type="button" class="flex items-center gap-2 text-left active:scale-98 transition-transform group py-0.5">
+<span class="material-symbols-outlined text-mobile-primary text-[18px]">apartment</span>
+<div class="flex flex-col">
+
+<span class="font-label-mobile text-[14px] font-semibold text-on-surface flex items-center gap-1 leading-tight group-hover:text-primary transition-colors">
+Skyline Tower A (Bangkok Central)
+<span class="material-symbols-outlined text-[16px] text-outline">expand_more</span>
+</span>
+</div>
+</button>
+
+</div></header>
+<!-- Main Content -->
+<main class="px-edge-mobile py-space-4 flex flex-col gap-space-4">
+<!-- Header & Filters -->
+<div class="flex flex-col gap-space-3"><div class="flex justify-between items-end">
+<div>
+
+
+</div>
+
+</div>
+<div class="flex gap-space-2 overflow-x-auto pb-1 scrollbar-hide -mx-edge-mobile px-edge-mobile" style="scrollbar-width: none;">
+<button type="button" class="flex-shrink-0 px-4 py-2 rounded-full bg-primary-container text-white font-label-mobile text-label-mobile shadow-sm ring-2 ring-primary/30 flex items-center gap-1.5 active:scale-95 transition-all cursor-pointer">
+<span class="">All</span>
+<span class="w-5 h-5 rounded-full bg-white/20 text-white text-[11px] font-bold flex items-center justify-center">8</span>
+</button>
+<button type="button" class="flex-shrink-0 px-4 py-2 rounded-full bg-surface-container-high text-on-surface border border-outline-variant/40 hover:border-outline hover:bg-surface-container-highest font-label-mobile text-label-mobile flex items-center gap-1.5 active:scale-95 transition-all cursor-pointer">
+<span class="">RFQ</span>
+<span class="w-5 h-5 rounded-full bg-surface-container-highest text-on-surface-variant text-[11px] font-medium flex items-center justify-center border border-outline-variant/30">3</span>
+</button>
+<button type="button" class="flex-shrink-0 px-4 py-2 rounded-full bg-surface-container-high text-on-surface border border-outline-variant/40 hover:border-outline hover:bg-surface-container-highest font-label-mobile text-label-mobile flex items-center gap-1.5 active:scale-95 transition-all cursor-pointer">
+<span class="">PO</span>
+<span class="w-5 h-5 rounded-full bg-surface-container-highest text-on-surface-variant text-[11px] font-medium flex items-center justify-center border border-outline-variant/30">4</span>
+</button>
+<button type="button" class="flex-shrink-0 px-4 py-2 rounded-full bg-mobile-warning/10 text-mobile-warning border border-mobile-warning/40 hover:bg-mobile-warning/20 font-label-mobile text-label-mobile flex items-center gap-1.5 active:scale-95 transition-all cursor-pointer shadow-sm">
+<span class="material-symbols-outlined text-[16px] text-mobile-warning">priority_high</span>
+<span class="">Urgent</span>
+<span class="w-5 h-5 rounded-full bg-mobile-warning text-dark-bg text-[11px] font-bold flex items-center justify-center">1</span>
+</button>
+</div></div>
+<!-- Approval List (Bento/Cards) -->
+<div class="flex flex-col gap-space-3">
+<!-- Card 1: Urgent PO -->
+<div class="bg-surface-container rounded-xl overflow-hidden flex flex-col relative border border-outline-variant/20 shadow-md transition-all hover:border-mobile-warning/50">
+<div class="absolute left-0 top-0 bottom-0 w-1.5 bg-mobile-warning"></div>
+<div class="p-space-4 pl-5 flex flex-col gap-space-3 border-b border-outline-variant/10">
+<div class="flex justify-between items-start cursor-pointer group">
+<div>
+<div class="flex items-center gap-2 mb-1.5 flex-wrap">
+<span class="font-tiny-web text-tiny-web text-on-surface-variant bg-surface-container-highest px-2 py-0.5 rounded border border-outline-variant/20 font-semibold tracking-wide">#PO-2023-089</span>
+<span class="font-tiny-web text-tiny-web text-mobile-warning bg-mobile-warning/15 border border-mobile-warning/30 px-2 py-0.5 rounded flex items-center gap-1 font-semibold animate-pulse">
+<span class="material-symbols-outlined text-[13px]">alarm</span>4h remaining</span>
+</div>
+<h3 class="font-h2-web text-h2-web text-on-surface group-hover:text-primary transition-colors flex items-center gap-1.5">
+Steel Rebar Supply Q3
+<span class="material-symbols-outlined text-[18px] text-outline group-hover:translate-x-0.5 transition-transform">chevron_right</span>
+</h3>
+</div>
+<div class="text-right pl-2">
+
+<span class="font-h1-web text-h1-web-mobile text-primary font-bold whitespace-nowrap tracking-tight">฿ 1.2 M&nbsp;</span>
+</div>
+</div>
+<div class="grid grid-cols-2 gap-3 mt-1 bg-surface-container-low/50 p-2.5 rounded-lg border border-outline-variant/10">
+<div class="flex flex-col">
+<span class="font-tiny-web text-tiny-web text-on-surface-variant flex items-center gap-1">
+<span class="material-symbols-outlined text-[13px]">storefront</span>VENDOR</span>
+<span class="font-body-mobile text-[15px] font-medium text-on-surface line-clamp-1 mt-0.5">Siam Construction Materials</span>
+</div>
+<div class="flex flex-col">
+<span class="font-tiny-web text-tiny-web text-on-surface-variant flex items-center gap-1">
+<span class="material-symbols-outlined text-[13px]">apartment</span>PROJECT</span>
+<span class="font-body-mobile text-[15px] font-medium text-on-surface line-clamp-1 mt-0.5">Metro Line Blue Extension</span>
+</div>
+</div>
+</div>
+<div class="p-space-3 pl-5 flex gap-space-2 bg-surface-container-lowest/40 items-center">
+<button type="button" class="flex-1 h-touch-target rounded-lg bg-mobile-primary hover:bg-blue-600 active:bg-blue-700 text-white font-label-mobile text-label-mobile tracking-wide flex items-center justify-center gap-2 active:scale-95 transition-all shadow-md shadow-blue-500/20 cursor-pointer">
+<span class="material-symbols-outlined text-[20px]">verified</span>
+<span class="">APPROVE</span>
+</button>
+<button type="button" class="flex-1 h-touch-target rounded-lg bg-surface-container-high hover:bg-surface-container-highest border border-outline-variant/50 text-on-surface font-label-mobile text-label-mobile tracking-wide flex items-center justify-center gap-2 active:scale-95 transition-all cursor-pointer">
+<span class="material-symbols-outlined text-[20px] text-outline">visibility</span>
+<span class="">DETAILS</span>
+</button>
+</div>
+</div>
+<!-- Card 2: Normal RFQ -->
+<div class="bg-surface-container rounded-xl overflow-hidden flex flex-col relative border border-outline-variant/20 shadow-md transition-all hover:border-secondary/50">
+<div class="absolute left-0 top-0 bottom-0 w-1.5 bg-secondary"></div>
+<div class="p-space-4 pl-5 flex flex-col gap-space-3 border-b border-outline-variant/10">
+<div class="flex justify-between items-start cursor-pointer group">
+<div>
+<div class="flex items-center gap-2 mb-1.5 flex-wrap">
+<span class="font-tiny-web text-tiny-web text-secondary bg-secondary/10 border border-secondary/30 px-2 py-0.5 rounded font-semibold tracking-wide">#RFQ-2023-142</span>
+<span class="font-tiny-web text-tiny-web text-on-surface-variant bg-surface-container-highest px-2 py-0.5 rounded flex items-center gap-1 font-medium">
+<span class="material-symbols-outlined text-[13px]">gavel</span>Comparison</span>
+</div>
+<h3 class="font-h2-web text-h2-web text-on-surface group-hover:text-primary transition-colors flex items-center gap-1.5">
+Heavy Machinery ...<span class="material-symbols-outlined text-[18px] text-outline group-hover:translate-x-0.5 transition-transform">chevron_right</span>
+</h3>
+</div>
+<div class="text-right pl-2">
+
+<span class="font-h1-web text-h1-web-mobile text-on-surface font-bold whitespace-nowrap tracking-tight">฿ 450 K</span>
+</div>
+</div>
+<div class="grid grid-cols-2 gap-3 mt-1 bg-surface-container-low/50 p-2.5 rounded-lg border border-outline-variant/10">
+<div class="flex flex-col">
+<span class="font-tiny-web text-tiny-web text-on-surface-variant flex items-center gap-1">
+<span class="material-symbols-outlined text-[13px]">storefront</span>VENDOR</span>
+<span class="font-body-mobile text-[15px] font-medium text-secondary line-clamp-1 mt-0.5">Multi-Vendor (3 Bids)</span>
+</div>
+<div class="flex flex-col">
+<span class="font-tiny-web text-tiny-web text-on-surface-variant flex items-center gap-1">
+<span class="material-symbols-outlined text-[13px]">apartment</span>PROJECT</span>
+<span class="font-body-mobile text-[15px] font-medium text-on-surface line-clamp-1 mt-0.5">Riverside Condominium</span>
+</div>
+</div>
+</div>
+<div class="p-space-3 pl-5 flex gap-space-2 bg-surface-container-lowest/40 items-center">
+<button type="button" class="flex-1 h-touch-target rounded-lg bg-mobile-primary hover:bg-blue-600 active:bg-blue-700 text-white font-label-mobile text-label-mobile tracking-wide flex items-center justify-center gap-2 active:scale-95 transition-all shadow-md shadow-blue-500/20 cursor-pointer">
+<span class="material-symbols-outlined text-[20px]">verified</span>
+<span class="">APPROVE</span>
+</button>
+<button type="button" class="flex-1 h-touch-target rounded-lg bg-surface-container-high hover:bg-surface-container-highest border border-outline-variant/50 text-on-surface font-label-mobile text-label-mobile tracking-wide flex items-center justify-center gap-2 active:scale-95 transition-all cursor-pointer">
+<span class="material-symbols-outlined text-[20px] text-outline">visibility</span>
+<span class="">COMPARE</span>
+</button>
+</div>
+</div>
+<!-- Card 3: Normal PO -->
+<div class="bg-surface-container rounded-xl overflow-hidden flex flex-col relative border border-outline-variant/20 shadow-md transition-all hover:border-primary/50">
+<div class="absolute left-0 top-0 bottom-0 w-1.5 bg-primary"></div>
+<div class="p-space-4 pl-5 flex flex-col gap-space-3 border-b border-outline-variant/10">
+<div class="flex justify-between items-start cursor-pointer group">
+<div>
+<div class="flex items-center gap-2 mb-1.5 flex-wrap">
+<span class="font-tiny-web text-tiny-web text-on-surface-variant bg-surface-container-highest px-2 py-0.5 rounded border border-outline-variant/20 font-semibold tracking-wide">#PO-2023-090</span>
+<span class="font-tiny-web text-tiny-web text-on-surface-variant bg-surface-container-high px-2 py-0.5 rounded flex items-center gap-1 font-medium">
+<span class="material-symbols-outlined text-[13px]">schedule</span> ปกติ (Standard)
+</span>
+</div>
+<h3 class="font-h2-web text-h2-web text-on-surface group-hover:text-primary transition-colors flex items-center gap-1.5">
+Safety Equipment Bulk
+<span class="material-symbols-outlined text-[18px] text-outline group-hover:translate-x-0.5 transition-transform">chevron_right</span>
+</h3>
+</div>
+<div class="text-right pl-2">
+
+<span class="font-h1-web text-h1-web-mobile text-on-surface font-bold whitespace-nowrap tracking-tight">฿ 85 K</span>
+</div>
+</div>
+<div class="grid grid-cols-2 gap-3 mt-1 bg-surface-container-low/50 p-2.5 rounded-lg border border-outline-variant/10">
+<div class="flex flex-col">
+<span class="font-tiny-web text-tiny-web text-on-surface-variant flex items-center gap-1">
+<span class="material-symbols-outlined text-[13px]">storefront</span>VENDOR</span>
+<span class="font-body-mobile text-[15px] font-medium text-on-surface line-clamp-1 mt-0.5">Global Safety Gear Co.</span>
+</div>
+<div class="flex flex-col">
+<span class="font-tiny-web text-tiny-web text-on-surface-variant flex items-center gap-1">
+<span class="material-symbols-outlined text-[13px]">apartment</span>PROJECT</span>
+<span class="font-body-mobile text-[15px] font-medium text-on-surface line-clamp-1 mt-0.5">HQ Renovation</span>
+</div>
+</div>
+</div>
+<div class="p-space-3 pl-5 flex gap-space-2 bg-surface-container-lowest/40 items-center">
+<button type="button" class="flex-1 h-touch-target rounded-lg bg-mobile-primary hover:bg-blue-600 active:bg-blue-700 text-white font-label-mobile text-label-mobile tracking-wide flex items-center justify-center gap-2 active:scale-95 transition-all shadow-md shadow-blue-500/20 cursor-pointer">
+<span class="material-symbols-outlined text-[20px]">verified</span>
+<span class="">APPROVE</span>
+</button>
+<button type="button" class="flex-1 h-touch-target rounded-lg bg-surface-container-high hover:bg-surface-container-highest border border-outline-variant/50 text-on-surface font-label-mobile text-label-mobile tracking-wide flex items-center justify-center gap-2 active:scale-95 transition-all cursor-pointer">
+<span class="material-symbols-outlined text-[20px] text-outline">visibility</span>
+<span class="">DETAILS</span>
+</button>
+</div>
+</div>
+<div class="mt-2 p-3 bg-surface-container-high border border-outline-variant/30 rounded-xl flex items-center justify-between shadow-sm">
+<div class="flex items-center gap-2">
+
+
+</div>
+<button type="button" class="px-3 py-1.5 rounded-lg bg-primary/10 hover:bg-primary/20 border border-primary/30 text-primary font-label-mobile text-[12px] font-semibold flex items-center gap-1 active:scale-95 transition-all cursor-pointer">
+<span class="material-symbols-outlined text-[16px]">done_all</span>
+<span class="">อนุมัติทั้งหมด (8 รายการ)</span>
+</button>
+</div></div>
+</main>
+<!-- BottomNavBar (Mobile Only) -->
+<nav class="md:hidden bg-surface-container dark:bg-surface-container font-label-mobile text-label-mobile docked full-width bottom-0 rounded-t-xl bg-surface-container dark:bg-surface-container shadow-lg fixed bottom-0 w-full z-50 flex justify-around items-center px-4 h-20 pb-safe md:hidden"><a class="flex flex-col items-center justify-center min-w-[56px] min-h-[52px] text-on-surface-variant hover:text-on-surface p-1 rounded-lg active:scale-90 transition-all" href="#">
+<span class="material-symbols-outlined mb-0.5 text-[22px]" style="font-variation-settings: &quot;FILL&quot; 0;">dashboard</span>
+<span class="text-[11px] font-medium">Home</span>
+</a>
+<a class="flex flex-col items-center justify-center min-w-[70px] min-h-[52px] bg-primary-container text-white rounded-xl px-3 py-1 active:scale-90 transition-all shadow-md shadow-primary-container/30" href="#">
+<span class="material-symbols-outlined mb-0.5 text-[22px] text-white" style="font-variation-settings: &quot;FILL&quot; 1;">rule</span>
+<span class="text-[11px] font-bold text-white tracking-wide">RFQs</span>
+</a>
+<a class="flex flex-col items-center justify-center min-w-[56px] min-h-[52px] text-on-surface-variant hover:text-on-surface p-1 rounded-lg active:scale-90 transition-all" href="#">
+<span class="material-symbols-outlined mb-0.5 text-[22px]" style="font-variation-settings: &quot;FILL&quot; 0;">receipt_long</span>
+<span class="text-[11px] font-medium">Orders</span>
+</a>
+<a class="flex flex-col items-center justify-center min-w-[56px] min-h-[52px] text-on-surface-variant hover:text-on-surface p-1 rounded-lg active:scale-90 transition-all" href="#">
+<span class="material-symbols-outlined mb-0.5 text-[22px]" style="font-variation-settings: &quot;FILL&quot; 0;">local_shipping</span>
+<span class="text-[11px] font-medium">Deliveries</span>
+</a></nav>
+
+
+
+
+</body></html>
