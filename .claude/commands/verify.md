@@ -106,9 +106,14 @@ cleaned up so the next round starts from a closed gate:
 rm .claude/impl-pending.md .claude/impl-approved
 ```
 
-Ask before running it. Leaving both files in place is what leaves
-`rule-38-check-approval.sh` permanently open — it only blocks when
-`impl-pending.md` exists **without** `impl-approved`.
+Ask before running it. Leaving both files in place used to leave
+`rule-38-check-approval.sh` permanently open, because it only blocked when
+`impl-pending.md` existed **without** `impl-approved`. Since 2026-09-08 the hook
+also refuses a marker that does not match the plan on disk — older than it, or
+naming a different one — so a leftover pair now fails closed on the next round
+instead of waving it through. **That is a safety net, not the procedure:** the
+marker still has to be cleaned up here, and the archive convention is to rename
+the plan rather than delete it, `.claude/impl-completed-<date>-<subject>.md`.
 
 Report the state of both files at the end of every run, whatever the verdict, so
 an open gate is visible rather than assumed. Report the tick count too — how many

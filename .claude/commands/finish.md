@@ -39,8 +39,11 @@ branch can reach a merge without CI having run on it at all.
 
 A green suite is one obligation, not the list. Run `/verify` and show the command
 output per obligation before the branch is described as finished, and report the
-state of `.claude/impl-pending.md` and `.claude/impl-approved` — leaving both in
-place is what leaves the Rule 38 gate permanently open.
+state of `.claude/impl-pending.md` and `.claude/impl-approved`. Leaving both in
+place used to leave the Rule 38 gate permanently open; since 2026-09-08 a marker
+that does not match the plan on disk is refused instead, so a leftover pair fails
+closed on the next round. Clean them up anyway — the safety net is not the
+procedure.
 
 ## The one thing never to infer
 

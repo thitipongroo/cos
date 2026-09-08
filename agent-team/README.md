@@ -134,6 +134,13 @@ Neither can close itself. `/plan-gate` must not create `.claude/impl-approved` â
 that file is the human gate, and an agent creating it defeats the only check in
 the workflow.
 
+Since 2026-09-08 the marker also has to MATCH the plan: an empty one must be at
+least as new as `.claude/impl-pending.md`, or it may carry that file's SHA-256 and
+be checked by content instead. Presence alone had let a marker outlive its plan
+three rounds running, and the gate stood open for a list nobody had read. The
+mechanics are in `.claude/hooks/rule-38-check-approval.sh`; the cases are asserted
+in `scripts/ci/check-hooks-fire.sh`.
+
 ## Adding to this
 
 - **A new skill** â€” `.claude/skills/<group>-<name>/SKILL.md`, then add a row to

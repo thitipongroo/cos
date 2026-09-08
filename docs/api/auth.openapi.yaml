@@ -1574,6 +1574,16 @@ paths:
         request needs a fresh action token, and step-up already caps those at 10 per user per day.
 
         Behind the `s1.identity.data-export` kill switch (QM-15 / ADR-049).
+
+        **What the `identity` category returns from the account itself**, and the reason this list
+        is written down: it is an explicit column list in `data-export.collector.ts`, not
+        `SELECT *`, so a column added to `platform.users` and forgotten there would narrow every
+        export from that day without failing anything.
+
+        `user_id`, `display_name`, `department`, `position`, `is_active`, `created_at`,
+        `updated_at` — plus the caller's trusted devices and, where the account is linked to one,
+        their worker record. `position` was added on 2026-09-08 with the column (ADR-101).
+        The `contact` category returns `email` and `phone_number` from the same row.
       operationId: requestDataExport
       tags: [data-export]
       security:

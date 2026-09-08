@@ -1,0 +1,215 @@
+<!DOCTYPE html><html class="dark" lang="en" style=""><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport">
+<title>Purchase Orders | Construction OS</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<style>
+        body {
+            font-family: 'Inter Tight', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .scrollbar-hide::-webkit-scrollbar {
+            display: none;
+        }
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        .active-tab-indicator {
+            view-transition-name: active-tab;
+        }
+    </style>
+<!-- Tailwind Configuration -->
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface": "#031427",
+                        "cos-blue": "#2563EB",
+                        "background": "#031427",
+                        "tertiary-fixed": "#dee1f9",
+                        "on-secondary-fixed-variant": "#004e5c",
+                        "tertiary-container": "#686c80",
+                        "secondary": "#4cd7f6",
+                        "secondary-fixed-dim": "#4cd7f6",
+                        "on-secondary": "#003640",
+                        "on-secondary-fixed": "#001f26",
+                        "cos-cyan": "#06B6D4",
+                        "primary-fixed-dim": "#b4c5ff",
+                        "on-tertiary-fixed-variant": "#414658",
+                        "on-tertiary": "#2b3041",
+                        "mobile-danger": "#FF3B30",
+                        "inverse-on-surface": "#213145",
+                        "secondary-container": "#03b5d3",
+                        "cos-white": "#F8FAFC",
+                        "surface-container-low": "#0b1c30",
+                        "primary": "#b4c5ff",
+                        "dark-surface": "#0F172A",
+                        "on-tertiary-fixed": "#161b2b",
+                        "on-primary-container": "#eeefff",
+                        "surface-container-highest": "#26364a",
+                        "mobile-primary": "#0066FF",
+                        "surface-dim": "#031427",
+                        "sync-active": "#FFD60A",
+                        "tertiary-fixed-dim": "#c1c5dc",
+                        "surface-container": "#102034",
+                        "inverse-primary": "#0053db",
+                        "mobile-success": "#00C853",
+                        "error": "#ffb4ab",
+                        "on-primary-fixed-variant": "#003ea8",
+                        "inverse-surface": "#d3e4fe",
+                        "on-surface": "#d3e4fe",
+                        "tertiary": "#c1c5dc",
+                        "on-primary-fixed": "#00174b",
+                        "surface-variant": "#26364a",
+                        "sync-pending": "#94A3B8",
+                        "on-secondary-container": "#00424e",
+                        "surface-bright": "#2a3a4f",
+                        "on-error": "#690005",
+                        "surface-container-lowest": "#000f21",
+                        "outline": "#8d90a0",
+                        "on-tertiary-container": "#eeefff",
+                        "on-background": "#d3e4fe",
+                        "primary-container": "#2563eb",
+                        "on-primary": "#002a78",
+                        "error-container": "#93000a",
+                        "on-error-container": "#ffdad6",
+                        "primary-fixed": "#dbe1ff",
+                        "dark-bg": "#020617",
+                        "cos-navy": "#0B1020",
+                        "surface-tint": "#b4c5ff",
+                        "surface-container-high": "#1b2b3f",
+                        "mobile-warning": "#FF9500",
+                        "secondary-fixed": "#acedff",
+                        "outline-variant": "#434655",
+                        "on-surface-variant": "#c3c6d7"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "web-space-8": "32px",
+                        "mobile-edge": "24px",
+                        "web-space-3": "12px",
+                        "mobile-touch-target": "52px",
+                        "web-space-4": "16px",
+                        "web-space-2": "8px",
+                        "web-space-1": "4px",
+                        "web-base": "4px"
+                    },
+                    "fontFamily": {
+                        "mobile-text-label": ["Inter Tight"],
+                        "web-text-small": ["Inter Tight"],
+                        "web-text-display": ["Inter Tight"],
+                        "web-text-h2": ["Inter Tight"],
+                        "web-text-tiny": ["Inter Tight"],
+                        "mobile-text-body": ["Inter Tight"],
+                        "web-text-h1": ["Inter Tight"],
+                        "mobile-text-hero": ["Inter Tight"],
+                        "web-text-body": ["Inter Tight"]
+                    },
+                    "fontSize": {
+                        "mobile-text-label": ["13px", {"lineHeight": "18px", "fontWeight": "600"}],
+                        "web-text-small": ["12px", {"lineHeight": "16px", "fontWeight": "400"}],
+                        "web-text-display": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "web-text-h2": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                        "web-text-tiny": ["11px", {"lineHeight": "12px", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                        "mobile-text-body": ["17px", {"lineHeight": "24px", "fontWeight": "400"}],
+                        "web-text-h1": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                        "mobile-text-hero": ["28px", {"lineHeight": "34px", "fontWeight": "700"}],
+                        "web-text-body": ["14px", {"lineHeight": "20px", "fontWeight": "400"}]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-dark-bg text-on-surface select-none overflow-x-hidden pb-24">
+<!-- Top Navigation Bar -->
+<header class="fixed top-0 left-0 right-0 z-50 bg-surface/90 backdrop-blur-md px-mobile-edge h-16 flex items-center justify-between">
+<h1 class="font-mobile-text-hero text-mobile-text-hero tracking-tight text-on-surface">Purchase Orders</h1>
+<div class="flex items-center gap-4"><button aria-label="Notifications" class="w-11 h-11 flex items-center justify-center rounded-full bg-surface-container border border-outline-variant/40 text-on-surface hover:text-on-surface-variant active:scale-95 transition-all shadow-sm relative"><span class="material-symbols-outlined text-[22px]">notifications</span><span class="absolute top-2 right-2 w-2 h-2 rounded-full bg-mobile-danger"></span></button><button aria-label="User Profile" class="w-11 h-11 rounded-full border-2 border-cos-blue/60 p-0.5 overflow-hidden active:scale-95 transition-transform flex items-center justify-center bg-surface-container"><img class="w-full h-full rounded-full object-cover" data-alt="User Profile" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD79yuUdqSXEgYhXc7E2QkjSGH7ii_QdAw5_RCzd7amx0f_p87MydnvoWpNDt6LsIHpglV9CSWdnh5TLnhBDtOp7u3nMB-NI97kcnQ80Yl4nB5jqJMd0VzBidzckj0w8Falh6Y4ndZA7ZIHtScnK-nSkrxndKSiryXbPmglHubd3TSChV4LWEX1G5vsgSm6CXSGKM0E3hekQnCKN8mbLWtGHzMnNgW868wpu53BaFjMQeVtjVmyf_SfN4_FX_Tvq194r-9i_K3ShM4"></button></div>
+</header>
+<!-- Main Content Canvas -->
+<main class="mt-16 px-mobile-edge pt-web-space-4 space-y-6">
+<!-- Search & Filter Controls -->
+<section class="space-y-3"><div class="relative flex items-center gap-2"><div class="relative flex-1"><div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-outline"><span class="material-symbols-outlined text-[20px]">search</span></div><input class="w-full h-mobile-touch-target bg-surface-container-low border border-outline-variant/60 text-on-surface rounded-xl pl-10 pr-10 focus:ring-2 focus:ring-cos-blue focus:border-transparent transition-all font-mobile-text-body text-mobile-text-body" placeholder="Search by ID or Vendor..." type="text"><button aria-label="Clear or voice" class="absolute inset-y-0 right-0 pr-3 flex items-center text-outline hover:text-on-surface active:scale-95"><span class="material-symbols-outlined text-[20px]">mic</span></button></div></div><div class="flex gap-2 overflow-x-auto scrollbar-hide py-1"><button class="flex-shrink-0 px-4 h-10 flex items-center gap-1.5 bg-primary-container text-on-primary-container rounded-full font-mobile-text-label text-mobile-text-label shadow-sm active:scale-95 transition-transform border border-cos-blue"><span class="material-symbols-outlined text-[16px]">check</span><span class="">Status</span><span class="material-symbols-outlined text-[16px]">arrow_drop_down</span></button><button class="flex-shrink-0 px-4 h-10 flex items-center gap-1.5 bg-surface-container text-on-surface-variant border border-outline-variant/50 rounded-full font-mobile-text-label text-mobile-text-label active:bg-surface-container-highest active:scale-95 transition-transform"><span class="material-symbols-outlined text-[16px]">apartment</span><span class="">Project</span><span class="material-symbols-outlined text-[16px]">arrow_drop_down</span></button><button class="flex-shrink-0 px-4 h-10 flex items-center gap-1.5 bg-surface-container text-on-surface-variant border border-outline-variant/50 rounded-full font-mobile-text-label text-mobile-text-label active:bg-surface-container-highest active:scale-95 transition-transform"><span class="material-symbols-outlined text-[16px]">calendar_month</span><span class="">Date</span><span class="material-symbols-outlined text-[16px]">arrow_drop_down</span></button><button class="flex-shrink-0 px-4 h-10 flex items-center gap-1.5 bg-surface-container text-on-surface-variant border border-outline-variant/50 rounded-full font-mobile-text-label text-mobile-text-label active:bg-surface-container-highest active:scale-95 transition-transform"><span class="material-symbols-outlined text-[16px]">payments</span><span class="">Amount</span><span class="material-symbols-outlined text-[16px]">arrow_drop_down</span></button></div></section>
+<!-- AI Delay Alert Module -->
+<section class="p-web-space-4 bg-cos-cyan/5 border-l-4 border-cos-cyan rounded-xl relative overflow-hidden group"><div class="flex items-start gap-3 relative z-10"><div class="bg-cos-cyan text-on-primary rounded-xl p-2.5 flex items-center justify-center shadow-md"><span class="material-symbols-outlined text-[22px]" style="font-variation-settings: &quot;FILL&quot; 1;">auto_awesome</span></div><div class="flex-1"><div class="flex items-center gap-2 mb-1"><span class="font-mobile-text-label text-mobile-text-label text-cos-cyan uppercase tracking-wider font-bold">ADelay Alert</span><span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-cos-cyan/20 text-cos-cyan border border-cos-cyan/40">HIGH RISK</span></div><p class="font-mobile-text-body text-mobile-text-body text-on-surface leading-snug mb-3">3 POs are at risk of <span class="font-bold text-cos-cyan">72-hour delay</span> due to logistical congestion at Port of Rayong.</p><button class="h-10 px-4 rounded-lg bg-cos-cyan/15 border border-cos-cyan/60 text-cos-cyan font-bold text-xs flex items-center gap-2 active:bg-cos-cyan/30 active:scale-95 transition-all shadow-sm"><span class="material-symbols-outlined text-[18px]">lightbulb</span><span class="">VIEW RECOMMENDATIONS</span><span class="material-symbols-outlined text-[16px]">arrow_forward</span></button></div></div><div class="absolute top-0 right-0 p-2 opacity-10 pointer-events-none"><span class="material-symbols-outlined text-[64px]">waves</span></div></section>
+<!-- Purchase Order Cards List -->
+<section class="space-y-4">
+<div class="flex items-center justify-between mb-2"><span class="text-on-surface-variant font-web-text-tiny uppercase tracking-widest font-bold">Active Orders (14)</span><button class="h-8 px-3 rounded-lg bg-surface-container border border-outline-variant/40 text-cos-blue font-bold text-xs flex items-center gap-1.5 active:bg-surface-container-highest active:scale-95 transition-all shadow-sm"><span class="material-symbols-outlined text-[16px]">swap_vert</span><span class="">SORT BY DATE</span></button></div>
+<!-- PO Card 1 -->
+<div class="p-web-space-4 bg-surface-container-low border border-outline-variant border-l-4 border-l-mobile-success rounded-xl shadow-sm space-y-3.5 transition-all"><div class="flex items-start justify-between"><div class="flex-1"><div><div class="flex items-center gap-2 mb-1"><span class="font-bold text-on-surface text-lg">#PO-8821</span><span class="px-2 py-0.5 bg-mobile-success/10 text-mobile-success text-xs font-bold rounded uppercase border border-mobile-success/20">VERIFY</span></div><p class="text-on-surface-variant font-web-text-body">Structural Steel Co., Ltd.</p></div></div><div class="flex items-center gap-2"><div class="text-right"><p class="font-bold text-on-surface">฿ 1.234 M</p><p class="text-on-surface-variant text-[11px] uppercase tracking-tighter">Project Alpha</p></div><button aria-label="View PO Details" class="w-8 h-8 rounded-lg flex items-center justify-center text-outline hover:text-on-surface bg-surface-container/50 active:scale-90 transition-transform"><span class="material-symbols-outlined text-[20px]">chevron_right</span></button></div></div><div class="space-y-1.5"><div class="flex justify-between text-xs text-on-surface-variant font-medium"><span class="">Delivery Progress</span><span class="font-bold text-on-surface">65%</span></div><div class="w-full h-2 bg-surface-container-highest rounded-full overflow-hidden"><div class="h-full bg-cos-blue rounded-full" style="width: 65%"></div></div></div><div class="flex items-center justify-between pt-2 border-t border-outline-variant/30"><div class="flex items-center gap-1.5 text-xs text-on-surface-variant"><span class="material-symbols-outlined text-[15px]">calendar_today</span><span class="">ETA: Oct 24, 2023</span></div><button class="h-7 px-2.5 rounded bg-surface-container border border-outline-variant/40 text-on-surface-variant text-xs font-medium flex items-center gap-1 active:bg-surface-container-highest active:scale-95 transition-all"><span class="material-symbols-outlined text-[14px]">local_shipping</span><span class="">Track PO</span></button></div></div>
+<!-- PO Card 2 -->
+<div class="p-web-space-4 bg-surface-container-low border border-outline-variant border-l-4 border-l-mobile-warning rounded-xl shadow-sm space-y-3.5 transition-all"><div class="flex items-start justify-between"><div class="flex-1"><div><div class="flex items-center gap-2 mb-1"><span class="font-bold text-on-surface text-lg">#PO-8904</span><span class="px-2 py-0.5 bg-mobile-warning/10 text-mobile-warning text-xs font-bold rounded uppercase border border-mobile-warning/20">Sent</span></div><p class="text-on-surface-variant font-web-text-body">Pacific Concrete Solutions</p></div></div><div class="flex items-center gap-2"><div class="text-right"><p class="font-bold text-on-surface">฿ 485,200</p><p class="text-on-surface-variant text-[11px] uppercase tracking-tighter">Nexus Tower</p></div><button aria-label="View PO Details" class="w-8 h-8 rounded-lg flex items-center justify-center text-outline hover:text-on-surface bg-surface-container/50 active:scale-90 transition-transform"><span class="material-symbols-outlined text-[20px]">chevron_right</span></button></div></div><div class="space-y-1.5"><div class="flex justify-between text-xs text-on-surface-variant font-medium"><span class="">Delivery Progress</span><span class="font-bold text-mobile-warning">12%</span></div><div class="w-full h-2 bg-surface-container-highest rounded-full overflow-hidden"><div class="h-full bg-mobile-warning rounded-full" style="width: 12%"></div></div></div><div class="flex items-center justify-between pt-2 border-t border-outline-variant/30"><div class="flex items-center gap-1.5 text-xs text-on-surface-variant"><span class="material-symbols-outlined text-[15px]">calendar_today</span><span class="">ETA: Oct 28, 2023</span></div><button class="h-7 px-2.5 rounded bg-surface-container border border-outline-variant/40 text-on-surface-variant text-xs font-medium flex items-center gap-1 active:bg-surface-container-highest active:scale-95 transition-all"><span class="material-symbols-outlined text-[14px]">visibility</span><span class="">Details</span></button></div></div>
+<!-- PO Card 3 (Urgent/Danger) -->
+<div class="p-web-space-4 bg-surface-container-low border-l-4 border-l-mobile-danger border border-outline-variant rounded-xl shadow-md space-y-3.5 transition-all"><div class="flex items-start justify-between"><div class="flex-1"><div><div class="flex items-center gap-2 mb-1"><span class="font-bold text-on-surface text-lg">#PO-8752</span><span class="px-2 py-0.5 bg-mobile-danger/15 text-mobile-danger text-xs font-bold rounded uppercase border border-mobile-danger/30">Pending</span></div><p class="text-on-surface-variant font-web-text-body">Electro-Core Systems</p></div></div><div class="flex items-center gap-2"><div class="text-right"><p class="font-bold text-on-surface">฿ 2.45 M</p><p class="text-on-surface-variant text-[11px] uppercase tracking-tighter">Smart Grid A2</p></div><button aria-label="View PO Details" class="w-8 h-8 rounded-lg flex items-center justify-center text-outline hover:text-on-surface bg-surface-container/50 active:scale-90 transition-transform"><span class="material-symbols-outlined text-[20px]">chevron_right</span></button></div></div><div class="space-y-1.5"><div class="flex justify-between text-xs text-on-surface-variant font-medium"><span class="">Delivery Progress</span><span class="font-bold text-outline">0%</span></div><div class="w-full h-2 bg-surface-container-highest rounded-full overflow-hidden"><div class="h-full bg-outline rounded-full" style="width: 0%"></div></div></div><div class="pt-2 border-t border-outline-variant/30 space-y-2.5"><div class="flex items-center gap-1.5 text-xs text-mobile-danger font-bold"><span class="material-symbols-outlined text-[16px]">error</span><span class="">Requires Action: Approval Overdue (24h)</span></div><div class="flex items-center gap-2"><button class="flex-1 h-10 px-3 bg-mobile-danger text-on-primary font-bold text-xs rounded-lg flex items-center justify-center gap-1.5 active:scale-95 transition-transform shadow-md"><span class="material-symbols-outlined text-[16px]">check_circle</span><span class="">Review &amp; Approve</span></button><button class="h-10 px-3 bg-surface-container border border-outline-variant/50 text-on-surface text-xs font-medium rounded-lg flex items-center justify-center gap-1 active:bg-surface-container-highest active:scale-95 transition-transform"><span class="">Decline</span></button></div></div></div>
+<!-- PO Card 4 -->
+<div class="p-web-space-4 bg-surface-container-low border border-outline-variant border-l-4 border-l-cos-blue rounded-xl shadow-sm space-y-3.5 transition-all"><div class="flex items-start justify-between"><div class="flex-1"><div><div class="flex items-center gap-2 mb-1"><span class="font-bold text-on-surface text-lg">#PO-8640</span><span class="px-2 py-0.5 bg-cos-blue/10 text-cos-blue text-xs font-bold rounded uppercase border border-cos-blue/20">Paid</span></div><p class="text-on-surface-variant font-web-text-body">Mekong Hydraulics</p></div></div><div class="flex items-center gap-2"><div class="text-right"><p class="font-bold text-on-surface">฿ 75,000</p><p class="text-on-surface-variant text-[11px] uppercase tracking-tighter">Maintenance</p></div><button aria-label="View PO Details" class="w-8 h-8 rounded-lg flex items-center justify-center text-outline hover:text-on-surface bg-surface-container/50 active:scale-90 transition-transform"><span class="material-symbols-outlined text-[20px]">chevron_right</span></button></div></div><div class="space-y-1.5"><div class="flex justify-between text-xs text-on-surface-variant font-medium"><span class="">Delivery Progress</span><span class="font-bold text-mobile-success">100%</span></div><div class="w-full h-2 bg-surface-container-highest rounded-full overflow-hidden"><div class="h-full bg-mobile-success rounded-full" style="width: 100%"></div></div></div><div class="flex items-center justify-between pt-2 border-t border-outline-variant/30"><div class="flex items-center gap-1.5 text-xs text-on-surface-variant"><span class="material-symbols-outlined text-[15px]">check_circle</span><span class="">Completed: Oct 19, 2023</span></div><button class="h-7 px-2.5 rounded bg-surface-container border border-outline-variant/40 text-on-surface-variant text-xs font-medium flex items-center gap-1 active:bg-surface-container-highest active:scale-95 transition-all"><span class="material-symbols-outlined text-[14px]">receipt_long</span><span class="">Receipt</span></button></div></div>
+</section>
+</main>
+<!-- Contextual Floating Action Button -->
+<button aria-label="Create New Purchase Order" class="fixed bottom-24 right-mobile-edge w-14 h-14 bg-mobile-primary text-on-primary rounded-2xl shadow-2xl border-2 border-white/20 flex items-center justify-center active:scale-90 transition-transform z-40"><span class="material-symbols-outlined text-[32px]">add</span></button>
+<!-- Bottom Navigation Bar (Procurement Optimized) -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center h-mobile-touch-target px-mobile-edge pb-safe bg-surface border-t border-outline-variant/30 shadow-2xl"><button class="flex flex-col items-center justify-center text-on-surface-variant w-1/4 h-mobile-touch-target active:scale-90 transition-transform"><span class="material-symbols-outlined text-[24px]">dashboard</span><span class="font-mobile-text-label text-[10px] mt-0.5">Home</span></button><button class="flex flex-col items-center justify-center text-on-primary-container w-1/4 h-mobile-touch-target active:scale-90 transition-transform"><div class="bg-primary-container px-4 py-1 rounded-xl flex flex-col items-center justify-center shadow-sm"><span class="material-symbols-outlined text-[22px]" style="font-variation-settings: &quot;FILL&quot; 1;">description</span><span class="font-mobile-text-label text-[10px]">Orders</span></div></button><button class="flex flex-col items-center justify-center text-on-surface-variant w-1/4 h-mobile-touch-target active:scale-90 transition-transform"><span class="material-symbols-outlined text-[24px]">query_stats</span><span class="font-mobile-text-label text-[10px] mt-0.5">RFQs</span></button><button class="flex flex-col items-center justify-center text-on-surface-variant w-1/4 h-mobile-touch-target active:scale-90 transition-transform"><span class="material-symbols-outlined text-[24px]">trending_up</span><span class="font-mobile-text-label text-[10px] mt-0.5">Deliveries</span></button></nav>
+<!-- Voice Note Hold-to-Record Trigger (Mobile Specialist UI) -->
+<div class="fixed bottom-28 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 pointer-events-none opacity-0 group" id="voice-trigger" style="opacity: 0; pointer-events: none;">
+<div class="bg-mobile-primary/90 text-on-primary px-4 py-2 rounded-full text-xs font-bold whitespace-nowrap mb-2 shadow-lg">
+            HOLD TO ADD VOICE NOTE
+        </div>
+<button class="pointer-events-auto w-16 h-16 bg-mobile-primary border-4 border-white/20 text-on-primary rounded-full flex items-center justify-center shadow-2xl active:scale-125 active:bg-mobile-danger transition-all duration-300" onpointerdown="startVoice()" onpointerup="stopVoice()">
+<span class="material-symbols-outlined text-[28px]" id="mic-icon">mic</span>
+</button>
+</div>
+<script>
+        // Subtle interaction logic for voice trigger visibility on scroll
+        let lastScrollTop = 0;
+        const voiceTrigger = document.getElementById('voice-trigger');
+        
+        window.addEventListener('scroll', () => {
+            let st = window.pageYOffset || document.documentElement.scrollTop;
+            if (st > 100) {
+                voiceTrigger.style.opacity = '1';
+                voiceTrigger.style.pointerEvents = 'auto';
+            } else {
+                voiceTrigger.style.opacity = '0';
+                voiceTrigger.style.pointerEvents = 'none';
+            }
+            lastScrollTop = st;
+        });
+
+        function startVoice() {
+            document.getElementById('mic-icon').innerText = 'record_voice_over';
+            if (navigator.vibrate) navigator.vibrate(50);
+        }
+
+        function stopVoice() {
+            document.getElementById('mic-icon').innerText = 'mic';
+            if (navigator.vibrate) navigator.vibrate([50, 30, 50]);
+        }
+    </script>
+
+
+
+
+
+
+</body></html>

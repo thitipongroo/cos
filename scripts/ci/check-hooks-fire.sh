@@ -164,6 +164,37 @@ expect_signal "rule-38  pending plan without approval refuses a .ts write" \
 touch .claude/impl-approved
 expect_silent "rule-38  approved plan allows the same write" \
   rule-38-check-approval.sh "src/service.ts" "export const x = 1;"
+
+# THE MARKER MUST NAME THE PLAN IT APPROVED (2026-09-08). Presence alone used to be the whole
+# check, so a marker outlived its plan three rounds running and the gate stood open for a list
+# nobody had read. The cases below are those three rounds reduced to their mechanics.
+touch -d '2020-01-01' .claude/impl-approved
+expect_signal "rule-38  a marker OLDER than the plan is stale and refuses" \
+  rule-38-check-approval.sh "src/service.ts" "export const x = 1;"
+touch .claude/impl-approved
+expect_silent "rule-38  a marker newer than the plan approves it" \
+  rule-38-check-approval.sh "src/service.ts" "export const x = 1;"
+printf '# a different plan, written after approval\n' >.claude/impl-pending.md
+expect_signal "rule-38  rewriting the plan after approval refuses again" \
+  rule-38-check-approval.sh "src/service.ts" "export const x = 1;"
+
+# The stronger form: the marker carries the plan SHA-256, so CONTENT decides and the plan can be
+# re-saved or have its boxes ticked without losing its approval.
+sha256sum .claude/impl-pending.md | cut -d ' ' -f 1 >.claude/impl-approved
+expect_silent "rule-38  a marker naming this plan approves it" \
+  rule-38-check-approval.sh "src/service.ts" "export const x = 1;"
+touch -d '2020-01-01' .claude/impl-approved
+expect_silent "rule-38  a naming marker approves whatever its timestamp says" \
+  rule-38-check-approval.sh "src/service.ts" "export const x = 1;"
+printf '# yet another plan\n' >.claude/impl-pending.md
+expect_signal "rule-38  a marker naming a DIFFERENT plan refuses" \
+  rule-38-check-approval.sh "src/service.ts" "export const x = 1;"
+
+# Scope is unchanged by any of the above: the gate still holds only source files.
+expect_silent "rule-38  a test file is never gated, approved or not" \
+  rule-38-check-approval.sh "src/__tests__/service.ts" "export const x = 1;"
+expect_signal "rule-38  a .sql write is gated like a .ts one" \
+  rule-38-check-approval.sh "db/migrate.sql" "SELECT 1;"
 rm -f .claude/impl-pending.md .claude/impl-approved
 
 # ---------------------------------------------------------------- 2b. the Stop reminder

@@ -116,6 +116,27 @@ touch .claude/impl-approved
 block source writes until it appears; an agent creating it defeats the only human
 gate in the workflow.
 
-If `.claude/impl-approved` already exists from a previous round, say so — the
-hook is currently open, and the plan you just wrote is not what was approved.
-Ask the product owner to remove both files before this plan is considered.
+### The marker has to name the plan it approved
+
+Since 2026-09-08 the hook does more than test that the file exists, because
+presence alone cannot say WHICH plan was approved — and a marker outlived its
+plan three rounds running, leaving the gate open for a list nobody had read.
+
+- **`touch`** still works and is still the documented gesture. An empty marker is
+  checked by TIME: it must be at least as new as `.claude/impl-pending.md`. A
+  marker created before the plan it supposedly approves is refused as stale.
+- **Naming the plan exactly** is the stronger form, for anyone who wants it:
+
+  ```bash
+  sha256sum .claude/impl-pending.md | cut -d ' ' -f 1 > .claude/impl-approved
+  ```
+
+  Content then decides instead of time, so the plan can be re-saved or have its
+  boxes ticked afterwards without needing re-approval — but editing its words
+  stops the hash matching, which is the right answer.
+
+Either way the hook fails **closed**: an unverifiable marker refuses the write.
+
+If `.claude/impl-approved` already exists from a previous round, say so — it is
+not approval of the plan you just wrote, and the hook will now refuse rather than
+pass. Ask the product owner to remove both files before this plan is considered.
