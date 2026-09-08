@@ -638,3 +638,128 @@ export const DELIVERY_SIGNOFF = figure(
   { inspector: 'Ekachai P.', signed: true, counted: '60/60' },
   'a signature record on a delivery — received_by holds a user id and nothing about a signature',
 );
+
+// ── PROC_MANAGER (11_proc_manager) ───────────────────────────────────────────
+//
+// EXTENDED 2026-09-09. The manager's set overlaps the officer's more than any pair before it — same
+// four tab names, same tables underneath — so most of what it draws was already registered by the
+// 10_proc_officer round. What is below is only what this role's drawings ADD.
+
+/**
+ * "+5.2%" beside Total Committed Spend, and the "FY2024 Q3" under it.
+ *
+ * The SPEND is real and summed in decimal.js. The comparison is not: nothing records what committed
+ * spend was in a previous period. `finance.cost_transactions` carries a `transaction_date` and could
+ * answer it for cost, but committed spend is the sum of open PURCHASE ORDERS, and a purchase order
+ * has one `created_at` — there is no series of totals to difference. The fiscal-period label has no
+ * source either; this platform has no fiscal calendar.
+ */
+export const PROC_SPEND_TREND = figure(
+  { delta: '+5.2%', period: 'FY2026 Q3' },
+  'a series of committed-spend totals over time, and a fiscal calendar to label them with',
+);
+
+/**
+ * "฿ 1.4 M" on the Savings Realized tile.
+ *
+ * THE SAME GAP THAT STOPPED THE OFFICER'S RFQ PRICE DELTA, one screen up: a saving is a difference
+ * between what was estimated and what was paid, and no table holds a procurement estimate.
+ * `boq.boq_items` carries rates for the bill of quantities, which is a different number about a
+ * different thing.
+ */
+export const PROC_SAVINGS_REALIZED = figure(
+  '฿ 1.4 M',
+  'a baseline estimate per order to measure the saving against — the BOQ rate is not one',
+);
+
+/**
+ * The countdown on an approval row — "4h remaining".
+ *
+ * `procurement.rfqs` has a `deadline` and the officer's screen measures against it. A PURCHASE
+ * ORDER has none: `purchase_orders` is `po_id, rfq_id, vendor_id, project_id, tenant_id, po_number,
+ * status, total_amount, currency_code, delivery_date, temporal_workflow_id, created_by, created_at,
+ * updated_at`. `delivery_date` is when goods are due, not when a signature is.
+ */
+export const APPROVAL_COUNTDOWN = figure(
+  ['4h remaining', '2d remaining', '6h remaining'] as const,
+  'a decision deadline on a purchase order — delivery_date is when goods are due, not a signature',
+);
+
+/**
+ * The vendor card's ON-TIME RATE, QC PASS RATE and COMPLIANCE line.
+ *
+ * A REAL SCORE EXISTS and is used: `GET /procurement/vendors/:vendorId/score` weights delivery,
+ * dispute and quotation history into one number. What has no source is the BREAKDOWN as the drawing
+ * words it — an on-time percentage, a QC pass rate and an insurance-document state are three
+ * separate measures the scorecard folds into one and never reports apart.
+ */
+export const VENDOR_PERFORMANCE = figure(
+  { onTimeRate: '98.5%', qcPassRate: '99.2%', compliance: 'Insurance renewal pending' },
+  'the scorecard to report its components separately, and a document register for compliance',
+);
+
+/**
+ * The manager's approval limit — "วงเงินอนุมัติ ฿5.0M" under the name in the drawer.
+ *
+ * NOT ADDED TO THE SHARED PROFILE BLOCK, whose five lines spec §32.7 fixes for every role. There is
+ * no approval-limit column on `platform.users` or anywhere else; the ladder in
+ * `po.workflow.ts::buildApprovalTiers` is per ORDER AMOUNT and per TIER, not per person, and its
+ * thresholds are workflow parameters rather than a property of whoever signs.
+ */
+export const APPROVAL_LIMIT = figure(
+  '฿5.0M',
+  'a per-user approval limit — the workflow ladder is per amount and per tier, not per person',
+);
+
+/**
+ * The deliveries screen's warehouse-capacity bar — "ลานกองเหล็ก Sector SD40 · 78% · ~2 คันรถ".
+ *
+ * §20.7.3 defines `/procurement/warehouses` and `/procurement/inventory`, and NOTHING BACKS EITHER:
+ * of the 24 schemas in this database not one holds a warehouse, a bin, a stock level or a quota.
+ */
+export const WAREHOUSE_CAPACITY = figure(
+  { name: 'Steel yard — Sector SD40', percent: 78, remaining: '~2 truckloads (36 t left)' },
+  'the warehouse and inventory tables ADR-060 specifies and nothing has built',
+);
+
+/**
+ * The disputes tile and the held amount — "ข้อพิพาท 1 เคส · กัก ฿140 K".
+ *
+ * A vendor invoice can be DISPUTED (`POST /procurement/vendor-invoices/:id/dispute`), and that is a
+ * status on an invoice rather than a case with an amount held against it. No dispute table exists in
+ * any schema, and nothing withholds money.
+ */
+export const DELIVERY_DISPUTES = figure(
+  { cases: 1, held: '฿ 140 K' },
+  'a dispute record with an amount held — an invoice status is not a case and holds nothing',
+);
+
+/**
+ * The weighbridge reading, the credit note and the inspector on a delivery card.
+ *
+ * `procurement.delivery_items` holds `quantity_received` and nothing else about how it was measured.
+ * There is no scale integration, no shortfall document and no signature record — `deliveries` has a
+ * `received_by` user id and says nothing about a sign-off.
+ */
+export const DELIVERY_INSPECTION = figure(
+  {
+    weighed: '18,040 kg (+0.22%)',
+    verdict: 'Within tolerance',
+    shortfall: '70 bags short (430 of 500)',
+    creditNote: '฿ -14,350',
+    inspector: 'Nattapon',
+  },
+  'a weighbridge feed, a credit-note document and a sign-off record on a delivery',
+);
+
+/** "CONFIDENCE: 96%" on the deliveries screen's logistics advisor (11_proc_manager/04_deliveries). */
+export const LOGISTICS_CONFIDENCE = figure(
+  96,
+  'a logistics model with carrier or traffic telemetry behind it — none runs',
+);
+
+/** "CONFIDENCE: 95%" on the vendor directory's insight banner (11_proc_manager/03_orders). */
+export const VENDOR_INSIGHT_CONFIDENCE = figure(
+  95,
+  'a model that ranks suppliers against a negotiating opportunity — none runs',
+);

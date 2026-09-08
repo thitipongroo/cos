@@ -17,6 +17,7 @@ import FieldHome from '../../components/home/FieldHome';
 import ExecHome from '../../components/home/ExecHome';
 import FinanceHome from '../../components/home/FinanceHome';
 import ProcurementHome from '../../components/home/ProcurementHome';
+import ProcManagerHome from '../../components/home/ProcManagerHome';
 import PmHome from '../../components/home/PmHome';
 import MinimalHome from '../../components/home/MinimalHome';
 
@@ -29,8 +30,13 @@ export default function HomeScreen() {
     case CosRole.FINANCE:
       return <FinanceHome />;
     case CosRole.PROCUREMENT_OFFICER:
-    case CosRole.PROC_MANAGER:
       return <ProcurementHome />;
+    // SPLIT FROM THE OFFICER ON 2026-09-09. Both roles shared one dashboard until
+    // `mockup/mobile/11_proc_manager/01_home` arrived and turned out not to be the same screen with
+    // different numbers: the officer's is four WORK QUEUES, the manager's is committed spend, the
+    // approvals waiting on a signature and how the suppliers are performing.
+    case CosRole.PROC_MANAGER:
+      return <ProcManagerHome />;
     case CosRole.PROJECT_MANAGER:
       return <PmHome />;
     case CosRole.SITE_ENGINEER:

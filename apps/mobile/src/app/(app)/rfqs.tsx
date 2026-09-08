@@ -43,6 +43,9 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { View, Text, Pressable, ScrollView, TextInput, StyleSheet } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { LoadingBoundary } from '../../components/LoadingBoundary';
+import { CosRole } from '@cos/types';
+import { useAuthStore } from '../../store/authStore';
+import ApprovalsQueue from '../../components/procurement/ApprovalsQueue';
 import { useT } from '../../i18n';
 import { useComingSoon } from '../../components/useComingSoon';
 import { listRfqs, projectNameIndex, type RfqRow } from '../../api/procurement';
@@ -81,7 +84,20 @@ function hoursLeft(deadline: string | null, now: Date): number | null {
   return Number.isFinite(ms) ? Math.round(ms / 3_600_000) : null;
 }
 
-export default function RfqsScreen(): React.JSX.Element {
+/**
+ * The RFQs tab, which is two screens.
+ *
+ * PROC_MANAGER sees the APPROVALS QUEUE (`11_proc_manager/02_rfqs`) — the purchase orders and RFQs
+ * waiting on a decision. PROCUREMENT_OFFICER sees the RFQ queue below
+ * (`10_proc_officer/02_rfqs`) — the requests for quotation it is running. One route, two jobs, the
+ * same way `home.tsx` has dispatched by role since the app had two roles.
+ */
+export default function RfqsRoute(): React.JSX.Element {
+  const role = useAuthStore((s) => s.role);
+  return role === CosRole.PROC_MANAGER ? <ApprovalsQueue /> : <OfficerRfqs />;
+}
+
+function OfficerRfqs(): React.JSX.Element {
   const t = useT();
   const p = usePalette();
   const isDark = useIsDark();

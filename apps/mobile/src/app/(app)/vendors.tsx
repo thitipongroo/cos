@@ -23,6 +23,8 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { View, Text, TextInput, ScrollView, Pressable, StyleSheet, Alert } from 'react-native';
 import { LoadingState } from '../../components/LoadingState';
 import { MaterialIcons } from '@expo/vector-icons';
+import { AiCardFooter } from '../../components/AiCardFooter';
+import { VENDOR_INSIGHT_CONFIDENCE, VENDOR_PERFORMANCE } from '../../lib/mockupFigures';
 import { CosRole } from '@cos/types';
 import {
   fetchVendorDirectory,
@@ -180,6 +182,25 @@ export default function VendorsScreen(): React.JSX.Element {
         </Text>
       ) : null}
 
+      {/* The drawing's insight banner (11_proc_manager/03_orders). DRAWN — nothing ranks suppliers
+          against a negotiating opportunity — and the source names the records this screen read
+          rather than the drawing's absent integrations. Standard AI-card foot, spec §32.7. */}
+      <View testID="vendor-insight" style={[styles.card, styles.insight]}>
+        <View style={styles.insightHead}>
+          <MaterialIcons name="auto-awesome" size={16} color={p.accent} />
+          <Text style={styles.insightTitle}>{t('vendors.insight')}</Text>
+        </View>
+        <Text style={styles.insightBody}>{t('vendors.insightBody')}</Text>
+        <AiCardFooter
+          testID="vendor-insight-foot"
+          percent={VENDOR_INSIGHT_CONFIDENCE.value}
+          source={t('vendors.insightSource')}
+          confLabel={t('insight.confShort')}
+          sourceLabel={t('insight.sourceShort')}
+          palette={p}
+        />
+      </View>
+
       {visible.map((entry) => {
         const score = scores[entry.vendor_id];
         const badge = vendorBadge(entry.verification_status, score?.grade ?? null);
@@ -214,6 +235,24 @@ export default function VendorsScreen(): React.JSX.Element {
                   <Text style={styles.badgeText}>{t(BADGE_LABEL[badge])}</Text>
                 </View>
               ) : null}
+            </View>
+
+            {/* DRAWN — the scorecard folds delivery, dispute and quotation history into ONE number
+                and never reports the parts. An on-time percentage, a QC pass rate and an insurance
+                state are three separate measures nothing records. See VENDOR_PERFORMANCE. */}
+            <View style={styles.perfRow}>
+              <View style={styles.fact}>
+                <MaterialIcons name="timer" size={14} color={p.muted} />
+                <Text style={styles.perfText}>
+                  {t('vendors.onTime', { rate: VENDOR_PERFORMANCE.value.onTimeRate })}
+                </Text>
+              </View>
+              <View style={styles.fact}>
+                <MaterialIcons name="verified-user" size={14} color={p.muted} />
+                <Text style={styles.perfText}>
+                  {t('vendors.qcPass', { rate: VENDOR_PERFORMANCE.value.qcPassRate })}
+                </Text>
+              </View>
             </View>
 
             {canManage ? (
@@ -339,6 +378,22 @@ const makeStyles = (p: Palette) =>
       textTransform: 'uppercase',
     },
 
+    insight: { borderLeftWidth: 4, borderLeftColor: p.accent, borderColor: p.accent },
+    insightHead: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
+    insightTitle: {
+      color: p.accent,
+      fontFamily: fontFamily.semibold,
+      fontSize: 10,
+      letterSpacing: 0.8,
+      textTransform: 'uppercase',
+    },
+    insightBody: {
+      color: p.text,
+      fontFamily: fontFamily.regular,
+      fontSize: typography.caption.fontSize,
+    },
+    perfRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, flexWrap: 'wrap' },
+    perfText: { color: p.muted, fontFamily: fontFamily.regular, fontSize: 11 },
     manage: {
       alignSelf: 'flex-end',
       width: touchTarget.iconButton,

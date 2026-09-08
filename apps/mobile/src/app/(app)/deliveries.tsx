@@ -40,6 +40,9 @@ import { usePalette, useIsDark, type Palette } from '../../theme/usePalette';
 import { makeQueueStyles } from '../../components/procurement/QueueKit';
 import { LoadingBoundary } from '../../components/LoadingBoundary';
 import { PhotoCapture } from '../../components/PhotoCapture';
+import { CosRole } from '@cos/types';
+import { useAuthStore } from '../../store/authStore';
+import ManagerDeliveries from '../../components/procurement/ManagerDeliveries';
 import { useT } from '../../i18n';
 import { colors, fontFamily, radius, spacing, typography } from '../../theme/tokens';
 import { screen } from '../../theme/screenStyles';
@@ -80,7 +83,19 @@ function asList<T>(res: { items?: T[] } | T[]): T[] {
   return Array.isArray(res) ? res : (res.items ?? []);
 }
 
-export default function DeliveriesScreen() {
+/**
+ * The Deliveries tab, which is two screens.
+ *
+ * PROC_MANAGER sees the manager's view (`11_proc_manager/04_deliveries`) — arrivals, holds and yard
+ * capacity. PROCUREMENT_OFFICER sees the receiving queue below (`10_proc_officer/04_deliveries`)
+ * and the record form behind it. One route, two jobs.
+ */
+export default function DeliveriesRoute(): React.JSX.Element {
+  const role = useAuthStore((s) => s.role);
+  return role === CosRole.PROC_MANAGER ? <ManagerDeliveries /> : <OfficerDeliveries />;
+}
+
+function OfficerDeliveries() {
   const [rows, setRows] = useState<DeliveryRow[]>([]);
   const [pos, setPos] = useState<PoRow[]>([]);
   const [poId, setPoId] = useState('');

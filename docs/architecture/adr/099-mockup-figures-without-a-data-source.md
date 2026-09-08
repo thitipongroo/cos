@@ -575,3 +575,63 @@ The lesson generalises past this entry: reading a route's decorator is not readi
 
 Counted, not recalled: `grep -c "^export const [A-Z_]* = figure(" apps/mobile/src/lib/mockupFigures.ts`.
 Thirty before, ten added, none removed.
+
+## Amendment — 2026-09-09: the PROC_MANAGER set, and the two roles that stopped sharing a screen
+
+`mockup/mobile/11_proc_manager/` — six drawings, 1,840 lines. The register goes from forty entries
+to fifty.
+
+### The structural finding came first, and it is not about figures
+
+PROC_MANAGER and PROCUREMENT_OFFICER shared every screen: one `<ProcurementHome />` for both, one
+`rfqs.tsx`, one `orders.tsx`, one `deliveries.tsx`. The drawings are the same four tab NAMES over
+four different screens — the officer's Home is four work queues, the manager's is committed spend,
+approvals and supplier performance; the officer's RFQs tab is the requests it is running, the
+manager's is the decisions waiting on a signature. The routes now dispatch by role, the way
+`home.tsx` has since the app had two roles.
+
+### What was added — ten entries
+
+| Entry                       | Screen     | What it draws                                                          |
+| --------------------------- | ---------- | ---------------------------------------------------------------------- |
+| `PROC_SPEND_TREND`          | Home       | "+5.2%" and the fiscal-quarter label beside committed spend            |
+| `PROC_SAVINGS_REALIZED`     | Home       | "฿ 1.4 M" saved                                                        |
+| `APPROVAL_COUNTDOWN`        | Approvals  | "4h remaining" on a purchase order                                     |
+| `VENDOR_PERFORMANCE`        | Vendors    | The on-time rate, the QC pass rate and the compliance line             |
+| `VENDOR_INSIGHT_CONFIDENCE` | Vendors    | "CONFIDENCE: 95%" on the directory's banner                            |
+| `APPROVAL_LIMIT`            | Drawer     | "วงเงินอนุมัติ ฿5.0M" under the manager's name                         |
+| `WAREHOUSE_CAPACITY`        | Deliveries | The yard bar, its percentage and its remaining quota                   |
+| `DELIVERY_DISPUTES`         | Deliveries | The dispute count and the amount held                                  |
+| `DELIVERY_INSPECTION`       | Deliveries | The weighbridge reading, the shortfall, the credit note, the inspector |
+| `LOGISTICS_CONFIDENCE`      | Deliveries | "CONFIDENCE: 96%" on the logistics advisor                             |
+
+### THE APPROVE BUTTON IS DRAWN, AND THE REASON IS NOT A MISSING TABLE
+
+Every other entry in this register is missing DATA. This one is missing AUTHORITY, and it is the
+first of its kind:
+
+- `POST /procurement/purchase-orders/:poId/approve` is
+  `@Roles(PROJECT_MANAGER, FINANCE, EXECUTIVE, TENANT_ADMIN)`. **PROC_MANAGER is not on it.**
+- `docs/specifications/06-*.md:296` gives PROC_MANAGER **`RW + A`** on purchase orders, and line 283
+  describes the role as "Procurement approval authority tier above Procurement Officer".
+- `context/phases/phase-05-procurement-service.md:205` lists "approval hierarchy (use ROLE:
+  PROC_MANAGER from Phase 2)" under the heading **Do not invent** — a third source putting this role
+  in the approval chain, and the one that says the ladder was specified rather than left open.
+- So the specification grants an authority the route refuses. **That is a defect, not a design.**
+- And opening the route would not be enough: `po.workflow.ts::buildApprovalTiers` builds
+  PM → FINANCE → EXECUTIVE from the order's amount, and `approvePoSignal` accepts those four tiers.
+  There is no rung for a procurement manager. Sending one of the existing tiers from this role would
+  sign someone else's rung and corrupt the audit trail the ladder exists to produce.
+
+The RFQ half fails differently: `POST /rfqs/:rfqId/award` DOES allow this role, and needs a
+`quotation_id` that only the AWARDING endpoint can supply (the sixth amendment's finding). So neither
+row type can be approved from this screen by this role, and the button says so on tap.
+
+**It was not added to the register as a figure.** A button is not a number, and calling it one would
+put an authority gap in a list of missing tables. It is recorded here, in the screen's own header,
+and in a test that fails if anyone wires it.
+
+### The register is at fifty
+
+Counted, not recalled:
+`grep -c "^export const [A-Z_]* = figure(" apps/mobile/src/lib/mockupFigures.ts`.

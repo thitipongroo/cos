@@ -2449,3 +2449,54 @@ exists. The app's drawer is one shared `<NavigationDrawer />` whose per-role lin
 `drawerLinks.ts` derives from spec §6.4 — projects, reports, material requests, tasks, invoices,
 vendors and budget for this role — and a mockup's menu is not re-exported over it (product-owner
 decision 2026-09-07). ADR-085: style is the drawing's, composition is not.
+
+## Procurement Manager — four tabs, six screens — [`11-proc-manager/`](11-proc-manager/)
+
+`mockup/mobile/11_proc_manager/` — the role that decides. Captured 2026-09-09 as `+66811000006`
+(Rungnapa Chaiyo) over **Path A, phone OTP**: `MFA_ROLES` is `{TENANT_ADMIN, FINANCE}` and this role
+is in neither.
+
+**The bar is the same four tabs as the officer's, and the screens behind three of them are not.**
+Both roles shared every screen until this set arrived; the drawings are the same tab NAMES over
+different jobs, so the routes now dispatch by role the way `home.tsx` always has.
+
+| Tab        | PROCUREMENT_OFFICER sees                | PROC_MANAGER sees                                          |
+| ---------- | --------------------------------------- | ---------------------------------------------------------- |
+| Home       | four work queues                        | committed spend, approvals waiting, supplier scores        |
+| RFQs       | the RFQ queue it is running             | the **approvals queue** — POs and RFQs awaiting a decision |
+| Orders     | purchase orders                         | purchase orders — **the same screen**                      |
+| Deliveries | the receiving queue and its record form | arrivals, holds and yard capacity                          |
+
+| Directory                                          | What the frames show                                                                                                                                                                                                        |
+| -------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [`01-Home/`](11-proc-manager/01-Home/)             | The dashboard (`01`): committed spend summed in decimal.js, open RFQs, the drawn savings tile, the insight module, "Action Required" from the real approvals queue, and Top Vendors with real weighted trust scores.        |
+| [`02-Approvals/`](11-proc-manager/02-Approvals/)   | The approvals queue (`01`): purchase orders in `PENDING_APPROVAL` and RFQs in `EVALUATED`, each with its vendor, project and amount. **Approve is drawn** — see below.                                                      |
+| [`03-Orders/`](11-proc-manager/03-Orders/)         | The purchase orders (`01`) — the officer's screen, unchanged for this role.                                                                                                                                                 |
+| [`04-Deliveries/`](11-proc-manager/04-Deliveries/) | The manager's delivery view (`01`): today's arrivals and their value (real), the drawn to-inspect and dispute tiles, the logistics advisor, the yard-capacity bar and a card per delivery with its order, vendor and value. |
+| [`05-Vendors/`](11-proc-manager/05-Vendors/)       | The vendor directory (`01`) — trust scores, open-order counts and state badges, all real, under the drawn insight banner.                                                                                                   |
+| [`06-Drawer/`](11-proc-manager/06-Drawer/)         | The navigation drawer (`01`) and account settings (`02`) — the shared components every role gets.                                                                                                                           |
+
+**THE ORDERS TAB SHOWS ORDERS, AND THE DRAWING DISAGREES WITH ITSELF ABOUT THAT.**
+`03_orders/01_pom_order/code.html` sits in a directory called _orders_, its bottom nav highlights a
+tab labelled _Orders_, and the page is titled "Vendor Directory" with not one purchase order on it.
+The tab keeps its label and its content (§20.7.3 gives the role both pages); the drawing's vendor
+content is implemented on the vendor directory, which already existed with real scores, and is
+captured as `05-Vendors/`. ADR-085: composition is the implementation's.
+
+**The Approve button is drawn, and it is the first entry of its kind** — missing AUTHORITY rather
+than missing data. `POST /purchase-orders/:poId/approve` is
+`@Roles(PROJECT_MANAGER, FINANCE, EXECUTIVE, TENANT_ADMIN)` and PROC_MANAGER is not on it, while
+`docs/specifications/06-*.md:296` gives that role `RW + A` on purchase orders. The specification and
+the route disagree, and the approval ladder has no rung for a procurement manager to sign either.
+The RFQ half fails differently: the award endpoint allows this role and needs a quotation id that
+only the awarding endpoint can supply. Full reasoning in
+[ADR-099](../../architecture/adr/099-mockup-figures-without-a-data-source.md)'s 2026-09-09 amendment
+and in the screen's own header.
+
+**Ten figures in these frames are drawn**, listed in that same amendment. The largest is the
+yard-capacity bar: §20.7.3 defines `/procurement/warehouses` and `/procurement/inventory` and none of
+the database's 24 schemas holds a warehouse, a bin, a stock level or a quota.
+
+**Everything else is live data**: committed spend, open RFQs, every approval row and its vendor,
+project and amount, every vendor's weighted trust score and open-order count, today's arrivals and
+what those orders are worth.

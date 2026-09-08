@@ -216,11 +216,30 @@ describe('HomeScreen role dispatch', () => {
     expect(getByTestId('kpi-deliveries')).toHaveTextContent(/0/);
   });
 
-  it('gives PROC_MANAGER the same home as PROCUREMENT_OFFICER', async () => {
-    const { getByTestId } = await renderHome(CosRole.PROC_MANAGER);
+  it('gives PROC_MANAGER its own home, not the officer’s', async () => {
+    // SPLIT ON 2026-09-09. The two roles shared one dashboard until
+    // `mockup/mobile/11_proc_manager/01_home` turned out not to be the same screen with different
+    // numbers: the officer's is four work queues, the manager's is committed spend, the approvals
+    // waiting on a signature, and supplier performance.
+    const { getByTestId, queryByTestId } = await renderHome(CosRole.PROC_MANAGER);
 
-    await waitFor(() => expect(getByTestId('kpi-requests')).toBeTruthy());
-    expect(getByTestId('kpi-awaitingPo')).toBeTruthy();
+    await waitFor(() => expect(getByTestId('kpi-committed-spend')).toBeTruthy());
+    expect(getByTestId('kpi-savings')).toBeTruthy();
+    // The officer's queue tiles must NOT be here — that is the whole of the split.
+    expect(queryByTestId('kpi-requests')).toBeNull();
+    expect(queryByTestId('kpi-awaitingPo')).toBeNull();
+  });
+
+  it('reads the approvals queue and the vendor scorecards for PROC_MANAGER', async () => {
+    // `fetchPendingApprovals` returns POs in PENDING_APPROVAL and RFQs in EVALUATED — exactly the
+    // two rows the drawing's "Action Required" shows, and it predates the drawing by a month.
+    await renderHome(CosRole.PROC_MANAGER);
+
+    await waitFor(() =>
+      expect(pathsCalled().some((p) => p.startsWith('/procurement/purchase-orders'))).toBe(true),
+    );
+    expect(pathsCalled().some((p) => p.startsWith('/procurement/rfqs'))).toBe(true);
+    expect(pathsCalled().some((p) => p.startsWith('/procurement/vendors/directory'))).toBe(true);
   });
 
   it('gives PROJECT_MANAGER the project KPIs and the blockers panel', async () => {

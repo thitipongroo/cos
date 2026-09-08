@@ -605,7 +605,12 @@
     "viewProfile": "View profile",
     "manage": "Manage vendor",
     "viewProfileUnavailable": "There is no vendor profile screen yet.",
-    "manageViewOnly": "Your role can view vendors but not manage them."
+    "manageViewOnly": "Your role can view vendors but not manage them.",
+    "insight": "Procurement insight",
+    "insightBody": "Three suppliers are carrying most of the open orders. Consolidating the next steel award could move the price.",
+    "insightSource": "vendor directory and scorecards",
+    "onTime": "On time {rate}",
+    "qcPass": "QC pass {rate}"
   },
   "insight": {
     "title": "Insights",
@@ -779,6 +784,24 @@
       "progress": "Progress",
       "progressUnavailable": "Progress not computable",
       "noProjects": "You are not a member of any project yet."
+    },
+    "procManager": {
+      "committedSpend": "Total committed spend",
+      "openRfqs": "Open RFQs",
+      "savings": "Savings realized",
+      "actionRequired": "Action required",
+      "pending": "{count, plural, one {# pending} other {# pending}}",
+      "viewAll": "View all",
+      "queueEmpty": "Nothing is waiting for a decision.",
+      "managerReview": "Manager review",
+      "awaitingAward": "Awaiting award",
+      "purchaseOrder": "Purchase order",
+      "rfq": "Request for quotation",
+      "topVendors": "Top vendors",
+      "noVendors": "No vendors on record.",
+      "trustScore": "{score} TS",
+      "noScore": "No score yet",
+      "activeProjects": "{count, plural, =0 {No open orders} one {# project with open orders} other {# projects with open orders}}"
     }
   },
   "tasks": {
@@ -1652,7 +1675,43 @@
       "receivedAt": "Received {when}",
       "highAlert": "High alert",
       "avgSpeed": "Average speed: {speed}",
-      "route": "GPS route"
+      "route": "GPS route",
+      "pill": {
+        "TRANSIT": "In transit",
+        "INSPECTION": "Inspection",
+        "COMPLETED": "Completed"
+      }
+    },
+    "approvals": {
+      "title": "Approvals",
+      "subtitle": "Waiting on your decision",
+      "all": "All",
+      "kind": {
+        "PO": "Purchase order",
+        "RFQ": "RFQ"
+      },
+      "vendor": "Vendor",
+      "project": "Project",
+      "multiVendor": "Multiple bids",
+      "approve": "Approve",
+      "details": "Details",
+      "empty": "Nothing is waiting for a decision.",
+      "failed": "The queue could not be read. Nothing is claimed about what is waiting."
+    },
+    "managerDeliveries": {
+      "title": "Deliveries",
+      "subtitle": "Arrivals, holds and yard capacity",
+      "arrivals": "Today",
+      "inspection": "To inspect",
+      "disputes": "Disputes",
+      "trucks": "trucks",
+      "held": "held {amount}",
+      "all": "All",
+      "advisor": "Logistics advisor",
+      "advisorBody": "Traffic is running {speed}; arrivals are trending {minutes} minutes late. Move the pour queue before the next load lands.",
+      "advisorSource": "delivery records and their orders",
+      "yard": "Yard capacity",
+      "approveGrn": "Approve GRN"
     }
   },
   "notifications": {
