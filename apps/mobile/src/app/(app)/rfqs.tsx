@@ -44,7 +44,7 @@ import { View, Text, Pressable, ScrollView, TextInput, StyleSheet } from 'react-
 import { MaterialIcons } from '@expo/vector-icons';
 import { LoadingBoundary } from '../../components/LoadingBoundary';
 import { useT } from '../../i18n';
-import { useComingSoon } from '../../lib/useComingSoon';
+import { useComingSoon } from '../../components/useComingSoon';
 import { listRfqs, projectNameIndex, type RfqRow } from '../../api/procurement';
 import {
   RFQ_MATERIAL,

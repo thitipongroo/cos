@@ -176,6 +176,32 @@ run "Unit tests (100/100)"         pnpm run test:cov
 # them as a separate step in the same job; skipping them here meant `pnpm run test:cov` passing was
 # read as "the unit-tests job passed" when a third of a suite had not run.
 run_in backend "Unit tests — Temporal workflows (serial)" pnpm run test:workflows
+
+# ── Mobile Tests job ────────────────────────────────────────────────────────
+#
+# ADDED 2026-09-08, after this script reported "34 passed · 0 failed" on a tree whose mobile coverage
+# gate was red. `mobile-tests` was listed at the foot of this file under "runs in CI and nowhere
+# else", and that was a true statement about a real gap rather than a reason to keep it: a hook added
+# to `src/lib/**` had no test in the node-environment suite that measures that directory at 100%
+# lines, the logic suite still passed 1053/1053, and only `--coverage` said so. The push check ran
+# neither mobile suite, so it could not say so at all.
+#
+# apps/mobile IS ITS OWN PNPM WORKSPACE ROOT — its own pnpm-lock.yaml, its own node_modules, and the
+# `@cos/*` packages arrive as hardlinks. ci.yml installs it separately for exactly that reason. Here
+# the install is NOT run: it is the developer's tree and a `--frozen-lockfile` install on it would
+# be this script changing the thing it is checking. If the modules are not there the two suites are
+# skipped and say so, which is the same contract every other optional job in this file has.
+if [[ -d apps/mobile/node_modules ]]; then
+  run_in apps/mobile "Mobile — type check"        pnpm run type-check
+  run "Mobile — eslint"                           pnpm exec eslint apps/mobile/src
+  run "Mobile — RN a11y gate"                     bash ./scripts/a11y/check-rn-a11y.sh
+  # The 100% lines / 100% branches gate over src/lib, src/sync and src/store (QM-1).
+  run_in apps/mobile "Mobile — unit tests (100/100)" pnpm run test:cov
+  # The render suite's own ratchet over src/components and src/app, which the gate above excludes.
+  run_in apps/mobile "Mobile — render tests + ratchet" pnpm run test:render:cov
+else
+  SKIP+=("Mobile tests — no node_modules at apps/mobile (build: cd apps/mobile && pnpm install)")
+fi
 run "Contract tests (Pact)"        pnpm run test:contract
 run "Architecture tests"           pnpm run test:architecture
 run "Conformance tests"            pnpm run test:conformance
@@ -221,7 +247,7 @@ printf '\n  %d passed · %d failed · %d skipped\n' "${#PASS[@]}" "${#FAIL[@]}" 
 cat <<'NOTE'
 
   Not covered here — these run in CI and nowhere else:
-    mobile-tests · go-tests · mlops-tests · build-docker
+    go-tests · mlops-tests · build-docker
     secret-scan · security-scan · e2e-tests · mobile-e2e-tests
     push-ecr · update-gitops   (deploy jobs; `if: ref == main || staging`, so they never
                                 run on a feature branch — but "never runs here" is not the

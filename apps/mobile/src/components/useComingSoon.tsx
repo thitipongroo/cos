@@ -8,6 +8,14 @@
 //
 // The KEY, not the words. The caller passes the i18n key of the thing it cannot do, and the body is
 // always `more.comingSoon`; that is what keeps six screens saying it the same way.
+//
+// IT LIVES IN `components/` AND IS NAMED `.tsx`, WITH NO JSX IN IT. That is deliberate filing, not
+// an accident. `src/lib/**` is pure logic measured by the node-environment suite at 100% lines, and
+// a hook that calls `Alert.alert` cannot be rendered there — it was written into `lib/` on
+// 2026-09-08 and CI caught it the same day at 99.53%. The render suite measures `src/components/
+// **/*.tsx` and every screen's spec already presses a control that calls this, so here it is
+// covered by the tests that actually exercise it. A `.ts` file in this directory would be measured
+// by neither suite, which is the shape of dodging a threshold rather than meeting it.
 
 import { useCallback } from 'react';
 import { Alert } from 'react-native';

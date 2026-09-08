@@ -82,7 +82,7 @@ import { useProjectStore } from '../../store/projectStore';
 import { spacedMoney } from '../../lib/compactMoney';
 import { FORECAST_CONFIDENCE, PAYMENT_DETAIL_EXTRAS } from '../../lib/mockupFigures';
 import { useT, useI18n } from '../../i18n';
-import { useComingSoon } from '../../lib/useComingSoon';
+import { useComingSoon } from '../../components/useComingSoon';
 import type { TranslateFn } from '../../i18n';
 import {
   fontFamily,

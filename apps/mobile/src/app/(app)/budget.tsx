@@ -78,7 +78,7 @@ import {
   FORECAST_CONFIDENCE,
 } from '../../lib/mockupFigures';
 import { useT } from '../../i18n';
-import { useComingSoon } from '../../lib/useComingSoon';
+import { useComingSoon } from '../../components/useComingSoon';
 import type { TranslateFn } from '../../i18n';
 import {
   fontFamily,

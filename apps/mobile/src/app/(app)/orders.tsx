@@ -60,7 +60,7 @@ import { StatusChip } from '../../components/StatusChip';
 import { PO_DELAY_ALERT } from '../../lib/mockupFigures';
 import { spacedMoney } from '../../lib/compactMoney';
 import { useT } from '../../i18n';
-import { useComingSoon } from '../../lib/useComingSoon';
+import { useComingSoon } from '../../components/useComingSoon';
 import { usePalette, useIsDark, type Palette } from '../../theme/usePalette';
 import { fontFamily, radius, spacing, typography } from '../../theme/tokens';
 import { makeQueueStyles, QueueChip } from '../../components/procurement/QueueKit';

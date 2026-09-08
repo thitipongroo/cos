@@ -75,7 +75,7 @@ import { AiCardFooter } from '../../components/AiCardFooter';
 import { spacedMoney } from '../../lib/compactMoney';
 import { DELIVERY_GRN, INVOICE_DISCREPANCY, THREE_WAY_MATCH } from '../../lib/mockupFigures';
 import { useT, useI18n } from '../../i18n';
-import { useComingSoon } from '../../lib/useComingSoon';
+import { useComingSoon } from '../../components/useComingSoon';
 import type { TranslateFn } from '../../i18n';
 import { fontFamily, radius, spacing, touchTarget, typography } from '../../theme/tokens';
 import { usePalette, useIsDark, type Palette } from '../../theme/usePalette';
