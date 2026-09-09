@@ -1,8 +1,13 @@
 // ── CRM_SALES_MANAGER — the pipeline, what is waiting, and where the deals sit ───────────────────
 //
 // DRAWING: mockup/mobile/12_crm_manager/01_home/01_dashboard (Stitch screen
-// "CRM Manager Home Dashboard - Mobile", refreshed from Stitch on 2026-09-09 — the copy in the repo
-// was 18,322 bytes against the current 22,687 and had drifted since August).
+// "CRM Manager Home Dashboard - Mobile"). Pulled from Stitch on 2026-09-09, when the copy in the
+// repo was 18,322 bytes against that day's 22,687 and had drifted since August; pulled again on
+// 2026-09-10 at 22,691 bytes after the product owner edited the drawing's HEADER BAR in Stitch to
+// match `<TopBar />` — the drawing had led with the `construction` glyph, which the brand guide
+// prohibits (design-tokens.md: no hard hat, crane, building, blueprint or gear icons), beside a
+// tenant-switcher chevron this app does not have. The repo copy is byte-identical to Stitch, which
+// is what the drift scan checks.
 //
 // WHY THIS SCREEN EXISTS AT ALL, given the specification said not yet. §20.7.10 read "Advanced CRM
 // UI (pipeline kanban, dashboards, proposal generation) remains post-MVP", and this is a dashboard.
