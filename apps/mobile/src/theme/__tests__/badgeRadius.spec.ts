@@ -32,6 +32,10 @@ const CIRCLES: Readonly<Record<string, string>> = {
   // height, which is the same "999 means a circle, not a capsule" case as the dots below it. Listed
   // here rather than renamed, because the style is named after what it is.
   stageSeg: '4px-high stepper segment, radius half its height',
+  // The same false positive, for the same reason: "s-TAG-eCircle". It is a 56px circle on the
+  // CRM home's pipeline snapshot (components/home/CrmHome.tsx) holding one stage count, so 999
+  // IS half its width — the shape §32.7 keeps 999 for.
+  stageCircle: '56px stage circle on the CRM pipeline snapshot',
   extBadgeDot: '22px dot on an external-app tile',
   chipDot: '8px state dot inside a sync-queue chip',
   statusBadgeDot: '6px dot beside a user status',

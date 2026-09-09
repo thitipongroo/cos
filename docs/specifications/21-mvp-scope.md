@@ -117,8 +117,9 @@ Layer B/C capabilities — see 22-ai-architecture section 22.2. The deterministi
 
 Modules :
 
-- CRM advanced UI (pipeline kanban, dashboards, proposal generation) — the basic
-  leads / opportunities / customers UI + backend are MVP (see section 21.6)
+- CRM advanced UI (pipeline kanban, proposal generation) — the basic
+  leads / opportunities / customers UI + backend are MVP (see section 21.6), and the mobile
+  home dashboard joined them on 2026-09-09 (§20.7.10)
 - Full BIM
 - IoT
 - Advanced digital twin
@@ -187,7 +188,8 @@ MVP is built multi-tenant from Day 1 :
 
 > The basic CRM UI + backend are now MVP. The schema and the four §14 endpoints did not actually exist before;
 > they were built together with the `/crm/leads · /crm/opportunities · /crm/customers` pages. Only **advanced** CRM UI
-> (pipeline kanban, analytics dashboards, proposal generation) remains post-MVP.
+> (pipeline kanban, proposal generation) remains post-MVP. The mobile home dashboard was moved out of that list on
+> 2026-09-09 — the role's Home tab existed either way and was rendering a placeholder; §20.7.10 records the reasoning.
 
 The basic CRM UI is in MVP; the CRM database schema (`crm` schema) ships with it.
 

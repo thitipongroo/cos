@@ -19,6 +19,7 @@ import FinanceHome from '../../components/home/FinanceHome';
 import ProcurementHome from '../../components/home/ProcurementHome';
 import ProcManagerHome from '../../components/home/ProcManagerHome';
 import PmHome from '../../components/home/PmHome';
+import CrmHome from '../../components/home/CrmHome';
 import MinimalHome from '../../components/home/MinimalHome';
 
 export default function HomeScreen() {
@@ -37,6 +38,12 @@ export default function HomeScreen() {
     // approvals waiting on a signature and how the suppliers are performing.
     case CosRole.PROC_MANAGER:
       return <ProcManagerHome />;
+    // Added 2026-09-09. This role fell through to <MinimalHome /> — a 22-line placeholder —
+    // while its drawing had a full dashboard. §20.7.10 had deferred CRM dashboards to
+    // post-MVP; the product owner lifted that for this screen and the section was amended in
+    // the same commit. See CrmHome.tsx's header for what the screen does and does not claim.
+    case CosRole.CRM_SALES_MANAGER:
+      return <CrmHome />;
     case CosRole.PROJECT_MANAGER:
       return <PmHome />;
     case CosRole.SITE_ENGINEER:

@@ -1462,7 +1462,7 @@ The foot of every AI card, and **the project's standard for one** (product-owner
 | Confidence | `verified` glyph + `CONF: {n}%`, success ink. **Omitted entirely when the card has no model behind it** |
 | Separator  | A drawn 1px rule, not a `\|` character — a pipe between two labels reads as a table column             |
 | Source     | `storage` glyph + `SOURCE: {name}`, muted, `flex: 1`, one line, tail ellipsis                        |
-| Chevron    | Trailing, accent, hidden from the accessibility tree — the row's own label already says the source    |
+| Chevron    | Trailing, accent, hidden from the accessibility tree — the row's own label already says the source. **Dropped when the card's body already offers a button or a chevron** — see below |
 
 **THE CONFIDENCE LIVES HERE, NOT IN THE HEADER.** It used to sit as a chip opposite the card's title,
 which is where `09_finance` and `10_proc_officer` both draw it, and that put the two halves of one
@@ -1483,6 +1483,29 @@ longer a chip for a number to lead.
 **A null confidence draws no CONF half at all** — never "CONF: —", never a zero. A card whose
 figures are deterministic has no confidence to report; the FINANCE cash-flow forecast is the case on
 record (ADR-099, third amendment), and printing one would claim a model that never ran.
+
+**THE TRAILING CHEVRON IS DROPPED WHEN THE BODY ALREADY HAS ONE** (product-owner decision
+2026-09-09). The caller passes `bodyHasAction` and the foot ends at the source.
+
+The rule is about how many ways out of one card a reader is offered. A card whose body carries a
+filled action — "Send the final BOQ", "Adjust the site schedule", "See the opening" — has already
+said what to do next; a second arrow in the foot points somewhere vaguer and the two compete. On
+most of those cards the foot has no `onPress` at all, so its chevron was an affordance for nothing.
+
+**It is a property of the card, not of the component**, which is why the caller states it rather than
+the component inferring it. `onPress === undefined` is the wrong test: a card can have a body button
+and a pressable foot, and it can have neither.
+
+**The flag is for a body action a reader can actually take** — not for a glyph that looks like one.
+The FINANCE forecast card drew a bare `chevron-right` in its header, inside a plain `View` with no
+`onPress`, while its foot was the card's one working affordance; flagging it would have deleted the
+control and kept the decoration. **The decoration was deleted instead** (2026-09-09), so that card
+has no body action and keeps its footer chevron by the ordinary path. A card that needs an exception
+to this rule usually has a different bug.
+
+Applied at four cards on the day the rule was made: the CRM intelligence card, the vendor insight,
+the logistics advisor, and `<InsightPanel />`. Budget, invoices, payments and RFQs carry no body
+action and keep the chevron — which is why this is a flag rather than a deletion.
 
 **The source names something this repository has** — a project, a set of records — never a system it
 does not. Both mockup sets foot their AI cards with integrations that do not exist ("Integrated ERP

@@ -324,6 +324,9 @@ export default function ManagerDeliveries(): React.JSX.Element {
               source={t('procurement.managerDeliveries.advisorSource')}
               confLabel={t('insight.confShort')}
               sourceLabel={t('insight.sourceShort')}
+              // The body already carries the filled "adjust the schedule" button, so the foot
+              // ends at the source (PO 2026-09-09).
+              bodyHasAction
               palette={p}
             />
           </View>

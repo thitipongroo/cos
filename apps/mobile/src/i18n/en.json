@@ -812,6 +812,26 @@
       "urgent": "{count, plural, one {# urgent} other {# urgent}}",
       "aiDriven": "AI driven",
       "grade": "Grade {grade}"
+    },
+    "crm": {
+      "totalPipeline": "Total pipeline",
+      "viewAll": "View all",
+      "vsLastMonth": "{delta} vs last month",
+      "leads": "Leads",
+      "leadsActive": "Active",
+      "winRate": "Win rate",
+      "noWinRate": "No closed deals yet",
+      "intelligence": "CRM intelligence",
+      "intelSource": "leads, opportunities and customers",
+      "actionRequired": "Action required",
+      "pending": "{count, plural, one {# pending} other {# pending}}",
+      "highPriority": "High priority",
+      "followUp": "Follow-up",
+      "snapshot": "Pipeline snapshot",
+      "kanban": "View kanban",
+      "stageLead": "Lead",
+      "stageOppty": "Oppty",
+      "stageContract": "Contract"
     }
   },
   "tasks": {

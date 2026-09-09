@@ -613,10 +613,25 @@ Source: RBAC role definition (master Phase 2 — read-only across modules, per p
 ### 20.7.10 CRM / Sales Manager (`CRM_SALES_MANAGER`)
 
 Source: §11.3 CRM lifecycle + §14 CRM APIs. Basic CRM UI is MVP (ADR-029; §21.6 updated). Advanced
-CRM UI (pipeline kanban, dashboards, proposal generation) remains post-MVP.
+CRM UI (pipeline kanban, proposal generation) remains post-MVP.
+
+**The home dashboard was moved out of that deferral on 2026-09-09** (product owner decision). The
+sentence above read "pipeline kanban, dashboards, proposal generation" and the mobile app had
+already given this role a Home tab — every role gets one — which rendered a 22-line placeholder
+showing a pending-sync count. Deferring the dashboard did not remove the tab; it left it empty. The
+kanban and the proposal generator stay deferred, and the dashboard's own kanban button says so when
+pressed.
+
+The dashboard claims nothing the CRM tables cannot answer: the pipeline total sums OPEN
+`crm.opportunities.value` in decimal, the lead count excludes DISQUALIFIED, the win rate is
+WON / (WON + LOST) with OPEN left out of the denominator, and the three snapshot counts come from
+the three list endpoints. What the drawing shows beyond that — a month-on-month delta, an AI
+insight, and two "action required" rows needing a last-activity date no column holds — is drawn and
+registered under ADR-099.
 
 | Route                | Page          | Purpose                                                | Source     |
 | -------------------- | ------------- | ------------------------------------------------------ | ---------- |
+| `/home`              | Dashboard     | Pipeline value, active leads, win rate, stage counts   | §11.3, §14 |
 | `/crm/leads`         | Leads         | List / create leads                                    | §11.3, §14 |
 | `/crm/opportunities` | Opportunities | Create opportunity from a lead; convert won → Customer | §11.3, §14 |
 | `/crm/customers`     | Customers     | Read-only customer list (`finance.customers`)          | §11.3, §14 |

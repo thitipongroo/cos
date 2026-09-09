@@ -812,6 +812,26 @@
       "urgent": "{count, plural, other {เร่งด่วน # รายการ}}",
       "aiDriven": "จาก AI",
       "grade": "เกรด {grade}"
+    },
+    "crm": {
+      "totalPipeline": "มูลค่าโอกาสรวม",
+      "viewAll": "ดูภาพรวม",
+      "vsLastMonth": "{delta} จากเดือนก่อน",
+      "leads": "ผู้สนใจ",
+      "leadsActive": "ที่ยังดำเนินอยู่",
+      "winRate": "อัตราปิดดีล",
+      "noWinRate": "ยังไม่มีดีลที่ปิด",
+      "intelligence": "ข้อมูลเชิงลึก CRM",
+      "intelSource": "ผู้สนใจ โอกาสขาย และลูกค้า",
+      "actionRequired": "รอดำเนินการ",
+      "pending": "{count, plural, other {รอ # รายการ}}",
+      "highPriority": "ด่วน",
+      "followUp": "ติดตาม",
+      "snapshot": "ภาพรวมไปป์ไลน์",
+      "kanban": "ดู Kanban",
+      "stageLead": "ผู้สนใจ",
+      "stageOppty": "โอกาสขาย",
+      "stageContract": "ลูกค้า"
     }
   },
   "tasks": {

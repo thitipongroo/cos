@@ -415,6 +415,9 @@ export function InsightPanel({
         source={projectLabel ?? projectId}
         confLabel={t('insight.confShort')}
         sourceLabel={t('insight.sourceShort')}
+        // The body already offers `insight-run` and, where one exists, a follow-up button, so
+        // the foot ends at the source (PO 2026-09-09).
+        bodyHasAction
         palette={p}
       />
     </View>

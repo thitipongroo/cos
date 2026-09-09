@@ -315,6 +315,8 @@ export default function VendorsScreen(): React.JSX.Element {
           source={t('vendors.insightSource')}
           confLabel={t('insight.confShort')}
           sourceLabel={t('insight.sourceShort')}
+          // The body already offers an action, so the foot ends at the source (PO 2026-09-09).
+          bodyHasAction
           palette={p}
         />
       </View>

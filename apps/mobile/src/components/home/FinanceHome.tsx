@@ -283,12 +283,14 @@ export default function FinanceHome(): React.JSX.Element {
 
         {/* ── The forecast. Real, deterministic, and NOT labelled as a model — see the header. ── */}
         <View testID="finance-forecast" style={[styles.card, styles.forecast]}>
-          <View style={styles.forecastHead}>
-            <View style={styles.forecastTitleRow}>
-              <MaterialIcons name="insights" size={18} color={p.accent} />
-              <Text style={styles.forecastTitle}>{t('home.finance.forecastTitle')}</Text>
-            </View>
-            <MaterialIcons name="chevron-right" size={18} color={p.accent} />
+          {/* NO CHEVRON HERE (removed 2026-09-09). A bare `chevron-right` sat at the trailing edge
+              of this row inside a plain `View` — it was not a control, it opened nothing, and it
+              read as one. The card's one working affordance is the foot below, which IS pressable.
+              The `forecastHead` wrapper went with it: it existed to push the glyph to the far edge
+              with `space-between`, and with one child left it was a row wrapping a row. */}
+          <View style={styles.forecastTitleRow}>
+            <MaterialIcons name="insights" size={18} color={p.accent} />
+            <Text style={styles.forecastTitle}>{t('home.finance.forecastTitle')}</Text>
           </View>
           <Text style={styles.body}>
             {periods === null || periods.length === 0
@@ -566,12 +568,6 @@ const makeStyles = (p: Palette) =>
     },
 
     forecast: { borderColor: p.accent, gap: spacing.xs },
-    forecastHead: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      gap: spacing.xs,
-    },
     forecastTitle: {
       color: p.accent,
       fontFamily: fontFamily.semibold,

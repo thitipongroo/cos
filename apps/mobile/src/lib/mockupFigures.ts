@@ -860,3 +860,55 @@ export const DELIVERY_DISPUTE_REASON = figure(
   'Site staff counted pallet 4: 12 bags broken and 58 short. A credit note was withheld against the invoice automatically.',
   'a dispute record with an inspection narrative — no dispute table exists in any of the 24 schemas',
 );
+
+// ── The CRM manager's home dashboard (role_crm_manager/01_home/01_dashboard) ──
+//
+// ADDED 2026-09-09, product owner's answer (c) to that screen's escalation: build the dashboard and
+// amend §20.7.10, which had deferred "Advanced CRM UI (pipeline kanban, dashboards, proposal
+// generation)" to post-MVP.
+//
+// MOST OF THIS SCREEN IS REAL and deliberately is not here. `crm.opportunities` carries `value` and
+// `status`, and `crm.leads` carries `status`, so the pipeline total, the active-lead count, the win
+// rate and all three snapshot counts are measured. What follows is only what no column can answer.
+
+/** "+12.5% vs Last Month" under the pipeline total, and "↑3%" under the win rate. */
+export const CRM_TREND = figure(
+  { pipeline: '+12.5%', winRate: '3%' },
+  'a historical series of pipeline value and win rate — nothing records what either was last month',
+);
+
+/**
+ * The CRM Intelligence card: its confidence, its sentence, its action and its source line.
+ *
+ * There is NO CRM or sales report anywhere in `backend/src/modules/ai/` — checked by grep on
+ * 2026-09-09, which returned nothing. Every other AI card on this platform renders a real endpoint's
+ * output; this one has none to render.
+ */
+export const CRM_INTELLIGENCE = figure(
+  {
+    confidence: 92,
+    body: 'The "Skyline Tower A" opportunity is likely to close this week. Send the final BOQ.',
+    action: 'Send the final BOQ',
+  },
+  'a sales model reading lead velocity and email sentiment — neither the endpoint nor the email integration exists',
+);
+
+/**
+ * The two "Action Required" rows.
+ *
+ * "Stalled" is the word that cannot be measured. `Opportunity` is `opportunity_id, lead_id, title,
+ * value, status, expected_close_date, assigned_to, created_at` — there is no last-activity or
+ * last-contacted date, so nothing can say a deal has gone quiet. `created_at` says when it opened,
+ * which is a different fact.
+ */
+export const CRM_ACTION_REQUIRED = figure(
+  [
+    {
+      kind: 'HIGH_PRIORITY' as const,
+      title: 'Stalled Opportunity: Skyline Tower A',
+      when: '2h ago',
+    },
+    { kind: 'FOLLOW_UP' as const, title: 'Follow-up Needed: Siam Materials', when: 'Yesterday' },
+  ] as const,
+  'a last-activity timestamp on an opportunity, and a rule for how long is too long',
+);

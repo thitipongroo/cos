@@ -401,8 +401,9 @@ threshold %, retention %, LINE channel token, notification prefs).
 
 **CRM / Sales Manager** (`20.7.10` — basic UI only in MVP): `/crm/leads` (list/create) ·
 `/crm/opportunities` (create from lead; convert won → Customer) · `/crm/customers`
-(read-only list). Kanban pipeline, CRM dashboards, proposal generation = post-MVP —
-full screen specs in §15.3.
+(read-only list) · `/home` (dashboard — pipeline value, active leads, win rate, stage counts;
+moved out of the post-MVP deferral on 2026-09-09, see §20.7.10). Kanban pipeline and proposal
+generation = post-MVP — full screen specs in §15.3.
 
 ### 5.5 Mobile app IA (spec 17, 32 §32.7, 20 §20.3)
 

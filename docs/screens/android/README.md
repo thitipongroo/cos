@@ -1128,7 +1128,8 @@ the frame itself.
 ## CRM Sales Manager — not captured (retired 2026-08-11)
 
 **The three CRM pages are no longer part of this set** (product-owner decision 2026-08-11). The
-frames — Leads, Opportunities and Customers, the three pages §20.7.10 defines — were deleted, and the
+frames — Leads, Opportunities and Customers, three of the four pages §20.7.10 now defines (a home
+dashboard was added on 2026-09-09) — were deleted, and the
 capture path was retired with them: `apps/mobile/scripts/capture-android-crm.mjs` and its
 `capture:android:crm` script are gone, so nothing writes a `CRM-SALES-MANAGER/` or `09-crm-manager/`
 folder any more.

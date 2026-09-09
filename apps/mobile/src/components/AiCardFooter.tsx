@@ -27,6 +27,33 @@
 // `percent` MAY BE NULL, and then the CONF half is not drawn at all — no "CONF: —", no zero. A card
 // whose figures are deterministic has no confidence to report (the FINANCE cash-flow forecast is the
 // case on record), and printing one would claim a model that never ran.
+//
+// ── THE TRAILING CHEVRON IS DROPPED WHEN THE BODY ALREADY HAS ONE (PO decision 2026-09-09) ──────
+//
+// `bodyHasAction` says the card's body already carries a button or a chevron of its own. Pass it and
+// the foot ends at the source; leave it off and the chevron is drawn as before.
+//
+// The rule is about how many ways out of one card a reader is offered. A card with a filled action
+// in its body — "Send the final BOQ", "Adjust the site schedule", "See the opening" — has already
+// said what to do next; a second arrow in the foot points at a different, vaguer place and the two
+// compete. Worse, on most of these cards the foot has no `onPress` at all, so the chevron was an
+// affordance for nothing.
+//
+// It is a property of the CARD, not of this component, which is why the caller states it rather than
+// this file guessing. `onPress === undefined` would be the wrong test: a card can have a body button
+// AND a pressable foot, and it can have neither.
+//
+// Applied at the FOUR cards whose bodies carry an action: the CRM intelligence card, the vendor
+// insight, the logistics advisor and `<InsightPanel />`. The four that carry none — budget,
+// invoices, payments, RFQs — keep the chevron, and are the reason this is a flag rather than a
+// deletion.
+//
+// A DECORATIVE CHEVRON WOULD NOT HAVE COUNTED, and the case that proved it was fixed instead. The
+// FINANCE forecast card drew a bare `chevron-right` in its header inside a plain `View` — no
+// `onPress`, opening nothing — while its FOOT was the card's one working affordance. Flagging it
+// would have deleted the control and left the decoration. The decoration was deleted on the same
+// day (2026-09-09) rather than written into this rule as an exception, so the card now simply has
+// no body action and keeps its footer chevron by the ordinary path.
 
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -40,6 +67,7 @@ export function AiCardFooter({
   confLabel,
   sourceLabel,
   onPress,
+  bodyHasAction = false,
   palette,
 }: {
   testID?: string;
@@ -52,6 +80,11 @@ export function AiCardFooter({
   /** Pre-translated "SOURCE". */
   sourceLabel: string;
   onPress?: () => void;
+  /**
+   * The card's body already offers a button or a chevron, so the foot draws none. See the note at
+   * the head of this file — one card, one way onward.
+   */
+  bodyHasAction?: boolean;
   palette: Palette;
 }): React.JSX.Element {
   const styles = makeStyles(palette);
@@ -74,13 +107,15 @@ export function AiCardFooter({
       <Text style={styles.source} numberOfLines={1} ellipsizeMode="tail">
         {`${sourceLabel}: ${source}`}
       </Text>
-      <MaterialIcons
-        name="chevron-right"
-        size={18}
-        color={palette.accent}
-        accessibilityElementsHidden
-        importantForAccessibility="no"
-      />
+      {bodyHasAction ? null : (
+        <MaterialIcons
+          name="chevron-right"
+          size={18}
+          color={palette.accent}
+          accessibilityElementsHidden
+          importantForAccessibility="no"
+        />
+      )}
     </View>
   );
 
