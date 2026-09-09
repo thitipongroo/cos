@@ -58,3 +58,7 @@ apps/mobile/ios/Pods/
 # Playwright's per-run output — error-context.md and .last-run.json (4 of the 94; gitignored,
 # .gitignore:108).
 test-results/
+# Generated prompt bundles kept beside the repository rather than in it — .gitignore:172 carries the
+# reasoning. Named here as well because prettier reads THIS file and not .gitignore, so ignoring it
+# for git left `format:check` red on the same three documents.
+docs/Claude outputs/

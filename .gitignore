@@ -152,3 +152,21 @@ override_*.tf
 .claude/impl-approved
 .claude/impl-pending.md
 .claude/impl-completed-*.md
+
+# ── Generated prompt bundles, kept beside the repo rather than in it ─────────────────────────────
+#
+# `docs/Claude outputs/` appeared on 2026-09-10 holding a README and a .zip of Stitch prompts, and
+# turned the Lint job red twice over: prettier on the README, and markdownlint with six MD013
+# line-length errors — one line 404 characters long. That is the same shape of failure the
+# impl-*.md entries above record: a working document written to be read, linted as if it were
+# reference documentation.
+#
+# IT IS ALSO NOT A DOCS DIRECTORY THIS REPOSITORY HAS. `.claude/rules/markdown-docs.md` fixes the
+# set — api · architecture · assessments · evidence · manual · policies · registers · research ·
+# runbooks · screens · specifications — and a name carrying a space and a capital needs quoting in
+# every shell command that touches it. A `.zip` is not a form `docs/` stores either.
+#
+# Product-owner decision 2026-09-10: keep it out of the repository. If any of it should be kept,
+# `docs/research/` is where prompt material of this kind belongs, as Markdown that passes the
+# linters like every other document.
+docs/Claude outputs/
