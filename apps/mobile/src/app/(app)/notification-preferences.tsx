@@ -5,9 +5,12 @@
 // stands regardless — ADR-085: a mockup is authoritative for STYLE, not for existence, and "a
 // drawing does not remove reviewed working capability". The screen stays wired (MobileNav,
 // roleTabs, AccountSettings, Breadcrumb, routeRegistry.spec) and master §Phase 10 still lists it
-// as the TENANT_ADMIN "Settings" tab. It is NOT repointed at the surviving desktop drawing
-// (mockup/desktop/notification_desktop_view/notification_preferences_tenant_admin) — that is a
-// different surface, and citing it here would claim a mobile layout it does not specify.
+// as the TENANT_ADMIN "Settings" tab. It was never repointed at the desktop drawing that used to
+// sit at `mockup/desktop/notification_desktop_view/notification_preferences_tenant_admin` — that is
+// a different surface, and citing it here would claim a mobile layout it does not specify.
+// THAT DRAWING NO LONGER EXISTS: commit 5a807955 (2026-09-09) deleted it with 53 other desktop
+// files. The reasoning above is unaffected — it was a reason NOT to cite the file — but the path is
+// recorded in the past tense so nobody goes looking for it.
 // The §32.7 dark-screen ruling for this route is unchanged.
 //
 // Wired to the REAL model (PO decision 2026-07-26 — "event catalog จริง + โครง mockup"):

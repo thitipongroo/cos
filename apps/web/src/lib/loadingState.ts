@@ -31,7 +31,7 @@ export type LoadingVariant = 'widget' | 'table' | 'ai' | 'micro';
  *
  * WHAT THE MOTIF IS ON WEB (product-owner decision 2026-08-17): the cyan glow, the pulsing processor
  * plate and the ping dot — **not** a scan-line and **not** a waveform. The desktop mockup
- * (`imp_002_universal_loading_component_desktop_view`, the authoritative web reference per ADR-055)
+ * (`mockup/desktop/00_loading`, the authoritative web reference per ADR-055)
  * carries none of those two; they are the mobile mockup's motif and stay in the React Native
  * component. §32.7 "Exception 2" was updated to match in the same commit (Rule 37).
  */

@@ -1,7 +1,7 @@
 // <LoadingState /> — the standard loading placeholder / progress component for apps/web
 // (§32.7 "Loading State"; ADR-055).
 //
-// Layout is the DESKTOP mockup, `mockup/desktop/imp_002_universal_loading_component_desktop_view`
+// Layout is the DESKTOP mockup, `mockup/desktop/00_loading`
 // — the authoritative web reference per ADR-055 (the mobile `mockup/mobile/00_loading` governs the
 // React Native component, which genuinely differs: it stacks cards where this renders table rows).
 //

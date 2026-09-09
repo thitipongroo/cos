@@ -769,7 +769,7 @@ post-auth routes): it is reached from the login footer and is pre-auth by constr
 and nothing else.
 
 **Exception 2 — loading states** (product-owner decision 2026-07-17; ADR-055; reference
-`mockup/mobile/00_loading` + `mockup/desktop/imp_002_universal_loading_component_desktop_view`).
+`mockup/mobile/00_loading` + `mockup/desktop/00_loading`).
 `<LoadingState />` may use the same motif on the `ai` variant — **for the same reason the pre-auth
 exception exists: no project data is on screen yet**. A loading state is by definition the interval
 before data arrives, so the motif never competes with project content.
@@ -780,7 +780,7 @@ before data arrives, so the motif never competes with project content.
 | Platform | `ai` motif                                                      | Reference                            |
 | -------- | --------------------------------------------------------------- | ------------------------------------ |
 | Mobile   | cyan glow · **scan-line gradient** · **waveform** · left border | `mockup/mobile/00_loading` section C |
-| Web      | cyan glow · **processor plate** · **ping dot** · full border-2  | `mockup/desktop/imp_002_…` Variant C |
+| Web      | cyan glow · **processor plate** · **ping dot** · full border-2  | `mockup/desktop/00_loading` Variant C |
 
 The web drawing carries neither a scan-line nor a waveform; it signals work with a pulsing processor
 glyph on a tinted plate and a `ping` dot on its status row. Do not port the mobile pair onto web to
@@ -961,10 +961,14 @@ the mockup set on 2026-08-13. The row stays because this table rules on **which 
 screens have a drawing — withdrawing the drawing does not relight the screen. The screen itself also stands: it is
 wired into `MobileNav`, `roleTabs`, `AccountSettings`, `Breadcrumb` and `routeRegistry.spec`, and master §Phase 10
 still lists it as the TENANT_ADMIN **Settings** tab, so ADR-085 applies as written — a drawing does not remove
-reviewed working capability. The Reference cell is deliberately NOT repointed at the surviving desktop drawing
-(`mockup/desktop/notification_desktop_view/notification_preferences_tenant_admin`): that is a different surface and
-would claim a mobile layout it does not specify. Both drawings were dark (`<html class="dark">`, `#031427`), which is
-the evidence the dark ruling rests on.
+reviewed working capability. The Reference cell was deliberately never repointed at the desktop drawing that used
+to sit at `mockup/desktop/notification_desktop_view/notification_preferences_tenant_admin`: that is a different
+surface and would claim a mobile layout it does not specify. **That drawing was deleted on 2026-09-09** (commit
+5a807955, which removed 54 desktop files); the decision is unaffected, since it was a decision not to cite the file,
+but the path is written in the past tense so it is not mistaken for a live reference. Both drawings were dark
+(`<html class="dark">`, `#031427`) when they existed, and that is the evidence the dark ruling rests on — it is
+**no longer verifiable in this repository**, which is the cost of the deletion and is recorded here rather than
+left for the next reader to discover.
 
 **The navigation drawer keeps its row on exactly the same terms** (product-owner decision 2026-08-16).
 `mockup/mobile/02_shared/01_navigation_drawer/` was deleted from the mockup set on 2026-08-16, in the commit that

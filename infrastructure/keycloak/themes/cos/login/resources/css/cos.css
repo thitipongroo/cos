@@ -1,5 +1,5 @@
 /*
- * Construction OS — Keycloak login restyle (Path B, mockup/desktop/imp_001_authen/03_login_email_password_web).
+ * Construction OS — Keycloak login restyle (Path B, mockup/desktop/01_authen/01_login/03_login_email_password_web).
  *
  * Layers over the stock `keycloak` login theme (theme.properties parent=keycloak). Element ids
  * (#username / #password / #kc-login / #kc-form-login) come from the inherited base login.ftl and

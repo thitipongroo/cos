@@ -10,7 +10,7 @@
 ## Context
 
 `mockup/mobile/00_loading` and
-`mockup/desktop/imp_002_universal_loading_component_desktop_view` specify a standardised set of loading
+`mockup/desktop/00_loading` specify a standardised set of loading
 patterns — a widget skeleton, a list/table skeleton, an AI insight processor, and micro-indicators.
 Nothing in `docs/specifications/` covered them:
 
@@ -206,10 +206,13 @@ and mobile still had 24 raw `ActivityIndicator` call sites. Decisions 1–7 and 
    `resolveMicroInk(palette, tone, color?)` replaces `resolveToneColor` and is inside the QM-1 gate.
    **Every `ActivityIndicator` in the app is now gone** — 24 call sites across 19 files.
 6. **`<VoiceNoteButton />`'s transcribing ring stays white, and the reason is measured, not
-   aesthetic.** The one mockup that draws this state
-   (`mockup/desktop/role_site_worker_desktop_view/site_worker_desktop_3`) keeps the mic glyph in the
-   button and puts a **cyan** "AI Transcribing…" label outside it — but that is a dark desktop screen
-   (`#031427`), where cyan measures 10.25:1. `<VoiceNoteButton />` is fixed to the light `colors` set
+   aesthetic.** The one mockup that drew this state kept the mic glyph in the button and put a
+   **cyan** "AI Transcribing…" label outside it, on a dark desktop screen (`#031427`) where cyan
+   measures 10.25:1. That drawing —
+   `mockup/desktop/role_site_worker_desktop_view/site_worker_desktop_3` — was **deleted on
+   2026-09-09** by commit 5a807955. The contrast figures below are what decided this and are still
+   checkable; the drawing that prompted the question is not. `<VoiceNoteButton />` is fixed to the
+   light `colors` set
    and its button is `--mobile-primary` `#0066FF`, where **every** cyan in the product fails even
    WCAG SC 1.4.11's 3:1 floor for a non-text control: `#22D3EE` → 2.67:1, `#4CD7F6` → 2.84:1,
    `#06B6D4` → 1.99:1. Cyan fails on the light page (`#FFFFFF`, 1.81–2.43:1) and card (`#F5F5F5`,
@@ -260,4 +263,4 @@ numbered decisions above and the earlier updates stand; these four refine how it
 - [32-implementation-specifications.md §32.7](../../specifications/32-implementation-specifications.md) —
   "Exception 2 — loading states"; Mobile Core Component Library → `<LoadingState />`
 - [ADR-049](049-unleash-feature-flags.md) — feature-flag retrofit scope (critical surfaces only)
-- `mockup/mobile/00_loading` · `mockup/desktop/imp_002_universal_loading_component_desktop_view`
+- `mockup/mobile/00_loading` · `mockup/desktop/00_loading`

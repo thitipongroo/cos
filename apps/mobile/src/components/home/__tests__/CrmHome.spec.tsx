@@ -1,4 +1,4 @@
-// The CRM manager's home dashboard (mockup role_crm_manager/01_home/01_dashboard).
+// The CRM manager's home dashboard (mockup mockup/mobile/12_crm_manager/01_home/01_dashboard).
 //
 // The role rendered `<MinimalHome />` until 2026-09-09. What these tests hold is the arithmetic —
 // three figures on this screen are computed rather than fetched, and each one has a way of being

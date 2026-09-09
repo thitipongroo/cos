@@ -1,6 +1,6 @@
 // ── CRM_SALES_MANAGER — the pipeline, what is waiting, and where the deals sit ───────────────────
 //
-// DRAWING: mockup/mobile/role_crm_manager/01_home/01_dashboard (Stitch screen
+// DRAWING: mockup/mobile/12_crm_manager/01_home/01_dashboard (Stitch screen
 // "CRM Manager Home Dashboard - Mobile", refreshed from Stitch on 2026-09-09 — the copy in the repo
 // was 18,322 bytes against the current 22,687 and had drifted since August).
 //

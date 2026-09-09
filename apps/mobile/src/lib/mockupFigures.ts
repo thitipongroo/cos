@@ -861,7 +861,7 @@ export const DELIVERY_DISPUTE_REASON = figure(
   'a dispute record with an inspection narrative — no dispute table exists in any of the 24 schemas',
 );
 
-// ── The CRM manager's home dashboard (role_crm_manager/01_home/01_dashboard) ──
+// ── The CRM manager's home dashboard (mockup/mobile/12_crm_manager/01_home/01_dashboard) ──
 //
 // ADDED 2026-09-09, product owner's answer (c) to that screen's escalation: build the dashboard and
 // amend §20.7.10, which had deferred "Advanced CRM UI (pipeline kanban, dashboards, proposal

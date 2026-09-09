@@ -57,7 +57,7 @@ fi
 # Tailwind's animation utilities are how a hand-rolled skeleton or spinner is written on web. They
 # are allowed ONLY inside the component that IS the specified loading state, plus the pre-auth
 # verification screen, which §32.7 "Exception 1" gives its own mockup
-# (mockup/desktop/imp_001_authen/04_verification_loading_web) and its own motif.
+# (mockup/desktop/01_authen/01_login/04_verification_loading_web) and its own motif.
 echo "--> apps/web: no hand-rolled skeleton / spinner outside <LoadingState />"
 WEB_ALLOW='apps/web/src/components/ui/LoadingState.tsx|apps/web/src/app/post-login/page.tsx'
 WEB_HITS="$(grep -rnE "animate-(pulse|spin|ping)" "$ROOT/apps/web/src" --include=*.tsx --include=*.ts \

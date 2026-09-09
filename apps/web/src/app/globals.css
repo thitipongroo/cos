@@ -36,7 +36,7 @@
 
   /*
    * <LoadingState /> glows (§32.7 "Exception 2 — loading states"; ADR-055; reference
-   * mockup/desktop/imp_002_universal_loading_component_desktop_view). Declared as tokens rather
+   * mockup/desktop/00_loading). Declared as tokens rather
    * than written inline: the mockup states them as raw rgba, and §32.7 "Tokens only" forbids a
    * hardcoded hex in a component. Each derives its colour from the brand token via color-mix, so
    * retinting --cos-blue / --cos-cyan retints the glow with it.
