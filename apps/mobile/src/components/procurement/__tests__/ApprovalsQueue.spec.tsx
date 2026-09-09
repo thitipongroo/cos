@@ -141,4 +141,85 @@ describe('ApprovalsQueue', () => {
     // …and no chip carries a count it does not have.
     expect(failed.getByTestId('approval-filter-ALL')).not.toHaveTextContent(/\(/);
   });
+  // ── The 2026-09-09 rebuild: the countdown stopped being drawn ───────────────────────────────
+  //
+  // `APPROVAL_COUNTDOWN` printed "4h remaining" on every row until this date, purchase orders
+  // included. `procurement.rfqs.deadline` is a real column, so an RFQ's countdown is now measured
+  // and a purchase order — which has no decision deadline — carries no chip at all. Deadlines here
+  // are relative to the clock so the assertion holds whenever the suite runs.
+  const hoursFromNow = (h: number) => new Date(Date.now() + h * 3600_000).toISOString();
+
+  it('measures an RFQ countdown from its real deadline', async () => {
+    client.get.mockImplementation(route([PO], [{ ...RFQ, deadline: hoursFromNow(4) }]));
+    const { getByTestId } = await renderScreen();
+
+    // Rounded up, so 4 hours reads as 4 and never as 3.
+    await waitFor(() => expect(getByTestId('approval-countdown-rfq-rfq-1')).toHaveTextContent(/4/));
+  });
+
+  it('draws no countdown on a purchase order, which has no decision deadline', async () => {
+    const { getByTestId, queryByTestId } = await renderScreen();
+
+    await waitFor(() => expect(getByTestId('approval-po-po-1')).toBeTruthy());
+    expect(queryByTestId('approval-countdown-po-po-1')).toBeNull();
+  });
+
+  it('says overdue rather than counting backwards past the deadline', async () => {
+    client.get.mockImplementation(route([PO], [{ ...RFQ, deadline: hoursFromNow(-1) }]));
+    const { getByTestId } = await renderScreen();
+
+    await waitFor(() => expect(getByTestId('approval-countdown-rfq-rfq-1')).toBeTruthy());
+    expect(getByTestId('approval-countdown-rfq-rfq-1')).not.toHaveTextContent(/-/);
+  });
+
+  it('counts and filters Urgent by the measured deadline, not by kind', async () => {
+    // Two RFQs: one due in three hours, one in a week. The chip must say 1 — a count over the whole
+    // queue — and pressing it must leave only the urgent row.
+    client.get.mockImplementation(
+      route(
+        [PO],
+        [
+          { ...RFQ, deadline: hoursFromNow(3) },
+          { ...RFQ, rfq_id: 'rfq-2', rfq_number: 'RFQ-2024-090', deadline: hoursFromNow(24 * 7) },
+        ],
+      ),
+    );
+    const { getByTestId, queryByTestId } = await renderScreen();
+
+    await waitFor(() => expect(getByTestId('approval-filter-URGENT')).toHaveTextContent(/1/));
+
+    await fireEvent.press(getByTestId('approval-filter-URGENT'));
+    await waitFor(() => expect(queryByTestId('approval-rfq-rfq-2')).toBeNull());
+    expect(getByTestId('approval-rfq-rfq-1')).toBeTruthy();
+    // The purchase order has no deadline, so it is not urgent either.
+    expect(queryByTestId('approval-po-po-1')).toBeNull();
+  });
+
+  // The drawing's bottom bar. It is the row button n times and the route refuses this role, so it
+  // draws and says so — and it must not offer to approve nothing.
+  it('offers the bulk bar with the visible count, and posts nothing', async () => {
+    const { getByTestId } = await renderScreen();
+
+    await waitFor(() => expect(getByTestId('approve-all')).toHaveTextContent(/2/));
+    await fireEvent.press(getByTestId('approve-all'));
+    expect(client.post).not.toHaveBeenCalled();
+  });
+
+  it('hides the bulk bar when there is nothing to approve', async () => {
+    client.get.mockImplementation(route([], []));
+    const { queryByTestId, getByTestId } = await renderScreen();
+
+    await waitFor(() => expect(getByTestId('approvals-empty')).toBeTruthy());
+    expect(queryByTestId('approve-all')).toBeNull();
+  });
+
+  // The drawing labels the second button COMPARE on an RFQ and DETAILS on a purchase order —
+  // different words because they are different acts.
+  it('offers Compare on an RFQ and Details on a purchase order', async () => {
+    const { getByTestId } = await renderScreen();
+
+    await waitFor(() => expect(getByTestId('approval-rfq-rfq-1')).toBeTruthy());
+    expect(getByTestId('approval-details-rfq-rfq-1')).toHaveTextContent(/Compare/i);
+    expect(getByTestId('approval-details-po-po-1')).toHaveTextContent(/Details/i);
+  });
 });

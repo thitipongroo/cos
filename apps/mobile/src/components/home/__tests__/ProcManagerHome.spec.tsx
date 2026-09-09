@@ -172,4 +172,85 @@ describe('ProcManagerHome', () => {
     await waitFor(() => expect(getByTestId('kpi-savings')).toHaveTextContent(/1\.4 M/));
     expect(getByTestId('kpi-committed-spend')).toHaveTextContent(/\+5\.2%/);
   });
+  // ── The 2026-09-09 rebuild ──────────────────────────────────────────────────────────────────
+
+  const hoursFromNow = (h: number) => new Date(Date.now() + h * 3600_000).toISOString();
+
+  it('counts the urgent RFQs from their real deadlines, not from a drawn figure', async () => {
+    // Two PUBLISHED RFQs, one due in three hours. The tile says 2 and the chip says 1 — and the
+    // chip can never exceed the tile, because both count the same rows.
+    client.get.mockImplementation((path: string, params?: Record<string, string>) => {
+      if (path.startsWith('/procurement/rfqs') && params?.['status'] === undefined) {
+        return Promise.resolve({
+          items: [
+            { ...RFQ, deadline: hoursFromNow(3) },
+            { ...RFQ, rfq_id: 'rfq-2', rfq_number: 'RFQ-090', deadline: hoursFromNow(24 * 9) },
+          ],
+        });
+      }
+      return route()(path, params);
+    });
+    const { getByTestId } = await renderScreen();
+
+    await waitFor(() => expect(getByTestId('kpi-open-rfqs')).toHaveTextContent(/2/));
+    expect(getByTestId('kpi-open-rfqs-urgent')).toHaveTextContent(/1/);
+  });
+
+  it('draws no urgent chip when nothing is urgent, rather than a zero', async () => {
+    // The default fixture's RFQ is due in 2026-09-20. The drawing never shows "0 Urgent".
+    const { getByTestId, queryByTestId } = await renderScreen();
+
+    await waitFor(() => expect(getByTestId('kpi-open-rfqs')).toBeTruthy());
+    expect(queryByTestId('kpi-open-rfqs-urgent')).toBeNull();
+  });
+
+  it('names the project once on an approval row, with the amount beneath it', async () => {
+    // The project is the row's title; the meta line carries only the money. Printing the project in
+    // both places is what the first capture showed, and `toHaveTextContent` would have passed for
+    // either — so the count is asserted, not just the presence.
+    const { getByTestId, getAllByText } = await renderScreen();
+
+    await waitFor(() => expect(getByTestId('approval-po-po-1')).toHaveTextContent(/Rama IX Tower/));
+    expect(getByTestId('approval-po-po-1')).toHaveTextContent(/1,240,000/);
+    expect(getAllByText('Rama IX Tower')).toHaveLength(1);
+  });
+
+  it('rounds a vendor score rather than printing the weighted float', async () => {
+    // `vendor-scoring.ts` returns a weighted number. The dashboard printed "94.03292181069958 TS"
+    // until 2026-09-09 while the vendor directory rounded — one score, two answers.
+    client.get.mockImplementation((path: string, params?: Record<string, string>) =>
+      /\/procurement\/vendors\/[^/]+\/score/.test(path)
+        ? Promise.resolve({ vendorId: 'v-1', totalScore: 94.03292181069958, grade: 'A' })
+        : route()(path, params),
+    );
+    const { getByTestId } = await renderScreen();
+
+    await waitFor(() => expect(getByTestId('vendor-v-1')).toHaveTextContent(/94 TS/));
+    expect(getByTestId('vendor-v-1')).not.toHaveTextContent(/94\.0/);
+  });
+
+  it('prints the vendor’s real grade beside its open-order count', async () => {
+    // Both halves are measured: the grade from the scorecard, the count from the directory. The
+    // drawing's "Grade A Tier-1 Supplier" line has no invented tier behind it here.
+    const { getByTestId } = await renderScreen();
+
+    await waitFor(() => expect(getByTestId('vendor-v-1')).toHaveTextContent(/Grade A/));
+  });
+
+  it('shows only the order count for a vendor with no scorecard yet', async () => {
+    // No grade means no tier line — never "Grade —", never a default letter.
+    //
+    // BOTH HALVES ARE NULL TOGETHER. `total_score` and `grade` are NULL until the vendor has any
+    // history to score (see `VendorScore` in api/procurement.ts), so `route({ score: null })` — which
+    // keeps grade 'A' — is not a shape the server can produce. This case builds the real one.
+    client.get.mockImplementation((path: string, params?: Record<string, string>) =>
+      /\/procurement\/vendors\/[^/]+\/score/.test(path)
+        ? Promise.resolve({ vendorId: 'v-1', totalScore: null, grade: null })
+        : route()(path, params),
+    );
+    const { getByTestId } = await renderScreen();
+
+    await waitFor(() => expect(getByTestId('vendor-v-1')).toHaveTextContent(/No score yet/i));
+    expect(getByTestId('vendor-v-1')).not.toHaveTextContent(/Grade/);
+  });
 });

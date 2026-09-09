@@ -52,6 +52,7 @@ import {
 } from '../../api/procurement';
 import { committedSpend, openRfqCount, type SpendRow } from '../../lib/procurementKpi';
 import { spacedMoney } from '../../lib/compactMoney';
+import { deadlineCountdown } from '../../lib/approvalDeadline';
 import { PROC_SPEND_TREND, PROC_SAVINGS_REALIZED } from '../../lib/mockupFigures';
 import { ProcurementInsight } from '../ProcurementInsight';
 import { usePalette, type Palette } from '../../theme/usePalette';
@@ -64,6 +65,12 @@ const TOP_VENDORS = 3;
 interface Scored extends VendorDirectoryEntry {
   /** `null` while the per-vendor request is out, and `null` again for a vendor with no history. */
   score: number | null;
+  /**
+   * The letter grade the same scorecard returns. REAL — `vendor-scoring.ts` derives it from the
+   * weighted total — and it is what the drawing's "Grade A Tier-1 Supplier" line is asking for.
+   * `null` for a vendor with no history, exactly like the score.
+   */
+  grade: string | null;
 }
 
 export default function ProcManagerHome(): React.JSX.Element {
@@ -75,6 +82,7 @@ export default function ProcManagerHome(): React.JSX.Element {
 
   const [spend, setSpend] = useState<string | null>(null);
   const [openRfqs, setOpenRfqs] = useState<number | null>(null);
+  const [urgentRfqs, setUrgentRfqs] = useState(0);
   const [pos, setPos] = useState<PurchaseOrderRow[]>([]);
   const [rfqs, setRfqs] = useState<RfqRow[]>([]);
   const [vendors, setVendors] = useState<Scored[]>([]);
@@ -103,7 +111,18 @@ export default function ProcManagerHome(): React.JSX.Element {
       });
 
     const rfqCount = step(listRfqs())
-      .then((res) => setOpenRfqs(openRfqCount(res.items)))
+      .then((res) => {
+        setOpenRfqs(openRfqCount(res.items));
+        // MEASURED. `procurement.rfqs.deadline` is a real column, so "urgent" is a count and not a
+        // picture: the open RFQs whose deadline falls inside URGENT_MS. Counted over the SAME rows
+        // the tile's total counts, so the chip can never exceed the number above it.
+        const now = new Date();
+        setUrgentRfqs(
+          res.items.filter(
+            (r) => r.status === 'PUBLISHED' && deadlineCountdown(r.deadline, now)?.urgent === true,
+          ).length,
+        );
+      })
       .catch(() => {
         /* offline */
       });
@@ -122,13 +141,13 @@ export default function ProcManagerHome(): React.JSX.Element {
     const suppliers = step(fetchVendorDirectory())
       .then(async (rows) => {
         const top = rows.slice(0, TOP_VENDORS);
-        setVendors(top.map((v) => ({ ...v, score: null })));
+        setVendors(top.map((v) => ({ ...v, score: null, grade: null })));
         const scored = await Promise.all(
           top.map(async (v) => ({
             ...v,
-            score: await fetchVendorScore(v.vendor_id)
-              .then((s) => s.totalScore)
-              .catch(() => null),
+            ...(await fetchVendorScore(v.vendor_id)
+              .then((s) => ({ score: s.totalScore, grade: s.grade }))
+              .catch(() => ({ score: null, grade: null }))),
           })),
         );
         setVendors(scored);
@@ -161,8 +180,9 @@ export default function ProcManagerHome(): React.JSX.Element {
     <View style={styles.root}>
       <Screen testID="home-screen" scroll>
         <KpiRegion loading={loading} settled={settled} steps={LOAD_STEPS}>
-          {/* The drawing's full-width spend tile. An em dash until the request settles — never a
-              zero, which on a committed-spend tile would read as "nothing is on order". */}
+          {/* The drawing's full-width spend tile, with the oversized `payments` glyph bleeding off
+              its bottom-right corner. An em dash until the request settles — never a zero, which on
+              a committed-spend tile would read as "nothing is on order". */}
           <Pressable
             testID="kpi-committed-spend"
             accessibilityRole="button"
@@ -170,6 +190,12 @@ export default function ProcManagerHome(): React.JSX.Element {
             onPress={() => router.push('/orders')}
             style={[styles.wideTile, { borderLeftColor: p.primary }]}
           >
+            <View style={styles.watermark} pointerEvents="none">
+              {/* The drawing's glyph is `text-surface-variant/20` — a fifth of an already muted
+                  colour. Drawn at full strength it is a grey plate across the tile, which is what
+                  the first capture showed. */}
+              <MaterialIcons name="payments" size={112} color={`${p.border}40`} />
+            </View>
             <View style={styles.tileHead}>
               <MaterialIcons name="account-balance" size={18} color={p.primary} />
               <Text style={styles.tileLabel} numberOfLines={1}>
@@ -186,8 +212,9 @@ export default function ProcManagerHome(): React.JSX.Element {
                 <MaterialIcons name="trending-up" size={13} color={p.success} />
                 <Text style={styles.trendText}>{PROC_SPEND_TREND.value.delta}</Text>
               </View>
+              <View style={styles.spacer} />
+              <Text style={styles.period}>{PROC_SPEND_TREND.value.period}</Text>
             </View>
-            <Text style={styles.period}>{PROC_SPEND_TREND.value.period}</Text>
           </Pressable>
 
           <View style={styles.pairRow}>
@@ -202,9 +229,26 @@ export default function ProcManagerHome(): React.JSX.Element {
                 <Text style={styles.tileLabel} numberOfLines={2}>
                   {t('home.procManager.openRfqs')}
                 </Text>
-                <MaterialIcons name="chevron-right" size={16} color={p.muted} />
+                {/* The drawing's circular chevron plate, on both small tiles. */}
+                <View style={styles.chevPlate}>
+                  <MaterialIcons name="chevron-right" size={16} color={p.muted} />
+                </View>
               </View>
-              <Text style={styles.tileValue}>{openRfqs === null ? '—' : String(openRfqs)}</Text>
+              <View style={styles.tileFoot}>
+                <Text style={styles.tileValue}>{openRfqs === null ? '—' : String(openRfqs)}</Text>
+                {/* MEASURED, not drawn. `procurement.rfqs.deadline` is a real column, so "urgent"
+                    is the count of open RFQs whose deadline falls inside `URGENT_MS`
+                    (lib/approvalDeadline.ts). The chip is absent when none of them is, rather than
+                    printing a zero the drawing never shows. */}
+                {urgentRfqs === 0 ? null : (
+                  <View testID="kpi-open-rfqs-urgent" style={styles.warnChip}>
+                    <MaterialIcons name="warning" size={12} color={p.warning} />
+                    <Text style={styles.warnChipText}>
+                      {t('home.procManager.urgent', { count: urgentRfqs })}
+                    </Text>
+                  </View>
+                )}
+              </View>
             </Pressable>
 
             {/* DRAWN IN FULL — savings needs a baseline estimate per order and no table holds one.
@@ -220,11 +264,19 @@ export default function ProcManagerHome(): React.JSX.Element {
                 <Text style={styles.tileLabel} numberOfLines={2}>
                   {t('home.procManager.savings')}
                 </Text>
-                <MaterialIcons name="chevron-right" size={16} color={p.muted} />
+                <View style={styles.chevPlate}>
+                  <MaterialIcons name="chevron-right" size={16} color={p.muted} />
+                </View>
               </View>
-              <Text style={[styles.tileValue, { color: p.success }]}>
-                {PROC_SAVINGS_REALIZED.value}
-              </Text>
+              <View style={styles.tileFoot}>
+                <Text style={[styles.tileValue, { color: p.accent }]}>
+                  {PROC_SAVINGS_REALIZED.value}
+                </Text>
+                <View style={styles.aiChip}>
+                  <MaterialIcons name="auto-awesome" size={12} color={p.accent} />
+                  <Text style={styles.aiChipText}>{t('home.procManager.aiDriven')}</Text>
+                </View>
+              </View>
             </Pressable>
           </View>
         </KpiRegion>
@@ -269,7 +321,7 @@ export default function ProcManagerHome(): React.JSX.Element {
                 testID={`approval-po-${po.po_id}`}
                 number={po.po_number}
                 stateLabel={t('home.procManager.managerReview')}
-                title={projects.get(po.project_id) ?? t('home.procManager.purchaseOrder')}
+                project={projects.get(po.project_id) ?? t('home.procManager.purchaseOrder')}
                 amount={spacedMoney(po.total_amount, 'THB')}
                 onPress={() => router.push('/rfqs')}
                 styles={styles}
@@ -282,7 +334,7 @@ export default function ProcManagerHome(): React.JSX.Element {
                 testID={`approval-rfq-${rfq.rfq_id}`}
                 number={rfq.rfq_number}
                 stateLabel={t('home.procManager.awaitingAward')}
-                title={projects.get(rfq.project_id) ?? t('home.procManager.rfq')}
+                project={projects.get(rfq.project_id) ?? t('home.procManager.rfq')}
                 amount={null}
                 onPress={() => router.push('/rfqs')}
                 styles={styles}
@@ -302,46 +354,57 @@ export default function ProcManagerHome(): React.JSX.Element {
           {vendors.length === 0 ? (
             <Text style={styles.body}>{t('home.procManager.noVendors')}</Text>
           ) : (
-            vendors.map((v) => (
-              <Pressable
-                key={v.vendor_id}
-                testID={`vendor-${v.vendor_id}`}
-                accessibilityRole="button"
-                accessibilityLabel={v.vendor_name}
-                onPress={() => router.push('/vendors')}
-                style={styles.vendorRow}
-              >
-                <View style={styles.avatar}>
-                  <Text style={styles.avatarText}>{initials(v.vendor_name)}</Text>
-                </View>
-                <View style={styles.vendorBody}>
-                  <Text style={styles.vendorName} numberOfLines={1}>
-                    {v.vendor_name}
-                  </Text>
-                  <Text style={styles.vendorMeta} numberOfLines={1}>
-                    {t('home.procManager.activeProjects', { count: v.active_project_count })}
-                  </Text>
-                </View>
-                <View style={styles.scoreCol}>
-                  {/* REAL, and NULL IS ITS OWN ANSWER: a vendor with no delivery, dispute or
+            vendors.map((v, i) => (
+              <View key={v.vendor_id}>
+                {/* The drawing separates the rows with a hairline and leaves the last one open. */}
+                {i === 0 ? null : <View style={styles.vendorDivider} />}
+                <Pressable
+                  testID={`vendor-${v.vendor_id}`}
+                  accessibilityRole="button"
+                  accessibilityLabel={v.vendor_name}
+                  onPress={() => router.push('/vendors')}
+                  style={styles.vendorRow}
+                >
+                  <View style={styles.avatar}>
+                    <Text style={styles.avatarText}>{initials(v.vendor_name)}</Text>
+                  </View>
+                  <View style={styles.vendorBody}>
+                    <Text style={styles.vendorName} numberOfLines={1}>
+                      {v.vendor_name}
+                    </Text>
+                    {/* The drawing's tier line. Both halves are real: the grade from the scorecard,
+                      the count from the directory. A vendor with no history shows only the count —
+                      no invented tier. */}
+                    <Text style={styles.vendorMeta} numberOfLines={1}>
+                      {v.grade === null
+                        ? t('home.procManager.activeProjects', { count: v.active_project_count })
+                        : `${t('home.procManager.grade', { grade: v.grade })} · ${t('home.procManager.activeProjects', { count: v.active_project_count })}`}
+                    </Text>
+                  </View>
+                  <View style={styles.scoreCol}>
+                    {/* REAL, and NULL IS ITS OWN ANSWER: a vendor with no delivery, dispute or
                       quotation history has no score, and a zero there would read as a terrible
                       supplier rather than a new one. */}
-                  <Text style={[styles.score, v.score === null && { color: p.muted }]}>
-                    {v.score === null
-                      ? t('home.procManager.noScore')
-                      : t('home.procManager.trustScore', { score: v.score })}
-                  </Text>
-                  <View style={styles.scoreTrack}>
-                    <View
-                      style={[
-                        styles.scoreFill,
-                        { width: `${v.score ?? 0}%`, backgroundColor: p.success },
-                      ]}
-                    />
+                    <Text style={[styles.score, v.score === null && { color: p.muted }]}>
+                      {v.score === null
+                        ? t('home.procManager.noScore')
+                        : // ROUNDED. `vendor-scoring.ts` returns a weighted float and this printed
+                          // it whole — "94.03292181069958 TS" on the dashboard. The vendor directory
+                          // already rounded; this did not.
+                          t('home.procManager.trustScore', { score: Math.round(v.score) })}
+                    </Text>
+                    <View style={styles.scoreTrack}>
+                      <View
+                        style={[
+                          styles.scoreFill,
+                          { width: `${v.score ?? 0}%`, backgroundColor: p.success },
+                        ]}
+                      />
+                    </View>
                   </View>
-                </View>
-                <MaterialIcons name="chevron-right" size={16} color={p.muted} />
-              </Pressable>
+                  <MaterialIcons name="chevron-right" size={16} color={p.muted} />
+                </Pressable>
+              </View>
             ))
           )}
         </View>
@@ -363,7 +426,7 @@ function ApprovalRow({
   testID,
   number,
   stateLabel,
-  title,
+  project,
   amount,
   onPress,
   styles,
@@ -372,7 +435,7 @@ function ApprovalRow({
   testID: string;
   number: string;
   stateLabel: string;
-  title: string;
+  project: string;
   amount: string | null;
   onPress: () => void;
   styles: ReturnType<typeof makeStyles>;
@@ -384,22 +447,34 @@ function ApprovalRow({
       accessibilityRole="button"
       accessibilityLabel={number}
       onPress={onPress}
-      style={[styles.card, styles.approvalCard]}
+      style={styles.approvalCard}
     >
       <View style={styles.approvalBody}>
+        {/* The drawing's first row: the record number as a chip, then the state chip. */}
         <View style={styles.approvalHead}>
-          <Text style={styles.approvalNumber}>{number}</Text>
+          <View style={styles.numberChip}>
+            <Text style={styles.approvalNumber}>{number}</Text>
+          </View>
           <View style={styles.stateChip}>
             <MaterialIcons name="schedule" size={11} color={palette.warning} />
             <Text style={styles.stateText}>{stateLabel}</Text>
           </View>
         </View>
         <Text style={styles.approvalTitle} numberOfLines={1}>
-          {title}
+          {project}
         </Text>
-        {/* An RFQ has no total until it is awarded, so the row simply omits the line rather than
+        {/* The drawing's third row is `location_on {site} • {amount}` under a SUBJECT line. This
+            platform has no subject on a purchase order, so the project took the big line — and the
+            first capture then printed the project twice, once in each place. The meta row keeps
+            only what the big line does not already say: the money.
+            An RFQ has no total until it is awarded, so the row is omitted entirely rather than
             printing a zero or an em dash where money belongs. */}
-        {amount === null ? null : <Text style={styles.approvalAmount}>{amount}</Text>}
+        {amount === null ? null : (
+          <View style={styles.approvalMeta}>
+            <MaterialIcons name="payments" size={13} color={palette.muted} />
+            <Text style={styles.approvalAmount}>{amount}</Text>
+          </View>
+        )}
       </View>
       <View style={styles.openPlate}>
         <MaterialIcons name="chevron-right" size={20} color={palette.accent} />
@@ -411,7 +486,62 @@ function ApprovalRow({
 function makeStyles(p: Palette) {
   return StyleSheet.create({
     root: { flex: 1, backgroundColor: p.bg },
+    // The drawing's oversized `payments` glyph, bleeding off the tile's bottom-right corner. It is
+    // decoration, so it takes the border colour rather than a tinted brand hue, and the tile clips
+    // it. `pointerEvents="none"` at the call site keeps it out of the press target.
+    watermark: { position: 'absolute', right: -16, bottom: -24 },
+    spacer: { flex: 1 },
+    tileFoot: { gap: spacing.xs / 2, alignItems: 'flex-start' },
+    // A circle: 999 marks a shape whose radius is half its width.
+    chevPlate: {
+      width: 28,
+      height: 28,
+      borderRadius: 999,
+      backgroundColor: p.elevated,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    warnChip: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 3,
+      paddingHorizontal: 6,
+      paddingVertical: 1,
+      borderRadius: radius.xl,
+      borderWidth: 1,
+      borderColor: `${p.warning}55`,
+      backgroundColor: `${p.warning}1A`,
+    },
+    warnChipText: { color: p.warning, fontFamily: fontFamily.semibold, fontSize: 10 },
+    aiChip: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 3,
+      paddingHorizontal: 6,
+      paddingVertical: 1,
+      borderRadius: radius.xl,
+      borderWidth: 1,
+      borderColor: `${p.accent}55`,
+      backgroundColor: `${p.accent}1A`,
+    },
+    aiChipText: { color: p.accent, fontFamily: fontFamily.semibold, fontSize: 10 },
+    numberChip: {
+      paddingHorizontal: 6,
+      paddingVertical: 2,
+      borderRadius: radius.xl,
+      backgroundColor: p.surfaceBright,
+    },
+    approvalMeta: { flexDirection: 'row', alignItems: 'center', gap: 3 },
+    approvalMetaText: {
+      flexShrink: 1,
+      color: p.muted,
+      fontFamily: fontFamily.regular,
+      fontSize: 11,
+    },
+    dot: { color: p.muted, fontFamily: fontFamily.regular, fontSize: 11 },
+    vendorDivider: { height: 1, backgroundColor: p.border },
     wideTile: {
+      overflow: 'hidden',
       gap: spacing.xs,
       padding: spacing.md,
       borderRadius: radius.lg,
@@ -489,8 +619,14 @@ function makeStyles(p: Palette) {
     approvalCard: {
       flexDirection: 'row',
       alignItems: 'center',
+      gap: spacing.sm,
+      padding: spacing.sm,
+      borderRadius: radius.xl,
+      borderWidth: 1,
+      borderColor: p.border,
       borderLeftWidth: 4,
       borderLeftColor: p.warning,
+      backgroundColor: p.surface,
     },
     approvalBody: { flex: 1, gap: 2 },
     approvalHead: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, flexWrap: 'wrap' },
@@ -513,8 +649,8 @@ function makeStyles(p: Palette) {
     },
     approvalAmount: { color: p.accent, fontFamily: fontFamily.bold, fontSize: 12 },
     openPlate: {
-      width: 36,
-      height: 36,
+      width: 40,
+      height: 40,
       alignItems: 'center',
       justifyContent: 'center',
       // A circle: 999 marks a shape whose radius is half its width.

@@ -157,30 +157,96 @@ describe('VendorsScreen', () => {
     await waitFor(() => expect(queryByTestId('vendor-v-1')).toBeNull());
   });
 
-  // The category filter is a SERVER query, not a client filter — it re-fetches. And ALL sends
-  // `undefined` rather than the string 'ALL', which is not a category the endpoint knows.
-  it('re-asks the server when the category changes', async () => {
-    const { getByTestId } = await renderScreen();
+  // THE CATEGORY FILTER IS A CLIENT FILTER, NOT A SERVER QUERY (changed 2026-09-09). It used to
+  // re-fetch on every chip press and these two tests pinned that. The drawing puts a COUNT on each
+  // chip, and a count over one category's response cannot say how many are in the others — so the
+  // screen asks once, unfiltered, and both the counts and the filtering are computed over what came
+  // back. One request is the contract now, and the chip press must not produce a second.
+  it('filters on the client and never re-asks the server', async () => {
+    api.fetchVendorDirectory.mockResolvedValue([
+      vendor('v-1', { category: 'MATERIALS' }),
+      vendor('v-2', { category: 'LOGISTICS' }),
+    ]);
+    const { getByTestId, queryByTestId } = await renderScreen();
 
-    await waitFor(() => expect(api.fetchVendorDirectory).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(getByTestId('vendor-v-2')).toBeTruthy());
     await fireEvent.press(getByTestId('vendors-filter-materials'));
 
-    await waitFor(() => expect(api.fetchVendorDirectory).toHaveBeenCalledTimes(2));
-    expect(api.fetchVendorDirectory).toHaveBeenLastCalledWith('MATERIALS');
+    await waitFor(() => expect(queryByTestId('vendor-v-2')).toBeNull());
+    expect(getByTestId('vendor-v-1')).toBeTruthy();
+    expect(api.fetchVendorDirectory).toHaveBeenCalledTimes(1);
   });
 
-  it('asks for everything, not for a category called ALL', async () => {
+  it('asks for the whole directory, with no category argument at all', async () => {
     const { getByTestId } = await renderScreen();
 
     await waitFor(() => expect(api.fetchVendorDirectory).toHaveBeenCalledTimes(1));
-    expect(api.fetchVendorDirectory).toHaveBeenCalledWith(undefined);
+    expect(api.fetchVendorDirectory).toHaveBeenCalledWith();
 
     await fireEvent.press(getByTestId('vendors-filter-materials'));
-    await waitFor(() => expect(api.fetchVendorDirectory).toHaveBeenCalledTimes(2));
     await fireEvent.press(getByTestId('vendors-filter-all'));
 
-    await waitFor(() => expect(api.fetchVendorDirectory).toHaveBeenCalledTimes(3));
-    expect(api.fetchVendorDirectory).toHaveBeenLastCalledWith(undefined);
+    expect(api.fetchVendorDirectory).toHaveBeenCalledTimes(1);
+  });
+
+  // The chip counts are REAL — they are why the request stopped being per-category. A count that
+  // came from the filtered response could only ever have equalled the rows on screen.
+  it('counts each chip over the whole directory, not over the rows on screen', async () => {
+    api.fetchVendorDirectory.mockResolvedValue([
+      vendor('v-1', { category: 'MATERIALS' }),
+      vendor('v-2', { category: 'MATERIALS' }),
+      vendor('v-3', { category: 'LOGISTICS' }),
+      vendor('v-4', { category: null }),
+    ]);
+    const { getByTestId } = await renderScreen();
+
+    await waitFor(() => expect(getByTestId('vendors-filter-all')).toHaveTextContent(/4/));
+    expect(getByTestId('vendors-filter-materials')).toHaveTextContent(/2/);
+    expect(getByTestId('vendors-filter-logistics')).toHaveTextContent(/1/);
+    // Nothing is invented for the uncategorised vendor: it counts in ALL and in no chip below it.
+    expect(getByTestId('vendors-filter-services')).toHaveTextContent(/0/);
+
+    // Filtering must not move the counts.
+    await fireEvent.press(getByTestId('vendors-filter-logistics'));
+    await waitFor(() => expect(getByTestId('vendors-filter-all')).toHaveTextContent(/4/));
+    expect(getByTestId('vendors-filter-materials')).toHaveTextContent(/2/);
+  });
+
+  // Both are controls the drawing shows and this platform cannot perform — no speech pipeline, and
+  // the chips already are the filter. They say so; they never sit dead (PO convention 2026-09-04).
+  it('says the mic and the filter button are not built rather than doing nothing', async () => {
+    const { getByTestId } = await renderScreen();
+
+    await waitFor(() => expect(getByTestId('vendors-voice')).toBeTruthy());
+    await fireEvent.press(getByTestId('vendors-voice'));
+    expect(alert).toHaveBeenCalledTimes(1);
+
+    await fireEvent.press(getByTestId('vendors-tune'));
+    expect(alert).toHaveBeenCalledTimes(2);
+  });
+
+  // The drawing's per-card controls. Neither a vendor profile screen nor an RFQ composer exists.
+  it('says the profile and RFQ buttons are not built', async () => {
+    const { getByTestId } = await renderScreen();
+
+    await waitFor(() => expect(getByTestId('vendor-view-v-1')).toBeTruthy());
+    await fireEvent.press(getByTestId('vendor-view-v-1'));
+    await fireEvent.press(getByTestId('vendor-rfq-v-1'));
+
+    expect(alert).toHaveBeenCalledTimes(2);
+  });
+
+  // The insight card's two actions, and the reason the card has a foot at all: the SOURCE must name
+  // something this repository has (ADR-098 amendment 2).
+  it('draws the insight card with its source and both actions', async () => {
+    const { getByTestId } = await renderScreen();
+
+    await waitFor(() => expect(getByTestId('vendor-insight')).toBeTruthy());
+    expect(getByTestId('vendor-insight-foot')).toHaveTextContent(/SOURCE/);
+
+    await fireEvent.press(getByTestId('vendor-insight-dismiss'));
+    await fireEvent.press(getByTestId('vendor-insight-act'));
+    expect(alert).toHaveBeenCalledTimes(2);
   });
 
   // §6.8 gives the role the right; the app has no editor to exercise it with, and says so.

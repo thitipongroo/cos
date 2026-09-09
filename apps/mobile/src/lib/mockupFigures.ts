@@ -680,10 +680,12 @@ export const PROC_SAVINGS_REALIZED = figure(
  * status, total_amount, currency_code, delivery_date, temporal_workflow_id, created_by, created_at,
  * updated_at`. `delivery_date` is when goods are due, not when a signature is.
  */
-export const APPROVAL_COUNTDOWN = figure(
-  ['4h remaining', '2d remaining', '6h remaining'] as const,
-  'a decision deadline on a purchase order — delivery_date is when goods are due, not a signature',
-);
+// APPROVAL_COUNTDOWN WAS DELETED ON 2026-09-09 — the second entry this register has lost to real
+// data rather than to a cancelled screen (ADR-101 removed PROFILE_JOB_TITLE, the first). It drew
+// "4h remaining" on every approval row. `procurement.rfqs.deadline` is a real column and `RfqRow`
+// already returned it, so an RFQ's countdown is now measured in `lib/approvalDeadline.ts`. A
+// PURCHASE ORDER GETS NO CHIP AT ALL: it has no decision deadline, and that was the entry's own
+// stated reason for existing.
 
 /**
  * The vendor card's ON-TIME RATE, QC PASS RATE and COMPLIANCE line.
@@ -762,4 +764,99 @@ export const LOGISTICS_CONFIDENCE = figure(
 export const VENDOR_INSIGHT_CONFIDENCE = figure(
   95,
   'a model that ranks suppliers against a negotiating opportunity — none runs',
+);
+
+// ── The deliveries screen's four card shapes (11_proc_manager/04_deliveries) ──
+//
+// EXTENDED 2026-09-09, product owner's answer to escalation E2 in
+// `.claude/impl-completed-2026-09-09-proc-manager-round1.md`'s successor plan: "เหมือนแบบทุกตัวเลข".
+// The drawing gives the delivery list FOUR distinct card shapes — awaiting GRN, in dispute, in
+// transit, fully received — and each carries detail no column on `procurement.deliveries` holds. The
+// register already covered the weighbridge reading, the shortfall, the credit note, the inspector,
+// the truck telemetry, the yard and the GRN numbers; what follows is only what was still missing.
+//
+// HOW THESE REACH A ROW. The rows themselves are REAL — `GET /procurement/deliveries` — as are the
+// delivery note, the date, the joined purchase order, its vendor and its value. The card SHAPE and
+// its drawn detail are assigned by position in the list, so a real delivery is dressed in one of the
+// drawing's four states. Nothing here invents a delivery that the server did not return, and
+// deleting this block leaves the real half standing.
+
+/**
+ * Which of the drawing's four card shapes a row takes, and the drawn detail for each.
+ *
+ * `procurement.deliveries` is `delivery_id, po_id, tenant_id, delivery_note, delivered_at,
+ * received_by, notes`. It records THAT something arrived. There is no status, so nothing can be
+ * awaiting a signature, in dispute or on the road; and no line-level material name, so no card can
+ * name what was delivered.
+ */
+export const DELIVERY_CARD_KIND = figure(
+  [
+    {
+      kind: 'AWAITING_GRN' as const,
+      material: 'Deformed bar SD40',
+      detail: 'Quantity: 18 t',
+      trailing: 'PO-7721-MAIN',
+    },
+    {
+      kind: 'DISPUTED' as const,
+      material: 'Portland cement',
+      detail: '70 bags short (430 of 500 delivered)',
+      trailing: 'Credit note',
+    },
+    {
+      kind: 'IN_TRANSIT' as const,
+      material: 'Ready-mix concrete 320 ksc',
+      detail: 'SCG Concrete (CPAC) • 40 m³ (8 trucks)',
+      trailing: 'ETA 13:40',
+    },
+    {
+      kind: 'RECEIVED' as const,
+      material: 'AAC block Q-CON G4',
+      detail: '6,400 blocks • Warehouse Sector B',
+      trailing: 'Passed to AP',
+    },
+  ] as const,
+  'a status column and a delivery-line material name on procurement.deliveries — neither exists',
+);
+
+/** "Trust Score 98%" beside the supplier on a delivery card. */
+export const DELIVERY_VENDOR_TRUST = figure(
+  '98%',
+  'a vendor score computed AT THE MOMENT OF DELIVERY — /procurement/vendors/:id/score is current, not historical, and nothing snapshots it against a receipt',
+);
+
+/** The in-transit card's fleet bar — "3/8 trucks arrived · 4.2 km away" and its two legend labels. */
+export const DELIVERY_TRANSIT = figure(
+  {
+    arrived: 3,
+    sent: 8,
+    distanceKm: '4.2',
+    legendDone: 'Trucks 1–3 (poured)',
+    legendMoving: 'Trucks 4–5 (on the expressway)',
+  },
+  'per-vehicle dispatch records and a GPS feed — a delivery is one row, not a fleet of them',
+);
+
+/** "Shelf R-04 | received by Nattapon · 10:45" on a completed card. */
+export const DELIVERY_STORAGE = figure(
+  { shelf: 'R-04', time: '10:45' },
+  'the warehouse bin and put-away records ADR-060 specifies and nothing has built',
+);
+
+/** The trailing map row — "tracking 4 trucks heading for the site". */
+export const DELIVERY_RADAR = figure(
+  4,
+  'a live vehicle count, which needs the same GPS feed DELIVERY_TELEMETRY names',
+);
+
+/** "+45 min (ETA 14:15)" on the logistics advisor, beside DELIVERY_TELEMETRY's delay. */
+export const LOGISTICS_ETA = figure(
+  '14:15',
+  'a projected arrival time — no carrier or traffic feed produces one',
+);
+
+/** The dispute card's explanation paragraph. */
+export const DELIVERY_DISPUTE_REASON = figure(
+  'Site staff counted pallet 4: 12 bags broken and 58 short. A credit note was withheld against the invoice automatically.',
+  'a dispute record with an inspection narrative — no dispute table exists in any of the 24 schemas',
 );

@@ -610,7 +610,14 @@
     "insightBody": "คู่ค้าสามรายถือใบสั่งซื้อที่เปิดอยู่เกือบทั้งหมด การรวมคำสั่งซื้อเหล็กครั้งหน้าอาจต่อรองราคาได้",
     "insightSource": "ทำเนียบคู่ค้าและคะแนนความน่าเชื่อถือ",
     "onTime": "ตรงเวลา {rate}",
-    "qcPass": "ผ่าน QC {rate}"
+    "qcPass": "ผ่าน QC {rate}",
+    "dismiss": "ไม่สนใจ",
+    "negotiate": "ดูโอกาสต่อรอง",
+    "activeJobs": "งานที่ดำเนินอยู่",
+    "onTimeRate": "อัตราตรงเวลา",
+    "rfq": "RFQ",
+    "voiceSearch": "ค้นหาด้วยเสียง",
+    "moreFilters": "ตัวกรองเพิ่มเติม"
   },
   "insight": {
     "title": "ข้อมูลเชิงลึก",
@@ -801,7 +808,10 @@
       "noVendors": "ยังไม่มีข้อมูลคู่ค้า",
       "trustScore": "{score} คะแนน",
       "noScore": "ยังไม่มีคะแนน",
-      "activeProjects": "{count, plural, =0 {ไม่มีใบสั่งซื้อที่เปิดอยู่} other {# โครงการที่มีใบสั่งซื้อ}}"
+      "activeProjects": "{count, plural, =0 {ไม่มีใบสั่งซื้อที่เปิดอยู่} other {# โครงการที่มีใบสั่งซื้อ}}",
+      "urgent": "{count, plural, other {เร่งด่วน # รายการ}}",
+      "aiDriven": "จาก AI",
+      "grade": "เกรด {grade}"
     }
   },
   "tasks": {
@@ -1696,7 +1706,15 @@
       "approve": "อนุมัติ",
       "details": "รายละเอียด",
       "empty": "ไม่มีรายการรอการตัดสินใจ",
-      "failed": "อ่านคิวไม่สำเร็จ ไม่สามารถระบุได้ว่ามีรายการรออยู่หรือไม่"
+      "failed": "อ่านคิวไม่สำเร็จ ไม่สามารถระบุได้ว่ามีรายการรออยู่หรือไม่",
+      "stateAwaitingAward": "รอตัดสินผู้ชนะ",
+      "stateManagerReview": "รอผู้จัดการตรวจ",
+      "urgent": "เร่งด่วน",
+      "hoursLeft": "เหลือ {hours} ชม.",
+      "daysLeft": "เหลือ {days} วัน",
+      "overdue": "เลยกำหนด",
+      "compare": "เทียบราคา",
+      "approveAll": "อนุมัติทั้งหมด ({count} รายการ)"
     },
     "managerDeliveries": {
       "title": "การส่งมอบ",
@@ -1711,7 +1729,36 @@
       "advisorBody": "การจราจรเฉลี่ย {speed} รถเข้าไซต์ช้ากว่ากำหนดราว {minutes} นาที แนะนำปรับคิวเทพื้นก่อนรถรอบถัดไป",
       "advisorSource": "บันทึกการส่งมอบและใบสั่งซื้อ",
       "yard": "ความจุลานกอง",
-      "approveGrn": "อนุมัติ GRN"
+      "approveGrn": "อนุมัติ GRN",
+      "pillAwaitingGrn": "รออนุมัติ GRN",
+      "pillDisputed": "ข้อพิพาท / กักจ่าย",
+      "pillInTransit": "กำลังขนส่ง",
+      "pillReceived": "ตรวจรับสมบูรณ์",
+      "filterDisputed": "มีข้อพิพาท",
+      "filterTransit": "กำลังขนส่ง",
+      "filterReceived": "ตรวจรับแล้ว",
+      "weighIn": "ชั่งน้ำหนัก",
+      "flagItem": "แจ้งรายการ",
+      "chatVendor": "แชทเจรจาคู่ค้า",
+      "photoEvidence": "หลักฐานภาพถ่าย",
+      "viewGps": "ดูพิกัด GPS",
+      "callDriver": "ติดต่อคนขับ",
+      "viewGrn": "ดูใบรับสินค้า GRN",
+      "share": "แชร์",
+      "yardPlan": "ผังคลัง",
+      "adjustSchedule": "ปรับตารางไซต์",
+      "etaGain": "+{minutes} นาที (ETA {eta})",
+      "radarTitle": "แผนที่เรดาร์การเดินทางรวม",
+      "radarBody": "ติดตามรถบรรทุก {count} คันที่มุ่งหน้าเข้าไซต์",
+      "trustScore": "Trust Score {percent}",
+      "fleetStatus": "{arrived}/{sent} คัน ถึงหน้างานแล้ว",
+      "distanceAway": "ห่าง {km} กม.",
+      "shelfLine": "ชั้นจัดเก็บ {shelf} | ผู้ตรวจ: {inspector}",
+      "creditNote": "Credit Note",
+      "remedyWindow": "ส่งเสริมใน 24 ชม.",
+      "items": "รายการ",
+      "cases": "เคส",
+      "queueOver": "หน้าด่าน 1 เกินคิว"
     }
   },
   "notifications": {

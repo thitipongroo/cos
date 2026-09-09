@@ -269,7 +269,15 @@ async function main() {
     await find(byId('approvals-screen'), 'approvals-screen', 20);
     // Three requests: the two approval lists, the vendor directory and the project names.
     await delay(4000);
-    await stitchFull('02-Approvals/01-pom-approvals');
+    // THE BULK BAR IS STICKY. "อนุมัติทั้งหมด (n รายการ)" sits under the list rather than inside it,
+    // so the content scrolls behind it and the stitcher pasted it into every shot — three copies of
+    // one bar, each landing across a card. Handing its bounds in is the same treatment the Orders
+    // tab gives its floating button.
+    await stitchFull(
+      '02-Approvals/01-pom-approvals',
+      undefined,
+      await boundsOf(byId('approve-all'), 'bulk approve bar'),
+    );
   }
 
   if (wanted('orders')) {

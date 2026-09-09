@@ -2452,7 +2452,9 @@ decision 2026-09-07). ADR-085: style is the drawing's, composition is not.
 
 ## Procurement Manager — four tabs, six screens — [`11-proc-manager/`](11-proc-manager/)
 
-`mockup/mobile/11_proc_manager/` — the role that decides. Captured 2026-09-09 as `+66811000006`
+`mockup/mobile/11_proc_manager/` — the role that decides. Captured 2026-09-09, and **re-shot the
+same day** after the screens were rebuilt to match the drawings (see the note at the end of this
+section), as `+66811000006`
 (Rungnapa Chaiyo) over **Path A, phone OTP**: `MFA_ROLES` is `{TENANT_ADMIN, FINANCE}` and this role
 is in neither.
 
@@ -2467,14 +2469,14 @@ different jobs, so the routes now dispatch by role the way `home.tsx` always has
 | Orders     | purchase orders                         | purchase orders — **the same screen**                      |
 | Deliveries | the receiving queue and its record form | arrivals, holds and yard capacity                          |
 
-| Directory                                          | What the frames show                                                                                                                                                                                                        |
-| -------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [`01-Home/`](11-proc-manager/01-Home/)             | The dashboard (`01`): committed spend summed in decimal.js, open RFQs, the drawn savings tile, the insight module, "Action Required" from the real approvals queue, and Top Vendors with real weighted trust scores.        |
-| [`02-Approvals/`](11-proc-manager/02-Approvals/)   | The approvals queue (`01`): purchase orders in `PENDING_APPROVAL` and RFQs in `EVALUATED`, each with its vendor, project and amount. **Approve is drawn** — see below.                                                      |
-| [`03-Orders/`](11-proc-manager/03-Orders/)         | The purchase orders (`01`) — the officer's screen, unchanged for this role.                                                                                                                                                 |
-| [`04-Deliveries/`](11-proc-manager/04-Deliveries/) | The manager's delivery view (`01`): today's arrivals and their value (real), the drawn to-inspect and dispute tiles, the logistics advisor, the yard-capacity bar and a card per delivery with its order, vendor and value. |
-| [`05-Vendors/`](11-proc-manager/05-Vendors/)       | The vendor directory (`01`) — trust scores, open-order counts and state badges, all real, under the drawn insight banner.                                                                                                   |
-| [`06-Drawer/`](11-proc-manager/06-Drawer/)         | The navigation drawer (`01`) and account settings (`02`) — the shared components every role gets.                                                                                                                           |
+| Directory                                          | What the frames show                                                                                                                                                                                                                                                             |
+| -------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [`01-Home/`](11-proc-manager/01-Home/)             | The dashboard (`01`): committed spend summed in decimal.js, open RFQs, the drawn savings tile, the insight module, "Action Required" from the real approvals queue, and Top Vendors with real weighted trust scores.                                                             |
+| [`02-Approvals/`](11-proc-manager/02-Approvals/)   | The approvals queue (`01`): purchase orders in `PENDING_APPROVAL` and RFQs in `EVALUATED`, each with its vendor, project, amount and — on an RFQ — a **measured** countdown. **Approve is drawn** — see below.                                                                   |
+| [`03-Orders/`](11-proc-manager/03-Orders/)         | The purchase orders (`01`) — the officer's screen, unchanged for this role.                                                                                                                                                                                                      |
+| [`04-Deliveries/`](11-proc-manager/04-Deliveries/) | The manager's delivery view (`01`): today's arrivals and their value (real), the drawn to-inspect and dispute tiles, the logistics advisor, the yard row, and the drawing's **four card shapes** — awaiting GRN, disputed, in transit, received — each over a real delivery row. |
+| [`05-Vendors/`](11-proc-manager/05-Vendors/)       | The vendor directory (`01`) — trust scores, open-order counts and state badges, all real, under the drawn insight banner.                                                                                                                                                        |
+| [`06-Drawer/`](11-proc-manager/06-Drawer/)         | The navigation drawer (`01`) and account settings (`02`) — the shared components every role gets.                                                                                                                                                                                |
 
 **THE ORDERS TAB SHOWS ORDERS, AND THE DRAWING DISAGREES WITH ITSELF ABOUT THAT.**
 `03_orders/01_pom_order/code.html` sits in a directory called _orders_, its bottom nav highlights a
@@ -2493,10 +2495,30 @@ only the awarding endpoint can supply. Full reasoning in
 [ADR-099](../../architecture/adr/099-mockup-figures-without-a-data-source.md)'s 2026-09-09 amendment
 and in the screen's own header.
 
-**Ten figures in these frames are drawn**, listed in that same amendment. The largest is the
-yard-capacity bar: §20.7.3 defines `/procurement/warehouses` and `/procurement/inventory` and none of
-the database's 24 schemas holds a warehouse, a bin, a stock level or a quota.
+**Eighteen figures are drawn across the four screens this role owns**, listed in that amendment and
+the one after it. Counted, not recalled — the `mockupFigures` imports of `vendors.tsx`,
+`ManagerDeliveries.tsx`, `ApprovalsQueue.tsx` and `ProcManagerHome.tsx`.
+The largest is the yard row: §20.7.3 defines `/procurement/warehouses` and
+`/procurement/inventory` and none of the database's 24 schemas holds a warehouse, a bin, a stock
+level or a quota. The delivery cards' material names, quantities, weighbridge readings, truck
+counts and shelf codes are the rest — the product owner asked for the drawing figure for figure
+on 2026-09-09, and each one names the column that would delete it.
+
+**One figure went the other way on the same day.** The "4h remaining" countdown was drawn on
+every approval row; `procurement.rfqs.deadline` is a real column, so it is now measured in
+`lib/approvalDeadline.ts` and the register entry was deleted. A purchase order has no decision
+deadline and now shows no chip at all rather than a picture of one.
 
 **Everything else is live data**: committed spend, open RFQs, every approval row and its vendor,
 project and amount, every vendor's weighted trust score and open-order count, today's arrivals and
-what those orders are worth.
+what those orders are worth. The category-chip counts on the vendor directory and the Urgent count
+on both the dashboard and the queue joined that list on 2026-09-09 — each is computed over the
+rows the screen already holds, so no chip can disagree with the list beneath it.
+
+**These frames were re-shot after a rebuild, and the reason is worth recording.** The first set
+had the right data in the wrong shape: the drawings were read and the screens were then composed
+afresh rather than followed. ADR-085 lets an implemented structure that has OUTGROWN its drawing
+stand; none of these four had outgrown anything. Two differences from the drawings remain, both
+decided by the product owner on the day: the CONFIDENCE chip stays in the AI card's foot per the
+2026-09-08 standard rather than moving to the header, and the vendor directory stays on the
+drawer rather than moving onto the Orders tab.

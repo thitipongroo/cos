@@ -112,6 +112,113 @@ describe('ManagerDeliveries', () => {
     expect(client.post).not.toHaveBeenCalled();
   });
 
+  // THE DRAWING GIVES THE LIST FOUR CARD SHAPES and the product owner asked for all four
+  // (2026-09-09, "เหมือนแบบทุกตัวเลข"). The shape is drawn — no status column exists — but it is
+  // assigned by POSITION, which is what lets the filter chips count honestly. Four rows, four
+  // shapes, in the register's order.
+  function four() {
+    return [
+      delivery({ delivery_id: 'del-1', delivery_note: 'DN-1' }),
+      delivery({ delivery_id: 'del-2', delivery_note: 'DN-2' }),
+      delivery({ delivery_id: 'del-3', delivery_note: 'DN-3' }),
+      delivery({ delivery_id: 'del-4', delivery_note: 'DN-4' }),
+    ];
+  }
+
+  it('draws all four of the drawing’s card shapes, one per row', async () => {
+    client.get.mockImplementation(route(four()));
+    const { getByTestId } = await renderScreen();
+
+    // Card 1 — awaiting GRN: weigh, flag and the GRN button.
+    await waitFor(() => expect(getByTestId('delivery-weigh-del-1')).toBeTruthy());
+    expect(getByTestId('delivery-flag-del-1')).toBeTruthy();
+    expect(getByTestId('delivery-grn-del-1')).toBeTruthy();
+
+    // Card 2 — disputed: negotiate and photo evidence, and the credit note in place of the amount.
+    expect(getByTestId('delivery-chat-del-2')).toBeTruthy();
+    expect(getByTestId('delivery-photo-del-2')).toBeTruthy();
+    expect(getByTestId('delivery-item-del-2')).toHaveTextContent(/14,350/);
+
+    // Card 3 — in transit: GPS, the driver, and the fleet bar.
+    expect(getByTestId('delivery-gps-del-3')).toBeTruthy();
+    expect(getByTestId('delivery-call-del-3')).toBeTruthy();
+    expect(getByTestId('delivery-progress-del-3')).toBeTruthy();
+
+    // Card 4 — received: the receipt and the share square.
+    expect(getByTestId('delivery-receipt-del-4')).toBeTruthy();
+    expect(getByTestId('delivery-share-del-4')).toBeTruthy();
+  });
+
+  it('shows the order’s real amount on every card except the disputed one', async () => {
+    // The fixture order is ฿540,000. The disputed card shows the drawn credit note instead, because
+    // the drawing shows a negative number there — and that is the ONE place a real figure is
+    // replaced, which is why it is pinned.
+    client.get.mockImplementation(route(four()));
+    const { getByTestId } = await renderScreen();
+
+    await waitFor(() => expect(getByTestId('delivery-item-del-1')).toHaveTextContent(/540,000/));
+    expect(getByTestId('delivery-item-del-3')).toHaveTextContent(/540,000/);
+    expect(getByTestId('delivery-item-del-4')).toHaveTextContent(/540,000/);
+    expect(getByTestId('delivery-item-del-2')).not.toHaveTextContent(/540,000/);
+  });
+
+  it('filters by card shape and counts each chip against what the list shows', async () => {
+    client.get.mockImplementation(route(four()));
+    const { getByTestId, queryByTestId } = await renderScreen();
+
+    await waitFor(() => expect(getByTestId('delivery-filter-ALL')).toHaveTextContent(/4/));
+    expect(getByTestId('delivery-filter-DISPUTED')).toHaveTextContent(/1/);
+
+    await fireEvent.press(getByTestId('delivery-filter-DISPUTED'));
+    await waitFor(() => expect(queryByTestId('delivery-item-del-1')).toBeNull());
+    expect(getByTestId('delivery-item-del-2')).toBeTruthy();
+
+    // The counts describe the whole list, so filtering must not move them.
+    expect(getByTestId('delivery-filter-ALL')).toHaveTextContent(/4/);
+  });
+
+  it('never posts from any of the drawn controls, whichever card they are on', async () => {
+    // None of these has an endpoint: no chat, no photo pipeline on a delivery, no GPS, no driver
+    // record, and §20.7.3's /procurement/grn is unimplemented. Every one says so instead.
+    client.get.mockImplementation(route(four()));
+    const { getByTestId } = await renderScreen();
+
+    await waitFor(() => expect(getByTestId('delivery-weigh-del-1')).toBeTruthy());
+    for (const id of [
+      'delivery-weigh-del-1',
+      'delivery-flag-del-1',
+      'delivery-chat-del-2',
+      'delivery-photo-del-2',
+      'delivery-gps-del-3',
+      'delivery-call-del-3',
+      'delivery-receipt-del-4',
+      'delivery-share-del-4',
+    ]) {
+      await fireEvent.press(getByTestId(id));
+    }
+    expect(client.post).not.toHaveBeenCalled();
+  });
+
+  it('draws the advisor’s action, the yard row and the fleet radar without an endpoint', async () => {
+    const { getByTestId } = await renderScreen();
+
+    await waitFor(() => expect(getByTestId('advisor-adjust')).toBeTruthy());
+    await fireEvent.press(getByTestId('advisor-adjust'));
+    await fireEvent.press(getByTestId('warehouse-plan'));
+    await fireEvent.press(getByTestId('delivery-radar'));
+
+    expect(client.post).not.toHaveBeenCalled();
+  });
+
+  it('keeps the confidence in the card foot, not in the advisor’s header', async () => {
+    // The drawing puts a "CONFIDENCE: 96%" chip beside the advisor's title. The project standard of
+    // 2026-09-08 puts it in the foot, and the product owner chose the standard on 2026-09-09.
+    const { getByTestId } = await renderScreen();
+
+    await waitFor(() => expect(getByTestId('logistics-advisor-foot')).toHaveTextContent(/96/));
+    expect(getByTestId('logistics-advisor')).toHaveTextContent(/SOURCE/);
+  });
+
   it('says so when nothing has been delivered', async () => {
     client.get.mockImplementation(route([]));
     const { getByTestId } = await renderScreen();

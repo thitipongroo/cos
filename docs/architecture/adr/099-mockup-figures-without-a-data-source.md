@@ -635,3 +635,95 @@ and in a test that fails if anyone wires it.
 
 Counted, not recalled:
 `grep -c "^export const [A-Z_]* = figure(" apps/mobile/src/lib/mockupFigures.ts`.
+
+## Amendment — 2026-09-09 (second): the PROC_MANAGER screens rebuilt to the drawings
+
+The amendment above landed the PROC_MANAGER set with the right data. **The product owner rejected
+it, three times, because the screens did not look like the drawings** — "กูมี mockup ให้มึงดู มึงก็ต้อง
+ทำให้เหมือนใน mockup ที่กูส่งให้". The composition carve-out in ADR-085 had been read as licence to
+redraw a screen's visual structure, which it is not: it lets an implemented structure that has
+OUTGROWN its drawing stand, and none of these four had outgrown anything.
+
+Rebuilding to the drawings meant one screen needed figures the previous round had not drawn.
+
+### The question that had to be asked first
+
+`mockup/mobile/11_proc_manager/04_deliveries/01_pom_deliveries` gives the delivery list FOUR card
+shapes — awaiting GRN, in dispute, in transit, fully received — and each carries detail
+`procurement.deliveries` cannot hold. That table is `delivery_id, po_id, tenant_id, delivery_note,
+delivered_at, received_by, notes`. It records THAT something arrived.
+
+Matching the drawing meant roughly a dozen new entries at once, which is a decision about how much
+of a screen may be a picture and is therefore not an agent's to take. It was put to the product
+owner with two options — register them all, or keep the drawing's card SHAPES and fill them only
+from real columns. **The answer was the first: "เหมือนแบบทุกตัวเลข".**
+
+### What was added — seven entries
+
+| Entry                     | What it draws                                                                 | What would delete it                                                               |
+| ------------------------- | ----------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| `DELIVERY_CARD_KIND`      | which of the four shapes a row takes, and each one's material and detail line | a status column and a line-level material name on a delivery                       |
+| `DELIVERY_VENDOR_TRUST`   | "Trust Score 98%" beside the supplier ON a delivery                           | a score snapshotted at receipt — the scorecard endpoint is current, not historical |
+| `DELIVERY_TRANSIT`        | "3/8 trucks on site · 4.2 km away" and the two legend labels                  | per-vehicle dispatch records and a GPS feed                                        |
+| `DELIVERY_STORAGE`        | the shelf code and the time of receipt                                        | the warehouse bin and put-away records ADR-060 specifies                           |
+| `DELIVERY_RADAR`          | the trailing map row's truck count                                            | the same GPS feed `DELIVERY_TELEMETRY` names                                       |
+| `LOGISTICS_ETA`           | "(ETA 14:15)" beside the advisor's delay                                      | a carrier or traffic feed                                                          |
+| `DELIVERY_DISPUTE_REASON` | the dispute card's explanation paragraph                                      | a dispute record with an inspection narrative                                      |
+
+The shape is assigned by a row's POSITION in the list, and the row under it is a real delivery — its
+note, its date, the joined order, that order's number, vendor and amount. Deleting this block leaves
+the real half standing, which is the condition every entry here has always been held to.
+
+**One figure REPLACES a real number, and it is the only one in the register that does.** On the
+disputed card the amount shown is the drawn credit note rather than the order's value, because the
+drawing shows a negative number in that position. It is stated in the screen's header comment, in
+the entry, and here, because a reader comparing the card to the order would otherwise find a
+discrepancy with no explanation.
+
+### And one entry was deleted, for the second time in the register's life
+
+`APPROVAL_COUNTDOWN` drew "4h remaining" on every approval row. Its own stated reason was that a
+purchase order has no decision deadline — `delivery_date` is when goods are due, not when a
+signature is. **That reason never applied to an RFQ.** `procurement.rfqs.deadline` is a real column
+and `RfqRow` was already returning it; the figure had been painted over a measurement.
+
+So the countdown is now computed in `apps/mobile/src/lib/approvalDeadline.ts`, and **a purchase
+order carries no chip at all** — not a dash, not "no deadline". The same function gives the
+dashboard's "Urgent" tile chip and the queue's Urgent filter a real count, both over the same rows
+the total above them counts, so neither can exceed it.
+
+The threshold — under 24 hours is urgent — is a product choice and is recorded as one in that
+module. Nothing in `docs/specifications/` sets it, and a rule stated in the code is better than a
+feeling reimplemented per screen.
+
+This is the second entry lost to real data rather than to a cancelled screen; the fifth amendment
+removed `PROFILE_JOB_TITLE` the same way.
+
+### What the drawings asked for and did NOT get
+
+Two deliberate refusals, both the product owner's own call on the day:
+
+- **The CONFIDENCE chip stays in the card FOOT.** All four drawings put it in the header beside the
+  title. The standard of 2026-09-08 (spec §32.7, `<AiCardFooter />`) puts it in the foot beside the
+  source, because "this confident" and "from this" are one sentence. Asked which wins, the product
+  owner said the standard — so these four cards have no header chip and the deviation is recorded in
+  each screen's header comment.
+- **The APPROVE button still cannot approve.** The sixth amendment's finding stands: the route is
+  `@Roles(PROJECT_MANAGER, FINANCE, EXECUTIVE, TENANT_ADMIN)` while `docs/specifications/06-*.md:296`
+  grants this role `RW + A`. Asked whether to open the route instead, the answer was no. The drawing's
+  bulk bar — "อนุมัติทั้งหมด (n รายการ)" — is that same action n times and draws on the same terms.
+
+### One structural line that is NOT a figure
+
+`mockup/mobile/11_proc_manager/03_orders/01_pom_order` has `<title>Vendor Directory</title>` and its
+bottom nav highlights **Orders**. The drawing says this role's Orders tab is the supplier directory;
+in this app that tab is the purchase-order list and the directory is reached from the drawer.
+Nothing in `docs/specifications/` settles it. The product owner said not to move it, so only the
+screen's style changed. Recorded here because a later reader comparing the two will otherwise think
+the drawing was ignored by accident.
+
+### The register is at fifty-six
+
+Counted, not recalled:
+`grep -c "^export const [A-Z_]* = figure(" apps/mobile/src/lib/mockupFigures.ts`.
+Fifty, plus seven, less `APPROVAL_COUNTDOWN`.

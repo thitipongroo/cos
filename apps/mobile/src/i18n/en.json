@@ -610,7 +610,14 @@
     "insightBody": "Three suppliers are carrying most of the open orders. Consolidating the next steel award could move the price.",
     "insightSource": "vendor directory and scorecards",
     "onTime": "On time {rate}",
-    "qcPass": "QC pass {rate}"
+    "qcPass": "QC pass {rate}",
+    "dismiss": "Dismiss",
+    "negotiate": "See the opening",
+    "activeJobs": "Active jobs",
+    "onTimeRate": "On-time rate",
+    "rfq": "RFQ",
+    "voiceSearch": "Voice search",
+    "moreFilters": "More filters"
   },
   "insight": {
     "title": "Insights",
@@ -801,7 +808,10 @@
       "noVendors": "No vendors on record.",
       "trustScore": "{score} TS",
       "noScore": "No score yet",
-      "activeProjects": "{count, plural, =0 {No open orders} one {# project with open orders} other {# projects with open orders}}"
+      "activeProjects": "{count, plural, =0 {No open orders} one {# project with open orders} other {# projects with open orders}}",
+      "urgent": "{count, plural, one {# urgent} other {# urgent}}",
+      "aiDriven": "AI driven",
+      "grade": "Grade {grade}"
     }
   },
   "tasks": {
@@ -1696,7 +1706,15 @@
       "approve": "Approve",
       "details": "Details",
       "empty": "Nothing is waiting for a decision.",
-      "failed": "The queue could not be read. Nothing is claimed about what is waiting."
+      "failed": "The queue could not be read. Nothing is claimed about what is waiting.",
+      "stateAwaitingAward": "Awaiting award",
+      "stateManagerReview": "Manager review",
+      "urgent": "Urgent",
+      "hoursLeft": "{hours}h remaining",
+      "daysLeft": "{days}d remaining",
+      "overdue": "Overdue",
+      "compare": "Compare",
+      "approveAll": "Approve all ({count} items)"
     },
     "managerDeliveries": {
       "title": "Deliveries",
@@ -1711,7 +1729,36 @@
       "advisorBody": "Traffic is running {speed}; arrivals are trending {minutes} minutes late. Move the pour queue before the next load lands.",
       "advisorSource": "delivery records and their orders",
       "yard": "Yard capacity",
-      "approveGrn": "Approve GRN"
+      "approveGrn": "Approve GRN",
+      "pillAwaitingGrn": "Awaiting GRN",
+      "pillDisputed": "Dispute / held",
+      "pillInTransit": "In transit",
+      "pillReceived": "Received",
+      "filterDisputed": "Disputed",
+      "filterTransit": "In transit",
+      "filterReceived": "Received",
+      "weighIn": "Weigh in",
+      "flagItem": "Flag item",
+      "chatVendor": "Chat with the vendor",
+      "photoEvidence": "Photo evidence",
+      "viewGps": "View GPS",
+      "callDriver": "Call the driver",
+      "viewGrn": "View the GRN",
+      "share": "Share",
+      "yardPlan": "Yard plan",
+      "adjustSchedule": "Adjust the site schedule",
+      "etaGain": "+{minutes} min (ETA {eta})",
+      "radarTitle": "Fleet radar map",
+      "radarBody": "Tracking {count} trucks heading for the site",
+      "trustScore": "Trust Score {percent}",
+      "fleetStatus": "{arrived}/{sent} trucks on site",
+      "distanceAway": "{km} km away",
+      "shelfLine": "Shelf {shelf} | received by {inspector}",
+      "creditNote": "Credit note",
+      "remedyWindow": "Redeliver within 24 h",
+      "items": "items",
+      "cases": "cases",
+      "queueOver": "1 over at the gate"
     }
   },
   "notifications": {
