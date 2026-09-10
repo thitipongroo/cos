@@ -74,4 +74,64 @@ describe('ProjectMapDocument', () => {
     expect(queryByText(/coming soon/i)).toBeNull();
     expect(queryByText(/unavailable/i)).toBeNull();
   });
+
+  // ── THE 2026-09-11 REDRAW ─────────────────────────────────────────────────────────────────────
+
+  it('carries the state on the pin label itself', async () => {
+    const { getByTestId } = await renderMap();
+
+    await waitFor(() => expect(getByTestId('map-pin-0')).toBeTruthy());
+    // The redraw folded the pin's state into its label as `Site Alpha · • On track`, so a pin says
+    // what it is without the sheet being read. The bare third pin gains nothing.
+    expect(getByTestId('map-pin-0')).toHaveTextContent(/Site Alpha/);
+    expect(getByTestId('map-pin-0')).toHaveTextContent(/On track/i);
+    expect(getByTestId('map-pin-1')).toHaveTextContent(/Delayed/i);
+    expect(getByTestId('map-pin-2')).not.toHaveTextContent(/On track/i);
+  });
+
+  it('caps the sheet and scrolls its list, which the first capture proved it must', async () => {
+    const { getByTestId } = await renderMap();
+
+    await waitFor(() => expect(getByTestId('map-sheet')).toBeTruthy());
+    // At the cap the second site row was cut off mid-figure with nothing to reach it. The cap keeps
+    // the map above a map; the ScrollView is what makes the cap survivable. Both or neither.
+    const sheet = getByTestId('map-sheet').props.style as { maxHeight?: string };
+    expect(sheet.maxHeight).toBe('52%');
+    expect(getByTestId('map-sheet-list')).toBeTruthy();
+  });
+
+  it('makes each site row a control and leaves the sheet’s own chrome ornament', async () => {
+    const alert = jest.spyOn(Alert, 'alert').mockImplementation(() => undefined);
+
+    const { getByTestId } = await renderMap();
+    await waitFor(() => expect(getByTestId('map-sheet')).toBeTruthy());
+
+    // A site row carries a round chevron plate, so it is a control and answers on the press — no
+    // per-site screen exists for this role. The grab handle and the collapse chevron beside
+    // "3 VISIBLE" are the opposite case: ornament on a panel that cannot be dragged, drawn because
+    // the drawing draws them, pressable by nothing.
+    //
+    // Counted rather than asserted one at a time, so the two claims hold together: the number of
+    // press handlers ANYWHERE under the sheet must equal the number of rows. A pressable grab
+    // handle would push it up; a row that lost its press would pull it down.
+    const pressable = hostNodes(getByTestId('map-sheet')).filter(
+      (n) => n.props.onResponderRelease !== undefined,
+    );
+    expect(pressable).toHaveLength(VIEWER_MAP_SITES.value.rows.length);
+
+    fireEvent.press(getByTestId(`map-site-${VIEWER_MAP_SITES.value.rows[0]?.ref}`));
+    await waitFor(() => expect(alert).toHaveBeenCalled());
+    alert.mockRestore();
+  });
 });
+
+type HostNode = { type: string; props: Record<string, unknown>; children: unknown[] };
+
+/** Every host element under `node`, flattened. Host elements expose type/props/children only. */
+function hostNodes(node: unknown, out: HostNode[] = []): HostNode[] {
+  if (typeof node !== 'object' || node === null) return out;
+  const host = node as HostNode;
+  if (host.props !== undefined) out.push(host);
+  for (const child of host.children ?? []) hostNodes(child, out);
+  return out;
+}

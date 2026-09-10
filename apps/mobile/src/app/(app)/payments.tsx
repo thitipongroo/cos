@@ -81,6 +81,8 @@ import { AiCardFooter } from '../../components/AiCardFooter';
 import { useProjectStore } from '../../store/projectStore';
 import { spacedMoney } from '../../lib/compactMoney';
 import { FORECAST_CONFIDENCE, PAYMENT_DETAIL_EXTRAS } from '../../lib/mockupFigures';
+import { useAuthStore } from '../../store/authStore';
+import { canRenderWriteControls } from '../../lib/readOnlyRole';
 import { useT, useI18n } from '../../i18n';
 import { useComingSoon } from '../../components/useComingSoon';
 import type { TranslateFn } from '../../i18n';
@@ -462,6 +464,10 @@ function PaymentDetail({
   onApprove: () => void;
   onDispute: () => void;
 }): React.JSX.Element {
+  // §20.7.9: a read-only role is shown no create, edit or approve control. Read HERE rather than
+  // passed as a prop — the rule is about the signed-in session, not about this row, and a prop
+  // would let one caller forget it.
+  const canWrite = useAuthStore((s) => canRenderWriteControls(s.role));
   const rows: Array<[string, string]> = [
     [t('finance.payments.vendor'), invoice?.vendor_name ?? '—'],
     [t('finance.payments.amount'), spacedMoney(row.amount, row.currency_code)],
@@ -508,38 +514,45 @@ function PaymentDetail({
       </View>
 
       {/* What pressing Approve will actually do — see the header for what it is and is not. */}
-      <View testID="payment-mfa-note" style={[styles.card, styles.mfaNote]}>
-        <MaterialIcons name="fingerprint" size={18} color={palette.accent} />
-        <Text style={styles.body}>{t('finance.payments.confirmNote')}</Text>
-      </View>
+      {canWrite ? (
+        <View testID="payment-mfa-note" style={[styles.card, styles.mfaNote]}>
+          <MaterialIcons name="fingerprint" size={18} color={palette.accent} />
+          <Text style={styles.body}>{t('finance.payments.confirmNote')}</Text>
+        </View>
+      ) : null}
 
-      <View style={styles.detailActions}>
-        <Pressable
-          testID="payment-dispute-button"
-          accessibilityRole="button"
-          accessibilityLabel={t('finance.payments.dispute')}
-          onPress={onDispute}
-          style={[styles.detailButton, styles.detailButtonDanger]}
-        >
-          <Text style={[styles.detailButtonText, styles.detailButtonTextDanger]}>
-            {t('finance.payments.dispute')}
-          </Text>
-        </Pressable>
-        <Pressable
-          testID="approve-payment-button"
-          accessibilityRole="button"
-          accessibilityLabel={t('finance.payments.approve')}
-          accessibilityState={{ disabled: busy }}
-          disabled={busy}
-          onPress={onApprove}
-          style={[styles.detailButton, styles.detailButtonPrimary, busy && styles.disabled]}
-        >
-          <MaterialIcons name="task-alt" size={16} color={palette.onPrimary} />
-          <Text style={[styles.detailButtonText, styles.detailButtonTextPrimary]}>
-            {t('finance.payments.approve')}
-          </Text>
-        </Pressable>
-      </View>
+      {/* §20.7.9: A VIEWER IS SHOWN NEITHER BUTTON. Both mutate — approve releases a payment,
+          dispute holds one — and the note above them explains an action this reader cannot take.
+          Hidden rather than disabled: a greyed button still offers the action. */}
+      {canWrite ? (
+        <View style={styles.detailActions}>
+          <Pressable
+            testID="payment-dispute-button"
+            accessibilityRole="button"
+            accessibilityLabel={t('finance.payments.dispute')}
+            onPress={onDispute}
+            style={[styles.detailButton, styles.detailButtonDanger]}
+          >
+            <Text style={[styles.detailButtonText, styles.detailButtonTextDanger]}>
+              {t('finance.payments.dispute')}
+            </Text>
+          </Pressable>
+          <Pressable
+            testID="approve-payment-button"
+            accessibilityRole="button"
+            accessibilityLabel={t('finance.payments.approve')}
+            accessibilityState={{ disabled: busy }}
+            disabled={busy}
+            onPress={onApprove}
+            style={[styles.detailButton, styles.detailButtonPrimary, busy && styles.disabled]}
+          >
+            <MaterialIcons name="task-alt" size={16} color={palette.onPrimary} />
+            <Text style={[styles.detailButtonText, styles.detailButtonTextPrimary]}>
+              {t('finance.payments.approve')}
+            </Text>
+          </Pressable>
+        </View>
+      ) : null}
     </View>
   );
 }

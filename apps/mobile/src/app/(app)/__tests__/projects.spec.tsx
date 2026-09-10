@@ -137,4 +137,39 @@ describe('ProjectsScreen', () => {
     expect(alert).toHaveBeenCalled();
     alert.mockRestore();
   });
+
+  // ── THE 2026-09-11 REDRAW ────────────────────────────────────────────────────────────────────
+
+  it('leaves the chosen All chip inert and gives every other chip a press', async () => {
+    useCollection.mockReturnValue([RIVERSIDE]);
+
+    const { getByTestId } = await renderScreen();
+    await waitFor(() => expect(getByTestId('projects-filter-all')).toBeTruthy());
+
+    // `All` is the state the list is already in. The redraw marks it with a tick, and pressing the
+    // state you are already in is not a control — so it is a View and carries no press at all.
+    expect(getByTestId('projects-filter-all').props.onStartShouldSetResponder).toBeUndefined();
+    expect(getByTestId('projects-filter-commercial').props.onStartShouldSetResponder).toBeDefined();
+  });
+
+  it('makes the issue count a control of its own, distinct from the card', async () => {
+    const alert = jest.spyOn(Alert, 'alert').mockImplementation(() => undefined);
+    useCollection.mockReturnValue([RIVERSIDE]);
+
+    const { getByTestId } = await renderScreen();
+    await waitFor(() => expect(getByTestId('project-issues')).toBeTruthy());
+
+    // Before the redraw this was a line of text inside the card's own press. It is now a tinted
+    // plate with a `navigate_next`, so the two must answer differently — a nested control that
+    // fell through to its parent would look identical and open the wrong thing.
+    fireEvent.press(getByTestId('project-issues'));
+    await waitFor(() => expect(alert).toHaveBeenLastCalledWith('Issues', expect.any(String)));
+
+    fireEvent.press(getByTestId('project-item'));
+    await waitFor(() =>
+      expect(alert).toHaveBeenLastCalledWith('Project detail', expect.any(String)),
+    );
+
+    alert.mockRestore();
+  });
 });

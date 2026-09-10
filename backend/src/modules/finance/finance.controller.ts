@@ -91,7 +91,11 @@ export class FinanceController {
 
   // GET /api/v1/finance/budget/:projectId  (budget vs actual vs committed + lines)
   @Get('finance/budget/:projectId')
-  @Roles(...READ_ROLES)
+  // VIEWER ADDED 2026-09-11. §6.8 grants this role R on the whole module and the route refused
+  // it — measured at 403 with a real token that day. Added HERE rather than to `READ_ROLES`, which
+  // would have opened every read route in this controller: the product owner chose to open only
+  // the routes the two VIEWER screens actually read (F3 = C). See ADR.
+  @Roles(...READ_ROLES, CosRole.VIEWER)
   @ApiOperation({ summary: 'Budget summary with lines (budget vs actual vs committed)' })
   @ApiParam({ name: 'projectId', type: 'string', format: 'uuid' })
   getBudget(@Param('projectId', ParseUUIDPipe) projectId: string) {
@@ -124,7 +128,11 @@ export class FinanceController {
 
   // GET /api/v1/finance/cost-transactions  (tenant-wide, AIP-132; ?project_id= to scope)
   @Get('finance/cost-transactions')
-  @Roles(...READ_ROLES)
+  // VIEWER ADDED 2026-09-11. §6.8 grants this role R on the whole module and the route refused
+  // it — measured at 403 with a real token that day. Added HERE rather than to `READ_ROLES`, which
+  // would have opened every read route in this controller: the product owner chose to open only
+  // the routes the two VIEWER screens actually read (F3 = C). See ADR.
+  @Roles(...READ_ROLES, CosRole.VIEWER)
   @ApiOperation({ summary: 'List cost transactions across the tenant (filterable by project)' })
   @ApiQuery({ name: 'project_id', required: false, type: String })
   @ApiQuery({ name: 'page', required: false, type: Number })
@@ -362,7 +370,11 @@ export class FinanceController {
 
   // GET /api/v1/finance/cashflow-forecast/:projectId
   @Get('finance/cashflow-forecast/:projectId')
-  @Roles(...READ_ROLES)
+  // VIEWER ADDED 2026-09-11. §6.8 grants this role R on the whole module and the route refused
+  // it — measured at 403 with a real token that day. Added HERE rather than to `READ_ROLES`, which
+  // would have opened every read route in this controller: the product owner chose to open only
+  // the routes the two VIEWER screens actually read (F3 = C). See ADR.
+  @Roles(...READ_ROLES, CosRole.VIEWER)
   @ApiOperation({ summary: '13-week direct-method cash flow forecast for a project' })
   @ApiParam({ name: 'projectId', type: 'string', format: 'uuid' })
   getCashflowForecast(@Param('projectId', ParseUUIDPipe) projectId: string) {

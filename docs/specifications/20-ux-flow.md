@@ -620,7 +620,16 @@ the role's Home rendered a 22-line placeholder.
 | `/projects` | Project list     | Every assigned project, searchable by code or name                    | `role_viewer/02_projects` |
 | `/map`      | Project map      | Where the sites are, with a sheet listing the visible ones            | `role_viewer/03_map` |
 | `/insights` | Project insights | Progress curve, safety performance, risk forecast, issue severity     | `role_viewer/04_insights` |
+| `/procurement` | Procurement | POs, deliveries and the pending count, with a delivery predictor and monitored lines | `role_viewer/06_procurement` |
+| `/budget` | Budget & cost | Total / committed / actual, absorption by category, BOQ divisions, the verified log | `role_viewer/07_budget` |
 | `/account-settings` | Account settings | The shared screen, plus a System Permissions block for this role alone | `role_viewer/05_profile` |
+
+**Extended to seven pages on 2026-09-11**, when the product owner named six Stitch screens: two new
+ones — Procurement and Budget — and four of the five above REDRAWN. `/procurement` and `/budget` are
+the third and fourth entries on this role's bottom bar and had, until that day, rendered the
+PROCUREMENT_MANAGER and FINANCE screens to a viewer, mutating controls included. Both routes now
+branch on role, the way `/home` always has; the other roles that reach them keep their screen
+untouched. See ADR-103 for the six read routes opened underneath them, and the seventeen left shut.
 
 **`/map` and `/insights` are DRAWER ROWS, not tabs.** The five drawings give FOUR different bottom
 bars — `Home · Projects · Map · Insights · Profile` on two of them, and three other sets elsewhere —

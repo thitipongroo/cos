@@ -59,6 +59,8 @@ import { LoadingBoundary } from '../../components/LoadingBoundary';
 import { StatusChip } from '../../components/StatusChip';
 import { PO_DELAY_ALERT } from '../../lib/mockupFigures';
 import { spacedMoney } from '../../lib/compactMoney';
+import { useAuthStore } from '../../store/authStore';
+import { canRenderWriteControls } from '../../lib/readOnlyRole';
 import { useT } from '../../i18n';
 import { useComingSoon } from '../../components/useComingSoon';
 import { usePalette, useIsDark, type Palette } from '../../theme/usePalette';
@@ -361,6 +363,9 @@ const OrderCard = memo(function OrderCard({
   palette: Palette;
   t: (key: string, params?: Record<string, string | number>) => string;
 }): React.JSX.Element {
+  // §20.7.9: a read-only role is shown no approve control. Read inside the CARD, not passed in:
+  // the rule is about the signed-in session, and a prop would let one caller forget it.
+  const canWrite = useAuthStore((s) => canRenderWriteControls(s.role));
   const tone = palette[TONE[po.status] ?? 'muted'];
   const stage = STAGE[po.status];
   return (
@@ -429,7 +434,9 @@ const OrderCard = memo(function OrderCard({
         </View>
       )}
 
-      {po.status === 'PENDING_APPROVAL' ? (
+      {/* §20.7.9: a VIEWER is shown no approve control. The status test says whether the PO
+          CAN be decided; `canWrite` says whether this reader may be offered the decision. */}
+      {canWrite && po.status === 'PENDING_APPROVAL' ? (
         <View style={styles.actions}>
           <Pressable
             testID={`order-approve-${po.po_id}`}

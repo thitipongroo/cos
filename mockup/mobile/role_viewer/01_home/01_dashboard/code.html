@@ -1,4 +1,4 @@
-<!DOCTYPE html><html class="dark" lang="en"><head>
+<!DOCTYPE html><html class="dark" lang="en" style=""><head>
 <meta charset="utf-8">
 <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport">
 <title>Construction OS - Viewer Dashboard</title>
@@ -215,63 +215,16 @@
 </head>
 <body class="antialiased min-h-screen flex flex-col font-body-mobile text-body-mobile bg-background">
 <!-- TopAppBar -->
-<header class="w-full top-0 sticky bg-surface-dim flat no shadows flex justify-between items-center px-edge-mobile h-touch-target z-50">
-<div class="flex items-center gap-space-3">
-<span class="material-symbols-outlined text-on-surface-variant text-[24px]">menu</span>
-<h1 class="font-display-web text-h1-web-mobile font-bold tracking-tight text-primary uppercase tracking-wider">CONSTRUCTION OS</h1>
-</div>
-<div class="flex items-center gap-space-3">
-<!-- Sync Status -->
-<div class="flex items-center gap-space-1 bg-surface-container-high rounded-full px-2 py-1 border border-outline-variant/30">
-<div class="w-2 h-2 rounded-full bg-mobile-success"></div>
-<span class="font-tiny-web text-tiny-web text-on-surface-variant uppercase">SYNCED</span>
-</div>
-<img alt="User profile avatar" class="w-8 h-8 rounded-full border-2 border-surface-container-high object-cover" data-alt="A professional headshot of an engineer wearing a hardhat and safety glasses, high-contrast dramatic lighting, dark industrial aesthetic, close up." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCecDeiYhU3kC3QLMwbR6iqbmEMOsSFoZ_ry8QFKv_xfbo4iX6q0tv6cD9bRviHEGSYDszqdVuC-kD1slCQO28zSRRt6Zxc6pOqvddYP9PNdOxUIiq064PLAsm4wDFnWfBrGZgk1O_9UGxo_Dro9ZpZ366zk90ueyWn6p8HcvFM0ayMih7-SHw7PpsODsF9d-7ab70fPVPl_wfCzpiBt_OGYYVu8d9oC1o3g0fdlT0ku-a2xr2-AAzx">
-</div>
-</header>
+<header class="w-full top-0 sticky bg-surface-dim flat no shadows flex justify-between items-center px-edge-mobile h-touch-target z-50 border-b border-outline-variant/30 bg-dark-bg"><button type="button" aria-label="Open navigation drawer" class="flex items-center gap-space-2 text-left cursor-pointer active:scale-95 transition-all"><svg class="h-[26px] w-[26px] flex-shrink-0" viewBox="0 0 28 32" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14 1.5L26.1244 8.5V23.5L14 30.5L1.87564 23.5V8.5L14 1.5Z" stroke="#2563eb" stroke-width="2" stroke-linejoin="round"></path><rect x="7" y="9" width="14" height="2.5" rx="1.25" fill="#ffffff"></rect><rect x="7" y="14.5" width="14" height="2.5" rx="1.25" fill="#ffffff"></rect><rect x="7" y="20" width="4.5" height="2.5" rx="1.25" fill="#4cd7f6"></rect><rect x="12.5" y="20" width="8.5" height="2.5" rx="1.25" fill="#ffffff"></rect></svg><div class="flex flex-col"><div class="font-h1-web font-bold text-[14px] leading-tight tracking-tight uppercase"><span class="text-[#F8FAFC]">CONSTRUCTION </span><span class="text-secondary">OS</span></div><span class="font-tiny-web text-[8px] leading-tight uppercase font-medium text-[#64748B] tracking-[1.5px]">AI-NATIVE CONSTRUCTION...</span></div></button><div class="flex items-center gap-space-2"><div class="flex items-center justify-center bg-surface-container-high rounded-full px-2 py-1 border border-outline-variant/30" title="Synced"><span class="material-symbols-outlined text-mobile-success text-[18px]">cloud_done</span></div><button type="button" aria-label="Help &amp; Support" class="flex items-center justify-center w-8 h-8 rounded-lg text-[#F8FAFC] hover:bg-surface-container-high active:scale-95 transition-all cursor-pointer"><span class="material-symbols-outlined text-[22px]">help_outline</span></button><button type="button" aria-label="Notifications" class="relative flex items-center justify-center w-8 h-8 rounded-lg text-[#F8FAFC] hover:bg-surface-container-high active:scale-95 transition-all cursor-pointer"><span class="material-symbols-outlined text-[24px]">notifications_none</span><span class="absolute top-1 right-1 w-2 h-2 bg-mobile-danger rounded-full ring-2 ring-background"></span></button><div class="w-8 h-8 rounded-full bg-surface-container-high border border-outline-variant/40 flex items-center justify-center text-[12px] font-bold text-on-surface ring-1 ring-outline-variant/30 select-none">CN</div></div></header>
 <!-- Main Canvas -->
 <main class="flex-1 overflow-y-auto px-edge-mobile pt-space-4 pb-[92px] space-y-edge-mobile">
 <!-- Welcome & Context -->
 <section class="space-y-space-1">
 
-<h2 class="font-hero-mobile text-hero-mobile text-on-surface">Portfolio Overview</h2>
+
 </section>
 <!-- KPI Bento Grid (Read-Only) -->
-<section class="grid grid-cols-2 gap-space-3">
-<!-- Active Projects Tile -->
-<div class="bg-surface-container rounded-xl p-space-4 border border-outline-variant/20 relative overflow-hidden group">
-<div class="absolute left-0 top-0 bottom-0 w-1 bg-primary-fixed"></div>
-<div class="flex justify-between items-start mb-space-3">
-<span class="material-symbols-outlined text-primary-fixed" style="font-variation-settings: &quot;FILL&quot; 1;">domain</span>
-</div>
-<p class="font-label-mobile text-label-mobile text-on-surface-variant uppercase tracking-wide">Active Projects</p>
-<p class="font-display-web text-display-web text-on-surface mt-1">12</p>
-</div>
-<!-- Open Issues Tile (Warning status) -->
-<div class="bg-surface-container rounded-xl p-space-4 border border-outline-variant/20 relative overflow-hidden">
-<div class="absolute left-0 top-0 bottom-0 w-1 bg-mobile-warning"></div>
-<div class="flex justify-between items-start mb-space-3">
-<span class="material-symbols-outlined text-mobile-warning" style="font-variation-settings: &quot;FILL&quot; 1;">warning</span>
-</div>
-<p class="font-label-mobile text-label-mobile text-on-surface-variant uppercase tracking-wide">Open Issues</p>
-<p class="font-display-web text-display-web text-on-surface mt-1">47</p>
-</div>
-<!-- Total Budget Tile (Full Width) -->
-<div class="bg-surface-container rounded-xl p-space-4 border border-outline-variant/20 relative overflow-hidden col-span-2 flex items-center justify-between">
-<div class="absolute left-0 top-0 bottom-0 w-1 bg-mobile-success"></div>
-<div>
-<div class="flex items-center gap-space-2 mb-1">
-<span class="material-symbols-outlined text-mobile-success text-sm" style="font-variation-settings: &quot;FILL&quot; 1;">payments</span>
-<p class="font-label-mobile text-label-mobile text-on-surface-variant uppercase tracking-wide">Portfolio Budget</p>
-</div>
-<p class="font-hero-mobile text-hero-mobile text-on-surface">$142.5M</p>
-</div>
-<div class="text-right">
-<p class="font-tiny-web text-tiny-web text-mobile-success uppercase">+2.4% YTD</p>
-<p class="font-tiny-web text-tiny-web text-on-surface-variant mt-1">Allocated</p>
-</div>
-</div>
-</section>
+<section class="grid grid-cols-2 gap-space-3"><div role="button" tabindex="0" class="bg-surface-container hover:bg-surface-container-high/60 rounded-xl p-space-4 border border-outline-variant/30 hover:border-primary-container/60 active:scale-[0.98] transition-all cursor-pointer relative overflow-hidden group flex flex-col justify-between"><div class="absolute left-0 top-0 bottom-0 w-1 bg-primary-fixed"></div><div class="flex justify-between items-start mb-space-2"><span class="material-symbols-outlined text-primary-fixed" style="font-variation-settings: &quot;FILL&quot; 1;">domain</span><span class="material-symbols-outlined text-on-surface-variant group-hover:text-primary transition-colors text-[20px] group-hover:translate-x-0.5 transform duration-150">chevron_right</span></div><div><p class="font-label-mobile text-label-mobile text-on-surface-variant uppercase tracking-wide">Active Projects</p><div class="flex items-baseline justify-between mt-1"><p class="font-display-web text-display-web text-on-surface font-bold">12</p><span class="font-tiny-web text-tiny-web text-primary group-hover:underline uppercase font-medium">VIEW &gt;</span></div></div></div><div role="button" tabindex="0" class="bg-surface-container hover:bg-surface-container-high/60 rounded-xl p-space-4 border border-outline-variant/30 hover:border-mobile-warning/60 active:scale-[0.98] transition-all cursor-pointer relative overflow-hidden group flex flex-col justify-between"><div class="absolute left-0 top-0 bottom-0 w-1 bg-mobile-warning"></div><div class="flex justify-between items-start mb-space-2"><span class="material-symbols-outlined text-mobile-warning" style="font-variation-settings: &quot;FILL&quot; 1;">warning</span><span class="material-symbols-outlined text-on-surface-variant group-hover:text-mobile-warning transition-colors text-[20px] group-hover:translate-x-0.5 transform duration-150">chevron_right</span></div><div><p class="font-label-mobile text-label-mobile text-on-surface-variant uppercase tracking-wide">Open Issues</p><div class="flex items-baseline justify-between mt-1"><p class="font-display-web text-display-web text-on-surface font-bold">47</p><span class="font-tiny-web text-tiny-web text-mobile-warning group-hover:underline uppercase font-medium">TRACK &gt;</span></div></div></div><div role="button" tabindex="0" class="bg-surface-container hover:bg-surface-container-high/60 rounded-xl p-space-4 border border-outline-variant/30 hover:border-secondary/60 active:scale-[0.98] transition-all cursor-pointer relative overflow-hidden col-span-2 flex items-center justify-between group"><div class="absolute left-0 top-0 bottom-0 w-1 bg-mobile-success"></div><div><div class="flex items-center gap-space-2 mb-1"><span class="material-symbols-outlined text-mobile-success text-sm" style="font-variation-settings: &quot;FILL&quot; 1;">payments</span><p class="font-label-mobile text-label-mobile text-on-surface-variant uppercase tracking-wide">Budget</p></div><p class="font-hero-mobile text-hero-mobile text-on-surface font-bold">฿ 142.5 M</p></div><div class="flex items-center gap-2 text-right"><div class="flex flex-col items-end"><p class="font-tiny-web text-tiny-web text-mobile-success font-semibold uppercase">+2.4% YTD</p></div><div class="w-8 h-8 rounded-lg bg-surface-container-high flex items-center justify-center text-on-surface-variant group-hover:text-secondary group-hover:bg-surface-bright transition-all"><span class="material-symbols-outlined text-[18px] group-hover:translate-x-0.5 transform duration-150">chevron_right</span></div></div></div></section>
 <!-- AI Insights Module -->
 <section class="bg-surface-container-high/40 rounded-xl p-space-4 border-l-4 border-secondary relative overflow-hidden">
 <div class="absolute inset-0 bg-secondary/5 ai-pulse pointer-events-none"></div>
@@ -284,133 +237,18 @@
 </div>
 </section>
 <!-- Active Projects List (Read-Only) -->
-<section class="space-y-space-3">
-<div class="flex justify-between items-end mb-space-2">
-<h3 class="font-h2-web text-h2-web text-on-surface">Tracked Projects</h3>
-<span class="font-tiny-web text-tiny-web text-primary uppercase tracking-wide cursor-pointer hover:text-primary-fixed">View All</span>
-</div>
-<!-- Project Card 1 -->
-<div class="bg-surface-container rounded-xl border border-outline-variant/20 overflow-hidden flex flex-col">
-<div class="p-space-4 pb-space-3 border-b border-outline-variant/10">
-<div class="flex justify-between items-start mb-2">
-<div>
-<h4 class="font-h1-web text-[18px] font-semibold text-on-surface">Alpha Towers Phase 2</h4>
-<p class="font-tiny-web text-tiny-web text-on-surface-variant uppercase mt-1">ID: PRJ-9942 • Commercial</p>
-</div>
-<div class="bg-mobile-success/10 text-mobile-success px-2 py-1 rounded font-tiny-web text-tiny-web uppercase tracking-wide border border-mobile-success/20">
-                            On Track
-                        </div>
-</div>
-<div class="mt-space-3">
-<div class="flex justify-between font-tiny-web text-tiny-web text-on-surface-variant mb-1 uppercase">
-<span class="">Completion</span>
-<span class="">68%</span>
-</div>
-<div class="h-2 w-full bg-surface-container-highest rounded-full overflow-hidden">
-<div class="h-full bg-primary-fixed rounded-full" style="width: 68%;"></div>
-</div>
-</div>
-</div>
-<!-- Read-only footer metrics -->
-<div class="bg-surface-container-low px-space-4 py-space-2 flex justify-between">
-<div class="flex items-center gap-1 text-on-surface-variant">
-<span class="material-symbols-outlined text-[16px]">groups</span>
-<span class="font-tiny-web text-tiny-web uppercase">124 Workers</span>
-</div>
-<div class="flex items-center gap-1 text-mobile-warning">
-<span class="material-symbols-outlined text-[16px]">report</span>
-<span class="font-tiny-web text-tiny-web uppercase">3 Issues</span>
-</div>
-</div>
-</div>
-<!-- Project Card 2 -->
-<div class="bg-surface-container rounded-xl border border-outline-variant/20 overflow-hidden flex flex-col">
-<div class="p-space-4 pb-space-3 border-b border-outline-variant/10">
-<div class="flex justify-between items-start mb-2">
-<div>
-<h4 class="font-h1-web text-[18px] font-semibold text-on-surface">Metro Expansion Line C</h4>
-<p class="font-tiny-web text-tiny-web text-on-surface-variant uppercase mt-1">ID: PRJ-8810 • Infrastructure</p>
-</div>
-<div class="bg-mobile-warning/10 text-mobile-warning px-2 py-1 rounded font-tiny-web text-tiny-web uppercase tracking-wide border border-mobile-warning/20">
-                            Delayed
-                        </div>
-</div>
-<div class="mt-space-3">
-<div class="flex justify-between font-tiny-web text-tiny-web text-on-surface-variant mb-1 uppercase">
-<span class="">Completion</span>
-<span class="">42%</span>
-</div>
-<div class="h-2 w-full bg-surface-container-highest rounded-full overflow-hidden">
-<div class="h-full bg-mobile-warning rounded-full" style="width: 42%;"></div>
-</div>
-</div>
-</div>
-<!-- Read-only footer metrics -->
-<div class="bg-surface-container-low px-space-4 py-space-2 flex justify-between">
-<div class="flex items-center gap-1 text-on-surface-variant">
-<span class="material-symbols-outlined text-[16px]">groups</span>
-<span class="font-tiny-web text-tiny-web uppercase">89 Workers</span>
-</div>
-<div class="flex items-center gap-1 text-mobile-danger">
-<span class="material-symbols-outlined text-[16px]">report</span>
-<span class="font-tiny-web text-tiny-web uppercase">12 Issues</span>
-</div>
-</div>
-</div>
-</section>
+<section class="space-y-space-3"><div class="flex justify-between items-center mb-space-2"><h3 class="font-h2-web text-h2-web text-on-surface font-semibold">TRACKED PROJECTS</h3><button type="button" class="text-secondary hover:text-white bg-secondary/10 hover:bg-secondary/20 border border-secondary/30 rounded-full px-3 py-1 font-tiny-web text-tiny-web uppercase font-semibold flex items-center gap-1 active:scale-95 transition-all cursor-pointer"><span class="">View All</span><span class="material-symbols-outlined text-[14px]">arrow_forward</span></button></div><div role="button" tabindex="0" class="bg-surface-container hover:bg-surface-container-high/60 rounded-xl border border-outline-variant/30 hover:border-primary-container/60 active:scale-[0.98] transition-all cursor-pointer overflow-hidden flex flex-col group"><div class="p-space-4 pb-space-3 border-b border-outline-variant/10"><div class="flex justify-between items-start mb-2"><div><div class="flex items-center gap-2"><h4 class="font-h1-web text-[18px] font-semibold text-on-surface group-hover:text-primary transition-colors">Alpha Towers Phase 2</h4><span class="material-symbols-outlined text-on-surface-variant group-hover:text-primary text-[18px] group-hover:translate-x-0.5 transform transition-transform">chevron_right</span></div><p class="font-tiny-web text-tiny-web text-on-surface-variant uppercase mt-1">ID: PRJ-9942 • Commercial</p></div><div class="bg-mobile-success/10 text-mobile-success px-2 py-1 rounded font-tiny-web text-tiny-web uppercase tracking-wide border border-mobile-success/20 font-semibold">On Track</div></div><div class="mt-space-3"><div class="flex justify-between font-tiny-web text-tiny-web text-on-surface-variant mb-1 uppercase font-medium"><span class="">Completion</span><span class="text-on-surface font-semibold">68%</span></div><div class="h-2 w-full bg-surface-container-highest rounded-full overflow-hidden"><div class="h-full bg-primary-fixed rounded-full" style="width: 68%;"></div></div></div></div><div class="bg-surface-container-low px-space-4 py-space-2 flex justify-between items-center"><div class="flex items-center gap-1 text-on-surface-variant"><span class="material-symbols-outlined text-[16px]">groups</span><span class="font-tiny-web text-tiny-web uppercase">124 Workers</span></div><div class="flex items-center gap-1 text-mobile-warning"><span class="material-symbols-outlined text-[16px]">report</span><span class="font-tiny-web text-tiny-web uppercase font-medium">3 Issues</span></div></div></div><div role="button" tabindex="0" class="bg-surface-container hover:bg-surface-container-high/60 rounded-xl border border-outline-variant/30 hover:border-primary-container/60 active:scale-[0.98] transition-all cursor-pointer overflow-hidden flex flex-col group"><div class="p-space-4 pb-space-3 border-b border-outline-variant/10"><div class="flex justify-between items-start mb-2"><div><div class="flex items-center gap-2"><h4 class="font-h1-web text-[18px] font-semibold text-on-surface group-hover:text-primary transition-colors">Metro Expansion Line C</h4><span class="material-symbols-outlined text-on-surface-variant group-hover:text-primary text-[18px] group-hover:translate-x-0.5 transform transition-transform">chevron_right</span></div><p class="font-tiny-web text-tiny-web text-on-surface-variant uppercase mt-1">ID: PRJ-8810 • Infrastructure</p></div><div class="bg-mobile-warning/10 text-mobile-warning px-2 py-1 rounded font-tiny-web text-tiny-web uppercase tracking-wide border border-mobile-warning/20 font-semibold">Delayed</div></div><div class="mt-space-3"><div class="flex justify-between font-tiny-web text-tiny-web text-on-surface-variant mb-1 uppercase font-medium"><span class="">Completion</span><span class="text-on-surface font-semibold">42%</span></div><div class="h-2 w-full bg-surface-container-highest rounded-full overflow-hidden"><div class="h-full bg-mobile-warning rounded-full" style="width: 42%;"></div></div></div></div><div class="bg-surface-container-low px-space-4 py-space-2 flex justify-between items-center"><div class="flex items-center gap-1 text-on-surface-variant"><span class="material-symbols-outlined text-[16px]">groups</span><span class="font-tiny-web text-tiny-web uppercase">89 Workers</span></div><div class="flex items-center gap-1 text-mobile-danger"><span class="material-symbols-outlined text-[16px]">report</span><span class="font-tiny-web text-tiny-web uppercase font-medium">12 Issues</span></div></div></div></section>
 <!-- Recent Activity (Read-Only Timeline) -->
-<section class="space-y-space-3">
-<h3 class="font-h2-web text-h2-web text-on-surface">Site Activity</h3>
-<div class="bg-surface-container rounded-xl p-space-4 border border-outline-variant/20">
-<!-- Timeline Item 1 -->
-<div class="relative pl-6 pb-6 border-l border-outline-variant/30 last:border-0 last:pb-0">
-<div class="absolute -left-[5px] top-1 w-2 h-2 rounded-full bg-primary-fixed outline outline-4 outline-surface-container"></div>
-<p class="font-tiny-web text-tiny-web text-on-surface-variant uppercase mb-1">10:42 AM • Alpha Towers</p>
-<p class="font-body-mobile text-body-mobile text-on-surface">Daily Safety Report submitted by <span class="font-semibold text-primary">J. Smith</span>.</p>
-</div>
-<!-- Timeline Item 2 -->
-<div class="relative pl-6 pb-6 border-l border-outline-variant/30 last:border-0 last:pb-0">
-<div class="absolute -left-[5px] top-1 w-2 h-2 rounded-full bg-mobile-danger outline outline-4 outline-surface-container"></div>
-<p class="font-tiny-web text-tiny-web text-on-surface-variant uppercase mb-1">09:15 AM • Metro Expansion</p>
-<p class="font-body-mobile text-body-mobile text-on-surface">Critical defect logged: <span class="text-on-surface-variant italic">"Rebar spacing fails spec in Section 4."</span></p>
-</div>
-<!-- Timeline Item 3 -->
-<div class="relative pl-6 last:border-0 last:pb-0">
-<div class="absolute -left-[5px] top-1 w-2 h-2 rounded-full bg-mobile-success outline outline-4 outline-surface-container"></div>
-<p class="font-tiny-web text-tiny-web text-on-surface-variant uppercase mb-1">08:00 AM • System</p>
-<p class="font-body-mobile text-body-mobile text-on-surface">Morning sync completed successfully. All data current.</p>
-</div>
-</div>
-</section>
+<section class="space-y-space-3"><div class="flex justify-between items-center mb-space-2"><h3 class="font-h2-web text-h2-web text-on-surface font-semibold">SITE ACTIVITY</h3><span class="font-tiny-web text-tiny-web text-on-surface-variant uppercase tracking-wider font-semibold">Live Feed</span></div><div class="bg-surface-container rounded-xl p-space-4 border border-outline-variant/30 divide-y divide-outline-variant/10"><div role="button" tabindex="0" class="relative pl-6 pb-4 pt-1 border-l border-outline-variant/30 -ml-space-4 pl-[calc(1rem+1.25rem)] pr-space-2 hover:bg-surface-container-high/40 rounded-lg transition-colors cursor-pointer group flex items-start justify-between"><div class="absolute -left-[5px] top-2 w-2 h-2 rounded-full bg-primary-fixed outline outline-4 outline-surface-container group-hover:scale-125 transition-transform"></div><div class="flex-1 pr-2"><p class="font-tiny-web text-tiny-web text-on-surface-variant uppercase mb-1 font-medium">10:42 AM • Alpha Towers</p><p class="font-body-mobile text-body-mobile text-on-surface">Daily Safety Reported by&nbsp;<span class="font-semibold text-primary">J. Smith</span>.</p></div><span class="material-symbols-outlined text-on-surface-variant group-hover:text-primary text-[18px] group-hover:translate-x-0.5 transform transition-all mt-1">chevron_right</span></div><div role="button" tabindex="0" class="relative pl-6 pb-4 pt-3 border-l border-outline-variant/30 -ml-space-4 pl-[calc(1rem+1.25rem)] pr-space-2 hover:bg-surface-container-high/40 rounded-lg transition-colors cursor-pointer group flex items-start justify-between"><div class="absolute -left-[5px] top-4 w-2 h-2 rounded-full bg-mobile-danger outline outline-4 outline-surface-container group-hover:scale-125 transition-transform"></div><div class="flex-1 pr-2"><p class="font-tiny-web text-tiny-web text-on-surface-variant uppercase mb-1 font-medium">09:15 AM • Metro Expansion</p><p class="font-body-mobile text-body-mobile text-on-surface"><span class="text-on-surface-variant italic">"Rebar spacing fails spec in Sec..."</span></p></div><span class="material-symbols-outlined text-on-surface-variant group-hover:text-mobile-danger text-[18px] group-hover:translate-x-0.5 transform transition-all mt-1">chevron_right</span></div><div role="button" tabindex="0" class="relative pl-6 pt-3 -ml-space-4 pl-[calc(1rem+1.25rem)] pr-space-2 hover:bg-surface-container-high/40 rounded-lg transition-colors cursor-pointer group flex items-start justify-between"><div class="absolute -left-[5px] top-4 w-2 h-2 rounded-full bg-mobile-success outline outline-4 outline-surface-container group-hover:scale-125 transition-transform"></div><div class="flex-1 pr-2"><p class="font-tiny-web text-tiny-web text-on-surface-variant uppercase mb-1 font-medium">08:00 AM • System</p><p class="font-body-mobile text-body-mobile text-on-surface">Morning sync completed succ...</p></div><span class="material-symbols-outlined text-on-surface-variant group-hover:text-mobile-success text-[18px] group-hover:translate-x-0.5 transform transition-all mt-1">chevron_right</span></div></div></section>
 </main>
 <!-- BottomNavBar (Viewer Context) -->
-<nav class="fixed bottom-0 w-full z-50 pb-safe bg-surface-container shadow-lg flex justify-around items-center h-[72px] px-base">
-<!-- Active Tab: Home -->
-<button class="flex flex-col items-center justify-center bg-primary-container text-on-primary-container rounded-xl px-space-3 py-base active:scale-95 transition-transform duration-200">
-<span class="material-symbols-outlined" style="font-variation-settings: &quot;FILL&quot; 1;">home</span>
-<span class="font-label-mobile text-label-mobile mt-1">Home</span>
-</button>
-<!-- Inactive Tab: Projects -->
-<button class="flex flex-col items-center justify-center text-on-surface-variant px-space-3 py-base hover:bg-surface-container-high transition-all rounded-xl active:scale-95 duration-200">
-<span class="material-symbols-outlined">domain</span>
-<span class="font-label-mobile text-label-mobile mt-1">Projects</span>
-</button>
-<!-- Inactive Tab: Map (Replacing generic ones with domain specific, adhering to Viewer context) -->
-<button class="flex flex-col items-center justify-center text-on-surface-variant px-space-3 py-base hover:bg-surface-container-high transition-all rounded-xl active:scale-95 duration-200">
-<span class="material-symbols-outlined">map</span>
-<span class="font-label-mobile text-label-mobile mt-1">Map</span>
-</button>
-<!-- Inactive Tab: AI Insights -->
-<button class="flex flex-col items-center justify-center text-on-surface-variant px-space-3 py-base hover:bg-surface-container-high transition-all rounded-xl active:scale-95 duration-200">
-<span class="material-symbols-outlined">psychology</span>
-<span class="font-label-mobile text-label-mobile mt-1">Insights</span>
-</button>
-<!-- Inactive Tab: Profile -->
-<button class="flex flex-col items-center justify-center text-on-surface-variant px-space-3 py-base hover:bg-surface-container-high transition-all rounded-xl active:scale-95 duration-200">
-<span class="material-symbols-outlined">person</span>
-<span class="font-label-mobile text-label-mobile mt-1">Profile</span>
-</button>
-</nav>
+<nav class="fixed bottom-0 w-full z-50 pb-safe bg-surface-container shadow-lg flex justify-around items-center h-[72px] px-base"><button type="button" class="flex flex-col items-center justify-center bg-primary-container text-on-primary-container rounded-xl px-4 py-1.5 min-h-[52px] shadow-sm active:scale-95 transition-all duration-150 cursor-pointer"><span class="material-symbols-outlined text-[22px]" style="font-variation-settings: &quot;FILL&quot; 1;">home</span><span class="font-label-mobile text-[12px] font-semibold tracking-tight mt-0.5">Home</span></button><button type="button" class="flex flex-col items-center justify-center text-on-surface-variant hover:text-on-surface rounded-xl px-4 py-1.5 min-h-[52px] hover:bg-surface-container-high active:scale-95 transition-all duration-150 cursor-pointer"><span class="material-symbols-outlined text-[22px]">domain</span><span class="font-label-mobile text-[12px] font-medium tracking-tight mt-0.5">Projects</span></button><button type="button" class="flex flex-col items-center justify-center text-on-surface-variant hover:text-on-surface rounded-xl px-4 py-1.5 min-h-[52px] hover:bg-surface-container-high active:scale-95 transition-all duration-150 cursor-pointer"><span class="material-symbols-outlined text-[22px]">inventory_2</span><span class="font-label-mobile text-[12px] font-medium tracking-tight mt-0.5">Procurement</span></button><button type="button" class="flex flex-col items-center justify-center text-on-surface-variant hover:text-on-surface rounded-xl px-4 py-1.5 min-h-[52px] hover:bg-surface-container-high active:scale-95 transition-all duration-150 cursor-pointer"><span class="material-symbols-outlined text-[22px]">account_balance_wallet</span><span class="font-label-mobile text-[12px] font-medium tracking-tight mt-0.5">Budget</span></button></nav>
+
+
+
+
+
+
 
 
 </body></html>

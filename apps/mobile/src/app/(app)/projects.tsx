@@ -1,8 +1,19 @@
 // Projects — the VIEWER's read-only project list.
 //
 // DRAWING: mockup/mobile/role_viewer/02_projects/01_list_items (Stitch screen "Project List -
-// Viewer (Mobile Dark Mode)"), downloaded from Stitch on 2026-09-10 and byte-identical to the copy
-// in this repo.
+// Viewer (Mobile Dark Mode)").
+//
+// REDRAWN 2026-09-11. The screen was first built against the 2026-09-10 export; the product owner
+// edited four of this role's five drawings the next day, which a check of Stitch's screen COUNT
+// could not have shown — the count only says two were ADDED. All seven are re-downloaded and
+// sha256-compared now.
+//
+// WHAT THE REDRAW CHANGED HERE: the invented header became the app's real <TopBar />; the bar
+// became the enumerated four (`Projects · Home · Procurement · Budget`, the same set as Home draws
+// with Home in the second slot — order is behaviour and stays the app's, §32.7); the `All Projects`
+// chip became `All` with a leading tick; each card gained a round chevron plate beside its status
+// chip; and the issue count in each card's footer became a control of its own with a
+// `navigate_next`.
 //
 // THIS ROUTE IS VIEWER'S ALONE (`lib/roleTabs.ts`: "`projects` is VIEWER's only" — it stopped being
 // a PROJECT_MANAGER tab on 2026-08-10), so restyling it changes no other role's screen. It was 51
@@ -104,7 +115,10 @@ export default function ProjectsScreen(): React.JSX.Element {
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.chipRow}
       >
+        {/* `All` with a leading tick, the redraw's own shape. It is the chip that is ON, so it is
+            not pressable — pressing the state you are already in is not a control. */}
         <View testID="projects-filter-all" style={[styles.chip, styles.chipActive]}>
+          <MaterialIcons name="check" size={16} color={p.onPrimary} />
           <Text style={[styles.chipText, styles.chipTextActive]}>
             {t('project.viewer.allProjects')}
           </Text>
@@ -139,9 +153,15 @@ export default function ProjectsScreen(): React.JSX.Element {
         const toneColor = tone === 'success' ? p.success : tone === 'warning' ? p.warning : p.muted;
         const issueColor = drawn !== undefined && drawn.issues >= 10 ? p.warning : p.muted;
         return (
-          <View
+          <Pressable
             key={project.id}
             testID="project-item"
+            accessibilityRole="button"
+            accessibilityLabel={project.projectName}
+            // No per-project screen exists for this role: `/dashboard` is the manager's, takes a
+            // param and is gated to roles this one is not. The card is drawn as the drawing draws
+            // it and says so on the press.
+            onPress={() => soon('project.viewer.projectDetail')}
             style={[styles.card, { borderLeftColor: toneColor }]}
           >
             <View style={styles.cardHead}>
@@ -160,8 +180,13 @@ export default function ProjectsScreen(): React.JSX.Element {
                   {project.projectName}
                 </Text>
               </View>
-              <View style={[styles.statusChip, { borderColor: toneColor }]}>
-                <Text style={[styles.statusText, { color: toneColor }]}>{project.status}</Text>
+              <View style={styles.cardHeadTrail}>
+                <View style={[styles.statusChip, { borderColor: toneColor }]}>
+                  <Text style={[styles.statusText, { color: toneColor }]}>{project.status}</Text>
+                </View>
+                <View style={styles.chevronCircle}>
+                  <MaterialIcons name="chevron-right" size={18} color={p.muted} />
+                </View>
               </View>
             </View>
 
@@ -189,16 +214,26 @@ export default function ProjectsScreen(): React.JSX.Element {
                       {t('project.viewer.workers', { count: drawn.crew })}
                     </Text>
                   </View>
-                  <View style={styles.footItem}>
+                  {/* A CONTROL OF ITS OWN in the redraw — a tinted plate with a `navigate_next`.
+                      `/issues` is not a route this role can reach (§32.7 kept it off the bar
+                      because its create button is not role-gated), so it says so on the press. */}
+                  <Pressable
+                    testID="project-issues"
+                    accessibilityRole="button"
+                    accessibilityLabel={t('project.viewer.issues', { count: drawn.issues })}
+                    onPress={() => soon('project.viewer.issuesLabel')}
+                    style={styles.issuesButton}
+                  >
                     <MaterialIcons name="report" size={14} color={issueColor} />
                     <Text style={[styles.footText, { color: issueColor }]}>
                       {t('project.viewer.issues', { count: drawn.issues })}
                     </Text>
-                  </View>
+                    <MaterialIcons name="navigate-next" size={14} color={issueColor} />
+                  </Pressable>
                 </View>
               </>
             )}
-          </View>
+          </Pressable>
         );
       })}
     </ScrollView>
@@ -212,6 +247,9 @@ const makeStyles = (p: Palette) =>
 
     chipRow: { gap: spacing.xs, paddingRight: spacing.md },
     chip: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.xs / 2,
       paddingHorizontal: spacing.md,
       paddingVertical: spacing.xs,
       borderRadius: radius.xl,
@@ -243,6 +281,17 @@ const makeStyles = (p: Palette) =>
       backgroundColor: p.surface,
     },
     cardHead: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm },
+    cardHeadTrail: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
+    // A CIRCLE, not a step on the radius scale: 999 with a fixed 28px side is the documented
+    // "make this round" marker (§32.7's closing paragraph).
+    chevronCircle: {
+      width: 28,
+      height: 28,
+      borderRadius: 999,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: p.surfaceBright,
+    },
     cardTitleBlock: { flex: 1, gap: spacing.xs / 2 },
     cardEyebrow: {
       color: p.muted,
@@ -300,6 +349,17 @@ const makeStyles = (p: Palette) =>
       borderTopColor: p.border,
     },
     footItem: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs / 2 },
+    issuesButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.xs / 2,
+      paddingHorizontal: spacing.xs,
+      paddingVertical: 2,
+      borderRadius: radius.md,
+      borderWidth: 1,
+      borderColor: p.border,
+      backgroundColor: p.surfaceSoft,
+    },
     footText: {
       color: p.muted,
       fontFamily: fontFamily.regular,

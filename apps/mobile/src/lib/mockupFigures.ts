@@ -1088,36 +1088,24 @@ export const HELP_CHAT_THREAD = figure(
 // `local_issues`. The cache holds five columns — id, project_id, project_code, project_name,
 // status — so the code and the name are printed from it and everything else on a card is below.
 
-/**
- * Home's OPEN ISSUES tile — and this one is MISSING AUTHORITY, not missing data.
- *
- * The count exists and the query is written: `GET /api/v1/site/issues?status=OPEN` returns exactly
- * it. This role cannot call it. Measured on 2026-09-10 with a real VIEWER token minted through
- * `POST /auth/otp/verify`:
- *
- *   403  Role 'VIEWER' does not have access.
- *        Required: SITE_WORKER | SITE_ENGINEER | PROJECT_MANAGER | EXECUTIVE | SAFETY_OFFICER |
- *        TENANT_ADMIN
- *
- * §6.8 grants VIEWER `Issues R`, and has since the table was written. The route's `@Roles` list and
- * the specification therefore disagree, and the specification wins (`context.md` §On ambiguity) —
- * but that section also says to REPORT the discrepancy to the product owner rather than implement
- * against it, so the route is untouched and this entry stands in the meantime. It is the second
- * entry of its kind; the first is the PROC_MANAGER approve button (ADR-099, 2026-09-09).
- *
- * The screen fetched the endpoint for one build and drew an em dash for the 403 every time. A KPI
- * tile that can never resolve is worse than a drawn one, because a dash claims the request might
- * still answer.
- */
-export const VIEWER_OPEN_ISSUES = figure(
-  47,
-  'VIEWER added to `@Roles` on `GET /site/issues` in `site-ops.controller.ts` — the count itself ' +
-    'is already computed there, and §6.8 already grants this role `Issues R`',
-);
+// `VIEWER_OPEN_ISSUES` LIVED HERE FOR ONE DAY. The Home dashboard's open-issue tile drew 47 because
+// `GET /site/issues` answered 403 for this role while §6.8 granted it `Issues R` — missing AUTHORITY
+// rather than missing data, the second entry of that kind after the PROC_MANAGER approve button.
+// The route was opened on 2026-09-11 (ADR-103) and the tile reads it again, so the entry is gone.
+// Recorded rather than deleted silently: this register is meant to shrink, and it is worth knowing
+// which entries left because the data arrived and which left because a screen was cancelled.
 
-/** Home's full-width budget tile — the figure and the year-to-date delta beside it. */
+/**
+ * Home's full-width budget tile — the amount and the year-to-date delta beside it.
+ *
+ * AN AMOUNT, NOT A STRING. The 2026-09-10 drawing wrote `$142.5M` and this held that literal; the
+ * 2026-09-11 redraw writes **`฿ 142.5 M`**, which is this project's own compact-money format
+ * (`compactMoneyLabel`, PO 2026-08-10) rather than a new one. So the register holds the number and
+ * the screen formats it — a hardcoded `฿` would print baht to a reader whose locale is not Thai,
+ * and the currency symbol is exactly the part `@cos/financial` exists to decide.
+ */
 export const VIEWER_PORTFOLIO_BUDGET = figure(
-  { total: '$142.5M', deltaPct: 2.4 },
+  { amount: 142_500_000, currency: 'THB', deltaPct: 2.4 },
   'a portfolio budget roll-up for a VIEWER. `GET /analytics/executive` returns one, but it is ' +
     "scoped to the EXECUTIVE's whole tenant rather than to this role's `project_membership` rows, " +
     'and no endpoint sums budgets across the projects one viewer is assigned to',
@@ -1302,4 +1290,304 @@ export const VIEWER_PERMISSION_TILES = figure(
   ] as const,
   'a per-module grant readable from the client. `@cos/rbac` resolves permissions from the JWT ' +
     'role claim, and no endpoint returns the effective matrix for the signed-in user to render',
+);
+
+// ── VIEWER Procurement (mockup/mobile/role_viewer/06_procurement/01_procurement) ──────────────────
+//
+// ADDED 2026-09-11. Every figure on this screen is drawn, and the reason is the same one measured
+// for `VIEWER_OPEN_ISSUES`: the data exists and this role cannot fetch it. Measured that day with a
+// real VIEWER token minted through `POST /auth/otp/verify`:
+//
+//   GET /api/v1/procurement/purchase-orders   403
+//   GET /api/v1/procurement/deliveries        403
+//   GET /api/v1/procurement/rfqs              403
+//   GET /api/v1/procurement/vendors           403
+//
+// §6.8 grants this role "Procurement (all) R". None of the 23 GET routes in the procurement and
+// finance controllers lists VIEWER. The six these two screens need are being opened in the same
+// commit (product-owner decision F3 = C); until that lands and the screens are rewired, the numbers
+// below stand in, and each entry names the query that replaces it.
+
+/** The four KPI tiles across the top. */
+export const VIEWER_PROCUREMENT_KPIS = figure(
+  {
+    totalPos: { count: 48, value: 14_200_000, currency: 'THB', packages: 12 },
+    inDelivery: { orders: 6, arrivingToday: 2 },
+    pendingPm: { items: 3 },
+    fulfillmentPct: 94.2,
+  },
+  'a count and a committed value over `procurement.purchase_orders`, a delivery count over ' +
+    '`procurement.deliveries`, and a fulfilment rate between the two — all three queries exist for ' +
+    'other roles; this one is refused by `@Roles`',
+);
+
+/** The Delivery Predictor card — its sentence, its confidence and its two state chips. */
+export const VIEWER_DELIVERY_PREDICTOR = figure(
+  {
+    body:
+      'Concrete shipments on schedule with zero transit choke. Rebar batch variance estimated ' +
+      'within +0.5 days under prevailing port clearance patterns.',
+    confidence: 94,
+    variance: '+0.5 days',
+  },
+  'a delivery-time model. Phase 23 trains DelayForecastModel, SafetyVisionModel, GraphMLModel, ' +
+    'RiskClassifier and DeviceTrustModel — none of them forecasts shipment arrival',
+);
+
+/**
+ * The two state chips under that card — "Sensor Feeds Active" and "Live Predictive Sync".
+ *
+ * REGISTERED SEPARATELY FROM THE CARD because they are claims about INFRASTRUCTURE rather than
+ * about a project. Phase 21 does build an IoT path (EMQX → ingestion worker → Kafka →
+ * TimescaleDB, ADR per §33.8), so the feeds are not fictional — what is missing is any endpoint
+ * that reports their health, so nothing on a device can know whether they are active.
+ */
+export const VIEWER_PREDICTOR_FEEDS = figure(
+  ['sensorFeeds', 'predictiveSync'] as const,
+  'a health endpoint for the Phase 21 IoT pipeline and the Phase 12 inference path — the pipelines ' +
+    'exist, a readiness signal a client can read does not',
+);
+
+/** The Active Route Inspection tracker — the shipment it names and its four steps. */
+export const VIEWER_ROUTE_INSPECTION = figure(
+  {
+    poNumber: 'PO-2024-095',
+    vendor: 'Thai Metal Tech',
+    steps: [
+      { key: 'dispatched', state: 'done', at: '06:30' },
+      { key: 'transit', state: 'current', at: 'Gate 4 ETA' },
+      { key: 'weighIn', state: 'pending', at: null },
+      { key: 'staging', state: 'pending', at: 'Zone C' },
+    ],
+  } as const,
+  'a per-delivery status timeline. `procurement.deliveries` records that a delivery happened and ' +
+    'when; it has no leg-by-leg tracking, and no GPS or weighbridge feed is ingested',
+);
+
+/** The four monitored purchase-order lines. */
+export const VIEWER_PROCUREMENT_LINES = figure(
+  [
+    {
+      po: '#PO-2024-089',
+      title: 'Rebar 16mm & 20mm (Grade SD40)',
+      vendor: 'Siam Steel Co., Ltd.',
+      state: 'partial',
+      statePct: 75,
+      metric: '150 / 200 Metric Tons',
+      note: 'Batch 3 of 4 on site',
+      icon: 'inventory-2',
+    },
+    {
+      po: '#PO-2024-092',
+      title: 'Ready-mix Concrete C30/37',
+      vendor: 'CPAC Concrete Prod...',
+      state: 'delivered',
+      statePct: 100,
+      metric: '420 / 420 m³ Received',
+      note: 'Pouring verified',
+      icon: 'scale',
+    },
+    {
+      po: '#PO-2024-095',
+      title: 'Structural Steel Beams (H-Beams)',
+      vendor: 'Thai Metal Tech Plc.',
+      state: 'transit',
+      statePct: null,
+      metric: 'Convoy 2 of 3 En Route',
+      note: 'GPS Tracked #TH-882',
+      icon: 'local-shipping',
+    },
+    {
+      po: '#PO-2024-101',
+      title: 'MEP Ductwork & Fittings Level 4-8',
+      vendor: 'Siam Air Flow...',
+      state: 'pendingApproval',
+      statePct: null,
+      metric: 'Viewer: Action Disabled',
+      note: 'Under Technical Review',
+      icon: 'visibility-off',
+    },
+  ] as const,
+  '`GET /procurement/purchase-orders` and `GET /procurement/purchase-orders/{id}/deliveries` — ' +
+    'both refuse this role today. The received-quantity metrics also need a per-line delivery ' +
+    'roll-up that no endpoint returns',
+);
+
+/** The active project the banner names, and its LOCKED state. */
+export const VIEWER_PROCUREMENT_CONTEXT = figure(
+  { project: 'Skyline Tower A (Bangkok CBD)' },
+  'a project NAME is real (`local_projects`) — what is drawn here is a project this seed does not ' +
+    'have, and the LOCKED chip beside it, which is a scope lock this product does not model',
+);
+
+// ── VIEWER Budget (mockup/mobile/role_viewer/07_budget/01_budget) ─────────────────────────────────
+//
+// ADDED 2026-09-11, and MISSING AUTHORITY for the same reason as the procurement screen beside it.
+// Measured that day with a real VIEWER token:
+//
+//   GET /api/v1/finance/budget/{projectId}            403
+//   GET /api/v1/finance/cost-transactions             403
+//   GET /api/v1/finance/cashflow-forecast/{projectId} 403
+//
+// §6.8 grants this role "Finance (all) R". Every one of those queries is written and answers for
+// FINANCE, PROJECT_MANAGER and EXECUTIVE today — `budget.tsx` reads all three. The three routes are
+// being opened in this same round (F3 = C); until this screen is rewired onto them, the figures
+// below stand in.
+//
+// AMOUNTS ARE NUMBERS. The drawing prints `฿ 124.5 M` on the summary cards and
+// `฿ 45,000,000.00` on the BOQ rows — the compact and the exact forms of this project's own money
+// formatting (`compactMoneyLabel` and `formatMoney`). Storing either as a string would hardcode
+// both the symbol and the separator, which are the reader's locale's to choose.
+
+/** The three summary cards at the top. */
+export const VIEWER_BUDGET_SUMMARY = figure(
+  {
+    currency: 'THB',
+    total: 124_500_000,
+    reserved: 6_225_000,
+    allocatedPct: 100,
+    committed: 84_210_000,
+    committedPctOfCap: 67.6,
+    actual: 62_450_000,
+    burnedPct: 50.1,
+    variancePct: -2.4,
+  },
+  '`GET /finance/budget/{projectId}` returns `total_budget_amount` and `actual_amount`; the ' +
+    'COMMITTED figure is the sum of purchase orders against the budget and the RESERVED figure a ' +
+    'contingency this product does not model at all',
+);
+
+/**
+ * The Absorption bar and its legend.
+ *
+ * `pct` drives the segment width and `amount` the legend's money. The two are the drawing's and
+ * agree with each other: 32.4 + 24.1 + 11.2 + 4.5 = 72.2 M against a 124.5 M total, which is the
+ * 26 / 19.3 / 9 / 3.6 the drawing prints.
+ */
+export const VIEWER_BUDGET_ABSORPTION = figure(
+  [
+    { key: 'structural', pct: 26, amount: 32_400_000 },
+    { key: 'steel', pct: 19.3, amount: 24_100_000 },
+    { key: 'mep', pct: 9, amount: 11_200_000 },
+    { key: 'finishes', pct: 3.6, amount: 4_500_000 },
+  ] as const,
+  'a spend breakdown per work category. `budget_lines` carries what was ALLOCATED and no actual ' +
+    'column; the spend comes from `GET /finance/cost-transactions` summed by `budget_line_id`, ' +
+    'which is exactly the query this role is refused',
+);
+
+/** The Audit & Forecast card. */
+export const VIEWER_BUDGET_FORECAST = figure(
+  {
+    body:
+      'Cost integrity verified across 412 ledgers. Zero anomalous rate-spikes detected in active ' +
+      'procurement. Projected margin at completion tracks solidly at 14.80% ' +
+      '(Target benchmark: 14.00%).',
+    confidence: 96,
+    burnVelocity: 1_820_000,
+    eacTarget: 121_200_000,
+    riskIndex: 0.12,
+    riskBand: 'low',
+  },
+  'a ledger-anomaly audit and an estimate at completion. `GET /finance/cashflow-forecast/{id}` ' +
+    'projects a shortfall, not an EAC or a margin, and no model scores ledger integrity',
+);
+
+/** The four BOQ work categories. */
+export const VIEWER_BOQ_CATEGORIES = figure(
+  [
+    {
+      key: 'structural',
+      division: 'DIV-03 • SUBSTRUCTURE',
+      budget: 45_000_000,
+      disbursed: 32_400_000,
+      pct: 72.0,
+      state: 'onTrack',
+    },
+    {
+      key: 'steel',
+      division: 'DIV-05 • METALS',
+      budget: 28_500_000,
+      disbursed: 24_100_000,
+      pct: 84.5,
+      state: 'allocated',
+    },
+    {
+      key: 'mep',
+      division: 'DIV-22/26 • SERVICES',
+      budget: 22_000_000,
+      disbursed: 11_200_000,
+      pct: 50.9,
+      state: 'onTrack',
+    },
+    {
+      key: 'finishes',
+      division: 'DIV-08/09 • ENVELOPE',
+      budget: 18_000_000,
+      disbursed: 4_500_000,
+      pct: 25.0,
+      state: 'notStarted',
+    },
+  ] as const,
+  'BOQ divisions with a disbursed figure per division. `boq.boq_items` has no CSI division code ' +
+    'and no disbursement column, and the per-line spend is the refused cost-transactions query',
+);
+
+/**
+ * The On-Site Progress Validation block.
+ *
+ * The FILE is bundled and real; what is drawn is the claim that this photograph shows this
+ * project's level 18. Same treatment as `OPPORTUNITY_PHOTO` (2026-09-10) — a stock frame, bundled
+ * so it renders with no network, and said to be stock in the screen's own comment.
+ */
+export const VIEWER_BUDGET_PROGRESS_PHOTO = figure(
+  {
+    file: 'construction-site-1.jpg',
+    caption: 'Level 18 Pour Complete • QA Verified',
+    milestone: 'Milestone M-04 Inspection',
+  },
+  'a progress photo attached to a milestone. Photos exist (`local_photos`, the site-report flow) ' +
+    'and none is linked to a budget milestone, because no milestone entity carries one',
+);
+
+/** The VERIFIED LOG's three entries. */
+export const VIEWER_BUDGET_LOG = figure(
+  [
+    {
+      key: 'disbursement',
+      icon: 'verified',
+      tone: 'success',
+      party: 'Siam Cement Group • Grad...',
+      certifier: '08:30 AM',
+      amount: 3_850_000,
+      state: 'executed',
+    },
+    {
+      key: 'retention',
+      icon: 'lock',
+      tone: 'accent',
+      party: 'Apex Steelworks Ltd. • Anc...',
+      certifier: 'Yesterday',
+      amount: 1_200_000,
+      state: 'released',
+    },
+    {
+      key: 'advance',
+      icon: 'draw',
+      tone: 'primary',
+      party: 'Bangkok HVAC Systems • Chi...',
+      certifier: 'Bank Auditor • 22 Oct',
+      amount: 2_400_000,
+      state: 'verified',
+    },
+  ] as const,
+  'an audited financial event log. `finance.payments` records payments and `procurement.invoices` ' +
+    'invoices; neither carries a certifier, and no endpoint returns the two as one trail',
+);
+
+/** The project the context row names, and the phase beside it. */
+export const VIEWER_BUDGET_CONTEXT = figure(
+  { project: 'Skyline Tower A • Phase II' },
+  'the same missing project as VIEWER_PROCUREMENT_CONTEXT, plus a PHASE — `projects.projects` ' +
+    'has no phase column, and §32.12 computes progress rather than naming a phase',
 );

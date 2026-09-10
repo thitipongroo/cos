@@ -43,6 +43,7 @@ import { PhotoCapture } from '../../components/PhotoCapture';
 import { CosRole } from '@cos/types';
 import { useAuthStore } from '../../store/authStore';
 import ManagerDeliveries from '../../components/procurement/ManagerDeliveries';
+import { canRenderWriteControls } from '../../lib/readOnlyRole';
 import { useT } from '../../i18n';
 import { colors, fontFamily, radius, spacing, typography } from '../../theme/tokens';
 import { screen } from '../../theme/screenStyles';
@@ -96,6 +97,9 @@ export default function DeliveriesRoute(): React.JSX.Element {
 }
 
 function OfficerDeliveries() {
+  // §20.7.9: a read-only role is shown no create control. VIEWER reaches this screen from the
+  // drawer and falls to this branch, so the FAB that opens the record form is hidden for it.
+  const canWrite = useAuthStore((s) => canRenderWriteControls(s.role));
   const [rows, setRows] = useState<DeliveryRow[]>([]);
   const [pos, setPos] = useState<PoRow[]>([]);
   const [poId, setPoId] = useState('');
@@ -354,16 +358,22 @@ function OfficerDeliveries() {
 
         {/* The FAB opens the RECORD FORM, not a "coming soon" dialog: recording a delivery against
             a purchase order is a real action this app has performed since G-M4, and it queues
-            offline. */}
-        <Pressable
-          testID="delivery-fab"
-          accessibilityRole="button"
-          accessibilityLabel={t('procurement.deliveries.record')}
-          onPress={() => setMode('record')}
-          style={listStyles.fab}
-        >
-          <MaterialIcons name="add" size={28} color={p.onPrimary} />
-        </Pressable>
+            offline.
+
+            §20.7.9: NOT FOR A READ-ONLY ROLE. This screen is one of VIEWER's drawer rows and the
+            FAB is the only way into the form, so hiding it closes the whole create path while
+            leaving the list — which is what that role is here to read — untouched. */}
+        {canWrite ? (
+          <Pressable
+            testID="delivery-fab"
+            accessibilityRole="button"
+            accessibilityLabel={t('procurement.deliveries.record')}
+            onPress={() => setMode('record')}
+            style={listStyles.fab}
+          >
+            <MaterialIcons name="add" size={28} color={p.onPrimary} />
+          </Pressable>
+        ) : null}
       </View>
     );
   }

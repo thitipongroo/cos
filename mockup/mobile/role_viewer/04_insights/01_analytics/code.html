@@ -133,157 +133,62 @@
   </head>
 <body class="bg-background text-on-surface antialiased flex flex-col min-h-screen">
 <!-- TopAppBar -->
-<header class="bg-background dark:bg-dark-bg text-primary dark:text-primary-fixed sticky full-width top-0 bg-surface-container-low flex justify-between items-center px-edge-mobile h-touch-target w-full z-50">
-<div class="flex items-center gap-space-2">
-<span class="material-symbols-outlined text-primary dark:text-primary-fixed" data-icon="analytics" data-weight="fill">analytics</span>
-<span class="font-display-web text-display-web-mobile font-bold text-primary tracking-tight">CONSTRUCTION OS</span>
-</div>
-<div class="flex items-center gap-space-2 text-sync-active bg-surface-container-low rounded px-2 py-1">
-<span class="font-tiny-web text-tiny-web uppercase">SYNCED</span>
-<div class="w-2 h-2 rounded-full bg-sync-active shadow-[0_0_8px_rgba(255,214,10,0.6)]"></div>
-</div>
+<header class="flex justify-between items-center px-4 w-full sticky top-0 z-50 bg-[#020617] border-b border-[#1E293B]/60 h-14 shrink-0">
+  <div class="flex items-center gap-2.5 cursor-pointer active:opacity-80 transition-opacity" title="Open Navigation">
+    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="shrink-0">
+      <path d="M12 2L21 7.2V16.8L12 22L3 16.8V7.2L12 2Z" stroke="#2563EB" stroke-width="1.8" stroke-linejoin="round"></path>
+      <rect x="6.5" y="7.5" width="11" height="1.8" rx="0.9" fill="#F8FAFC"></rect>
+      <rect x="6.5" y="11.1" width="11" height="1.8" rx="0.9" fill="#F8FAFC"></rect>
+      <rect x="6.5" y="14.7" width="3.4" height="1.8" rx="0.9" fill="#4CD7F6"></rect>
+      <rect x="10.7" y="14.7" width="6.8" height="1.8" rx="0.9" fill="#F8FAFC"></rect>
+    </svg>
+    <div class="flex flex-col justify-center">
+      <span class="font-bold text-[14px] leading-tight tracking-tight uppercase" style="font-family: &quot;Inter Tight&quot;, sans-serif;">
+        <span class="text-[#F8FAFC]">CONSTRUCTION </span><span class="text-[#4CD7F6]">OS</span>
+      </span>
+      <span class="text-[8px] font-semibold text-[#64748B] tracking-[1.5px] uppercase leading-none mt-0.5" style="font-family: &quot;Inter Tight&quot;, sans-serif;">
+        AI-NATIVE CONSTRUCTION...</span>
+    </div>
+  </div>
+  <div class="flex items-center gap-2.5">
+    <div class="flex items-center justify-center p-1 rounded bg-[#00C853]/10 text-[#00C853]" title="Synced">
+      <span class="material-symbols-outlined text-[18px]">cloud_done</span>
+    </div>
+    <button class="flex items-center justify-center text-[#94A3B8] hover:text-[#F8FAFC] active:scale-95 transition-all p-1" title="Help">
+      <span class="material-symbols-outlined text-[22px]">help_outline</span>
+    </button>
+    <button class="relative flex items-center justify-center text-[#94A3B8] hover:text-[#F8FAFC] active:scale-95 transition-all p-1" title="Notifications">
+      <span class="material-symbols-outlined text-[24px]">notifications_none</span>
+      <span class="absolute top-1 right-1 w-2 h-2 rounded-full bg-[#EF4444] ring-2 ring-[#020617]"></span>
+    </button>
+    <div class="w-8 h-8 rounded-full bg-[#1E293B] border border-[#334155] flex items-center justify-center text-[12px] font-bold text-[#F8FAFC] tracking-wider shrink-0 cursor-pointer shadow-sm">
+      CN
+    </div>
+  </div>
 </header>
 <!-- Main Canvas -->
 <main class="flex-1 overflow-y-auto px-edge-mobile pt-space-4 pb-[96px]">
 <!-- Header Section -->
-<div class="mb-space-4">
-<h1 class="font-hero-mobile text-hero-mobile text-on-surface mb-space-1 tracking-tight">Project Insights</h1>
-
-</div>
+<div class="mb-space-4"><div class="flex flex-col gap-space-3"><div class="flex items-center justify-between"></div><div class="flex items-center gap-space-2 overflow-x-auto pb-1"><button class="px-3 py-1.5 rounded-full text-xs font-label-mobile bg-primary-container text-on-primary-container shadow-sm transition-all">Quarter</button><button class="px-3 py-1.5 rounded-full text-xs font-label-mobile bg-surface-container text-on-surface-variant border border-outline-variant/40 hover:bg-surface-container-high transition-all cursor-pointer active:scale-95">7D</button><button class="px-3 py-1.5 rounded-full text-xs font-label-mobile bg-surface-container text-on-surface-variant border border-outline-variant/40 hover:bg-surface-container-high transition-all cursor-pointer active:scale-95">30D</button><button class="px-3 py-1.5 rounded-full text-xs font-label-mobile bg-surface-container text-on-surface-variant border border-outline-variant/40 hover:bg-surface-container-high transition-all cursor-pointer active:scale-95">YTD</button><button class="px-3 py-1.5 rounded-full text-xs font-label-mobile bg-surface-container text-on-surface-variant border border-outline-variant/40 hover:bg-surface-container-high transition-all cursor-pointer active:scale-95">All</button></div></div></div>
 <div class="grid grid-cols-1 gap-space-4 md:grid-cols-2 lg:grid-cols-3">
 <!-- Overall Progress (S-Curve) -->
-<section class="bg-surface-container rounded-xl p-space-4 flex flex-col border border-surface-container-highest shadow-sm md:col-span-2 lg:col-span-2">
-<div class="flex justify-between items-start mb-space-4">
-<div>
-<h2 class="font-h2-web text-h2-web text-on-surface">Overall Progress</h2>
-<span class="font-label-mobile text-label-mobile text-on-surface-variant">Planned vs. Actual</span>
-</div>
-<span class="material-symbols-outlined text-on-surface-variant">monitoring</span>
-</div>
-<div class="h-48 w-full rounded bg-surface-container-low relative border border-surface-container-highest overflow-hidden p-4 flex flex-col justify-end">
-<!-- Faux S-Curve Lines for visual representation -->
-<svg class="absolute inset-0 w-full h-full" preserveAspectRatio="none" viewBox="0 0 100 100">
-<path d="M0,90 Q30,85 50,50 T100,10" fill="none" stroke="#2563eb" stroke-dasharray="4" stroke-width="2"></path>
-<path d="M0,95 Q25,90 45,60 T90,20" fill="none" stroke="#4cd7f6" stroke-width="2.5"></path>
-</svg>
-<div class="absolute bottom-2 left-2 flex gap-4 text-xs font-tiny-web">
-<div class="flex items-center gap-1"><div class="w-3 h-1 bg-primary-container"></div>Planned</div>
-<div class="flex items-center gap-1"><div class="w-3 h-1 bg-secondary"></div>Actual</div>
-</div>
-</div>
-</section>
+<section class="bg-surface-container rounded-xl p-space-4 flex flex-col border border-surface-container-highest shadow-sm md:col-span-2 lg:col-span-2 hover:border-primary/40 transition-all group"><div class="flex justify-between items-start mb-space-3"><div><h2 class="font-h2-web text-h2-web text-on-surface font-semibold">Overall Progress</h2><span class="font-label-mobile text-label-mobile text-on-surface-variant">Planned vs. Actual</span></div><button class="flex items-center gap-1 text-primary text-xs font-label-mobile bg-primary/10 hover:bg-primary/20 px-2.5 py-1 rounded-full border border-primary/20 cursor-pointer active:scale-95 transition-all"><span class="">DETAILED METRICS</span><span class="material-symbols-outlined text-[16px]">chevron_right</span></button></div><div class="h-48 w-full rounded-lg bg-surface-container-low relative border border-surface-container-highest overflow-hidden p-4 flex flex-col justify-end"><svg class="absolute inset-0 w-full h-full pointer-events-none" preserveAspectRatio="none" viewBox="0 0 100 100"><path d="M0,90 Q30,85 50,50 T100,10" fill="none" stroke="#2563eb" stroke-dasharray="4" stroke-width="2"></path><path d="M0,95 Q25,90 45,60 T90,20" fill="none" stroke="#4cd7f6" stroke-width="2.5"></path></svg><div class="absolute bottom-2 left-2 flex gap-2 text-xs font-tiny-web z-10"><button class="flex items-center gap-1.5 px-2.5 py-1 rounded bg-surface-container/90 border border-surface-container-highest text-on-surface hover:bg-surface-container transition-all cursor-pointer active:scale-95"><div class="w-3 h-1 bg-primary-container rounded-full"></div><span class="">Planned</span></button><button class="flex items-center gap-1.5 px-2.5 py-1 rounded bg-surface-container/90 border border-surface-container-highest text-on-surface hover:bg-surface-container transition-all cursor-pointer active:scale-95"><div class="w-3 h-1 bg-secondary rounded-full"></div><span class="">Actual</span></button></div></div></section>
 <!-- Safety Performance Card -->
-<section class="bg-surface-container rounded-xl p-space-4 flex flex-col border-l-4 border-l-mobile-success border border-y-surface-container-highest border-r-surface-container-highest shadow-sm">
-<div class="flex justify-between items-center mb-space-3">
-<h2 class="font-h2-web text-h2-web text-on-surface">Safety Performance</h2>
-<span class="material-symbols-outlined text-mobile-success">health_and_safety</span>
-</div>
-<div class="flex flex-col gap-space-3">
-<div class="flex justify-between items-end border-b border-surface-variant pb-space-2">
-<span class="font-body-mobile text-body-mobile text-on-surface-variant">Safe Work Hours</span>
-<span class="font-h1-web text-h1-web font-bold text-on-surface tracking-tight">42,500 <span class="font-tiny-web text-on-surface-variant text-sm font-normal">hrs</span></span>
-</div>
-<div class="flex justify-between items-end border-b border-surface-variant pb-space-2">
-<span class="font-body-mobile text-body-mobile text-on-surface-variant">Zero Incident Days</span>
-<span class="font-h1-web text-h1-web font-bold text-on-surface tracking-tight">128 <span class="font-tiny-web text-on-surface-variant text-sm font-normal">days</span></span>
-</div>
-<div class="flex justify-between items-center pt-space-1">
-<span class="font-label-mobile text-label-mobile text-on-surface-variant">System Status</span>
-<span class="font-label-mobile text-label-mobile text-mobile-success bg-mobile-success/10 px-2 py-1 rounded">OPTIMAL</span>
-</div>
-</div>
-</section>
+<section class="bg-surface-container rounded-xl p-space-4 flex flex-col border-l-4 border-l-mobile-success border border-y-surface-container-highest border-r-surface-container-highest shadow-sm hover:border-mobile-success/40 transition-all"><div class="flex justify-between items-center mb-space-3"><div class="flex items-center gap-2"><span class="material-symbols-outlined text-mobile-success">health_and_safety</span><h2 class="font-h2-web text-h2-web text-on-surface font-semibold">Safety Performance</h2></div><button class="flex items-center gap-1 text-mobile-success text-xs font-label-mobile bg-mobile-success/10 hover:bg-mobile-success/20 px-2.5 py-1 rounded-full border border-mobile-success/30 cursor-pointer active:scale-95 transition-all"><span class="">LOGS</span><span class="material-symbols-outlined text-[16px]">chevron_right</span></button></div><div class="flex flex-col gap-space-2"><div class="flex justify-between items-center p-2.5 rounded-lg bg-surface-container-low/60 hover:bg-surface-container-low transition-colors cursor-pointer active:scale-[0.99] border border-transparent hover:border-surface-container-highest"><span class="font-body-mobile text-body-mobile text-on-surface-variant">Safe Work Hours</span><div class="flex items-center gap-1.5"><span class="font-h1-web text-h1-web font-bold text-on-surface tracking-tight">42,500 <span class="font-tiny-web text-on-surface-variant text-sm font-normal">hrs</span></span><span class="material-symbols-outlined text-on-surface-variant text-[18px]">chevron_right</span></div></div><div class="flex justify-between items-center p-2.5 rounded-lg bg-surface-container-low/60 hover:bg-surface-container-low transition-colors cursor-pointer active:scale-[0.99] border border-transparent hover:border-surface-container-highest"><span class="font-body-mobile text-body-mobile text-on-surface-variant">Zero Incident Days</span><div class="flex items-center gap-1.5"><span class="font-h1-web text-h1-web font-bold text-on-surface tracking-tight">128 <span class="font-tiny-web text-on-surface-variant text-sm font-normal">days</span></span><span class="material-symbols-outlined text-on-surface-variant text-[18px]">chevron_right</span></div></div><div class="flex justify-between items-center pt-space-2 px-1"><span class="font-label-mobile text-label-mobile text-on-surface-variant">System Status</span><span class="font-label-mobile text-label-mobile text-mobile-success bg-mobile-success/10 px-2.5 py-1 rounded-full border border-mobile-success/30 flex items-center gap-1"><div class="w-1.5 h-1.5 rounded-full bg-mobile-success animate-pulse"></div>OPTIMAL</span></div></div></section>
 <!-- AI Risk Prediction Module -->
-<section class="bg-surface-container rounded-xl p-space-4 flex flex-col border-l-4 border-l-secondary shadow-sm relative overflow-hidden">
-<!-- AI Subtle Background Tint -->
-<div class="absolute inset-0 bg-secondary/5 pointer-events-none"></div>
-<div class="relative z-10">
-<div class="flex items-center gap-space-2 mb-space-3">
-<span class="material-symbols-outlined text-secondary">memory</span>
-<h2 class="font-h2-web text-h2-web text-secondary font-bold tracking-tight">Risk Forecast</h2>
-</div>
-<p class="font-body-mobile text-body-mobile text-on-surface mb-space-4 leading-relaxed">
-                        High probability of material supply bottleneck in Phase 4 due to regional logistics trend.
-                    </p>
-<div class="flex items-center gap-space-2 text-on-surface-variant border-t border-secondary/20 pt-space-3 mt-auto">
-<span class="material-symbols-outlined text-[16px]">verified</span>
-<span class="font-tiny-web text-tiny-web tracking-wider">92% Confidence Score | Data: Logistics Hub</span>
-</div>
-</div>
-</section>
+<section class="bg-surface-container rounded-xl p-space-4 flex flex-col border-l-4 border-l-secondary shadow-sm relative overflow-hidden hover:border-secondary/50 transition-all active:scale-[0.99] cursor-pointer group"><div class="absolute inset-0 bg-secondary/5 pointer-events-none"></div><div class="relative z-10 flex flex-col h-full"><div class="flex items-center justify-between mb-space-3"><div class="flex items-center gap-space-2"><span class="material-symbols-outlined text-secondary">memory</span><h2 class="font-h2-web text-h2-web text-secondary font-bold tracking-tight">Risk Forecast</h2></div><button class="flex items-center gap-1 text-secondary text-xs font-label-mobile bg-secondary/10 hover:bg-secondary/20 px-2.5 py-1 rounded-full border border-secondary/30 cursor-pointer active:scale-95 transition-all"><span class="">VIEW EVIDENCE</span><span class="material-symbols-outlined text-[16px]">chevron_right</span></button></div><p class="font-body-mobile text-body-mobile text-on-surface mb-space-4 leading-relaxed">High probability of material supply bottleneck in Phase 4 due to regional logistics trend.</p><div class="flex items-center justify-between text-on-surface-variant border-t border-secondary/20 pt-space-3 mt-auto"><div class="flex items-center gap-space-2"><span class="material-symbols-outlined text-[16px] text-secondary">verified</span><span class="font-tiny-web text-tiny-web tracking-wider">92% Confidence Score | Data: Logistics Hub</span></div><span class="material-symbols-outlined text-secondary text-[18px] group-hover:translate-x-0.5 transition-transform">arrow_forward</span></div></div></section>
 <!-- Issue Distribution -->
-<section class="bg-surface-container rounded-xl p-space-4 flex flex-col border border-surface-container-highest shadow-sm">
-<div class="flex justify-between items-center mb-space-4">
-<h2 class="font-h2-web text-h2-web text-on-surface">Issue Severity</h2>
-<span class="material-symbols-outlined text-on-surface-variant">bug_report</span>
-</div>
-<div class="flex flex-col gap-space-2">
-<!-- Critical -->
-<div class="flex items-center justify-between group">
-<div class="flex items-center gap-space-2">
-<div class="w-3 h-3 rounded-full bg-mobile-danger"></div>
-<span class="font-body-mobile text-body-mobile text-on-surface">Critical</span>
-</div>
-<span class="font-h2-web text-h2-web text-on-surface font-semibold">12</span>
-</div>
-<!-- High -->
-<div class="flex items-center justify-between group">
-<div class="flex items-center gap-space-2">
-<div class="w-3 h-3 rounded-full bg-mobile-warning"></div>
-<span class="font-body-mobile text-body-mobile text-on-surface">High</span>
-</div>
-<span class="font-h2-web text-h2-web text-on-surface font-semibold">34</span>
-</div>
-<!-- Medium -->
-<div class="flex items-center justify-between group">
-<div class="flex items-center gap-space-2">
-<div class="w-3 h-3 rounded-full bg-sync-active"></div>
-<span class="font-body-mobile text-body-mobile text-on-surface">Medium</span>
-</div>
-<span class="font-h2-web text-h2-web text-on-surface font-semibold">87</span>
-</div>
-<!-- Low -->
-<div class="flex items-center justify-between group">
-<div class="flex items-center gap-space-2">
-<div class="w-3 h-3 rounded-full bg-outline"></div>
-<span class="font-body-mobile text-body-mobile text-on-surface">Low</span>
-</div>
-<span class="font-h2-web text-h2-web text-on-surface font-semibold">142</span>
-</div>
-</div>
-<!-- Progress bar style visualization -->
-<div class="w-full h-2 rounded-full overflow-hidden flex mt-space-4 bg-surface-container-low">
-<div class="bg-mobile-danger" style="width: 5%"></div>
-<div class="bg-mobile-warning" style="width: 12%"></div>
-<div class="bg-sync-active" style="width: 31%"></div>
-<div class="bg-outline" style="width: 52%"></div>
-</div>
-</section>
+<section class="bg-surface-container rounded-xl p-space-4 flex flex-col border border-surface-container-highest shadow-sm hover:border-surface-variant transition-all"><div class="flex justify-between items-center mb-space-3"><div class="flex items-center gap-2"><h2 class="font-h2-web text-h2-web text-on-surface font-semibold">Issue Severity</h2><span class="text-xs font-label-mobile text-on-surface-variant bg-surface-container-low px-2 py-0.5 rounded-full border border-surface-container-highest">275 Total</span></div><button class="flex items-center gap-1 text-primary text-xs font-label-mobile bg-surface-container-low hover:bg-surface-container-high px-2.5 py-1 rounded-full border border-surface-container-highest cursor-pointer active:scale-95 transition-all"><span class="">VIEW ALL</span><span class="material-symbols-outlined text-[16px]">chevron_right</span></button></div><div class="flex flex-col gap-1.5"><button class="w-full flex items-center justify-between p-2.5 rounded-lg bg-surface-container-low/40 hover:bg-surface-container-low transition-colors cursor-pointer active:scale-[0.99] border border-transparent hover:border-surface-container-highest text-left"><div class="flex items-center gap-space-2"><div class="w-3 h-3 rounded-full bg-mobile-danger shadow-[0_0_8px_rgba(255,59,48,0.5)]"></div><span class="font-body-mobile text-body-mobile text-on-surface font-medium">Critical</span></div><div class="flex items-center gap-2"><span class="font-h2-web text-h2-web text-on-surface font-semibold">12</span><span class="material-symbols-outlined text-on-surface-variant text-[18px]">chevron_right</span></div></button><button class="w-full flex items-center justify-between p-2.5 rounded-lg bg-surface-container-low/40 hover:bg-surface-container-low transition-colors cursor-pointer active:scale-[0.99] border border-transparent hover:border-surface-container-highest text-left"><div class="flex items-center gap-space-2"><div class="w-3 h-3 rounded-full bg-mobile-warning shadow-[0_0_8px_rgba(255,149,0,0.5)]"></div><span class="font-body-mobile text-body-mobile text-on-surface font-medium">High</span></div><div class="flex items-center gap-2"><span class="font-h2-web text-h2-web text-on-surface font-semibold">34</span><span class="material-symbols-outlined text-on-surface-variant text-[18px]">chevron_right</span></div></button><button class="w-full flex items-center justify-between p-2.5 rounded-lg bg-surface-container-low/40 hover:bg-surface-container-low transition-colors cursor-pointer active:scale-[0.99] border border-transparent hover:border-surface-container-highest text-left"><div class="flex items-center gap-space-2"><div class="w-3 h-3 rounded-full bg-sync-active shadow-[0_0_8px_rgba(255,214,10,0.5)]"></div><span class="font-body-mobile text-body-mobile text-on-surface font-medium">Medium</span></div><div class="flex items-center gap-2"><span class="font-h2-web text-h2-web text-on-surface font-semibold">87</span><span class="material-symbols-outlined text-on-surface-variant text-[18px]">chevron_right</span></div></button><button class="w-full flex items-center justify-between p-2.5 rounded-lg bg-surface-container-low/40 hover:bg-surface-container-low transition-colors cursor-pointer active:scale-[0.99] border border-transparent hover:border-surface-container-highest text-left"><div class="flex items-center gap-space-2"><div class="w-3 h-3 rounded-full bg-outline"></div><span class="font-body-mobile text-body-mobile text-on-surface font-medium">Low</span></div><div class="flex items-center gap-2"><span class="font-h2-web text-h2-web text-on-surface font-semibold">142</span><span class="material-symbols-outlined text-on-surface-variant text-[18px]">chevron_right</span></div></button></div><div class="w-full h-2 rounded-full overflow-hidden flex mt-space-3 bg-surface-container-low"><div class="bg-mobile-danger" style="width: 5%"></div><div class="bg-mobile-warning" style="width: 12%"></div><div class="bg-sync-active" style="width: 31%"></div><div class="bg-outline" style="width: 52%"></div></div></section>
 </div>
 </main>
 <!-- BottomNavBar -->
-<nav class="bg-surface-container dark:bg-surface-container text-primary-fixed font-label-mobile text-label-mobile docked full-width bottom-0 h-[72px] pb-safe fixed bottom-0 w-full z-50 flex justify-around items-center px-space-2 shadow-[0_-4px_24px_rgba(0,0,0,0.5)] md:hidden">
-<!-- Inactive: Projects -->
-<button class="flex flex-col items-center justify-center text-on-surface-variant hover:text-primary transition-colors min-w-[64px] h-touch-target">
-<span class="material-symbols-outlined mb-1" data-icon="inventory_2">inventory_2</span>
-<span class="font-tiny-web text-[10px]">Projects</span>
-</button>
-<!-- Inactive: Daily Logs -->
-<button class="flex flex-col items-center justify-center text-on-surface-variant hover:text-primary transition-colors min-w-[64px] h-touch-target">
-<span class="material-symbols-outlined mb-1" data-icon="history_edu">history_edu</span>
-<span class="font-tiny-web text-[10px]">Daily Logs</span>
-</button>
-<!-- Inactive: Safety -->
-<button class="flex flex-col items-center justify-center text-on-surface-variant hover:text-primary transition-colors min-w-[64px] h-touch-target">
-<span class="material-symbols-outlined mb-1" data-icon="safety_check">safety_check</span>
-<span class="font-tiny-web text-[10px]">Safety</span>
-</button>
-<!-- Active: Insights (Mapped from Directory due to lack of explicit Insights tab in JSON, but acting as the active state for this screen intent) -->
-<button class="flex flex-col items-center justify-center bg-primary-container text-on-primary-container rounded-xl px-space-4 py-space-1 min-w-[64px] h-touch-target scale-95 transition-all duration-200">
-<span class="material-symbols-outlined icon-filled mb-1" data-icon="insights" data-weight="fill">insights</span>
-<span class="font-tiny-web text-[10px] font-semibold">Insights</span>
-</button>
-</nav>
+<nav class="bg-surface-container dark:bg-surface-container text-primary-fixed font-label-mobile text-label-mobile docked full-width bottom-0 h-[72px] pb-safe fixed bottom-0 w-full z-50 flex justify-around items-center px-space-2 shadow-[0_-4px_24px_rgba(0,0,0,0.5)] md:hidden"><button class="flex flex-col items-center justify-center text-on-surface-variant hover:text-primary transition-colors min-w-[64px] h-touch-target cursor-pointer active:scale-95"><span class="material-symbols-outlined mb-1 text-[22px]" data-icon="inventory_2">inventory_2</span><span class="font-tiny-web text-[10px]">Projects</span></button><button class="flex flex-col items-center justify-center text-on-surface-variant hover:text-primary transition-colors min-w-[64px] h-touch-target cursor-pointer active:scale-95"><span class="material-symbols-outlined mb-1 text-[22px]" data-icon="history_edu">history_edu</span><span class="font-tiny-web text-[10px]">Daily Logs</span></button><button class="flex flex-col items-center justify-center text-on-surface-variant hover:text-primary transition-colors min-w-[64px] h-touch-target cursor-pointer active:scale-95"><span class="material-symbols-outlined mb-1 text-[22px]" data-icon="safety_check">safety_check</span><span class="font-tiny-web text-[10px]">Safety</span></button><button class="flex flex-col items-center justify-center bg-primary-container text-on-primary-container rounded-xl px-space-4 py-space-1 min-w-[64px] h-touch-target transition-all duration-200 shadow-md cursor-pointer active:scale-95"><span class="material-symbols-outlined icon-filled mb-1 text-[22px]" data-icon="insights" data-weight="fill">insights</span><span class="font-tiny-web text-[10px] font-semibold">Insights</span></button></nav>
+
+
+
+
+
+
 
 
 </body></html>

@@ -77,6 +77,9 @@ import {
   BUDGET_CATEGORY_GLYPHS,
   FORECAST_CONFIDENCE,
 } from '../../lib/mockupFigures';
+import { CosRole } from '@cos/types';
+import { useAuthStore } from '../../store/authStore';
+import { ViewerBudgetDocument } from '../../components/ViewerBudgetDocument';
 import { useT } from '../../i18n';
 import { useComingSoon } from '../../components/useComingSoon';
 import type { TranslateFn } from '../../i18n';
@@ -93,7 +96,16 @@ import { usePalette, useIsDark, type Palette } from '../../theme/usePalette';
 /** The drawing's square category plate. Named so the plate and its radius cannot drift apart. */
 const PLATE = 40;
 
-export default function BudgetScreen(): React.JSX.Element {
+/**
+ * The FINANCE screen — the three KPI cards, the forecast module and the per-category breakdown.
+ *
+ * NOT THE DEFAULT EXPORT ANY MORE (2026-09-11). `/budget` is reached by SEVEN roles — FINANCE and
+ * VIEWER by tab, five more by drawer row — and until today every one of them got this screen,
+ * including its "request an amendment" control. §20.7.9 forbids rendering a create/edit action to a
+ * VIEWER, and §32.7's justification for that role's tab set rested on an audit from 2026-08-04 that
+ * this screen's own 2026-09-08 rebuild made untrue.
+ */
+function FinanceBudgetScreen(): React.JSX.Element {
   const t = useT();
   const p = usePalette();
   const isDark = useIsDark();
@@ -857,3 +869,13 @@ const makeStyles = (p: Palette) =>
       justifyContent: 'center',
     },
   });
+
+/**
+ * The route, branching on role — the pattern `home.tsx` has always used (product-owner decision
+ * F1 = A, 2026-09-11). The other six roles are unaffected: only VIEWER takes the new branch.
+ */
+export default function BudgetScreen(): React.JSX.Element {
+  const role = useAuthStore((s) => s.role);
+  if (role === CosRole.VIEWER) return <ViewerBudgetDocument />;
+  return <FinanceBudgetScreen />;
+}

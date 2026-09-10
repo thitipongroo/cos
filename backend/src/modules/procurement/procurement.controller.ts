@@ -284,7 +284,11 @@ export class ProcurementController {
 
   // GET /api/v1/procurement/purchase-orders  (tenant-wide, AIP-132; ?project_id= to scope)
   @Get('procurement/purchase-orders')
-  @Roles(...READ_ROLES)
+  // VIEWER ADDED 2026-09-11. §6.8 grants this role R on the whole module and the route refused
+  // it — measured at 403 with a real token that day. Added HERE rather than to `READ_ROLES`, which
+  // would have opened every read route in this controller: the product owner chose to open only
+  // the routes the two VIEWER screens actually read (F3 = C). See ADR.
+  @Roles(...READ_ROLES, CosRole.VIEWER)
   @ApiOperation({ summary: 'List purchase orders across the tenant (filterable)' })
   @ApiQuery({ name: 'project_id', required: false, type: String })
   @ApiQuery({ name: 'status', required: false, type: String })
@@ -396,7 +400,11 @@ export class ProcurementController {
 
   // GET /api/v1/procurement/deliveries  (tenant-wide, AIP-132; ?po_id= to scope)
   @Get('procurement/deliveries')
-  @Roles(...READ_ROLES)
+  // VIEWER ADDED 2026-09-11. §6.8 grants this role R on the whole module and the route refused
+  // it — measured at 403 with a real token that day. Added HERE rather than to `READ_ROLES`, which
+  // would have opened every read route in this controller: the product owner chose to open only
+  // the routes the two VIEWER screens actually read (F3 = C). See ADR.
+  @Roles(...READ_ROLES, CosRole.VIEWER)
   @ApiOperation({ summary: 'List deliveries across the tenant (filterable by PO)' })
   @ApiQuery({ name: 'po_id', required: false, type: String })
   @ApiQuery({ name: 'page', required: false, type: Number })

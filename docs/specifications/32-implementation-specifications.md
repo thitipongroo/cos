@@ -2090,6 +2090,44 @@ BOQ has no mobile screen at any status.
 Adding `reports` / `issues` / `tasks` to VIEWER therefore requires building a read-only mode for
 those screens first — it is not a `MobileNav` configuration change.
 
+**THE SENTENCE ABOVE WENT STALE AND THE 2026-09-11 AUDIT IS WHAT FOUND IT.** "Verified to contain no
+`onPress`/`Pressable` at all" was true of `projects`, `procurement` and `budget` on 2026-08-04 and
+stopped being true as each was rebuilt: by 2026-09-11 `/procurement` rendered the
+PROCUREMENT_MANAGER dashboard to a viewer, approve button included, and `/budget` rendered FINANCE's
+screen with its "request an amendment" control. A justification that names a PROPERTY OF A SCREEN
+expires the next time that screen is written, and nothing was watching this one.
+
+Two things replace it, because the original reasoning cannot be repaired — only re-established:
+
+- **`/procurement` and `/budget` branch on role** (product-owner decision F1, 2026-09-11), the way
+  `/home` always has. VIEWER gets its own screen at each; the other roles keep theirs.
+- **The claim is now TESTED rather than asserted.**
+  `apps/mobile/src/app/(app)/__tests__/viewer-read-only.spec.tsx` renders each affected route as
+  VIEWER and as the role allowed to write, and fails if the viewer's tree carries a control the
+  other one has. A static grep cannot see a control wrapped in `{canWrite ? … }`, which is why the
+  proof is a render and not a script.
+
+`apps/mobile/src/lib/readOnlyRole.ts` states the rule once — `isReadOnlyRole` /
+`canRenderWriteControls` — so a screen asks the question rather than re-deciding it. It is a
+PRESENTATION gate and not a security one: the security gate is `@Roles` on the route, and ADR-103
+records which routes this role may now call.
+
+**READ-ONLY IS NOT UNTAPPABLE, and the two new screens got that wrong before their first capture.**
+`ViewerProcurementDocument` and `ViewerBudgetDocument` were first written with no `onPress` anywhere,
+on the reasoning that a read-only role should not be given controls. §20.7.9 does not say that — it
+forbids **create, edit and approve**, and opening a detail is a read. What shipped instead was eleven
+affordances drawn to look like controls and answering nothing: `TRACK LIVE →`, `DISPLAYING ALL`,
+`DETAILS ›`, an `EXPAND` chip, and a chevron plate on every BOQ division and audit-log row. On screen
+they are indistinguishable from Home's KPI tiles and Insights' `DETAILED METRICS ›`, both of which
+respond — the Android capture of 2026-09-11 is what made the difference visible, because no test was
+asking the question.
+
+Each now raises `useComingSoon()`, per the convention of 2026-09-04: a control the drawings show but
+the platform cannot perform is DRAWN and says so when pressed. The two render specs COUNT the press
+handlers — against the drawn-figure register, not a literal — so a card cannot be added without one
+or quietly lose the one it has. The one carve-out is ornament that was never a control: the map
+sheet's grab handle and its collapse chevron sit on a panel that cannot be dragged, and stay inert.
+
 **VIEWER's bar survived its own mockup set on 2026-09-10, and unlike EXECUTIVE's that was because
 the drawings could not be read.** The product owner requested five Stitch screens under
 `mockup/mobile/role_viewer/`. Their four `<nav>` blocks give **four different bars**:

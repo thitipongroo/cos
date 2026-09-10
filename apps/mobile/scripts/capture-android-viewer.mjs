@@ -6,6 +6,20 @@
 //   03-Map/01-project-map            the site map and its Active Sites sheet
 //   04-Insights/01-project-insights  progress curve, safety, risk forecast, issue severity
 //   05-Profile/01-account-settings   the shared screen plus this role's System Permissions block
+//   06-Procurement/01-procurement    access banner, PO KPIs, delivery predictor, monitored lines
+//   07-Budget/01-budget              total/committed/actual, absorption, BOQ divisions, verified log
+//
+// ── SIX SCREENS SINCE 2026-09-11, AND FOUR OF THE FIRST FIVE WERE REDRAWN ────────────────────────
+//
+// The product owner asked for the same set again and named six screens. The Stitch project held the
+// five above plus two, so a COUNT comparison said "two new" — and sha256 against the repo copies
+// said four of the five had been redrawn since 2026-09-10. Every frame here is therefore retaken,
+// not just the two added ones.
+//
+// PROCUREMENT AND BUDGET ARE TABS, not drawer rows — the third and fourth slots of this role's
+// enumerated bar (Home | Projects | Procurement | Budget). Until 2026-09-11 both rendered another
+// role's screen to a viewer, approve button and "request an amendment" included; each route branches
+// on role now (§20.7.9, ADR-103) and these two frames are the first photographs of the branch.
 //
 // ── THIS ROLE HAD NEVER BEEN CAPTURED, AND COULD NOT HAVE BEEN ──────────────────────────────────
 //
@@ -275,7 +289,7 @@ async function openFromDrawer(route, what, screenId) {
   await find(byId(screenId), what, 30);
 }
 
-// Targets: home projects map insights settings
+// Targets: home projects map insights settings procurement budget
 async function main() {
   mkdirSync(OUT, { recursive: true });
   adb('reverse', 'tcp:8081', `tcp:${METRO_PORT}`);
@@ -362,6 +376,30 @@ async function main() {
     // `GET /users/me` for the head, and the notification preferences below it.
     await delay(4000);
     await stitchFull('05-Profile/01-account-settings');
+    // Back to a tab: the two below are tabs, and the tab bar is not on screen inside the drawer's
+    // account-settings route.
+    adb('shell', 'input', 'keyevent', '4');
+    await delay(1500);
+  }
+
+  if (wanted('procurement')) {
+    console.log('· Procurement tab — the viewer branch');
+    await tap(byId('procurement-tab'), 'procurement tab');
+    // `viewer-procurement`, NOT the manager dashboard's own id. If the branch ever regresses this
+    // find times out rather than photographing the wrong screen under the right filename.
+    await find(byId('viewer-procurement'), 'viewer procurement', 30);
+    await delay(2500);
+    await stitchFull('06-Procurement/01-procurement');
+  }
+
+  if (wanted('budget')) {
+    console.log('· Budget tab — the viewer branch');
+    await tap(byId('budget-tab'), 'budget tab');
+    await find(byId('viewer-budget'), 'viewer budget', 30);
+    // The tallest screen in the set (4,206px in the drawing) — ten shots rather than eight, or the
+    // verified log at its foot never enters a frame.
+    await delay(2500);
+    await stitchFull('07-Budget/01-budget', { top: TOP, bottom: BOT }, null, 10);
   }
 
   console.log(`\nDone → ${OUT}`);

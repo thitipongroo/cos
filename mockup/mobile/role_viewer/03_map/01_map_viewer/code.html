@@ -1,12 +1,10 @@
-<!DOCTYPE html>
-
-<html class="dark" lang="en"><head>
-<meta charset="utf-8"/>
-<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<!DOCTYPE html><html class="dark" lang="en" style=""><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
 <title>CONSTRUCTION OS - Project Map</title>
 <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
-<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
 <script id="tailwind-config">
         tailwind.config = {
             darkMode: "class",
@@ -145,75 +143,53 @@
 </head>
 <body class="bg-background text-on-background font-body-mobile h-[100dvh] flex flex-col overflow-hidden antialiased selection:bg-primary-container selection:text-on-primary-container">
 <!-- TopAppBar -->
-<header class="bg-surface-container-low text-primary flex justify-between items-center px-edge-mobile h-touch-target w-full z-50 fixed top-0 left-0 right-0 shadow-md shrink-0 border-b border-outline-variant/20">
-<div class="flex items-center gap-space-2">
-<span class="material-symbols-outlined text-[24px]" data-icon="analytics">analytics</span>
-<span class="font-h1-web font-bold text-primary tracking-tight text-xl">CONSTRUCTION OS</span>
-</div>
-<div class="flex items-center gap-space-2 bg-surface-container-highest px-3 py-1.5 rounded-full cursor-default group hover:bg-surface-container-highest transition-colors">
-<div class="w-2 h-2 rounded-full bg-mobile-success shadow-[0_0_8px_rgba(0,200,83,0.6)] animate-pulse"></div>
-<span class="font-tiny-web text-on-surface-variant uppercase tracking-wider group-hover:text-primary-fixed transition-colors">SYNCED</span>
-</div>
+<header class="flex justify-between items-center px-4 w-full sticky top-0 z-50 bg-[#020617] border-b border-[#1E293B]/60 h-14 shrink-0">
+  <div class="flex items-center gap-2.5 cursor-pointer active:opacity-80 transition-opacity" title="Open Navigation">
+    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="shrink-0">
+      <path d="M12 2L21 7.2V16.8L12 22L3 16.8V7.2L12 2Z" stroke="#2563EB" stroke-width="1.8" stroke-linejoin="round"></path>
+      <rect x="6.5" y="7.5" width="11" height="1.8" rx="0.9" fill="#F8FAFC"></rect>
+      <rect x="6.5" y="11.1" width="11" height="1.8" rx="0.9" fill="#F8FAFC"></rect>
+      <rect x="6.5" y="14.7" width="3.4" height="1.8" rx="0.9" fill="#4CD7F6"></rect>
+      <rect x="10.7" y="14.7" width="6.8" height="1.8" rx="0.9" fill="#F8FAFC"></rect>
+    </svg>
+    <div class="flex flex-col justify-center">
+      <span class="font-bold text-[14px] leading-tight tracking-tight uppercase" style="font-family: &quot;Inter Tight&quot;, sans-serif;">
+        <span class="text-[#F8FAFC]">CONSTRUCTION </span><span class="text-[#4CD7F6]">OS</span>
+      </span>
+      <span class="text-[8px] font-semibold text-[#64748B] tracking-[1.5px] uppercase leading-none mt-0.5" style="font-family: &quot;Inter Tight&quot;, sans-serif;">
+        AI-NATIVE CONSTRUCTION...</span>
+    </div>
+  </div>
+  <div class="flex items-center gap-2.5">
+    <div class="flex items-center justify-center p-1 rounded bg-[#00C853]/10 text-[#00C853]" title="Synced">
+      <span class="material-symbols-outlined text-[18px]">cloud_done</span>
+    </div>
+    <button class="flex items-center justify-center text-[#94A3B8] hover:text-[#F8FAFC] active:scale-95 transition-all p-1" title="Help">
+      <span class="material-symbols-outlined text-[22px]">help_outline</span>
+    </button>
+    <button class="relative flex items-center justify-center text-[#94A3B8] hover:text-[#F8FAFC] active:scale-95 transition-all p-1" title="Notifications">
+      <span class="material-symbols-outlined text-[24px]">notifications_none</span>
+      <span class="absolute top-1 right-1 w-2 h-2 rounded-full bg-[#EF4444] ring-2 ring-[#020617]"></span>
+    </button>
+    <div class="w-8 h-8 rounded-full bg-[#1E293B] border border-[#334155] flex items-center justify-center text-[12px] font-bold text-[#F8FAFC] tracking-wider shrink-0 cursor-pointer shadow-sm">
+      CN
+    </div>
+  </div>
 </header>
 <!-- Main Content Area (Map) -->
 <main class="flex-1 relative mt-[52px] bg-background overflow-hidden flex flex-col">
 <!-- Map Background -->
 <div class="absolute inset-0 z-0 h-full">
-<div class="w-full h-full bg-cover bg-center opacity-40 mix-blend-screen" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuAmOLLBSefPHb84yjtIYQxUWyKFC77u6pg1MJq4W38LkSHeFbYBfG00RJ_s6Zy9EhuH2TwEowGUZQVyYsXN58U8g47f6SNfk2rTZmd4Lf1iU-iuGS8JQ6FqlYeq-iXS06nIjUkxCdkG_S8ImLsrWS4AbjeeKGDCOLIFC0eu7zo3e3uy6po5HihUnXOKFaGmyAjYxIpmCtwJYZCKrCJ0YfAZEPNZ-9UqJXvTvvu4FaklK7_mtTUJEAtI'); filter: grayscale(100%) sepia(100%) hue-rotate(180deg) saturate(300%) brightness(0.8) contrast(1.2);"></div>
+<div class="w-full h-full bg-cover bg-center opacity-40 mix-blend-screen" style="background-image: url(&quot;https://lh3.googleusercontent.com/aida-public/AB6AXuAmOLLBSefPHb84yjtIYQxUWyKFC77u6pg1MJq4W38LkSHeFbYBfG00RJ_s6Zy9EhuH2TwEowGUZQVyYsXN58U8g47f6SNfk2rTZmd4Lf1iU-iuGS8JQ6FqlYeq-iXS06nIjUkxCdkG_S8ImLsrWS4AbjeeKGDCOLIFC0eu7zo3e3uy6po5HihUnXOKFaGmyAjYxIpmCtwJYZCKrCJ0YfAZEPNZ-9UqJXvTvvu4FaklK7_mtTUJEAtI&quot;); filter: grayscale(100%) sepia(100%) hue-rotate(180deg) saturate(300%) brightness(0.8) contrast(1.2);"></div>
 <div class="absolute inset-0 bg-gradient-to-b from-transparent via-background/40 to-background/90"></div>
 </div>
 <!-- Map Controls -->
-<div class="absolute right-space-4 top-space-4 z-20 flex flex-col gap-space-2 no-select">
-<button class="w-10 h-10 bg-surface-container-high/80 border border-outline-variant/30 text-on-surface rounded flex items-center justify-center hover:bg-surface-container-highest backdrop-blur-sm">
-<span class="material-symbols-outlined text-[20px]" data-icon="add">add</span>
-</button>
-<button class="w-10 h-10 bg-surface-container-high/80 border border-outline-variant/30 text-on-surface rounded flex items-center justify-center hover:bg-surface-container-highest backdrop-blur-sm">
-<span class="material-symbols-outlined text-[20px]" data-icon="remove">remove</span>
-</button>
-<button class="w-10 h-10 bg-surface-container-high/80 border border-outline-variant/30 text-on-surface rounded flex items-center justify-center mt-space-2 hover:bg-surface-container-highest backdrop-blur-sm">
-<span class="material-symbols-outlined text-[20px]" data-icon="my_location">my_location</span>
-</button>
-<button class="w-10 h-10 bg-surface-container-high/80 border border-outline-variant/30 text-on-surface rounded flex items-center justify-center mt-space-2 hover:bg-surface-container-highest backdrop-blur-sm">
-<span class="material-symbols-outlined text-[20px]" data-icon="layers">layers</span>
-</button>
-</div>
+<div class="absolute right-space-4 top-space-4 z-20 flex flex-col gap-space-2 no-select"><div class="flex flex-col bg-surface-container/90 border border-outline-variant/50 rounded-xl overflow-hidden shadow-lg backdrop-blur-md"><button type="button" aria-label="Zoom in" class="w-11 h-11 text-on-surface flex items-center justify-center hover:bg-surface-container-highest active:scale-90 active:bg-primary-container/30 transition-all border-b border-outline-variant/30"><span class="material-symbols-outlined text-[20px]" data-icon="add">add</span></button><button type="button" aria-label="Zoom out" class="w-11 h-11 text-on-surface flex items-center justify-center hover:bg-surface-container-highest active:scale-90 active:bg-primary-container/30 transition-all"><span class="material-symbols-outlined text-[20px]" data-icon="remove">remove</span></button></div><button type="button" aria-label="My location" class="w-11 h-11 bg-surface-container/90 border border-outline-variant/50 text-on-surface rounded-xl flex items-center justify-center hover:bg-surface-container-highest active:scale-90 active:bg-primary-container/30 shadow-lg backdrop-blur-md transition-all"><span class="material-symbols-outlined text-[20px]" data-icon="my_location">my_location</span></button><button type="button" aria-label="Toggle layers" class="w-11 h-11 bg-surface-container/90 border border-outline-variant/50 text-on-surface rounded-xl flex items-center justify-center hover:bg-surface-container-highest active:scale-90 active:bg-primary-container/30 shadow-lg backdrop-blur-md transition-all"><span class="material-symbols-outlined text-[20px]" data-icon="layers">layers</span></button></div>
 <!-- Map Markers -->
 <!-- Marker: Site Alpha (On Track) -->
-<div class="absolute top-[25%] left-[35%] z-10 map-marker group cursor-pointer -translate-x-1/2 -translate-y-full">
-<div class="relative flex flex-col items-center">
-<!-- Status Ping -->
-<div class="absolute w-12 h-12 bg-mobile-success/20 rounded-full animate-ping top-[-8px]"></div>
-<!-- Pin Body -->
-<div class="w-8 h-10 bg-surface-container border border-outline-variant rounded-t-full rounded-bl-full rounded-br-none rotate-45 flex items-center justify-center shadow-lg relative overflow-hidden">
-<div class="w-5 h-5 bg-dark-bg rounded-full flex items-center justify-center -rotate-45 relative z-10">
-<div class="w-2.5 h-2.5 bg-mobile-success rounded-full"></div>
-</div>
-</div>
-<!-- Label Pill -->
-<div class="mt-2 bg-surface-container-high/90 border border-outline-variant/50 px-3 py-1.5 rounded-full whitespace-nowrap shadow-md backdrop-blur-md">
-<span class="font-label-mobile text-on-surface block text-center leading-tight">Site Alpha</span>
-<span class="font-tiny-web text-mobile-success block text-center mt-0.5">ON TRACK</span>
-</div>
-</div>
-</div>
+<div class="absolute top-[25%] left-[35%] z-10 cursor-pointer -translate-x-1/2 -translate-y-full group transition-transform duration-200 hover:scale-110 active:scale-95"><div class="relative flex flex-col items-center"><div class="absolute w-12 h-12 bg-mobile-success/20 rounded-full animate-ping top-[-8px] pointer-events-none"></div><div class="w-8 h-10 bg-surface-container border-2 border-mobile-success rounded-t-full rounded-bl-full rounded-br-none rotate-45 flex items-center justify-center shadow-[0_4px_16px_rgba(0,200,83,0.4)] relative overflow-hidden group-hover:border-primary-fixed"><div class="w-5 h-5 bg-dark-bg rounded-full flex items-center justify-center -rotate-45 relative z-10"><div class="w-2.5 h-2.5 bg-mobile-success rounded-full ring-2 ring-mobile-success/40"></div></div></div><div class="mt-2 bg-surface-container-high/95 border border-mobile-success/50 px-3 py-1.5 rounded-full whitespace-nowrap shadow-lg backdrop-blur-md flex items-center gap-1.5 group-hover:border-mobile-success transition-all"><span class="font-label-mobile text-on-surface block text-center leading-tight font-semibold">Site Alpha</span><span class="font-tiny-web text-mobile-success block text-center font-bold">• ON TRACK</span></div></div></div>
 <!-- Marker: Metro Expansion (Delayed/Warning) -->
-<div class="absolute top-[45%] left-[70%] z-10 map-marker group cursor-pointer -translate-x-1/2 -translate-y-full">
-<div class="relative flex flex-col items-center">
-<!-- Status Ping -->
-<div class="absolute w-12 h-12 bg-mobile-warning/30 rounded-full animate-pulse top-[-8px]"></div>
-<!-- Pin Body -->
-<div class="w-8 h-10 bg-surface-container border border-mobile-warning/70 rounded-t-full rounded-bl-full rounded-br-none rotate-45 flex items-center justify-center shadow-lg relative overflow-hidden">
-<div class="w-5 h-5 bg-dark-bg rounded-full flex items-center justify-center -rotate-45 relative z-10">
-<div class="w-2.5 h-2.5 bg-mobile-warning rounded-full"></div>
-</div>
-</div>
-<!-- Label Pill -->
-<div class="mt-2 bg-surface-container-high/90 border border-mobile-warning/50 px-3 py-1.5 rounded-full whitespace-nowrap shadow-md backdrop-blur-md">
-<span class="font-label-mobile text-on-surface block text-center leading-tight">Metro Exp.</span>
-<span class="font-tiny-web text-mobile-warning block text-center mt-0.5 animate-pulse">DELAYED</span>
-</div>
-</div>
-</div>
+<div class="absolute top-[45%] left-[70%] z-10 cursor-pointer -translate-x-1/2 -translate-y-full group transition-transform duration-200 hover:scale-110 active:scale-95"><div class="relative flex flex-col items-center"><div class="absolute w-12 h-12 bg-mobile-warning/30 rounded-full animate-pulse top-[-8px] pointer-events-none"></div><div class="w-8 h-10 bg-surface-container border-2 border-mobile-warning rounded-t-full rounded-bl-full rounded-br-none rotate-45 flex items-center justify-center shadow-[0_4px_16px_rgba(255,149,0,0.4)] relative overflow-hidden group-hover:border-primary-fixed"><div class="w-5 h-5 bg-dark-bg rounded-full flex items-center justify-center -rotate-45 relative z-10"><div class="w-2.5 h-2.5 bg-mobile-warning rounded-full ring-2 ring-mobile-warning/40"></div></div></div><div class="mt-2 bg-surface-container-high/95 border border-mobile-warning/70 px-3 py-1.5 rounded-full whitespace-nowrap shadow-lg backdrop-blur-md flex items-center gap-1.5 group-hover:border-mobile-warning transition-all"><span class="font-label-mobile text-on-surface block text-center leading-tight font-semibold">Metro Exp.</span><span class="font-tiny-web text-mobile-warning block text-center font-bold animate-pulse">• DELAYED</span></div></div></div>
 <!-- Marker: Generic -->
 <div class="absolute top-[55%] left-[25%] z-10 map-marker cursor-pointer -translate-x-1/2 -translate-y-full">
 <div class="relative flex flex-col items-center opacity-80">
@@ -233,103 +209,22 @@
 <div class="w-12 h-1.5 bg-outline-variant/50 rounded-full"></div>
 </div>
 <!-- Header -->
-<div class="px-edge-mobile pb-3 flex justify-between items-center border-b border-outline-variant/10 shrink-0">
-<div class="flex items-center gap-space-2">
-<span class="material-symbols-outlined text-on-surface-variant" data-icon="explore">explore</span>
-<h2 class="font-body-mobile text-on-surface">Active Sites</h2>
-</div>
-<div class="bg-surface-container-high px-2 py-1 rounded font-tiny-web text-on-surface-variant">
-                3 VISIBLE
-            </div>
-</div>
+<div class="px-edge-mobile pb-3 flex justify-between items-center border-b border-outline-variant/20 shrink-0 cursor-pointer select-none active:opacity-75 transition-opacity"><div class="flex items-center gap-space-2"><span class="material-symbols-outlined text-primary" data-icon="explore">explore</span><h2 class="font-body-mobile text-on-surface font-semibold text-base">Active Sites</h2></div><div class="flex items-center gap-2"><div class="bg-surface-container-highest/80 border border-outline-variant/30 px-2.5 py-1 rounded-full font-tiny-web text-on-surface-variant font-medium tracking-wide">3 VISIBLE</div><span class="material-symbols-outlined text-[20px] text-on-surface-variant" data-icon="keyboard_arrow_up">keyboard_arrow_up</span></div></div>
 <!-- List Content (Scrollable) -->
 <div class="overflow-y-auto px-edge-mobile py-4 space-y-4 flex-1">
 <!-- Project Item: Site Alpha -->
-<div class="bg-surface-container-high border-l-4 border-l-mobile-success p-4 rounded-r-lg flex flex-col gap-3">
-<div class="flex justify-between items-start">
-<div>
-<h3 class="font-body-mobile text-on-surface">Site Alpha Complex</h3>
-<p class="font-tiny-web text-on-surface-variant mt-1">ID: #SA-2044 • Commercial</p>
-</div>
-<div class="bg-mobile-success/10 px-2 py-1 rounded text-mobile-success font-tiny-web border border-mobile-success/20">
-                        ON TRACK
-                    </div>
-</div>
-<div class="grid grid-cols-2 gap-4 mt-1">
-<div class="flex flex-col">
-<span class="font-tiny-web text-on-surface-variant mb-1">COMPLETION</span>
-<div class="flex items-center gap-2">
-<span class="font-label-mobile text-on-surface font-semibold">42%</span>
-<div class="h-1.5 flex-1 bg-surface-container rounded-full overflow-hidden">
-<div class="h-full bg-mobile-success w-[42%]"></div>
-</div>
-</div>
-</div>
-<div class="flex flex-col pl-4">
-<span class="font-tiny-web text-on-surface-variant mb-1">ACTIVE ISSUES</span>
-<div class="flex items-center gap-1.5">
-<span class="material-symbols-outlined text-[16px] text-on-surface-variant" data-icon="error_outline">error_outline</span>
-<span class="font-label-mobile text-on-surface font-semibold">3</span>
-</div>
-</div>
-</div>
-</div>
+<div class="bg-surface-container-high border border-outline-variant/30 border-l-4 border-l-mobile-success p-4 rounded-xl flex flex-col gap-3 cursor-pointer transition-all duration-150 hover:border-primary/50 hover:bg-surface-container-highest/60 active:scale-[0.99] shadow-sm group"><div class="flex justify-between items-start gap-2"><div><h3 class="font-body-mobile text-on-surface font-semibold text-[16px] group-hover:text-primary transition-colors">Site Alpha Complex</h3><p class="font-tiny-web text-on-surface-variant mt-0.5">ID: #SA-2044 • Comm...</p></div><div class="flex items-center gap-2"><div class="bg-mobile-success/15 px-2.5 py-1 rounded-full text-mobile-success font-tiny-web font-semibold border border-mobile-success/30 flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-mobile-success"></span>TRACK</div><div class="w-8 h-8 rounded-full bg-surface-container border border-outline-variant/30 flex items-center justify-center text-on-surface-variant group-hover:text-primary group-hover:border-primary/50 transition-colors"><span class="material-symbols-outlined text-[18px]" data-icon="chevron_right">chevron_right</span></div></div></div><div class="grid grid-cols-2 gap-4 pt-1 border-t border-outline-variant/10"><div class="flex flex-col"><span class="font-tiny-web text-on-surface-variant mb-1">COMPLETION</span><div class="flex items-center gap-2"><span class="font-label-mobile text-on-surface font-semibold">42%</span><div class="h-2 flex-1 bg-surface-container rounded-full overflow-hidden"><div class="h-full bg-mobile-success w-[42%] rounded-full"></div></div></div></div><div class="flex flex-col pl-4 border-l border-outline-variant/20"><span class="font-tiny-web text-on-surface-variant mb-1">ACTIVE ISSUES</span><div class="flex items-center gap-1.5"><span class="material-symbols-outlined text-[16px] text-mobile-success" data-icon="check_circle">check_circle</span><span class="font-label-mobile text-on-surface font-semibold">3 minor</span></div></div></div></div>
 <!-- Project Item: Metro Expansion -->
-<div class="bg-surface-container-high border-l-4 border-l-mobile-warning p-4 rounded-r-lg flex flex-col gap-3">
-<div class="flex justify-between items-start">
-<div>
-<h3 class="font-body-mobile text-on-surface">Metro Line Expansion</h3>
-<p class="font-tiny-web text-on-surface-variant mt-1">ID: #ME-1092 • Infrastructure</p>
-</div>
-<div class="bg-mobile-warning/10 px-2 py-1 rounded text-mobile-warning font-tiny-web border border-mobile-warning/30">
-                        DELAYED
-                    </div>
-</div>
-<div class="grid grid-cols-2 gap-4 mt-1">
-<div class="flex flex-col">
-<span class="font-tiny-web text-on-surface-variant mb-1">COMPLETION</span>
-<div class="flex items-center gap-2">
-<span class="font-label-mobile text-on-surface font-semibold">15%</span>
-<div class="h-1.5 flex-1 bg-surface-container rounded-full overflow-hidden">
-<div class="h-full bg-mobile-warning w-[15%]"></div>
-</div>
-</div>
-</div>
-<div class="flex flex-col pl-4">
-<span class="font-tiny-web text-mobile-warning mb-1">ACTIVE ISSUES</span>
-<div class="flex items-center gap-1.5">
-<span class="material-symbols-outlined text-[16px] text-mobile-warning" data-icon="warning">warning</span>
-<span class="font-label-mobile text-mobile-warning font-semibold">12</span>
-</div>
-</div>
-</div>
-</div>
+<div class="bg-surface-container-high border border-outline-variant/30 border-l-4 border-l-mobile-warning p-4 rounded-xl flex flex-col gap-3 cursor-pointer transition-all duration-150 hover:border-mobile-warning/60 hover:bg-surface-container-highest/60 active:scale-[0.99] shadow-sm group"><div class="flex justify-between items-start gap-2"><div><h3 class="font-body-mobile text-on-surface font-semibold text-[16px] group-hover:text-primary transition-colors">Metro Line Expansion</h3><p class="font-tiny-web text-on-surface-variant mt-0.5">ID: #ME-1092 • Infra...</p></div><div class="flex items-center gap-2"><div class="bg-mobile-warning/15 px-2.5 py-1 rounded-full text-mobile-warning font-tiny-web font-semibold border border-mobile-warning/40 flex items-center gap-1 animate-pulse"><span class="w-1.5 h-1.5 rounded-full bg-mobile-warning"></span>DELAYED</div><div class="w-8 h-8 rounded-full bg-surface-container border border-outline-variant/30 flex items-center justify-center text-on-surface-variant group-hover:text-mobile-warning group-hover:border-mobile-warning/50 transition-colors"><span class="material-symbols-outlined text-[18px]" data-icon="chevron_right">chevron_right</span></div></div></div><div class="grid grid-cols-2 gap-4 pt-1 border-t border-outline-variant/10"><div class="flex flex-col"><span class="font-tiny-web text-on-surface-variant mb-1">COMPLETION</span><div class="flex items-center gap-2"><span class="font-label-mobile text-on-surface font-semibold">15%</span><div class="h-2 flex-1 bg-surface-container rounded-full overflow-hidden"><div class="h-full bg-mobile-warning w-[15%] rounded-full"></div></div></div></div><div class="flex flex-col pl-4 border-l border-outline-variant/20"><span class="font-tiny-web text-mobile-warning mb-1">ACTIVE ISSUES</span><div class="flex items-center gap-1.5"><span class="material-symbols-outlined text-[16px] text-mobile-warning" data-icon="warning">warning</span><span class="font-label-mobile text-mobile-warning font-semibold">12 alerts</span></div></div></div></div>
 <div class="h-2"></div>
 </div>
 </div>
 <!-- BottomNavBar -->
-<nav class="bg-surface-container-low text-on-surface-variant font-label-mobile h-[72px] pb-safe fixed bottom-0 w-full z-50 flex justify-around items-center px-2 shadow-[0_-4px_20px_rgba(0,0,0,0.3)] shrink-0 border-t border-outline-variant/20">
-<!-- Projects -->
-<a class="flex flex-col items-center justify-center hover:text-primary transition-colors w-[25%] py-2" href="#">
-<span class="material-symbols-outlined text-[24px] mb-1" data-icon="inventory_2">inventory_2</span>
-<span class="font-tiny-web tracking-wide">Projects</span>
-</a>
-<!-- Daily Logs -->
-<a class="flex flex-col items-center justify-center hover:text-primary transition-colors w-[25%] py-2" href="#">
-<span class="material-symbols-outlined text-[24px] mb-1" data-icon="history_edu">history_edu</span>
-<span class="font-tiny-web tracking-wide">Daily Logs</span>
-</a>
-<!-- Map (Active) -->
-<a class="flex flex-col items-center justify-center w-[25%] py-1" href="#">
-<div class="bg-primary-container text-on-primary-container rounded-xl px-5 py-1 flex flex-col items-center mb-1">
-<span class="material-symbols-outlined text-[24px]" data-icon="map" data-weight="fill">map</span>
-</div>
-<span class="font-tiny-web tracking-wide font-semibold text-primary-fixed">Map</span>
-</a>
-<!-- Directory -->
-<a class="flex flex-col items-center justify-center hover:text-primary transition-colors w-[25%] py-2" href="#">
-<span class="material-symbols-outlined text-[24px] mb-1" data-icon="groups">groups</span>
-<span class="font-tiny-web tracking-wide">Directory</span>
-</a>
-</nav>
+<nav class="bg-surface-container-low text-on-surface-variant font-label-mobile h-[72px] pb-safe fixed bottom-0 w-full z-50 flex justify-around items-center px-2 shadow-[0_-4px_20px_rgba(0,0,0,0.3)] shrink-0 border-t border-outline-variant/20"><a class="flex flex-col items-center justify-center hover:text-primary transition-all w-[25%] h-touch-target active:scale-95 group" href="#"><span class="material-symbols-outlined text-[24px] mb-0.5 group-hover:-translate-y-0.5 transition-transform" data-icon="inventory_2">inventory_2</span><span class="font-tiny-web tracking-wide text-[11px]">Projects</span></a><a class="flex flex-col items-center justify-center hover:text-primary transition-all w-[25%] h-touch-target active:scale-95 group" href="#"><span class="material-symbols-outlined text-[24px] mb-0.5 group-hover:-translate-y-0.5 transition-transform" data-icon="history_edu">history_edu</span><span class="font-tiny-web tracking-wide text-[11px]">Daily Logs</span></a><a class="flex flex-col items-center justify-center w-[25%] h-touch-target active:scale-95" href="#"><div class="bg-primary-container text-on-primary-container rounded-xl px-5 py-1 flex flex-col items-center mb-0.5 shadow-md"><span class="material-symbols-outlined text-[24px]" data-icon="map" data-weight="fill">map</span></div><span class="font-tiny-web tracking-wide font-semibold text-primary-fixed text-[11px]">Map</span></a><a class="flex flex-col items-center justify-center hover:text-primary transition-all w-[25%] h-touch-target active:scale-95 group" href="#"><span class="material-symbols-outlined text-[24px] mb-0.5 group-hover:-translate-y-0.5 transition-transform" data-icon="groups">groups</span><span class="font-tiny-web tracking-wide text-[11px]">Directory</span></a></nav>
+
+
+
+
+
+
 </body></html>

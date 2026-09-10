@@ -1,7 +1,20 @@
 // Project Map — where the portfolio's sites are, as the VIEWER's drawing shows them.
 //
 // DRAWING: mockup/mobile/role_viewer/03_map/01_map_viewer (Stitch screen "Project Map - Viewer
-// (Fixed View)"), downloaded from Stitch on 2026-09-10 and byte-identical to the copy in this repo.
+// (Fixed View)").
+//
+// REDRAWN 2026-09-11 — one of the four this role's set gained that day. The header became the app's
+// real <TopBar />; the pin labels put name and state on ONE line, the state now reading `• ON TRACK`
+// / `• DELAYED`; each sheet row gained a dotted state chip and a round chevron; the issue counts
+// gained a word (`3 minor`, `12 alerts`) and a glyph per tone; and the sheet header gained a
+// `keyboard_arrow_up`. Its bottom nav is UNCHANGED — still `Projects · Daily Logs · Map ·
+// Directory`, which is one of the two drawings in this set that never adopted the enumerated bar,
+// and is exactly why this screen is a drawer row rather than a tab.
+//
+// THE SHEET'S STATE CHIP READS THE SAME WORDS AS THE PINS. The drawing writes `TRACK` on the first
+// row's chip and `• ON TRACK` on the same site's pin — one state, two labels, in one picture. The
+// pins' wording is used in both places rather than a third label being invented for a chip six
+// hundred pixels below the first (ADR-085: composition is the implementation's).
 //
 // ── THERE IS NO MAP BEHIND THIS MAP, AND THAT IS A DECISION RATHER THAN AN OMISSION ─────────────
 //
@@ -130,7 +143,7 @@ export function ProjectMapDocument(): React.JSX.Element {
                 <View style={[styles.pinLabel, { borderColor: color }]}>
                   <Text style={styles.pinLabelText}>{pin.label}</Text>
                   <Text style={[styles.pinLabelState, { color }]}>
-                    {t(`map.viewer.state.${pin.tone}`)}
+                    {t('map.viewer.dotState', { state: t(`map.viewer.state.${pin.tone}`) })}
                   </Text>
                 </View>
               )}
@@ -152,10 +165,16 @@ export function ProjectMapDocument(): React.JSX.Element {
             <MaterialIcons name="explore" size={18} color={p.muted} />
             <Text style={styles.sheetTitle}>{t('map.viewer.activeSites')}</Text>
           </View>
-          <View style={styles.countChip}>
-            <Text style={styles.countText}>
-              {t('map.viewer.visible', { count: VIEWER_MAP_SITES.value.visible })}
-            </Text>
+          <View style={styles.sheetHeadTrail}>
+            <View style={styles.countChip}>
+              <Text style={styles.countText}>
+                {t('map.viewer.visible', { count: VIEWER_MAP_SITES.value.visible })}
+              </Text>
+            </View>
+            {/* DRAWN, and it does not collapse anything. The sheet is a fixed panel — a drag
+                handle on a panel that cannot be dragged is the drawn dead control this project
+                keeps refusing to ship, so the glyph is decoration and carries no press. */}
+            <MaterialIcons name="keyboard-arrow-up" size={20} color={p.muted} />
           </View>
         </View>
 
@@ -171,9 +190,16 @@ export function ProjectMapDocument(): React.JSX.Element {
           {VIEWER_MAP_SITES.value.rows.map((row) => {
             const color = toneColor(row.tone as 'success' | 'warning');
             return (
-              <View
+              <Pressable
                 key={row.ref}
                 testID={`map-site-${row.ref}`}
+                accessibilityRole="button"
+                accessibilityLabel={row.name}
+                // The row carries a round chevron plate, so it is a control. No per-site screen
+                // exists for this role, so it says so on the press — the same treatment the
+                // project cards on `/projects` get, and the opposite of the grab handle above,
+                // which is ornament on a panel that cannot be dragged.
+                onPress={() => soon('map.viewer.siteDetail')}
                 style={[styles.siteRow, { borderLeftColor: color }]}
               >
                 <View style={styles.siteHead}>
@@ -188,10 +214,16 @@ export function ProjectMapDocument(): React.JSX.Element {
                       })}
                     </Text>
                   </View>
-                  <View style={[styles.statusChip, { borderColor: color }]}>
-                    <Text style={[styles.statusText, { color }]}>
-                      {t(`map.viewer.state.${row.tone}`)}
-                    </Text>
+                  <View style={styles.siteHeadTrail}>
+                    <View style={[styles.statusChip, { borderColor: color }]}>
+                      <View style={[styles.statusDot, { backgroundColor: color }]} />
+                      <Text style={[styles.statusText, { color }]}>
+                        {t(`map.viewer.state.${row.tone}`)}
+                      </Text>
+                    </View>
+                    <View style={styles.chevronCircle}>
+                      <MaterialIcons name="chevron-right" size={18} color={p.muted} />
+                    </View>
                   </View>
                 </View>
 
@@ -211,23 +243,24 @@ export function ProjectMapDocument(): React.JSX.Element {
                     </View>
                   </View>
 
-                  <View style={styles.factCell}>
-                    <Text style={[styles.factLabel, row.issues >= 10 && { color }]}>
-                      {t('map.viewer.activeIssues')}
-                    </Text>
+                  {/* THE COUNT CARRIES A WORD NOW — `3 minor`, `12 alerts` — and the glyph goes
+                      with it: a tick where the site is on track, a warning where it is not. Keyed
+                      on the row's TONE rather than on the number, so the two can never disagree. */}
+                  <View style={[styles.factCell, styles.factCellDivided]}>
+                    <Text style={styles.factLabel}>{t('map.viewer.activeIssues')}</Text>
                     <View style={styles.factValueRow}>
                       <MaterialIcons
-                        name={row.issues >= 10 ? 'warning' : 'error-outline'}
+                        name={row.tone === 'success' ? 'check-circle' : 'warning'}
                         size={16}
-                        color={row.issues >= 10 ? color : p.muted}
+                        color={color}
                       />
-                      <Text style={[styles.factValue, row.issues >= 10 && { color }]}>
-                        {row.issues}
+                      <Text style={styles.factValue}>
+                        {t(`map.viewer.issueCount.${row.tone}`, { count: row.issues })}
                       </Text>
                     </View>
                   </View>
                 </View>
-              </View>
+              </Pressable>
             );
           })}
         </ScrollView>
@@ -278,13 +311,16 @@ const makeStyles = (p: Palette) =>
       transform: [{ rotate: '45deg' }],
     },
     pinCore: { width: 10, height: 10, borderRadius: 999, transform: [{ rotate: '-45deg' }] },
+    // ONE ROW, not two — the redraw sets the name and the state side by side inside a capsule.
     pinLabel: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.xs / 2,
       marginTop: spacing.xs,
       paddingHorizontal: spacing.sm,
       paddingVertical: spacing.xs / 2,
       borderRadius: radius.xl,
       borderWidth: 1,
-      alignItems: 'center',
       backgroundColor: p.surfaceSoft,
     },
     pinLabelText: {
@@ -315,6 +351,7 @@ const makeStyles = (p: Palette) =>
     },
     handleRow: { alignItems: 'center', paddingTop: spacing.sm, paddingBottom: spacing.xs },
     handle: { width: 48, height: 6, borderRadius: 999, backgroundColor: p.border },
+    sheetHeadTrail: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
     sheetHead: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -353,6 +390,18 @@ const makeStyles = (p: Palette) =>
       backgroundColor: p.surfaceSoft,
     },
     siteHead: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm },
+    siteHeadTrail: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
+    // A CIRCLE by construction: 999 with a fixed side is §32.7's "make this round" marker.
+    chevronCircle: {
+      width: 30,
+      height: 30,
+      borderRadius: 999,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderWidth: 1,
+      borderColor: p.border,
+      backgroundColor: p.surface,
+    },
     siteTitleBlock: { flex: 1, gap: spacing.xs / 2 },
     siteName: {
       color: p.text,
@@ -365,11 +414,15 @@ const makeStyles = (p: Palette) =>
       fontSize: typography.label.fontSize,
     },
     statusChip: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.xs / 2,
       paddingHorizontal: spacing.xs,
       paddingVertical: spacing.xs / 2,
       borderRadius: radius.xl,
       borderWidth: 1,
     },
+    statusDot: { width: 6, height: 6, borderRadius: 999 },
     statusText: {
       fontFamily: fontFamily.semibold,
       fontSize: typography.label.fontSize,
@@ -377,8 +430,16 @@ const makeStyles = (p: Palette) =>
       textTransform: 'uppercase',
     },
 
-    siteFacts: { flexDirection: 'row', gap: spacing.md },
+    siteFacts: {
+      flexDirection: 'row',
+      gap: spacing.md,
+      paddingTop: spacing.xs,
+      borderTopWidth: 1,
+      borderTopColor: p.border,
+    },
     factCell: { flex: 1, gap: spacing.xs / 2 },
+    // The redraw rules a hairline between the two fact cells.
+    factCellDivided: { paddingLeft: spacing.md, borderLeftWidth: 1, borderLeftColor: p.border },
     factLabel: {
       color: p.muted,
       fontFamily: fontFamily.regular,

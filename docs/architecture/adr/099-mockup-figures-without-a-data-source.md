@@ -737,12 +737,12 @@ The amendment above closed at **fifty-six** and that was correct on the day. The
 written up. Measured, not recalled — `grep -c "^export const [A-Z_]* = figure(" \
 apps/mobile/src/lib/mockupFigures.ts` — and attributable by the section headers in that file:
 
-| Round | Block | Entries |
-| ----- | ----- | ------- |
-| 2026-09-09 | The CRM manager's home dashboard | 3 |
-| 2026-09-10 | The CRM manager's four remaining screens | 8 |
-| 2026-09-10 | Get Help (`01_authen/05_get_help`) | 5 |
-| 2026-09-10 | VIEWER (`role_viewer/`) | 14 |
+| Round      | Block                                    | Entries |
+| ---------- | ---------------------------------------- | ------- |
+| 2026-09-09 | The CRM manager's home dashboard         | 3       |
+| 2026-09-10 | The CRM manager's four remaining screens | 8       |
+| 2026-09-10 | Get Help (`01_authen/05_get_help`)       | 5       |
+| 2026-09-10 | VIEWER (`role_viewer/`)                  | 14      |
 
 The first three are recorded in their screens' header comments and in the register itself, which is
 where a reader looks; what they skipped was this file, so the running total here has been wrong for
@@ -806,3 +806,68 @@ never resolve is still worse than a drawn one, because a dash claims the request
 Counted, not recalled:
 `grep -c "^export const [A-Z_]* = figure(" apps/mobile/src/lib/mockupFigures.ts`.
 Fifty-six, plus three, plus eight, plus five, plus fourteen.
+
+## Amendment — 2026-09-11: the VIEWER set again, two new screens, and the first entry lost to an OPENED ROUTE
+
+The amendment above closed this role at five screens and the register at eighty-six. On 2026-09-11
+the product owner asked for the same set again and named **six** screens. Checking the count was not
+enough and nearly shipped the wrong work: the Stitch project held the same five names plus two, so a
+count comparison said "two new". Downloading all seven and comparing sha256 against the repo copies
+said something else — **four of the five existing drawings had been REDRAWN** since 2026-09-10. Home,
+Projects, Map and Analytics all changed; only Account Settings was byte-identical.
+
+The lesson is the one the product owner put as a question — "ไม่ตรวจดูเหรอว่ามีการเปลี่ยนแปลงอะไร
+หรือไม่". A screen list is not a diff. Every drawing in a repeated round is downloaded and hashed,
+and the ROUND IS PLANNED FROM THE HASHES, not from the names.
+
+### Thirteen figures in, one out
+
+The two new screens — `06_procurement/01_procurement` and `07_budget/01_budget` — are drawn whole,
+and for the reason this register exists: every endpoint behind them answered **403** for this role
+when measured with a real VIEWER token on 2026-09-11, while
+`docs/specifications/06-rbac-permission-matrix.md` §6.8 grants it "Procurement R" and "Finance (all)
+R". That is the "missing AUTHORITY rather than missing data" category opened on 2026-09-10, and this
+round it is the majority category rather than the exception.
+
+| Screen      | Entries                                                                                                                                                                                    |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Procurement | `VIEWER_PROCUREMENT_KPIS` · `VIEWER_DELIVERY_PREDICTOR` · `VIEWER_PREDICTOR_FEEDS` · `VIEWER_ROUTE_INSPECTION` · `VIEWER_PROCUREMENT_LINES` · `VIEWER_PROCUREMENT_CONTEXT`                 |
+| Budget      | `VIEWER_BUDGET_SUMMARY` · `VIEWER_BUDGET_ABSORPTION` · `VIEWER_BUDGET_FORECAST` · `VIEWER_BOQ_CATEGORIES` · `VIEWER_BUDGET_PROGRESS_PHOTO` · `VIEWER_BUDGET_LOG` · `VIEWER_BUDGET_CONTEXT` |
+
+`VIEWER_OPEN_ISSUES` was **deleted**. It is the third entry this register has lost to real data, and
+the first lost for a new reason: not a column that arrived (`PROFILE_JOB_TITLE`, the fifth amendment)
+and not a computation that replaced it (`APPROVAL_COUNTDOWN`, 2026-09-09), but a ROUTE THAT WAS
+OPENED. The entry's own note said the specification and the `@Roles` list disagreed and that the
+specification wins; on 2026-09-11 the product owner answered that escalation by opening six read
+routes to this role — `GET /api/v1/site/issues?status=OPEN` among them — and the Home tile reads the
+endpoint again. The entry was written with the one-line fix that would delete it, and that is exactly
+what deleted it.
+
+**A route being open is not a screen being reachable.** `/issues` is still off this role's tab bar
+and off its drawer, because the ISSUES SCREEN's create button is not role-gated. So the Home tile's
+TRACK still says "coming soon" on the press while the COUNT beside it is real — the two halves of one
+tile now sit on opposite sides of the line this register draws, which is unusual enough to say out
+loud.
+
+### What the two drawings asked for and did NOT get
+
+- **The CONFIDENCE chip stays in the card FOOT.** Both drawings put it in the header — procurement's
+  `CONF: 94%` opposite "Delivery Predictor", budget's `CONF: 96%` opposite "Audit & Forecast". The
+  standard of 2026-09-08 (spec §32.7, `<AiCardFooter />`) puts it in the foot beside the source,
+  because "this confident" and "from this" are one sentence. Asked each time this conflict has come
+  up, the product owner has chosen the standard; these two cards carry no header chip and each
+  records the deviation in its own header comment.
+- **A SOURCE was ADDED that neither drawing has.** Neither card names where its claim comes from at
+  all. `<AiCardFooter />` requires one, and the carve-out ADR-098's second amendment opened decides
+  what it may say: it names the viewer's assigned projects, a record set this repository HAS.
+- **The budget AI card is FLAT.** The drawing fills it
+  `bg-gradient-to-br from-surface-container via-surface-container to-secondary-container/10`. §32.7's
+  brand rule forbids a gradient anywhere the signed-in app shows project data, and its two exceptions
+  are the pre-auth entry screens and `<LoadingState />`'s `ai` variant. A budget screen is neither,
+  so the card takes a flat `surface` fill.
+
+### The register is at ninety-eight
+
+Counted, not recalled:
+`grep -c "^export const [A-Z_0-9]* = figure(" apps/mobile/src/lib/mockupFigures.ts`.
+Eighty-six, plus thirteen, less `VIEWER_OPEN_ISSUES`.

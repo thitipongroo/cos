@@ -42,6 +42,9 @@ import { getMyProjects, refreshProjectsCache } from '../../api/projects';
 import { openRfqCount, OPEN_RFQ_STATUS } from '../../lib/procurementKpi';
 import { waitingAge } from '../../lib/waitingAge';
 import { ProcurementInsight } from '../../components/ProcurementInsight';
+import { CosRole } from '@cos/types';
+import { useAuthStore } from '../../store/authStore';
+import { ViewerProcurementDocument } from '../../components/ViewerProcurementDocument';
 import { useT } from '../../i18n';
 import { fontFamily, radius, spacing, touchTarget, typography } from '../../theme/tokens';
 import { usePalette, type Palette, useIsDark } from '../../theme/usePalette';
@@ -59,7 +62,16 @@ function asList<T>(res: { items?: T[] } | T[]): T[] {
   return Array.isArray(res) ? res : (res.items ?? []);
 }
 
-export default function ProcurementScreen(): React.JSX.Element {
+/**
+ * The PROJECT_MANAGER's dashboard — everything above, and the approve button with it.
+ *
+ * NOT THE DEFAULT EXPORT ANY MORE (2026-09-11). `/procurement` is VIEWER's third tab as well as
+ * this role's second, and until today both got this screen — including `approval-approve-{poId}`,
+ * wired to a real `approvePurchaseOrder`, with no role gate anywhere in the file. §20.7.9 forbids
+ * rendering an approve action to a VIEWER; §32.7 justified that role's tab set on an audit from
+ * 2026-08-04 that this screen's own rebuild, six days later, made untrue.
+ */
+function ManagerProcurementScreen(): React.JSX.Element {
   const t = useT();
   const p = usePalette();
   const isDark = useIsDark();
@@ -496,3 +508,15 @@ const makeStyles = (p: Palette) =>
       textTransform: 'uppercase',
     },
   });
+
+/**
+ * The route, branching on role — the pattern `home.tsx` has always used, and the answer the product
+ * owner gave on 2026-09-11 when asked whether the viewer's screen should be a route of its own
+ * (F1 = A). One route, one name, two documents; a second route would be the same screen under two
+ * names, which is the `dashboard` mistake recorded at the top of `routeRegistry.ts`.
+ */
+export default function ProcurementScreen(): React.JSX.Element {
+  const role = useAuthStore((s) => s.role);
+  if (role === CosRole.VIEWER) return <ViewerProcurementDocument />;
+  return <ManagerProcurementScreen />;
+}

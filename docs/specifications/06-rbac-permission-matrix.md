@@ -336,6 +336,17 @@ Read-only across all modules assigned to the viewer's project scope.
 
 Viewer does not have write, delete, or approve access on any module.
 
+**The ROUTES did not match this table until 2026-09-11, and now they match it for six endpoints and
+no more.** Measured that day with a real VIEWER token: every GET route in the procurement and
+finance controllers answered **403** — 23 of them, not one listing the role — while this table grants
+R on both whole modules. The role's Procurement and Budget tabs had therefore been rendering screens
+whose every request failed since it got them on 2026-08-04. ADR-103 opened the six that its screens
+actually read (`purchase-orders`, `deliveries`, `finance/budget/:projectId`, `cost-transactions`,
+`cashflow-forecast/:projectId`, `site/issues`) and left the other seventeen shut as a recorded,
+deliberate gap. `backend/src/shared/guards/__tests__/viewer-read-routes.spec.ts` reads the
+decorators' own metadata and holds both halves — the six that are open, and that no write or approve
+route accepts this role.
+
 **The last three rows were added on 2026-09-10** (ADR-102). The table held seven modules until then
 — the modules that had screens when it was written — while the role is defined above as "read-only
 across all modules assigned to the viewer's project scope". The role's mobile screen set

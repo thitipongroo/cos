@@ -203,8 +203,11 @@ export const ALL_TABS: TabConfig[] = [
   // `procurement` is the PROJECT_MANAGER's second tab again (corrected mockup 2026-08-10,
   // 06_project_manager/02_procurement). The screen behind it is no longer the read-only PO list it
   // was: it is the role's procurement dashboard, and it absorbed the approvals queue that briefly
-  // lived at its own route. VIEWER keeps it too — that role sees the same screen with nothing to
-  // approve, which is what §20.7.9's read-only rule asks for.
+  // lived at its own route. VIEWER keeps the TAB but no longer the SCREEN: the sentence here used
+  // to say it "sees the same screen with nothing to approve", and an audit on 2026-09-11 found that
+  // was never true — the manager's dashboard renders its approve button unconditionally, so a
+  // viewer had been getting one since 2026-08-04. `(app)/procurement.tsx` branches on role now
+  // (§20.7.9, ADR-103), the way `home.tsx` always has, and `/budget` below does the same.
   {
     name: 'procurement',
     titleKey: 'nav.tabs.procurement',

@@ -1,9 +1,22 @@
 // ── VIEWER — the read-only portfolio: what is running, what is wrong, and what just happened ─────
 //
 // DRAWING: mockup/mobile/role_viewer/01_home/01_dashboard (Stitch screen "Viewer Home Dashboard -
-// Mobile (Fixed Dark Mode)"). The repo copy was downloaded from Stitch on 2026-09-10 and compared
-// byte for byte — sha256 identical, all five screens of the set — so the file read here is the
-// drawing, not a stale export of it.
+// Mobile (Fixed Dark Mode)").
+//
+// REDRAWN 2026-09-11, and the redraw is why the repo copy is re-verified rather than trusted. The
+// first build of this screen was made against the 2026-09-10 export; the product owner edited the
+// drawing the next day and asked "ไม่ตรวจดูเหรอว่ามีการเปลี่ยนแปลงอะไรหรือไม่". Four of the five
+// VIEWER screens had changed — the screen COUNT in Stitch had only told us two were ADDED. All
+// seven are now re-downloaded and sha256-compared against the repo copies.
+//
+// WHAT THE REDRAW CHANGED HERE:
+//   · the invented header (menu · wordmark · SYNCED pill · avatar) became the app's REAL <TopBar />,
+//     so the drawing now agrees with the shell instead of asking for a second one
+//   · the bar became `Home · Projects · Procurement · Budget` — the enumerated bar the product
+//     owner kept in escalation E1, so the drawing and the app no longer disagree about it
+//   · `$142.5M` became `฿ 142.5 M`, which is `compactMoneyLabel`'s own output
+//   · "Portfolio Overview" is gone; the screen opens on the tiles
+//   · every tile, card and activity row gained a way onward: `VIEW ›`, `TRACK ›`, a chevron
 //
 // WHY THIS SCREEN EXISTS. Until today VIEWER fell through `home.tsx`'s switch to <MinimalHome />, a
 // 22-line placeholder showing one pending-sync count. That is the same gap CRM_SALES_MANAGER had
@@ -12,14 +25,17 @@
 // WHAT IS REAL, AND THE REAL PART IS THE TOP OF THE SCREEN.
 //   Active Projects  a count of `local_projects` — the §17.4 read-through cache this role's
 //                    /projects tab already reads. Not a drawn 12.
+//   Open Issues      `GET /site/issues?status=OPEN`, counted.
 //
-// THE OPEN ISSUES TILE IS DRAWN, AND IT TOOK TWO WRONG ANSWERS TO GET THERE. It first counted
-// `local_issues` and printed "0" — that table is filled by delta sync from work THIS DEVICE did,
-// a VIEWER writes nothing, so it is empty and stays empty, and a confident 0 over a seeded
-// portfolio is a false statement. It then fetched `GET /site/issues?status=OPEN`, as `PmHome`
-// does, and drew an em dash for every 403. Measured with a real VIEWER token that day: the route's
-// `@Roles` list does not include this role, while §6.8 grants it `Issues R`. See
-// VIEWER_OPEN_ISSUES, which names the one-line fix that deletes it.
+//                    IT TOOK THREE ANSWERS TO GET RIGHT, and the first two both rendered
+//                    perfectly. It counted `local_issues` and printed a confident **0** — that
+//                    table is filled by delta sync from work THIS DEVICE did, and a VIEWER writes
+//                    nothing, so it is empty and always will be. It then fetched the endpoint and
+//                    drew an em dash for every **403**, measured with a real token: the route
+//                    refused a role §6.8 grants `Issues R`. For one day it drew a registered 47.
+//                    ADR-103 opened the route on 2026-09-11 and the tile reads it again. Until the
+//                    request settles it shows a DASH, never a zero — "not loaded" and "none" are
+//                    different answers (`countLabel`, HomeKit).
 //   Project cards    name, code and lifecycle status are the cached row's. The chip prints the
 //                    REAL status (ACTIVE, ON_HOLD, …) through `projectStatusTone`, exactly as the
 //                    manager Home does — the drawing's "On Track" is a label for a state this
@@ -56,19 +72,22 @@ import { MaterialIcons } from '@expo/vector-icons';
 import type { Project } from '../../db/database';
 import { useCollection } from '../../hooks/useCollection';
 import { refreshProjectsCache } from '../../api/projects';
+import { get } from '../../api/client';
+import { type ActiveIssue } from '../../lib/siteEngineerHome';
 import { useT } from '../../i18n';
 import { AiCardFooter } from '../AiCardFooter';
+import { useComingSoon } from '../useComingSoon';
+import { compactMoneyLabel } from '../../lib/compactMoney';
 import { projectStatusTone } from '../../lib/projectStatusTone';
 import {
   VIEWER_HOME_PROJECT_CARDS,
-  VIEWER_OPEN_ISSUES,
   VIEWER_PORTFOLIO_BUDGET,
   VIEWER_SITE_ACTIVITY,
   VIEWER_SYSTEM_INSIGHT,
 } from '../../lib/mockupFigures';
 import { usePalette, type Palette } from '../../theme/usePalette';
 import { fontFamily, plateRadius, radius, spacing, typography } from '../../theme/tokens';
-import { Screen, KpiRegion } from './HomeKit';
+import { Screen, KpiRegion, countLabel, asList } from './HomeKit';
 
 /** The insight card's glyph plate. Named so the plate and its radius cannot drift apart. */
 const PLATE = 32;
@@ -89,8 +108,11 @@ export default function ViewerHome(): React.JSX.Element {
   const p = usePalette();
   const styles = useMemo(() => makeStyles(p), [p]);
   const router = useRouter();
+  const soon = useComingSoon();
 
   const projects = useCollection<Project>('local_projects');
+  /** `null` until the request settles — the tile draws a dash for it, never a zero. */
+  const [openIssues, setOpenIssues] = useState<number | null>(null);
 
   // A failed refresh and an empty portfolio must not render the same sentence. PmHome learned that
   // the hard way — its first capture photographed "you are not a member of any project" for a
@@ -107,6 +129,15 @@ export default function ViewerHome(): React.JSX.Element {
         if (!cancelled) setProjectsState('failed');
       },
     );
+    // The portfolio's open issues. The endpoint does the filtering, so nothing here re-decides
+    // which statuses count as open.
+    get<{ items?: ActiveIssue[] } | ActiveIssue[]>('/site/issues', { status: 'OPEN' })
+      .then((res) => {
+        if (!cancelled) setOpenIssues(asList(res).length);
+      })
+      .catch(() => {
+        /* offline — the tile keeps its dash rather than claiming a count */
+      });
     return () => {
       cancelled = true;
     };
@@ -118,43 +149,90 @@ export default function ViewerHome(): React.JSX.Element {
 
   return (
     <Screen testID="home-screen" scroll>
-      <Text style={styles.hero}>{t('home.viewer.portfolioOverview')}</Text>
-
+      {/* NO PAGE HEADING. "Portfolio Overview" was removed in the 2026-09-11 redraw and the screen
+          opens on the tiles — a screen is named ONCE (§32.7), and the tab bar already names it. */}
       <KpiRegion loading={projectsState === 'loading'} settled={0} steps={1}>
         {/* THE BENTO GRID. Two counted tiles, then the budget across both columns — the drawing's
-            own arrangement, each with its 4px accent bar. */}
+            own arrangement, each with its 4px accent bar and its own way onward. */}
         <View style={styles.pairRow}>
-          <View testID="viewer-kpi-projects" style={[styles.tile, { borderLeftColor: p.accent }]}>
-            <MaterialIcons name="domain" size={22} color={p.accent} />
+          <Pressable
+            testID="viewer-kpi-projects"
+            accessibilityRole="button"
+            accessibilityLabel={t('home.viewer.activeProjects')}
+            onPress={() => router.push('/projects')}
+            style={[styles.tile, { borderLeftColor: p.accent }]}
+          >
+            <View style={styles.tileHead}>
+              <MaterialIcons name="domain" size={22} color={p.accent} />
+              <MaterialIcons name="chevron-right" size={20} color={p.muted} />
+            </View>
             <Text style={styles.tileLabel}>{t('home.viewer.activeProjects')}</Text>
-            <Text style={styles.tileValue}>{projects.length}</Text>
-          </View>
+            <View style={styles.tileFoot}>
+              <Text style={styles.tileValue}>{projects.length}</Text>
+              <Text style={[styles.tileAction, { color: p.accent }]}>{t('home.viewer.view')}</Text>
+            </View>
+          </Pressable>
 
-          <View testID="viewer-kpi-issues" style={[styles.tile, { borderLeftColor: p.warning }]}>
-            <MaterialIcons name="warning" size={22} color={p.warning} />
+          <Pressable
+            testID="viewer-kpi-issues"
+            accessibilityRole="button"
+            accessibilityLabel={t('home.viewer.openIssues')}
+            // The COUNT is real now (ADR-103), and `/issues` is still not a route this role can
+            // REACH: §32.7 kept it off the bar because its create button is not role-gated, and
+            // opening a read route did not change that. So TRACK still says so on the press.
+            onPress={() => soon('home.viewer.openIssues')}
+            style={[styles.tile, { borderLeftColor: p.warning }]}
+          >
+            <View style={styles.tileHead}>
+              <MaterialIcons name="warning" size={22} color={p.warning} />
+              <MaterialIcons name="chevron-right" size={20} color={p.muted} />
+            </View>
             <Text style={styles.tileLabel}>{t('home.viewer.openIssues')}</Text>
-            {/* DRAWN — see VIEWER_OPEN_ISSUES. The endpoint that holds this number refuses this
-                role, measured, and the register entry names the fix. */}
-            <Text style={styles.tileValue}>{VIEWER_OPEN_ISSUES.value}</Text>
-          </View>
+            <View style={styles.tileFoot}>
+              {/* REAL since ADR-103 opened `GET /site/issues` to this role. A dash while the
+                  request is in flight; never a zero, which would state a fact about a portfolio
+                  nothing has counted yet. */}
+              <Text style={styles.tileValue}>{countLabel(openIssues)}</Text>
+              <Text style={[styles.tileAction, { color: p.warning }]}>
+                {t('home.viewer.track')}
+              </Text>
+            </View>
+          </Pressable>
         </View>
 
-        <View testID="viewer-kpi-budget" style={[styles.wideTile, { borderLeftColor: p.success }]}>
+        <Pressable
+          testID="viewer-kpi-budget"
+          accessibilityRole="button"
+          accessibilityLabel={t('home.viewer.budget')}
+          onPress={() => router.push('/budget')}
+          style={[styles.wideTile, { borderLeftColor: p.success }]}
+        >
           <View style={styles.wideBody}>
             <View style={styles.wideHead}>
               <MaterialIcons name="payments" size={16} color={p.success} />
-              <Text style={styles.tileLabel}>{t('home.viewer.portfolioBudget')}</Text>
+              <Text style={styles.tileLabel}>{t('home.viewer.budget')}</Text>
             </View>
-            {/* DRAWN — see VIEWER_PORTFOLIO_BUDGET. */}
-            <Text style={styles.wideValue}>{VIEWER_PORTFOLIO_BUDGET.value.total}</Text>
+            {/* DRAWN — see VIEWER_PORTFOLIO_BUDGET. Formatted, not printed: the drawing's
+                `฿ 142.5 M` is `compactMoneyLabel`'s own output, so the symbol and the suffix come
+                from the money layer and follow the reader's locale. */}
+            <Text style={styles.wideValue}>
+              {compactMoneyLabel(
+                VIEWER_PORTFOLIO_BUDGET.value.amount,
+                VIEWER_PORTFOLIO_BUDGET.value.currency,
+                t,
+                { maxScale: 'million' },
+              )}
+            </Text>
           </View>
-          <View style={styles.wideAside}>
+          <View style={styles.wideAsideRow}>
             <Text style={styles.deltaText}>
               {t('home.viewer.ytdDelta', { delta: VIEWER_PORTFOLIO_BUDGET.value.deltaPct })}
             </Text>
-            <Text style={styles.asideMeta}>{t('home.viewer.allocated')}</Text>
+            <View style={styles.chevronPlate}>
+              <MaterialIcons name="chevron-right" size={18} color={p.muted} />
+            </View>
           </View>
-        </View>
+        </Pressable>
       </KpiRegion>
 
       {/* SYSTEM INSIGHT — drawn whole. The confidence sits in the foot, not the head: the standard
@@ -180,14 +258,19 @@ export default function ViewerHome(): React.JSX.Element {
 
       <View style={styles.sectionHead}>
         <Text style={styles.sectionTitle}>{t('home.viewer.trackedProjects')}</Text>
+        {/* A PILL NOW, not a bare word — the redraw gives it a tinted outline and a trailing
+            arrow. `textTransform` does the uppercasing rather than the copy, so Thai is unaffected
+            (it has no case). */}
         <Pressable
           testID="viewer-view-all"
           accessibilityRole="button"
           accessibilityLabel={t('home.viewer.viewAll')}
           onPress={() => router.push('/projects')}
           hitSlop={8}
+          style={styles.viewAllPill}
         >
           <Text style={styles.viewAll}>{t('home.viewer.viewAll')}</Text>
+          <MaterialIcons name="arrow-forward" size={14} color={p.accent} />
         </Pressable>
       </View>
 
@@ -210,19 +293,34 @@ export default function ViewerHome(): React.JSX.Element {
         const drawn = VIEWER_HOME_PROJECT_CARDS.value[index];
         const tone = projectStatusTone(project.status);
         const toneColor = tone === 'success' ? p.success : tone === 'warning' ? p.warning : p.muted;
-        // The issue count carries the drawing's own escalation: a card with many issues reads in
-        // the danger tone rather than the muted one.
-        const issueColor = drawn !== undefined && drawn.issues >= 10 ? p.danger : p.muted;
+        // THE ISSUE COUNT IS TONED, AND THE REDRAW RAISED THE FLOOR. It read muted below ten and
+        // danger at ten or more; the 2026-09-11 drawing colours the three-issue card WARNING and
+        // the twelve-issue card DANGER, so no card's issue count is drawn as ordinary text.
+        const issueColor =
+          drawn === undefined ? p.muted : drawn.issues >= 10 ? p.danger : p.warning;
         return (
-          <View key={project.id} testID={`viewer-project-${project.id}`} style={styles.projectCard}>
+          <Pressable
+            key={project.id}
+            testID={`viewer-project-${project.id}`}
+            accessibilityRole="button"
+            accessibilityLabel={project.projectName}
+            // No project detail screen exists for this role — `/dashboard` is the manager's, driven
+            // by a projectId param and gated to roles this one is not. The card says so on a press.
+            onPress={() => soon('home.viewer.projectDetail')}
+            style={styles.projectCard}
+          >
             <View style={styles.projectBody}>
               <View style={styles.projectHead}>
                 <View style={styles.projectTitleBlock}>
                   {/* One line with an ellipsis — the rule the product owner set on 2026-09-10 for
-                      every project and customer name in this app. */}
-                  <Text style={styles.projectName} numberOfLines={1} ellipsizeMode="tail">
-                    {project.projectName}
-                  </Text>
+                      every project and customer name in this app. The chevron sits beside the name
+                      in the redraw, not at the card's trailing edge. */}
+                  <View style={styles.projectNameRow}>
+                    <Text style={styles.projectName} numberOfLines={1} ellipsizeMode="tail">
+                      {project.projectName}
+                    </Text>
+                    <MaterialIcons name="chevron-right" size={18} color={p.muted} />
+                  </View>
                   <Text style={styles.projectMeta} numberOfLines={1}>
                     {drawn === undefined
                       ? t('home.viewer.projectCode', { code: project.projectCode })
@@ -274,27 +372,48 @@ export default function ViewerHome(): React.JSX.Element {
                 </View>
               </View>
             )}
-          </View>
+          </Pressable>
         );
       })}
 
-      <Text style={styles.sectionTitle}>{t('home.viewer.siteActivity')}</Text>
+      <View style={styles.sectionHead}>
+        <Text style={styles.sectionTitle}>{t('home.viewer.siteActivity')}</Text>
+        <Text style={styles.liveFeed}>{t('home.viewer.liveFeed')}</Text>
+      </View>
       <View testID="viewer-activity" style={styles.timelineCard}>
         {VIEWER_SITE_ACTIVITY.value.map((entry, index) => {
           const last = index === VIEWER_SITE_ACTIVITY.value.length - 1;
           return (
-            <View key={entry.at} style={[styles.timelineRow, last && styles.timelineRowLast]}>
+            <Pressable
+              key={entry.at}
+              testID={`viewer-activity-${index}`}
+              accessibilityRole="button"
+              accessibilityLabel={t('home.viewer.activityWhen', {
+                at: entry.at,
+                where: entry.where,
+              })}
+              // Each entry is a different KIND of record — a site report, an issue, a sync run —
+              // and no one screen opens all three. Drawn, and it says so on the press.
+              onPress={() => soon('home.viewer.siteActivity')}
+              style={[styles.timelineRow, last && styles.timelineRowLast]}
+            >
               <View style={[styles.timelineDot, { backgroundColor: TONE_COLOR[entry.tone](p) }]} />
-              <Text style={styles.timelineWhen}>
-                {t('home.viewer.activityWhen', { at: entry.at, where: entry.where })}
-              </Text>
-              <Text style={styles.timelineWhat}>
-                {t(`home.viewer.activity.${entry.key}`, {
-                  who: 'who' in entry ? entry.who : '',
-                  quote: 'quote' in entry ? entry.quote : '',
-                })}
-              </Text>
-            </View>
+              <View style={styles.timelineBody}>
+                <Text style={styles.timelineWhen}>
+                  {t('home.viewer.activityWhen', { at: entry.at, where: entry.where })}
+                </Text>
+                {/* ONE LINE. The redraw truncates every entry ("…fails spec in Sec…"); the string
+                    kept here is the whole one, and the clamp is what does the truncating — so a
+                    screen reader still reads the sentence the register holds. */}
+                <Text style={styles.timelineWhat} numberOfLines={1} ellipsizeMode="tail">
+                  {t(`home.viewer.activity.${entry.key}`, {
+                    who: 'who' in entry ? entry.who : '',
+                    quote: 'quote' in entry ? entry.quote : '',
+                  })}
+                </Text>
+              </View>
+              <MaterialIcons name="chevron-right" size={18} color={p.muted} />
+            </Pressable>
           );
         })}
       </View>
@@ -311,6 +430,21 @@ const makeStyles = (p: Palette) =>
       lineHeight: typography.hero.lineHeight,
     },
     pairRow: { flexDirection: 'row', gap: spacing.sm },
+    tileHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+    tileFoot: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between' },
+    tileAction: {
+      fontFamily: fontFamily.semibold,
+      fontSize: typography.label.fontSize,
+      textTransform: 'uppercase',
+    },
+    chevronPlate: {
+      width: 32,
+      height: 32,
+      borderRadius: plateRadius(PLATE),
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: p.surfaceBright,
+    },
 
     // ── the bento tiles ───────────────────────────────────────────────────────────────────────
     tile: {
@@ -356,7 +490,7 @@ const makeStyles = (p: Palette) =>
       fontSize: typography.hero.fontSize,
       lineHeight: typography.hero.lineHeight,
     },
-    wideAside: { alignItems: 'flex-end', gap: spacing.xs / 2 },
+    wideAsideRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
     deltaText: {
       color: p.success,
       fontFamily: fontFamily.semibold,
@@ -410,14 +544,35 @@ const makeStyles = (p: Palette) =>
       alignItems: 'flex-end',
       justifyContent: 'space-between',
     },
+    // UPPERCASE IN THE STYLE, NOT IN THE COPY. The redraw sets these headings in capitals; doing
+    // it with `textTransform` keeps one string per language, and Thai — which has no case — renders
+    // unchanged rather than being shouted at in a script that cannot shout.
     sectionTitle: {
       color: p.text,
       fontFamily: fontFamily.semibold,
       fontSize: typography.title.fontSize,
       lineHeight: typography.title.lineHeight,
+      textTransform: 'uppercase',
+    },
+    viewAllPill: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.xs / 2,
+      paddingHorizontal: spacing.sm,
+      paddingVertical: spacing.xs / 2,
+      borderRadius: radius.xl,
+      borderWidth: 1,
+      borderColor: p.accent,
     },
     viewAll: {
       color: p.accent,
+      fontFamily: fontFamily.semibold,
+      fontSize: typography.label.fontSize,
+      letterSpacing: 0.8,
+      textTransform: 'uppercase',
+    },
+    liveFeed: {
+      color: p.muted,
       fontFamily: fontFamily.semibold,
       fontSize: typography.label.fontSize,
       letterSpacing: 0.8,
@@ -440,7 +595,9 @@ const makeStyles = (p: Palette) =>
     projectBody: { gap: spacing.sm, padding: spacing.md },
     projectHead: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm },
     projectTitleBlock: { flex: 1, gap: spacing.xs / 2 },
+    projectNameRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs / 2 },
     projectName: {
+      flexShrink: 1,
       color: p.text,
       fontFamily: fontFamily.semibold,
       fontSize: typography.body.fontSize,
@@ -502,12 +659,15 @@ const makeStyles = (p: Palette) =>
       backgroundColor: p.surface,
     },
     timelineRow: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      gap: spacing.xs,
       paddingLeft: spacing.md,
       paddingBottom: spacing.md,
       borderLeftWidth: 1,
       borderLeftColor: p.border,
-      gap: spacing.xs / 2,
     },
+    timelineBody: { flex: 1, gap: spacing.xs / 2 },
     // The rail stops at the last entry, as the drawing's `last:border-0 last:pb-0` does.
     timelineRowLast: { paddingBottom: 0, borderLeftColor: 'transparent' },
     timelineDot: {

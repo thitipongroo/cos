@@ -876,11 +876,8 @@
       "stageContract": "ลูกค้า"
     },
     "viewer": {
-      "portfolioOverview": "ภาพรวมพอร์ตโฟลิโอ",
       "activeProjects": "โครงการที่ดำเนินการ",
       "openIssues": "ปัญหาที่เปิดอยู่",
-      "portfolioBudget": "งบประมาณรวม",
-      "allocated": "จัดสรรแล้ว",
       "ytdDelta": "+{delta}% ตั้งแต่ต้นปี",
       "systemInsight": "ข้อมูลเชิงลึกจากระบบ",
       "trackedProjects": "โครงการที่ติดตาม",
@@ -900,10 +897,15 @@
         "residential": "ที่อยู่อาศัย"
       },
       "activity": {
-        "report": "{who} ส่งรายงานความปลอดภัยประจำวันแล้ว",
+        "report": "{who} รายงานความปลอดภัยประจำวัน",
         "defect": "บันทึกข้อบกพร่องร้ายแรง: “{quote}”",
         "sync": "ซิงโครไนซ์รอบเช้าสำเร็จ ข้อมูลทั้งหมดเป็นปัจจุบัน"
-      }
+      },
+      "view": "ดู",
+      "track": "ติดตาม",
+      "budget": "งบประมาณ",
+      "liveFeed": "ฟีดสด",
+      "projectDetail": "รายละเอียดโครงการ"
     }
   },
   "tasks": {
@@ -1311,7 +1313,7 @@
     },
     "viewer": {
       "searchPlaceholder": "ค้นหาโครงการจากรหัสหรือชื่อ",
-      "allProjects": "ทุกโครงการ",
+      "allProjects": "ทั้งหมด",
       "code": "รหัส: {code}",
       "codeCategory": "รหัส: {code} • {category}",
       "progress": "ความคืบหน้า",
@@ -1323,7 +1325,9 @@
         "commercial": "อาคารพาณิชย์",
         "infrastructure": "โครงสร้างพื้นฐาน",
         "residential": "ที่อยู่อาศัย"
-      }
+      },
+      "projectDetail": "รายละเอียดโครงการ",
+      "issuesLabel": "ปัญหา"
     }
   },
   "pm": {
@@ -1706,6 +1710,67 @@
       "approveFailed": "อนุมัติไม่สำเร็จ ใบแจ้งหนี้อนุมัติขณะออฟไลน์ไม่ได้",
       "disputeFailed": "เปิดข้อพิพาทไม่สำเร็จ ใบแจ้งหนี้เปิดข้อพิพาทขณะออฟไลน์ไม่ได้",
       "truncated": "แสดง {shown} จาก {total} รายการ กรุณากรองให้แคบลงเพื่อดูส่วนที่เหลือ"
+    },
+    "viewer": {
+      "readOnlyRole": "ผู้ชม (อ่านอย่างเดียว)",
+      "totalBudget": "งบประมาณรวม",
+      "details": "รายละเอียด",
+      "reserved": "กันไว้: {amount}",
+      "allocated": "จัดสรรแล้ว: {pct}%",
+      "committed": "ผูกพันแล้ว",
+      "actualSpent": "ใช้จ่ายจริง",
+      "ofCap": "{pct}% ของเพดาน",
+      "burned": "ใช้ไป {pct}%",
+      "favourable": "{pct}% ดีกว่าแผน",
+      "absorption": "การใช้งบ",
+      "consume": "ใช้ไปแล้ว: {amount}",
+      "legendValue": "{pct}% ({amount})",
+      "category": {
+        "structural": "งานคอนกรีตโครงสร้าง",
+        "structuralFull": "คอนกรีตโครงสร้างและเหล็กเสริม",
+        "steel": "โครงเหล็ก",
+        "steelFull": "โครงเหล็กและโครงถัก",
+        "mep": "งานระบบ",
+        "mepFull": "งานระบบ (ปรับอากาศ/ไฟฟ้า)",
+        "finishes": "งานตกแต่งและเปลือกอาคาร",
+        "finishesFull": "งานตกแต่งและผนังกระจก"
+      },
+      "auditForecast": "ตรวจสอบและคาดการณ์",
+      "burnVelocity": "อัตราการใช้งบ",
+      "perWeek": "{amount}/สัปดาห์",
+      "eacTarget": "ประมาณการเมื่อแล้วเสร็จ",
+      "riskIndex": "ดัชนีความเสี่ยง",
+      "riskValue": "{band} ({value})",
+      "riskBand": {
+        "low": "ต่ำ",
+        "medium": "ปานกลาง",
+        "high": "สูง"
+      },
+      "boqCategories": "หมวดงานตาม BOQ",
+      "divisions": "{count, plural, other {# หมวด}}",
+      "boqState": {
+        "onTrack": "ตามแผน",
+        "notStarted": "ยังไม่เริ่ม"
+      },
+      "pctAllocated": "จัดสรรแล้ว {pct}%",
+      "budgetLabel": "งบประมาณ",
+      "disbursed": "เบิกจ่ายแล้ว ({pct}%)",
+      "onSiteProgress": "ตรวจสอบความคืบหน้าหน้างาน",
+      "surveyedToday": "สำรวจวันนี้",
+      "expand": "ขยาย",
+      "verifiedLog": "บันทึกที่ตรวจสอบแล้ว",
+      "auditTrail": "ร่องรอยตรวจสอบ (อ่านอย่างเดียว)",
+      "certifier": "ผู้รับรอง: {who}",
+      "log": {
+        "disbursement": "อนุมัติเบิกจ่าย IPC #08",
+        "retention": "ปล่อยเงินประกันผลงานตามงวด",
+        "advance": "ตรวจสอบเงินล่วงหน้าผู้รับเหมาช่วง"
+      },
+      "logState": {
+        "executed": "ดำเนินการแล้ว",
+        "released": "ปล่อยแล้ว",
+        "verified": "ตรวจสอบแล้ว"
+      }
     }
   },
   "procurement": {
@@ -1863,6 +1928,47 @@
       "items": "รายการ",
       "cases": "เคส",
       "queueOver": "หน้าด่าน 1 เกินคิว"
+    },
+    "viewer": {
+      "accessProfile": "สิทธิ์การเข้าถึง",
+      "readOnlyRole": "ผู้ชม (อ่านอย่างเดียว)",
+      "locked": "ล็อก",
+      "totalPos": "ใบสั่งซื้อทั้งหมด",
+      "inDelivery": "กำลังจัดส่ง",
+      "pendingPm": "รอ PM อนุมัติ",
+      "fulfillment": "อัตราส่งครบ",
+      "orders": "รายการ",
+      "items": "รายการ",
+      "acrossPackages": "{count, plural, other {จาก # แพ็กเกจ}}",
+      "arrivingToday": "{count, plural, other {ถึงวันนี้ # รายการ}}",
+      "awaitingSignOff": "รอ PM ลงนาม",
+      "deliveryPredictor": "คาดการณ์การจัดส่ง",
+      "feed": {
+        "sensorFeeds": "เซ็นเซอร์ทำงานอยู่",
+        "predictiveSync": "ซิงก์การคาดการณ์แบบสด"
+      },
+      "activeRoute": "ตรวจสอบเส้นทางที่กำลังวิ่ง",
+      "routeRef": "{po} · {vendor}",
+      "trackLive": "ติดตามสด",
+      "step": {
+        "dispatched": "ออกจากต้นทาง",
+        "transit": "กำลังขนส่ง",
+        "weighIn": "ชั่งน้ำหนัก",
+        "staging": "พื้นที่พักของ"
+      },
+      "stepPending": "รอดำเนินการ",
+      "monitoredLine": "รายการที่ติดตาม",
+      "entries": "{count, plural, other {# รายการ}}",
+      "displayingAll": "แสดงทั้งหมด",
+      "vendor": "ผู้ขาย: {name}",
+      "lineState": {
+        "partial": "ส่งแล้ว",
+        "delivered": "ส่งครบแล้ว",
+        "transit": "กำลังขนส่ง",
+        "pendingApproval": "รอ PM อนุมัติ"
+      },
+      "lineStatePct": "{state} ({pct}%)",
+      "lineDetail": "ใบสั่งซื้อ"
     }
   },
   "notifications": {
@@ -3346,7 +3452,13 @@
       "state": {
         "success": "ตามแผน",
         "warning": "ล่าช้า"
-      }
+      },
+      "dotState": "• {state}",
+      "issueCount": {
+        "success": "{count, plural, other {# รายการเล็กน้อย}}",
+        "warning": "{count, plural, other {# รายการเตือน}}"
+      },
+      "siteDetail": "รายละเอียดไซต์"
     }
   },
   "insights": {
@@ -3372,6 +3484,18 @@
         "high": "สูง",
         "medium": "ปานกลาง",
         "low": "ต่ำ"
+      },
+      "detailedMetrics": "ดูตัวชี้วัดละเอียด",
+      "logs": "บันทึก",
+      "viewEvidence": "ดูหลักฐาน",
+      "viewAll": "ดูทั้งหมด",
+      "total": "{count, plural, other {รวม # รายการ}}",
+      "range": {
+        "quarter": "ไตรมาส",
+        "7d": "7D",
+        "30d": "30D",
+        "ytd": "YTD",
+        "all": "ทั้งหมด"
       }
     }
   }

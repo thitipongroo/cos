@@ -63,6 +63,7 @@ import { getProjectPhases } from '../../api/projects';
 import { currentPhase, type ProjectPhase } from '../../lib/siteEngineerHome';
 import { phaseName } from '../../lib/phaseName';
 import { mutate } from '../../api/client';
+import { canRenderWriteControls } from '../../lib/readOnlyRole';
 import { useI18n } from '../../i18n';
 import { fontFamily, radius, spacing, touchTarget, typography } from '../../theme/tokens';
 import { usePalette } from '../../theme/usePalette';
@@ -141,6 +142,9 @@ export default function TasksScreen() {
 }
 
 function FieldTasks() {
+  // §20.7.9: a read-only role is shown no edit control. VIEWER reaches `/tasks` from the drawer
+  // (§6.8 grants it `Tasks R`) and falls to this branch, which owns the progress editor.
+  const canWrite = useAuthStore((s) => canRenderWriteControls(s.role));
   const tasks = useCollection<Task>('local_tasks');
   // The same site the bar above the list names — read from the store rather than a second chooser,
   // so the Insight card can never report on a different project than the screen says it is on.
@@ -266,23 +270,31 @@ function FieldTasks() {
       <View testID="task-detail-screen" style={screen.container}>
         <Text style={screen.heading}>{selected.taskName}</Text>
         <Text style={[styles.label, { color: p.muted }]}>{t('tasks.detail.progressLabel')}</Text>
-        <TextInput
-          testID="progress-input"
-          style={screen.input}
-          keyboardType="number-pad"
-          maxLength={3}
-          value={progress}
-          onChangeText={setProgress}
-        />
-        <TouchableOpacity
-          testID="save-progress-button"
-          style={screen.primaryButton}
-          accessibilityRole="button"
-          accessibilityLabel={t('tasks.detail.save')}
-          onPress={onSave}
-        >
-          <Text style={screen.primaryButtonText}>{t('tasks.detail.save')}</Text>
-        </TouchableOpacity>
+        {/* §20.7.9: THE EDITOR AND ITS BUTTON GO TOGETHER for a read-only role. Hiding only the
+            save would leave a field that accepts a number and loses it — worse than not offering
+            the edit. The saved value below still renders, which is what that role is here to
+            read. */}
+        {canWrite ? (
+          <>
+            <TextInput
+              testID="progress-input"
+              style={screen.input}
+              keyboardType="number-pad"
+              maxLength={3}
+              value={progress}
+              onChangeText={setProgress}
+            />
+            <TouchableOpacity
+              testID="save-progress-button"
+              style={screen.primaryButton}
+              accessibilityRole="button"
+              accessibilityLabel={t('tasks.detail.save')}
+              onPress={onSave}
+            >
+              <Text style={screen.primaryButtonText}>{t('tasks.detail.save')}</Text>
+            </TouchableOpacity>
+          </>
+        ) : null}
         {savedValue !== null ? (
           <Text testID="progress-display" style={[styles.saved, { color: p.success }]}>
             {savedValue}

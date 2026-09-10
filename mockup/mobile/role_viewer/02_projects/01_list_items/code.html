@@ -1,4 +1,4 @@
-<!DOCTYPE html><html class="dark" lang="en"><head>
+<!DOCTYPE html><html class="dark" lang="en" style=""><head>
 <meta charset="utf-8">
 <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport">
 <title>Construction OS - Project List (Viewer)</title>
@@ -222,21 +222,7 @@
 </head>
 <body class="antialiased min-h-screen flex flex-col pb-[92px] bg-background">
 <!-- TopAppBar -->
-<header class="bg-surface-container flex justify-between items-center px-edge-mobile h-[64px] w-full z-50 sticky top-0 border-b border-outline-variant/30">
-<div class="flex items-center gap-space-3 text-on-surface">
-<button class="hover:bg-surface-container-highest transition-colors w-[40px] h-[40px] flex items-center justify-center rounded-full active:scale-95 transition-transform duration-150">
-<span class="material-symbols-outlined" style="font-variation-settings: &quot;FILL&quot; 0;">arrow_back</span>
-</button>
-<div class="flex items-center gap-space-2">
-<span class="material-symbols-outlined text-primary" style="font-variation-settings: &quot;FILL&quot; 1;">analytics</span>
-<h1 class="font-display-web text-display-web-mobile md:text-display-web font-bold text-primary tracking-tight">CONSTRUCTION...</h1>
-</div>
-</div>
-<div class="flex items-center gap-space-2">
-<div class="w-2 h-2 rounded-full bg-mobile-success animate-pulse"></div>
-<span class="font-tiny-web text-tiny-web text-on-surface-variant uppercase tracking-wider">SYNCED</span>
-</div>
-</header>
+<header class="flex justify-between items-center px-edge-mobile h-[64px] w-full z-50 sticky top-0 border-b border-outline-variant/30 bg-dark-bg"><button class="flex items-center gap-space-2 text-left cursor-pointer focus:outline-none" aria-label="Open navigation drawer"><svg class="h-[26px] w-[26px] flex-shrink-0" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg"><polygon points="16,2 29,9.5 29,24.5 16,32 3,24.5 3,9.5" stroke="#2563EB" stroke-width="2.2" fill="none" stroke-linejoin="round"></polygon><rect x="8.5" y="10" width="15" height="2.2" rx="1.1" fill="#FFFFFF"></rect><rect x="8.5" y="15" width="15" height="2.2" rx="1.1" fill="#FFFFFF"></rect><rect x="8.5" y="20" width="4.5" height="2.2" rx="1.1" fill="#4CD7F6"></rect><rect x="14" y="20" width="9.5" height="2.2" rx="1.1" fill="#FFFFFF"></rect></svg><div class="flex flex-col justify-center leading-tight"><div class="font-display-web font-bold uppercase tracking-tight text-[14px] leading-none"><span class="text-[#F8FAFC]">CONSTRUCTION </span><span class="text-[#4CD7F6]">OS</span></div><div class="font-tiny-web uppercase tracking-[1.5px] text-[#64748B] text-[8px] leading-tight mt-[3px]">AI-NATIVE CONSTRUCTION...</div></div></button><div class="flex items-center gap-space-3"><div class="flex items-center justify-center p-1 rounded-full" title="Synced"><span class="material-symbols-outlined text-[18px] text-[#00C853]" style="font-variation-settings: &quot;FILL&quot; 1;">cloud_done</span></div><button class="flex items-center justify-center w-[32px] h-[32px] text-[#F8FAFC] hover:text-primary transition-colors focus:outline-none" aria-label="Help"><span class="material-symbols-outlined text-[22px]" style="font-variation-settings: &quot;FILL&quot; 0;">help_outline</span></button><button class="relative flex items-center justify-center w-[32px] h-[32px] text-[#F8FAFC] hover:text-primary transition-colors focus:outline-none" aria-label="Notifications"><span class="material-symbols-outlined text-[24px]" style="font-variation-settings: &quot;FILL&quot; 0;">notifications_none</span><span class="absolute top-1 right-1 w-2 h-2 rounded-full bg-[#FF3B30] ring-2 ring-[#020617]"></span></button><div class="w-[32px] h-[32px] rounded-full bg-[#1E293B] border border-outline-variant/40 flex items-center justify-center text-on-surface font-bold text-[12px] select-none flex-shrink-0">CN</div></div></header>
 <!-- Main Content -->
 <main class="flex-1 px-edge-mobile py-space-4 max-w-7xl mx-auto w-full">
 <!-- Filter Area -->
@@ -247,142 +233,26 @@
 <input class="w-full bg-surface-container-high border border-outline-variant/50 rounded-lg py-space-3 pl-12 pr-space-3 text-body-mobile font-body-mobile text-on-surface focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all placeholder:text-on-surface-variant/50 cursor-default" placeholder="Search projects by ID, name, or location..." readonly="" type="text">
 </div>
 <!-- Chips -->
-<div class="flex gap-space-2 overflow-x-auto pb-2 scrollbar-hide -mx-edge-mobile px-edge-mobile md:mx-0 md:px-0">
-<div class="flex-shrink-0 bg-primary-container text-on-primary-container px-space-4 py-space-2 rounded-full font-label-mobile text-label-mobile whitespace-nowrap border border-primary/20">All Projects</div>
-<div class="flex-shrink-0 bg-surface-container-high text-on-surface-variant px-space-4 py-space-2 rounded-full font-label-mobile text-label-mobile whitespace-nowrap border border-outline-variant/50">Commercial</div>
-<div class="flex-shrink-0 bg-surface-container-high text-on-surface-variant px-space-4 py-space-2 rounded-full font-label-mobile text-label-mobile whitespace-nowrap border border-outline-variant/50">Infrastructure</div>
-<div class="flex-shrink-0 bg-surface-container-high text-on-surface-variant px-space-4 py-space-2 rounded-full font-label-mobile text-label-mobile whitespace-nowrap border border-outline-variant/50">Residential</div>
-</div>
+<div class="flex gap-space-2 overflow-x-auto pb-2 scrollbar-hide -mx-edge-mobile px-edge-mobile md:mx-0 md:px-0"><button class="flex-shrink-0 bg-primary-container text-on-primary-container px-space-4 py-space-2 rounded-full font-label-mobile text-label-mobile whitespace-nowrap border border-primary/40 shadow-sm transition-all duration-150 active:scale-95 flex items-center gap-1 font-bold"><span class="material-symbols-outlined text-[16px]">check</span>All&nbsp;</button><button class="flex-shrink-0 bg-surface-container-high text-on-surface-variant hover:text-on-surface hover:bg-surface-container-highest px-space-4 py-space-2 rounded-full font-label-mobile text-label-mobile whitespace-nowrap border border-outline-variant/50 hover:border-outline-variant transition-all duration-150 active:scale-95">Commercial</button><button class="flex-shrink-0 bg-surface-container-high text-on-surface-variant hover:text-on-surface hover:bg-surface-container-highest px-space-4 py-space-2 rounded-full font-label-mobile text-label-mobile whitespace-nowrap border border-outline-variant/50 hover:border-outline-variant transition-all duration-150 active:scale-95">Infrastructure</button><button class="flex-shrink-0 bg-surface-container-high text-on-surface-variant hover:text-on-surface hover:bg-surface-container-highest px-space-4 py-space-2 rounded-full font-label-mobile text-label-mobile whitespace-nowrap border border-outline-variant/50 hover:border-outline-variant transition-all duration-150 active:scale-95">Residential</button></div>
 </section>
 <!-- Project Cards Grid -->
 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-space-4">
 <!-- Card 1 -->
-<article class="bg-surface-container rounded-xl overflow-hidden relative border border-outline-variant shadow-lg hover:bg-surface-container-high transition-colors">
-<div class="absolute left-0 top-0 bottom-0 w-1 bg-mobile-success"></div>
-<div class="p-space-4 pl-space-4 ml-1 flex flex-col h-full gap-space-3">
-<div class="flex justify-between items-start gap-space-2">
-<div>
-<span class="font-tiny-web text-tiny-web text-on-surface-variant">ID: PRJ-9942 • COMMERCIAL</span>
-<h2 class="font-h2-web text-h2-web text-on-surface mt-1">Apex Tower Phase II</h2>
-</div>
-<div class="bg-mobile-success/10 text-mobile-success border border-mobile-success/20 px-2 py-1 rounded font-tiny-web text-tiny-web whitespace-nowrap">
-                            ON TRACK
-                        </div>
-</div>
-<div class="mt-auto pt-space-2">
-<div class="flex justify-between items-end mb-1">
-<span class="font-tiny-web text-tiny-web text-on-surface-variant">PROGRESS</span>
-<span class="font-label-mobile text-label-mobile text-primary">68%</span>
-</div>
-<div class="h-1.5 w-full bg-surface-container-highest rounded-full overflow-hidden">
-<div class="h-full bg-primary rounded-full w-[68%]"></div>
-</div>
-</div>
-<div class="flex justify-between items-center pt-space-3 border-t border-outline-variant/30 mt-1">
-<div class="flex items-center gap-space-1 text-on-surface-variant">
-<span class="material-symbols-outlined text-[16px]" style="font-variation-settings: &quot;FILL&quot; 0;">group</span>
-<span class="font-tiny-web text-tiny-web">124 WORKERS</span>
-</div>
-<div class="flex items-center gap-space-1 text-on-surface-variant">
-<span class="material-symbols-outlined text-[16px]" style="font-variation-settings: &quot;FILL&quot; 0;">report</span>
-<span class="font-tiny-web text-tiny-web">3 ISSUES</span>
-</div>
-</div>
-</div>
-</article>
+<article class="bg-surface-container rounded-xl overflow-hidden relative border border-outline-variant shadow-lg hover:bg-surface-container-high hover:border-primary/40 active:scale-[0.98] transition-all duration-150 cursor-pointer group"><div class="absolute left-0 top-0 bottom-0 w-1 bg-mobile-success group-hover:w-1.5 transition-all"></div><div class="p-space-4 pl-space-4 ml-1 flex flex-col h-full gap-space-3"><div class="flex justify-between items-start gap-space-2"><div><span class="font-tiny-web text-tiny-web text-on-surface-variant">ID: PRJ-9942 • COMMERCIAL</span><h2 class="font-h2-web text-h2-web text-on-surface mt-1 group-hover:text-primary transition-colors flex items-center gap-1.5">Apex Tower Phase II</h2></div><div class="flex items-center gap-2"><div class="bg-mobile-success/10 text-mobile-success border border-mobile-success/20 px-2 py-1 rounded font-tiny-web text-tiny-web whitespace-nowrap font-bold">ON TRACK</div><div class="w-7 h-7 rounded-full bg-surface-container-highest/60 flex items-center justify-center text-on-surface-variant group-hover:bg-primary-container group-hover:text-on-primary-container transition-all"><span class="material-symbols-outlined text-[18px]">chevron_right</span></div></div></div><div class="mt-auto pt-space-2"><div class="flex justify-between items-end mb-1"><span class="font-tiny-web text-tiny-web text-on-surface-variant">PROGRESS</span><span class="font-label-mobile text-label-mobile text-primary font-bold">68%</span></div><div class="h-1.5 w-full bg-surface-container-highest rounded-full overflow-hidden"><div class="h-full bg-primary rounded-full w-[68%]"></div></div></div><div class="flex justify-between items-center pt-space-3 border-t border-outline-variant/30 mt-1"><div class="flex items-center gap-space-1 text-on-surface-variant"><span class="material-symbols-outlined text-[16px]" style="font-variation-settings: &quot;FILL&quot; 0;">group</span><span class="font-tiny-web text-tiny-web">124 WORKERS</span></div><button class="flex items-center gap-space-1 text-on-surface-variant hover:text-on-surface px-2 py-0.5 rounded bg-surface-container-highest/40 hover:bg-surface-container-highest transition-all duration-150 border border-outline-variant/30 active:scale-95"><span class="material-symbols-outlined text-[16px]" style="font-variation-settings: &quot;FILL&quot; 0;">report</span><span class="font-tiny-web text-tiny-web font-medium">3 ISSUES</span><span class="material-symbols-outlined text-[14px]">navigate_next</span></button></div></div></article>
 <!-- Card 2 -->
-<article class="bg-surface-container rounded-xl overflow-hidden relative border border-outline-variant shadow-lg hover:bg-surface-container-high transition-colors">
-<div class="absolute left-0 top-0 bottom-0 w-1 bg-mobile-warning"></div>
-<div class="p-space-4 pl-space-4 ml-1 flex flex-col h-full gap-space-3">
-<div class="flex justify-between items-start gap-space-2">
-<div>
-<span class="font-tiny-web text-tiny-web text-on-surface-variant">ID: PRJ-8810 • INFRASTRUCTURE</span>
-<h2 class="font-h2-web text-h2-web text-on-surface mt-1">Metro Line Extension</h2>
-</div>
-<div class="bg-mobile-warning/10 text-mobile-warning border border-mobile-warning/20 px-2 py-1 rounded font-tiny-web text-tiny-web whitespace-nowrap">
-                            DELAYED
-                        </div>
-</div>
-<div class="mt-auto pt-space-2">
-<div class="flex justify-between items-end mb-1">
-<span class="font-tiny-web text-tiny-web text-on-surface-variant">PROGRESS</span>
-<span class="font-label-mobile text-label-mobile text-primary">42%</span>
-</div>
-<div class="h-1.5 w-full bg-surface-container-highest rounded-full overflow-hidden">
-<div class="h-full bg-mobile-warning rounded-full w-[42%]"></div>
-</div>
-</div>
-<div class="flex justify-between items-center pt-space-3 border-t border-outline-variant/30 mt-1">
-<div class="flex items-center gap-space-1 text-on-surface-variant">
-<span class="material-symbols-outlined text-[16px]" style="font-variation-settings: &quot;FILL&quot; 0;">group</span>
-<span class="font-tiny-web text-tiny-web">450 WORKERS</span>
-</div>
-<div class="flex items-center gap-space-1 text-mobile-warning">
-<span class="material-symbols-outlined text-[16px]" style="font-variation-settings: &quot;FILL&quot; 1;">report</span>
-<span class="font-tiny-web text-tiny-web">12 ISSUES</span>
-</div>
-</div>
-</div>
-</article>
+<article class="bg-surface-container rounded-xl overflow-hidden relative border border-outline-variant shadow-lg hover:bg-surface-container-high hover:border-mobile-warning/40 active:scale-[0.98] transition-all duration-150 cursor-pointer group"><div class="absolute left-0 top-0 bottom-0 w-1 bg-mobile-warning group-hover:w-1.5 transition-all"></div><div class="p-space-4 pl-space-4 ml-1 flex flex-col h-full gap-space-3"><div class="flex justify-between items-start gap-space-2"><div><span class="font-tiny-web text-tiny-web text-on-surface-variant">ID: PRJ-8810 • INFRASTRUCTURE</span><h2 class="font-h2-web text-h2-web text-on-surface mt-1 group-hover:text-secondary transition-colors flex items-center gap-1.5">Metro Line Extension</h2></div><div class="flex items-center gap-2"><div class="bg-mobile-warning/10 text-mobile-warning border border-mobile-warning/20 px-2 py-1 rounded font-tiny-web text-tiny-web whitespace-nowrap font-bold">DELAYED</div><div class="w-7 h-7 rounded-full bg-surface-container-highest/60 flex items-center justify-center text-on-surface-variant group-hover:bg-primary-container group-hover:text-on-primary-container transition-all"><span class="material-symbols-outlined text-[18px]">chevron_right</span></div></div></div><div class="mt-auto pt-space-2"><div class="flex justify-between items-end mb-1"><span class="font-tiny-web text-tiny-web text-on-surface-variant">PROGRESS</span><span class="font-label-mobile text-label-mobile text-primary font-bold">42%</span></div><div class="h-1.5 w-full bg-surface-container-highest rounded-full overflow-hidden"><div class="h-full bg-mobile-warning rounded-full w-[42%]"></div></div></div><div class="flex justify-between items-center pt-space-3 border-t border-outline-variant/30 mt-1"><div class="flex items-center gap-space-1 text-on-surface-variant"><span class="material-symbols-outlined text-[16px]" style="font-variation-settings: &quot;FILL&quot; 0;">group</span><span class="font-tiny-web text-tiny-web">450 WORKERS</span></div><button class="flex items-center gap-space-1 text-mobile-warning px-2 py-0.5 rounded bg-mobile-warning/10 hover:bg-mobile-warning/20 transition-all duration-150 border border-mobile-warning/30 active:scale-95"><span class="material-symbols-outlined text-[16px]" style="font-variation-settings: &quot;FILL&quot; 1;">report</span><span class="font-tiny-web text-tiny-web font-bold">12 ISSUES</span><span class="material-symbols-outlined text-[14px]">navigate_next</span></button></div></div></article>
 <!-- Card 3 -->
-<article class="bg-surface-container rounded-xl overflow-hidden relative border border-outline-variant shadow-lg hover:bg-surface-container-high transition-colors">
-<div class="absolute left-0 top-0 bottom-0 w-1 bg-mobile-success"></div>
-<div class="p-space-4 pl-space-4 ml-1 flex flex-col h-full gap-space-3">
-<div class="flex justify-between items-start gap-space-2">
-<div>
-<span class="font-tiny-web text-tiny-web text-on-surface-variant">ID: PRJ-7721 • COMMERCIAL</span>
-<h2 class="font-h2-web text-h2-web text-on-surface mt-1">Riverside Complex</h2>
-</div>
-<div class="bg-mobile-success/10 text-mobile-success border border-mobile-success/20 px-2 py-1 rounded font-tiny-web text-tiny-web whitespace-nowrap">
-                            ON TRACK
-                        </div>
-</div>
-<div class="mt-auto pt-space-2">
-<div class="flex justify-between items-end mb-1">
-<span class="font-tiny-web text-tiny-web text-on-surface-variant">PROGRESS</span>
-<span class="font-label-mobile text-label-mobile text-primary">89%</span>
-</div>
-<div class="h-1.5 w-full bg-surface-container-highest rounded-full overflow-hidden">
-<div class="h-full bg-primary rounded-full w-[89%]"></div>
-</div>
-</div>
-<div class="flex justify-between items-center pt-space-3 border-t border-outline-variant/30 mt-1">
-<div class="flex items-center gap-space-1 text-on-surface-variant">
-<span class="material-symbols-outlined text-[16px]" style="font-variation-settings: &quot;FILL&quot; 0;">group</span>
-<span class="font-tiny-web text-tiny-web">85 WORKERS</span>
-</div>
-<div class="flex items-center gap-space-1 text-on-surface-variant">
-<span class="material-symbols-outlined text-[16px]" style="font-variation-settings: &quot;FILL&quot; 0;">report</span>
-<span class="font-tiny-web text-tiny-web">1 ISSUE</span>
-</div>
-</div>
-</div>
-</article>
+<article class="bg-surface-container rounded-xl overflow-hidden relative border border-outline-variant shadow-lg hover:bg-surface-container-high hover:border-primary/40 active:scale-[0.98] transition-all duration-150 cursor-pointer group"><div class="absolute left-0 top-0 bottom-0 w-1 bg-mobile-success group-hover:w-1.5 transition-all"></div><div class="p-space-4 pl-space-4 ml-1 flex flex-col h-full gap-space-3"><div class="flex justify-between items-start gap-space-2"><div><span class="font-tiny-web text-tiny-web text-on-surface-variant">ID: PRJ-7721 • COMMERCIAL</span><h2 class="font-h2-web text-h2-web text-on-surface mt-1 group-hover:text-primary transition-colors flex items-center gap-1.5">Riverside Complex</h2></div><div class="flex items-center gap-2"><div class="bg-mobile-success/10 text-mobile-success border border-mobile-success/20 px-2 py-1 rounded font-tiny-web text-tiny-web whitespace-nowrap font-bold">ON TRACK</div><div class="w-7 h-7 rounded-full bg-surface-container-highest/60 flex items-center justify-center text-on-surface-variant group-hover:bg-primary-container group-hover:text-on-primary-container transition-all"><span class="material-symbols-outlined text-[18px]">chevron_right</span></div></div></div><div class="mt-auto pt-space-2"><div class="flex justify-between items-end mb-1"><span class="font-tiny-web text-tiny-web text-on-surface-variant">PROGRESS</span><span class="font-label-mobile text-label-mobile text-primary font-bold">89%</span></div><div class="h-1.5 w-full bg-surface-container-highest rounded-full overflow-hidden"><div class="h-full bg-primary rounded-full w-[89%]"></div></div></div><div class="flex justify-between items-center pt-space-3 border-t border-outline-variant/30 mt-1"><div class="flex items-center gap-space-1 text-on-surface-variant"><span class="material-symbols-outlined text-[16px]" style="font-variation-settings: &quot;FILL&quot; 0;">group</span><span class="font-tiny-web text-tiny-web">85 WORKERS</span></div><button class="flex items-center gap-space-1 text-on-surface-variant hover:text-on-surface px-2 py-0.5 rounded bg-surface-container-highest/40 hover:bg-surface-container-highest transition-all duration-150 border border-outline-variant/30 active:scale-95"><span class="material-symbols-outlined text-[16px]" style="font-variation-settings: &quot;FILL&quot; 0;">report</span><span class="font-tiny-web text-tiny-web font-medium">1 ISSUE</span><span class="material-symbols-outlined text-[14px]">navigate_next</span></button></div></div></article>
 </div>
 </main>
 <!-- BottomNavBar -->
-<nav class="md:hidden bg-surface-container fixed bottom-0 w-full z-50 flex justify-around items-center px-space-2 h-[72px] pb-safe border-t border-outline-variant/30">
-<!-- Active Tab: Projects -->
-<button class="flex flex-col items-center justify-center bg-primary-container text-on-primary-container rounded-xl px-space-4 py-space-1 hover:text-primary transition-colors active:scale-95 transition-all duration-200">
-<span class="material-symbols-outlined mb-[2px]" style="font-variation-settings: &quot;FILL&quot; 1;">inventory_2</span>
-<span class="font-label-mobile text-label-mobile">Projects</span>
-</button>
-<!-- Inactive Tab: Daily Logs -->
-<button class="flex flex-col items-center justify-center text-on-surface-variant hover:text-primary transition-colors active:scale-95 transition-all duration-200 px-space-4 py-space-1">
-<span class="material-symbols-outlined mb-[2px]" style="font-variation-settings: &quot;FILL&quot; 0;">history_edu</span>
-<span class="font-label-mobile text-label-mobile">Daily Logs</span>
-</button>
-<!-- Inactive Tab: Safety -->
-<button class="flex flex-col items-center justify-center text-on-surface-variant hover:text-primary transition-colors active:scale-95 transition-all duration-200 px-space-4 py-space-1">
-<span class="material-symbols-outlined mb-[2px]" style="font-variation-settings: &quot;FILL&quot; 0;">safety_check</span>
-<span class="font-label-mobile text-label-mobile">Safety</span>
-</button>
-<!-- Inactive Tab: Directory -->
-<button class="flex flex-col items-center justify-center text-on-surface-variant hover:text-primary transition-colors active:scale-95 transition-all duration-200 px-space-4 py-space-1">
-<span class="material-symbols-outlined mb-[2px]" style="font-variation-settings: &quot;FILL&quot; 0;">groups</span>
-<span class="font-label-mobile text-label-mobile">Directory</span>
-</button>
-</nav>
+<nav class="md:hidden bg-surface-container fixed bottom-0 w-full z-50 flex justify-around items-center px-space-2 h-[72px] pb-safe border-t border-outline-variant/30"><button class="flex flex-col items-center justify-center min-w-[56px] h-[52px] bg-primary-container text-on-primary-container rounded-full px-space-4 py-1 active:scale-90 transition-all duration-150 shadow-md"><span class="material-symbols-outlined text-[20px] mb-[1px]" style="font-variation-settings: &quot;FILL&quot; 1;">inventory_2</span><span class="font-label-mobile text-label-mobile font-bold">Projects</span></button><button class="flex flex-col items-center justify-center min-w-[56px] h-[52px] text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high/50 rounded-xl px-space-3 py-1 transition-all duration-150 active:scale-90"><span class="material-symbols-outlined text-[20px] mb-[1px]" style="font-variation-settings: &quot;FILL&quot; 0;">history_edu</span><span class="font-label-mobile text-label-mobile font-medium">Home</span></button><button class="flex flex-col items-center justify-center min-w-[56px] h-[52px] text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high/50 rounded-xl px-space-3 py-1 transition-all duration-150 active:scale-90"><span class="material-symbols-outlined text-[20px] mb-[1px]" style="font-variation-settings: &quot;FILL&quot; 0;">safety_check</span><span class="font-label-mobile text-label-mobile font-medium">Procurement</span></button><button class="flex flex-col items-center justify-center min-w-[56px] h-[52px] text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high/50 rounded-xl px-space-3 py-1 transition-all duration-150 active:scale-90"><span class="material-symbols-outlined text-[20px] mb-[1px]" style="font-variation-settings: &quot;FILL&quot; 0;">groups</span><span class="font-label-mobile text-label-mobile font-medium">Budget</span></button></nav>
+
+
+
+
+
+
 
 
 </body></html>

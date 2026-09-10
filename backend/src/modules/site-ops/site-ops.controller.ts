@@ -216,6 +216,11 @@ export class SiteOpsController {
 
   // GET /api/v1/site/issues
   @Get('site/issues')
+  // VIEWER ADDED 2026-09-11. §6.8 has granted this role `Issues R` since that table was written and
+  // this route refused it — measured at 403 with a real token. The VIEWER Home dashboard's OPEN
+  // ISSUES tile drew a registered figure for one day because of it; the register entry
+  // (`VIEWER_OPEN_ISSUES`) is deleted with this change. Read only: the role gains nothing on the
+  // POST/PATCH routes around this one.
   @Roles(
     CosRole.SITE_WORKER,
     CosRole.SITE_ENGINEER,
@@ -223,6 +228,7 @@ export class SiteOpsController {
     CosRole.EXECUTIVE,
     CosRole.SAFETY_OFFICER,
     CosRole.TENANT_ADMIN,
+    CosRole.VIEWER,
   )
   @ApiOperation({ summary: 'List issues (filterable by severity, status, project)' })
   @ApiQuery({ name: 'project_id', required: false, type: String })

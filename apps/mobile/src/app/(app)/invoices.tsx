@@ -74,6 +74,8 @@ import { LoadingBoundary } from '../../components/LoadingBoundary';
 import { AiCardFooter } from '../../components/AiCardFooter';
 import { spacedMoney } from '../../lib/compactMoney';
 import { DELIVERY_GRN, INVOICE_DISCREPANCY, THREE_WAY_MATCH } from '../../lib/mockupFigures';
+import { useAuthStore } from '../../store/authStore';
+import { canRenderWriteControls } from '../../lib/readOnlyRole';
 import { useT, useI18n } from '../../i18n';
 import { useComingSoon } from '../../components/useComingSoon';
 import type { TranslateFn } from '../../i18n';
@@ -514,8 +516,12 @@ function InvoiceCard({
   const due = dueTone(invoice, palette);
   // The server's own rules, read from `procurement.service.ts` — a button that would earn a 422 is
   // not offered.
-  const canApprove = invoice.status === 'RECEIVED' || invoice.status === 'VERIFIED';
-  const canDispute = invoice.status !== 'PAID' && invoice.status !== 'DISPUTED';
+  // TWO CONDITIONS, AND THEY ANSWER DIFFERENT QUESTIONS. The status decides whether the invoice
+  // CAN be approved; `canWrite` decides whether this reader may be offered the action at all
+  // (§20.7.9 — a VIEWER is shown no approve control). Both were needed and only the first existed.
+  const canWrite = useAuthStore((s) => canRenderWriteControls(s.role));
+  const canApprove = canWrite && (invoice.status === 'RECEIVED' || invoice.status === 'VERIFIED');
+  const canDispute = canWrite && invoice.status !== 'PAID' && invoice.status !== 'DISPUTED';
 
   return (
     <View
@@ -678,6 +684,10 @@ function InvoiceDetailView({
   onSaveNote: () => void;
   onBack: () => void;
 }): React.JSX.Element {
+  // §20.7.9: a read-only role is shown no edit control. The NOTE below is one — it writes to the
+  // invoice — so the whole card goes, not just its button: a note field with no way to save it is
+  // an invitation to type something that will be lost.
+  const canWrite = useAuthStore((s) => canRenderWriteControls(s.role));
   const fields: Array<[string, string]> = [
     [t('finance.invoices.number'), detail.invoice_number],
     [t('finance.invoices.amount'), spacedMoney(detail.amount, detail.currency_code)],
@@ -714,32 +724,34 @@ function InvoiceDetailView({
         ))}
       </View>
 
-      <View style={styles.card}>
-        <Text style={styles.eyebrow}>{t('finance.invoices.note')}</Text>
-        <TextInput
-          testID="invoice-note-input"
-          style={styles.noteInput}
-          multiline
-          value={noteText}
-          onChangeText={onChangeNote}
-          placeholder={t('finance.invoices.notePlaceholder')}
-          placeholderTextColor={palette.muted}
-        />
-        <Pressable
-          testID="save-note-button"
-          accessibilityRole="button"
-          accessibilityLabel={t('finance.invoices.saveNote')}
-          onPress={onSaveNote}
-          style={styles.noteButton}
-        >
-          <Text style={styles.noteButtonText}>{t('finance.invoices.saveNote')}</Text>
-        </Pressable>
-        {noteSaved ? (
-          <Text testID="note-saved" style={styles.savedText}>
-            {t('finance.invoices.noteSaved')}
-          </Text>
-        ) : null}
-      </View>
+      {canWrite ? (
+        <View style={styles.card}>
+          <Text style={styles.eyebrow}>{t('finance.invoices.note')}</Text>
+          <TextInput
+            testID="invoice-note-input"
+            style={styles.noteInput}
+            multiline
+            value={noteText}
+            onChangeText={onChangeNote}
+            placeholder={t('finance.invoices.notePlaceholder')}
+            placeholderTextColor={palette.muted}
+          />
+          <Pressable
+            testID="save-note-button"
+            accessibilityRole="button"
+            accessibilityLabel={t('finance.invoices.saveNote')}
+            onPress={onSaveNote}
+            style={styles.noteButton}
+          >
+            <Text style={styles.noteButtonText}>{t('finance.invoices.saveNote')}</Text>
+          </Pressable>
+          {noteSaved ? (
+            <Text testID="note-saved" style={styles.savedText}>
+              {t('finance.invoices.noteSaved')}
+            </Text>
+          ) : null}
+        </View>
+      ) : null}
     </ScrollView>
   );
 }

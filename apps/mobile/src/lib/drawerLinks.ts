@@ -264,6 +264,15 @@ const DERIVED: readonly { link: DrawerLink; module: string; roles: readonly CosR
     module: 'Safety incidents',
     roles: [EXECUTIVE, PROJECT_MANAGER, SITE_ENGINEER, SAFETY_OFFICER, TENANT_ADMIN, SITE_WORKER],
   },
+  // VIEWER LEFT THIS ROW ON 2026-09-11, and it is the one row of the seven the read-only audit
+  // touched that was fixed by REMOVAL rather than by hiding a control.
+  //
+  // `/material-request` is not a screen with a create button on it — it IS the create form: a
+  // project picker, a line-item editor and a submit. There is nothing on it for a role that may
+  // only read. §6.8 grants VIEWER "Procurement (all) R" and §20.7.9 says no create action is
+  // rendered to it; a form whose submit was hidden would still be a form, and typing into one that
+  // cannot be sent is worse than not being offered it. The purchase requests this role may READ are
+  // on `/rfqs` and `/orders`, both of which it keeps.
   {
     link: MATERIALS,
     module: 'Purchase requests',
@@ -275,7 +284,6 @@ const DERIVED: readonly { link: DrawerLink; module: string; roles: readonly CosR
       FINANCE,
       TENANT_ADMIN,
       PROC_MANAGER,
-      VIEWER,
     ],
   },
   // ── end of the four drawn rows; everything below is the role's own ──────────────────────────────

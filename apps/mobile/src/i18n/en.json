@@ -876,11 +876,8 @@
       "stageContract": "Contract"
     },
     "viewer": {
-      "portfolioOverview": "Portfolio Overview",
       "activeProjects": "Active Projects",
       "openIssues": "Open Issues",
-      "portfolioBudget": "Portfolio Budget",
-      "allocated": "Allocated",
       "ytdDelta": "+{delta}% YTD",
       "systemInsight": "System Insight",
       "trackedProjects": "Tracked Projects",
@@ -900,10 +897,15 @@
         "residential": "Residential"
       },
       "activity": {
-        "report": "Daily Safety Report submitted by {who}.",
+        "report": "Daily Safety Reported by {who}.",
         "defect": "Critical defect logged: “{quote}”",
         "sync": "Morning sync completed successfully. All data current."
-      }
+      },
+      "view": "View",
+      "track": "Track",
+      "budget": "Budget",
+      "liveFeed": "Live feed",
+      "projectDetail": "Project detail"
     }
   },
   "tasks": {
@@ -1311,7 +1313,7 @@
     },
     "viewer": {
       "searchPlaceholder": "Search projects by ID or name",
-      "allProjects": "All Projects",
+      "allProjects": "All",
       "code": "ID: {code}",
       "codeCategory": "ID: {code} • {category}",
       "progress": "Progress",
@@ -1323,7 +1325,9 @@
         "commercial": "Commercial",
         "infrastructure": "Infrastructure",
         "residential": "Residential"
-      }
+      },
+      "projectDetail": "Project detail",
+      "issuesLabel": "Issues"
     }
   },
   "pm": {
@@ -1706,6 +1710,67 @@
       "approveFailed": "The approval did not go through. Invoices cannot be approved offline.",
       "disputeFailed": "The dispute was not raised. Invoices cannot be disputed offline.",
       "truncated": "Showing {shown} of {total}. Narrow the filter to see the rest."
+    },
+    "viewer": {
+      "readOnlyRole": "Viewer (read only)",
+      "totalBudget": "Total budget",
+      "details": "Details",
+      "reserved": "Reserved: {amount}",
+      "allocated": "Allocated: {pct}%",
+      "committed": "Committed",
+      "actualSpent": "Actual spent",
+      "ofCap": "{pct}% of cap",
+      "burned": "{pct}% burned",
+      "favourable": "{pct}% fav",
+      "absorption": "Absorption",
+      "consume": "Consumed: {amount}",
+      "legendValue": "{pct}% ({amount})",
+      "category": {
+        "structural": "Structural concrete",
+        "structuralFull": "Structural concrete & rebar",
+        "steel": "Steel framing",
+        "steelFull": "Steel framing & trusses",
+        "mep": "MEP engineering",
+        "mepFull": "MEP engineering (HVAC/Elec)",
+        "finishes": "Finishes & facade",
+        "finishesFull": "Finishes & curtain facade"
+      },
+      "auditForecast": "Audit & forecast",
+      "burnVelocity": "Burn velocity",
+      "perWeek": "{amount}/w",
+      "eacTarget": "EAC target",
+      "riskIndex": "Risk index",
+      "riskValue": "{band} ({value})",
+      "riskBand": {
+        "low": "Low",
+        "medium": "Medium",
+        "high": "High"
+      },
+      "boqCategories": "BOQ work categories",
+      "divisions": "{count, plural, one {# division} other {# divisions}}",
+      "boqState": {
+        "onTrack": "On track",
+        "notStarted": "Not started"
+      },
+      "pctAllocated": "{pct}% allocated",
+      "budgetLabel": "Budget",
+      "disbursed": "Disbursed ({pct}%)",
+      "onSiteProgress": "On-site progress validation",
+      "surveyedToday": "Surveyed today",
+      "expand": "Expand",
+      "verifiedLog": "Verified log",
+      "auditTrail": "Read-only audit trail",
+      "certifier": "Certifier: {who}",
+      "log": {
+        "disbursement": "Disbursement IPC #08 approved",
+        "retention": "Milestone retention released",
+        "advance": "Subcontract advance verified"
+      },
+      "logState": {
+        "executed": "Executed",
+        "released": "Released",
+        "verified": "Verified"
+      }
     }
   },
   "procurement": {
@@ -1863,6 +1928,47 @@
       "items": "items",
       "cases": "cases",
       "queueOver": "1 over at the gate"
+    },
+    "viewer": {
+      "accessProfile": "Access profile",
+      "readOnlyRole": "Viewer (read only)",
+      "locked": "Locked",
+      "totalPos": "Total POs",
+      "inDelivery": "In delivery",
+      "pendingPm": "Pending PM",
+      "fulfillment": "Fulfillment",
+      "orders": "orders",
+      "items": "items",
+      "acrossPackages": "{count, plural, one {Across # package} other {Across # packages}}",
+      "arrivingToday": "{count, plural, one {# arriving today} other {# arriving today}}",
+      "awaitingSignOff": "Awaiting PM sign-off",
+      "deliveryPredictor": "Delivery predictor",
+      "feed": {
+        "sensorFeeds": "Sensor feeds active",
+        "predictiveSync": "Live predictive sync"
+      },
+      "activeRoute": "Active route inspection",
+      "routeRef": "{po} · {vendor}",
+      "trackLive": "Track live",
+      "step": {
+        "dispatched": "Dispatched",
+        "transit": "Transit",
+        "weighIn": "Weigh-in",
+        "staging": "Staging"
+      },
+      "stepPending": "Pending",
+      "monitoredLine": "Monitored line",
+      "entries": "{count, plural, one {# entry} other {# entries}}",
+      "displayingAll": "Displaying all",
+      "vendor": "Vendor: {name}",
+      "lineState": {
+        "partial": "Delivered",
+        "delivered": "Fully delivered",
+        "transit": "In transit",
+        "pendingApproval": "Pending PM approval"
+      },
+      "lineStatePct": "{state} ({pct}%)",
+      "lineDetail": "Purchase order"
     }
   },
   "notifications": {
@@ -3346,7 +3452,13 @@
       "state": {
         "success": "On track",
         "warning": "Delayed"
-      }
+      },
+      "dotState": "• {state}",
+      "issueCount": {
+        "success": "{count, plural, one {# minor} other {# minor}}",
+        "warning": "{count, plural, one {# alert} other {# alerts}}"
+      },
+      "siteDetail": "Site detail"
     }
   },
   "insights": {
@@ -3372,6 +3484,18 @@
         "high": "High",
         "medium": "Medium",
         "low": "Low"
+      },
+      "detailedMetrics": "Detailed metrics",
+      "logs": "Logs",
+      "viewEvidence": "View evidence",
+      "viewAll": "View all",
+      "total": "{count, plural, one {# total} other {# total}}",
+      "range": {
+        "quarter": "Quarter",
+        "7d": "7D",
+        "30d": "30D",
+        "ytd": "YTD",
+        "all": "All"
       }
     }
   }

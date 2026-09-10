@@ -1138,13 +1138,13 @@ the folder beside it is exactly what this file is for.
 Shot as `+66811000012` (Chalermsak Nithat) over **Path A, phone OTP**: `MFA_ROLES` is
 `{TENANT_ADMIN, FINANCE}` and this role is in neither.
 
-| Directory                                        | What the frames show                                                                 |
-| ------------------------------------------------ | ------------------------------------------------------------------------------------ |
-| [`01-Home/`](12-crm-manager/01-Home/)            | `01-crm-dashboard` — pipeline value, active leads, win rate, the three stage counts   |
-| [`02-Leads/`](12-crm-manager/02-Leads/)          | `01-leads-directory` — search, state chips, the AI score per lead                     |
-| [`03-Pipeline/`](12-crm-manager/03-Pipeline/)    | `01-opportunities` — the forecast card, the deal cards, convert                       |
-| [`04-Customers/`](12-crm-manager/04-Customers/)  | `01-customers` — the relationship card and the client list                            |
-| [`05-Profile/`](12-crm-manager/05-Profile/)      | `01-navigation-drawer` (the grouped CRM menu) and `02-account-settings`               |
+| Directory                                       | What the frames show                                                                |
+| ----------------------------------------------- | ----------------------------------------------------------------------------------- |
+| [`01-Home/`](12-crm-manager/01-Home/)           | `01-crm-dashboard` — pipeline value, active leads, win rate, the three stage counts |
+| [`02-Leads/`](12-crm-manager/02-Leads/)         | `01-leads-directory` — search, state chips, the AI score per lead                   |
+| [`03-Pipeline/`](12-crm-manager/03-Pipeline/)   | `01-opportunities` — the forecast card, the deal cards, convert                     |
+| [`04-Customers/`](12-crm-manager/04-Customers/) | `01-customers` — the relationship card and the client list                          |
+| [`05-Profile/`](12-crm-manager/05-Profile/)     | `01-navigation-drawer` (the grouped CRM menu) and `02-account-settings`             |
 
 **The SCREENS are untouched.** `CRM_SALES_MANAGER` still has its four tabs in the app, still backed by
 `crm.controller.ts` and the same role-gated routes `apps/web` uses; only their screenshots left this
@@ -2536,10 +2536,11 @@ decided by the product owner on the day: the CONFIDENCE chip stays in the AI car
 2026-09-08 standard rather than moving to the header, and the vendor directory stays on the
 drawer rather than moving onto the Orders tab.
 
-## Viewer — first capture, five screens — [`13-viewer/`](13-viewer/)
+## Viewer — six screens — [`13-viewer/`](13-viewer/)
 
-`mockup/mobile/role_viewer/` — the read-only stakeholder. Captured **2026-09-10**, and this is the
-role's **first appearance in this folder**: twelve role folders existed and none was VIEWER's.
+`mockup/mobile/role_viewer/` — the read-only stakeholder. First captured **2026-09-10**, when this
+was the role's **first appearance in this folder**: twelve role folders existed and none was
+VIEWER's. **Re-captured whole on 2026-09-11** — see "the second round" below.
 
 **IT COULD NOT HAVE BEEN CAPTURED BEFORE, AND THE REASON WAS UPSTREAM OF THE CAMERA.**
 `backend/prisma/seed-realistic.ts` carried a demo user for eleven of the twelve roles and none for
@@ -2553,13 +2554,15 @@ fully seeded database — the same defect `sw1` was added to fix on 2026-08-08.
 Shot over **Path A, phone OTP**: `MFA_ROLES` is `{TENANT_ADMIN, FINANCE}` and this role is in
 neither.
 
-| Directory                                     | What the frames show                                                                                                                                       |
-| --------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [`01-Home/`](13-viewer/01-Home/)              | `01-viewer-dashboard` — the project count and open-issue count (both real), the drawn portfolio budget, the System Insight card, two tracked projects and the activity timeline |
-| [`02-Projects/`](13-viewer/02-Projects/)      | `01-project-list` — a working search over the cached rows, the drawn category chips, and a card per assigned project                                        |
-| [`03-Map/`](13-viewer/03-Map/)                | `01-project-map` — the pins, the four map controls and the Active Sites sheet                                                                               |
-| [`04-Insights/`](13-viewer/04-Insights/)      | `01-project-insights` — the progress curve, safety performance, the risk forecast and the issue-severity breakdown                                          |
-| [`05-Profile/`](13-viewer/05-Profile/)        | `01-account-settings` — the shared screen, plus the **System Permissions** block that renders for this role and no other                                    |
+| Directory                                      | What the frames show                                                                                                                                                            |
+| ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [`01-Home/`](13-viewer/01-Home/)               | `01-viewer-dashboard` — the project count and open-issue count (both real), the drawn portfolio budget, the System Insight card, two tracked projects and the activity timeline |
+| [`02-Projects/`](13-viewer/02-Projects/)       | `01-project-list` — a working search over the cached rows, the drawn category chips, and a card per assigned project                                                            |
+| [`03-Map/`](13-viewer/03-Map/)                 | `01-project-map` — the pins, the four map controls and the Active Sites sheet                                                                                                   |
+| [`04-Insights/`](13-viewer/04-Insights/)       | `01-project-insights` — the progress curve, safety performance, the risk forecast and the issue-severity breakdown                                                              |
+| [`05-Profile/`](13-viewer/05-Profile/)         | `01-account-settings` — the shared screen, plus the **System Permissions** block that renders for this role and no other                                                        |
+| [`06-Procurement/`](13-viewer/06-Procurement/) | `01-procurement` — the ACCESS PROFILE banner, four PO counters, the Delivery Predictor, a four-step route tracker and four monitored PO lines                                   |
+| [`07-Budget/`](13-viewer/07-Budget/)           | `01-budget` — total / committed / actual, the absorption bar and its legend, Audit & Forecast, four BOQ divisions, the progress photo and the VERIFIED LOG                      |
 
 **THE BOTTOM BAR IN THESE FRAMES IS NOT THE ONE THE MOCKUPS DRAW, AND THAT WAS DECIDED RATHER THAN
 OVERLOOKED.** The five drawings give **four different bars** — `01_home` and `05_profile` agree on
@@ -2571,11 +2574,11 @@ ADR-098 precedent and the product owner kept the enumerated bar,
 `Home · Projects · Procurement · Budget`. **Nothing was lost**: `/map` and `/insights` are new
 routes with a drawer row each.
 
-**One frame is a single viewport and the other four are stitched.** The map does not scroll at page
+**One frame is a single viewport and the other five are stitched.** The map does not scroll at page
 level — a canvas with a sheet pinned under it — so it is one shot; the sheet's own list scrolls,
-which is what makes its second row reachable. The heading above says "five screens" rather than
-naming a tab count because only two of them are tabs: Home and Projects. The map, the insights page
-and account settings are all reached from the navigation drawer.
+which is what makes its second row reachable. The heading above counts screens rather than tabs
+because only four of the six are tabs: Home, Projects, Procurement and Budget. The map, the insights
+page and account settings are reached from the navigation drawer.
 
 **Almost everything on Insights is drawn, and the header of
 `components/ProjectInsightsDocument.tsx` says so in those words.** No endpoint on this device
@@ -2601,3 +2604,39 @@ does not hold. Escalated the same day; the product owner added all three
 ([ADR-102](../../architecture/adr/102-viewer-gains-safety-analytics-ai-read.md)) and §6.8's table was
 amended in the same commit. All three are `:read`, so §20.7.9's "no create/edit/approve actions are
 rendered" is untouched.
+
+### The second round — 2026-09-11: four redrawn, two added, and a defect only the camera found
+
+The product owner asked for this set again and named six screens. **Checking the count was not
+enough.** The Stitch project held the same five names plus two, so a count comparison said "two
+new"; downloading all seven and comparing sha256 against the repo copies said that **four of the
+five had been redrawn** — Home, Projects, Map and Analytics. Only Account Settings was
+byte-identical. Every frame in this folder was therefore retaken, not just the two added ones.
+
+`/procurement` and `/budget` are the third and fourth slots of this role's bar and had, since
+2026-08-04, rendered the PROCUREMENT_MANAGER and FINANCE screens **to a viewer** — approve button
+and "request an amendment" included, neither role-gated. Both routes branch on role now, the way
+`/home` always has. Six read routes were opened underneath them the same day
+([ADR-103](../../architecture/adr/103-viewer-read-routes-opened.md)); every figure on the two new
+frames is still drawn, because the screens have not yet been rewired onto those routes.
+
+**THE CAPTURE FOUND SOMETHING NO TEST WAS ASKING ABOUT.** Both new screens were first written with
+no `onPress` anywhere, on the reasoning that a read-only role should not be handed controls. §20.7.9
+does not say that — it forbids **create, edit and approve**, and opening a detail is a read. What
+that shipped was eleven affordances drawn to look like controls and answering nothing: `TRACK
+LIVE →`, `DISPLAYING ALL`, `DETAILS ›`, an `EXPAND` chip, and a chevron plate on every BOQ division
+and audit-log row. The render specs passed, because they asserted the _absence_ of handlers and got
+it. Putting `06-Procurement/01-procurement.png` beside `01-Home/01-viewer-dashboard.png` is what
+made it visible: the same shapes on Home and Insights respond, and these did not.
+
+Each now raises the coming-soon dialog, per the convention of 2026-09-04. The two specs COUNT press
+handlers against the drawn-figure register rather than asserting none, so a card cannot be added
+without one or quietly lose the one it has. The map sheet's grab handle and collapse chevron stay
+inert and that is the one carve-out — ornament on a panel that cannot be dragged was never a
+control.
+
+**What is real on the two new frames**: nothing below the chrome. The role's own token was measured
+against every endpoint these screens would read and all of them answered 403 before ADR-103; the
+screens are drawn end to end and each figure is registered under
+[ADR-099](../../architecture/adr/099-mockup-figures-without-a-data-source.md). What is real is the
+signed-in identity in the top bar, the sync state, and the tab bar itself.
