@@ -22,11 +22,42 @@ import { Alert } from 'react-native';
 import { I18nProvider } from '../../i18n';
 import { useBiometricStore } from '../../store/biometricStore';
 import { useThemeStore } from '../../store/themeStore';
+import { useAuthStore } from '../../store/authStore';
+import { useLocaleStore } from '../../store/localeStore';
 import { AccountSettings } from '../AccountSettings';
 
 jest.mock('expo-router', () => ({
   useRouter: () => ({ push: jest.fn(), back: jest.fn(), replace: jest.fn() }),
 }));
+
+// `<NotificationSettings />` renders inside this card and fetches its preferences on mount. LEAVING
+// THAT REQUEST UNMOCKED IS NOT HARMLESS: it reaches `api/client`, the 401 interceptor calls
+// `useAuthStore.getState().logout()`, and the store this spec sets in `beforeEach` is emptied
+// mid-test. It raced the render — the profile-head assertions failed roughly one run in four, with
+// the name and the id both back at their fallbacks — which is exactly what a flake that survives a
+// green run looks like. The component has its own spec; here it is mocked to silence.
+jest.mock('../../api/notifications', () => ({
+  getNotificationPreferences: jest.fn().mockResolvedValue([]),
+  updateNotificationPreferences: jest.fn().mockResolvedValue(undefined),
+}));
+
+// `GET /users/me` feeds the profile head and the MFA row's state — the same call the drawer makes
+// for the same block. Mocked rather than left to reject, so each answer can be asserted.
+jest.mock('../../api/users', () => ({ getMe: jest.fn() }));
+
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const users = require('../../api/users') as { getMe: jest.Mock };
+
+const ME = {
+  user_id: 'u-1111-aaaa',
+  email: 'v@example.com',
+  display_name: 'Vorawee S.',
+  photo_url: null,
+  role: 'CRM_SALES_MANAGER',
+  mfa_enabled: true,
+  employee_code: null,
+  position: 'CRM Manager',
+};
 
 function renderCard() {
   return render(
@@ -47,6 +78,12 @@ describe('AccountSettings', () => {
     useBiometricStore.setState({ available: true, enabled: false, setEnabled } as never);
     useThemeStore.setState({ mode: 'dark', setMode } as never);
     alert = jest.spyOn(Alert, 'alert').mockImplementation(() => undefined);
+    users.getMe.mockReset();
+    users.getMe.mockResolvedValue(ME);
+    useAuthStore.setState({ displayName: 'Vorawee S.', userId: 'u-1111-aaaa' } as never);
+    // The language row toggles the locale and persists it, so a test running after it would
+    // otherwise render in Thai and every assertion on English copy would be an accident.
+    useLocaleStore.setState({ locale: 'en' } as never);
   });
 
   afterEach(() => alert.mockRestore());
@@ -141,5 +178,141 @@ describe('AccountSettings', () => {
     const { getByTestId } = await renderCard();
 
     expect(getByTestId('profile-version')).toBeTruthy();
+  });
+});
+
+// -- THE THREE-GROUP LAYOUT AND ITS PROFILE HEAD (2026-09-10) -----------------------------------
+//
+// The rows did not change; where they sit did, and a profile head was added above them. What these
+// tests hold is the part of that which is a CLAIM rather than a layout: the head's fields are the
+// standard block, the MFA row's state is read rather than drawn, the sync line is the app's own
+// precedence rather than a timestamp nothing records, and the cache figure is measured.
+
+describe('AccountSettings - the profile head', () => {
+  let alert: jest.SpyInstance;
+
+  beforeEach(() => {
+    useBiometricStore.setState({
+      available: true,
+      enabled: false,
+      setEnabled: jest.fn(),
+    } as never);
+    useThemeStore.setState({ mode: 'dark', setMode: jest.fn() } as never);
+    alert = jest.spyOn(Alert, 'alert').mockImplementation(() => undefined);
+    users.getMe.mockReset();
+    users.getMe.mockResolvedValue(ME);
+    useAuthStore.setState({ displayName: 'Vorawee S.', userId: 'u-1111-aaaa' } as never);
+    // The language row toggles the locale and persists it, so a test running after it would
+    // otherwise render in Thai and every assertion on English copy would be an accident.
+    useLocaleStore.setState({ locale: 'en' } as never);
+  });
+
+  afterEach(() => alert.mockRestore());
+
+  // AVATAR - NAME - POSITION - ID - STATUS, the standard block (spec 32.7). The drawing's photo
+  // avatar and its hardcoded "CRM Manager" line are not what render: the position is real.
+  it('draws the standard profile block, in its order', async () => {
+    const { getByTestId, getByText } = await renderCard();
+
+    await waitFor(() => expect(getByTestId('settings-job-title')).toHaveTextContent(/CRM Manager/));
+    expect(getByText('Vorawee S.')).toBeTruthy();
+    expect(getByTestId('settings-user-id')).toBeTruthy();
+    expect(getByTestId('settings-sync-row')).toBeTruthy();
+  });
+
+  // A null position draws NOTHING - no placeholder, no role. Null is the ordinary case: no route
+  // sets one.
+  it('draws no position line when the account has no position', async () => {
+    users.getMe.mockResolvedValue({ ...ME, position: null });
+
+    const { getByTestId, queryByTestId } = await renderCard();
+
+    await waitFor(() => expect(getByTestId('settings-user-id')).toBeTruthy());
+    expect(queryByTestId('settings-job-title')).toBeNull();
+  });
+
+  it('falls back to a short id, and says nothing about a factor it could not read', async () => {
+    users.getMe.mockRejectedValue(new Error('offline'));
+
+    const { getByTestId } = await renderCard();
+
+    await waitFor(() => expect(getByTestId('settings-user-id')).toHaveTextContent(/AAAA/));
+    expect(getByTestId('profile-mfa-row')).not.toHaveTextContent(/MFA active|Not enrolled/);
+  });
+
+  // REAL: platform.users.mfa_enabled, the same column the drawer's status line reads.
+  it('says the second factor is enrolled when it is', async () => {
+    const { getByTestId } = await renderCard();
+
+    await waitFor(() => expect(getByTestId('profile-mfa-row')).toHaveTextContent(/MFA active/));
+  });
+
+  it('says it is not enrolled when it is not', async () => {
+    users.getMe.mockResolvedValue({ ...ME, mfa_enabled: false });
+
+    const { getByTestId } = await renderCard();
+
+    await waitFor(() => expect(getByTestId('profile-mfa-row')).toHaveTextContent(/Not enrolled/));
+  });
+
+  // The drawing prints "Last sync: 2 min ago". Nothing here records when the last flush finished,
+  // so the head says the CURRENT state instead, through the same precedence every other sync
+  // indicator reads.
+  it('reports the current sync state rather than a time nothing records', async () => {
+    const { getByTestId } = await renderCard();
+
+    await waitFor(() => expect(getByTestId('settings-sync-row')).toBeTruthy());
+    expect(getByTestId('settings-sync-row')).not.toHaveTextContent(/ago/i);
+  });
+});
+
+describe('AccountSettings - the system group', () => {
+  let alert: jest.SpyInstance;
+
+  beforeEach(() => {
+    useBiometricStore.setState({
+      available: true,
+      enabled: false,
+      setEnabled: jest.fn(),
+    } as never);
+    useThemeStore.setState({ mode: 'dark', setMode: jest.fn() } as never);
+    alert = jest.spyOn(Alert, 'alert').mockImplementation(() => undefined);
+    users.getMe.mockReset();
+    users.getMe.mockResolvedValue(ME);
+    useAuthStore.setState({ displayName: 'Vorawee S.', userId: 'u-1111-aaaa' } as never);
+    // The language row toggles the locale and persists it, so a test running after it would
+    // otherwise render in Thai and every assertion on English copy would be an accident.
+    useLocaleStore.setState({ locale: 'en' } as never);
+  });
+
+  afterEach(() => alert.mockRestore());
+
+  // MEASURED, not drawn: PRAGMA page_count x page_size, shown against the 17.7 ceiling it is
+  // measured for. The drawing's "2.4 GB" is a figure no device here reported.
+  it('shows the offline database size against its ceiling', async () => {
+    const { getByTestId } = await renderCard();
+
+    await waitFor(() => expect(getByTestId('offline-data-row')).toBeTruthy());
+    expect(getByTestId('offline-data-row')).toHaveTextContent(/of 500\.0 MB/);
+    expect(getByTestId('offline-data-row')).not.toHaveTextContent(/2\.4 GB/);
+  });
+
+  // It REPORTS and does not manage - nothing in this app prunes that cache on request, so the row
+  // is not a button and must never become one by accident.
+  it('offers no action on the offline row, because there is none to offer', async () => {
+    const { getByTestId } = await renderCard();
+
+    await waitFor(() => expect(getByTestId('offline-data-row')).toBeTruthy());
+    expect(getByTestId('offline-data-row').props.accessibilityRole).toBeUndefined();
+  });
+
+  // Nothing was dropped in the regrouping (ADR-085: a drawing does not remove reviewed working
+  // capability). These three have no place in the CRM drawing and are all still here.
+  it('keeps every row the drawing does not draw', async () => {
+    const { getByTestId } = await renderCard();
+
+    await waitFor(() => expect(getByTestId('profile-version')).toBeTruthy());
+    expect(getByTestId('change-pin-row')).toBeTruthy();
+    expect(getByTestId('theme-row')).toBeTruthy();
   });
 });

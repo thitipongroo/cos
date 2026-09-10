@@ -1948,9 +1948,7 @@
   "profile": {
     "main": {
       "title": "โปรไฟล์",
-      "securitySection": "ความปลอดภัย",
       "preferencesSection": "การตั้งค่า",
-      "aboutSection": "เกี่ยวกับ",
       "userId": "รหัสผู้ใช้",
       "role": "บทบาท",
       "language": "ภาษา",
@@ -1961,7 +1959,14 @@
       "theme": "ธีม",
       "themeDark": "มืด",
       "themeLight": "สว่าง",
-      "changePin": "เปลี่ยนรหัส PIN"
+      "changePin": "เปลี่ยนรหัส PIN",
+      "accountSection": "บัญชี",
+      "systemSection": "ระบบ",
+      "mfaOn": "เปิดใช้ MFA",
+      "mfaOff": "ยังไม่ได้ลงทะเบียน",
+      "offlineData": "ข้อมูลออฟไลน์ในเครื่องนี้",
+      "offlineDataDesc": "ระเบียน แบบ และรูปที่รอส่ง",
+      "offlineDataCeiling": "{used} จาก {cap}"
     },
     "notifications": {
       "title": "การแจ้งเตือน",
@@ -2004,7 +2009,12 @@
     "CANCELLED": "ยกเลิก",
     "DRAFT": "ร่าง",
     "LOW": "ต่ำ",
-    "MEDIUM": "ปานกลาง"
+    "MEDIUM": "ปานกลาง",
+    "NEW": "ใหม่",
+    "QUALIFIED": "ผ่านคัดกรอง",
+    "DISQUALIFIED": "ไม่ผ่านคัดกรอง",
+    "WON": "ปิดการขายได้",
+    "LOST": "ไม่ได้งาน"
   },
   "voice": {
     "record": "อัดเสียงบันทึก",
@@ -2949,7 +2959,16 @@
       "create": "เพิ่มผู้มุ่งหวัง",
       "saving": "กำลังบันทึก…",
       "empty": "ยังไม่มีผู้มุ่งหวัง",
-      "untitled": "ผู้มุ่งหวังไม่มีชื่อ"
+      "untitled": "ผู้มุ่งหวังไม่มีชื่อ",
+      "searchPlaceholder": "ค้นหาผู้มุ่งหวังจากชื่อหรือบริษัท",
+      "filterAll": "ทั้งหมด",
+      "insight": "ข้อมูลเชิงลึก",
+      "insightBody": "มีผู้มุ่งหวัง {count} รายที่น่าติดต่อก่อน",
+      "insightAction": "รายการแนะนำ",
+      "aiScore": "คะแนน AI",
+      "confidence": "ความเชื่อมั่น {percent}%",
+      "moreFilters": "ตัวกรองเพิ่มเติม",
+      "newLead": "ผู้มุ่งหวังใหม่"
     },
     "opportunities": {
       "title": "โอกาสขาย",
@@ -2961,11 +2980,56 @@
       "saving": "กำลังบันทึก…",
       "empty": "ยังไม่มีโอกาสขาย",
       "convert": "แปลงเป็นลูกค้า",
-      "converting": "กำลังแปลง…"
+      "converting": "กำลังแปลง…",
+      "searchPlaceholder": "ค้นหาชื่อโครงการ ดีล หรือผู้ว่าจ้าง",
+      "forecastTitle": "การคาดการณ์ปิดการขาย",
+      "portfolioAverage": "พอร์ตโฟลิโอเฉลี่ย",
+      "advice": "คำแนะนำเชิงกลยุทธ์",
+      "viewAnalysis": "ดูการวิเคราะห์รายละเอียด",
+      "winRate": "อัตราชนะ",
+      "projectValue": "มูลค่าโครงการ",
+      "manageDeal": "จัดการดีล",
+      "sortBy": "เรียงตาม: มูลค่าสูงสุด",
+      "totalValue": "มูลค่ารวม",
+      "forecastLabel": "คาดการณ์",
+      "newOpportunity": "สร้างโอกาสขาย",
+      "moreFilters": "ตัวกรองเพิ่มเติม",
+      "closeDate": "กำหนดปิดการขาย",
+      "dealCount": "{count} ดีล"
     },
     "customers": {
       "title": "ลูกค้า",
-      "empty": "ยังไม่มีลูกค้า"
+      "empty": "ยังไม่มีลูกค้า",
+      "searchPlaceholder": "ค้นหาชื่อบริษัท ผู้ติดต่อ เลขประจำตัวผู้เสียภาษี",
+      "relationship": "ความสัมพันธ์และความเสี่ยง",
+      "trustIndex": "ดัชนีสุขภาพคู่สัญญา",
+      "repeatRate": "อัตรากลับมาใช้ซ้ำ",
+      "repeatProjects": "{count} โครงการต่อเนื่อง",
+      "heading": "บัญชีผู้ว่าจ้างหลัก",
+      "activeProjects": "โครงการที่กำลังดำเนินงาน",
+      "terms": "เงื่อนไขการชำระเงิน",
+      "projectsValue": "{count} โครงการ · {value}",
+      "viewHistory": "ดูประวัติ",
+      "moreFilters": "ตัวกรองเพิ่มเติม"
+    },
+    "drawer": {
+      "groupSales": "งานขายและลูกค้าสัมพันธ์",
+      "groupPrecon": "เตรียมประมูลงาน และสัญญา",
+      "groupAssets": "อสังหาริมทรัพย์ และส่งมอบ",
+      "overview": "ภาพรวมยอดขาย",
+      "leads": "ทำเนียบผู้สนใจ",
+      "pipeline": "ไปป์ไลน์การขาย",
+      "customers": "ลูกค้าและผู้ว่าจ้าง",
+      "proposal": "ร่างข้อเสนอด้วย AI",
+      "tender": "จัดการเอกสารประกวดราคา",
+      "contracts": "สัญญาจ้างหลัก",
+      "inviteOwner": "เชิญเจ้าของโครงการ",
+      "unitMatrix": "ผังยูนิต และพรีเซลส์",
+      "handover": "บันทึกตรวจรับส่งมอบ",
+      "newBadge": "{count} ใหม่",
+      "dealsBadge": "{count} ดีล",
+      "groupSystem": "ระบบ และข้อกำหนด",
+      "tenderBadge": "{count} ปิดรับ"
     }
   },
   "reattest": {
@@ -3156,5 +3220,19 @@
     "download": "ดาวน์โหลดไฟล์",
     "linkFailed": "เปิดลิงก์ดาวน์โหลดไม่ได้ กรุณาลองใหม่",
     "notAvailableYet": "ยังไม่เปิดใช้ การขอสำเนาข้อมูลยังไม่ได้เปิดใช้สำหรับองค์กรนี้ ไม่ได้มีอะไรผิดพลาด และระหว่างนี้คุณติดต่อสำนักงานคุ้มครองข้อมูลของเราได้"
+  },
+  "accountSettings": {
+    "groupAccount": "บัญชี",
+    "groupPreferences": "การตั้งค่า",
+    "groupSystem": "ระบบ",
+    "personalInfo": "ข้อมูลส่วนตัว",
+    "securityMfa": "ความปลอดภัยและ MFA",
+    "mfaActive": "เปิดใช้ MFA แล้ว",
+    "mfaOff": "ยังไม่ได้ตั้ง MFA",
+    "biometric": "เข้าใช้งานด้วยไบโอเมตริก",
+    "notificationPrefs": "การแจ้งเตือน",
+    "language": "ภาษา",
+    "offlineData": "ข้อมูลออฟไลน์",
+    "offlineDataBody": "ไฟล์และแบบที่เก็บไว้ในเครื่อง"
   }
 }

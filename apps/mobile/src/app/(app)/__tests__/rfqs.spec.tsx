@@ -4,7 +4,8 @@
 // list screen: a `<FetchListScreen />` printing a number and a status. It is now a queue with
 // counted chips, per-row quotation fetches and a real deadline countdown, and those tests moved here
 // with it — a shared spec file for "every plain list" cannot describe a screen that stopped being
-// one.
+// one. THAT FILE NO LONGER EXISTS: its other screen, Customers, outgrew `<FetchListScreen />` the
+// same way on 2026-09-10 and took its tests to `customers.spec.tsx`, leaving nothing behind.
 
 import React from 'react';
 import { render, waitFor, fireEvent } from '@testing-library/react-native';

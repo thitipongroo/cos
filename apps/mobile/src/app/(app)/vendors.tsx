@@ -46,8 +46,9 @@
 // TOP RATED is not a stored badge — see lib/vendorBadge.ts for why it is derived from the score.
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { View, Text, TextInput, ScrollView, Pressable, StyleSheet, Alert } from 'react-native';
+import { View, Text, ScrollView, Pressable, StyleSheet, Alert } from 'react-native';
 import { LoadingState } from '../../components/LoadingState';
+import { SearchField, SearchFieldButton } from '../../components/SearchField';
 import { MaterialIcons } from '@expo/vector-icons';
 import { AiCardFooter } from '../../components/AiCardFooter';
 import { ProjectContextBar } from '../../components/ProjectContextBar';
@@ -212,36 +213,28 @@ export default function VendorsScreen(): React.JSX.Element {
       <ProjectContextBar />
 
       {/* SEARCH — the drawing carries both trailing controls INSIDE the field. */}
-      <View style={styles.search}>
-        <MaterialIcons name="search" size={20} color={p.muted} />
-        <TextInput
-          testID="vendors-search"
-          value={query}
-          onChangeText={setQuery}
-          placeholder={t('vendors.searchPlaceholder')}
-          placeholderTextColor={p.muted}
-          accessibilityLabel={t('vendors.searchPlaceholder')}
-          style={styles.searchInput}
-        />
-        <Pressable
+      <SearchField
+        testID="vendors-search"
+        value={query}
+        onChangeText={setQuery}
+        placeholder={t('vendors.searchPlaceholder')}
+      >
+        <SearchFieldButton
           testID="vendors-voice"
-          accessibilityRole="button"
-          accessibilityLabel={t('vendors.voiceSearch')}
+          icon="mic"
+          label={t('vendors.voiceSearch')}
           onPress={() => comingSoon('vendors.voiceSearch')}
-          style={styles.searchBtn}
-        >
-          <MaterialIcons name="mic" size={18} color={p.muted} />
-        </Pressable>
-        <Pressable
+          tone={p.muted}
+        />
+        {/* `active` fills the plate — this drawing shows the filter button as the one that is on. */}
+        <SearchFieldButton
           testID="vendors-tune"
-          accessibilityRole="button"
-          accessibilityLabel={t('vendors.moreFilters')}
+          icon="tune"
+          label={t('vendors.moreFilters')}
           onPress={() => comingSoon('vendors.moreFilters')}
-          style={[styles.searchBtn, styles.searchBtnOn]}
-        >
-          <MaterialIcons name="tune" size={18} color={p.accent} />
-        </Pressable>
-      </View>
+          active
+        />
+      </SearchField>
 
       <ScrollView
         horizontal
@@ -482,34 +475,6 @@ export default function VendorsScreen(): React.JSX.Element {
 const makeStyles = (p: Palette) =>
   StyleSheet.create({
     page: { padding: spacing.md, gap: spacing.md },
-
-    search: {
-      minHeight: touchTarget.formInput,
-      borderRadius: radius.lg,
-      borderWidth: 1,
-      borderColor: p.border,
-      backgroundColor: p.surface,
-      paddingLeft: spacing.md,
-      paddingRight: spacing.xs / 2,
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: spacing.sm,
-    },
-    searchInput: {
-      flex: 1,
-      color: p.text,
-      fontFamily: fontFamily.regular,
-      fontSize: typography.caption.fontSize,
-      paddingVertical: 0,
-    },
-    searchBtn: {
-      width: 32,
-      height: 32,
-      borderRadius: radius.md,
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    searchBtnOn: { backgroundColor: p.surfaceBright, borderWidth: 1, borderColor: p.border },
 
     chipRow: { gap: spacing.xs, paddingRight: spacing.md, alignItems: 'center' },
     chip: {

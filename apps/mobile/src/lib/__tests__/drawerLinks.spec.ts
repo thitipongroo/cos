@@ -2,6 +2,7 @@ import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { CosRole } from '@cos/types';
 import {
+  drawerGroupsFor,
   drawerLinksFor,
   drawerSectionFor,
   DRAWER_MAX_ROWS,
@@ -460,5 +461,156 @@ describe('drawerSectionFor — row seven becomes More', () => {
     const exec = drawerSectionFor(CosRole.EXECUTIVE);
     const folded = [...exec.visible, ...exec.overflow].map((link) => link.route);
     for (const shared of SHARED_LINKS) expect(folded).not.toContain(shared.route);
+  });
+});
+
+describe('drawerGroupsFor — the grouped menu, and who gets one', () => {
+  // The split exists so one role's drawing can be honoured without restructuring eleven other
+  // drawers. `null` is what says "render the flat list"; an empty array would say "render nothing",
+  // which is a different and much worse answer.
+  it('gives every role but the CRM manager no grouped menu at all', () => {
+    for (const role of Object.values(CosRole)) {
+      if (role === CosRole.CRM_SALES_MANAGER) continue;
+      expect({ role, groups: drawerGroupsFor(role) }).toEqual({ role, groups: null });
+    }
+  });
+
+  it('gives a session with no role no grouped menu either', () => {
+    expect(drawerGroupsFor(null)).toBeNull();
+    expect(drawerGroupsFor(undefined)).toBeNull();
+  });
+
+  it('gives the CRM manager the drawing’s three built groups, in its order', () => {
+    // The fourth group is SHARED_LINKS under a heading and is rendered by the component, so it is
+    // deliberately not in this table — see drawerLinks.ts.
+    expect(drawerGroupsFor(CosRole.CRM_SALES_MANAGER)?.map((g) => g.titleKey)).toEqual([
+      'crm.drawer.groupSales',
+      'crm.drawer.groupPrecon',
+      'crm.drawer.groupAssets',
+    ]);
+  });
+
+  // PO decision 2026-09-10 (plan item 4.5). These four ARE this role's bottom tabs, which the flat
+  // table forbids and this one is the single named exception to. The exception is confined here:
+  // no other role can pick up a duplicate row by accident.
+  it('routes exactly four rows, and every one of them to a screen that exists', () => {
+    const groups = drawerGroupsFor(CosRole.CRM_SALES_MANAGER) ?? [];
+    const routed = groups.flatMap((g) => g.rows).filter((r) => r.comingSoon !== true);
+
+    expect(routed.map((r) => r.route)).toEqual(['/home', '/leads', '/opportunities', '/customers']);
+    for (const row of routed) {
+      expect({
+        route: row.route,
+        exists: existsSync(join(APP_DIR, screenFile(row.route))),
+      }).toEqual({ route: row.route, exists: true });
+    }
+  });
+
+  // The other six draw and say so on tap. What must never happen is one of them acquiring a real
+  // route by accident, because a `comingSoon` row is never pushed — it would become a dead row.
+  it('leaves the six unbuilt rows pointing at no screen this app has', () => {
+    const groups = drawerGroupsFor(CosRole.CRM_SALES_MANAGER) ?? [];
+    const unbuilt = groups.flatMap((g) => g.rows).filter((r) => r.comingSoon === true);
+
+    expect(unbuilt).toHaveLength(6);
+    for (const row of unbuilt) {
+      expect({
+        route: row.route,
+        exists: existsSync(join(APP_DIR, screenFile(row.route))),
+      }).toEqual({ route: row.route, exists: false });
+      expect(row.href).toBeUndefined();
+    }
+  });
+
+  it('counts two badges from real lists and draws exactly one', () => {
+    const rows = (drawerGroupsFor(CosRole.CRM_SALES_MANAGER) ?? []).flatMap((g) => g.rows);
+    const badged = rows.filter((r) => r.badge !== undefined);
+
+    expect(badged.map((r) => r.route)).toEqual(['/leads', '/opportunities', '/crm-tenders']);
+    // Counted: the two whose lists this app can actually read.
+    expect(badged.slice(0, 2).every((r) => r.badge !== undefined && 'count' in r.badge)).toBe(true);
+    // Drawn: there is no tender table to count (ADR-099, CRM_DRAWER_COUNTS).
+    expect(badged[2]!.badge !== undefined && 'drawn' in badged[2]!.badge).toBe(true);
+  });
+
+  it('draws no operating-region row — no schema here holds a region for a user', () => {
+    const rows = (drawerGroupsFor(CosRole.CRM_SALES_MANAGER) ?? []).flatMap((g) => g.rows);
+    expect(rows.some((r) => /region/i.test(r.route) || /region/i.test(r.labelKey))).toBe(false);
+  });
+
+  // The AI report the drawing lists is a CARD on the CRM home dashboard, not a screen. A row onto
+  // /home under a second name would be the second door onto one room.
+  it('offers no second row onto the home dashboard', () => {
+    const rows = (drawerGroupsFor(CosRole.CRM_SALES_MANAGER) ?? []).flatMap((g) => g.rows);
+    expect(rows.filter((r) => r.route === '/home')).toHaveLength(1);
+  });
+});
+
+describe('the CRM drawer’s copy', () => {
+  // WHY THIS PINS ACTUAL WORDS, which a spec should normally avoid.
+  //
+  // THE SHORT LABELS ARE DELIBERATE and they are the product owner's own edit (2026-09-10).
+  // "Clients and customers", "Draft a proposal with AI", "Tender documents", "Unit matrix and
+  // presales" and "Pre-construction and contracts" each wrapped onto a second line in a 310dp
+  // panel, which puts one tall row among short ones and its badge out of line with the rest.
+  //
+  // This list exists because I did not recognise that edit for what it was: I found the shorter
+  // strings, could not account for them, treated them as damage and wrote the long ones back. A
+  // pinned list makes the copy a decision that has to be made HERE rather than something that can
+  // be quietly reverted by whoever looks at it next.
+  //
+  // If a label needs to change, change it in both catalogues and in this list. That is the point.
+  it('keeps the row labels short enough for one line', () => {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const en = require('../../i18n/en.json') as { crm: { drawer: Record<string, string> } };
+
+    expect(en.crm.drawer).toMatchObject({
+      groupSales: 'Sales and clients',
+      groupPrecon: 'Pre-construction',
+      groupAssets: 'Property and handover',
+      groupSystem: 'System and policies',
+      overview: 'Sales overview',
+      leads: 'Lead directory',
+      pipeline: 'Sales pipeline',
+      customers: 'customers',
+      proposal: 'Draft proposal',
+      tender: 'Tender',
+      contracts: 'Master contracts',
+      inviteOwner: 'Invite a project owner',
+      unitMatrix: 'Unit matrix',
+      handover: 'Handover records',
+    });
+  });
+
+  // Every row in the table must have copy behind it in BOTH catalogues. `parity.spec.ts` compares
+  // the two key sets against each other; nothing until now compared either against the table that
+  // asks for the keys, so a row added with a typo'd labelKey would render its own key as its label.
+  it('has copy for every row and group the table names, in both catalogues', () => {
+    /* eslint-disable @typescript-eslint/no-require-imports */
+    const en = require('../../i18n/en.json') as Record<string, never>;
+    const th = require('../../i18n/th.json') as Record<string, never>;
+    /* eslint-enable @typescript-eslint/no-require-imports */
+
+    const read = (messages: Record<string, never>, key: string): unknown =>
+      key.split('.').reduce<unknown>((acc, part) => {
+        if (acc && typeof acc === 'object' && part in (acc as Record<string, unknown>)) {
+          return (acc as Record<string, unknown>)[part];
+        }
+        return undefined;
+      }, messages);
+
+    const groups = drawerGroupsFor(CosRole.CRM_SALES_MANAGER) ?? [];
+    const keys = [
+      ...groups.map((g) => g.titleKey),
+      ...groups.flatMap((g) => g.rows.map((r) => r.labelKey)),
+      ...groups.flatMap((g) =>
+        g.rows.flatMap((r) => (r.badge === undefined ? [] : [r.badge.labelKey])),
+      ),
+    ];
+
+    for (const key of keys) {
+      expect({ key, en: typeof read(en, key) }).toEqual({ key, en: 'string' });
+      expect({ key, th: typeof read(th, key) }).toEqual({ key, th: 'string' });
+    }
   });
 });

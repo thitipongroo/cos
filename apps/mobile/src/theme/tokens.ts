@@ -45,6 +45,41 @@ export const darkColors = {
   // The value is the mockups' own, counted rather than chosen: of the 194 mockup/mobile/**/code.html
   // files that declare `surface-bright`, 190 declare #2a3a4f (two #1e293b, one #1E293B, one #1b2b3f).
   surfaceBright: '#2A3A4F',
+  // --cos-dark-surface-container-high. ADDED 2026-09-10, because `surfaceBright` above turned out
+  // to be the WRONG STEP for a panel that fills a card rather than a chip that sits on one: at
+  // #2A3A4F a fact panel or a forecast cell competes with the card's own content for attention.
+  //
+  // The drawings are the evidence. On `12_crm_manager/06_opportunities` the inner panels are
+  // `bg-surface-container-high` 16 times against 4 uses of `bg-surface-bright`; on
+  // `07_customers` it is 8 against 6. Bright is for the brightest few chips; this is for the
+  // panels. One step apart on the mockups' scale, and the difference is exactly the complaint.
+  //
+  // Counted rather than chosen, like the line above it: of the 202 mockup/mobile/**/code.html
+  // files that declare `surface-container-high`, 197 declare #1b2b3f (two #1e293b, one each of
+  // #0f172a, #232d47 and #111827).
+  surfaceSoft: '#1B2B3F',
+  // --cos-dark-surface-container-low. ADDED 2026-09-10 (PO decision), and it is the FIRST token in
+  // this set that goes DOWN from the card rather than up.
+  //
+  // A panel is not always a raised thing. The drawings sink the ones that hold a card's own facts
+  // and raise the ones that label it, and the customers card shows both at once:
+  //
+  //   the card itself            bg-surface-container       #102034
+  //   its two-column fact panel  bg-surface-container-low   #0b1c30   <- DOWN, this token
+  //   the relationship cells     bg-surface-container-low   #0b1c30   <- DOWN
+  //   the avatar plate           bg-surface-container-high  #1b2b3f   <- up
+  //   the contact circle         bg-surface-bright          #2a3a4f   <- up
+  //
+  // So "panels sink, chips rise". A fact panel that floats above its card competes with the card;
+  // sunk, it reads as a recess the card's own numbers sit in.
+  //
+  // IT IS NOT THE PAGE COLOUR, which is the mistake this whole sequence started from: #0B1C30 sits
+  // between --cos-dark-bg #020617 and the #0F172A card, so it reads as a step down INTO the card
+  // rather than a hole punched through it.
+  //
+  // Counted rather than chosen, like the two above: of the 203 mockup/mobile/**/code.html files
+  // that declare `surface-container-low`, 199 declare #0b1c30 (three #0f172a, one #020617).
+  surfaceSunk: '#0B1C30',
   // --cos-dark-surface-container. SPECIFIED 2026-08-06 (PO decision) for the BOTTOM NAV, and only
   // for it. The mockups draw the two pieces of chrome differently and deliberately: the header is
   // `bg-surface dark:bg-dark-bg`, so on `<html class="dark">` with `darkMode: "class"` the dark:

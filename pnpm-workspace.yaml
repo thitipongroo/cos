@@ -124,6 +124,29 @@ overrides:
   # merge shapes (nested records, arrays, nulls, functions, Dates, empty objects) with identical
   # results.
   'deepmerge-ts@<8.0.0': '^8.0.0'
+  # GHSA-vxpw-j846-p89q (DoS via WebSocket fragment-count bypass, patched 6.27.0) +
+  # GHSA-v9p9-hfj2-hcw8 (unbounded memory consumption in WebSocket permessage-deflate, patched
+  # 6.24.0) + a third advisory reported alongside them, "Unhandled Exception in WebSocket Client"
+  # (also patched 6.24.0), whose GHSA id is deliberately not written here because it was not read
+  # off the audit output — the two above were. All three are against undici's WebSocket client, and
+  # 6.27.0 clears every one. The vulnerable copy is
+  # undici 5.29.0, pulled by testcontainers@10.28.0, which pins '^5.29.0' — testcontainers 11+ moved
+  # to undici ^7, so the alternative to this line is a major bump of the dev dependency that 13
+  # integration suites are built on.
+  #
+  # COMPATIBILITY WAS VERIFIED, NOT ASSUMED. testcontainers@10.28.0 imports exactly ONE symbol from
+  # undici, in one file: `Agent` in build/wait-strategies/http-wait-strategy.js, constructed as
+  # `new Agent({ connect: { rejectUnauthorized: false } })`. That signature is unchanged across
+  # undici 5, 6 and 7. The `fetch` on the line above it is the Node GLOBAL, not undici's — there is
+  # no `undici_1.` prefix on it. And the one call site is behind `if (this._allowInsecure)`, which
+  # nothing in this repository sets: every `Wait.forHttp` here (test-utils/containers.ts, the
+  # ClickHouse and Elasticsearch suites) uses plain HTTP against a container port.
+  #
+  # It also CONVERGES the tree rather than adding to it: undici 6.27.0 is already present via
+  # @digitalbazaar/http-client, so this replaces two copies with one. undici 6 requires Node >= 18;
+  # CI runs Node 24.
+  'undici@<6.27.0': '^6.27.0'
+  'smol-toml@<=1.7.0': '^1.7.1' # GHSA-7w5x-hrqm-74c2 — DoS parsing a malformed TOML document. Dev-only and single-sourced (root devDependency markdownlint-cli2@0.23.1 > smol-toml), and a patch release fixes it, so it is bumped rather than suppressed
   'nanoid@<3.3.18': '^3.3.18' # GHSA-2v37-7h3g-55p8 — a custom alphabet generator loops forever when size is 0, hanging the caller; only the 3.x line is in this tree (via postcss ← next / tailwind / webpack), so the advisory's other branch (>=4.0.0 <5.1.6) needs no entry. Range widened from <3.3.17: the advisory was re-scoped after 3.3.17 shipped an incomplete fix, and now reads vulnerable <3.3.18 / patched >=3.3.18 — the pinned 3.3.17 became vulnerable again where it stood, which is what turned the audit gate red
 
 auditConfig:

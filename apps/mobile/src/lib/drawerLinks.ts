@@ -74,6 +74,7 @@
 
 import type { MaterialIcons } from '@expo/vector-icons';
 import { CosRole } from '@cos/types';
+import { CRM_DRAWER_COUNTS } from './mockupFigures';
 import { overflowTabsFor, visibleTabsFor } from './roleTabs';
 
 export interface DrawerLink {
@@ -599,4 +600,164 @@ export function drawerSectionFor(role: CosRole | null | undefined): DrawerSectio
     visible: links.slice(0, DRAWER_MAX_ROWS - 1),
     overflow: links.slice(DRAWER_MAX_ROWS - 1),
   };
+}
+
+// ── GROUPED DRAWERS ─────────────────────────────────────────────────────────────────────────────
+//
+// Everything above renders as ONE flat list under a single "Field tools" heading, folded at seven.
+// That is what eleven of the twelve roles still get, unchanged.
+//
+// CRM_SALES_MANAGER's drawer drawing (mockup/mobile/12_crm_manager/05_profile/02_crm_navigation_
+// drawer, from Stitch 2026-09-10) is a different shape: four titled groups, a badge on two rows, and
+// most of its rows leading to screens this product does not have. A flat seven-row list cannot say
+// any of that, so this role gets a grouped menu and the other eleven keep theirs — which is also why
+// `drawerGroupsFor` returns `null` rather than an empty array for a role with no grouped menu. Null
+// means "render the flat list"; an empty array would mean "render nothing".
+//
+// ── FOUR RULES WERE APPLIED TO THE DRAWING, AND EACH COST IT SOMETHING ─────────────────────────
+//
+// 1. THE ROWS ONTO TABS ARE KEPT HERE, and this is the one place in this file where a drawer row is
+//    also a bottom tab. The rule above — "A DRAWER ENTRY IS NEVER ALSO A TAB" — is suspended for
+//    this role by product-owner decision 2026-09-10 (plan item 4.5, approved: "overview → /home,
+//    leads → /leads, pipeline → /opportunities, customers → /customers"). All four ARE this role's
+//    bar. The drawing puts them in the drawer because they are the group that gives the other two
+//    groups their meaning: a menu whose sales section is empty says this role has no sales screens.
+//    It is a deliberate exception with a named decision behind it, not the rule falling over — and
+//    it is confined to `GROUPED`, so no other role can acquire a duplicate row by accident.
+//
+// 2. THE "รายงานอัจฉริยะ" (AI report) ROW IS NOT BUILT. It has no route, and it is not a screen: the
+//    CRM home dashboard renders that report as a card (`components/home/CrmHome.tsx`). A row onto
+//    `/home` under a second name is the second door onto one room that rule 1's exception was
+//    narrowly opened for, and it is not on the approved list of routed rows. `crm.drawer.
+//    intelligence` was deleted from both catalogues with it rather than left as dead copy.
+//
+// 3. THE GROUP EYEBROWS ARE NOT DRAWN — "COMMERCIAL", "PRE-CON", "V3 REAL ESTATE" opposite the three
+//    group titles. Each restates its own title in an English abbreviation, which is the "a heading
+//    is stated once" rule the token spec already applies to a card sitting under a section label
+//    (`.claude/rules/design-tokens.md`); and the third is a Stitch version marker rather than a
+//    label at all. The titles carry the grouping on their own.
+//
+// 4. THERE IS NO OPERATING-REGION BAR. The drawing heads the menu with "ภูมิภาคปฏิบัติการ: กทม. &
+//    ปริมณฑล (CBD)" and a switch button. NO SCHEMA IN THIS PRODUCT HOLDS A REGION FOR A USER — not
+//    `platform.users`, not `platform.tenants` — so the bar could only ever print a constant and its
+//    button could only ever do nothing. `<ProjectContextBar />` answers "which project", which is a
+//    different question and already has its own component. Recorded here and in the component.
+
+/** A row in a grouped drawer. */
+export interface DrawerRow extends DrawerLink {
+  /**
+   * The screen is not built. The row draws, and says so on tap — it never pushes.
+   *
+   * Drawn rather than dropped because the drawing is the record of what this role's menu is meant
+   * to become, and a menu that silently omits six of its eleven rows reads as a complete menu.
+   */
+  comingSoon?: true;
+  /**
+   * The trailing badge, when the row carries one.
+   *
+   * `count` is a COUNTABLE list — the component fetches it and the badge appears only once a real
+   * number has arrived. `drawn` is a registered figure (ADR-099) for a row with no endpoint behind
+   * it at all. A row has one or the other, never both.
+   */
+  badge?:
+    { labelKey: string; count: 'newLeads' | 'openDeals' } | { labelKey: string; drawn: number };
+}
+
+export interface DrawerGroup {
+  titleKey: string;
+  rows: readonly DrawerRow[];
+}
+
+/**
+ * The grouped menus, by role. One role today.
+ *
+ * Group 4 is not listed: it is `SHARED_LINKS` under a heading, so that Settings and the Privacy
+ * Policy cannot fall out of step with the eleven flat drawers by being written down twice.
+ */
+const GROUPED: Partial<Record<CosRole, readonly DrawerGroup[]>> = {
+  [CRM_SALES_MANAGER]: [
+    {
+      titleKey: 'crm.drawer.groupSales',
+      rows: [
+        { route: '/home', labelKey: 'crm.drawer.overview', icon: 'dashboard' },
+        {
+          route: '/leads',
+          labelKey: 'crm.drawer.leads',
+          icon: 'groups',
+          // REAL: leads whose status is NEW, counted from `GET /crm/leads`.
+          badge: { labelKey: 'crm.drawer.newBadge', count: 'newLeads' },
+        },
+        {
+          route: '/opportunities',
+          labelKey: 'crm.drawer.pipeline',
+          icon: 'leaderboard',
+          // REAL: opportunities still OPEN, counted from `GET /crm/opportunities`.
+          badge: { labelKey: 'crm.drawer.dealsBadge', count: 'openDeals' },
+        },
+        { route: '/customers', labelKey: 'crm.drawer.customers', icon: 'corporate-fare' },
+      ],
+    },
+    {
+      titleKey: 'crm.drawer.groupPrecon',
+      rows: [
+        {
+          route: '/crm-proposal',
+          labelKey: 'crm.drawer.proposal',
+          icon: 'draw',
+          comingSoon: true,
+        },
+        {
+          route: '/crm-tenders',
+          labelKey: 'crm.drawer.tender',
+          icon: 'gavel',
+          comingSoon: true,
+          // DRAWN, and the only badge here that is: there is no tender table to count.
+          badge: {
+            labelKey: 'crm.drawer.tenderBadge',
+            drawn: CRM_DRAWER_COUNTS.value.closingTenders,
+          },
+        },
+        {
+          route: '/crm-contracts',
+          labelKey: 'crm.drawer.contracts',
+          icon: 'article',
+          comingSoon: true,
+        },
+        {
+          route: '/crm-invite-owner',
+          labelKey: 'crm.drawer.inviteOwner',
+          icon: 'person-add',
+          comingSoon: true,
+        },
+      ],
+    },
+    {
+      titleKey: 'crm.drawer.groupAssets',
+      rows: [
+        {
+          route: '/crm-unit-matrix',
+          labelKey: 'crm.drawer.unitMatrix',
+          icon: 'grid-view',
+          comingSoon: true,
+        },
+        {
+          route: '/crm-handover',
+          labelKey: 'crm.drawer.handover',
+          icon: 'key',
+          comingSoon: true,
+        },
+      ],
+    },
+  ],
+};
+
+/**
+ * The role's grouped menu, or `null` where it has none and the flat list above applies.
+ *
+ * A `comingSoon` row's `route` is a KEY, not a destination: nothing pushes it, and the paths above
+ * deliberately do not exist. They are unique and readable so a row can be addressed by test id.
+ */
+export function drawerGroupsFor(role: CosRole | null | undefined): readonly DrawerGroup[] | null {
+  if (role == null) return null;
+  return GROUPED[role] ?? null;
 }

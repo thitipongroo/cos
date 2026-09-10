@@ -1,0 +1,344 @@
+<!DOCTYPE html><html class="dark" lang="en" style=""><head><meta charset="utf-8"><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"><link href="https://fonts.googleapis.com" rel="preconnect"><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"><link href="https://fonts.googleapis.com/css2?family=Inter+Tight:ital,wght@0,400;0,500;0,600;0,700;1,400&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"><style>@layer base{html,body{width:100vw;margin:0;padding:0;background-color:#031427;color:#d3e4fe;}body{overscroll-behavior-y:none;-webkit-tap-highlight-color:transparent;}.pb-safe{padding-bottom:env(safe-area-inset-bottom,0px);}.pt-safe{padding-top:env(safe-area-inset-top,0px);}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config={darkMode:"class",theme:{extend:{"colors":{"mobile-success":"#00C853","on-tertiary-fixed":"#161b2b","on-secondary-fixed-variant":"#004e5c","background":"#031427","on-secondary-container":"#00424e","surface":"#031427","outline":"#8d90a0","on-secondary-fixed":"#001f26","secondary-fixed-dim":"#4cd7f6","surface-container-lowest":"#000f21","tertiary":"#c1c5dc","tertiary-fixed":"#dee1f9","primary":"#b4c5ff","inverse-surface":"#d3e4fe","sync-pending":"#94A3B8","on-surface-variant":"#c3c6d7","on-tertiary-fixed-variant":"#414658","on-error-container":"#ffdad6","surface-container-high":"#1b2b3f","on-background":"#d3e4fe","on-primary-fixed":"#00174b","surface-bright":"#2a3a4f","primary-fixed":"#dbe1ff","tertiary-container":"#686c80","surface-variant":"#26364a","mobile-primary":"#0066FF","mobile-danger":"#FF3B30","surface-dim":"#031427","on-secondary":"#003640","error":"#ffb4ab","dark-surface":"#0F172A","primary-fixed-dim":"#b4c5ff","surface-container":"#102034","on-tertiary-container":"#eeefff","on-tertiary":"#2b3041","secondary-container":"#03b5d3","outline-variant":"#434655","on-surface":"#d3e4fe","surface-container-low":"#0b1c30","error-container":"#93000a","on-primary-container":"#eeefff","mobile-warning":"#FF9500","secondary-fixed":"#acedff","sync-active":"#FFD60A","surface-container-highest":"#26364a","inverse-on-surface":"#213145","tertiary-fixed-dim":"#c1c5dc","dark-bg":"#020617","surface-tint":"#b4c5ff","on-primary-fixed-variant":"#003ea8","primary-container":"#2563eb","on-error":"#690005","on-primary":"#002a78","inverse-primary":"#0053db","secondary":"#4cd7f6"},"borderRadius":{"DEFAULT":"0.25rem","lg":"0.5rem","xl":"0.75rem","full":"9999px"},"spacing":{"space-2":"8px","base":"4px","web-margin":"32px","space-3":"12px","space-4":"16px","edge-mobile":"24px","space-1":"4px","touch-target":"52px"},"fontFamily":{"tiny-web":["Inter Tight"],"hero-mobile":["Inter Tight"],"body-mobile":["Inter Tight"],"h2-web":["Inter Tight"],"label-mobile":["Inter Tight"],"body-web":["Inter Tight"],"h1-web":["Inter Tight"],"display-web":["Inter Tight"]},"fontSize":{"tiny-web":["11px",{"lineHeight":"12px","letterSpacing":"0.05em","fontWeight":"500"}],"hero-mobile":["28px",{"lineHeight":"34px","fontWeight":"700"}],"body-mobile":["17px",{"lineHeight":"24px","fontWeight":"400"}],"h2-web":["20px",{"lineHeight":"28px","fontWeight":"600"}],"label-mobile":["13px",{"lineHeight":"18px","fontWeight":"600"}],"body-web":["14px",{"lineHeight":"20px","fontWeight":"400"}],"h1-web":["24px",{"lineHeight":"32px","fontWeight":"600"}],"display-web":["32px",{"lineHeight":"40px","letterSpacing":"-0.02em","fontWeight":"700"}]}}}}</script><style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head><body class="bg-surface font-body-mobile text-body-mobile text-on-surface min-h-screen flex flex-col"><header class="fixed top-0 inset-x-0 z-50 bg-surface/85 backdrop-blur-xl pt-safe shadow-[0_1px_8px_rgba(0,0,0,0.25)]"><div class="h-16 px-edge-mobile flex items-center justify-between border-b border-outline-variant/30"><div class="flex items-center gap-2.5 cursor-pointer"><svg class="w-[26px] h-[26px] shrink-0" viewBox="0 0 100 100" fill="none"><path d="M50 5 L90 27.5 L90 72.5 L50 95 L10 72.5 L10 27.5 Z" stroke="#2563EB" stroke-width="7" fill="#0B1020"></path><rect x="24" y="32" width="52" height="7.5" rx="3.75" fill="#FFFFFF"></rect><rect x="24" y="47" width="52" height="7.5" rx="3.75" fill="#FFFFFF"></rect><rect x="24" y="62" width="16" height="7.5" rx="3.75" fill="#4CD7F6"></rect><rect x="44" y="62" width="32" height="7.5" rx="3.75" fill="#FFFFFF"></rect></svg><div class="flex flex-col justify-center"><div class="font-bold uppercase tracking-wider text-[14px] leading-tight text-white">CONSTRUCTION <span class="text-[#4CD7F6]">OS</span></div><span class="text-[8px] uppercase tracking-[1.5px] font-medium text-[#64748B] leading-tight mt-0.5">AI-NATIVE CONSTRUCTION...</span></div></div><div class="flex items-center gap-space-2"><div class="flex items-center justify-center p-1 rounded bg-surface-container-high/50 border border-outline-variant/30 text-mobile-success"><span class="material-symbols-outlined text-[16px]" style="color: rgb(0, 200, 83);">cloud_done</span></div><button class="w-9 h-9 flex items-center justify-center text-on-surface hover:text-white transition-colors"><span class="material-symbols-outlined text-[22px]">help_outline</span></button><button class="relative w-9 h-9 flex items-center justify-center text-on-surface hover:text-white transition-colors"><span class="material-symbols-outlined text-[24px]">notifications_none</span><span class="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-mobile-danger"></span></button><div class="w-8 h-8 rounded-full bg-surface-container-high border border-outline-variant/40 flex items-center justify-center shrink-0 font-label-mobile text-[12px] font-bold text-on-surface tracking-wider">CN</div></div></div></header><main class="flex flex-col relative w-full px-edge-mobile pt-16 pb-28 bg-surface"><div class="flex flex-col w-full gap-space-4">
+<!-- Subheader & Page Context -->
+<section class="flex flex-col gap-1">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-space-2">
+<span class="w-1.5 h-4 rounded-full bg-secondary"></span>
+
+</div>
+
+</div>
+
+</section>
+<!-- Search & Filter Controls -->
+<section class="flex flex-col gap-space-3">
+<!-- Search Bar -->
+<div class="relative flex items-center w-full">
+<span class="material-symbols-outlined absolute left-space-3 text-outline text-[20px] pointer-events-none">search</span>
+<input class="w-full h-touch-target pl-11 pr-10 rounded-xl bg-surface-container text-on-surface placeholder:text-outline text-body-web font-body-web focus:outline-none focus:bg-surface-container-high transition-all" id="opp-search" placeholder="ค้นหาชื่อโครงการ, ดีล หรือผู้ว่าจ้าง..." type="text">
+<button class="absolute right-space-2 w-8 h-8 rounded-lg bg-surface-container-highest flex items-center justify-center text-on-surface-variant hover:text-on-surface">
+<span class="material-symbols-outlined text-[18px]">tune</span>
+</button>
+</div>
+<!-- Quick Filters Horizontal Scroll -->
+<div class="flex items-center gap-space-2 overflow-x-auto no-scrollbar py-0.5" id="filter-container">
+<button class="shrink-0 h-9 px-3.5 rounded-full bg-primary text-on-primary font-label-mobile text-label-mobile font-semibold flex items-center gap-1.5 shadow-sm">
+<span class="">ทั้งหมด</span>
+<span class="px-1.5 py-0.5 rounded-full bg-on-primary/20 text-[11px] font-bold">18</span>
+</button>
+<button class="shrink-0 h-9 px-3.5 rounded-full bg-surface-container-high text-on-surface-variant hover:text-on-surface font-label-mobile text-label-mobile flex items-center gap-1.5 transition-colors">
+<span class="">Proposal</span>
+<span class="px-1.5 py-0.5 rounded-full bg-surface-container-highest text-primary-fixed text-[11px]">6</span>
+</button>
+<button class="shrink-0 h-9 px-3.5 rounded-full bg-surface-container-high text-on-surface-variant hover:text-on-surface font-label-mobile text-label-mobile flex items-center gap-1.5 transition-colors">
+<span class="">Negotiation</span>
+<span class="px-1.5 py-0.5 rounded-full bg-surface-container-highest text-mobile-warning text-[11px]">5</span>
+</button>
+<button class="shrink-0 h-9 px-3.5 rounded-full bg-surface-container-high text-on-surface-variant hover:text-on-surface font-label-mobile text-label-mobile flex items-center gap-1.5 transition-colors">
+<span class="">Closing</span>
+<span class="px-1.5 py-0.5 rounded-full bg-surface-container-highest text-mobile-success text-[11px]">4</span>
+</button>
+<button class="shrink-0 h-9 px-3.5 rounded-full bg-surface-container-high text-on-surface-variant hover:text-on-surface font-label-mobile text-label-mobile flex items-center gap-1.5 transition-colors">
+<span class="">Won</span>
+<span class="px-1.5 py-0.5 rounded-full bg-surface-container-highest text-secondary text-[11px]">3</span>
+</button>
+</div>
+</section>
+<!-- AI Sales Forecast Card (Palantir/Linear Tactical Styling) -->
+<section class="relative overflow-hidden rounded-xl bg-surface-container-low p-space-4 shadow-lg">
+<div class="absolute left-0 top-0 bottom-0 w-1.5 bg-secondary-container"></div>
+<div class="flex flex-col gap-space-3">
+<!-- Card Header -->
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-space-2">
+<div class="w-7 h-7 rounded-lg bg-secondary-container/20 flex items-center justify-center text-secondary">
+<span class="material-symbols-outlined text-[18px]">neurology</span>
+</div>
+<div class="flex flex-col">
+<span class="font-tiny-web text-tiny-web tracking-widest text-secondary uppercase font-bold">การคาดการณืปิดการขาย</span>
+
+</div>
+</div>
+<span class="px-2 py-0.5 rounded bg-surface-container-high text-secondary font-tiny-web text-tiny-web font-medium tracking-wide uppercase">Active</span>
+</div>
+<!-- Probability Metrics Bento Section -->
+<div class="grid grid-cols-2 gap-space-2 mt-1">
+<div class="p-3 rounded-lg bg-surface-container flex flex-col gap-1">
+<span class="font-tiny-web text-tiny-web text-on-surface-variant uppercase">พอร์ตโฟลิโอเฉลี่ย</span>
+<div class="flex items-baseline gap-1.5">
+<span class="font-hero-mobile text-hero-mobile font-bold text-secondary">78%</span>
+<span class="font-tiny-web text-tiny-web text-mobile-success flex items-center font-semibold">
+<span class="material-symbols-outlined text-[12px]">arrow_upward</span>+4.2%
+            </span>
+</div>
+<!-- Tiny SVG Sparkline -->
+<div class="w-full h-4 mt-1">
+<svg class="w-full h-full" preserveAspectRatio="none" viewBox="0 0 100 20">
+<path class="text-secondary" d="M0 16 L20 14 L40 17 L60 9 L80 11 L100 3" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"></path>
+</svg>
+</div>
+</div>
+<div class="p-3 rounded-lg bg-surface-container flex flex-col gap-1">
+<span class="font-tiny-web text-tiny-web text-on-surface-variant uppercase">Confidence</span>
+<div class="flex items-baseline gap-1.5">
+<span class="font-hero-mobile text-hero-mobile font-bold text-on-surface">92%</span>
+<span class="font-tiny-web text-tiny-web text-on-surface-variant">HIGH</span>
+</div>
+<div class="w-full bg-surface-container-highest h-1.5 rounded-full mt-2 overflow-hidden">
+<div class="bg-primary-container h-full rounded-full w-[92%]"></div>
+</div>
+</div>
+</div>
+<!-- AI Tactical Action Recommendation Banner -->
+<div class="flex items-start gap-space-2 p-2.5 rounded-lg bg-surface-container-high/60">
+<span class="material-symbols-outlined text-mobile-warning text-[18px] shrink-0 mt-0.5">bolt</span>
+<p class="font-tiny-web text-tiny-web text-on-surface-variant leading-relaxed">
+<strong class="text-on-surface font-semibold">คำแนะนำเชิงกลยุทธ์:</strong> เร่งติดตามสัญญา <span class="text-secondary underline decoration-secondary/40 underline-offset-2">Skyline Phase 2</span> ก่อนสิ้นไตรมาสเพื่อล็อคอัตรากำไรขั้นต้น
+        </p>
+</div>
+<!-- AI Action Footer -->
+<button class="w-full py-2.5 px-3 rounded-lg bg-surface-container-highest hover:bg-surface-bright active:scale-[0.98] transition-all flex items-center justify-between text-on-surface font-label-mobile text-label-mobile font-semibold">
+<span class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-secondary text-[16px]">insights</span>
+          ดูการวิเคราะห์รายละเอียด
+        </span>
+<span class="material-symbols-outlined text-[16px] text-on-surface-variant">arrow_forward</span>
+</button>
+</div>
+</section>
+<!-- Section Header: Deals List -->
+<div class="flex items-center justify-between pt-1">
+<div class="flex items-center gap-2">
+<span class="font-label-mobile text-label-mobile uppercase tracking-wider text-on-surface font-bold">โอกาสทางการขาย</span>
+<span class="px-2 py-0.5 rounded-full bg-surface-container-high text-on-surface-variant font-tiny-web text-tiny-web">3 ดีลสำคัญ</span>
+</div>
+<div class="flex items-center gap-1 text-on-surface-variant font-tiny-web text-tiny-web uppercase">
+<span class="">เรียงตาม: มูลค่าสูงสุด</span>
+<span class="material-symbols-outlined text-[14px]">expand_more</span>
+</div>
+</div>
+<!-- Opportunities List -->
+<div class="flex flex-col gap-space-3">
+<!-- Card 1: Skyline Tower A -->
+<div class="relative overflow-hidden rounded-xl bg-surface-container shadow-md active:scale-[0.99] transition-transform flex flex-col">
+<!-- Left Status Border Strip (Blue for Proposal) -->
+<div class="absolute left-0 top-0 bottom-0 w-1.5 bg-primary-container"></div>
+<div class="p-space-4 pl-space-4 flex flex-col gap-space-3">
+<!-- Metadata Header -->
+<div class="flex items-start justify-between gap-space-2">
+<div class="flex flex-col min-w-0">
+<span class="font-tiny-web text-tiny-web uppercase tracking-widest text-on-surface-variant font-semibold">OPP-2026-088</span>
+<h2 class="font-h2-web text-h2-web text-on-surface truncate font-semibold">Skyline Tower A - ชั้น 25-30 Fit-out</h2>
+<div class="flex items-center gap-1.5 text-on-surface-variant mt-0.5">
+<span class="material-symbols-outlined text-[15px] text-outline">domain</span>
+<span class="font-body-web text-body-web text-on-surface-variant truncate">Siam Real Estate Development</span>
+</div>
+</div>
+<!-- Win Probability Chip -->
+<div class="flex flex-col items-end shrink-0"><span class="font-tiny-web text-tiny-web text-secondary uppercase font-semibold tracking-wider">WIN RATE</span><span class="px-2 py-0.5 rounded-md bg-secondary-container/20 text-secondary font-label-mobile text-label-mobile font-bold mt-0.5">85%</span></div>
+</div>
+<!-- Project Visual Thumbnail Snapshot -->
+<div class="relative w-full h-24 rounded-lg overflow-hidden bg-surface-container-high">
+<img class="w-full h-full object-cover" data-alt="Modern high-rise commercial tower interior fit-out construction site with glass windows, steel frames, and workers in safety gear reviewing blueprints, industrial dark blue lighting, 8k architectural render" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA9nIr0ePlicfo4zlc02iW1_PcrV2xCcvyvLKJu1Nd0hV_WxaApgWZJUbrC-__5TSNqFGYk7jXbWI0fP1mA6M5SLo8B96pEnqpGddH6_8jlZEyJQdn6AiYdodBewn7A-5BaQb2oKCK_IlQnsxlTI81DiH0jFtEKDRE6EWo-Rrx-wOzi3_BHBn8a60OqVk2izWq6__62v7cAnPuSR-G5ewG5_zrxe9-8nxUT3FMyueOGKi5KwCS9D_Bx">
+<div class="absolute inset-0 bg-gradient-to-t from-dark-bg/90 via-dark-bg/30 to-transparent flex items-end p-2.5 justify-between">
+<div class="flex items-center gap-1 text-on-surface">
+<span class="material-symbols-outlined text-[15px] text-secondary">location_on</span>
+<span class="font-tiny-web text-tiny-web font-medium">สุขุมวิท, กรุงเทพฯ</span>
+</div>
+<span class="font-tiny-web text-tiny-web bg-dark-bg/80 backdrop-blur-md px-2 py-0.5 rounded text-on-surface-variant">สัญญางานตกแต่งพิเศษ</span>
+</div>
+</div>
+<!-- Deal Numerical Breakdown -->
+<div class="flex items-center justify-between p-2.5 rounded-lg bg-surface-container-low">
+<div class="flex flex-col">
+<span class="font-tiny-web text-tiny-web text-on-surface-variant uppercase">มูลค่าโครงการ</span>
+<span class="font-h2-web text-h2-web font-bold text-on-surface">฿ 45,200,000</span>
+</div>
+<div class="flex flex-col items-end">
+<span class="font-tiny-web text-tiny-web text-on-surface-variant uppercase">กำหนดส่งร่างสัญญา</span>
+<div class="flex items-center gap-1 text-on-surface font-label-mobile text-label-mobile">
+<span class="material-symbols-outlined text-[14px] text-outline">event</span>
+<span class="">15/11/2026</span>
+</div>
+</div>
+</div>
+<!-- Stage & Sub-action Footer -->
+<div class="flex items-center justify-between pt-1 border-t border-surface-container-highest/60">
+<div class="flex items-center gap-1.5">
+<span class="w-2 h-2 rounded-full bg-primary-container"></span>
+<span class="px-2 py-0.5 rounded-md bg-primary-container/15 text-primary font-label-mobile text-label-mobile font-semibold">ส่งร่างสัญญา</span>
+</div>
+<button class="h-9 px-3 rounded-lg bg-surface-container-high hover:bg-surface-bright text-on-surface font-label-mobile text-label-mobile font-semibold flex items-center gap-1 transition-colors">
+<span class="">จัดการดีล</span>
+<span class="material-symbols-outlined text-[16px] text-primary">arrow_forward_ios</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Card 2: Bangkok Metro Blue Line -->
+<div class="relative overflow-hidden rounded-xl bg-surface-container shadow-md active:scale-[0.99] transition-transform flex flex-col">
+<!-- Left Status Border Strip (Amber for Negotiation) -->
+<div class="absolute left-0 top-0 bottom-0 w-1.5 bg-mobile-warning"></div>
+<div class="p-space-4 pl-space-4 flex flex-col gap-space-3">
+<!-- Metadata Header -->
+<div class="flex items-start justify-between gap-space-2">
+<div class="flex flex-col min-w-0">
+<span class="font-tiny-web text-tiny-web uppercase tracking-widest text-on-surface-variant font-semibold">OPP-2026-052</span>
+<h2 class="font-h2-web text-h2-web text-on-surface truncate font-semibold">Bangkok Metro Blue Line Extension</h2>
+<div class="flex items-center gap-1.5 text-on-surface-variant mt-0.5">
+<span class="material-symbols-outlined text-[15px] text-outline">account_balance</span>
+<span class="font-body-web text-body-web text-on-surface-variant truncate">Mass Rapid Transit Authority (MRTA)</span>
+</div>
+</div>
+<!-- Win Probability Chip -->
+<div class="flex flex-col items-end shrink-0"><span class="font-tiny-web text-tiny-web text-secondary uppercase font-semibold tracking-wider">WIN RATE</span><span class="px-2 py-0.5 rounded-md bg-mobile-warning/15 text-mobile-warning font-label-mobile text-label-mobile font-bold mt-0.5">64%</span></div>
+</div>
+<!-- Project Visual Thumbnail Snapshot -->
+<div class="relative w-full h-24 rounded-lg overflow-hidden bg-surface-container-high">
+<img class="w-full h-full object-cover" data-alt="Heavy civil transit infrastructure project with massive concrete viaduct piers, steel rebar framework, night construction with industrial spotlights, dark mood, technical engineering" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAFDTxtdaxy8KTotCYUH6NYOlXc2X_401EWMxhS0IC2vJGOehLzxWttAIeNuFvhNmB38VXs9vhsCIFlQm7uGzSkKsnNcciIOzgB0IPjuY_F8UqsJ8OODRNpO4CdfBRkxG6tmqBRyljdri8dcZQ29Ff8SkVlUnSnPIHNTDUz0NSuaa4mquN1LJilan_vhL18h2Luut724W4VvEfblsex7vrVaJkNwfwbUF09-tCI85CSMkvRS8Rn8uJW">
+<div class="absolute inset-0 bg-gradient-to-t from-dark-bg/90 via-dark-bg/30 to-transparent flex items-end p-2.5 justify-between">
+<div class="flex items-center gap-1 text-on-surface">
+<span class="material-symbols-outlined text-[15px] text-mobile-warning">engineering</span>
+<span class="font-tiny-web text-tiny-web font-medium">Substructure &amp; Foundation Works</span>
+</div>
+<span class="font-tiny-web text-tiny-web bg-dark-bg/80 backdrop-blur-md px-2 py-0.5 rounded text-on-surface-variant">งานสัมปทานรัฐ</span>
+</div>
+</div>
+<!-- Deal Numerical Breakdown -->
+<div class="flex items-center justify-between p-2.5 rounded-lg bg-surface-container-low">
+<div class="flex flex-col">
+<span class="font-tiny-web text-tiny-web text-on-surface-variant uppercase">มูลค่าโครงการ</span>
+<span class="font-h2-web text-h2-web font-bold text-on-surface">฿ 128,000,000</span>
+</div>
+<div class="flex flex-col items-end">
+<span class="font-tiny-web text-tiny-web text-on-surface-variant uppercase">ความเร่งด่วน</span>
+<div class="flex items-center gap-1 text-mobile-warning font-label-mobile text-label-mobile font-semibold">
+<span class="material-symbols-outlined text-[14px]">warning</span>
+<span class="">เจรจารอบสุดท้าย</span>
+</div>
+</div>
+</div>
+<!-- Stage & Sub-action Footer -->
+<div class="flex items-center justify-between pt-1 border-t border-surface-container-highest/60">
+<div class="flex items-center gap-1.5">
+<span class="w-2 h-2 rounded-full bg-mobile-warning animate-pulse"></span>
+<span class="px-2 py-0.5 rounded-md bg-mobile-warning/15 text-mobile-warning font-label-mobile text-label-mobile font-semibold">เจรจาต่อรอง</span>
+</div>
+<button class="h-9 px-3 rounded-lg bg-surface-container-high hover:bg-surface-bright text-on-surface font-label-mobile text-label-mobile font-semibold flex items-center gap-1 transition-colors">
+<span class="">จัดการดีล</span>
+<span class="material-symbols-outlined text-[16px] text-mobile-warning">arrow_forward_ios</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Card 3: EEC Logistics Hub Phase 1 -->
+<div class="relative overflow-hidden rounded-xl bg-surface-container shadow-md active:scale-[0.99] transition-transform flex flex-col">
+<!-- Left Status Border Strip (Emerald for Closing) -->
+<div class="absolute left-0 top-0 bottom-0 w-1.5 bg-mobile-success"></div>
+<div class="p-space-4 pl-space-4 flex flex-col gap-space-3">
+<!-- Metadata Header -->
+<div class="flex items-start justify-between gap-space-2">
+<div class="flex flex-col min-w-0">
+<span class="font-tiny-web text-tiny-web uppercase tracking-widest text-on-surface-variant font-semibold">OPP-2026-104</span>
+<h2 class="font-h2-web text-h2-web text-on-surface truncate font-semibold">EEC Logistics Hub Phase 1</h2>
+<div class="flex items-center gap-1.5 text-on-surface-variant mt-0.5">
+<span class="material-symbols-outlined text-[15px] text-outline">warehouse</span>
+<span class="font-body-web text-body-web text-on-surface-variant truncate">Eastern Logistics Park Co., Ltd.</span>
+</div>
+</div>
+<!-- Win Probability Chip -->
+<div class="flex flex-col items-end shrink-0"><span class="font-tiny-web text-tiny-web text-secondary uppercase font-semibold tracking-wider">WIN RATE</span><span class="px-2 py-0.5 rounded-md bg-mobile-success/15 text-mobile-success font-label-mobile text-label-mobile font-bold mt-0.5">94%</span></div>
+</div>
+<!-- Project Visual Thumbnail Snapshot -->
+<div class="relative w-full h-24 rounded-lg overflow-hidden bg-surface-container-high">
+<img class="w-full h-full object-cover" data-alt="Massive automated modern distribution warehouse construction in industrial zone Chonburi, precast concrete structures, sleek blue exterior cladding under dramatic industrial dusk sky" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCZBCp5tVEUcMxmYRvljZZ0mIn3ZPhReePKLFnjylQPLRg0Xj9xJVOHfuOa-WOIovqaCBZmnlPcNST-nVXc8bGk8Nh_Qlgcj2miu95sxpYWZSSeBqpnQ1cZ1RwkRCDSIjzMB0RHFtk6qQwqIJ8G4VsJz1sOkUoOI___z4yFkHo6sW2_IjBesG4YGhU8cFj4JmIkrCIqjHB9Xv4D7QQfGCg3GEWfEb7fCHusBYGBGj2nYngxPWB03H0K">
+<div class="absolute inset-0 bg-gradient-to-t from-dark-bg/90 via-dark-bg/30 to-transparent flex items-end p-2.5 justify-between">
+<div class="flex items-center gap-1 text-on-surface">
+<span class="material-symbols-outlined text-[15px] text-mobile-success">check_circle</span>
+<span class="font-tiny-web text-tiny-web font-medium">ระยอง / ชลบุรี EEC Zone</span>
+</div>
+<span class="font-tiny-web text-tiny-web bg-dark-bg/80 backdrop-blur-md px-2 py-0.5 rounded text-mobile-success font-semibold">Audit Approved</span>
+</div>
+</div>
+<!-- Deal Numerical Breakdown -->
+<div class="flex items-center justify-between p-2.5 rounded-lg bg-surface-container-low">
+<div class="flex flex-col">
+<span class="font-tiny-web text-tiny-web text-on-surface-variant uppercase">มูลค่าโครงการ</span>
+<span class="font-h2-web text-h2-web font-bold text-on-surface">฿ 72,500,000</span>
+</div>
+<div class="flex flex-col items-end">
+<span class="font-tiny-web text-tiny-web text-on-surface-variant uppercase">สถานะเอกสาร</span>
+<div class="flex items-center gap-1 text-mobile-success font-label-mobile text-label-mobile font-semibold">
+<span class="material-symbols-outlined text-[14px]">draw</span>
+<span class="">พร้อมลงนาม</span>
+</div>
+</div>
+</div>
+<!-- Stage & Sub-action Footer -->
+<div class="flex items-center justify-between pt-1 border-t border-surface-container-highest/60">
+<div class="flex items-center gap-1.5">
+<span class="w-2 h-2 rounded-full bg-mobile-success"></span>
+<span class="px-2 py-0.5 rounded-md bg-mobile-success/15 text-mobile-success font-label-mobile text-label-mobile font-semibold">รอลงนามสัญญา</span>
+</div>
+<button class="h-9 px-3 rounded-lg bg-surface-container-high hover:bg-surface-bright text-on-surface font-label-mobile text-label-mobile font-semibold flex items-center gap-1 transition-colors">
+<span class="">จัดการดีล</span>
+<span class="material-symbols-outlined text-[16px] text-mobile-success">arrow_forward_ios</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+<!-- Industrial Pipeline Summary Banner -->
+<section class="p-space-4 rounded-xl bg-surface-container-low flex items-center justify-between mt-1">
+<div class="flex items-center gap-space-3">
+<div class="w-10 h-10 rounded-lg bg-surface-container flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-[24px]">account_balance_wallet</span>
+</div>
+<div class="flex flex-col">
+<span class="font-tiny-web text-tiny-web uppercase tracking-wider text-on-surface-variant">มูลค่ารวม</span>
+<span class="font-h2-web text-h2-web font-bold text-on-surface">฿ 245.7 M</span>
+</div>
+</div>
+<div class="flex flex-col items-end">
+<span class="font-tiny-web text-tiny-web text-mobile-success font-bold uppercase">Forecast</span>
+<span class="font-label-mobile text-label-mobile font-semibold text-secondary">฿ 194.2 M</span>
+</div>
+</section>
+<!-- Tactile Floating Action Button (FAB) for Creating New Opportunity -->
+<div class="fixed right-edge-mobile bottom-24 z-40">
+<button aria-label="สร้างโอกาสการขายใหม่" class="h-14 px-5 rounded-full bg-primary-container text-on-primary-container shadow-2xl flex items-center gap-2 hover:bg-blue-600 active:scale-95 transition-all focus:outline-none" id="btn-create-opp">
+<span class="material-symbols-outlined text-[24px] text-on-primary-container font-bold">add</span>
+<span class="font-label-mobile text-label-mobile font-bold uppercase tracking-wider text-on-primary-container pr-1">สร้างโอกาสขาย</span>
+</button>
+</div>
+</div>
+<script>
+  // Simple micro-interactions for chip filters and tactile response
+  document.querySelectorAll('#filter-container button').forEach(button => {
+    button.addEventListener('click', function() {
+      document.querySelectorAll('#filter-container button').forEach(b => {
+        b.classList.remove('bg-primary', 'text-on-primary', 'shadow-sm');
+        b.classList.add('bg-surface-container-high', 'text-on-surface-variant');
+      });
+      this.classList.add('bg-primary', 'text-on-primary', 'shadow-sm');
+      this.classList.remove('bg-surface-container-high', 'text-on-surface-variant');
+    });
+  });
+
+  // FAB Tactile feedback
+  const fab = document.getElementById('btn-create-opp');
+  if (fab) {
+    fab.addEventListener('click', () => {
+      fab.classList.add('scale-90');
+      setTimeout(() => fab.classList.remove('scale-90'), 150);
+    });
+  }
+</script></main><nav class="fixed bottom-0 inset-x-0 z-50 pb-safe bg-surface-container-low/95 backdrop-blur-xl shadow-[0_-1px_8px_rgba(0,0,0,0.25)]" data-active-classes="text-primary font-semibold"><div class="flex justify-around items-center h-16 px-space-2"><a class="flex flex-col items-center justify-center gap-space-1 min-w-[64px] min-h-[48px] text-on-surface-variant transition-colors" data-path="home" href="#"><span class="material-symbols-outlined text-[24px]">dashboard</span><span class="font-tiny-web text-tiny-web">Home</span></a><a aria-current="page" class="flex flex-col items-center justify-center gap-space-1 min-w-[64px] min-h-[48px] transition-colors text-primary font-semibold" data-path="rfqs" href="#"><span class="material-symbols-outlined text-[24px]">request_quote</span><span class="font-tiny-web text-tiny-web">Leeds</span></a><a class="flex flex-col items-center justify-center gap-space-1 min-w-[64px] min-h-[48px] text-on-surface-variant transition-colors" data-path="orders" href="#"><span class="material-symbols-outlined text-[24px]">receipt_long</span><span class="font-tiny-web text-tiny-web">Opportunities</span></a><a class="flex flex-col items-center justify-center gap-space-1 min-w-[64px] min-h-[48px] text-on-surface-variant transition-colors" data-path="deliveries" href="#"><span class="material-symbols-outlined text-[24px]">local_shipping</span><span class="font-tiny-web text-tiny-web">Customers</span></a></div></nav>
+
+</body></html>

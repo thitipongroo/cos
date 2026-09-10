@@ -11,11 +11,12 @@
 // days the app had no way at all to open the notice PDPA §23 requires to remain available. That is
 // what a test on the shared section is for.
 
+import { Alert } from 'react-native';
 import { render, fireEvent, waitFor } from '@testing-library/react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { I18nProvider } from '../../i18n';
 import { CosRole } from '@cos/types';
-import { drawerSectionFor } from '../../lib/drawerLinks';
+import { drawerGroupsFor, drawerSectionFor } from '../../lib/drawerLinks';
 import { useAuthStore } from '../../store/authStore';
 import { useUiStore } from '../../store/uiStore';
 import { NavigationDrawer } from '../NavigationDrawer';
@@ -25,8 +26,14 @@ import { NavigationDrawer } from '../NavigationDrawer';
 // tests below can say what each answer renders.
 jest.mock('../../api/users', () => ({ getMe: jest.fn() }));
 
+// The two lists a GROUPED drawer badges. Only a grouped role fetches them, so the eleven flat roles
+// never touch these mocks — which is itself asserted below, because a drawer that fetched a role's
+// CRM lists to render a Site Engineer's menu would be two wasted requests per open.
+jest.mock('../../api/crm', () => ({ listLeads: jest.fn(), listOpportunities: jest.fn() }));
+
 /* eslint-disable @typescript-eslint/no-require-imports */
 const users = require('../../api/users') as { getMe: jest.Mock };
+const crm = require('../../api/crm') as { listLeads: jest.Mock; listOpportunities: jest.Mock };
 /* eslint-enable @typescript-eslint/no-require-imports */
 
 const mockPush = jest.fn();
@@ -59,6 +66,10 @@ describe('NavigationDrawer', () => {
   beforeEach(() => {
     mockPush.mockReset();
     users.getMe.mockReset();
+    crm.listLeads.mockReset();
+    crm.listOpportunities.mockReset();
+    crm.listLeads.mockResolvedValue([]);
+    crm.listOpportunities.mockResolvedValue([]);
     users.getMe.mockResolvedValue({
       user_id: 'u-1111-aaaa',
       email: 'w@example.com',
@@ -302,5 +313,202 @@ describe('NavigationDrawer', () => {
     expect(getByTestId('drawer-profile-card')).toHaveTextContent(
       /Waraporn Klinhom[\s\S]*Site Engineer[\s\S]*FI-04281/,
     );
+  });
+});
+
+// -- THE GROUPED MENU (CRM_SALES_MANAGER) ------------------------------------------------------
+//
+// One role's drawer is a different shape as of 2026-09-10: four titled groups instead of one folded
+// list. The risk that split introduces is not that the groups render wrong -- it is that the two
+// branches leak into each other, so these tests say what each role draws AND what it does not.
+
+describe('NavigationDrawer - the CRM manager grouped menu', () => {
+  let closeDrawer: jest.Mock;
+  let logout: jest.Mock;
+  let alert: jest.SpyInstance;
+
+  beforeEach(() => {
+    mockPush.mockReset();
+    users.getMe.mockReset();
+    users.getMe.mockResolvedValue({
+      user_id: 'u-9',
+      email: 'k@example.com',
+      display_name: 'Kittipong Wisawakan',
+      photo_url: null,
+      role: 'CRM_SALES_MANAGER',
+      mfa_enabled: false,
+      employee_code: null,
+      position: 'Head of Commercial & CRM',
+    });
+    crm.listLeads.mockReset();
+    crm.listOpportunities.mockReset();
+    crm.listLeads.mockResolvedValue([
+      { lead_id: 'l-1', status: 'NEW' },
+      { lead_id: 'l-2', status: 'NEW' },
+      { lead_id: 'l-3', status: 'QUALIFIED' },
+    ]);
+    crm.listOpportunities.mockResolvedValue([
+      { opportunity_id: 'o-1', status: 'OPEN' },
+      { opportunity_id: 'o-2', status: 'WON' },
+    ]);
+    alert = jest.spyOn(Alert, 'alert').mockImplementation(() => undefined);
+    mockPathname = '/home';
+    closeDrawer = jest.fn();
+    logout = jest.fn().mockResolvedValue(undefined);
+    useUiStore.setState({ drawerOpen: true, closeDrawer } as never);
+    useAuthStore.setState({
+      displayName: 'Kittipong Wisawakan',
+      role: 'CRM_SALES_MANAGER',
+      userId: 'u-9',
+      logout,
+    } as never);
+  });
+
+  afterEach(() => {
+    alert.mockRestore();
+  });
+
+  it('draws the four groups the drawing has, the system group included', async () => {
+    const { getByTestId } = await renderDrawer();
+
+    await waitFor(() => expect(getByTestId('drawer-group-crm.drawer.groupSales')).toBeTruthy());
+    expect(getByTestId('drawer-group-crm.drawer.groupPrecon')).toBeTruthy();
+    expect(getByTestId('drawer-group-crm.drawer.groupAssets')).toBeTruthy();
+    expect(getByTestId('drawer-group-crm.drawer.groupSystem')).toBeTruthy();
+  });
+
+  it('renders every grouped row this role is given', async () => {
+    const rows = (drawerGroupsFor(CosRole.CRM_SALES_MANAGER) ?? []).flatMap((g) => g.rows);
+
+    const { getByTestId } = await renderDrawer();
+
+    await waitFor(() => expect(getByTestId(`drawer-link-${rows[0]!.route}`)).toBeTruthy());
+    for (const row of rows) expect(getByTestId(`drawer-link-${row.route}`)).toBeTruthy();
+  });
+
+  // Both badges are REAL: two NEW leads out of three, one OPEN opportunity out of two.
+  it('counts its badges from the lists rather than drawing them', async () => {
+    const { getByTestId } = await renderDrawer();
+
+    await waitFor(() => expect(getByTestId('drawer-badge-/leads')).toHaveTextContent(/2/));
+    expect(getByTestId('drawer-badge-/opportunities')).toHaveTextContent(/1/);
+  });
+
+  // "Could not ask" is not "none". A failed fetch leaves the rows without badges rather than
+  // showing a zero, which would read as an answer.
+  it('shows no counted badge at all when the counts cannot be fetched', async () => {
+    crm.listLeads.mockRejectedValue(new Error('offline'));
+
+    const { getByTestId, queryByTestId } = await renderDrawer();
+
+    await waitFor(() => expect(getByTestId('drawer-link-/leads')).toBeTruthy());
+    await waitFor(() => expect(queryByTestId('drawer-badge-/leads')).toBeNull());
+    expect(queryByTestId('drawer-badge-/opportunities')).toBeNull();
+    // The DRAWN badge is unaffected -- it never needed a request.
+    expect(getByTestId('drawer-badge-/crm-tenders')).toBeTruthy();
+  });
+
+  it('navigates a built row and closes behind it', async () => {
+    const { getByTestId } = await renderDrawer();
+    await waitFor(() => expect(getByTestId('drawer-link-/leads')).toBeTruthy());
+
+    await fireEvent.press(getByTestId('drawer-link-/leads'));
+
+    expect(mockPush).toHaveBeenCalledWith('/leads');
+    expect(closeDrawer).toHaveBeenCalled();
+  });
+
+  // A row whose screen does not exist SAYS SO. Pushing it would navigate to nothing, which reads as
+  // a broken app rather than an unbuilt screen.
+  it('says an unbuilt row is unbuilt, and pushes nothing', async () => {
+    const { getByTestId } = await renderDrawer();
+    await waitFor(() => expect(getByTestId('drawer-link-/crm-tenders')).toBeTruthy());
+
+    await fireEvent.press(getByTestId('drawer-link-/crm-tenders'));
+
+    expect(alert).toHaveBeenCalled();
+    expect(mockPush).not.toHaveBeenCalled();
+    expect(closeDrawer).not.toHaveBeenCalled();
+  });
+
+  // The grouped branch draws SHARED_LINKS itself, under the system heading -- not a second copy of
+  // them, and not a second time below a divider.
+  it('offers Settings and the Privacy Policy exactly once each', async () => {
+    const { getAllByTestId } = await renderDrawer();
+
+    await waitFor(() => expect(getAllByTestId('drawer-link-/account-settings')).toHaveLength(1));
+    expect(getAllByTestId('drawer-link-/privacy-policy')).toHaveLength(1);
+  });
+
+  // The profile block has no per-role variant (spec 32.7). The drawing's pipeline-target line under
+  // the position is the thing this test exists to keep out.
+  it('keeps the standard profile block, with no pipeline target added to it', async () => {
+    const { getByTestId, queryByText } = await renderDrawer();
+
+    await waitFor(() => expect(getByTestId('drawer-job-title')).toHaveTextContent(/Head of/));
+    expect(getByTestId('drawer-user-id')).toBeTruthy();
+    expect(queryByText(/Pipeline:/)).toBeNull();
+    expect(queryByText(/450M/)).toBeNull();
+  });
+
+  it('draws no operating-region switcher', async () => {
+    const { getByTestId, queryByText } = await renderDrawer();
+
+    await waitFor(() => expect(getByTestId('drawer-group-crm.drawer.groupSales')).toBeTruthy());
+    expect(queryByText(/CBD/)).toBeNull();
+    expect(queryByText(/swap/i)).toBeNull();
+  });
+
+  it('never folds a grouped menu behind a More row', async () => {
+    const { getByTestId, queryByTestId } = await renderDrawer();
+
+    await waitFor(() => expect(getByTestId('drawer-group-crm.drawer.groupSales')).toBeTruthy());
+    expect(queryByTestId('drawer-more')).toBeNull();
+  });
+});
+
+describe('NavigationDrawer - the two branches do not leak', () => {
+  beforeEach(() => {
+    mockPush.mockReset();
+    users.getMe.mockReset();
+    users.getMe.mockResolvedValue({
+      user_id: 'u-1',
+      email: 'w@example.com',
+      display_name: 'Waraporn Klinhom',
+      photo_url: null,
+      role: 'SITE_ENGINEER',
+      mfa_enabled: true,
+      employee_code: 'FI-04281',
+      position: 'Site Engineer',
+    });
+    crm.listLeads.mockReset();
+    crm.listOpportunities.mockReset();
+    crm.listLeads.mockResolvedValue([]);
+    crm.listOpportunities.mockResolvedValue([]);
+    mockPathname = '/home';
+    useUiStore.setState({ drawerOpen: true, closeDrawer: jest.fn() } as never);
+    useAuthStore.setState({
+      displayName: 'Waraporn Klinhom',
+      role: 'SITE_ENGINEER',
+      userId: 'u-1',
+      logout: jest.fn(),
+    } as never);
+  });
+
+  it('gives a flat role no CRM group and no CRM request', async () => {
+    const { getByTestId, queryByTestId } = await renderDrawer();
+
+    await waitFor(() => expect(getByTestId('drawer-link-/projects')).toBeTruthy());
+    expect(queryByTestId('drawer-group-crm.drawer.groupSales')).toBeNull();
+    expect(queryByTestId('drawer-link-/crm-tenders')).toBeNull();
+    expect(crm.listLeads).not.toHaveBeenCalled();
+    expect(crm.listOpportunities).not.toHaveBeenCalled();
+  });
+
+  it('keeps the flat role shared rows below their divider, exactly once each', async () => {
+    const { getAllByTestId } = await renderDrawer();
+
+    await waitFor(() => expect(getAllByTestId('drawer-link-/account-settings')).toHaveLength(1));
+    expect(getAllByTestId('drawer-link-/privacy-policy')).toHaveLength(1);
   });
 });

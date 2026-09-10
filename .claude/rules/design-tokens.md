@@ -102,6 +102,33 @@ Dark theme tokens (source: brand_palette §6):
   --cos-dark-elevated:    #111827   Elevated modal / dropdown surface — over a DIMMED PAGE, never on
                                     a card: it is darker than --cos-dark-surface, so anything filled
                                     with it on a card is invisible. Use --cos-dark-surface-bright.
+  --cos-dark-surface-container-low:
+                          #0B1C30   A RECESSED panel — one that should read as SUNK INTO its card
+                                    (added 2026-09-10, PO decision). The first token here that goes
+                                    DOWN from the card. PANELS SINK, CHIPS RISE: the customers card
+                                    is surface-container, its fact panel and relationship cells are
+                                    surface-container-low, its avatar plate is -high and its contact
+                                    circle is surface-bright. A panel holding the card's OWN FACTS
+                                    is a recess they sit in; one that LABELS the card rises.
+                                    NOT the page colour — #0B1C30 sits between --cos-dark-bg and the
+                                    #0F172A card, so it steps down INTO the card, not through it.
+                                    Counted, not chosen: of 203 mockup/mobile/**/code.html that
+                                    declare surface-container-low, 199 declare #0b1c30.
+  --cos-dark-surface-container-high:
+                          #1B2B3F   A raised PANEL on a card — a fact panel, a forecast cell, a
+                                    counted circle, an un-filled button (added 2026-09-10, PO
+                                    decision). One step below surface-bright, and the two are not
+                                    interchangeable at card size: bright is for a CHIP or a PLATE,
+                                    something small that wants to be seen, and a panel filling half
+                                    a card at that value competes with the card's own content.
+                                    The drawings already split them — 12_crm_manager's opportunities
+                                    screen uses surface-container-high 16 times against 4 uses of
+                                    surface-bright; its customers screen 8 against 6. Value counted,
+                                    not chosen: of the 202 mockup/mobile/**/code.html that declare
+                                    surface-container-high, 197 declare #1b2b3f. LIGHT MODE HAS NO
+                                    COUNTERPART, same reason as surface-bright below.
+                                    NEITHER IS EVER --cos-dark-bg on a card: the page colour is
+                                    darker than the card, so such a panel reads as a hole.
   --cos-dark-surface-bright:
                           #2A3A4F   A surface that must READ AS RAISED on a card — chips, tags, glyph
                                     plates (added 2026-09-07, PO decision). Added because `elevated`

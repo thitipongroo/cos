@@ -912,3 +912,105 @@ export const CRM_ACTION_REQUIRED = figure(
   ] as const,
   'a last-activity timestamp on an opportunity, and a rule for how long is too long',
 );
+
+// ── The CRM manager's four remaining screens (12_crm_manager, 2026-09-10) ──
+//
+// The leads, opportunities, customers, drawer and settings drawings, built under the plan the
+// product owner approved on 2026-09-10. The CRM tables are small — `crm.leads` is seven columns,
+// `crm.opportunities` eight, `finance.customers` six — so these screens carry more drawn detail
+// than the procurement ones did. Each entry below names the column that would delete it.
+
+/** The "AI Score" box on every lead card — 98, 82, 75 in the drawing. */
+export const LEAD_AI_SCORE = figure(
+  [98, 82, 75] as const,
+  'a lead scoring model, and a score column on crm.leads — the table has no numeric field at all',
+);
+
+/** The leads insight card: how many leads it calls high-potential, and its confidence. */
+export const LEAD_INSIGHT = figure(
+  { highPotential: 3, confidence: 95 },
+  'the same scoring model — nothing ranks a lead, so nothing can call three of them high-potential',
+);
+
+/**
+ * The opportunity cards' win rate, document state and urgency line.
+ *
+ * `crm.opportunities` is `opportunity_id, lead_id, title, value, status, expected_close_date,
+ * assigned_to, created_at`. `status` is OPEN | WON | LOST — a three-state flag, not a probability —
+ * and there is no document, audit or signature record anywhere in the CRM schema.
+ */
+export const OPPORTUNITY_DETAIL = figure(
+  [
+    { winRate: 85, docState: 'Special award contract', urgency: null },
+    { winRate: 64, docState: 'State concession', urgency: 'Final round of negotiation' },
+    { winRate: 94, docState: 'Ready to sign', urgency: null },
+  ] as const,
+  'a win probability and a contract-document state on an opportunity — neither column exists',
+);
+
+/** The opportunities forecast card: portfolio average, its delta, and the forecast total. */
+export const OPPORTUNITY_FORECAST = figure(
+  { average: '78%', delta: '+4.2%', confidence: 92, forecast: '฿ 194.2 M' },
+  'a historical series of win rates and a forecasting model — the CRM records neither',
+);
+
+/**
+ * The site photographs on the opportunity cards.
+ *
+ * INCLUDED BY PRODUCT-OWNER DECISION 2026-09-10, over the recommendation to omit them: a stock
+ * image on a deal card is the drawn element a reader is most likely to take for that deal's own
+ * site. They are BUNDLED under `assets/crm/` rather than loaded from the drawing's
+ * `lh3.googleusercontent.com` URLs — this app must work offline (§17), and those URLs are Stitch's
+ * own CDN, which was measured expiring within the hour on the day this was written.
+ *
+ * The filenames say what the pictures are, not which deal they sit on.
+ */
+export const OPPORTUNITY_PHOTO = figure(
+  ['construction-site-1.jpg', 'construction-site-2.jpg', 'construction-site-3.jpg'] as const,
+  'a photo or attachment column on crm.opportunities, and real site photography per deal',
+);
+
+/** The customers screen's relationship card: trust index and repeat rate. */
+export const CUSTOMER_RELATIONSHIP = figure(
+  { trustIndex: 89, repeatRate: '94%', repeatProjects: 18 },
+  'a customer scoring model and a history of repeat engagements — finance.customers holds neither',
+);
+
+/**
+ * Everything a customer card shows beyond company name, type and status.
+ *
+ * `finance.customers` is `customer_id, opportunity_id, company_name, customer_type, status,
+ * created_at`. No tier, no credit terms, no contact people, no project counts.
+ */
+export const CUSTOMER_DETAIL = figure(
+  [
+    {
+      tier: 'AAA',
+      projects: 3,
+      value: '฿ 320 M',
+      terms: '60-day credit',
+      contact: 'Chief Development Officer',
+    },
+    {
+      tier: 'AA+',
+      projects: 1,
+      value: '฿ 128 M',
+      terms: 'e-GP disbursement',
+      contact: 'Deputy Director of Engineering',
+    },
+    {
+      tier: 'A',
+      projects: 2,
+      value: '฿ 145 M',
+      terms: 'Awaiting 4th-instalment approval',
+      contact: 'Project Director',
+    },
+  ] as const,
+  'a tier, credit terms, contact people and per-customer project counts — none is a column',
+);
+
+/** The drawer's row counts — "24 ใหม่" on leads, "14 ดีล" on the pipeline. */
+export const CRM_DRAWER_COUNTS = figure(
+  { newLeads: 24, deals: 14, closingTenders: 3 },
+  'nothing — these ARE countable from the three list endpoints, and are drawn only where a row has no endpoint behind it (tenders)',
+);

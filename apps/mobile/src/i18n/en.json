@@ -1948,9 +1948,7 @@
   "profile": {
     "main": {
       "title": "Profile",
-      "securitySection": "Security",
       "preferencesSection": "Preferences",
-      "aboutSection": "About",
       "userId": "User ID",
       "role": "Role",
       "language": "Language",
@@ -1961,7 +1959,14 @@
       "theme": "Appearance",
       "themeDark": "Dark",
       "themeLight": "Light",
-      "changePin": "Change Secure PIN"
+      "changePin": "Change Secure PIN",
+      "accountSection": "Account",
+      "systemSection": "System",
+      "mfaOn": "MFA active",
+      "mfaOff": "Not enrolled",
+      "offlineData": "Offline data on this device",
+      "offlineDataDesc": "Cached records, drawings and queued photos",
+      "offlineDataCeiling": "{used} of {cap}"
     },
     "notifications": {
       "title": "Notifications",
@@ -2004,7 +2009,12 @@
     "CANCELLED": "Cancelled",
     "DRAFT": "Draft",
     "LOW": "Low",
-    "MEDIUM": "Medium"
+    "MEDIUM": "Medium",
+    "NEW": "New",
+    "QUALIFIED": "Qualified",
+    "DISQUALIFIED": "Disqualified",
+    "WON": "Won",
+    "LOST": "Lost"
   },
   "voice": {
     "record": "Record voice note",
@@ -2949,7 +2959,16 @@
       "create": "Add lead",
       "saving": "Saving…",
       "empty": "No leads yet.",
-      "untitled": "Unnamed lead"
+      "untitled": "Unnamed lead",
+      "searchPlaceholder": "Search leads by name or company",
+      "filterAll": "All leads",
+      "insight": "Insights",
+      "insightBody": "{count} leads look worth a call first",
+      "insightAction": "Recommended",
+      "aiScore": "AI score",
+      "confidence": "{percent}% confidence",
+      "moreFilters": "More filters",
+      "newLead": "New lead"
     },
     "opportunities": {
       "title": "Opportunities",
@@ -2961,11 +2980,56 @@
       "saving": "Saving…",
       "empty": "No opportunities yet.",
       "convert": "Convert to customer",
-      "converting": "Converting…"
+      "converting": "Converting…",
+      "searchPlaceholder": "Search by project, deal or client",
+      "forecastTitle": "Close forecast",
+      "portfolioAverage": "Portfolio average",
+      "advice": "Advice",
+      "viewAnalysis": "View the full analysis",
+      "winRate": "Win rate",
+      "projectValue": "Project value",
+      "manageDeal": "Manage deal",
+      "sortBy": "Sorted by value",
+      "totalValue": "Total value",
+      "forecastLabel": "Forecast",
+      "newOpportunity": "New opportunity",
+      "moreFilters": "More filters",
+      "closeDate": "Expected close",
+      "dealCount": "{count, plural, one {# deal} other {# deals}}"
     },
     "customers": {
       "title": "Customers",
-      "empty": "No customers yet."
+      "empty": "No customers yet.",
+      "searchPlaceholder": "Search by company, contact or tax id",
+      "relationship": "Relationship and risk",
+      "trustIndex": "Contract health index",
+      "repeatRate": "Repeat rate",
+      "repeatProjects": "{count} repeat projects",
+      "heading": "Principal clients",
+      "activeProjects": "Active projects",
+      "terms": "Payment terms",
+      "projectsValue": "{count, plural, one {# project} other {# projects}} · {value}",
+      "viewHistory": "View history",
+      "moreFilters": "More filters"
+    },
+    "drawer": {
+      "groupSales": "Sales and clients",
+      "groupPrecon": "Pre-construction",
+      "groupAssets": "Property and handover",
+      "overview": "Sales overview",
+      "leads": "Lead directory",
+      "pipeline": "Sales pipeline",
+      "customers": "customers",
+      "proposal": "Draft proposal",
+      "tender": "Tender",
+      "contracts": "Master contracts",
+      "inviteOwner": "Invite a project owner",
+      "unitMatrix": "Unit matrix",
+      "handover": "Handover records",
+      "newBadge": "{count} new",
+      "dealsBadge": "{count} deals",
+      "groupSystem": "System and policies",
+      "tenderBadge": "{count} closing"
     }
   },
   "reattest": {
@@ -3156,5 +3220,19 @@
     "download": "Download archive",
     "linkFailed": "The download link could not be opened. Please try again.",
     "notAvailableYet": "Not available yet. Requesting a copy of your data is not switched on for this organisation yet — nothing has gone wrong, and you can ask our Data Protection Office in the meantime."
+  },
+  "accountSettings": {
+    "groupAccount": "Account",
+    "groupPreferences": "Preferences",
+    "groupSystem": "System",
+    "personalInfo": "Personal info",
+    "securityMfa": "Security and MFA",
+    "mfaActive": "MFA active",
+    "mfaOff": "MFA not set up",
+    "biometric": "Biometric login",
+    "notificationPrefs": "Notification preferences",
+    "language": "Language",
+    "offlineData": "Offline data",
+    "offlineDataBody": "Cached files and drawings"
   }
 }

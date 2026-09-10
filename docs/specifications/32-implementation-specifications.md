@@ -530,15 +530,15 @@ downstream could tell the two apart.
 | 13  | `procurement.vendor_invoice.approved.v1` | `invoice_id`, `po_id`, `project_id`, `vendor_id`, `amount` {amount, currency_code}, `approved_by`, `approved_at`, `payment_due`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
 | 14  | `finance.cashflow_risk.detected.v1`      | `project_id`, `risk_level` (enum: LOW/MEDIUM/HIGH/CRITICAL), `projected_shortfall` {amount, currency_code}, `projected_at`, `detected_by` (enum: AI_FORECAST/RULE_ENGINE) — **BUILT 2026-08-23.** Emitted by `CashflowRiskService`, a daily leased `@Cron` sweep. The forecast exists as a PULL endpoint (`GET /api/v1/finance/cashflow-forecast/:projectId`), returning 13 weekly buckets of `inflow` / `outflow` / `net_flow` / `cumulative_net`. `RULE_ENGINE` grades by HOW SOON `cumulative_net` first goes negative — never in 13 weeks → no event; weeks 9–13 → `LOW`; 5–8 → `MEDIUM`; 2–4 → `HIGH`; 0–1 → `CRITICAL`. `projected_shortfall` is the most negative `cumulative_net` across the horizon. Everything it needs is already computed, so no new figure is invented. It is a SWEEP rather than a write hook because the risk moves on the CALENDAR: nothing changes in the data, a week passes, and a shortfall that was five weeks out is now one week out. It does not emit from the pull endpoint either — that would make an alert depend on somebody opening a screen. It calls the same `buildForecast` the endpoint uses, so an alert cannot disagree with the screen an operator opens to check it. `AI_FORECAST` remains a second, later producer                                      |
 | 15  | `ai.risk_prediction.generated.v1`        | `prediction_id`, `project_id`, `model_type` (enum: DELAY_FORECAST/COST_OVERRUN/SAFETY_VISION/RISK_CLASSIFIER), `prediction` (model-specific object), `confidence`: DECIMAL(5,4), `generated_at`, `model_version`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
-| 16  | `finance.variance.alert.v1`              | `project_id`, `budget_id`, `variance_percentage` (DECIMAL string), `threshold_exceeded` (DECIMAL string — the configured threshold that was crossed; default 10%), `actual_amount`, `committed_amount`, `allocated_amount` (all DECIMAL strings), `currency_code` (ISO 4217). Corrected 2026-08-22 — see the naming note below                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| 16  | `finance.variance.alert.v1`              | `project_id`, `budget_id`, `variance_percentage` (DECIMAL string), `threshold_exceeded` (DECIMAL string — the configured threshold that was crossed; default 10%), `actual_amount`, `committed_amount`, `allocated_amount` (all DECIMAL strings), `currency_code` (ISO 4217). Corrected 2026-08-22 — see the naming note below                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
 | 17  | `file.document.uploaded.v1`              | `file_id`, `tenant_id`, `entity_type` (nullable — e.g. "site_report", "purchase_order"), `entity_id` (nullable UUID), `mime_type`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
 | 18  | `file.document.quarantined.v1`           | `file_id`, `tenant_id`, `threat_type` (nullable string — ClamAV threat name, null if unknown)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
 | 19  | `construction.boq.created.v1`            | `project_id` (UUID), `version_id` (UUID), `version_number` (integer) — emitted once when the first BOQ version (version_number = 1) is created for a project                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
 | 20  | `construction.boq.updated.v1`            | `version_id` (UUID), `project_id` (UUID), `changed_items_count` (integer), `new_total_estimated_amount` (DECIMAL string — never float), `new_total_estimated_currency` (ISO 4217)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
 | 21  | `procurement.po.approval_requested.v1`   | `po_id`, `project_id`, `approver_id`, `tier` (enum: PM/FINANCE/EXECUTIVE/TENANT-ADMIN), `po_number`, `total_amount` (DECIMAL string — never float), `currency_code` (ISO 4217) — emitted by the PO approval workflow (notifyApprover activity) when a PO enters an approval tier or is escalated on the 48h timeout; consumed by the Notification Service to alert the specific `approver_id`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
-| 22  | `platform.sync.exhausted.v1`             | `exhaustion_id` (UUID of the `platform.sync_exhaustions` row), `entity_type` (enum: safety/attendance/inspection/material — the value the queue holds and the wire carries, 1:1 with §17.2's safety_incidents/workforce_attendance/inspection_results/material_consumption; corrected 2026-08-31, when the server was still keyed on the category names nothing sends and answered 400 to every real report), `entity_id` (UUID), `reported_by` (UUID — from the JWT, not the request body), `retry_count` (integer, always 5), `last_error` (nullable string — diagnostic only) — emitted by `SyncService.reportExhaustion` when a device reports a queued offline mutation that exhausted its 5 retries (§17.2). Consumed by the Notification Service, which routes it **by `entity_type`**: safety incidents alert PM + Safety Officer, attendance and inspections alert PM, and material consumption enters the review queue with no alert — §17.2's table, not a single role list.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
-| 23  | `safety.compliance.failed.v1`            | `failure_type` (enum: PERMIT_EXPIRED/CHECKLIST_ITEM_FAILED), `project_id` (UUID), `detected_by` (PERMIT_EXPIRY_SWEEP or CHECKLIST_SUBMISSION), `detail` (string), plus the producer-specific nullables: `permit_id`/`permit_number`/`permit_type`/`linked_task_id` for PERMIT_EXPIRED, `inspection_id`/`checklist_id`/`failed_item_count` for CHECKLIST_ITEM_FAILED. **The platform's own rules finding a safety requirement unmet** — an expired permit, a failed required checklist item — as opposed to row 24, where a model finds a violation in a photo. Built 2026-08-22 as `safety.violation.detected.v1`; renamed when the merge of 2026-08-31 found that name already assigned to SafetyVisionModel by the product-owner decisions of 2026-08-25. Two payloads cannot share one subject under BACKWARD_TRANSITIVE, and the two events do not describe the same thing. §19.6's "cannot be disabled" applies to this event as well as to row 24: `notification.service.ts` carries both in `CRITICAL_EVENT_TYPES`. Producers: `PermitExpiryService` (sweep) and `SiteOpsService.submitInspection` (FAILED checklist). |
-| 24  | `safety.violation.detected.v1`           | `violation_id`, `project_id`, `file_id` (the analysed site photo), `violations[]` (string), `confidence` (DECIMAL string — never a float, matching row 15), `severity` (enum: LOW/MEDIUM/HIGH/CRITICAL). Added 2026-08-25 (Phase 23). This is the `SafetyViolationDetected` of `16-enterprise-event-flow` §Safety and of §19.6's "cannot be disabled" pair — it had no canonical name until the phase that builds `SafetyVisionModel`, the only detector of a violation in this specification. `violations`/`confidence`/`severity` are that model's `SafetyAnalysisResult`; `violation_id` and `project_id` follow the sibling `safety.incident.created.v1`; `file_id` is how every other event references an image. Producer: `services/ai-gateway/reports/safety_violation_event.py` — emits nothing while the model is a stub. |
+| 22  | `platform.sync.exhausted.v1`             | `exhaustion_id` (UUID of the `platform.sync_exhaustions` row), `entity_type` (enum: safety/attendance/inspection/material — the value the queue holds and the wire carries, 1:1 with §17.2's safety_incidents/workforce_attendance/inspection_results/material_consumption; corrected 2026-08-31, when the server was still keyed on the category names nothing sends and answered 400 to every real report), `entity_id` (UUID), `reported_by` (UUID — from the JWT, not the request body), `retry_count` (integer, always 5), `last_error` (nullable string — diagnostic only) — emitted by `SyncService.reportExhaustion` when a device reports a queued offline mutation that exhausted its 5 retries (§17.2). Consumed by the Notification Service, which routes it **by `entity_type`**: safety incidents alert PM + Safety Officer, attendance and inspections alert PM, and material consumption enters the review queue with no alert — §17.2's table, not a single role list.                                                                                                                                                                                                                                                                                                                         |
+| 23  | `safety.compliance.failed.v1`            | `failure_type` (enum: PERMIT_EXPIRED/CHECKLIST_ITEM_FAILED), `project_id` (UUID), `detected_by` (PERMIT_EXPIRY_SWEEP or CHECKLIST_SUBMISSION), `detail` (string), plus the producer-specific nullables: `permit_id`/`permit_number`/`permit_type`/`linked_task_id` for PERMIT_EXPIRED, `inspection_id`/`checklist_id`/`failed_item_count` for CHECKLIST_ITEM_FAILED. **The platform's own rules finding a safety requirement unmet** — an expired permit, a failed required checklist item — as opposed to row 24, where a model finds a violation in a photo. Built 2026-08-22 as `safety.violation.detected.v1`; renamed when the merge of 2026-08-31 found that name already assigned to SafetyVisionModel by the product-owner decisions of 2026-08-25. Two payloads cannot share one subject under BACKWARD_TRANSITIVE, and the two events do not describe the same thing. §19.6's "cannot be disabled" applies to this event as well as to row 24: `notification.service.ts` carries both in `CRITICAL_EVENT_TYPES`. Producers: `PermitExpiryService` (sweep) and `SiteOpsService.submitInspection` (FAILED checklist).                                                                                                                                                                                   |
+| 24  | `safety.violation.detected.v1`           | `violation_id`, `project_id`, `file_id` (the analysed site photo), `violations[]` (string), `confidence` (DECIMAL string — never a float, matching row 15), `severity` (enum: LOW/MEDIUM/HIGH/CRITICAL). Added 2026-08-25 (Phase 23). This is the `SafetyViolationDetected` of `16-enterprise-event-flow` §Safety and of §19.6's "cannot be disabled" pair — it had no canonical name until the phase that builds `SafetyVisionModel`, the only detector of a violation in this specification. `violations`/`confidence`/`severity` are that model's `SafetyAnalysisResult`; `violation_id` and `project_id` follow the sibling `safety.incident.created.v1`; `file_id` is how every other event references an image. Producer: `services/ai-gateway/reports/safety_violation_event.py` — emits nothing while the model is a stub.                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
 
 ### Schema Registry Rules
 
@@ -777,9 +777,9 @@ before data arrives, so the motif never competes with project content.
 **The motif is per platform, because the two mockups genuinely differ** (product-owner decision
 2026-08-17 — the earlier wording named one motif for both and did not match either drawing):
 
-| Platform | `ai` motif                                                      | Reference                            |
-| -------- | --------------------------------------------------------------- | ------------------------------------ |
-| Mobile   | cyan glow · **scan-line gradient** · **waveform** · left border | `mockup/mobile/00_loading` section C |
+| Platform | `ai` motif                                                      | Reference                             |
+| -------- | --------------------------------------------------------------- | ------------------------------------- |
+| Mobile   | cyan glow · **scan-line gradient** · **waveform** · left border | `mockup/mobile/00_loading` section C  |
 | Web      | cyan glow · **processor plate** · **ping dot** · full border-2  | `mockup/desktop/00_loading` Variant C |
 
 The web drawing carries neither a scan-line nor a waveform; it signals work with a pulsing processor
@@ -810,22 +810,77 @@ throughout; only its use as a _brand_ colour is prohibited.
 
 #### Dark Theme Tokens
 
-| Token                          | Hex       |
-| ------------------------------ | --------- |
-| `--cos-dark-bg`                | `#020617` |
-| `--cos-dark-surface`           | `#0F172A` |
-| `--cos-dark-elevated`          | `#111827` |
-| `--cos-dark-surface-bright`    | `#2A3A4F` |
-| `--cos-dark-text`              | `#F8FAFC` |
-| `--cos-dark-muted`             | `#94A3B8` |
-| `--cos-dark-blue`              | `#2563EB` |
-| `--cos-dark-cyan`              | `#22D3EE` |
-| `--cos-dark-success`           | `#10B981` |
-| `--cos-dark-warning`           | `#F59E0B` |
-| `--cos-dark-danger`            | `#EF4444` |
-| `--cos-dark-outline`           | `#46464C` |
-| `--cos-dark-accent`            | `#4CD7F6` |
-| `--cos-dark-surface-container` | `#102034` |
+| Token                               | Hex       |
+| ----------------------------------- | --------- |
+| `--cos-dark-bg`                     | `#020617` |
+| `--cos-dark-surface`                | `#0F172A` |
+| `--cos-dark-elevated`               | `#111827` |
+| `--cos-dark-surface-bright`         | `#2A3A4F` |
+| `--cos-dark-text`                   | `#F8FAFC` |
+| `--cos-dark-muted`                  | `#94A3B8` |
+| `--cos-dark-blue`                   | `#2563EB` |
+| `--cos-dark-cyan`                   | `#22D3EE` |
+| `--cos-dark-success`                | `#10B981` |
+| `--cos-dark-warning`                | `#F59E0B` |
+| `--cos-dark-danger`                 | `#EF4444` |
+| `--cos-dark-outline`                | `#46464C` |
+| `--cos-dark-accent`                 | `#4CD7F6` |
+| `--cos-dark-surface-container`      | `#102034` |
+| `--cos-dark-surface-container-high` | `#1B2B3F` |
+| `--cos-dark-surface-container-low` | `#0B1C30` |
+
+> `--cos-dark-surface-container-low` added 2026-09-10 (product-owner decision), and it is the
+> first token in this set that goes **down** from the card rather than up. A panel is not always a
+> raised thing: **panels sink, chips rise**, and the customers card shows both at once —
+>
+> | Element | Mockup class | Direction |
+> | ------- | ------------ | --------- |
+> | the card itself | `bg-surface-container` `#102034` | — |
+> | its two-column fact panel | `bg-surface-container-low` `#0b1c30` | **down** |
+> | its relationship cells | `bg-surface-container-low` `#0b1c30` | **down** |
+> | its avatar plate | `bg-surface-container-high` `#1b2b3f` | up |
+> | its contact circle | `bg-surface-bright` `#2a3a4f` | up |
+>
+> A panel that holds a card's OWN FACTS reads as a recess those facts sit in; one that floats above
+> the card competes with it. A panel that LABELS the card — a plate, a chip — rises.
+>
+> **It is not the page colour**, which is the mistake the 2026-09-10 sequence began with. `#0B1C30`
+> sits between `--cos-dark-bg` `#020617` and the `#0F172A` card, so it is a step down **into** the
+> card rather than a hole punched through it.
+>
+> Counted rather than chosen: of the 203 `mockup/mobile/**/code.html` files that declare
+> `surface-container-low`, **199 declare `#0b1c30`** (three `#0f172a`, one `#020617`).
+>
+> **Light mode has no counterpart.** On a white card the only available step is toward grey, so
+> recessed and raised coincide there and all three resolve to the page colour.
+
+> `--cos-dark-surface-container-high` added 2026-09-10 (product-owner decision). It is the step
+> BELOW `--cos-dark-surface-bright`, and it exists because those two are not interchangeable at
+> card size. `surface-bright` is right for a CHIP or a GLYPH PLATE — something small that wants to
+> be seen. A PANEL that fills half a card at the same value competes with the card's own content,
+> which is what the product owner reported on the CRM screens the day the panels were first raised
+> off the page colour.
+>
+> The drawings already split them this way, and that is the evidence rather than a preference:
+> on `mockup/mobile/12_crm_manager/06_opportunities/01_crm_opportunities` the inner panels are
+> `bg-surface-container-high` **16 times** against **4** uses of `bg-surface-bright`; on
+> `07_customers/01_crm_customers` it is **8 against 6**. The mockups' full scale, in their order:
+> `surface-container-lowest` `#000f21` · `surface-container-low` `#0b1c30` · `surface-container`
+> `#102034` · **`surface-container-high` `#1b2b3f`** · `surface-container-highest` `#26364a` ·
+> `surface-bright` `#2a3a4f`.
+>
+> The value is counted rather than chosen, exactly as the line below it: of the 202
+> `mockup/mobile/**/code.html` files that declare `surface-container-high`, **197 declare
+> `#1b2b3f`** (two `#1e293b`, one each of `#0f172a`, `#232d47` and `#111827`).
+>
+> **Light mode has no counterpart**, for the same reason `--cos-dark-surface-bright` has none:
+> nothing is brighter than a white card, so both resolve to the grey page colour there. Adding this
+> token changed nothing in light mode.
+>
+> WHICH TO REACH FOR: a chip, a tag, a glyph plate, an avatar plate → `surface-bright`. A fact
+> panel, a forecast cell, a counted circle, an un-filled button that fills part of a card →
+> `surface-container-high`. Neither is ever `--cos-dark-bg`: a panel on the PAGE colour sitting on a
+> card is darker than the card, and reads as a hole punched through it.
 
 > `--cos-dark-surface-bright` added 2026-09-07 (product-owner decision). It exists because
 > `--cos-dark-elevated` cannot do this job and was being asked to: `#111827` is a shade **darker**
@@ -1420,15 +1475,22 @@ The card at the head of `<NavigationDrawer />`, and **the project's standard for
 signed in** (product-owner decision 2026-09-08). One drawer serves every role, so this is every
 role's block; there is no per-role variant and no second shape anywhere in the app.
 
+**IT HEADS TWO SURFACES SINCE 2026-09-10, AND THEY DRAW THE SAME BLOCK.** `<AccountSettings />`
+gained the same card when that screen was regrouped (see _Account Settings_ below), because its
+drawing opens on a profile header and the standard is what such a header is. Two INSTANCES of one
+shape is what the paragraph above requires; a second shape is what it forbids. The drawing's photo
+avatar and its hardcoded "CRM Manager" line are not used on either surface — the position is
+`platform.users.position` in both, and null draws nothing in both.
+
 Its order, top to bottom:
 
-| Line         | Source                                                  | Notes                                                    |
-| ------------ | ------------------------------------------------------- | -------------------------------------------------------- |
-| Avatar       | `platform.users.photo_url`, initials otherwise          | Leading, centred against the three text lines            |
-| **Name**     | `auth.displayName`, `drawer.member` otherwise           | Body size, semibold, one line                            |
-| **Position** | `platform.users.position`, **omitted entirely** if null | 11px, muted. ADR-101                                     |
-| **Id**       | `workforce.workers.employee_code`, short UUID otherwise | Caption size, **monospaced**, muted                      |
-| Status       | `platform.users.mfa_enabled` + the sync state           | Own inset row on `--cos-dark-bg`, cloud glyph, 11px      |
+| Line         | Source                                                  | Notes                                               |
+| ------------ | ------------------------------------------------------- | --------------------------------------------------- |
+| Avatar       | `platform.users.photo_url`, initials otherwise          | Leading, centred against the three text lines       |
+| **Name**     | `auth.displayName`, `drawer.member` otherwise           | Body size, semibold, one line                       |
+| **Position** | `platform.users.position`, **omitted entirely** if null | 11px, muted. ADR-101                                |
+| **Id**       | `workforce.workers.employee_code`, short UUID otherwise | Caption size, **monospaced**, muted                 |
+| Status       | `platform.users.mfa_enabled` + the sync state           | Own inset row on `--cos-dark-bg`, cloud glyph, 11px |
 
 **The order is the specification, not an accident of layout.** It descends by how often a line is
 read: a name identifies at a glance, a position gives that name meaning, an id is looked up perhaps
@@ -1452,6 +1514,62 @@ route sets a position, so it arrives by seed or HR import, and an app running ag
 older than migration `20260908000001` receives no such key at all. Both render the same way. A
 placeholder here would be the drawn line returning under another name, which is what ADR-101 ended.
 
+#### Navigation Drawer — one profile block, two body shapes
+
+The PROFILE BLOCK above is every role's, unchanged. The BODY below it has two shapes as of
+2026-09-10 (product-owner decision), and `drawerGroupsFor(role)` in `lib/drawerLinks.ts` decides
+which — returning `null` for a role with no grouped menu, which means _render the flat list_, where
+an empty array would mean _render nothing_.
+
+| Shape       | Roles               | Body                                                                                |
+| ----------- | ------------------- | ----------------------------------------------------------------------------------- |
+| **Flat**    | eleven roles        | one `Field tools` heading, up to `DRAWER_MAX_ROWS` (7) rows, the rest behind `More` |
+| **Grouped** | `CRM_SALES_MANAGER` | four titled groups, badges on two rows, no folding                                  |
+
+**The grouped shape exists because a flat seven-row list cannot express its drawing**
+(`mockup/mobile/12_crm_manager/05_profile/02_crm_navigation_drawer`): four titled groups, of whose
+eleven rows six lead to screens this product does not have. Four rules were applied to that drawing
+and each cost it something; all four are recorded beside the table in `lib/drawerLinks.ts`, and the
+two that are decisions rather than readings are:
+
+- **A drawer row may also be a bottom tab, for this role only.** The rule everywhere else is that it
+  may not — the tabs are one tap away already, so a drawer row onto one is a second door onto one
+  room. `/home`, `/leads`, `/opportunities` and `/customers` are all this role's tabs and are all in
+  its drawer, by product-owner decision 2026-09-10: the drawing puts them there because they are the
+  group that gives the other two groups their meaning, and a menu whose sales section is empty says
+  this role has no sales screens. The exception lives in the `GROUPED` table and nowhere else, so no
+  other role can acquire a duplicate row by accident.
+- **There is no operating-region bar**, which the drawing heads the menu with. No schema in this
+  product holds a region for a user — not `platform.users`, not `platform.tenants` — so the bar could
+  only print a constant and its switch button could only do nothing. `<ProjectContextBar />` answers
+  _which project_, a different question with its own component.
+
+A grouped row's badge is REAL where a list can be counted (new leads, open opportunities — fetched
+once when the drawer first opens, and drawn as nothing at all if the fetch fails, because _could not
+ask_ is not _none_) and a registered figure where nothing can be counted (closing tenders: there is
+no tender table).
+
+#### Account Settings — three groups and a profile head
+
+`<AccountSettings />` is **Account · Preferences · System** under the profile block above, for
+**every role** (product-owner decision 2026-09-10, from
+`mockup/mobile/12_crm_manager/05_profile/01_account_settings`). One component serves all twelve
+roles; a per-role settings layout would be twelve screens to keep in step.
+
+`Security` and `About` are gone as group NAMES only — security is two rows of Account, the build
+version is one row of System. **Nothing was dropped in the regrouping:** Change Secure PIN, the theme
+switch and the version row are all still there, because ADR-085 gives composition to the
+implementation and says in as many words that a drawing does not remove reviewed working capability.
+
+What the drawing asks for and does not get, each for a stated reason:
+
+| Drawn                     | Rendered instead                                                                                                                                                                                                          |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Personal Info` row       | **Nothing.** The profile card directly above it IS that information, and this product has no editable self-profile: `/profile` was deleted on 2026-08-09 and `/user-profile` is the Tenant Admin looking at somebody else |
+| `Last sync: 2 min ago`    | The CURRENT sync state, through the same `useSyncPillView` precedence every other sync indicator reads. Nothing here records when the last flush finished                                                                 |
+| `MFA Active` (as a label) | `platform.users.mfa_enabled`, from `GET /users/me` — and **silence** until the answer arrives, because an unanswered fetch is not "not enrolled"                                                                          |
+| `2.4 GB` cached           | The measured on-disk size of the offline database (`localDbSizeBytes()`), against the §17.7 ceiling it is measured for. The row REPORTS and does not manage: nothing in this app prunes that cache on request             |
+
 #### AI Card Footer (`<AiCardFooter />`)
 
 The foot of every AI card, and **the project's standard for one** (product-owner decision
@@ -1461,11 +1579,11 @@ The foot of every AI card, and **the project's standard for one** (product-owner
 ⌾ CONF: 94%  |  ⌾ SOURCE: THE SUKHUMVIT 45 RESIDENCES                    ›
 ```
 
-| Element    | Rule                                                                                                 |
-| ---------- | ------------------------------------------------------------------------------------------------------ |
-| Confidence | `verified` glyph + `CONF: {n}%`, success ink. **Omitted entirely when the card has no model behind it** |
-| Separator  | A drawn 1px rule, not a `\|` character — a pipe between two labels reads as a table column             |
-| Source     | `storage` glyph + `SOURCE: {name}`, muted, `flex: 1`, one line, tail ellipsis                        |
+| Element    | Rule                                                                                                                                                                                  |
+| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Confidence | `verified` glyph + `CONF: {n}%`, success ink. **Omitted entirely when the card has no model behind it**                                                                               |
+| Separator  | A drawn 1px rule, not a `\|` character — a pipe between two labels reads as a table column                                                                                            |
+| Source     | `storage` glyph + `SOURCE: {name}`, muted, `flex: 1`, one line, tail ellipsis                                                                                                         |
 | Chevron    | Trailing, accent, hidden from the accessibility tree — the row's own label already says the source. **Dropped when the card's body already offers a button or a chevron** — see below |
 
 **THE CONFIDENCE LIVES HERE, NOT IN THE HEADER.** It used to sit as a chip opposite the card's title,
@@ -1892,8 +2010,8 @@ correction.** From Phase 10 the role rendered `Home | Portfolio | Alerts | Repor
 right by every source there was: it matched the tab table in code, §20.7.1's page inventory and
 master §Phase 10's EXEC block, all three in agreement.
 
-| Until 2026-09-05 | 2026-09-05 (ADR-098) | From 2026-09-07 |
-| ---------------- | -------------------- | --------------- |
+| Until 2026-09-05                      | 2026-09-05 (ADR-098)           | From 2026-09-07                       |
+| ------------------------------------- | ------------------------------ | ------------------------------------- |
 | `Home · Portfolio · Alerts · Reports` | `Home · Tasks · Safety · More` | `Home · Alerts · Portfolio · Reports` |
 
 **2026-09-05.** `mockup/mobile/08_executive/` drew `Home | Tasks | Safety | More` on all four of its
@@ -2129,12 +2247,12 @@ is dead code — it must be removed within 30 days.
 
 ### Lifecycle States
 
-| State        | Definition                                         | Required action                                                         |
-| ------------ | -------------------------------------------------- | ----------------------------------------------------------------------- |
-| ACTIVE       | Flag live; rollout < 100%                          | Monitor, iterate                                                        |
-| FULL_ROLLOUT | Flag at 100% rollout for < 30 days                 | Schedule cleanup PR in current sprint                                   |
+| State        | Definition                                         | Required action                                                                  |
+| ------------ | -------------------------------------------------- | -------------------------------------------------------------------------------- |
+| ACTIVE       | Flag live; rollout < 100%                          | Monitor, iterate                                                                 |
+| FULL_ROLLOUT | Flag at 100% rollout for < 30 days                 | Schedule cleanup PR in current sprint                                            |
 | STALE        | Flag at 100% rollout for > 30 days without cleanup | Add to `docs/registers/feature-flag-cleanup-backlog.md`; escalate in next sprint |
-| REMOVED      | Flag check deleted from code and registry          | Strike through entry in backlog; must be in same PR as code deletion    |
+| REMOVED      | Flag check deleted from code and registry          | Strike through entry in backlog; must be in same PR as code deletion             |
 
 ### Rules
 

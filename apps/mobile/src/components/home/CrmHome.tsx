@@ -664,7 +664,10 @@ function makeStyles(p: Palette) {
       borderRadius: 999,
       borderWidth: 1,
       borderColor: p.border,
-      backgroundColor: p.bg,
+      // RAISED, not recessed. On `p.bg` this circle was darker than the card holding it and read
+      // as a hole; the connecting line behind it made that worse, because a line running INTO a
+      // dark disc looks like it disappears down one. See the note at the head of this change.
+      backgroundColor: p.surfaceSoft,
       alignItems: 'center',
       justifyContent: 'center',
     },

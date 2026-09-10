@@ -1,4 +1,4 @@
-<!DOCTYPE html><html class="dark" lang="en"><head>
+<!DOCTYPE html><html class="dark" lang="en" style=""><head>
 <meta charset="utf-8">
 <meta content="width=device-width, initial-scale=1.0" name="viewport">
 <title>Construction OS - Leads Directory</title>
@@ -177,41 +177,82 @@
 </head>
 <body class="bg-background text-on-background font-body-mobile min-h-screen pb-32">
 <!-- Top Navigation Bar -->
-<header class="flex justify-between items-center w-full px-edge-mobile h-touch-target bg-surface-container dark:bg-surface-container sticky top-0 z-40">
-<div class="flex items-center gap-space-2">
-<span class="material-symbols-outlined text-primary text-2xl" style="font-variation-settings: &quot;FILL&quot; 1;">construction</span>
-<span class="font-hero-mobile text-hero-mobile text-primary font-bold">Construction...</span>
-</div>
-<div class="flex items-center gap-space-2">
-<div class="flex items-center gap-1 bg-surface-container-high px-2 py-1 rounded-full border border-outline-variant">
-<div class="w-2 h-2 rounded-full bg-mobile-success animate-pulse"></div>
-<span class="font-tiny-web text-tiny-web text-on-surface-variant uppercase tracking-wider">Synced</span>
-</div>
-<div class="w-8 h-8 rounded-full overflow-hidden border-2 border-primary">
-<img alt="User avatar" class="w-full h-full object-cover" data-alt="A small circular avatar image showing a professional male construction manager in his 40s wearing a hard hat, softly lit against a dark background, in a modern, highly detailed corporate portrait style." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDAew-7N-nrH6P5tZlO5p6xxSo7Jaz9L_d-Dbn8qdRI3tZz1SFPv-eBdqryjlb24VymMqAMPSKCUyXX2qEhdi-qW9Di6WuLH_k23Y6bCsExlvvgYz5kNj1BviUE03hhlT1ya5_esTvcc8VISlxrK6Wt-OpE9NnSPaMrzNxdxqROG1CvHFUFKlubvHnq0m4kX3pkpAM3z6PNWCV80bTXqQHpljrgvaBc3d8UYbwPX7MQsrH7FmTevBUU">
-</div>
-</div>
+<header class="flex justify-between items-center w-full px-edge-mobile h-touch-target bg-[#020617] border-b border-slate-800/80 sticky top-0 z-40">
+  <!-- LEFT GROUP: Logo + Wordmark -->
+  <div class="flex items-center gap-2.5 cursor-pointer active:opacity-90 transition-opacity">
+    <svg class="h-[26px] w-[26px] shrink-0" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <polygon points="50,5 90,27.5 90,72.5 50,95 10,72.5 10,27.5" stroke="#2563EB" stroke-width="7" fill="none" stroke-linejoin="round"></polygon>
+      <!-- Top Bar: White -->
+      <line x1="28" y1="38" x2="72" y2="38" stroke="#FFFFFF" stroke-width="6" stroke-linecap="round"></line>
+      <!-- Middle Bar: White -->
+      <line x1="28" y1="50" x2="72" y2="50" stroke="#FFFFFF" stroke-width="6" stroke-linecap="round"></line>
+      <!-- Bottom Bar: Cyan (left 1/3) & White (right 2/3) -->
+      <line x1="28" y1="62" x2="43" y2="62" stroke="#4CD7F6" stroke-width="6" stroke-linecap="round"></line>
+      <line x1="47" y1="62" x2="72" y2="62" stroke="#FFFFFF" stroke-width="6" stroke-linecap="round"></line>
+    </svg>
+    <div class="flex flex-col text-left justify-center leading-tight">
+      <span class="font-hero-mobile text-[14px] font-bold tracking-wide uppercase leading-tight text-white">CONSTRUCTION <span class="text-[#4CD7F6]">OS</span></span>
+      <span class="text-[8px] font-semibold text-[#64748B] uppercase tracking-[1.5px] leading-tight">AI-NATIVE CONSTRUCTION...</span>
+    </div>
+  </div>
+
+  <!-- RIGHT GROUP: Sync, Help, Notification, User Initials -->
+  <div class="flex items-center gap-2">
+    <!-- Sync status badge (no text) -->
+    <div class="flex items-center justify-center w-8 h-8 rounded-full bg-slate-900 border border-slate-800 text-[#00C853]" title="Synced">
+      <span class="material-symbols-outlined text-[18px]">cloud_done</span>
+    </div>
+    <!-- Help outline button -->
+    <button class="flex items-center justify-center w-8 h-8 rounded-full text-[#F8FAFC] hover:bg-slate-800/60 active:scale-95 transition-transform duration-150 focus:outline-none" aria-label="Help">
+      <span class="material-symbols-outlined text-[22px]">help_outline</span>
+    </button>
+    <!-- Notifications button with red badge -->
+    <button class="relative flex items-center justify-center w-8 h-8 rounded-full text-[#F8FAFC] hover:bg-slate-800/60 active:scale-95 transition-transform duration-150 focus:outline-none" aria-label="Notifications">
+      <span class="material-symbols-outlined text-[24px]">notifications_none</span>
+      <span class="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-mobile-danger ring-2 ring-[#020617]"></span>
+    </button>
+    <!-- User Avatar with initials CN -->
+    <div class="w-8 h-8 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center shadow-sm">
+      <span class="text-[12px] font-bold text-[#F8FAFC] tracking-wider">CN</span>
+    </div>
+  </div>
 </header>
 <main class="px-edge-mobile pt-space-4 flex flex-col gap-space-4">
 <!-- Search & Filter -->
 <section class="flex flex-col gap-space-3">
-<div class="relative w-full h-touch-target">
-<span class="material-symbols-outlined absolute left-space-4 top-1/2 -translate-y-1/2 text-on-surface-variant">search</span>
-<input class="w-full h-full bg-surface-container border border-outline-variant rounded-lg pl-12 pr-4 text-on-surface font-body-mobile text-body-mobile focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none placeholder-on-surface-variant transition-colors" placeholder="Search leads by name, project, or location..." type="text">
-</div>
-<div class="flex gap-space-2 overflow-x-auto pb-2 scrollbar-hide -mx-edge-mobile px-edge-mobile">
-<button class="bg-primary text-on-primary font-label-mobile text-label-mobile px-4 py-2 rounded-full whitespace-nowrap h-10 shadow-lg scale-95 transition-transform duration-150 active:bg-primary-container">All Leads</button>
-<button class="bg-surface-container text-on-surface font-label-mobile text-label-mobile px-4 py-2 rounded-full border border-outline-variant whitespace-nowrap h-10 active:opacity-80 transition-opacity">Hot</button>
-<button class="bg-surface-container text-on-surface font-label-mobile text-label-mobile px-4 py-2 rounded-full border border-outline-variant whitespace-nowrap h-10 active:opacity-80 transition-opacity">Warm</button>
-<button class="bg-surface-container text-on-surface font-label-mobile text-label-mobile px-4 py-2 rounded-full border border-outline-variant whitespace-nowrap h-10 active:opacity-80 transition-opacity">Cold</button>
-</div>
+<div class="relative w-full h-touch-target"><span class="material-symbols-outlined absolute left-space-4 top-1/2 -translate-y-1/2 text-on-surface-variant pointer-events-none text-[20px]">search</span>
+<input class="w-full h-full bg-surface-container border border-outline-variant rounded-xl pl-11 pr-12 text-on-surface font-body-mobile text-body-mobile focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none placeholder-on-surface-variant transition-colors shadow-sm" placeholder="Search leads byname, project ..." type="text">
+<button class="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-lg bg-surface-container-high border border-outline-variant flex items-center justify-center text-on-surface-variant hover:text-primary active:scale-95 transition-all duration-150 cursor-pointer" aria-label="Filter options">
+<span class="material-symbols-outlined text-[18px]">tune</span>
+</button></div>
+<div class="flex gap-space-2 overflow-x-auto pb-2 scrollbar-hide -mx-edge-mobile px-edge-mobile"><button class="bg-primary text-on-primary font-label-mobile text-label-mobile px-4 py-2 rounded-full whitespace-nowrap h-10 shadow-md active:scale-95 transition-all duration-150 font-bold flex items-center gap-1.5 cursor-pointer">
+<span class="material-symbols-outlined text-[16px]" style="font-variation-settings: &quot;FILL&quot; 1;">check_circle</span>
+<span class="">All Leads</span>
+</button>
+<button class="bg-surface-container text-on-surface hover:text-primary font-label-mobile text-label-mobile px-4 py-2 rounded-full border border-outline-variant whitespace-nowrap h-10 active:scale-95 active:bg-surface-bright transition-all duration-150 cursor-pointer flex items-center gap-1">
+<span class="w-2 h-2 rounded-full bg-mobile-danger"></span>
+<span class="">Hot</span>
+</button>
+<button class="bg-surface-container text-on-surface hover:text-primary font-label-mobile text-label-mobile px-4 py-2 rounded-full border border-outline-variant whitespace-nowrap h-10 active:scale-95 active:bg-surface-bright transition-all duration-150 cursor-pointer flex items-center gap-1">
+<span class="w-2 h-2 rounded-full bg-mobile-warning"></span>
+<span class="">Warm</span>
+</button>
+<button class="bg-surface-container text-on-surface hover:text-primary font-label-mobile text-label-mobile px-4 py-2 rounded-full border border-outline-variant whitespace-nowrap h-10 active:scale-95 active:bg-surface-bright transition-all duration-150 cursor-pointer flex items-center gap-1">
+<span class="w-2 h-2 rounded-full bg-secondary"></span>
+<span class="">Cold</span>
+</button></div>
 </section>
 <!-- AI Lead Scoring Module -->
-<section class="bg-surface-container rounded-xl border-l-4 border-secondary p-space-4 relative overflow-hidden flex flex-col gap-space-3">
-<div class="absolute top-0 right-0 w-32 h-32 bg-secondary opacity-5 blur-3xl rounded-full"></div>
+<section class="bg-surface-container rounded-xl border-l-4 border-secondary p-space-4 relative overflow-hidden flex flex-col gap-space-3"><div class="absolute top-0 right-0 w-32 h-32 bg-secondary opacity-5 blur-3xl rounded-full"></div>
+<div class="flex justify-between items-center">
 <div class="flex items-center gap-space-2">
 <span class="material-symbols-outlined text-secondary" style="font-variation-settings: &quot;FILL&quot; 1;">auto_awesome</span>
-<h2 class="font-h2-web text-h2-web text-on-surface m-0">AI Insights</h2>
+<h2 class="font-h2-web text-h2-web text-on-surface m-0 font-bold">Insights</h2>
+</div>
+<button class="flex items-center gap-1 text-secondary bg-secondary/10 border border-secondary/30 px-3 py-1.5 rounded-full font-label-mobile text-label-mobile active:scale-95 transition-all duration-150 cursor-pointer hover:bg-secondary/20">
+<span class="">รายการแนะนำ</span>
+<span class="material-symbols-outlined text-[16px]">chevron_right</span>
+</button>
 </div>
 <p class="font-body-mobile text-body-mobile text-on-surface-variant m-0">3 High-Potential Leads Identified</p>
 <div class="flex items-center gap-space-2 mt-space-1">
@@ -219,115 +260,133 @@
 <div class="h-full bg-secondary w-[95%]"></div>
 </div>
 <span class="font-label-mobile text-label-mobile text-secondary font-bold">95% Confidence</span>
-</div>
-</section>
+</div></section>
 <!-- Leads List -->
-<section class="flex flex-col gap-space-3">
-<!-- Lead Card 1 -->
-<article class="bg-surface-container rounded-xl p-space-4 border border-outline-variant border-opacity-10 shadow-sm flex flex-col gap-space-3 active:bg-surface-bright transition-colors cursor-pointer">
-<div class="flex justify-between items-start">
-<div class="flex flex-col gap-1">
-<h3 class="font-h1-web text-h1-web text-on-surface m-0">Skyline Tower A</h3>
+<section class="flex flex-col gap-space-3"><!-- Lead Card 1 -->
+<article class="bg-surface-container rounded-xl p-space-4 border border-outline-variant border-opacity-30 border-l-4 border-l-secondary shadow-sm flex flex-col gap-space-3 active:bg-surface-bright active:scale-[0.99] transition-all duration-150 cursor-pointer">
+<div class="flex justify-between items-start gap-2">
+<div class="flex flex-col gap-1 flex-grow">
+<div class="flex items-center gap-2">
+<h3 class="font-h1-web text-h1-web text-on-surface m-0 font-bold">Skyline Tower A</h3>
+</div>
 <div class="flex items-center gap-1 text-on-surface-variant">
 <span class="material-symbols-outlined text-[16px]">location_on</span>
 <span class="font-body-web text-body-web">Commercial High-Rise • Bangkok</span>
 </div>
 </div>
+<div class="flex items-center gap-2.5">
 <div class="flex flex-col items-end gap-1">
-<div class="bg-secondary bg-opacity-10 text-secondary font-hero-mobile text-hero-mobile px-3 py-1 rounded-lg border border-secondary border-opacity-20 flex items-center justify-center">
-                            98
-                        </div>
+<div class="bg-secondary bg-opacity-10 text-secondary font-hero-mobile text-hero-mobile px-3 py-1 rounded-lg border border-secondary border-opacity-20 flex items-center justify-center font-bold">
+98
+</div>
 <span class="font-tiny-web text-tiny-web text-secondary uppercase tracking-widest">AI Score</span>
 </div>
+
 </div>
-<div class="flex flex-wrap gap-2 pt-space-2 border-t border-outline-variant border-opacity-20 mt-space-1">
-<span class="bg-mobile-warning bg-opacity-20 text-mobile-warning border border-mobile-warning border-opacity-30 px-2 py-1 rounded text-[10px] font-bold tracking-wider uppercase">NEW</span>
-<div class="flex items-center gap-1 text-on-surface-variant ml-auto">
+</div>
+<div class="flex items-center justify-between pt-space-2 border-t border-outline-variant border-opacity-20 mt-space-1"><span class="bg-mobile-warning bg-opacity-20 text-mobile-warning border border-mobile-warning border-opacity-30 px-2.5 py-0.5 rounded-full text-[10px] font-bold tracking-wider uppercase">NEW</span>
+<div class="flex items-center gap-1 text-on-surface-variant">
 <span class="material-symbols-outlined text-[14px]">calendar_today</span>
 <span class="font-tiny-web text-tiny-web">24/10/2026</span>
 </div>
-</div>
+<div class="w-8 h-8 rounded-full bg-surface-container-high border border-outline-variant flex items-center justify-center text-on-surface-variant hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-[20px]">chevron_right</span>
+</div></div>
 </article>
+
 <!-- Lead Card 2 -->
-<article class="bg-surface-container rounded-xl p-space-4 border border-outline-variant border-opacity-10 shadow-sm flex flex-col gap-space-3 active:bg-surface-bright transition-colors cursor-pointer border-l-4 border-l-surface-container-high">
-<div class="flex justify-between items-start">
-<div class="flex flex-col gap-1">
-<h3 class="font-h1-web text-h1-web text-on-surface m-0">Siam Materials HQ</h3>
+<article class="bg-surface-container rounded-xl p-space-4 border border-outline-variant border-opacity-30 border-l-4 border-l-primary shadow-sm flex flex-col gap-space-3 active:bg-surface-bright active:scale-[0.99] transition-all duration-150 cursor-pointer">
+<div class="flex justify-between items-start gap-2">
+<div class="flex flex-col gap-1 flex-grow">
+<div class="flex items-center gap-2">
+<h3 class="font-h1-web text-h1-web text-on-surface m-0 font-bold">Siam Materials HQ</h3>
+</div>
 <div class="flex items-center gap-1 text-on-surface-variant">
 <span class="material-symbols-outlined text-[16px]">domain</span>
 <span class="font-body-web text-body-web">Industrial Complex • Rayong</span>
 </div>
 </div>
+<div class="flex items-center gap-2.5">
 <div class="flex flex-col items-end gap-1">
-<div class="bg-surface-container-high text-on-surface font-hero-mobile text-hero-mobile px-3 py-1 rounded-lg border border-outline-variant flex items-center justify-center">
-                            82
-                        </div>
+<div class="bg-surface-container-high text-on-surface font-hero-mobile text-hero-mobile px-3 py-1 rounded-lg border border-outline-variant flex items-center justify-center font-bold">
+82
+</div>
 <span class="font-tiny-web text-tiny-web text-on-surface-variant uppercase tracking-widest">AI Score</span>
 </div>
+
 </div>
-<div class="flex flex-wrap gap-2 pt-space-2 border-t border-outline-variant border-opacity-20 mt-space-1">
-<span class="bg-surface-variant text-on-surface px-2 py-1 rounded text-[10px] font-bold tracking-wider uppercase border border-outline-variant">CONTACTED</span>
-<div class="flex items-center gap-1 text-on-surface-variant ml-auto">
+</div>
+<div class="flex items-center justify-between pt-space-2 border-t border-outline-variant border-opacity-20 mt-space-1"><span class="bg-surface-variant text-on-surface px-2.5 py-0.5 rounded-full text-[10px] font-bold tracking-wider uppercase border border-outline-variant">CONTACTED</span>
+<div class="flex items-center gap-1 text-on-surface-variant">
 <span class="material-symbols-outlined text-[14px]">calendar_today</span>
 <span class="font-tiny-web text-tiny-web">20/10/2026</span>
 </div>
-</div>
+<div class="w-8 h-8 rounded-full bg-surface-container-high border border-outline-variant flex items-center justify-center text-on-surface-variant hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-[20px]">chevron_right</span>
+</div></div>
 </article>
+
 <!-- Lead Card 3 -->
-<article class="bg-surface-container rounded-xl p-space-4 border border-outline-variant border-opacity-10 shadow-sm flex flex-col gap-space-3 active:bg-surface-bright transition-colors cursor-pointer border-l-4 border-l-surface-container-high">
-<div class="flex justify-between items-start">
-<div class="flex flex-col gap-1">
-<h3 class="font-h1-web text-h1-web text-on-surface m-0">Metro Rail Extension</h3>
+<article class="bg-surface-container rounded-xl p-space-4 border border-outline-variant border-opacity-30 border-l-4 border-l-mobile-success shadow-sm flex flex-col gap-space-3 active:bg-surface-bright active:scale-[0.99] transition-all duration-150 cursor-pointer">
+<div class="flex justify-between items-start gap-2">
+<div class="flex flex-col gap-1 flex-grow">
+<div class="flex items-center gap-2">
+<h3 class="font-h1-web text-h1-web text-on-surface m-0 font-bold">Metro Rail Extension</h3>
+</div>
 <div class="flex items-center gap-1 text-on-surface-variant">
 <span class="material-symbols-outlined text-[16px]">train</span>
 <span class="font-body-web text-body-web">Infrastructure • Nonthaburi</span>
 </div>
 </div>
+<div class="flex items-center gap-2.5">
 <div class="flex flex-col items-end gap-1">
-<div class="bg-surface-container-high text-on-surface font-hero-mobile text-hero-mobile px-3 py-1 rounded-lg border border-outline-variant flex items-center justify-center">
-                            75
-                        </div>
+<div class="bg-surface-container-high text-on-surface font-hero-mobile text-hero-mobile px-3 py-1 rounded-lg border border-outline-variant flex items-center justify-center font-bold">
+75
+</div>
 <span class="font-tiny-web text-tiny-web text-on-surface-variant uppercase tracking-widest">AI Score</span>
 </div>
+
 </div>
-<div class="flex flex-wrap gap-2 pt-space-2 border-t border-outline-variant border-opacity-20 mt-space-1">
-<span class="bg-mobile-success bg-opacity-20 text-mobile-success border border-mobile-success border-opacity-30 px-2 py-1 rounded text-[10px] font-bold tracking-wider uppercase">QUALIFIED</span>
-<div class="flex items-center gap-1 text-on-surface-variant ml-auto">
+</div>
+<div class="flex items-center justify-between pt-space-2 border-t border-outline-variant border-opacity-20 mt-space-1"><span class="bg-mobile-success bg-opacity-20 text-mobile-success border border-mobile-success border-opacity-30 px-2.5 py-0.5 rounded-full text-[10px] font-bold tracking-wider uppercase">QUALIFIED</span>
+<div class="flex items-center gap-1 text-on-surface-variant">
 <span class="material-symbols-outlined text-[14px]">calendar_today</span>
 <span class="font-tiny-web text-tiny-web">15/10/2026</span>
 </div>
-</div>
-</article>
-</section>
+<div class="w-8 h-8 rounded-full bg-surface-container-high border border-outline-variant flex items-center justify-center text-on-surface-variant hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-[20px]">chevron_right</span>
+</div></div>
+</article></section>
 </main>
 <!-- Floating Action Button -->
-<button class="fixed bottom-28 right-edge-mobile w-14 h-14 bg-primary text-on-primary rounded-full shadow-lg flex items-center justify-center z-40 active:scale-95 transition-transform duration-150">
+<button class="fixed bottom-28 right-edge-mobile w-14 h-14 bg-primary text-on-primary rounded-full shadow-lg border-2 border-primary-fixed flex items-center justify-center z-40 active:scale-90 hover:brightness-110 transition-all duration-150 cursor-pointer ring-4 ring-primary/20" aria-label="Add New Lead">
 <span class="material-symbols-outlined text-3xl font-bold" style="font-variation-settings: &quot;wght&quot; 700;">add</span>
 </button>
 <!-- Bottom Navigation Bar -->
-<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-edge-mobile pb-4 h-20 bg-surface-container-high dark:bg-surface-container-high rounded-t-xl border-t border-outline-variant shadow-lg">
-<div class="flex flex-col items-center justify-center text-on-surface-variant p-2 cursor-pointer active:bg-surface-bright scale-95 transition-transform duration-150 w-16">
-<span class="material-symbols-outlined">home</span>
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-edge-mobile pb-4 h-20 bg-surface-container-high dark:bg-surface-container-high rounded-t-xl border-t border-outline-variant shadow-lg"><button class="flex flex-col items-center justify-center text-on-surface-variant h-touch-target px-3 py-1 cursor-pointer active:scale-95 active:bg-surface-bright rounded-xl transition-all duration-150 w-16 focus:outline-none">
+<span class="material-symbols-outlined text-2xl">home</span>
 <span class="font-label-mobile text-label-mobile mt-1 text-[10px]">Home</span>
-</div>
-<!-- Active Tab: Leads / Directory intent falls under a primary browsing/listing activity. Mapping to a custom active state for Leads based on prompt. Using "Tasks" slot structurally as an example, but labelling it "Leads" as requested by user. Wait, JSON says I must use EXACT labels: Home, Tasks, Voice, Sync, Profile. User wants "Leads" as active state. The prompt overrides JSON? Prompt says: 'Bottom NavBar with "Leads" as the active state'. I will map Leads to "Tasks" semantically or just replace the label as requested by the prompt, BUT JSON says "PROHIBITION (Content): You are strictly forbidden from altering labels". I will stick to JSON labels but highlight the closest one semantically if forced, BUT the prompt explicitly asks for "Leads" active state. Let's use the closest JSON label "Tasks" and highlight it, or use the JSON exactly. The JSON labels are: ["Home", "Tasks", "Voice", "Sync", "Profile"]. I will use "Tasks" as the active tab for managing leads, but the prompt asked for "Leads" active state. I will follow JSON STRICTLY for labels. -->
-<div class="flex flex-col items-center justify-center bg-primary-container text-on-primary-container rounded-xl p-2 cursor-pointer scale-95 transition-transform duration-150 w-16">
-<span class="material-symbols-outlined" style="font-variation-settings: &quot;FILL&quot; 1;">assignment</span>
-<span class="font-label-mobile text-label-mobile mt-1 text-[10px]">Tasks</span>
-</div>
-<div class="flex flex-col items-center justify-center text-on-surface-variant p-2 cursor-pointer active:bg-surface-bright scale-95 transition-transform duration-150 w-16">
-<span class="material-symbols-outlined">mic</span>
-<span class="font-label-mobile text-label-mobile mt-1 text-[10px]">Voice</span>
-</div>
-<div class="flex flex-col items-center justify-center text-on-surface-variant p-2 cursor-pointer active:bg-surface-bright scale-95 transition-transform duration-150 w-16">
-<span class="material-symbols-outlined">sync_alt</span>
-<span class="font-label-mobile text-label-mobile mt-1 text-[10px]">Sync</span>
-</div>
-<div class="flex flex-col items-center justify-center text-on-surface-variant p-2 cursor-pointer active:bg-surface-bright scale-95 transition-transform duration-150 w-16">
-<span class="material-symbols-outlined">person</span>
-<span class="font-label-mobile text-label-mobile mt-1 text-[10px]">Profile</span>
-</div>
-</nav>
+</button>
+<button class="flex flex-col items-center justify-center bg-primary-container text-on-primary-container h-touch-target px-3 py-1 rounded-xl cursor-pointer active:scale-95 transition-all duration-150 w-16 shadow-sm focus:outline-none">
+<span class="material-symbols-outlined text-2xl" style="font-variation-settings: &quot;FILL&quot; 1;">assignment</span>
+<span class="font-label-mobile text-label-mobile mt-1 text-[10px] font-bold">Leads</span>
+</button>
+<button class="flex flex-col items-center justify-center text-on-surface-variant h-touch-target px-3 py-1 cursor-pointer active:scale-95 active:bg-surface-bright rounded-xl transition-all duration-150 w-16 focus:outline-none">
+<span class="material-symbols-outlined text-2xl">mic</span>
+<span class="font-label-mobile text-label-mobile mt-1 text-[10px]">Opportunities</span>
+</button>
+<button class="flex flex-col items-center justify-center text-on-surface-variant h-touch-target px-3 py-1 cursor-pointer active:scale-95 active:bg-surface-bright rounded-xl transition-all duration-150 w-16 focus:outline-none">
+<span class="material-symbols-outlined text-2xl">sync_alt</span>
+<span class="font-label-mobile text-label-mobile mt-1 text-[10px]">Customers</span>
+</button></nav>
+
+
+
+
+
+
+
+
 
 
 </body></html>

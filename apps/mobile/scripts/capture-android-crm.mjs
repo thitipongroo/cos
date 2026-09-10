@@ -1,20 +1,26 @@
 // Android CRM_SALES_MANAGER screenshot capture — adb/uiautomator only, like every sibling script.
 //
 // Produces, under docs/screens/android/12-crm-manager/:
-//   01-Home/01-crm-dashboard   pipeline value, active leads, win rate, stage counts
+//   01-Home/01-crm-dashboard          pipeline value, active leads, win rate, stage counts
+//   02-Leads/01-leads-directory       search, state chips, AI score per lead
+//   03-Pipeline/01-opportunities      forecast card, photo cards, convert
+//   04-Customers/01-customers         relationship card, client cards
+//   05-Profile/01-navigation-drawer   the grouped CRM menu
+//   05-Profile/02-account-settings    the three grouped cards
 //
-// ── ONE SCREEN, AND THE REASON IS A DECISION, NOT AN OMISSION ────────────────────────────────────
+// ── THE AUGUST RETIREMENT IS OVER, BY THE DECISION THAT ENDED IT ────────────────────────────────
 //
 // This role's capture path was RETIRED on 2026-08-11 by product-owner decision: the Leads,
 // Opportunities and Customers frames were deleted and `capture-android-crm.mjs` was removed with
-// them (docs/screens/android/README.md, "CRM Sales Manager — not captured"). Nothing has reversed
-// that. What brought this file back on 2026-09-09 is the HOME DASHBOARD, which did not exist in
-// August — the role's Home tab rendered a 22-line placeholder — and which the product owner asked
-// to have captured when it was built.
+// them (docs/screens/android/README.md, "CRM Sales Manager — not captured"). The HOME DASHBOARD
+// brought the file back on 2026-09-09 — it did not exist in August, when the role's Home tab
+// rendered a 22-line placeholder — and it shot that one screen and nothing else, because adding the
+// others back would have reversed a decision nobody had revisited.
 //
-// So this script shoots the dashboard and nothing else. Adding the other three back would reverse a
-// decision nobody has revisited; if that is ever wanted, the tabs are `leads-tab`, `opportunities-tab`
-// and `customers-tab` and the shape below already handles them.
+// SOMEBODY REVISITED IT. The product owner asked on 2026-09-10 for the five remaining CRM screens
+// to be implemented from Stitch and for each to be captured ("capture screen ที่ Implement ด้วย").
+// All three retired frames are among them, so the retirement is lifted for exactly those and the
+// two profile screens join them. Nothing else changed about how they are shot.
 //
 // PATH A. `MFA_ROLES` in `backend/prisma/provision-keycloak-demo.ts` is `{TENANT_ADMIN, FINANCE}`,
 // and this role is in neither, so the ordinary phone-OTP flow works.
@@ -85,6 +91,20 @@ async function present(pred) {
 }
 
 const byId = (id) => (n) => n.includes(`resource-id="${id}"`);
+
+/**
+ * A node's `[x1,y1][x2,y2]` box, for `stitch-fullpage.py --fab`.
+ *
+ * A floating button is absolutely positioned, so it appears in EVERY frame the stitcher takes and
+ * a long page ends up with a column of them. The stitcher erases it from each shot and redraws it
+ * once, but only when it is told where the button is.
+ */
+async function boundsOf(pred, what) {
+  const node = (await dump()).find((n) => pred(n) && n.includes('bounds='));
+  if (!node) throw new Error(`capture: ${what} never appeared`);
+  const m = /bounds="\[(\d+),(\d+)\]\[(\d+),(\d+)\]"/.exec(node);
+  return [+m[1], +m[2], +m[3], +m[4]];
+}
 
 async function tap(pred, what) {
   const c = await find(pred, what);
@@ -203,7 +223,7 @@ function hasRealBounds(node) {
   return Number(m[3]) > Number(m[1]) && Number(m[4]) > Number(m[2]);
 }
 
-// Targets: home
+// Targets: home leads opportunities customers drawer settings
 async function main() {
   mkdirSync(OUT, { recursive: true });
   adb('reverse', 'tcp:8081', `tcp:${METRO_PORT}`);
@@ -257,6 +277,137 @@ async function main() {
     // of the skeleton rather than of the screen.
     await delay(6000);
     await stitchFull('01-Home/01-crm-dashboard');
+  }
+
+  // The three list tabs. Each opens on a <LoadingBoundary> over its whole region (Rule 40), so a
+  // frame taken before the fetch settles is a picture of the loader; 4s is what the dashboard's
+  // three-request wait above proved sufficient for one request on this emulator, doubled.
+  if (wanted('leads')) {
+    console.log('· Leads tab');
+    await tap(byId('leads-tab'), 'leads tab');
+    await find(byId('leads-screen'), 'Leads directory', 30);
+    await delay(4000);
+    await stitchFull(
+      '02-Leads/01-leads-directory',
+      undefined,
+      await boundsOf(byId('create-lead-fab'), 'lead FAB'),
+    );
+  }
+
+  if (wanted('opportunities')) {
+    console.log('· Opportunities tab');
+    await tap(byId('opportunities-tab'), 'opportunities tab');
+    await find(byId('opportunities-screen'), 'Opportunities', 30);
+    // Two requests here, not one: the list and the leads the create sheet picks from.
+    await delay(5000);
+    await stitchFull(
+      '03-Pipeline/01-opportunities',
+      undefined,
+      await boundsOf(byId('create-opportunity-fab'), 'opportunity FAB'),
+    );
+  }
+
+  if (wanted('customers')) {
+    console.log('· Customers tab');
+    await tap(byId('customers-tab'), 'customers tab');
+    await find(byId('customers-screen'), 'Customers', 30);
+    await delay(4000);
+    await stitchFull('04-Customers/01-customers');
+  }
+
+  // THE DRAWER IS AN OVERLAY OVER THE WHOLE SCREEN, TopBar included — it is `StyleSheet.
+  // absoluteFill` with elevation 32, so the usual 200..2196 band would cut its brand row off the
+  // top and its logout button off the bottom. It is shot edge to edge below the status bar instead.
+  //
+  // ITS MENU SCROLLS, AND `stitchFull` CANNOT SEE THAT IT DOES.
+  //
+  // The CRM drawer is a profile block, four titled groups, thirteen rows and a logout button —
+  // more than one screen. `shots: 4` was tried on 2026-09-10 and the stitcher answered
+  // `bottom reached (scroll~0)` on every frame after the first, so the file shipped cut off at the
+  // third group. The reason is structural: it finds the scroll by correlating whole ROWS of a
+  // 1080px-wide frame, and on an open drawer almost none of a row moves — the right ~220px is the
+  // dimmed backdrop, the profile card sits ABOVE the ScrollView, and the logout button is pinned
+  // below it. What travels is a window in the middle of a 310dp panel.
+  //
+  // So this does not correlate anything. It reads the scroll OFF THE TREE: the y of one row before
+  // the swipe and after it, which is the exact number of pixels the list moved. `stitch-drawer.py`
+  // pastes only those pixels in. Every output row was on the screen; none is interpolated.
+  if (wanted('drawer')) {
+    console.log('· Navigation drawer');
+    await tap(byId('drawer-menu-button'), 'drawer button');
+    await find(byId('navigation-drawer'), 'navigation drawer', 30);
+    // Two list requests badge the Leads and Pipeline rows.
+    await delay(4000);
+
+    // The scrolling window: from the first row under the static profile card to the top of the
+    // pinned logout button. Both are read, not assumed — the panel's height depends on the
+    // handset's safe-area inset, and the profile card's on whether the account has a position.
+    const firstRow = await boundsOf(byId('drawer-link-/home'), 'first drawer row');
+    const logout = await boundsOf(byId('drawer-logout'), 'logout button');
+    const region = [firstRow[1], logout[1]];
+
+    const top = join(TMP, 'crm_drawer_top.png');
+    grab(top);
+
+    // ANCHOR ON A ROW THAT SURVIVES THE SCROLL. `/customers` is the last row of the first group,
+    // far enough down to still be on screen at the bottom of a short list and far enough up not to
+    // be the row that leaves it. Its travel IS the list's travel.
+    const before = await boundsOf(byId('drawer-link-/customers'), 'anchor row');
+    for (let i = 0; i < 5; i++) {
+      adb('shell', 'input', 'swipe', '400', '1900', '400', '1000', '400');
+      await delay(400);
+    }
+    await delay(900);
+    const after = await boundsOf(byId('drawer-link-/customers'), 'anchor row after the scroll');
+    const scrolled = before[1] - after[1];
+
+    const bottom = join(TMP, 'crm_drawer_bottom.png');
+    grab(bottom);
+
+    const dest = join(OUT, '05-Profile/01-navigation-drawer.png');
+    mkdirSync(dirname(dest), { recursive: true });
+    process.stdout.write(
+      execFileSync(
+        'python',
+        [
+          join(HERE, 'stitch-drawer.py'),
+          dest,
+          top,
+          bottom,
+          '--scroll',
+          String(scrolled),
+          '--region',
+          String(region[0]),
+          String(region[1]),
+        ],
+        { encoding: 'utf-8' },
+      ),
+    );
+    console.log('  stitched 05-Profile/01-navigation-drawer.png');
+  }
+
+  if (wanted('settings')) {
+    console.log('· Account settings, from the drawer');
+    if (!(await present(byId('navigation-drawer')))) {
+      await tap(byId('drawer-menu-button'), 'drawer button');
+      await find(byId('navigation-drawer'), 'navigation drawer', 30);
+      await delay(1500);
+    }
+    // THE SETTINGS ROW IS IN THE DRAWER'S LAST GROUP, and on a fresh drawer that is below the
+    // fold — the first run tapped a row that was not on screen and the screen never opened. Scroll
+    // the panel down before reaching for it. Harmless when the drawer step ran just before this
+    // one and already left it at the bottom. Swiping at x=400 stays inside the panel; a swipe on
+    // the backdrop would close the drawer instead.
+    for (let i = 0; i < 5; i++) {
+      adb('shell', 'input', 'swipe', '540', '1800', '540', '900', '400');
+      await delay(400);
+    }
+    await delay(800);
+    await tap(byId('drawer-link-/account-settings'), 'Settings row');
+    await find(byId('account-settings'), 'account settings', 30);
+    // `GET /users/me` for the head, and the notification preferences below it.
+    await delay(4000);
+    await stitchFull('05-Profile/02-account-settings');
   }
 
   console.log(`\nDone → ${OUT}`);

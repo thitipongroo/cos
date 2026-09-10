@@ -30,6 +30,17 @@ const WITH_BOTH = {
 const CONTACT_ONLY = { ...WITH_BOTH, lead_id: 'l-2', company: null, contact_name: 'Malee S.' };
 const NEITHER = { ...WITH_BOTH, lead_id: 'l-3', company: null, contact_name: null };
 
+/**
+ * Open the capture sheet.
+ *
+ * The two inputs and the save button sat at the top of the screen until 2026-09-10; the drawing
+ * replaced them with a `+` over the list. They are the SAME fields with the same testIDs, one tap
+ * further in, so every test that captures a lead opens the sheet first.
+ */
+async function openSheet(r: { getByTestId: (id: string) => unknown }) {
+  await fireEvent.press(r.getByTestId('create-lead-fab') as never);
+}
+
 function renderScreen() {
   return render(
     <I18nProvider>
@@ -102,6 +113,8 @@ describe('LeadsScreen', () => {
     crm.createLead.mockResolvedValue(WITH_BOTH);
 
     const { getByTestId } = await renderScreen();
+    await waitFor(() => expect(getByTestId('create-lead-fab')).toBeTruthy());
+    await openSheet({ getByTestId });
     await waitFor(() => expect(getByTestId('create-lead-button')).toBeTruthy());
 
     await fireEvent.changeText(getByTestId('lead-company-input'), 'Riverside Construction');
@@ -118,6 +131,8 @@ describe('LeadsScreen', () => {
     crm.createLead.mockResolvedValue(CONTACT_ONLY);
 
     const { getByTestId } = await renderScreen();
+    await waitFor(() => expect(getByTestId('create-lead-fab')).toBeTruthy());
+    await openSheet({ getByTestId });
     await waitFor(() => expect(getByTestId('create-lead-button')).toBeTruthy());
 
     await fireEvent.changeText(getByTestId('lead-contact-input'), 'Malee S.');
@@ -132,6 +147,8 @@ describe('LeadsScreen', () => {
     crm.createLead.mockResolvedValue(WITH_BOTH);
 
     const { getByTestId } = await renderScreen();
+    await waitFor(() => expect(getByTestId('create-lead-fab')).toBeTruthy());
+    await openSheet({ getByTestId });
     await waitFor(() => expect(getByTestId('create-lead-button')).toBeTruthy());
 
     await fireEvent.changeText(getByTestId('lead-contact-input'), '  Somchai P.  ');
@@ -151,6 +168,8 @@ describe('LeadsScreen', () => {
     crm.listLeads.mockResolvedValue([]);
 
     const { getByTestId } = await renderScreen();
+    await waitFor(() => expect(getByTestId('create-lead-fab')).toBeTruthy());
+    await openSheet({ getByTestId });
     await waitFor(() => expect(getByTestId('create-lead-button')).toBeTruthy());
 
     expect(getByTestId('create-lead-button').props.accessibilityState.disabled).toBe(true);
@@ -164,6 +183,8 @@ describe('LeadsScreen', () => {
     crm.listLeads.mockResolvedValue([]);
 
     const { getByTestId } = await renderScreen();
+    await waitFor(() => expect(getByTestId('create-lead-fab')).toBeTruthy());
+    await openSheet({ getByTestId });
     await waitFor(() => expect(getByTestId('create-lead-button')).toBeTruthy());
 
     await fireEvent.changeText(getByTestId('lead-contact-input'), '   ');
@@ -182,6 +203,7 @@ describe('LeadsScreen', () => {
     const { getByTestId, getAllByTestId, getByText } = await renderScreen();
     await waitFor(() => expect(getAllByTestId('lead-item')).toHaveLength(1));
 
+    await openSheet({ getByTestId });
     await fireEvent.changeText(getByTestId('lead-company-input'), 'Riverside Construction');
     await fireEvent.press(getByTestId('create-lead-button'));
 
@@ -191,17 +213,26 @@ describe('LeadsScreen', () => {
     expect(crm.listLeads).toHaveBeenCalledTimes(1);
   });
 
-  it('empties the form once the lead is captured', async () => {
+  it('closes the sheet once the lead is captured, and empties it for next time', async () => {
     crm.listLeads.mockResolvedValue([]);
     crm.createLead.mockResolvedValue(WITH_BOTH);
 
-    const { getByTestId } = await renderScreen();
+    const { getByTestId, queryByTestId } = await renderScreen();
+    await waitFor(() => expect(getByTestId('create-lead-fab')).toBeTruthy());
+    await openSheet({ getByTestId });
     await waitFor(() => expect(getByTestId('create-lead-button')).toBeTruthy());
 
     await fireEvent.changeText(getByTestId('lead-contact-input'), 'Somchai P.');
     await fireEvent.changeText(getByTestId('lead-company-input'), 'Riverside Construction');
     await fireEvent.press(getByTestId('create-lead-button'));
 
+    // THE SHEET CLOSES on success (2026-09-10). Emptying the fields in place was the old screen's
+    // behaviour, when the form was pinned above the list and had nowhere to go; now the capture is
+    // finished and the list is what the user wants to see. The fields are still cleared — reopening
+    // the sheet shows them empty, which is the part that would actually bite if it regressed.
+    await waitFor(() => expect(queryByTestId('create-lead-button')).toBeNull());
+
+    await openSheet({ getByTestId });
     await waitFor(() => expect(getByTestId('lead-contact-input').props.value).toBe(''));
     expect(getByTestId('lead-company-input').props.value).toBe('');
   });
@@ -217,6 +248,8 @@ describe('LeadsScreen', () => {
     crm.createLead.mockRejectedValue(new Error('offline'));
 
     const { getByTestId, queryAllByTestId } = await renderScreen();
+    await waitFor(() => expect(getByTestId('create-lead-fab')).toBeTruthy());
+    await openSheet({ getByTestId });
     await waitFor(() => expect(getByTestId('create-lead-button')).toBeTruthy());
 
     await fireEvent.changeText(getByTestId('lead-company-input'), 'Riverside Construction');
@@ -233,6 +266,8 @@ describe('LeadsScreen', () => {
     crm.createLead.mockRejectedValue(new Error('offline'));
 
     const { getByTestId } = await renderScreen();
+    await waitFor(() => expect(getByTestId('create-lead-fab')).toBeTruthy());
+    await openSheet({ getByTestId });
     await waitFor(() => expect(getByTestId('create-lead-button')).toBeTruthy());
 
     await fireEvent.changeText(getByTestId('lead-company-input'), 'Riverside Construction');
@@ -250,6 +285,8 @@ describe('LeadsScreen', () => {
     crm.createLead.mockReturnValue(new Promise(() => undefined));
 
     const { getByTestId } = await renderScreen();
+    await waitFor(() => expect(getByTestId('create-lead-fab')).toBeTruthy());
+    await openSheet({ getByTestId });
     await waitFor(() => expect(getByTestId('create-lead-button')).toBeTruthy());
 
     await fireEvent.changeText(getByTestId('lead-company-input'), 'Riverside Construction');
@@ -298,9 +335,11 @@ describe('LeadsScreen', () => {
       { ...WITH_BOTH, lead_id: 'l-2', status: 'QUALIFIED' },
     ]);
 
-    const { getByText } = await renderScreen();
+    // `getAllByText`, not `getByText`: the filter chips above the list carry the same labels, so
+    // each one appears at least twice on this screen by design.
+    const { getAllByText } = await renderScreen();
 
-    await waitFor(() => expect(getByText('NEW')).toBeTruthy());
-    expect(getByText('QUALIFIED')).toBeTruthy();
+    await waitFor(() => expect(getAllByText('New').length).toBeGreaterThan(0));
+    expect(getAllByText('Qualified').length).toBeGreaterThan(0);
   });
 });

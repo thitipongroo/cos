@@ -15,19 +15,44 @@
 // the section above it is that role's own. The table lives in `lib/drawerLinks.ts` — this component
 // renders it and decides nothing about its contents. The shared rows were Settings + Support Centre
 // on 2026-08-10 and are Settings + Privacy Policy as of 2026-08-17; see that file for both moves.
+//
+// ── THE BODY HAS TWO SHAPES SINCE 2026-09-10 ───────────────────────────────────────────────────
+//
+// Eleven roles get the FLAT list described above: one "Field tools" heading, seven rows, the rest
+// behind "More". CRM_SALES_MANAGER gets a GROUPED menu — four titled groups, badges on two rows and
+// six rows whose screens are not built — because its drawing
+// (mockup/mobile/12_crm_manager/05_profile/02_crm_navigation_drawer) is that shape and a flat
+// seven-row list cannot express it. `drawerGroupsFor(role)` decides which, returning `null` for the
+// eleven; the four rules applied to that drawing, and what each cost it, are recorded beside the
+// table in `lib/drawerLinks.ts` rather than here.
+//
+// THE PROFILE BLOCK IS UNTOUCHED BY THAT SPLIT. It is the project's standard (§32.7 "Drawer Profile
+// Block") and has no per-role variant, so the drawing's "Pipeline: ฿450M Target" line under the
+// position is NOT added: it is a per-role figure inside the one block that has no per-role form.
+//
+// THERE IS NO OPERATING-REGION BAR, which the drawing heads the menu with. No schema in this
+// product holds a region for a user, so the bar could only print a constant and its switch button
+// could only do nothing. See `lib/drawerLinks.ts` rule 4.
 
 import { useEffect, useRef, useState } from 'react';
 import { View, Text, Pressable, Animated, StyleSheet, ScrollView, BackHandler } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter, usePathname } from 'expo-router';
-import { drawerSectionFor, SHARED_LINKS, type DrawerLink } from '../lib/drawerLinks';
+import {
+  drawerGroupsFor,
+  drawerSectionFor,
+  SHARED_LINKS,
+  type DrawerLink,
+  type DrawerRow,
+} from '../lib/drawerLinks';
 import { getMe } from '../api/users';
+import { listLeads, listOpportunities } from '../api/crm';
+import { useComingSoon } from './useComingSoon';
 import { useUiStore } from '../store/uiStore';
 import { useAuthStore } from '../store/authStore';
 import { useI18n } from '../i18n';
-import { Avatar } from './Avatar';
-import { shortId } from '../lib/shortId';
+import { ProfileBlock } from './ProfileBlock';
 import { BrandLogo } from './BrandLogo';
 import { darkColors, fontFamily, radius, spacing, touchTarget, typography } from '../theme/tokens';
 import { darkScreen } from '../theme/screenStyles';
@@ -59,8 +84,42 @@ export function NavigationDrawer(): React.JSX.Element | null {
   const userId = useAuthStore((s) => s.userId);
   const logout = useAuthStore((s) => s.logout);
   const { visible, overflow } = drawerSectionFor(role);
+  const groups = drawerGroupsFor(role);
+  const soon = useComingSoon();
   // Collapsed on open, every time: the drawer is a fresh glance, not a place with remembered state.
   const [expanded, setExpanded] = useState(false);
+
+  /**
+   * The two badge counts a grouped drawer carries, or null until they arrive.
+   *
+   * REAL, both of them: new leads and open opportunities are counted from the same two endpoints
+   * their screens read. Fetched once when a grouped drawer first opens — the same shape as `me`
+   * below, and for the same reason: a closed drawer renders nothing, so a request on mount would be
+   * for a panel nobody has asked for. A FAILURE LEAVES THE BADGES OFF ENTIRELY rather than showing a
+   * zero, because "no new leads" and "could not ask" are different answers and only one of them is
+   * a number.
+   */
+  const [counts, setCounts] = useState<{ newLeads: number; openDeals: number } | null>(null);
+
+  useEffect(() => {
+    if (!open || groups === null || counts !== null) return;
+    let cancelled = false;
+    Promise.all([listLeads(), listOpportunities()])
+      .then(([leads, opportunities]) => {
+        if (!cancelled) {
+          setCounts({
+            newLeads: leads.filter((l) => l.status === 'NEW').length,
+            openDeals: opportunities.filter((o) => o.status === 'OPEN').length,
+          });
+        }
+      })
+      .catch(() => {
+        /* offline — the rows draw without badges, which is what they did before this existed */
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [open, groups, counts]);
 
   /**
    * The two fields of the profile zone that the session token does not carry.
@@ -163,6 +222,64 @@ export function NavigationDrawer(): React.JSX.Element | null {
     );
   };
 
+  /**
+   * One row of a grouped menu.
+   *
+   * Differs from `renderLink` in exactly three ways, and shares everything else: it can carry a
+   * trailing badge, it can be a row whose screen does not exist, and it never folds. A row that does
+   * not exist SAYS SO on tap and pushes nothing — the alternative, a row that navigates nowhere,
+   * reads as a broken app rather than an unbuilt screen.
+   */
+  const renderRow = (row: DrawerRow): React.JSX.Element => {
+    const active = pathname === row.route;
+    const badgeText =
+      row.badge === undefined
+        ? null
+        : 'drawn' in row.badge
+          ? t(row.badge.labelKey, { count: String(row.badge.drawn) })
+          : counts === null
+            ? null
+            : t(row.badge.labelKey, { count: String(counts[row.badge.count]) });
+    return (
+      <Pressable
+        key={row.route}
+        testID={`drawer-link-${row.route}`}
+        onPress={() => (row.comingSoon === true ? soon(row.labelKey) : go(row.href ?? row.route))}
+        style={[styles.navItem, active && styles.navItemActive]}
+        accessibilityRole={row.comingSoon === true ? 'button' : 'link'}
+        accessibilityLabel={t(row.labelKey)}
+      >
+        {active ? <View style={styles.activePill} /> : null}
+        <MaterialIcons
+          name={row.icon}
+          size={24}
+          color={active ? darkColors.primary : darkColors.muted}
+        />
+        {/* ONE LINE. A wrapped label makes a two-line row among one-line rows, which puts its
+            badge and chevron out of alignment with every other row in the group — and a menu's
+            rows are read as a column, so one tall row is the thing the eye lands on. The copy is
+            kept short enough not to need the ellipsis; this is what stops a longer one being
+            ugly rather than merely long. */}
+        <Text
+          style={[styles.navLabel, styles.rowLabel, active && styles.navLabelActive]}
+          numberOfLines={1}
+          ellipsizeMode="tail"
+        >
+          {t(row.labelKey)}
+        </Text>
+        {badgeText === null ? (
+          <MaterialIcons name="chevron-right" size={18} color={darkColors.border} />
+        ) : (
+          <View testID={`drawer-badge-${row.route}`} style={styles.badge}>
+            <Text style={styles.badgeText} numberOfLines={1}>
+              {badgeText}
+            </Text>
+          </View>
+        )}
+      </Pressable>
+    );
+  };
+
   // Nothing in the tree while closed — no backdrop intercepting touches, no cost.
   if (!open) return null;
 
@@ -197,66 +314,64 @@ export function NavigationDrawer(): React.JSX.Element | null {
             2026-08-09). The `/profile` route was deleted with that ruling; every account control it
             held now renders below the navigation links as <AccountSettings />. */}
         <View testID="drawer-profile-card" style={styles.profileCard}>
-          <View style={styles.profileRow}>
-            <Avatar variant="dark" />
-            {/* THE PROJECT'S PROFILE BLOCK, and its order is the standard (PO decision
-                2026-09-08): AVATAR · NAME · WHAT THEY DO · WHO THEY ARE · STATUS. Descending by how
-                often it is read — a name identifies at a glance, a position gives it meaning, an id
-                is looked up perhaps twice a year, and the status line is the account's own. One
-                drawer serves every role, so this order is every role's; spec §32.7 "Drawer Profile
-                Block" is the authority and `NavigationDrawer.spec.tsx` pins the sequence, because a
-                reordered block renders perfectly and no snapshot-free test would otherwise see it.
-
-                NO ROLE TAG. The name line carried a `FINANCE` / `SITE_ENGINEER` chip until
-                2026-09-08 and it was removed on the product owner's instruction: the position line
-                below already says what this person does, in words a person uses, and an enum
-                shouted beside their name says it a second time in words the system uses. */}
-            <View style={darkScreen.fill}>
-              <Text style={styles.profileName} numberOfLines={1}>
-                {displayName ?? t('drawer.member')}
-              </Text>
-              {/* REAL since 2026-09-08: `platform.users.position`, returned by `GET /users/me`
-                  (ADR-101). It was DRAWN until that migration — `PROFILE_JOB_TITLE`, one hardcoded
-                  "Lead Controller" shown to every role — and the register entry was deleted with
-                  this change rather than left pointing at a column that now exists.
-
-                  NOTHING IS DRAWN WHEN THERE IS NO POSITION, and that is the common case: no route
-                  sets one, so it arrives by seed or HR import, and an app running against a
-                  deployment older than the migration gets no key at all. A missing title is not a
-                  title worth inventing — the name above and the id below already identify the
-                  account, and a placeholder would be the drawn line coming back under a new name. */}
-              {me?.position == null || me.position === '' ? null : (
-                <Text testID="drawer-job-title" style={styles.profileTitle} numberOfLines={1}>
-                  {me.position}
-                </Text>
-              )}
-              {/* `ID: <CODE>` in a monospaced face, as the mockup draws it — an id is read character
-                  by character, and a proportional face makes 0/O and 1/l ambiguous exactly there.
-                  THE CODE IS REAL WHERE THERE IS ONE: `workforce.workers.employee_code`, returned
-                  by `GET /users/me`. Office roles have no worker record and legitimately have no
-                  code, so those fall back to a short form of the UUID (PO 2026-08-09, "use a short
-                  UUID for now"). A display aid either way, never a key. */}
-              <Text testID="drawer-user-id" style={styles.profileId} numberOfLines={1}>
-                {t('profile.main.userId')}: {me?.employeeCode ?? shortId(userId)}
+          {/* THE PROJECT'S PROFILE BLOCK — <ProfileBlock />, which is also what heads Account
+              Settings. It was 18 lines of JSX here and 18 more there until 2026-09-10, when the
+              jscpd gate caught the pair on the run that added the second one. §32.7 says there is
+              "no second SHAPE anywhere in the app", and two hand-maintained copies of one shape is
+              precisely how a second shape appears — one prop at a time, with nothing failing when
+              it does. The component's own header carries the order and the reasons behind it. */}
+          <ProfileBlock
+            variant="drawer"
+            testIDPrefix="drawer"
+            displayName={displayName}
+            fallbackName={t('drawer.member')}
+            position={me?.position}
+            idLabel={t('profile.main.userId')}
+            employeeCode={me?.employeeCode}
+            userId={userId}
+          >
+            <View style={styles.statusRow}>
+              <MaterialIcons name="cloud-done" size={16} color={darkColors.success} />
+              {/* REAL: `platform.users.mfa_enabled`. Said only when the answer is known and true —
+                  an account with no second factor gets the plain online line rather than a claim.
+                  THE STATUS LINE IS THE CALLER'S, not the block's: this one says whether a second
+                  factor is enrolled, and Account Settings' says what the sync queue is doing. */}
+              <Text style={styles.statusText}>
+                {me?.mfaEnabled === true
+                  ? `${t('drawer.mfaVerified')} • ${t('drawer.online')}`
+                  : t('drawer.online')}
               </Text>
             </View>
-          </View>
-          <View style={styles.statusRow}>
-            <MaterialIcons name="cloud-done" size={16} color={darkColors.success} />
-            {/* REAL: `platform.users.mfa_enabled`. Said only when the answer is known and true —
-                an account with no second factor gets the plain online line rather than a claim. */}
-            <Text style={styles.statusText}>
-              {me?.mfaEnabled === true
-                ? `${t('drawer.mfaVerified')} • ${t('drawer.online')}`
-                : t('drawer.online')}
-            </Text>
-          </View>
+          </ProfileBlock>
         </View>
 
         <ScrollView style={darkScreen.fill} contentContainerStyle={styles.navList}>
+          {/* GROUPED — one role today. The flat branch below is unchanged and is what the other
+              eleven render; neither can reach the other's rows, which is what keeps this split from
+              becoming a way for one role to acquire another's menu. */}
+          {groups !== null ? (
+            <>
+              {groups.map((group) => (
+                <View key={group.titleKey} testID={`drawer-group-${group.titleKey}`}>
+                  {/* One line, for the reason the rows are — see renderRow. */}
+                  <Text style={styles.navSection} numberOfLines={1}>
+                    {t(group.titleKey)}
+                  </Text>
+                  {group.rows.map(renderRow)}
+                </View>
+              ))}
+              {/* The drawing's fourth group. Its rows are SHARED_LINKS rather than a second copy of
+                  them, so Settings and the Privacy Policy cannot drift from the eleven flat
+                  drawers by being written down twice. */}
+              <View testID="drawer-group-crm.drawer.groupSystem">
+                <Text style={styles.navSection}>{t('crm.drawer.groupSystem')}</Text>
+                {SHARED_LINKS.map(renderLink)}
+              </View>
+            </>
+          ) : null}
           {/* The role's own section. Empty for a session with no role, in which case the heading
               would label nothing and is not drawn either. */}
-          {visible.length > 0 ? (
+          {groups === null && visible.length > 0 ? (
             <>
               <Text style={styles.navSection}>{t('drawer.fieldTools')}</Text>
               {visible.map(renderLink)}
@@ -291,9 +406,13 @@ export function NavigationDrawer(): React.JSX.Element | null {
           {/* The shared rows — ONE ROW EACH, not the sections themselves (PO decision 2026-08-09).
               They rendered inline here for one build and made the panel carry both navigation and
               settings, with ~900px of a 2400px screen below the fold. Never folded behind "More":
-              see DRAWER_MAX_ROWS. */}
-          <View style={styles.divider} />
-          {SHARED_LINKS.map(renderLink)}
+              see DRAWER_MAX_ROWS. A grouped drawer has already drawn them, under a heading. */}
+          {groups === null ? (
+            <>
+              <View style={styles.divider} />
+              {SHARED_LINKS.map(renderLink)}
+            </>
+          ) : null}
         </ScrollView>
 
         {/* Logout */}
@@ -418,6 +537,20 @@ const styles = StyleSheet.create({
     color: darkColors.muted,
   },
   navLabelActive: { fontFamily: fontFamily.bold, color: darkColors.primary },
+  // A grouped row ends in a badge or a chevron, so its label is the half that gives way.
+  rowLabel: { flex: 1 },
+  badge: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: radius.xl,
+    backgroundColor: `${darkColors.accent}1F`,
+  },
+  badgeText: {
+    fontFamily: fontFamily.bold,
+    fontSize: 10,
+    letterSpacing: 0.4,
+    color: darkColors.accent,
+  },
   divider: {
     height: StyleSheet.hairlineWidth,
     backgroundColor: darkColors.border,
