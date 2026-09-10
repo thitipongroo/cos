@@ -49,6 +49,11 @@ export default function AuthLayout() {
           one of the two actions the drawing gives it, so the document must still be on the stack. */}
       <Stack.Screen name="terms-of-use-downloaded" />
       <Stack.Screen name="support" />
+      {/* mockup/mobile/01_authen/05_get_help — the Support Centre's two children. Both are
+          reached from its emergency pair, and both have `(app)` twins for the AuthGate
+          reason this file's header gives. */}
+      <Stack.Screen name="support-hotline" />
+      <Stack.Screen name="help-chat" />
     </Stack>
   );
 }

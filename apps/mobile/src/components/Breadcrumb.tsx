@@ -114,6 +114,16 @@ const BREADCRUMB_MAP: Record<string, Crumb[]> = {
   // authenticated screen, so Home is the parent crumb — the same reasoning as the Privacy Policy
   // above: the entry point is chrome and has no route of its own to name.
   '/support': [{ key: 'nav.tabs.home', href: '/home' }, { key: 'support.title' }],
+  '/support-hotline': [
+    { key: 'nav.tabs.home', href: '/home' },
+    { key: 'support.title', href: '/support' },
+    { key: 'supportHotline.title' },
+  ],
+  '/help-chat': [
+    { key: 'nav.tabs.home', href: '/home' },
+    { key: 'support.title', href: '/support' },
+    { key: 'helpChat.title' },
+  ],
   // Transparency Portal (PO 2026-08-04) — entered from the Data Collection card on the policy, so
   // the policy is the parent crumb. The seven category screens hang off the portal hub, giving
   // Policy → Portal → category.

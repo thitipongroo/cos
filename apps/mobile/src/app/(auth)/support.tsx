@@ -100,6 +100,8 @@ export default function SupportScreen(): React.JSX.Element {
       <SupportCenterDocument
         testID="support"
         palette={DARK}
+        onOpenHotline={() => router.push('/(auth)/support-hotline')}
+        onOpenChat={() => router.push('/(auth)/help-chat')}
         health={health}
         minutesAgo={minutesAgo}
         paddingBottom={insets.bottom + spacing.xl}

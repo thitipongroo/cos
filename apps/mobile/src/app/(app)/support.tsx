@@ -63,6 +63,7 @@ const STORAGE_LABEL_KEY: Record<LocalDbStatus, string> = {
 };
 import { drawerLinksFor } from '../../lib/drawerLinks';
 import { formatRole } from '../../lib/formatRole';
+import { useRouter } from 'expo-router';
 import { SupportCenterDocument, useBackendHealth } from '../../components/SupportCenterDocument';
 import { usePalette, type Palette } from '../../theme/usePalette';
 import { fontFamily, radius, spacing, typography } from '../../theme/tokens';
@@ -85,12 +86,18 @@ export default function SupportScreen(): React.JSX.Element {
   // The role's own modules, from the §6.4 matrix via drawerLinks — the single source the drawer
   // already derives from, so this list cannot drift from what the user can actually open.
   const modules = useMemo(() => drawerLinksFor(role), [role]);
+  const router = useRouter();
 
   return (
     <View style={[styles.root, { backgroundColor: pal.bg }]}>
       <SupportCenterDocument
         testID="support"
         palette={pal}
+        // GROUP-QUALIFIED. Both destinations exist in `(auth)` and `(app)`, groups add no path
+        // segment, and AuthGate bounces a signed-in user out of `(auth)` — so a bare push is
+        // ambiguous and could land on Home. Same rule as `DrawerLink.href`.
+        onOpenHotline={() => router.push('/(app)/support-hotline')}
+        onOpenChat={() => router.push('/(app)/help-chat')}
         health={health}
         minutesAgo={minutesAgo}
         paddingBottom={insets.bottom + spacing.xl}

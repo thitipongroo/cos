@@ -26,32 +26,35 @@
 //   - System status IS real — checkBackendHealth() pings the public GET /health/live, the same probe
 //     behind the login footer's status dot. Nothing here is a decorative "operational".
 //   - The two phone numbers are DEPLOYMENT CONFIG (PO decision 2026-08-09), the same treatment as
-//     EXPO_PUBLIC_DPO_EMAIL: no support-desk, emergency-contact or hotline column exists anywhere in
-//     the schema — verified again on 2026-08-17, `grep -i "support|hotline|emergency"` over
-//     backend/prisma/schema.prisma returns nothing — so signing in resolves no better number and the
-//     post-auth route reads the same two variables. Unset ⇒ the control renders disabled and says so,
-//     rather than dialling nothing. The priority line calls the SUPPORT CENTRE, not a named person
-//     (PO decision 2026-08-09, renaming the drawing's "Call Site Supervisor").
+//     EXPO_PUBLIC_DPO_EMAIL. The priority line calls the SUPPORT CENTRE, not a named person (PO
+//     decision 2026-08-09, renaming the drawing's "Call Site Supervisor"). Unset ⇒ that control
+//     renders disabled and says so, rather than dialling nothing.
+//
+//     THIS PARAGRAPH USED TO ASSERT THAT NO SUPPORT-DESK, EMERGENCY-CONTACT OR HOTLINE COLUMN
+//     EXISTED ANYWHERE IN THE SCHEMA, "verified again on 2026-08-17". It stopped being true on
+//     2026-08-18 and stayed on the page for three weeks. Migration
+//     `20260818000001_support_desk_and_help_chat` added `platform.support_desk_default` and
+//     `platform.tenant_support_desks` — `it_hotline_phone`, `it_hotline_label`,
+//     `it_hotline_description`, `operating_hours`, `regional_hotlines` — plus
+//     `platform.support_tickets` and `platform.support_messages`. What is still absent is the API:
+//     there is no `backend/src/modules/support/`, and none of the backend's 25 controller prefixes
+//     is support, chat or ticket (measured 2026-09-10). So the env vars remain what the app reads,
+//     but because nothing can read the columns yet — not because the columns do not exist.
 //   - Search is drawn DISABLED (PO decision 2026-08-09, re-affirmed for the post-auth route
 //     2026-08-17). There is no help-article corpus, no search endpoint and no `help_article`/`faq`
 //     table — an input that silently matches nothing is worse than one that admits it.
-//   - Quick Help Chat reports that it is unavailable — the product has no chat (PO decision
-//     2026-08-09, the treatment already used by the Directory's chat button).
+//   - Quick Help Chat NAVIGATES to the Help Chat screen as of 2026-09-10, and so does the IT
+//     Hotline card. Both gained the `chevron_right` the 2026-08-17 drawing puts on them, and the
+//     hotline card stopped dialling in place — `CALL NOW` on the detail screen is the dial (ADR-093
+//     decision 4). The chat card's "coming soon" note is gone with it: the screen exists; what is
+//     unbuilt is the ticket endpoint behind it, and that is stated on a press by
+//     `HelpChatDocument`, not as standing text here (PO decision 2026-09-10).
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import {
-  View,
-  Text,
-  TextInput,
-  ScrollView,
-  Pressable,
-  StyleSheet,
-  Linking,
-  Alert,
-  Vibration,
-} from 'react-native';
+import { View, Text, ScrollView, Pressable, StyleSheet, Linking, Vibration } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useT } from '../i18n';
+import { useComingSoon } from './useComingSoon';
 import { checkBackendHealth } from '../api/health';
 import { fontFamily, radius, spacing, touchTarget, typography } from '../theme/tokens';
 import type { Palette } from '../theme/palette';
@@ -63,7 +66,9 @@ type IconName = keyof typeof MaterialIcons.glyphMap;
 // which is what a half-filled .env actually produces.
 const SUPPORT_CENTER_PHONE: string | null =
   process.env['EXPO_PUBLIC_SUPPORT_CENTER_PHONE']?.trim() || null;
-const IT_HOTLINE: string | null = process.env['EXPO_PUBLIC_SUPPORT_IT_HOTLINE']?.trim() || null;
+// `EXPO_PUBLIC_SUPPORT_IT_HOTLINE` moved to `SupportHotlineDocument` on 2026-09-10 with the card
+// that read it: this screen navigates to the hotline now rather than dialling it, so the number
+// belongs to the screen that places the call.
 
 /** The four troubleshooting entries, in the mockup's order. */
 const TOPICS: readonly { id: string; icon: IconName }[] = [
@@ -109,6 +114,8 @@ export function useBackendHealth(): { health: Health; minutesAgo: number } {
 
 export function SupportCenterDocument({
   palette,
+  onOpenHotline,
+  onOpenChat,
   health,
   minutesAgo,
   paddingBottom,
@@ -117,6 +124,10 @@ export function SupportCenterDocument({
   footer,
 }: {
   palette: Palette;
+  /** Open the hotline detail screen. Each route supplies its own group-qualified push. */
+  onOpenHotline: () => void;
+  /** Open the Help Chat screen. Same reason. */
+  onOpenChat: () => void;
   /** From the caller's `useBackendHealth()` — see the note on that hook for why it is not held here. */
   health: Health;
   minutesAgo: number;
@@ -146,7 +157,9 @@ export function SupportCenterDocument({
     Vibration.vibrate(5);
   };
 
-  const unavailable = (label: string): void => Alert.alert(label, t('support.comingSoon'));
+  // The two controls on this screen with nothing behind them — search, and the priority line when
+  // no number is configured. They say so ON A PRESS; the page says nothing (PO 2026-09-10).
+  const soon = useComingSoon();
 
   const statusLabel =
     health === null
@@ -182,45 +195,44 @@ export function SupportCenterDocument({
         ) : null}
       </View>
 
-      {/* Search — drawn, disabled. See the header note. */}
-      <View style={styles.searchRow}>
+      {/* Search — drawn exactly as the mockup draws it: a glyph and a placeholder, nothing else.
+          It carried a `COMING SOON` chip until 2026-09-10; the drawing has no such chip, and a
+          standing note about what is unbuilt is what the product owner ruled out. There is still no
+          `help_article`/`faq` table and no search endpoint, so the field is not editable and a tap
+          says so — on the tap, not on the page. */}
+      <Pressable
+        testID="support-search"
+        accessibilityRole="search"
+        accessibilityLabel={t('support.search.placeholder')}
+        onPress={() => soon('support.search.placeholder')}
+        style={styles.searchRow}
+      >
         <MaterialIcons name="search" size={22} color={palette.muted} />
-        <TextInput
-          testID="support-search"
-          editable={false}
-          placeholder={t('support.search.placeholder')}
-          placeholderTextColor={palette.muted}
-          accessibilityLabel={`${t('support.search.placeholder')} — ${t('support.comingSoon')}`}
-          accessibilityState={{ disabled: true }}
-          style={styles.searchInput}
-        />
-        <View style={styles.chip}>
-          <Text style={styles.chipText}>{t('support.comingSoon')}</Text>
-        </View>
-      </View>
+        <Text style={styles.searchPlaceholder}>{t('support.search.placeholder')}</Text>
+      </Pressable>
 
       <Text style={styles.sectionHeading}>{t('support.emergency.heading')}</Text>
 
       {/* Priority line — the drawing's tall filled button. */}
+      {/* ALWAYS THE DRAWING'S FILLED BUTTON. It rendered grey with "No number set for this site"
+          under the title whenever `EXPO_PUBLIC_SUPPORT_CENTER_PHONE` was unset — copy that appears
+          nowhere in the mockup, and a standing note about what is unconfigured. Both are gone
+          (product-owner decision 2026-09-10). The button dials where a deployment set a number and
+          says so on a tap where it did not. */}
       <Pressable
         testID="support-call-center"
         accessibilityRole="button"
-        accessibilityState={{ disabled: SUPPORT_CENTER_PHONE === null }}
-        accessibilityLabel={
+        accessibilityLabel={t('support.emergency.supportCenter')}
+        onPress={() =>
           SUPPORT_CENTER_PHONE === null
-            ? `${t('support.emergency.supportCenter')} — ${t('support.emergency.noNumber')}`
-            : t('support.emergency.supportCenter')
+            ? soon('support.emergency.supportCenter')
+            : call(SUPPORT_CENTER_PHONE)
         }
-        disabled={SUPPORT_CENTER_PHONE === null}
-        onPress={() => SUPPORT_CENTER_PHONE !== null && call(SUPPORT_CENTER_PHONE)}
-        style={[styles.priorityButton, SUPPORT_CENTER_PHONE === null && styles.priorityDisabled]}
+        style={styles.priorityButton}
       >
         <View style={styles.priorityText}>
           <Text style={styles.priorityEyebrow}>{t('support.emergency.priorityLine')}</Text>
           <Text style={styles.priorityTitle}>{t('support.emergency.supportCenter')}</Text>
-          {SUPPORT_CENTER_PHONE === null ? (
-            <Text style={styles.priorityNote}>{t('support.emergency.noNumber')}</Text>
-          ) : null}
         </View>
         <View style={styles.priorityGlyph}>
           <MaterialIcons name="phone-in-talk" size={24} color={palette.onPrimary} />
@@ -229,40 +241,38 @@ export function SupportCenterDocument({
 
       {/* The pair below it. */}
       <View style={styles.pairRow}>
+        {/* BOTH CARDS NAVIGATE as of 2026-09-10 — the 2026-08-17 drawing puts a `chevron_right` on
+            each, and the detail screens they point at now exist. The IT Hotline card no longer
+            dials in place (ADR-093 decision 4): `CALL NOW` on the hotline screen is the dial, so
+            the same call is placed one way rather than two. */}
         <Pressable
           testID="support-it-hotline"
-          accessibilityRole="button"
-          accessibilityState={{ disabled: IT_HOTLINE === null }}
-          accessibilityLabel={
-            IT_HOTLINE === null
-              ? `${t('support.emergency.itHotline')} — ${t('support.emergency.noNumber')}`
-              : t('support.emergency.itHotline')
-          }
-          disabled={IT_HOTLINE === null}
-          onPress={() => IT_HOTLINE !== null && call(IT_HOTLINE)}
+          accessibilityRole="link"
+          accessibilityLabel={t('support.emergency.itHotline')}
+          onPress={onOpenHotline}
           style={styles.pairCard}
         >
-          <MaterialIcons
-            name="shield"
-            size={22}
-            color={IT_HOTLINE === null ? palette.muted : palette.danger}
-          />
+          <View style={styles.pairHead}>
+            <MaterialIcons name="shield" size={22} color={palette.danger} />
+            <MaterialIcons name="chevron-right" size={18} color={palette.muted} />
+          </View>
           <Text style={styles.pairTitle}>{t('support.emergency.itHotline')}</Text>
-          {IT_HOTLINE === null ? (
-            <Text style={styles.pairNote}>{t('support.emergency.noNumber')}</Text>
-          ) : null}
         </Pressable>
 
+        {/* Its "coming soon" note is GONE. The chat screen exists; what is not built is the ticket
+            endpoint behind it, and `HelpChatDocument` states that on a press rather than here. */}
         <Pressable
           testID="support-quick-chat"
-          accessibilityRole="button"
-          accessibilityLabel={`${t('support.emergency.quickChat')} — ${t('support.comingSoon')}`}
-          onPress={() => unavailable(t('support.emergency.quickChat'))}
+          accessibilityRole="link"
+          accessibilityLabel={t('support.emergency.quickChat')}
+          onPress={onOpenChat}
           style={styles.pairCard}
         >
-          <MaterialIcons name="chat-bubble" size={22} color={palette.accent} />
+          <View style={styles.pairHead}>
+            <MaterialIcons name="chat-bubble" size={22} color={palette.accent} />
+            <MaterialIcons name="chevron-right" size={18} color={palette.muted} />
+          </View>
           <Text style={styles.pairTitle}>{t('support.emergency.quickChat')}</Text>
-          <Text style={styles.pairNote}>{t('support.comingSoon')}</Text>
         </Pressable>
       </View>
 
@@ -285,8 +295,10 @@ export function SupportCenterDocument({
               >
                 <MaterialIcons name={topic.icon} size={22} color={palette.muted} />
                 <Text style={styles.topicTitle}>{t(titleKey)}</Text>
+                {/* CHEVRON RIGHT when the row is closed (product-owner decision 2026-09-10), not
+                    the drawing's `expand_more`. Open, it turns down onto the answer it revealed. */}
                 <MaterialIcons
-                  name={open ? 'expand-less' : 'expand-more'}
+                  name={open ? 'expand-more' : 'chevron-right'}
                   size={24}
                   color={palette.muted}
                 />
@@ -346,6 +358,12 @@ function makeStyles(palette: Palette) {
       flexDirection: 'row',
       alignItems: 'center',
       gap: spacing.sm,
+    },
+    searchPlaceholder: {
+      flex: 1,
+      color: palette.muted,
+      fontFamily: fontFamily.regular,
+      fontSize: typography.caption.fontSize,
     },
     searchInput: {
       flex: 1,
@@ -433,6 +451,12 @@ function makeStyles(palette: Palette) {
       backgroundColor: palette.surface,
       padding: spacing.md,
       gap: spacing.sm,
+    },
+    pairHead: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      alignSelf: 'stretch',
     },
     pairTitle: {
       color: palette.text,

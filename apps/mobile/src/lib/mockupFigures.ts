@@ -1014,3 +1014,63 @@ export const CRM_DRAWER_COUNTS = figure(
   { newLeads: 24, deals: 14, closingTenders: 3 },
   'nothing — these ARE countable from the three list endpoints, and are drawn only where a row has no endpoint behind it (tenders)',
 );
+
+// ── Get Help — mockup/mobile/01_authen/05_get_help ───────────────────────────────────────────────
+//
+// The tables for all of this exist: migration `20260818000001_support_desk_and_help_chat` created
+// `platform.support_desk_default` and `platform.tenant_support_desks` with columns for every figure
+// below, plus `platform.support_tickets` and `platform.support_messages`. What does not exist is
+// `GET /api/v1/support/desk` and the ticket endpoints — no `backend/src/modules/support/`, and none
+// of the 25 controller prefixes in the backend is support, chat or ticket (measured 2026-09-10). So
+// the columns each entry names are real columns, waiting on an endpoint to read them.
+
+/**
+ * The hotline number the drawing prints.
+ *
+ * ONLY A FALLBACK. `EXPO_PUBLIC_SUPPORT_IT_HOTLINE` wins wherever a deployment sets one — the
+ * Support Centre has read that variable since 2026-08-09 and the hotline screen reads the same one,
+ * so `CALL NOW` places a real call there. This is what it prints when nothing is configured.
+ */
+export const HOTLINE_NUMBER = figure(
+  '(+66) 063-416-5325',
+  'support_desk_default.it_hotline_phone, overridden by tenant_support_desks.it_hotline_phone',
+);
+
+/** The two operating-hour rows. */
+export const HOTLINE_HOURS = figure(
+  { critical: '24/7 Available', general: '08:00 - 18:00' },
+  'support_desk_default.operating_hours (JSONB), overridden per tenant',
+);
+
+/** The regional desks under the hours. Each row's call button dials the number beside it. */
+export const HOTLINE_REGIONS = figure(
+  [
+    { name: 'Bangkok HQ', number: '(+66) 02-555-0100' },
+    { name: 'Eastern Seaboard', number: '(+66) 038-555-0101' },
+  ] as const,
+  'support_desk_default.regional_hotlines (JSONB), overridden per tenant',
+);
+
+/**
+ * The ticket number in the chat's secure-session line.
+ *
+ * `platform.support_tickets` has a `reference` column for exactly this — the human-quotable handle,
+ * never an authenticator (ADR-093 §2). Until a ticket can be opened there is no reference to print.
+ */
+export const HELP_CHAT_TICKET = figure(
+  '8824',
+  'support_tickets.reference, minted when a ticket is opened',
+);
+
+/**
+ * The seeded conversation.
+ *
+ * ADR-093 §3 puts every AI turn through `LLMProvider` and the Phase 12 `HallucinationGuard`, and
+ * stores the verdict on the message. These four turns are the drawing's own copy, standing in for
+ * that thread. The error code `E-4099` is the drawing's too — this product mints
+ * `COS-{DOMAIN}-{NNN}` codes (QM-10), not `E-`-prefixed ones.
+ */
+export const HELP_CHAT_THREAD = figure(
+  { day: 'TODAY, 14:02 EST', opening: '14:02', question: '14:04', reply: '14:05' },
+  'support_messages rows — body, sender_type, created_at, and the guard verdict on each AI turn',
+);

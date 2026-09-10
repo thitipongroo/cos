@@ -152,6 +152,13 @@ override_*.tf
 .claude/impl-approved
 .claude/impl-pending.md
 .claude/impl-completed-*.md
+#   archive/ is the same artefact under a third name. `.claude/archive/impl-pending-*.md`
+#                  appeared on 2026-09-10 when one round's plan was set aside to make room
+#                  for the next, and it turned Lint red with 18 MD013 errors — the identical
+#                  failure the paragraph above records, four days later and one filename
+#                  along. Naming the DIRECTORY rather than a fourth pattern is what stops a
+#                  fifth.
+.claude/archive/
 
 # ── Generated prompt bundles, kept beside the repo rather than in it ─────────────────────────────
 #

@@ -14,7 +14,8 @@
 // The role's module list comes from `drawerLinksFor` — the same source the drawer derives from, so
 // "should I be able to see X?" cannot be answered here differently from what the user can open.
 
-import { render, waitFor } from '@testing-library/react-native';
+import { Alert } from 'react-native';
+import { render, waitFor, fireEvent } from '@testing-library/react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { CosRole } from '@cos/types';
 import { I18nProvider } from '../../../i18n';
@@ -141,11 +142,19 @@ describe('SupportScreen (post-auth)', () => {
 
   // No help_article table, no search endpoint — a live box returning nothing would be the screen
   // pretending to a corpus it does not have.
-  it('leaves search disabled, because there is nothing to search', async () => {
-    const { getByTestId } = await renderScreen();
+  it('says search is not built yet on a tap, and nothing on the page', async () => {
+    // It carried a standing `COMING SOON` chip until 2026-09-10. The drawing has no such chip and
+    // the product owner ruled out standing notes about what is unbuilt — so the state is stated on
+    // a press and nowhere else. There is still no `help_article`/`faq` table and no search endpoint.
+    const alert = jest.spyOn(Alert, 'alert').mockImplementation(() => undefined);
+    const { getByTestId, queryByText } = await renderScreen();
 
     await waitFor(() => expect(getByTestId('support-search')).toBeTruthy());
-    expect(getByTestId('support-search').props.editable).toBe(false);
+    expect(queryByText(/coming soon/i)).toBeNull();
+
+    await fireEvent.press(getByTestId('support-search'));
+    expect(alert).toHaveBeenCalled();
+    alert.mockRestore();
   });
 
   it('offers the contact routes the deployment configured', async () => {

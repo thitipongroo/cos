@@ -264,6 +264,11 @@ export function MobileNav() {
           the withdrawn mockup drew a Field | Tasks | Support | Profile bar, which is no role's set,
           and §32.7 fixes each role at exactly four tabs. */}
       <Tabs.Screen name="support" options={{ href: null }} />
+      {/* Its two children. Neither is a tab for any role — §32.7 fixes every role at
+          exactly four — so both are mounted href: null and reached from the Support
+          Centre. */}
+      <Tabs.Screen name="support-hotline" options={{ href: null }} />
+      <Tabs.Screen name="help-chat" options={{ href: null }} />
       <Tabs.Screen name="transparency" options={{ href: null }} />
       <Tabs.Screen name="transparency-identity" options={{ href: null }} />
       <Tabs.Screen name="transparency-location" options={{ href: null }} />

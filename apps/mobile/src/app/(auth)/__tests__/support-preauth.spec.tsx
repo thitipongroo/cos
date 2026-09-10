@@ -11,6 +11,7 @@
 // It is also why this route has a back control of its own: it is reached from the login screen,
 // which is outside the app shell, so there is no TopBar to supply one.
 
+import { Alert } from 'react-native';
 import { render, fireEvent, waitFor } from '@testing-library/react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { I18nProvider } from '../../../i18n';
@@ -88,11 +89,19 @@ describe('SupportScreen (pre-auth)', () => {
   });
 
   // Same call as the post-auth route: there is no help_article table and no search endpoint.
-  it('leaves search disabled here too', async () => {
-    const { getByTestId } = await renderScreen();
+  it('says search is not built yet on a tap, and nothing on the page', async () => {
+    // It carried a standing `COMING SOON` chip until 2026-09-10. The drawing has no such chip and
+    // the product owner ruled out standing notes about what is unbuilt — so the state is stated on
+    // a press and nowhere else. There is still no `help_article`/`faq` table and no search endpoint.
+    const alert = jest.spyOn(Alert, 'alert').mockImplementation(() => undefined);
+    const { getByTestId, queryByText } = await renderScreen();
 
     await waitFor(() => expect(getByTestId('support-search')).toBeTruthy());
-    expect(getByTestId('support-search').props.editable).toBe(false);
+    expect(queryByText(/coming soon/i)).toBeNull();
+
+    await fireEvent.press(getByTestId('support-search'));
+    expect(alert).toHaveBeenCalled();
+    alert.mockRestore();
   });
 
   it('offers the contact routes the deployment configured', async () => {
