@@ -162,6 +162,20 @@ const USERS: SeedUser[] = [
     role: 'CRM_SALES_MANAGER',
     phone: '+66811000012',
   },
+  // ADDED 2026-09-10, and it was the LAST role with no demo user: eleven of the twelve had one and
+  // VIEWER had none, which went unnoticed while the role's Home rendered a placeholder and none of
+  // its screens had ever been captured. `mockup/mobile/role_viewer/` gave it five, and a role that
+  // cannot be signed in as cannot be photographed.
+  //
+  // The name is the one `05_profile/01_account_settings` draws. It is seed data either way, and
+  // using the drawing's own means the captured screen and the drawing name the same person.
+  {
+    key: 'viewer',
+    name: 'Somsak Watcharawit',
+    email: 'somsak.w@ekachai.co.th',
+    role: 'VIEWER',
+    phone: '+66811000013',
+  },
 ];
 const U = (k: string): string => uid(`user/${k}`);
 
@@ -187,6 +201,8 @@ function deptFor(role: string): string {
       return 'Field Operations';
     case 'CRM_SALES_MANAGER':
       return 'Sales & CRM';
+    case 'VIEWER':
+      return 'Stakeholder Access';
     default:
       return 'General';
   }
@@ -222,6 +238,8 @@ function positionFor(role: string): string {
       return 'Foreman';
     case 'CRM_SALES_MANAGER':
       return 'Sales Manager';
+    case 'VIEWER':
+      return 'Client Representative';
     default:
       return 'Staff';
   }
@@ -790,6 +808,11 @@ async function seedProject(tx: Tx, p: SeedProject): Promise<void> {
     ['fin', 'FINANCE'],
     ['exec', 'EXECUTIVE'],
     ['sw1', 'SITE_WORKER'],
+    // Same reasoning as `sw1` above, and the same failure it was added to fix: `GET /projects/mine`
+    // reads this table, so a VIEWER belonging to nothing sees an empty portfolio on a fully seeded
+    // database — and every one of this role's five screens is a view OF its projects. A stakeholder
+    // with read access IS a member of the projects they may read.
+    ['viewer', 'VIEWER'],
   ] as const) {
     await tx.$executeRaw`INSERT INTO projects.project_members (membership_id, project_id, tenant_id, user_id, role, assigned_by)
       VALUES (${uid(`pm/${p.key}/${k}`)}::uuid, ${pid}::uuid, ${TENANT_ID}::uuid, ${U(k)}::uuid, ${role}::"ProjectMemberRole", ${U('admin')}::uuid)

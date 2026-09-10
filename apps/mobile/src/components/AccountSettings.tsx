@@ -36,6 +36,35 @@
 //     The row REPORTS and does not manage: nothing in this app prunes that cache on request, and a
 //     "Manage" chevron onto nothing would be the drawn control this project keeps refusing to ship.
 //
+// ── ONE SCREEN, AND ONE ROLE-CONDITIONAL BLOCK (PO decision 2026-09-10) ────────────────────────
+//
+// `mockup/mobile/role_viewer/05_profile/01_account_settings` groups the same rows differently again
+// — Account Information · System Permissions · App Settings · Security · Security & Legal — one day
+// after the CRM drawing set the grouping above. Escalated rather than followed: re-grouping a screen
+// that serves all twelve roles to suit the twelfth would change it for the other eleven, and the
+// header two paragraphs up is the argument against a per-role settings layout. The product owner
+// chose to keep this screen and add the ONE block the Viewer drawing has that no other drawing does.
+//
+// SYSTEM PERMISSIONS renders only when the signed-in role is VIEWER. It is that role's drawing's own
+// answer to a question only a read-only role asks — "what am I allowed to do here?" — and the three
+// tiles it draws say READ ONLY, which is true of every grant §6.8 gives this role.
+//
+// WHAT THE VIEWER DRAWING ASKS FOR AND DOES NOT GET, beyond the grouping:
+//   `ID: COS-8842-V` — already drawn, and REAL. <ProfileBlock /> prints the employee code, or the
+//     short UUID where there is none. A formatted member id is not a column, and the line it would
+//     have gone on is already occupied by one that is.
+//   A `Viewer` ROLE CHIP beside the name — the profile block carried the role enum until 2026-09-08
+//     and it was removed by decision: the position line says what the person does in a person's
+//     words. §32.7 "Drawer Profile Block" states it, and this screen is its second surface.
+//   A DISABLED Dark Mode switch with "Mandatory for field environments." — this app has a working
+//     theme control on every role and ADR-085 says a drawing does not remove reviewed working
+//     capability.
+//   A "Security & Legal" GROUP with Privacy Policy and Terms of Service. The Privacy Policy is
+//     already reachable post-auth from the navigation drawer, so a second entry point would be a
+//     duplicate; the Terms of Use have no post-auth route at all (they live at
+//     `app/(auth)/terms-of-use.tsx`), and adding one is a route, not a row — out of this round's
+//     scope and reported rather than smuggled in.
+//
 // Palette-resolved, because it is a page now rather than the always-dark drawer panel.
 //
 // Offline-safe: everything here is local state except the MFA row's target screen.
@@ -49,12 +78,14 @@ import { NotificationSettings } from './NotificationSettings';
 import { ProfileBlock } from './ProfileBlock';
 import { useThemeStore } from '../store/themeStore';
 import { useBiometricStore } from '../store/biometricStore';
+import { CosRole } from '@cos/types';
 import { useAuthStore } from '../store/authStore';
 import { useSyncPillView } from '../hooks/useSyncPillView';
 import { getMe } from '../api/users';
 import { localDbSizeBytes } from '../db/database';
 import { MAX_LOCAL_DB_BYTES } from '../sync/localDbLimit';
 import { formatBytes } from '../lib/formatBytes';
+import { VIEWER_PERMISSION_TILES } from '../lib/mockupFigures';
 import { useI18n } from '../i18n';
 import { fontFamily, radius, spacing, touchTarget, typography } from '../theme/tokens';
 import { usePalette, type Palette } from '../theme/usePalette';
@@ -203,6 +234,7 @@ export function AccountSettings() {
   const setEnabled = useBiometricStore((s) => s.setEnabled);
   const displayName = useAuthStore((s) => s.displayName);
   const userId = useAuthStore((s) => s.userId);
+  const role = useAuthStore((s) => s.role);
   const sync = useSyncPillView();
   const [busy, setBusy] = useState(false);
 
@@ -351,6 +383,43 @@ export function AccountSettings() {
         />
       </Section>
 
+      {/* SYSTEM PERMISSIONS — VIEWER only. The three MODULES are the drawing's (Financials, BIM
+          Models, Site Reports) and are registered as VIEWER_PERMISSION_TILES: `@cos/rbac` resolves
+          permissions from the JWT role claim and no endpoint returns the effective matrix for the
+          signed-in user, so this screen cannot read what it is showing. What it does NOT claim is
+          that these three are the whole grant — §6.8 gives this role ten modules — and the caption
+          under them is the drawing's own. */}
+      {role === CosRole.VIEWER ? (
+        <View testID="permissions-section" style={styles.section}>
+          <Text style={styles.sectionLabel}>{t('profile.permissions.title')}</Text>
+          <View style={styles.permissionGrid}>
+            {VIEWER_PERMISSION_TILES.value.map((tile) => (
+              <View
+                key={tile.key}
+                testID={`permission-tile-${tile.key}`}
+                style={styles.permissionTile}
+              >
+                <View style={styles.permissionHead}>
+                  <MaterialIcons name={tile.icon} size={20} color={p.muted} />
+                  <View style={styles.permissionChip}>
+                    <Text style={styles.permissionChipText}>
+                      {t('profile.permissions.readOnly')}
+                    </Text>
+                  </View>
+                </View>
+                <Text style={styles.permissionLabel} numberOfLines={1}>
+                  {t(`profile.permissions.module.${tile.key}`)}
+                </Text>
+              </View>
+            ))}
+          </View>
+          <View style={styles.permissionNote}>
+            <MaterialIcons name="info" size={14} color={p.muted} />
+            <Text style={styles.permissionNoteText}>{t('profile.permissions.note')}</Text>
+          </View>
+        </View>
+      ) : null}
+
       <Section label={t('profile.main.preferencesSection')}>
         {/* The mockup shows the current language with a chevron. With exactly two locales a picker
             screen would be a screen to choose between two items, so the row TOGGLES and names what
@@ -440,7 +509,11 @@ const makeStyles = (p: Palette) =>
       flexDirection: 'row',
       alignItems: 'center',
       gap: 6,
-      backgroundColor: p.bg,
+      // `p.bg` until 2026-09-10, which is the page colour and therefore DARKER than the card it
+      // sits on — the "reads as a hole" defect the product owner reported on three panels of the
+      // CRM screens the same week. `surfaceSunk` is the step INTO a card rather than through it
+      // (design-tokens.md: "NEITHER IS EVER --cos-dark-bg on a card").
+      backgroundColor: p.surfaceSunk,
       borderRadius: radius.md,
       paddingHorizontal: spacing.sm,
       paddingVertical: 6,
@@ -461,6 +534,61 @@ const makeStyles = (p: Palette) =>
       borderWidth: 1,
       borderColor: p.border,
       overflow: 'hidden',
+    },
+    // The permission tiles are a GRID rather than a card of rows — the one block on this screen
+    // that is not the <Row /> anatomy, because the drawing draws it as two columns of squares.
+    permissionGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+    permissionTile: {
+      // Two per row at any width: half the space, less half the gap. `flexGrow: 0` is the half that
+      // matters — with it growing, the drawing's THIRD tile stretched to the full width on its own
+      // row and stopped reading as one of a set of three. It stays half-width and left-aligned,
+      // which is what the drawing shows.
+      flexBasis: '48%',
+      flexGrow: 0,
+      gap: spacing.sm,
+      padding: spacing.sm,
+      borderRadius: radius.lg,
+      borderWidth: 1,
+      borderColor: p.border,
+      borderLeftWidth: 4,
+      borderLeftColor: p.muted,
+      backgroundColor: p.surface,
+    },
+    permissionHead: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      justifyContent: 'space-between',
+    },
+    permissionChip: {
+      paddingHorizontal: spacing.xs / 2,
+      paddingVertical: 2,
+      borderRadius: radius.xl,
+      backgroundColor: p.surfaceBright,
+    },
+    permissionChipText: {
+      fontSize: 10,
+      fontFamily: fontFamily.semibold,
+      letterSpacing: 0.5,
+      color: p.muted,
+      textTransform: 'uppercase',
+    },
+    permissionLabel: {
+      color: p.text,
+      fontFamily: fontFamily.semibold,
+      fontSize: typography.label.fontSize,
+    },
+    permissionNote: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      gap: spacing.xs / 2,
+      marginLeft: spacing.xs,
+    },
+    permissionNoteText: {
+      flex: 1,
+      color: p.muted,
+      fontFamily: fontFamily.regular,
+      fontSize: typography.label.fontSize,
+      lineHeight: typography.label.lineHeight,
     },
     row: {
       minHeight: touchTarget.formInput,

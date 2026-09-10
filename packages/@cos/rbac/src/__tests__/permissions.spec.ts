@@ -170,6 +170,10 @@ describe('ROLE_PERMISSIONS — exact matrix pin (mutation gate)', () => {
         'safety:read',
         'safety:write',
       ],
+      // WIDENED 2026-09-10 (ADR-102): seven grants to ten. The role's five mobile screens draw a
+      // safety panel, an analytics page and two AI cards, and the matrix denied all three modules.
+      // All three additions are `:read` — the next test asserts that this role still holds no
+      // write or approve permission, and it is the one that must keep passing.
       [CosRole.VIEWER]: [
         'project:read',
         'boq:read',
@@ -178,6 +182,9 @@ describe('ROLE_PERMISSIONS — exact matrix pin (mutation gate)', () => {
         'issue:read',
         'procurement:read',
         'finance:read',
+        'safety:read',
+        'analytics:read',
+        'ai:read',
       ],
     });
   });

@@ -2090,6 +2090,41 @@ BOQ has no mobile screen at any status.
 Adding `reports` / `issues` / `tasks` to VIEWER therefore requires building a read-only mode for
 those screens first — it is not a `MobileNav` configuration change.
 
+**VIEWER's bar survived its own mockup set on 2026-09-10, and unlike EXECUTIVE's that was because
+the drawings could not be read.** The product owner requested five Stitch screens under
+`mockup/mobile/role_viewer/`. Their four `<nav>` blocks give **four different bars**:
+
+| Drawing        | Tabs                                          |
+| -------------- | --------------------------------------------- |
+| `01_home`      | Home · Projects · Map · Insights · Profile    |
+| `02_projects`  | Projects · Daily Logs · Safety · Directory    |
+| `03_map`       | Projects · Daily Logs · Map · Directory       |
+| `04_insights`  | Projects · Daily Logs · Safety · Insights     |
+| `05_profile`   | Home · Projects · Map · Insights · Profile    |
+
+No bar appears on more than two of five screens; three of them put `Daily Logs` (not a route),
+`Safety` and `Directory` (neither granted to this role) on the bar; and even the two that agree on
+labels disagree on glyphs — `01_home` draws Projects as `domain` and Insights as `psychology`,
+`05_profile` as `inventory_2` and `insights`. That is the same signature recorded for the EXECUTIVE
+set above: labels changed over an older bar without the icons being moved. ADR-085 makes a mockup
+authoritative for style, which presumes a drawing that says one thing.
+
+Escalated under the ADR-098 precedent and decided by the product owner: **the enumerated bar
+stands.** `/map` and `/insights` are new routes reached from the navigation drawer — a `NOT_DERIVED`
+row each, an `href: null` mount in `MobileNav`, and a breadcrumb — which is the same answer this
+section already gives for every screen the app draws but does not put on a bar. The 5-tab option was
+also refused for a second reason: `Profile` is no role's tab (the drawer is the profile, PO
+2026-08-09), and no role's bar carries five.
+
+**Account Settings gained its first role-conditional block on the same day.** The Viewer drawing
+regroups the screen (Account Information · System Permissions · App Settings · Security · Security &
+Legal) one day after the CRM drawing set ACCOUNT · PREFERENCES · SYSTEM. Re-grouping was refused —
+one component serves all twelve roles and a per-role settings layout is twelve screens to keep in
+step — and the ONE block the Viewer drawing has that no other drawing does was added, rendering only
+when the signed-in role is `VIEWER`: three `READ ONLY` module tiles and the drawing's caption. The
+drawing's `ID: COS-8842-V` is NOT registered as a drawn figure; `<ProfileBlock />` already prints an
+id, from `workforce.workers.employee_code` falling back to the short UUID.
+
 ### Mobile Implementation — token wiring (React Native + Expo)
 
 As with web, defining the mobile tokens above is **not** sufficient — they take effect only when

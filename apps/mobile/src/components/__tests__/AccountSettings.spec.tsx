@@ -22,9 +22,11 @@ import { Alert } from 'react-native';
 import { I18nProvider } from '../../i18n';
 import { useBiometricStore } from '../../store/biometricStore';
 import { useThemeStore } from '../../store/themeStore';
+import { CosRole } from '@cos/types';
 import { useAuthStore } from '../../store/authStore';
 import { useLocaleStore } from '../../store/localeStore';
 import { AccountSettings } from '../AccountSettings';
+import { VIEWER_PERMISSION_TILES } from '../../lib/mockupFigures';
 
 jest.mock('expo-router', () => ({
   useRouter: () => ({ push: jest.fn(), back: jest.fn(), replace: jest.fn() }),
@@ -314,5 +316,45 @@ describe('AccountSettings - the system group', () => {
     await waitFor(() => expect(getByTestId('profile-version')).toBeTruthy());
     expect(getByTestId('change-pin-row')).toBeTruthy();
     expect(getByTestId('theme-row')).toBeTruthy();
+  });
+
+  // ── SYSTEM PERMISSIONS — the one role-conditional block on this screen (PO 2026-09-10) ────────
+  //
+  // One screen serves all twelve roles, so the risk a test has to hold is in BOTH directions: the
+  // block must appear for VIEWER and must not appear for anyone else. Rendering it for every role
+  // would tell eleven of them their access is read-only, which is false for all eleven.
+
+  it('draws no System Permissions block for a role that is not the Viewer', async () => {
+    useAuthStore.setState({ role: CosRole.CRM_SALES_MANAGER } as never);
+
+    const { queryByTestId, getByTestId } = await renderCard();
+
+    await waitFor(() => expect(getByTestId('profile-mfa-row')).toBeTruthy());
+    expect(queryByTestId('permissions-section')).toBeNull();
+  });
+
+  it('draws the three READ ONLY permission tiles for the Viewer', async () => {
+    useAuthStore.setState({ role: CosRole.VIEWER } as never);
+
+    const { getByTestId } = await renderCard();
+
+    await waitFor(() => expect(getByTestId('permissions-section')).toBeTruthy());
+    for (const tile of VIEWER_PERMISSION_TILES.value) {
+      expect(getByTestId(`permission-tile-${tile.key}`)).toHaveTextContent(/read only/i);
+    }
+  });
+
+  it('still shows the Viewer every row the other eleven roles get', async () => {
+    useAuthStore.setState({ role: CosRole.VIEWER } as never);
+
+    const { getByTestId } = await renderCard();
+
+    // E2 = A: the block is ADDED for this role, and nothing is taken away for it. A per-role
+    // layout was the option the product owner declined.
+    await waitFor(() => expect(getByTestId('permissions-section')).toBeTruthy());
+    expect(getByTestId('profile-mfa-row')).toBeTruthy();
+    expect(getByTestId('change-pin-row')).toBeTruthy();
+    expect(getByTestId('theme-row')).toBeTruthy();
+    expect(getByTestId('profile-version')).toBeTruthy();
   });
 });

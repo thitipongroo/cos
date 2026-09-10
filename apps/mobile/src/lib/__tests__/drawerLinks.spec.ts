@@ -386,6 +386,33 @@ describe('drawerLinksFor — derived from §6.4 / §6.8', () => {
     );
   });
 
+  it('gives the Viewer its map and insights screens, which are drawer rows and not tabs', () => {
+    // `mockup/mobile/role_viewer/03_map` and `/04_insights` draw both on the bottom bar. That set's
+    // five drawings give FOUR different bars, VIEWER is one of the three roles §32.7's table
+    // enumerates, and the product owner kept the enumerated bar on 2026-09-10 — so the two screens
+    // are reached from here. Without a row each they would be unreachable, which is the exact
+    // failure the Privacy Policy had for three days (see the note above `PRIVACY_LINK`).
+    expect(routes(CosRole.VIEWER)).toContain('/map');
+    expect(routes(CosRole.VIEWER)).toContain('/insights');
+    // They belong to this role alone: no other role's mockup set asks for either screen.
+    for (const role of Object.values(CosRole)) {
+      if (role === CosRole.VIEWER) continue;
+      expect(routes(role)).not.toContain('/map');
+      expect(routes(role)).not.toContain('/insights');
+    }
+  });
+
+  it('keeps both new Viewer rows reachable after the seven-row fold', () => {
+    // Two rows were ADDED to an already long drawer on 2026-09-10 ("Procurement (all) R" and
+    // "Finance (all) R" make this role's list one of the longest), so the fold is what decides
+    // whether they are on screen or behind More. Either is fine; DISAPPEARING is not, and a
+    // `toContain` on `routes()` alone would not have noticed.
+    const { visible, overflow } = drawerSectionFor(CosRole.VIEWER);
+    const all = [...visible, ...overflow].map((link) => link.route);
+    expect(all).toContain('/map');
+    expect(all).toContain('/insights');
+  });
+
   it('offers the crew directory only to the roles the app already gave it', () => {
     // Not derived: §6.4 names no module that governs a contact list.
     expect(routes(CosRole.SITE_ENGINEER)).toContain('/directory');

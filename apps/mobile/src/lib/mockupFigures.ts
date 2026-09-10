@@ -1074,3 +1074,232 @@ export const HELP_CHAT_THREAD = figure(
   { day: 'TODAY, 14:02 EST', opening: '14:02', question: '14:04', reply: '14:05' },
   'support_messages rows — body, sender_type, created_at, and the guard verdict on each AI turn',
 );
+
+// ── VIEWER (mockup/mobile/role_viewer/) ──────────────────────────────────────
+//
+// ADDED 2026-09-10 for the five Stitch screens the product owner asked for — Home, Projects, Map,
+// Insights and Account Settings. Same standing rule as the FINANCE and Get Help rounds: the drawing
+// is built as drawn, an unbuilt control says so on a press and never on the page, and every value
+// with no source is registered here.
+//
+// WHAT IS REAL ON THESE SCREENS AND IS DELIBERATELY NOT HERE: the project rows themselves. Home's
+// Active Projects count, its project cards' names and codes, and the whole Projects list read
+// `local_projects` (§17.4 stale-while-revalidate), and Home's Open Issues count reads
+// `local_issues`. The cache holds five columns — id, project_id, project_code, project_name,
+// status — so the code and the name are printed from it and everything else on a card is below.
+
+/**
+ * Home's OPEN ISSUES tile — and this one is MISSING AUTHORITY, not missing data.
+ *
+ * The count exists and the query is written: `GET /api/v1/site/issues?status=OPEN` returns exactly
+ * it. This role cannot call it. Measured on 2026-09-10 with a real VIEWER token minted through
+ * `POST /auth/otp/verify`:
+ *
+ *   403  Role 'VIEWER' does not have access.
+ *        Required: SITE_WORKER | SITE_ENGINEER | PROJECT_MANAGER | EXECUTIVE | SAFETY_OFFICER |
+ *        TENANT_ADMIN
+ *
+ * §6.8 grants VIEWER `Issues R`, and has since the table was written. The route's `@Roles` list and
+ * the specification therefore disagree, and the specification wins (`context.md` §On ambiguity) —
+ * but that section also says to REPORT the discrepancy to the product owner rather than implement
+ * against it, so the route is untouched and this entry stands in the meantime. It is the second
+ * entry of its kind; the first is the PROC_MANAGER approve button (ADR-099, 2026-09-09).
+ *
+ * The screen fetched the endpoint for one build and drew an em dash for the 403 every time. A KPI
+ * tile that can never resolve is worse than a drawn one, because a dash claims the request might
+ * still answer.
+ */
+export const VIEWER_OPEN_ISSUES = figure(
+  47,
+  'VIEWER added to `@Roles` on `GET /site/issues` in `site-ops.controller.ts` — the count itself ' +
+    'is already computed there, and §6.8 already grants this role `Issues R`',
+);
+
+/** Home's full-width budget tile — the figure and the year-to-date delta beside it. */
+export const VIEWER_PORTFOLIO_BUDGET = figure(
+  { total: '$142.5M', deltaPct: 2.4 },
+  'a portfolio budget roll-up for a VIEWER. `GET /analytics/executive` returns one, but it is ' +
+    "scoped to the EXECUTIVE's whole tenant rather than to this role's `project_membership` rows, " +
+    'and no endpoint sums budgets across the projects one viewer is assigned to',
+);
+
+/** Home's System Insight card. */
+export const VIEWER_SYSTEM_INSIGHT = figure(
+  {
+    body:
+      "Weather delays predicted for 'Sector 7G' tomorrow. Concrete pours may need rescheduling. " +
+      'Schedule variance currently at +2 days.',
+  },
+  'a weather-and-schedule prediction. `backend/src/modules/ai/` has no such report: the Phase 12 ' +
+    'pipeline produces site summaries, delay forecasts per project and risk classifications, none ' +
+    'of which reads a weather feed. §22.6 names no weather provider at any status',
+);
+
+/**
+ * Home's two project cards, in the order the cache returns them.
+ *
+ * Structured rather than copied as sentences, because the drawing writes the labels in English and
+ * a hardcoded string would print unchanged on a Thai device (QM-3). The card's name and code are
+ * NOT here — they are the cached row's.
+ */
+export const VIEWER_HOME_PROJECT_CARDS = figure(
+  [
+    { category: 'commercial', completion: 68, crew: 124, issues: 3 },
+    { category: 'infrastructure', completion: 42, crew: 89, issues: 12 },
+  ] as const,
+  'a completion percentage, a head-count and an issue count per project. §32.12 computes ' +
+    'completion per project but no mobile endpoint returns it for a list; the head-count would ' +
+    'come from `workforce` attendance, which has no per-project roll-up; the issue count is one ' +
+    'request per project, the fan-out `GET /tasks/portfolio-summary` exists to avoid',
+);
+
+/**
+ * Home's Site Activity timeline.
+ *
+ * `tone` picks the dot colour, `key` the sentence, and the two `at`/`where` strings are the
+ * drawing's own. A real feed would order these by timestamp and name the project from its row.
+ */
+export const VIEWER_SITE_ACTIVITY = figure(
+  [
+    { tone: 'accent', at: '10:42 AM', where: 'Alpha Towers', key: 'report', who: 'J. Smith' },
+    {
+      tone: 'danger',
+      at: '09:15 AM',
+      where: 'Metro Expansion',
+      key: 'defect',
+      quote: 'Rebar spacing fails spec in Section 4.',
+    },
+    { tone: 'success', at: '08:00 AM', where: 'System', key: 'sync' },
+  ] as const,
+  'a portfolio activity feed. Site reports, issues and sync runs are three separate tables with ' +
+    'no combined endpoint, and nothing records a completed sync as an event a screen can read',
+);
+
+/** The Projects list's three cards — the same shape as Home's, with that drawing's own numbers. */
+export const VIEWER_PROJECT_CARDS = figure(
+  [
+    { category: 'commercial', completion: 68, crew: 124, issues: 3 },
+    { category: 'infrastructure', completion: 42, crew: 450, issues: 12 },
+    { category: 'commercial', completion: 89, crew: 85, issues: 1 },
+  ] as const,
+  'the same three missing figures as VIEWER_HOME_PROJECT_CARDS. The two drawings disagree on the ' +
+    "second card's head-count (89 on Home, 450 here), so they are registered separately rather " +
+    'than one being quietly preferred over the other',
+);
+
+/** The Projects list's category filter chips. */
+export const VIEWER_PROJECT_FILTERS = figure(
+  ['commercial', 'infrastructure', 'residential'] as const,
+  '`projects.projects` has no category, sector or type column — the filter has nothing to filter on',
+);
+
+/**
+ * The Map screen's pins, as fractions of the canvas.
+ *
+ * POSITIONS, NOT COORDINATES. `projects.projects` holds no latitude or longitude (the geo columns
+ * added by `20260705000001_geo_coordinates` are on site reports, issues, photos and check-ins, not
+ * on the project), and the GIS engine that would place a real pin is listed in §28 as
+ * "Esri / Mapbox / OpenLayers — decide at V2-1 entry". These are where the drawing put them.
+ */
+export const VIEWER_MAP_PINS = figure(
+  [
+    { top: 0.25, left: 0.35, label: 'Site Alpha', tone: 'success', size: 'large' },
+    { top: 0.45, left: 0.7, label: 'Metro Exp.', tone: 'warning', size: 'large' },
+    { top: 0.55, left: 0.25, label: null, tone: 'success', size: 'small' },
+  ] as const,
+  'a coordinate on a project, and a decision on the GIS engine (§28, V2-1 entry)',
+);
+
+/** The Map screen's bottom sheet — the visible count and the two site rows. */
+export const VIEWER_MAP_SITES = figure(
+  {
+    visible: 3,
+    rows: [
+      {
+        name: 'Site Alpha Complex',
+        ref: '#SA-2044',
+        category: 'commercial',
+        completion: 42,
+        issues: 3,
+        tone: 'success',
+      },
+      {
+        name: 'Metro Line Expansion',
+        ref: '#ME-1092',
+        category: 'infrastructure',
+        completion: 15,
+        issues: 12,
+        tone: 'warning',
+      },
+    ],
+  },
+  'the same missing completion and issue counts as the project cards, plus a map viewport to ' +
+    'count what is visible within',
+);
+
+/** The Insights S-curve — planned and actual, as the drawing's own control points. */
+export const VIEWER_PROGRESS_CURVE = figure(
+  {
+    planned: 'M0,90 Q30,85 50,50 T100,10',
+    actual: 'M0,95 Q25,90 45,60 T90,20',
+  },
+  'a planned-vs-actual progress series. §32.12 computes completion at a point in time; nothing ' +
+    'stores the baseline S-curve a plan is measured against, and no endpoint returns a series',
+);
+
+/** The Insights safety card. */
+export const VIEWER_SAFETY_PERFORMANCE = figure(
+  { safeHours: 42500, zeroIncidentDays: 128, status: 'optimal' },
+  'safe man-hours and a zero-incident streak. `safety.incidents` records incidents, not the hours ' +
+    'between them, and no worked-hours ledger is aggregated per portfolio (see SAFE_MAN_HOURS)',
+);
+
+/** The Insights risk card. */
+export const VIEWER_RISK_FORECAST = figure(
+  {
+    body: 'High probability of material supply bottleneck in Phase 4 due to regional logistics trend.',
+    confidence: 92,
+  },
+  'a supply-chain risk model. Phase 23 trains DelayForecastModel, SafetyVisionModel, GraphMLModel, ' +
+    'RiskClassifier and DeviceTrustModel — none of them forecasts material logistics',
+);
+
+// NEITHER AI CARD PRINTS THE DRAWING'S SOURCE, and that is the one piece of drawn text this round
+// does not reproduce. `01_dashboard` foots nothing and `01_analytics` foots its risk card with
+// "Data: Logistics Hub" — a system this platform does not have. <AiCardFooter />'s contract is that
+// `source` names something this REPOSITORY has, never a system it does not; it is the carve-out
+// ADR-098's second amendment opened, ADR-099 has applied five times, and it exists because a
+// provenance line is the one drawn string that changes how much of a card a reader believes.
+// Both cards name the record set they are about instead — the viewer's assigned projects,
+// `platform.project_membership` — through `insight.sourcePortfolio`.
+
+/** The Insights issue-severity breakdown. */
+export const VIEWER_ISSUE_SEVERITY = figure(
+  { critical: 12, high: 34, medium: 87, low: 142 },
+  'a portfolio-wide issue count by severity. `local_issues` holds the severities of the issues ' +
+    'this device has cached for its own projects, which is not the same set and must not be ' +
+    'printed as though it were',
+);
+
+// `ID: COS-8842-V` IS NOT REGISTERED, because it is already REAL. A draft of this block had it as
+// VIEWER_MEMBER_ID; reading <ProfileBlock /> before writing the entry showed the id line is already
+// there and already drawn from `workforce.workers.employee_code`, falling back to the short UUID.
+// That is the second time this register has been spared an entry by reading the source first — the
+// FINANCE round lost four the same way — and it is the whole procedure.
+
+/**
+ * Account Settings' System Permissions tiles.
+ *
+ * The MODULES are the drawing's, not §6.8's — the drawing names Financials, BIM Models and Site
+ * Reports, and §6.8 grants this role ten modules as of the widening in the same commit as this
+ * entry. What is NOT drawn is a claim that these three are the whole grant.
+ */
+export const VIEWER_PERMISSION_TILES = figure(
+  [
+    { key: 'financials', icon: 'account-balance' },
+    { key: 'bim', icon: 'architecture' },
+    { key: 'siteReports', icon: 'assignment' },
+  ] as const,
+  'a per-module grant readable from the client. `@cos/rbac` resolves permissions from the JWT ' +
+    'role claim, and no endpoint returns the effective matrix for the signed-in user to render',
+);

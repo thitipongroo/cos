@@ -727,3 +727,82 @@ the drawing was ignored by accident.
 Counted, not recalled:
 `grep -c "^export const [A-Z_]* = figure(" apps/mobile/src/lib/mockupFigures.ts`.
 Fifty, plus seven, less `APPROVAL_COUNTDOWN`.
+
+## Amendment — 2026-09-10: the VIEWER set, and three rounds that reached the register without one
+
+### First, the count, because it had stopped being true
+
+The amendment above closed at **fifty-six** and that was correct on the day. The register is at
+**eighty-six**, and the thirty in between arrived across four rounds of which only this one is being
+written up. Measured, not recalled — `grep -c "^export const [A-Z_]* = figure(" \
+apps/mobile/src/lib/mockupFigures.ts` — and attributable by the section headers in that file:
+
+| Round | Block | Entries |
+| ----- | ----- | ------- |
+| 2026-09-09 | The CRM manager's home dashboard | 3 |
+| 2026-09-10 | The CRM manager's four remaining screens | 8 |
+| 2026-09-10 | Get Help (`01_authen/05_get_help`) | 5 |
+| 2026-09-10 | VIEWER (`role_viewer/`) | 14 |
+
+The first three are recorded in their screens' header comments and in the register itself, which is
+where a reader looks; what they skipped was this file, so the running total here has been wrong for
+two days. Recorded rather than quietly corrected: a count that drifts silently is exactly what the
+"counted, not recalled" line at the end of every amendment exists to prevent, and it drifted anyway.
+
+### The VIEWER round
+
+`mockup/mobile/role_viewer/` is five Stitch screens the product owner asked for on 2026-09-10 —
+Home, Projects, Map, Insights and Account Settings. Fourteen entries, and they are unusually
+top-heavy: the **Insights screen is drawn in full**, which no screen in this register has been
+before. No endpoint on that device returns a planned-versus-actual series, a safe-hours ledger, a
+supply-chain forecast or a portfolio-wide issue histogram, and the screen's header comment says so
+in those words rather than leaving it to be discovered.
+
+The **Map** screen is the other unusual one, and its entries are positions rather than values:
+`VIEWER_MAP_PINS` holds three `{top, left}` fractions because `projects.projects` has no coordinate
+and because §28 lists the GIS engine as "Esri / Mapbox / OpenLayers — decide at V2-1 entry". The
+screen adopts no GIS engine; nothing stands in for the drawing's background photograph.
+
+### One entry is MISSING AUTHORITY, and it is the second of its kind
+
+`VIEWER_OPEN_ISSUES` is the Home dashboard's open-issue count. The count exists and the query is
+written — `GET /api/v1/site/issues?status=OPEN` returns exactly it — and this role cannot call it.
+Measured with a real VIEWER token minted through `POST /auth/otp/verify`:
+
+```text
+403  Role 'VIEWER' does not have access.
+     Required: SITE_WORKER | SITE_ENGINEER | PROJECT_MANAGER | EXECUTIVE | SAFETY_OFFICER |
+     TENANT_ADMIN
+```
+
+`docs/specifications/06-rbac-permission-matrix.md` §6.8 grants VIEWER **Issues R**, and has since
+that table was written. The route's `@Roles` list and the specification therefore disagree. This is
+the same shape as the PROC_MANAGER approve button in the sixth amendment, and it is handled the same
+way: the specification wins, but `context.md` §On ambiguity says to REPORT the discrepancy to the
+product owner rather than implement against it, so `site-ops.controller.ts` is untouched and the
+figure is registered with the one-line fix that deletes it.
+
+It took two wrong answers to get there, and both are worth recording because both rendered
+perfectly. The tile first counted `local_issues` and printed **0** — that table is filled by delta
+sync from work the device did, a VIEWER writes nothing, so it is empty and stays empty, and the
+first capture of the screen photographed a confident zero over a seeded portfolio. It then fetched
+the endpoint, as `PmHome` does, and drew an em dash for every 403 — honest, and a KPI tile that can
+never resolve is still worse than a drawn one, because a dash claims the request might yet answer.
+
+### Two figures this round did NOT get
+
+- **`ID: COS-8842-V`** on Account Settings. A draft registered it. Reading `<ProfileBlock />` first
+  showed the id line is already there and already real — `workforce.workers.employee_code`, falling
+  back to the short UUID — so the entry was deleted before it shipped. Second time this register has
+  been spared an entry by reading the source before writing the note; the FINANCE round lost four
+  the same way.
+- **The drawings' AI SOURCES.** `04_insights` foots its risk card "Data: Logistics Hub". That is the
+  carve-out ADR-098's second amendment opened and this ADR has applied five times: `source` names
+  something this repository HAS, never a system it does not. Both AI cards in this set name the
+  record set they are about instead — the viewer's assigned projects.
+
+### The register is at eighty-six
+
+Counted, not recalled:
+`grep -c "^export const [A-Z_]* = figure(" apps/mobile/src/lib/mockupFigures.ts`.
+Fifty-six, plus three, plus eight, plus five, plus fourteen.

@@ -675,7 +675,8 @@
     "recommendation": "Recommendation",
     "risk": "Risk flagged",
     "confShort": "CONF",
-    "sourceShort": "SOURCE"
+    "sourceShort": "SOURCE",
+    "sourcePortfolio": "Your assigned projects"
   },
   "more": {
     "title": "More",
@@ -873,6 +874,36 @@
       "stageLead": "Lead",
       "stageOppty": "Oppty",
       "stageContract": "Contract"
+    },
+    "viewer": {
+      "portfolioOverview": "Portfolio Overview",
+      "activeProjects": "Active Projects",
+      "openIssues": "Open Issues",
+      "portfolioBudget": "Portfolio Budget",
+      "allocated": "Allocated",
+      "ytdDelta": "+{delta}% YTD",
+      "systemInsight": "System Insight",
+      "trackedProjects": "Tracked Projects",
+      "viewAll": "View all",
+      "completion": "Completion",
+      "workers": "{count, plural, one {# worker} other {# workers}}",
+      "issues": "{count, plural, one {# issue} other {# issues}}",
+      "siteActivity": "Site Activity",
+      "noProjects": "You are not assigned to any project yet.",
+      "projectsUnavailable": "The project list did not load. Nothing is cached on this device yet.",
+      "projectCode": "ID: {code}",
+      "projectCodeCategory": "ID: {code} • {category}",
+      "activityWhen": "{at} • {where}",
+      "category": {
+        "commercial": "Commercial",
+        "infrastructure": "Infrastructure",
+        "residential": "Residential"
+      },
+      "activity": {
+        "report": "Daily Safety Report submitted by {who}.",
+        "defect": "Critical defect logged: “{quote}”",
+        "sync": "Morning sync completed successfully. All data current."
+      }
     }
   },
   "tasks": {
@@ -1277,13 +1308,25 @@
       "change": "Working on {project}. Change site.",
       "on": "Project: {project}",
       "eyebrow": "Active project"
+    },
+    "viewer": {
+      "searchPlaceholder": "Search projects by ID or name",
+      "allProjects": "All Projects",
+      "code": "ID: {code}",
+      "codeCategory": "ID: {code} • {category}",
+      "progress": "Progress",
+      "workers": "{count, plural, one {# worker} other {# workers}}",
+      "issues": "{count, plural, one {# issue} other {# issues}}",
+      "empty": "No projects cached on this device.",
+      "noMatch": "No project matches that search.",
+      "category": {
+        "commercial": "Commercial",
+        "infrastructure": "Infrastructure",
+        "residential": "Residential"
+      }
     }
   },
   "pm": {
-    "projects": {
-      "title": "Projects",
-      "empty": "No projects cached"
-    },
     "finance": {
       "title": "Finance",
       "portfolioSummary": "Portfolio financial summary",
@@ -1927,7 +1970,9 @@
     "inspections": "Inspections",
     "materials": "Materials",
     "deliveries": "Deliveries",
-    "mfaVerified": "MFA verified"
+    "mfaVerified": "MFA verified",
+    "map": "Project map",
+    "insights": "Project insights"
   },
   "mfa": {
     "enroll": {
@@ -2027,6 +2072,16 @@
       "lockBody": "Unlock to continue.",
       "unlockAction": "Unlock",
       "signOut": "Sign out instead"
+    },
+    "permissions": {
+      "title": "System Permissions",
+      "readOnly": "Read only",
+      "note": "Your role restricts editing across modules. Contact an administrator for elevated access.",
+      "module": {
+        "financials": "Financials",
+        "bim": "BIM Models",
+        "siteReports": "Site Reports"
+      }
     }
   },
   "status": {
@@ -3275,5 +3330,49 @@
     "language": "Language",
     "offlineData": "Offline data",
     "offlineDataBody": "Cached files and drawings"
+  },
+  "map": {
+    "viewer": {
+      "title": "Project Map",
+      "zoomIn": "Zoom in",
+      "zoomOut": "Zoom out",
+      "recentre": "Recentre the map",
+      "layers": "Map layers",
+      "activeSites": "Active Sites",
+      "visible": "{count, plural, one {# visible} other {# visible}}",
+      "siteRef": "ID: {ref} • {category}",
+      "completion": "Completion",
+      "activeIssues": "Active issues",
+      "state": {
+        "success": "On track",
+        "warning": "Delayed"
+      }
+    }
+  },
+  "insights": {
+    "viewer": {
+      "title": "Project Insights",
+      "overallProgress": "Overall Progress",
+      "plannedVsActual": "Planned vs. Actual",
+      "planned": "Planned",
+      "actual": "Actual",
+      "safetyPerformance": "Safety Performance",
+      "safeHours": "Safe Work Hours",
+      "zeroIncidentDays": "Zero Incident Days",
+      "systemStatus": "System Status",
+      "hours": "{value, number} hrs",
+      "days": "{value, number} days",
+      "status": {
+        "optimal": "Optimal"
+      },
+      "riskForecast": "Risk Forecast",
+      "issueSeverity": "Issue Severity",
+      "severity": {
+        "critical": "Critical",
+        "high": "High",
+        "medium": "Medium",
+        "low": "Low"
+      }
+    }
   }
 }

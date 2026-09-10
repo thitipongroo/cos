@@ -124,6 +124,12 @@ const BREADCRUMB_MAP: Record<string, Crumb[]> = {
     { key: 'support.title', href: '/support' },
     { key: 'helpChat.title' },
   ],
+  // The VIEWER map and insights screens, both entered from the navigation drawer (PO decision
+  // 2026-09-10 — their drawings put them on the bar and the enumerated bar was kept). The drawer is
+  // reachable from any tab and has no route of its own to name, so Home is the parent crumb — the
+  // same reasoning as the Privacy Policy and Support Centre rows above.
+  '/map': [{ key: 'nav.tabs.home', href: '/home' }, { key: 'map.viewer.title' }],
+  '/insights': [{ key: 'nav.tabs.home', href: '/home' }, { key: 'insights.viewer.title' }],
   // Transparency Portal (PO 2026-08-04) — entered from the Data Collection card on the policy, so
   // the policy is the parent crumb. The seven category screens hang off the portal hub, giving
   // Policy → Portal → category.

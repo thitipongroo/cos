@@ -610,6 +610,30 @@ Source: RBAC role definition (master Phase 2 — read-only across modules, per p
 - Read-only access to the pages of whichever modules the viewer is assigned to (per
   `project_membership`). No create/edit/approve actions are rendered.
 
+**The role's page set was enumerated on 2026-09-10**, when the product owner requested the five
+Stitch screens under `mockup/mobile/role_viewer/`. Until that day this section was three lines and
+the role's Home rendered a 22-line placeholder.
+
+| Route       | Page             | Purpose                                                               | Source          |
+| ----------- | ---------------- | --------------------------------------------------------------------- | --------------- |
+| `/home`     | Portfolio        | Project and open-issue counts, portfolio budget, tracked projects, activity | `role_viewer/01_home` |
+| `/projects` | Project list     | Every assigned project, searchable by code or name                    | `role_viewer/02_projects` |
+| `/map`      | Project map      | Where the sites are, with a sheet listing the visible ones            | `role_viewer/03_map` |
+| `/insights` | Project insights | Progress curve, safety performance, risk forecast, issue severity     | `role_viewer/04_insights` |
+| `/account-settings` | Account settings | The shared screen, plus a System Permissions block for this role alone | `role_viewer/05_profile` |
+
+**`/map` and `/insights` are DRAWER ROWS, not tabs.** The five drawings give FOUR different bottom
+bars — `Home · Projects · Map · Insights · Profile` on two of them, and three other sets elsewhere —
+and even the two that agree on labels disagree on glyphs. VIEWER is one of the three roles §32.7's
+table enumerates, so the collision was escalated under the ADR-098 precedent and the enumerated bar
+(`Home · Projects · Procurement · Budget`) was kept. Neither screen is lost: both carry a
+`NOT_DERIVED` drawer row, an `href: null` mount and a breadcrumb.
+
+**The role's grants widened in the same commit** (ADR-102): `safety:read`, `analytics:read` and
+`ai:read`, taking §6.8's Viewer table from seven modules to ten. Three cards on this set — the Home
+System Insight, the Insights safety panel and the Insights risk forecast — render modules the matrix
+previously denied. All three additions are `R`, so the read-only rule above is unchanged.
+
 ### 20.7.10 CRM / Sales Manager (`CRM_SALES_MANAGER`)
 
 Source: §11.3 CRM lifecycle + §14 CRM APIs. Basic CRM UI is MVP (ADR-029; §21.6 updated). Advanced

@@ -249,14 +249,31 @@ describe('HomeScreen role dispatch', () => {
     expect(getByTestId('kpi-total-variance')).toBeTruthy();
   });
 
-  it('falls back to the minimal home for a role with no home of its own', async () => {
+  // VIEWER FELL THROUGH TO <MinimalHome /> UNTIL 2026-09-10, and this case asserted that it did.
+  // `mockup/mobile/role_viewer/01_home/01_dashboard` gave the role a full read-only portfolio
+  // dashboard, so the switch gained a case and this test now asserts the opposite.
+  it('gives VIEWER its own read-only portfolio dashboard', async () => {
     const { getByTestId, queryByTestId } = await renderHome(CosRole.VIEWER);
 
     await waitFor(() => expect(getByTestId('home-screen')).toBeTruthy());
-    expect(getByTestId('pending-sync-count')).toBeTruthy();
-    // None of the role-specific markers belong here.
+    expect(getByTestId('viewer-kpi-projects')).toBeTruthy();
+    expect(getByTestId('viewer-kpi-issues')).toBeTruthy();
+    expect(getByTestId('viewer-kpi-budget')).toBeTruthy();
+    // The placeholder it replaced, and the other roles' markers, must all be absent.
+    expect(queryByTestId('pending-sync-count')).toBeNull();
     expect(queryByTestId('kpi-active-projects')).toBeNull();
     expect(queryByTestId('stat-my-tasks')).toBeNull();
+  });
+
+  it('falls back to the minimal home for a role with no home of its own', async () => {
+    // SYSTEM_ADMIN is the last such role, and §20.7.11 says that is correct rather than a gap: its
+    // work is the separate `/admin` web panel, "not visible to tenant users".
+    const { getByTestId, queryByTestId } = await renderHome(CosRole.SYSTEM_ADMIN);
+
+    await waitFor(() => expect(getByTestId('home-screen')).toBeTruthy());
+    expect(getByTestId('pending-sync-count')).toBeTruthy();
+    expect(queryByTestId('kpi-active-projects')).toBeNull();
+    expect(queryByTestId('viewer-kpi-projects')).toBeNull();
   });
 
   it('falls back to the minimal home when no role is known yet', async () => {

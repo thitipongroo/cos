@@ -268,6 +268,12 @@ export function MobileNav() {
           exactly four — so both are mounted href: null and reached from the Support
           Centre. */}
       <Tabs.Screen name="support-hotline" options={{ href: null }} />
+      {/* The VIEWER map and insights screens (mockup/mobile/role_viewer/03_map and
+          /04_insights). Their drawings put both on the bottom bar; the set draws four
+          different bars and the product owner kept the enumerated one (2026-09-10), so both
+          are drawer rows and must be declared here or they land on every role's tab bar. */}
+      <Tabs.Screen name="map" options={{ href: null }} />
+      <Tabs.Screen name="insights" options={{ href: null }} />
       <Tabs.Screen name="help-chat" options={{ href: null }} />
       <Tabs.Screen name="transparency" options={{ href: null }} />
       <Tabs.Screen name="transparency-identity" options={{ href: null }} />

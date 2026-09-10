@@ -1125,14 +1125,26 @@ the frame itself.
 > toggled first, so the values written were the ones already on screen), but it is why retiring this
 > capture took the repo's only database-writing capture step with it.
 
-## CRM Sales Manager — not captured (retired 2026-08-11)
+## CRM Sales Manager — four tabs, six screens — [`12-crm-manager/`](12-crm-manager/)
 
-**The three CRM pages are no longer part of this set** (product-owner decision 2026-08-11). The
-frames — Leads, Opportunities and Customers, three of the four pages §20.7.10 now defines (a home
-dashboard was added on 2026-09-09) — were deleted, and the
-capture path was retired with them: `apps/mobile/scripts/capture-android-crm.mjs` and its
-`capture:android:crm` script are gone, so nothing writes a `CRM-SALES-MANAGER/` or `09-crm-manager/`
-folder any more.
+**THE 2026-08-11 RETIREMENT IS OVER, AND THIS HEADING SAID OTHERWISE FOR A DAY.** It read
+"not captured (retired 2026-08-11)" until 2026-09-10 while the six frames below were already in the
+tree, committed at `74582833`. The retirement was real — the three CRM frames were deleted that
+August and `capture-android-crm.mjs` went with them — and it was lifted by the product owner on
+2026-09-10, who asked for the role's five remaining screens to be implemented from Stitch and each
+to be captured. Recorded here rather than quietly overwritten, because a heading that contradicts
+the folder beside it is exactly what this file is for.
+
+Shot as `+66811000012` (Chalermsak Nithat) over **Path A, phone OTP**: `MFA_ROLES` is
+`{TENANT_ADMIN, FINANCE}` and this role is in neither.
+
+| Directory                                        | What the frames show                                                                 |
+| ------------------------------------------------ | ------------------------------------------------------------------------------------ |
+| [`01-Home/`](12-crm-manager/01-Home/)            | `01-crm-dashboard` — pipeline value, active leads, win rate, the three stage counts   |
+| [`02-Leads/`](12-crm-manager/02-Leads/)          | `01-leads-directory` — search, state chips, the AI score per lead                     |
+| [`03-Pipeline/`](12-crm-manager/03-Pipeline/)    | `01-opportunities` — the forecast card, the deal cards, convert                       |
+| [`04-Customers/`](12-crm-manager/04-Customers/)  | `01-customers` — the relationship card and the client list                            |
+| [`05-Profile/`](12-crm-manager/05-Profile/)      | `01-navigation-drawer` (the grouped CRM menu) and `02-account-settings`               |
 
 **The SCREENS are untouched.** `CRM_SALES_MANAGER` still has its four tabs in the app, still backed by
 `crm.controller.ts` and the same role-gated routes `apps/web` uses; only their screenshots left this
@@ -2523,3 +2535,69 @@ stand; none of these four had outgrown anything. Two differences from the drawin
 decided by the product owner on the day: the CONFIDENCE chip stays in the AI card's foot per the
 2026-09-08 standard rather than moving to the header, and the vendor directory stays on the
 drawer rather than moving onto the Orders tab.
+
+## Viewer — first capture, five screens — [`13-viewer/`](13-viewer/)
+
+`mockup/mobile/role_viewer/` — the read-only stakeholder. Captured **2026-09-10**, and this is the
+role's **first appearance in this folder**: twelve role folders existed and none was VIEWER's.
+
+**IT COULD NOT HAVE BEEN CAPTURED BEFORE, AND THE REASON WAS UPSTREAM OF THE CAMERA.**
+`backend/prisma/seed-realistic.ts` carried a demo user for eleven of the twelve roles and none for
+this one, so there was nobody to sign in as. The role's Home also rendered `<MinimalHome />` — a
+22-line placeholder — until the same day, so nothing had gone looking. Both were fixed in this
+commit: `viewer` / `+66811000013` / Somsak Watcharawit is seeded **with a
+`projects.project_members` row**, which is not a convenience for screenshots. Every screen this role
+owns is a view OF its projects, so a VIEWER belonging to nothing photographs five empty states on a
+fully seeded database — the same defect `sw1` was added to fix on 2026-08-08.
+
+Shot over **Path A, phone OTP**: `MFA_ROLES` is `{TENANT_ADMIN, FINANCE}` and this role is in
+neither.
+
+| Directory                                     | What the frames show                                                                                                                                       |
+| --------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [`01-Home/`](13-viewer/01-Home/)              | `01-viewer-dashboard` — the project count and open-issue count (both real), the drawn portfolio budget, the System Insight card, two tracked projects and the activity timeline |
+| [`02-Projects/`](13-viewer/02-Projects/)      | `01-project-list` — a working search over the cached rows, the drawn category chips, and a card per assigned project                                        |
+| [`03-Map/`](13-viewer/03-Map/)                | `01-project-map` — the pins, the four map controls and the Active Sites sheet                                                                               |
+| [`04-Insights/`](13-viewer/04-Insights/)      | `01-project-insights` — the progress curve, safety performance, the risk forecast and the issue-severity breakdown                                          |
+| [`05-Profile/`](13-viewer/05-Profile/)        | `01-account-settings` — the shared screen, plus the **System Permissions** block that renders for this role and no other                                    |
+
+**THE BOTTOM BAR IN THESE FRAMES IS NOT THE ONE THE MOCKUPS DRAW, AND THAT WAS DECIDED RATHER THAN
+OVERLOOKED.** The five drawings give **four different bars** — `01_home` and `05_profile` agree on
+`Home · Projects · Map · Insights · Profile` and then disagree with each other about which glyph
+carries which label; `02_projects`, `03_map` and `04_insights` each draw a different four-tab set
+containing `Daily Logs` (not a route), `Safety` and `Directory` (neither granted to this role).
+VIEWER is one of the three roles §32.7's table enumerates, so the collision was escalated under the
+ADR-098 precedent and the product owner kept the enumerated bar,
+`Home · Projects · Procurement · Budget`. **Nothing was lost**: `/map` and `/insights` are new
+routes with a drawer row each.
+
+**One frame is a single viewport and the other four are stitched.** The map does not scroll at page
+level — a canvas with a sheet pinned under it — so it is one shot; the sheet's own list scrolls,
+which is what makes its second row reachable. The heading above says "five screens" rather than
+naming a tab count because only two of them are tabs: Home and Projects. The map, the insights page
+and account settings are all reached from the navigation drawer.
+
+**Almost everything on Insights is drawn, and the header of
+`components/ProjectInsightsDocument.tsx` says so in those words.** No endpoint on this device
+returns a planned-versus-actual series, a safe-hours ledger, a supply-chain forecast or a
+portfolio-wide issue histogram. The one computed figure is the severity bar's proportions, derived
+from the four counts printed above it so the bar can never disagree with them.
+
+**What IS real, and it is the top of every screen**: the project rows — code, name and lifecycle
+status, from the §17.4 cache — the project count, the open-issue count
+(`GET /site/issues?status=OPEN`), the search, and on Account Settings the name, position, id and
+sync state. The status chips print the REAL lifecycle status (`ACTIVE`, `ON_HOLD`), never the
+drawings' "ON TRACK" / "DELAYED", which are labels for a state this product does not store.
+
+**Cards past the third on the project list carry no progress bar or footer, and that is
+deliberate.** The drawn figures are positional — three cards' worth — and a list longer than the
+drawing renders the rest without them rather than repeating the last one. A figure that has run out
+is absent, not recycled.
+
+**Three permissions were added for these screens rather than assumed.** `[CosRole.VIEWER]` held
+seven grants and none of `safety:read`, `analytics:read` or `ai:read` was among them, so the safety
+panel, the analytics page and the two AI cards would each have been drawn against a grant the role
+does not hold. Escalated the same day; the product owner added all three
+([ADR-102](../../architecture/adr/102-viewer-gains-safety-analytics-ai-read.md)) and §6.8's table was
+amended in the same commit. All three are `:read`, so §20.7.9's "no create/edit/approve actions are
+rendered" is untouched.

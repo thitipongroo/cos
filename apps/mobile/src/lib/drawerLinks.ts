@@ -191,6 +191,17 @@ const ISSUES: DrawerLink = {
   labelKey: 'nav.tabs.issues',
   icon: 'report-problem',
 };
+// The VIEWER's map and analytics screens, added 2026-09-10 with
+// `mockup/mobile/role_viewer/03_map` and `/04_insights`. Both drawings draw them as TABS; the five
+// drawings of that set give four different bars, VIEWER is one of the three roles §32.7's table
+// enumerates, and the product owner kept the enumerated bar — so they are rows here instead, which
+// is the same answer §32.7 records for every screen this app draws but does not put on a bar.
+//
+// NOT DERIVED FROM §6.4. No module governs "a map of the sites" or "the portfolio's analytics":
+// §6.8 grants this role Project (view), and these two screens are views OF that grant rather than
+// modules of their own — the same position `/dashboard` and `/directory` are in below.
+const MAP: DrawerLink = { route: '/map', labelKey: 'drawer.map', icon: 'map' };
+const INSIGHTS: DrawerLink = { route: '/insights', labelKey: 'drawer.insights', icon: 'insights' };
 
 const {
   TENANT_ADMIN,
@@ -424,6 +435,8 @@ const NOT_DERIVED: readonly { link: DrawerLink; roles: readonly CosRole[] }[] = 
   { link: DASHBOARD, roles: [PROJECT_MANAGER] },
   { link: ISSUES, roles: [PROJECT_MANAGER] },
   { link: DIRECTORY, roles: [SITE_ENGINEER, SAFETY_OFFICER, PROJECT_MANAGER] },
+  { link: MAP, roles: [VIEWER] },
+  { link: INSIGHTS, roles: [VIEWER] },
   // `/alerts` HAD A ROW HERE from 2026-09-05 and lost it on 2026-09-07: the executive risk feed is
   // that role's SECOND TAB again (replacement mockup set, PO decision), and this file suppresses any
   // row whose route is on the bar, so the entry could only ever have been dead weight. It is left

@@ -675,7 +675,8 @@
     "recommendation": "ข้อเสนอแนะ",
     "risk": "ความเสี่ยงที่พบ",
     "confShort": "ความเชื่อมั่น",
-    "sourceShort": "แหล่งข้อมูล"
+    "sourceShort": "แหล่งข้อมูล",
+    "sourcePortfolio": "โครงการที่คุณดูแล"
   },
   "more": {
     "title": "เพิ่มเติม",
@@ -873,6 +874,36 @@
       "stageLead": "ผู้สนใจ",
       "stageOppty": "โอกาสขาย",
       "stageContract": "ลูกค้า"
+    },
+    "viewer": {
+      "portfolioOverview": "ภาพรวมพอร์ตโฟลิโอ",
+      "activeProjects": "โครงการที่ดำเนินการ",
+      "openIssues": "ปัญหาที่เปิดอยู่",
+      "portfolioBudget": "งบประมาณรวม",
+      "allocated": "จัดสรรแล้ว",
+      "ytdDelta": "+{delta}% ตั้งแต่ต้นปี",
+      "systemInsight": "ข้อมูลเชิงลึกจากระบบ",
+      "trackedProjects": "โครงการที่ติดตาม",
+      "viewAll": "ดูทั้งหมด",
+      "completion": "ความคืบหน้า",
+      "workers": "{count, plural, other {คนงาน # คน}}",
+      "issues": "{count, plural, other {ปัญหา # รายการ}}",
+      "siteActivity": "ความเคลื่อนไหวหน้างาน",
+      "noProjects": "คุณยังไม่ถูกมอบหมายให้ดูแลโครงการใด",
+      "projectsUnavailable": "โหลดรายการโครงการไม่สำเร็จ และยังไม่มีข้อมูลในเครื่องนี้",
+      "projectCode": "รหัส: {code}",
+      "projectCodeCategory": "รหัส: {code} • {category}",
+      "activityWhen": "{at} • {where}",
+      "category": {
+        "commercial": "อาคารพาณิชย์",
+        "infrastructure": "โครงสร้างพื้นฐาน",
+        "residential": "ที่อยู่อาศัย"
+      },
+      "activity": {
+        "report": "{who} ส่งรายงานความปลอดภัยประจำวันแล้ว",
+        "defect": "บันทึกข้อบกพร่องร้ายแรง: “{quote}”",
+        "sync": "ซิงโครไนซ์รอบเช้าสำเร็จ ข้อมูลทั้งหมดเป็นปัจจุบัน"
+      }
     }
   },
   "tasks": {
@@ -1277,13 +1308,25 @@
       "change": "กำลังทำงานที่ {project} · แตะเพื่อเปลี่ยนโครงการ",
       "on": "โครงการ: {project}",
       "eyebrow": "โครงการที่ใช้งาน"
+    },
+    "viewer": {
+      "searchPlaceholder": "ค้นหาโครงการจากรหัสหรือชื่อ",
+      "allProjects": "ทุกโครงการ",
+      "code": "รหัส: {code}",
+      "codeCategory": "รหัส: {code} • {category}",
+      "progress": "ความคืบหน้า",
+      "workers": "{count, plural, other {คนงาน # คน}}",
+      "issues": "{count, plural, other {ปัญหา # รายการ}}",
+      "empty": "ยังไม่มีข้อมูลโครงการในเครื่องนี้",
+      "noMatch": "ไม่พบโครงการที่ตรงกับคำค้นหา",
+      "category": {
+        "commercial": "อาคารพาณิชย์",
+        "infrastructure": "โครงสร้างพื้นฐาน",
+        "residential": "ที่อยู่อาศัย"
+      }
     }
   },
   "pm": {
-    "projects": {
-      "title": "โครงการ",
-      "empty": "ยังไม่มีโครงการในเครื่อง"
-    },
     "finance": {
       "title": "การเงิน",
       "portfolioSummary": "สรุปการเงินรวมทุกโครงการ",
@@ -1927,7 +1970,9 @@
     "inspections": "การตรวจสอบ",
     "materials": "วัสดุ",
     "deliveries": "การจัดส่ง",
-    "mfaVerified": "ยืนยัน MFA แล้ว"
+    "mfaVerified": "ยืนยัน MFA แล้ว",
+    "map": "แผนที่โครงการ",
+    "insights": "ข้อมูลเชิงลึกโครงการ"
   },
   "mfa": {
     "enroll": {
@@ -2027,6 +2072,16 @@
       "lockBody": "ปลดล็อกเพื่อใช้งานต่อ",
       "unlockAction": "ปลดล็อก",
       "signOut": "ออกจากระบบแทน"
+    },
+    "permissions": {
+      "title": "สิทธิ์การใช้งานระบบ",
+      "readOnly": "อ่านอย่างเดียว",
+      "note": "บทบาทของคุณจำกัดการแก้ไขในทุกโมดูล หากต้องการสิทธิ์เพิ่มเติม กรุณาติดต่อผู้ดูแลระบบ",
+      "module": {
+        "financials": "การเงิน",
+        "bim": "แบบจำลอง BIM",
+        "siteReports": "รายงานหน้างาน"
+      }
     }
   },
   "status": {
@@ -3275,5 +3330,49 @@
     "language": "ภาษา",
     "offlineData": "ข้อมูลออฟไลน์",
     "offlineDataBody": "ไฟล์และแบบที่เก็บไว้ในเครื่อง"
+  },
+  "map": {
+    "viewer": {
+      "title": "แผนที่โครงการ",
+      "zoomIn": "ขยาย",
+      "zoomOut": "ย่อ",
+      "recentre": "กลับไปตำแหน่งปัจจุบัน",
+      "layers": "ชั้นข้อมูลแผนที่",
+      "activeSites": "หน้างานที่ดำเนินการ",
+      "visible": "{count, plural, other {แสดง # แห่ง}}",
+      "siteRef": "รหัส: {ref} • {category}",
+      "completion": "ความคืบหน้า",
+      "activeIssues": "ปัญหาที่เปิดอยู่",
+      "state": {
+        "success": "ตามแผน",
+        "warning": "ล่าช้า"
+      }
+    }
+  },
+  "insights": {
+    "viewer": {
+      "title": "ข้อมูลเชิงลึกโครงการ",
+      "overallProgress": "ความคืบหน้าโดยรวม",
+      "plannedVsActual": "แผนเทียบกับผลจริง",
+      "planned": "ตามแผน",
+      "actual": "ผลจริง",
+      "safetyPerformance": "ผลด้านความปลอดภัย",
+      "safeHours": "ชั่วโมงทำงานปลอดภัย",
+      "zeroIncidentDays": "วันที่ไม่มีอุบัติเหตุ",
+      "systemStatus": "สถานะระบบ",
+      "hours": "{value, number} ชม.",
+      "days": "{value, number} วัน",
+      "status": {
+        "optimal": "ดีเยี่ยม"
+      },
+      "riskForecast": "การคาดการณ์ความเสี่ยง",
+      "issueSeverity": "ระดับความรุนแรงของปัญหา",
+      "severity": {
+        "critical": "วิกฤต",
+        "high": "สูง",
+        "medium": "ปานกลาง",
+        "low": "ต่ำ"
+      }
+    }
   }
 }

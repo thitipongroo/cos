@@ -330,8 +330,19 @@ Read-only across all modules assigned to the viewer's project scope.
 | Issues            | R          |
 | Procurement (all) | R          |
 | Finance (all)     | R          |
+| Safety            | R          |
+| Analytics         | R          |
+| AI insights       | R          |
 
 Viewer does not have write, delete, or approve access on any module.
+
+**The last three rows were added on 2026-09-10** (ADR-102). The table held seven modules until then
+— the modules that had screens when it was written — while the role is defined above as "read-only
+across all modules assigned to the viewer's project scope". The role's mobile screen set
+(`mockup/mobile/role_viewer/`) draws a safety performance panel, a project analytics page and two
+AI-derived cards, and a screen that renders a module the matrix denies is the UI asserting an
+entitlement the guard would refuse. All three additions are `R`; §20 §20.7.9's "no create/edit/
+approve actions are rendered" is unchanged, and no write surface is opened by them.
 
 ---
 

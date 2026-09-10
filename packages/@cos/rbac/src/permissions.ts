@@ -92,7 +92,13 @@ export const ROLE_PERMISSIONS: Record<CosRole, Permission[]> = {
     'safety:read',
     'safety:write',
   ],
-  // VIEWER: read-only across all modules, scoped to project assignment (spec §6.8)
+  // VIEWER: read-only across all modules, scoped to project assignment (spec §6.8).
+  //
+  // SEVEN GRANTS UNTIL 2026-09-10, when `safety:read`, `analytics:read` and `ai:read` were added by
+  // product-owner decision (ADR-102). The role's five mobile screens draw a safety panel, an
+  // analytics page and two AI cards, and a screen rendering a module the matrix denies is the UI
+  // asserting an entitlement the guard would refuse. All three are `:read`, so §20.7.9's "no
+  // create/edit/approve actions are rendered" is unchanged and no write surface is opened.
   [CosRole.VIEWER]: [
     'project:read',
     'boq:read',
@@ -101,5 +107,8 @@ export const ROLE_PERMISSIONS: Record<CosRole, Permission[]> = {
     'issue:read',
     'procurement:read',
     'finance:read',
+    'safety:read',
+    'analytics:read',
+    'ai:read',
   ],
 };
