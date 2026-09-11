@@ -13,9 +13,9 @@ jobs:
     name: DAST Scan (OWASP ZAP) — staging
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Run OWASP ZAP full scan
-        uses: zaproxy/action-full-scan@v0.9.0
+        uses: zaproxy/action-full-scan@v0.13.0
         with:
           target: ${{ secrets.STAGING_URL }}
           # Advisory only — do not fail the job on findings; Engineering Lead reviews report
@@ -23,7 +23,7 @@ jobs:
           allow_issue_writing: false
           cmd_options: '-a'
       - name: Upload ZAP report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         if: always()
         with:
           name: zap-report-${{ github.run_id }}

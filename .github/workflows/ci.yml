@@ -25,11 +25,11 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0 # full history so the markdownlint step can diff changed files vs the base
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
+      - uses: pnpm/action-setup@v5
+      - uses: actions/setup-node@v5
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: pnpm
@@ -40,7 +40,7 @@ jobs:
       # YAML + SQL linters (Python). yamllint runs repo-wide (see .yamllint); sqlfluff lints only
       # hand-authored PostgreSQL — immutable migrations/rollbacks + ClickHouse are excluded (.sqlfluffignore).
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: '3.12'
       - name: Install yamllint + sqlfluff + ruff
@@ -60,7 +60,7 @@ jobs:
       # never been through `fmt` or `validate` in CI, and a node-pool rewrite landed unvalidated.
       # `validate` is what catches a bad reference or a wrong type; `fmt -check` keeps the diff clean.
       - name: Set up Terraform
-        uses: hashicorp/setup-terraform@v3
+        uses: hashicorp/setup-terraform@v4
         with:
           terraform_version: '1.9.8'
           terraform_wrapper: false
@@ -278,9 +278,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: '3.12'
       # mlops Python deps are split per service because airflow/mlflow/feast cannot co-resolve
@@ -297,9 +297,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v5
+      - uses: actions/setup-node@v5
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: pnpm
@@ -321,9 +321,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v5
+      - uses: actions/setup-node@v5
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: pnpm
@@ -378,9 +378,9 @@ jobs:
       NEO4J_USERNAME: ci
       NEO4J_PASSWORD: ci
     steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v5
+      - uses: actions/setup-node@v5
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: pnpm
@@ -476,7 +476,7 @@ jobs:
         working-directory: apps/web
         run: pnpm run test:cov
       - name: Upload coverage reports
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         if: always()
         with:
           name: coverage
@@ -505,9 +505,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v5
+      - uses: actions/setup-node@v5
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: pnpm
@@ -597,6 +597,12 @@ jobs:
     name: Go Tests — ${{ matrix.service }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    env:
+      # setup-go v6 calls core.exportVariable('GOTOOLCHAIN', 'local'), which v5 never did — so every
+      # later step in this job would inherit it, not just the one that ran the action. `auto` is Go's
+      # own default (`go env GOTOOLCHAIN` prints it), so this restores exactly what v5 left in place
+      # by setting nothing, rather than picking a new behaviour.
+      GOTOOLCHAIN: auto
     strategy:
       fail-fast: false
       matrix:
@@ -612,8 +618,8 @@ jobs:
           - service: libs/go
             coverage_min: ''
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/checkout@v5
+      - uses: actions/setup-go@v6
         with:
           go-version-file: ${{ matrix.service }}/go.mod
           cache-dependency-path: ${{ matrix.service }}/go.sum
@@ -671,8 +677,8 @@ jobs:
           - services/ai-transcription-pipeline
           - services/bim-import-worker
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
       - name: Install dependencies
@@ -706,9 +712,9 @@ jobs:
     timeout-minutes: 25
     needs: [lint, type-check, unit-tests]
     steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v5
+      - uses: actions/setup-node@v5
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: pnpm
@@ -739,9 +745,9 @@ jobs:
     timeout-minutes: 20
     needs: [lint, type-check, unit-tests]
     steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v5
+      - uses: actions/setup-node@v5
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: pnpm
@@ -765,9 +771,9 @@ jobs:
     timeout-minutes: 15
     needs: [lint, type-check]
     steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v5
+      - uses: actions/setup-node@v5
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: pnpm
@@ -794,9 +800,9 @@ jobs:
     timeout-minutes: 15
     needs: [lint, type-check]
     steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v5
+      - uses: actions/setup-node@v5
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: pnpm
@@ -806,7 +812,7 @@ jobs:
       # helm is PRESENT rather than skipping when it is missing, so without this step 10 of its 11
       # cases fail. Installed explicitly rather than relying on whatever the runner image happens to
       # ship, so a runner-image change cannot silently turn this job red.
-      - uses: azure/setup-helm@v4
+      - uses: azure/setup-helm@v5
       - run: pnpm install --frozen-lockfile
       - name: Run conformance tests
         run: pnpm run test:conformance
@@ -880,13 +886,22 @@ jobs:
             context: .
             file: services/ai-transcription-pipeline/Dockerfile
     steps:
-      - uses: actions/checkout@v4
-      - uses: docker/setup-buildx-action@v3
+      - uses: actions/checkout@v5
+      - uses: docker/setup-buildx-action@v4
       - name: Compute image name
         id: name
         run: echo "short=cos-$(basename ${{ matrix.service }})" >> $GITHUB_OUTPUT
       - name: Build image
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v7
+        # v6 turned both of these on by default; v5 did neither. Left alone they add a job summary
+        # and upload a build record as a GitHub artifact on EVERY build — ~30 extra artifacts per
+        # run across this job, security-scan and push-ecr. Both are needed to keep v5's behaviour.
+        # Step-level, not job-level: only build-push-action reads them, so unlike GOTOOLCHAIN there
+        # is no export leaking into later steps to contain, and the mitigation stays next to the
+        # `uses:` line it mitigates.
+        env:
+          DOCKER_BUILD_SUMMARY: 'false'
+          DOCKER_BUILD_RECORD_UPLOAD: 'false'
         with:
           context: ${{ matrix.context }}
           file: ${{ matrix.file }}
@@ -902,10 +917,15 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     needs: [lint, type-check]
+    env:
+      # Same reason as go-tests, and it bites harder here: `go install …@latest` under
+      # GOTOOLCHAIN=local fails outright instead of fetching a newer toolchain, and @latest floats.
+      # `auto` is Go's own default, which is what setup-go v5 left in place by setting nothing.
+      GOTOOLCHAIN: auto
     steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v5
+      - uses: actions/setup-node@v5
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: pnpm
@@ -924,7 +944,7 @@ jobs:
       # encoding/asn1) had shipped roughly an hour earlier. A floating minor cannot promise a patched
       # standard library on the day the patch lands, which is the only day it matters. Bump this in
       # step with the `go` directive in the service go.mod files, which is what actually builds them.
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v6
         with:
           go-version: '1.26.6'
       - name: govulncheck — kg-ingestion-worker
@@ -938,7 +958,7 @@ jobs:
       # Python safety check — every service with a runtime requirements.txt. Globbed rather than
       # listed: auditing only ai-gateway is how Pillow 12.2.0 (PYSEC-2026-2254) sat unnoticed in
       # ai-ocr-pipeline, and a new service would inherit the same blind spot.
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
       - name: pip-audit — Python services
@@ -965,11 +985,11 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0 # full history — scan every commit, not just HEAD
       - name: Run gitleaks (config .gitleaks.toml)
-        uses: gitleaks/gitleaks-action@v2
+        uses: gitleaks/gitleaks-action@v3
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITLEAKS_CONFIG: ${{ github.workspace }}/.gitleaks.toml
@@ -1026,13 +1046,17 @@ jobs:
             context: .
             file: services/ai-transcription-pipeline/Dockerfile
     steps:
-      - uses: actions/checkout@v4
-      - uses: docker/setup-buildx-action@v3
+      - uses: actions/checkout@v5
+      - uses: docker/setup-buildx-action@v4
       - name: Compute image name
         id: name
         run: echo "short=cos-$(basename ${{ matrix.service }})" >> $GITHUB_OUTPUT
       - name: Rebuild image from GHA cache
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v7
+        # v6 defaults both to true; v5 did neither. Keeps this job's artifact output as it was.
+        env:
+          DOCKER_BUILD_SUMMARY: 'false'
+          DOCKER_BUILD_RECORD_UPLOAD: 'false'
         with:
           context: ${{ matrix.context }}
           file: ${{ matrix.file }}
@@ -1092,13 +1116,13 @@ jobs:
           - services/ai-transcription-pipeline
           - apps/web
     steps:
-      - uses: actions/checkout@v4
-      - uses: docker/setup-buildx-action@v3
+      - uses: actions/checkout@v5
+      - uses: docker/setup-buildx-action@v4
       - name: Compute image name
         id: name
         run: echo "short=cos-$(basename ${{ matrix.service }})" >> $GITHUB_OUTPUT
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@v6
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
@@ -1107,7 +1131,11 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
       - name: Rebuild image from GHA cache and push to ECR
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v7
+        # v6 defaults both to true; v5 did neither. Keeps this job's artifact output as it was.
+        env:
+          DOCKER_BUILD_SUMMARY: 'false'
+          DOCKER_BUILD_RECORD_UPLOAD: 'false'
         with:
           context: .
           file: ${{ matrix.service }}/Dockerfile
@@ -1123,7 +1151,7 @@ jobs:
     needs: [push-ecr]
     if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/staging'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           ref: ${{ github.ref_name }}
@@ -1156,9 +1184,9 @@ jobs:
     # E2E result gates production promotion (merge staging → main).
     if: github.ref == 'refs/heads/staging'
     steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v5
+      - uses: actions/setup-node@v5
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: pnpm
@@ -1172,7 +1200,7 @@ jobs:
           E2E_EMAIL: ${{ secrets.E2E_EMAIL }}
           E2E_PASSWORD: ${{ secrets.E2E_PASSWORD }}
         run: pnpm exec playwright test
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         if: failure()
         with:
           name: playwright-report
@@ -1230,17 +1258,23 @@ jobs:
     needs: [update-gitops]
     if: github.ref == 'refs/heads/staging'
     steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v5
+      - uses: actions/setup-node@v5
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: pnpm
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '17'
-      - uses: android-actions/setup-android@v3
+      - uses: android-actions/setup-android@v4
+        with:
+          # v4 moves the default from 12266719 to 14742923 (cmdline-tools 20.0). Pinned to v3's
+          # value so the Android toolchain the Detox build sees is byte-for-byte what it was; the
+          # v4.0.0 note cut the major precisely "incase … default cmdline-tools upgrade breaks
+          # something downstream".
+          cmdline-tools-version: '12266719'
       # apps/mobile is its own pnpm workspace root (own pnpm-lock.yaml) — install standalone.
       - name: Install mobile dependencies
         working-directory: apps/mobile
@@ -1282,7 +1316,7 @@ jobs:
           script: >-
             pnpm exec detox test --configuration android.emu.debug --headless --record-logs failing
             e2e/offline-inspection.spec.ts e2e/sync-conflict.spec.ts
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         if: failure()
         with:
           name: detox-artifacts

@@ -33,9 +33,9 @@ jobs:
           - { name: '@cos/rbac', filter: '@cos/rbac', prisma: false }
           - { name: 'backend (procurement + guards)', filter: '@cos/backend', prisma: true }
     steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v5
+      - uses: actions/setup-node@v5
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: pnpm
@@ -47,7 +47,7 @@ jobs:
       - name: Run Stryker (break < 70%)
         run: pnpm --filter ${{ matrix.target.filter }} test:mutation
       - name: Upload mutation report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         if: always()
         with:
           name: mutation-report-${{ strategy.job-index }}-${{ github.run_id }}

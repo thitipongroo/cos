@@ -12,7 +12,7 @@ jobs:
     name: Load Tests (k6) — staging
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Install k6
         run: |
           curl -L https://github.com/grafana/k6/releases/download/v0.50.0/k6-v0.50.0-linux-amd64.tar.gz | tar xvz --strip-components 1
@@ -42,7 +42,7 @@ jobs:
           done
           exit "$failed"
       - name: Upload k6 results
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         if: always()
         with:
           name: k6-results-${{ github.run_id }}

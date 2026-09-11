@@ -39,7 +39,7 @@ jobs:
       # tools in ci.yml, which pin ruff / yamllint / sqlfluff exactly. Bump deliberately.
       image: semgrep/semgrep:1.175.0
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       # No --config from the registry here: these are the repo's own rules, so the run is
       # self-contained and reproducible offline.
       - name: Run COS rules (blocking)
@@ -56,7 +56,7 @@ jobs:
     container:
       image: semgrep/semgrep
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Run security rulesets
         # `|| true` is deliberate: findings surface in the code scanning UI alongside CodeQL rather
         # than failing the build. Promote a ruleset into project-rules once it is proven clean.
@@ -64,7 +64,7 @@ jobs:
           semgrep --config p/security-audit --config p/owasp-top-ten \
             --sarif --output semgrep.sarif || true
       - name: Upload SARIF to code scanning
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@v4
         if: always()
         with:
           sarif_file: semgrep.sarif

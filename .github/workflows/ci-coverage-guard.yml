@@ -47,7 +47,7 @@ jobs:
     name: Branch tips have CI runs
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       # `develop` only — see the script header: `main` has no workflow files at all, so its tip
       # having no run is expected, not the symptom this guard exists to surface.
       - name: Check develop
