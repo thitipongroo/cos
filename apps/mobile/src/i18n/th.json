@@ -501,10 +501,12 @@
       "checking": "กำลังตรวจสอบสถานะระบบ",
       "lastChecked": "ตรวจล่าสุด: {when}",
       "justNow": "เมื่อครู่นี้",
-      "minutesAgo": "{minutes} นาทีที่แล้ว"
+      "minutesAgo": "{minutes} นาทีที่แล้ว",
+      "heading": "สถานะระบบ"
     },
     "search": {
-      "placeholder": "ค้นหาบทความช่วยเหลือ…"
+      "placeholder": "ค้นหาบทความช่วยเหลือ…",
+      "hubPlaceholder": "ค้นหาคู่มือ บทเรียน หรือสถานะระบบ…"
     },
     "comingSoon": "เร็ว ๆ นี้",
     "emergency": {
@@ -563,6 +565,60 @@
     "modules": {
       "heading": "สิ่งที่บทบาทของคุณเปิดได้",
       "note": "โมดูลที่บทบาทของคุณมีสิทธิ์เข้าถึง ไม่ใช่รายการบทความช่วยเหลือ — แพลตฟอร์มนี้ยังไม่มีบทความช่วยเหลือ"
+    },
+    "categories": {
+      "siteReporting": {
+        "title": "รายงานหน้างาน",
+        "role": "Site Eng / Worker"
+      },
+      "safety": {
+        "title": "ความปลอดภัย",
+        "role": "Safety Officer"
+      },
+      "finance": {
+        "title": "การเงินและงบฯ",
+        "role": "Finance / PM"
+      },
+      "procurement": {
+        "title": "จัดซื้อและพัสดุ",
+        "role": "Procurement"
+      },
+      "tasks": {
+        "title": "แผนงานโครงการ",
+        "role": "All Field Roles"
+      },
+      "bim": {
+        "title": "BIM & Twin",
+        "role": "Site / PM / Exec"
+      },
+      "crm": {
+        "title": "CRM & Sales",
+        "role": "CRM Manager"
+      },
+      "admin": {
+        "title": "User & Admin",
+        "role": "Tenant Admin"
+      }
+    },
+    "faq": {
+      "heading": "คำถามที่พบบ่อย",
+      "viewAll": "ดูทั้งหมด",
+      "exportDailyLogs": "ส่งออกรายงานประจำวันอย่างไร",
+      "addFieldMembers": "เพิ่มสมาชิกทีมหน้างาน",
+      "progressBilling": "ตั้งค่าการวางบิลตามความคืบหน้า",
+      "cloudSync": "แก้ปัญหาการซิงก์ข้อมูล"
+    },
+    "article": {
+      "heading": "บทเรียนแนะนำ",
+      "tag": "บทเรียนใหม่",
+      "title": "Mastering AI Site Estimation",
+      "byline": "ทีมผลิตภัณฑ์",
+      "meta": "อ่าน {minutes} นาที • โดย {author}"
+    },
+    "footer": {
+      "liveChat": "แชทสด",
+      "emailSupport": "อีเมลฝ่ายสนับสนุน",
+      "available": "ติดต่อฝ่ายสนับสนุนทางเทคนิคได้ที่อีเมลนี้"
     }
   },
   "supportHotline": {

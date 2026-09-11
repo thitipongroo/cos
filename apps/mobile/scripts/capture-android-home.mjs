@@ -172,7 +172,11 @@ async function stitchFull(name, top = 180, bot = 1970) {
     }
   }
   const out = join(OUT, `${name}.png`);
-  process.stdout.write(execFileSync('python', [STITCH, out, String(top), String(bot), ...shots], { encoding: 'utf-8' }));
+  process.stdout.write(
+    execFileSync('python', [STITCH, out, String(top), String(bot), ...shots], {
+      encoding: 'utf-8',
+    }),
+  );
   console.log(`  stitched ${name}.png`);
 }
 
@@ -309,7 +313,9 @@ async function main() {
       }
       const loadOut = join(OUT, '00-se-home-loading.png');
       process.stdout.write(
-        execFileSync('python', [STITCH, loadOut, '180', '1970', ...loadShots], { encoding: 'utf-8' }),
+        execFileSync('python', [STITCH, loadOut, '180', '1970', ...loadShots], {
+          encoding: 'utf-8',
+        }),
       );
       console.log('  stitched 00-se-home-loading.png');
     } finally {

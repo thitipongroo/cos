@@ -1070,7 +1070,7 @@ from **123 drawings to 9**, and deleted `01_authen/07_get_help/01_support_center
 | ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `05_privacy_policy/00_policy_data`        | **Renamed** to `05_privacy_policy/01_privacy_policy` (git records `R075`). Every reference to it is repointed, not withdrawn.                                                                                                                                                        |
 | `05_privacy_policy/01_data_collection/**` | **Withdrawn — about 114 drawings**, the whole Transparency Portal set. It is deliberately NOT repointed at the surviving `02_data_collection`: that is a single-screen folder, not the container, and claiming it would be a lie.                                                    |
-| `01_authen/07_get_help/01_support_center` | **Withdrawn.** `mockup/mobile/support_center/01_dashboard` exists, but it was added by a DIFFERENT, earlier commit with no rename record linking the two, and the files differ (329 lines against 293) — so it is not asserted as the successor (product-owner decision 2026-08-16). |
+| `01_authen/07_get_help/01_support_center` | **Withdrawn.** `mockup/mobile/support_center/01_dashboard` existed but was NOT asserted as the successor — a different commit, no rename record, different content (product-owner decision 2026-08-16). **That question closed on 2026-09-11**, from the other end: Stitch redrew `support_center/01_dashboard` and the product owner named the redraw. It is authoritative because it was chosen, not because a rename was inferred, so the 2026-08-16 ruling was never overturned — it was made moot. |
 
 **The Support Centre has drawings again as of 2026-08-17 — three of them, and two are new screens.**
 Commit `76c8225c` added `01_authen/07_get_help/{01_home_support,02_hotline_details,03_help_chat}` and
@@ -1850,20 +1850,58 @@ card colour; `<MobileNav />` overrides `tabBarStyle` only on dark.
 
 #### Support Centre — two routes (`?` and GET SUPPORT)
 
-The Support Centre has **two** routes as of 2026-08-17 (product-owner decision), not one. They share
-their content and differ in frame and extras — the shape `PrivacyPolicyDocument` already uses for the
-same pre-auth/post-auth pair (PO 2026-08-04).
+The Support Centre has **two** routes as of 2026-08-17 (product-owner decision), and since
+**2026-09-11 they are two SCREENS** rather than one document rendered twice.
 
-|         | Pre-auth                                     | Post-auth                                              |
-| ------- | -------------------------------------------- | ------------------------------------------------------ |
-| Route   | `app/(auth)/support.tsx`                     | `app/(app)/support.tsx`                                |
-| Entry   | OTP step's `GET SUPPORT` footer item         | `<TopBar />` Help `?` — the **only** post-auth entry   |
-| Palette | pinned dark (§32.7 pinned pre-auth surfaces) | follows the user's theme                               |
-| Chrome  | own back + title bar, connection mark, build | none — `<TopBar />` + `Breadcrumb` supply it           |
-| Adds    | `FIELD ASSISTANT` panel                      | identity · active project · diagnostics · role modules |
+|          | Pre-auth                                                            | Post-auth                                                              |
+| -------- | -------------------------------------------------------------------- | ------------------------------------------------------------------------ |
+| Route    | `app/(auth)/support.tsx`                                            | `app/(app)/support.tsx`                                                |
+| Drawing  | `mockup/mobile/01_authen/05_get_help/01_home_support`                | `mockup/mobile/support_center/01_dashboard`                            |
+| Document | `components/SupportCenterDocument.tsx`                              | `components/SupportHubDocument.tsx`                                    |
+| Job      | someone who **cannot get in**                                       | someone **already working**                                            |
+| Entry    | OTP step's `GET SUPPORT` footer item                                | `<TopBar />` Help `?` — the **only** post-auth entry                   |
+| Palette  | pinned dark (§32.7 pinned pre-auth surfaces)                         | follows the user's theme                                               |
+| Chrome   | own back + title bar, connection mark, build                         | none — `<TopBar />` + `Breadcrumb` supply it                           |
+| Content  | system status · search · emergency contacts · field troubleshooting | system status · search · Quick Help categories · Top FAQs · a featured article · a pinned footer |
+| Adds     | `FIELD ASSISTANT` panel                                             | **nothing — the route is a frame**                                     |
 
-**Shared** (`components/SupportCenterDocument.tsx`): system status (a real `GET /health/live` probe) ·
-search · emergency contacts · field troubleshooting.
+**Shared** (`components/SupportPrimitives.tsx`): the system-status card (a real `GET /health/live`
+probe), the search row, and the `useBackendHealth` hook behind both. Nothing else — and that is the
+point of the file, not an accident of it.
+
+> **THE SPLIT WAS TAKEN ON 2026-09-11 AND A SCREENSHOT IS WHAT FORCED IT.** Stitch redrew
+> `support_center/01_dashboard` and the product owner first answered that both routes should share
+> the four sections it adds. They were built that way, and the first Android capture of the result
+> came out **5,556px tall** — half of it answering "how do I use this product" on a surface reached
+> only by someone who cannot yet use it. The product owner split the two screens the same day.
+>
+> This reverses the "one document, two frames" shape borrowed from `PrivacyPolicyDocument` (PO
+> 2026-08-04) **for this pair only**. The policy really is one document rendered twice; these two are
+> not, and building them as if they were is what produced the 5,556px page.
+>
+> **What the post-auth screen costs, recorded rather than discovered.** It has no EMERGENCY
+> ASSISTANCE pair — the drawing has none and the numbers belong to the pre-auth side — so the **IT
+> Hotline** screen loses its only signed-in entry. Help Chat does not: the new footer's LIVE CHAT
+> reaches `/help-chat`. Flagged to the product owner before the split was approved;
+> `(app)/__tests__/support.spec.tsx` asserts the absence and names the reason, so restoring the card
+> is a one-line deletion rather than an archaeology exercise.
+>
+> **The three new sections are DRAWN** — `SUPPORT_HELP_CATEGORIES`, `SUPPORT_TOP_FAQS`,
+> `SUPPORT_FEATURED_ARTICLE` under ADR-099. Measured 2026-09-11: no `help_article`, `faq` or
+> `article` model, no `backend/src/modules/support/`, no controller prefix for any of them.
+>
+> The footer's **Email Support** reads `EXPO_PUBLIC_SUPPORT_EMAIL`, added the same day on the terms
+> the priority line's phone number has had since 2026-08-09. The drawing fixes the footer to the
+> VIEWPORT; it is pinned to the document's own frame instead, because that route sits inside `<Tabs>`
+> and a viewport-fixed bar would land on top of `<MobileNav />` (composition, ADR-085).
+>
+> The eight category tiles are deliberately **not** `drawerLinksFor(role)`. That list answers "what
+> may I open?"; the grid answers "where do I read about X?". The role's own module list is still
+> rendered, in this screen's footer, where it belongs.
+>
+> The **FAQ rows do not expand**: the drawing puts `expand_more` on each and gives none of them a
+> body. The pre-auth screen's troubleshooting list is the one that really expands — its four answers
+> are written copy that exists — and a render test asserts no FAQ row ever grows an answer panel.
 
 **Why two routes and not one link.** `AuthGate` (`app/_layout.tsx`) redirects in both directions —
 `isAuthenticated && inAuthGroup → /(app)/home` — so a signed-in screen cannot push to anything in the
@@ -1878,22 +1916,30 @@ route directory instead.
 rather than kept alongside it (product-owner decision 2026-08-17), so `drawer.support` is gone from
 the i18n catalogues.
 
-**The two screens are deliberately not identical** (product-owner decision 2026-08-17). Everything the
-post-auth route adds is data the app already holds — signing in adds **no backend** here:
+**The post-auth route adds nothing, and it used to add three cards** (product-owner decision
+2026-09-11). `app/(app)/support.tsx` is 77 lines and renders `SupportHubDocument` with no header and
+no footer: the screen IS the drawing.
 
-- **Identity** — name + role from `authStore`, so the person on the phone need not recite them.
-- **Active project** — from `projectStore`, the same answer `<ProjectContextBar />` prints; a
-  "none selected" line rather than a placeholder when the picker has not been answered.
-- **Diagnostics** — connection, queued changes, unresolved conflicts, build. These replace the
-  `FIELD ASSISTANT` panel, which exists to say something when the app knows nothing else.
-- **Role modules** — derived from `drawerLinksFor(role)`, i.e. the §6.4 matrix. It answers "should I
-  be able to see X?". It is **not** a help-article list.
+The three removed cards were **YOUR SESSION** (name + role from `authStore`, active project from
+`projectStore`), **DEVICE DIAGNOSTICS** (connection, queued changes, unresolved conflicts, storage,
+build) and **WHAT YOUR ROLE CAN OPEN** (the §6.4 matrix via `drawerLinksFor(role)`).
+
+**Every one of them was real data**, which is why the removal is recorded rather than merely done.
+They were added on 2026-08-17 on the reasoning that a support screen ignoring the identity, project
+and device state the app already holds is asking the user to type back what it knows — sound at the
+time. What changed is the SPLIT: the pre-auth screen took the job of helping someone who cannot get
+IN, and a diagnostics dump belongs to that conversation rather than to a help library. The nearest
+equivalent survives where it is useful, as the pre-auth `FIELD ASSISTANT` panel.
+`(app)/__tests__/support.spec.tsx` asserts all three are absent, so one cannot drift back.
 
 **What it does not add.** Identity, project and diagnostics are all the app's own state — signing in
 adds no backend _to this pair of screens_. **Search stays disabled on BOTH routes** (PO 2026-08-09,
-re-affirmed 2026-08-17 and again 2026-08-18): there is still no `help_article`/`faq` table and no
-search endpoint, and ADR-093 gives it none — a signed-in user can see a dead control as clearly as a
-signed-out one.
+re-affirmed 2026-08-17, again 2026-08-18, and a **fourth time on 2026-09-11** when the redrawn
+`support_center/01_dashboard` asked for an active search box): there is still no `help_article`/`faq`
+table and no search endpoint, and ADR-093 gives it none — a signed-in user can see a dead control as
+clearly as a signed-out one. It was not registered as a drawn figure either, and ADR-099's
+2026-09-11 amendment records why: a drawn figure is a VALUE with no source, a search box is a
+CONTROL with no corpus, and filing the second as the first would launder a decision into a datum.
 
 > **The two paragraphs this one replaced stopped being true on 2026-08-18 (ADR-093).** They read
 > _"No better phone number … both routes read the same `EXPO_PUBLIC_SUPPORT__` deployment config"*,

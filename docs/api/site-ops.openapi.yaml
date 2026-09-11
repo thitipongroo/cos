@@ -655,6 +655,11 @@ paths:
 
     get:
       summary: List issues (filterable by severity, status, project)
+      description: |
+        VIEWER may call this since 2026-09-11 (ADR-103). §6.8 grants the role "Issues R" and this
+        route refused it until then; the Home dashboard's open-issue count reads it with
+        `?status=OPEN`. Only the LIST is open — creating, updating and escalating an issue are
+        unchanged, and §20.7.9 forbids rendering any of them to that role.
       operationId: listIssues
       tags: [issues]
       parameters:

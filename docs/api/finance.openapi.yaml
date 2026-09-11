@@ -260,6 +260,8 @@ paths:
           description: Not in a terminable state
   /finance/budget/{projectId}:
     get:
+      description: |
+        VIEWER may call this since 2026-09-11 (ADR-103). The role has read on this module in §6.8 and every GET here answered 403 for it until then; the six routes its own screens read were opened per-route rather than by widening the shared READ_ROLES constant, which 24 other handlers use.
       operationId: getFinanceBudgetByProjectid
       tags:
         - finance
@@ -425,6 +427,8 @@ paths:
           description: Unauthenticated — missing or invalid bearer token
   /finance/cost-transactions:
     get:
+      description: |
+        VIEWER may call this since 2026-09-11 (ADR-103). The role has read on this module in §6.8 and every GET here answered 403 for it until then; the six routes its own screens read were opened per-route rather than by widening the shared READ_ROLES constant, which 24 other handlers use.
       operationId: getFinanceCostTransactions
       tags:
         - finance
@@ -900,6 +904,8 @@ paths:
           description: Unauthenticated — missing or invalid bearer token
   /finance/cashflow-forecast/{projectId}:
     get:
+      description: |
+        VIEWER may call this since 2026-09-11 (ADR-103). The role has read on this module in §6.8 and every GET here answered 403 for it until then; the six routes its own screens read were opened per-route rather than by widening the shared READ_ROLES constant, which 24 other handlers use.
       operationId: getFinanceCashflowForecastByProjectid
       tags:
         - finance

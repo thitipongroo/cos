@@ -1591,3 +1591,72 @@ export const VIEWER_BUDGET_CONTEXT = figure(
   'the same missing project as VIEWER_PROCUREMENT_CONTEXT, plus a PHASE — `projects.projects` ' +
     'has no phase column, and §32.12 computes progress rather than naming a phase',
 );
+
+// ── SUPPORT CENTRE, 2026-09-11 ──────────────────────────────────────────────────────────────────
+//
+// `mockup/mobile/support_center/01_dashboard` was REDRAWN by Stitch and the product owner named it
+// ("ศูนย์ช่วยเหลือและสนับสนุน - Construction OS (Support Center)"). The three entries below are the
+// sections the redraw adds, and all three are the same category: MISSING A CORPUS, not missing a
+// query. Measured 2026-09-11 — there is no `help_article`, `faq` or `article` model in
+// `schema.prisma`, no `backend/src/modules/support/`, and none of the backend's controller prefixes
+// is support, chat, ticket, help or faq. The four support TABLES that do exist
+// (`SupportDeskDefault`, `TenantSupportDesk`, `SupportTicket`, `SupportMessage`) are about the desk
+// and about tickets; none of them holds an article or an FAQ.
+//
+// The drawing's SEARCH BAR is deliberately NOT registered. A drawn figure is a value with no source;
+// a search box is a CONTROL with no corpus, and this repository has answered that three times over —
+// it renders disabled (PO 2026-08-09, re-affirmed 2026-08-17 and 2026-08-18, and again today when a
+// fourth drawing asked for it). Registering it would misfile a decision as a datum.
+
+/**
+ * The eight Quick Help tiles, in the drawing's own order.
+ *
+ * `role` is the drawing's English hint and `icon`/`tone` its own glyph and accent. These are NOT
+ * `drawerLinksFor(role)` — that list is real, is filtered to the signed-in role, and does not exist
+ * at all before sign-in, which is half of where this screen lives.
+ */
+export const SUPPORT_HELP_CATEGORIES = figure(
+  [
+    { key: 'siteReporting', icon: 'description', tone: 'primary', role: 'Site Eng / Worker' },
+    { key: 'safety', icon: 'health-and-safety', tone: 'danger', role: 'Safety Officer' },
+    { key: 'finance', icon: 'payments', tone: 'success', role: 'Finance / PM' },
+    { key: 'procurement', icon: 'inventory-2', tone: 'warning', role: 'Procurement' },
+    { key: 'tasks', icon: 'task-alt', tone: 'primary', role: 'All Field Roles' },
+    { key: 'bim', icon: 'view-in-ar', tone: 'accent', role: 'Site / PM / Exec' },
+    { key: 'crm', icon: 'groups', tone: 'accent', role: 'CRM Manager' },
+    { key: 'admin', icon: 'manage-accounts', tone: 'muted', role: 'Tenant Admin' },
+  ] as const,
+  'a help TAXONOMY — a set of article categories and a body of articles filed under each. No ' +
+    '`help_article` table, no category column and no endpoint returns either',
+);
+
+/** The four Top FAQ rows. Their ANSWERS are drawn too — see the i18n keys they read. */
+export const SUPPORT_TOP_FAQS = figure(
+  ['exportDailyLogs', 'addFieldMembers', 'progressBilling', 'cloudSync'] as const,
+  'a ranked FAQ list. Ranking needs a question corpus and a hit count; this product stores ' +
+    'neither, and the four questions themselves have no table to come from',
+);
+
+/**
+ * The featured tutorial card.
+ *
+ * `image` names a file this repository already bundles rather than the drawing's remote URL: the
+ * drawing loads it from `lh3.googleusercontent.com`, which is not shippable here, and the same
+ * treatment was given to the VIEWER budget screen's progress photo.
+ *
+ * IT WAS `digital_archectural_blueprint.jpg` FOR ONE BUILD, chosen off its FILENAME and never
+ * opened. The first capture showed what it actually is: a rendered mockup of a Tenant Admin screen,
+ * Thai menu labels and a nav sidebar included — another product screen sitting behind an article
+ * title. Corrected 2026-09-11 to a genuine photograph. Open the asset before naming it.
+ */
+export const SUPPORT_FEATURED_ARTICLE = figure(
+  {
+    tag: 'NEW TUTORIAL',
+    title: 'Mastering AI Site Estimation',
+    readMinutes: 5,
+    byline: 'Product Team',
+    image: 'construction-site-2.jpg',
+  },
+  'an editorial article with a reading time and an author. Nothing in this product authors, ' +
+    'stores or serves one — there is no article table and no CMS behind it',
+);

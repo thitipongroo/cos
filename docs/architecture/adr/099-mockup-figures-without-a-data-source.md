@@ -871,3 +871,97 @@ loud.
 Counted, not recalled:
 `grep -c "^export const [A-Z_0-9]* = figure(" apps/mobile/src/lib/mockupFigures.ts`.
 Eighty-six, plus thirteen, less `VIEWER_OPEN_ISSUES`.
+
+## Amendment — 2026-09-11 (second): the Support Centre, and a register entry that would be a decision
+
+The Support Centre's drawing was redrawn and the product owner named it —
+`ศูนย์ช่วยเหลือและสนับสนุน - Construction OS (Support Center)`, Stitch screen
+`1eb1b5532aa745a8ba61345cbb138c9a`, stored at `mockup/mobile/support_center/01_dashboard`. Three
+entries follow from it, and all three are the same category: **missing a corpus**, not missing a
+query. Measured 2026-09-11 — no `help_article`, `faq` or `article` model in `schema.prisma`, no
+`backend/src/modules/support/`, and no controller prefix for support, chat, ticket, help or faq. The
+four support tables that DO exist (`SupportDeskDefault`, `TenantSupportDesk`, `SupportTicket`,
+`SupportMessage`, migration `20260818000001`) are about the desk and about tickets; none holds an
+article or an FAQ.
+
+| Entry                      | What it stands in for                                                                                |
+| -------------------------- | ---------------------------------------------------------------------------------------------------- |
+| `SUPPORT_HELP_CATEGORIES`  | eight help-taxonomy tiles — a set of article categories and a body of articles filed under each      |
+| `SUPPORT_TOP_FAQS`         | four ranked questions — ranking needs a corpus and a hit count, and this product stores neither      |
+| `SUPPORT_FEATURED_ARTICLE` | an editorial tutorial with a reading time and an author — nothing here authors, stores or serves one |
+
+### The search bar is deliberately NOT registered, and that is the point of this amendment
+
+The drawing draws an ACTIVE search box. Registering it would have been the obvious move and it would
+have been wrong. **A drawn figure is a VALUE with no source. A search box is a CONTROL with no
+corpus.** Filing the second as the first would launder a decision into a datum — and this particular
+decision has been taken four times now: the product owner ruled search disabled on 2026-08-09,
+re-affirmed it for the post-auth route on 2026-08-17, again on 2026-08-18 when ADR-093 gave it no
+endpoint, and again on 2026-09-11 when this drawing asked a fourth time. The register would have
+quietly re-opened it.
+
+The line this draws: if the answer to "what is missing?" is a NUMBER OR A STRING, it belongs here.
+If the answer is A CAPABILITY, it belongs in a decision record, and the control renders disabled or
+says so on a press.
+
+### Three things the drawing asked for that the rules already answered
+
+None of these needed a product-owner decision; each was settled by a rule already on the books, and
+they are recorded here so a later reader does not mistake them for oversights.
+
+- **No background glow.** The drawing fixes two `blur-[120px]` colour blobs behind the page. §32.7's
+  brand rule forbids glow and its exception list names this very screen: _"the Terms of Use and
+  Support Centre routes … ship with NO glow — they are opened FROM an entry screen rather than being
+  one."_
+- **No `24/7` claim.** The drawing states "Technical Support available 24/7" flat. Operating hours
+  are desk data (`support_desk_default.operating_hours`), nothing in this repository asserts 24/7,
+  and §32.7 already rules for the hotline screen that an unset block does not render at all. The
+  line renders only where a support address is configured, and says only what it can stand behind.
+- **The FAQ rows do not expand.** The drawing puts `expand_more` on each of the four and gives none
+  of them a body. A disclosure that opens onto nothing is the drawn dead control this project
+  refused on 2026-09-11, eleven affordances at a time, so each row says so on the press instead. The
+  TROUBLESHOOTING list above it is the one that really expands — its four answers are written copy
+  that exists, and a render test now asserts no FAQ row ever grows an answer panel.
+
+### One thing that stopped being drawn
+
+`EXPO_PUBLIC_SUPPORT_EMAIL` was added rather than registering the footer's EMAIL SUPPORT button as a
+figure (product-owner decision 2026-09-11). It takes exactly the terms the priority line's phone
+number has had since 2026-08-09: a per-deployment fact, unset ⇒ the control says so on a press and
+the page carries no standing note about it.
+
+### The register is at one hundred and one
+
+Counted, not recalled:
+`grep -c "^export const [A-Z_0-9]* = figure(" apps/mobile/src/lib/mockupFigures.ts`.
+Ninety-eight, plus three.
+
+## Amendment — 2026-09-11 (third): the three Support entries move to one screen, and a capture is why
+
+The amendment above registered `SUPPORT_HELP_CATEGORIES`, `SUPPORT_TOP_FAQS` and
+`SUPPORT_FEATURED_ARTICLE` against a Support Centre that was ONE document rendered at both routes.
+Later the same day the product owner split it into two screens, and all three entries now belong to
+the POST-AUTH one alone (`components/SupportHubDocument.tsx`). The entries themselves are unchanged;
+what changed is where they render, and the register count is unaffected — still one hundred and one.
+
+**The split was forced by a screenshot, which is the part worth recording.** The four sections the
+redraw adds were built into the shared document, every test passed, and the first Android capture of
+the pre-auth result came out **5,556px tall** — half of it answering "how do I use this product" on a
+surface reached only by someone who cannot yet use it. Nothing in the test suite could have said so:
+each section rendered correctly, in the right order, with every affordance responding. The defect was
+in WHO the page was for, and only a picture of the whole page shows that.
+
+This is the second time in one day that a capture caught what the suite could not. The first was the
+VIEWER procurement and budget screens shipping eleven affordances that answered nothing, which the
+specs actively agreed with because they asserted the ABSENCE of press handlers. Both belong to the
+same category: **a test can check that a screen does what it says, and cannot check whether the
+screen should say it.**
+
+### One entry that was nearly wrong for a second reason
+
+`SUPPORT_FEATURED_ARTICLE.image` read `digital_archectural_blueprint.jpg` for one build. It was
+chosen off the FILENAME — the drawing's alt text asks for "blueprints and a rugged industrial tablet"
+and the name matched — and the file was never opened. It is a rendered mockup of a Tenant Admin
+screen, Thai menu labels and a nav sidebar included, so the tutorial card had a picture of a
+different product screen behind its title. Corrected to `construction-site-2.jpg`, a genuine
+photograph. **Open the asset before naming it**; a filename is not a source.

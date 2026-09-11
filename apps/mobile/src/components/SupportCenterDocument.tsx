@@ -9,7 +9,8 @@
 // This is the shape `PrivacyPolicyDocument` already uses for the same pre-auth/post-auth pair
 // (PO decision 2026-08-04) — one copy of the content, two frames around it.
 //
-// WHAT IS SHARED (this file): system status · search · emergency contacts · troubleshooting.
+// WHAT IS SHARED (this file): system status · search · Quick Help categories · emergency contacts ·
+// troubleshooting · Top FAQs · a featured article · the support footer.
 // WHAT IS NOT:
 //   pre-auth  → FIELD ASSISTANT panel (footer). It is the only thing a screen with no user can add.
 //   post-auth → identity + active project (header); sync/connection diagnostics and the role's own
@@ -43,6 +44,13 @@
 //   - Search is drawn DISABLED (PO decision 2026-08-09, re-affirmed for the post-auth route
 //     2026-08-17). There is no help-article corpus, no search endpoint and no `help_article`/`faq`
 //     table — an input that silently matches nothing is worse than one that admits it.
+//   - THE 2026-09-11 REDRAW added the four sections marked above, and every figure in them is
+//     DRAWN — SUPPORT_HELP_CATEGORIES, SUPPORT_TOP_FAQS, SUPPORT_FEATURED_ARTICLE (ADR-099).
+//     Measured that day: no `help_article`, `faq` or `article` model, no `backend/src/modules/
+//     support/`, no controller prefix for support, chat, ticket, help or faq. What the redraw did
+//     NOT get is recorded in ADR-099's second 2026-09-11 amendment and in the section comments
+//     below: no background glow (§32.7 names this screen in its own exception list), no flat "24/7"
+//     claim, and no FAQ row that expands onto the body the drawing forgot to give it.
 //   - Quick Help Chat NAVIGATES to the Help Chat screen as of 2026-09-10, and so does the IT
 //     Hotline card. Both gained the `chevron_right` the 2026-08-17 drawing puts on them, and the
 //     hotline card stopped dialling in place — `CALL NOW` on the detail screen is the dial (ADR-093
@@ -50,12 +58,12 @@
 //     unbuilt is the ticket endpoint behind it, and that is stated on a press by
 //     `HelpChatDocument`, not as standing text here (PO decision 2026-09-10).
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { View, Text, ScrollView, Pressable, StyleSheet, Linking, Vibration } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useT } from '../i18n';
 import { useComingSoon } from './useComingSoon';
-import { checkBackendHealth } from '../api/health';
+import { SupportSearchRow, SupportStatusCard, type Health } from './SupportPrimitives';
 import { fontFamily, radius, spacing, touchTarget, typography } from '../theme/tokens';
 import type { Palette } from '../theme/palette';
 
@@ -77,40 +85,6 @@ const TOPICS: readonly { id: string; icon: IconName }[] = [
   { id: 'gps', icon: 'location-disabled' },
   { id: 'permit', icon: 'assignment-late' },
 ];
-
-/** Backend liveness, as this screen knows it. `null` while the first probe is in flight. */
-export type Health = boolean | null;
-
-/**
- * Backend liveness plus how stale the answer is.
- *
- * OWNED BY THE SCREEN, NOT BY THIS DOCUMENT, and passed back in as props. Both routes need the same
- * answer twice over — the status card here, and the caller's own footer (the pre-auth FIELD ASSISTANT
- * line, the post-auth diagnostics block) — so holding it in the document would force each screen to
- * run a SECOND probe for its footer and ping /health/live twice per open.
- */
-export function useBackendHealth(): { health: Health; minutesAgo: number } {
-  const [health, setHealth] = useState<Health>(null);
-  // Minutes since the probe answered. The drawing prints "Last checked: 2m ago", so the number has to
-  // age — a stamp that never moves would claim the check is always fresh.
-  const [minutesAgo, setMinutesAgo] = useState(0);
-
-  useEffect(() => {
-    let cancelled = false;
-    void checkBackendHealth().then((ok) => {
-      if (cancelled) return;
-      setHealth(ok);
-      setMinutesAgo(0);
-    });
-    const tick = setInterval(() => setMinutesAgo((m) => m + 1), 60_000);
-    return () => {
-      cancelled = true;
-      clearInterval(tick);
-    };
-  }, []);
-
-  return { health, minutesAgo };
-}
 
 export function SupportCenterDocument({
   palette,
@@ -161,235 +135,143 @@ export function SupportCenterDocument({
   // no number is configured. They say so ON A PRESS; the page says nothing (PO 2026-09-10).
   const soon = useComingSoon();
 
-  const statusLabel =
-    health === null
-      ? t('support.status.checking')
-      : health
-        ? t('support.status.operational')
-        : t('support.status.unreachable');
-  const statusColor = health === null ? palette.muted : health ? palette.success : palette.danger;
-
   return (
-    <ScrollView
-      testID={testID}
-      style={styles.scroll}
-      contentContainerStyle={[styles.content, { paddingBottom }]}
-    >
-      {header}
-
-      {/* System status — a real probe, not a badge. */}
-      <View testID="support-status" style={[styles.statusCard, { borderColor: statusColor }]}>
-        <View style={styles.statusLeft}>
-          <View style={[styles.statusDot, { backgroundColor: statusColor }]} />
-          <Text style={[styles.statusLabel, { color: statusColor }]}>{statusLabel}</Text>
-        </View>
-        {health !== null ? (
-          <Text style={styles.statusTime}>
-            {t('support.status.lastChecked', {
-              when:
-                minutesAgo === 0
-                  ? t('support.status.justNow')
-                  : t('support.status.minutesAgo', { minutes: minutesAgo }),
-            })}
-          </Text>
-        ) : null}
-      </View>
-
-      {/* Search — drawn exactly as the mockup draws it: a glyph and a placeholder, nothing else.
-          It carried a `COMING SOON` chip until 2026-09-10; the drawing has no such chip, and a
-          standing note about what is unbuilt is what the product owner ruled out. There is still no
-          `help_article`/`faq` table and no search endpoint, so the field is not editable and a tap
-          says so — on the tap, not on the page. */}
-      <Pressable
-        testID="support-search"
-        accessibilityRole="search"
-        accessibilityLabel={t('support.search.placeholder')}
-        onPress={() => soon('support.search.placeholder')}
-        style={styles.searchRow}
+    <View style={styles.frame}>
+      <ScrollView
+        testID={testID}
+        style={styles.scroll}
+        contentContainerStyle={[styles.content, { paddingBottom }]}
       >
-        <MaterialIcons name="search" size={22} color={palette.muted} />
-        <Text style={styles.searchPlaceholder}>{t('support.search.placeholder')}</Text>
-      </Pressable>
+        {header}
 
-      <Text style={styles.sectionHeading}>{t('support.emergency.heading')}</Text>
+        <SupportStatusCard
+          palette={palette}
+          health={health}
+          minutesAgo={minutesAgo}
+          onPress={() => soon('support.status.heading')}
+        />
 
-      {/* Priority line — the drawing's tall filled button. */}
-      {/* ALWAYS THE DRAWING'S FILLED BUTTON. It rendered grey with "No number set for this site"
+        <SupportSearchRow
+          palette={palette}
+          placeholder={t('support.search.placeholder')}
+          onPress={() => soon('support.search.placeholder')}
+        />
+
+        <Text style={styles.sectionHeading}>{t('support.emergency.heading')}</Text>
+
+        {/* Priority line — the drawing's tall filled button. */}
+        {/* ALWAYS THE DRAWING'S FILLED BUTTON. It rendered grey with "No number set for this site"
           under the title whenever `EXPO_PUBLIC_SUPPORT_CENTER_PHONE` was unset — copy that appears
           nowhere in the mockup, and a standing note about what is unconfigured. Both are gone
           (product-owner decision 2026-09-10). The button dials where a deployment set a number and
           says so on a tap where it did not. */}
-      <Pressable
-        testID="support-call-center"
-        accessibilityRole="button"
-        accessibilityLabel={t('support.emergency.supportCenter')}
-        onPress={() =>
-          SUPPORT_CENTER_PHONE === null
-            ? soon('support.emergency.supportCenter')
-            : call(SUPPORT_CENTER_PHONE)
-        }
-        style={styles.priorityButton}
-      >
-        <View style={styles.priorityText}>
-          <Text style={styles.priorityEyebrow}>{t('support.emergency.priorityLine')}</Text>
-          <Text style={styles.priorityTitle}>{t('support.emergency.supportCenter')}</Text>
-        </View>
-        <View style={styles.priorityGlyph}>
-          <MaterialIcons name="phone-in-talk" size={24} color={palette.onPrimary} />
-        </View>
-      </Pressable>
+        <Pressable
+          testID="support-call-center"
+          accessibilityRole="button"
+          accessibilityLabel={t('support.emergency.supportCenter')}
+          onPress={() =>
+            SUPPORT_CENTER_PHONE === null
+              ? soon('support.emergency.supportCenter')
+              : call(SUPPORT_CENTER_PHONE)
+          }
+          style={styles.priorityButton}
+        >
+          <View style={styles.priorityText}>
+            <Text style={styles.priorityEyebrow}>{t('support.emergency.priorityLine')}</Text>
+            <Text style={styles.priorityTitle}>{t('support.emergency.supportCenter')}</Text>
+          </View>
+          <View style={styles.priorityGlyph}>
+            <MaterialIcons name="phone-in-talk" size={24} color={palette.onPrimary} />
+          </View>
+        </Pressable>
 
-      {/* The pair below it. */}
-      <View style={styles.pairRow}>
-        {/* BOTH CARDS NAVIGATE as of 2026-09-10 — the 2026-08-17 drawing puts a `chevron_right` on
+        {/* The pair below it. */}
+        <View style={styles.pairRow}>
+          {/* BOTH CARDS NAVIGATE as of 2026-09-10 — the 2026-08-17 drawing puts a `chevron_right` on
             each, and the detail screens they point at now exist. The IT Hotline card no longer
             dials in place (ADR-093 decision 4): `CALL NOW` on the hotline screen is the dial, so
             the same call is placed one way rather than two. */}
-        <Pressable
-          testID="support-it-hotline"
-          accessibilityRole="link"
-          accessibilityLabel={t('support.emergency.itHotline')}
-          onPress={onOpenHotline}
-          style={styles.pairCard}
-        >
-          <View style={styles.pairHead}>
-            <MaterialIcons name="shield" size={22} color={palette.danger} />
-            <MaterialIcons name="chevron-right" size={18} color={palette.muted} />
-          </View>
-          <Text style={styles.pairTitle}>{t('support.emergency.itHotline')}</Text>
-        </Pressable>
-
-        {/* Its "coming soon" note is GONE. The chat screen exists; what is not built is the ticket
-            endpoint behind it, and `HelpChatDocument` states that on a press rather than here. */}
-        <Pressable
-          testID="support-quick-chat"
-          accessibilityRole="link"
-          accessibilityLabel={t('support.emergency.quickChat')}
-          onPress={onOpenChat}
-          style={styles.pairCard}
-        >
-          <View style={styles.pairHead}>
-            <MaterialIcons name="chat-bubble" size={22} color={palette.accent} />
-            <MaterialIcons name="chevron-right" size={18} color={palette.muted} />
-          </View>
-          <Text style={styles.pairTitle}>{t('support.emergency.quickChat')}</Text>
-        </Pressable>
-      </View>
-
-      <Text style={styles.sectionHeading}>{t('support.troubleshooting.heading')}</Text>
-
-      {/* One bordered container, hairline-separated rows — the drawing's `gap-px` list. */}
-      <View style={styles.topicList}>
-        {TOPICS.map((topic, index) => {
-          const open = openIds.includes(topic.id);
-          const titleKey = `support.troubleshooting.${topic.id}.title`;
-          return (
-            <View key={topic.id} style={index > 0 ? styles.topicDivider : undefined}>
-              <Pressable
-                testID={`support-topic-${topic.id}`}
-                accessibilityRole="button"
-                accessibilityState={{ expanded: open }}
-                accessibilityLabel={t(titleKey)}
-                onPress={() => toggle(topic.id)}
-                style={styles.topicHeader}
-              >
-                <MaterialIcons name={topic.icon} size={22} color={palette.muted} />
-                <Text style={styles.topicTitle}>{t(titleKey)}</Text>
-                {/* CHEVRON RIGHT when the row is closed (product-owner decision 2026-09-10), not
-                    the drawing's `expand_more`. Open, it turns down onto the answer it revealed. */}
-                <MaterialIcons
-                  name={open ? 'expand-more' : 'chevron-right'}
-                  size={24}
-                  color={palette.muted}
-                />
-              </Pressable>
-              {open ? (
-                <Text testID={`support-topic-${topic.id}-answer`} style={styles.topicAnswer}>
-                  {t(`support.troubleshooting.${topic.id}.answer`)}
-                </Text>
-              ) : null}
+          <Pressable
+            testID="support-it-hotline"
+            accessibilityRole="link"
+            accessibilityLabel={t('support.emergency.itHotline')}
+            onPress={onOpenHotline}
+            style={styles.pairCard}
+          >
+            <View style={styles.pairHead}>
+              <MaterialIcons name="shield" size={22} color={palette.danger} />
+              <MaterialIcons name="chevron-right" size={18} color={palette.muted} />
             </View>
-          );
-        })}
-      </View>
+            <Text style={styles.pairTitle}>{t('support.emergency.itHotline')}</Text>
+          </Pressable>
 
-      {footer}
-    </ScrollView>
+          {/* Its "coming soon" note is GONE. The chat screen exists; what is not built is the ticket
+            endpoint behind it, and `HelpChatDocument` states that on a press rather than here. */}
+          <Pressable
+            testID="support-quick-chat"
+            accessibilityRole="link"
+            accessibilityLabel={t('support.emergency.quickChat')}
+            onPress={onOpenChat}
+            style={styles.pairCard}
+          >
+            <View style={styles.pairHead}>
+              <MaterialIcons name="chat-bubble" size={22} color={palette.accent} />
+              <MaterialIcons name="chevron-right" size={18} color={palette.muted} />
+            </View>
+            <Text style={styles.pairTitle}>{t('support.emergency.quickChat')}</Text>
+          </Pressable>
+        </View>
+
+        <Text style={styles.sectionHeading}>{t('support.troubleshooting.heading')}</Text>
+
+        {/* One bordered container, hairline-separated rows — the drawing's `gap-px` list. */}
+        <View style={styles.topicList}>
+          {TOPICS.map((topic, index) => {
+            const open = openIds.includes(topic.id);
+            const titleKey = `support.troubleshooting.${topic.id}.title`;
+            return (
+              <View key={topic.id} style={index > 0 ? styles.topicDivider : undefined}>
+                <Pressable
+                  testID={`support-topic-${topic.id}`}
+                  accessibilityRole="button"
+                  accessibilityState={{ expanded: open }}
+                  accessibilityLabel={t(titleKey)}
+                  onPress={() => toggle(topic.id)}
+                  style={styles.topicHeader}
+                >
+                  <MaterialIcons name={topic.icon} size={22} color={palette.muted} />
+                  <Text style={styles.topicTitle}>{t(titleKey)}</Text>
+                  {/* CHEVRON RIGHT when the row is closed (product-owner decision 2026-09-10), not
+                    the drawing's `expand_more`. Open, it turns down onto the answer it revealed. */}
+                  <MaterialIcons
+                    name={open ? 'expand-more' : 'chevron-right'}
+                    size={24}
+                    color={palette.muted}
+                  />
+                </Pressable>
+                {open ? (
+                  <Text testID={`support-topic-${topic.id}-answer`} style={styles.topicAnswer}>
+                    {t(`support.troubleshooting.${topic.id}.answer`)}
+                  </Text>
+                ) : null}
+              </View>
+            );
+          })}
+        </View>
+
+        {footer}
+      </ScrollView>
+    </View>
   );
 }
 
 function makeStyles(palette: Palette) {
   return StyleSheet.create({
+    frame: { flex: 1 },
     scroll: { flex: 1 },
     content: { paddingHorizontal: spacing.lg, paddingTop: spacing.lg, gap: spacing.md },
 
-    statusCard: {
-      borderWidth: 1,
-      borderRadius: radius.lg,
-      backgroundColor: palette.surface,
-      padding: spacing.md,
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      gap: spacing.sm,
-    },
-    statusLeft: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-    // 999 — a documented circle, not a radius on the scale (§32.7).
-    statusDot: { width: 10, height: 10, borderRadius: 999 },
-    statusLabel: {
-      fontFamily: fontFamily.semibold,
-      fontSize: 11,
-      letterSpacing: 1.5,
-      textTransform: 'uppercase',
-    },
-    statusTime: {
-      color: palette.muted,
-      fontFamily: fontFamily.regular,
-      fontSize: typography.label.fontSize,
-    },
-
-    searchRow: {
-      minHeight: touchTarget.formInput,
-      borderWidth: 1,
-      borderColor: palette.border,
-      borderRadius: radius.lg,
-      backgroundColor: palette.surface,
-      paddingHorizontal: spacing.md,
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: spacing.sm,
-    },
-    searchPlaceholder: {
-      flex: 1,
-      color: palette.muted,
-      fontFamily: fontFamily.regular,
-      fontSize: typography.caption.fontSize,
-    },
-    searchInput: {
-      flex: 1,
-      color: palette.text,
-      fontFamily: fontFamily.regular,
-      fontSize: typography.caption.fontSize,
-      // RN gives a TextInput vertical padding of its own on Android; zeroing it keeps the row the
-      // height the container asks for instead of the font's.
-      paddingVertical: 0,
-    },
-    chip: {
-      paddingHorizontal: spacing.xs,
-      paddingVertical: 2,
-      borderRadius: radius.xl,
-      borderWidth: 1,
-      borderColor: palette.border,
-      backgroundColor: palette.elevated,
-    },
-    chipText: {
-      color: palette.muted,
-      fontFamily: fontFamily.medium,
-      fontSize: 10,
-      letterSpacing: 0.5,
-      textTransform: 'uppercase',
-    },
-
+    // ── Featured article ──────────────────────────────────────────────────────────────────────
     sectionHeading: {
       marginTop: spacing.sm,
       color: palette.muted,

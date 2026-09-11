@@ -5,8 +5,9 @@
 //
 // A child of the Support Centre on both sides of login, reached by the chevron the drawing puts on
 // its Help Chat card. The chat is open pre-auth AND post-auth (ADR-093 decision 3), which is why
-// there are two routes and one document — the shape `SupportCenterDocument` and
-// `PrivacyPolicyDocument` already use.
+// there are two routes and one document — the shape `PrivacyPolicyDocument` uses.
+// (`SupportCenterDocument` was the other example until 2026-09-11; the Support Centre is two
+// separate screens now, so it no longer illustrates this.)
 //
 // ── COMING SOON: WHAT IS INERT, AND WHAT HAPPENS WHEN IT IS PRESSED ────────────────────────────
 //

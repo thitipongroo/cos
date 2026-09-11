@@ -1,17 +1,38 @@
-// Support Center — PRE-AUTH route (mockup/mobile/01_authen/07_get_help/01_support_center, WITHDRAWN
-// 2026-08-15). The screen stands (ADR-085) — it now has neither a drawing nor a screenshot, since
-// docs/screens/android/01-authen/05-get-support/ was retired on 2026-08-17 and
-// capture-android-support.mjs was deleted with it. That makes this header, together with
-// components/SupportCenterDocument.tsx, the record of what the screen is. It is deliberately NOT
-// repointed at `mockup/mobile/support_center/01_dashboard`: that drawing was added by a different,
-// earlier commit with no rename record linking the two, and the files differ (329 lines against 293),
-// so calling it the successor would assert something unverified (product-owner decision 2026-08-16).
+// Support Center — PRE-AUTH route. DRAWING: mockup/mobile/01_authen/05_get_help/01_home_support.
+//
+// ── ITS JOB IS ONE JOB, AND THAT WAS SETTLED ON 2026-09-11 ──────────────────────────────────────
+//
+// This screen helps a person who CANNOT GET IN. System status, the emergency numbers, field
+// troubleshooting, and the FIELD ASSISTANT panel — nothing else, because nothing else is useful to
+// someone standing outside the door.
+//
+// It briefly held more. When Stitch redrew `mockup/mobile/support_center/01_dashboard` on
+// 2026-09-11, that drawing's four new sections — eight help categories, Top FAQs, a featured
+// article and a pinned footer — went into the document BOTH routes shared, so this screen got them
+// too. The first Android capture is what ended it: 5,556px tall, and half of it answering "how do I
+// use this product" on a surface reached only by someone who cannot yet use it. The product owner
+// split the two screens the same day.
+//
+// So the redrawn Stitch screen is the POST-AUTH one (components/SupportHubDocument.tsx), this one
+// keeps `01_home_support`, and what genuinely overlaps — the status card and the search row — lives
+// in components/SupportPrimitives.tsx rather than being copied into both.
+//
+//   THE SUCCESSOR QUESTION, for anyone reading the history: `01_authen/07_get_help/01_support_center`
+//   was WITHDRAWN 2026-08-15 and `support_center/01_dashboard` was deliberately NOT treated as its
+//   successor — a different commit, no rename record, different content (product-owner decision
+//   2026-08-16). That ruling was never overturned. It was made MOOT: the product owner chose the
+//   redrawn file by name for the OTHER route.
+//
+// This screen still has no screenshot of its own beyond
+// docs/screens/android/01-authen/05-get-help/01-home-support.png — the earlier
+// 01-authen/05-get-support/ folder was retired on 2026-08-17 and capture-android-support.mjs was
+// deleted with it.
 //
 // NO LONGER PRE-AUTH ONLY (product-owner decision 2026-08-17). This route keeps the (auth) group and
 // the OTP step's "GET SUPPORT" entry, but the Support Centre now also has a POST-AUTH route at
 // app/(app)/support.tsx, opened by the signed-in TopBar's "?" — which until that decision showed a
-// "coming soon" note. The two are NOT the same screen: see SupportCenterDocument.tsx for what they
-// share and §32.7 "Support Centre" for what each adds.
+// "coming soon" note. The two are NOT the same screen, and since 2026-09-11 they are not even the
+// same document: see §32.7 "Support Centre" for what each one is for.
 //
 //   Why a second route rather than linking here: AuthGate in app/_layout.tsx redirects an
 //   authenticated user out of the (auth) group (`isAuthenticated && inAuthGroup → /(app)/home`), so a
@@ -27,7 +48,7 @@
 // `paletteFor('dark')` maps field-for-field onto the `darkColors.*` this screen used before the
 // 2026-08-17 extraction, so nothing about its appearance changed.
 //
-// WHAT THIS ROUTE ADDS TO THE SHARED DOCUMENT: the FIELD ASSISTANT panel, and nothing else. It keeps
+// WHAT THIS ROUTE ADDS TO THE DOCUMENT: the FIELD ASSISTANT panel, and nothing else. It keeps
 // its frame but NOT the drawn copy. The mockup has it assert "you're in Sector 7" and a known
 // cellular-repeater outage; there is no sector, zone or outage feed anywhere in the product, so that
 // text would be invented. It says what is actually knowable: the device's connectivity and whether
@@ -43,7 +64,8 @@ import { useRouter } from 'expo-router';
 import Constants from 'expo-constants';
 import { useT } from '../../i18n';
 import { useNetworkStatus } from '../../hooks/useNetworkStatus';
-import { SupportCenterDocument, useBackendHealth } from '../../components/SupportCenterDocument';
+import { SupportCenterDocument } from '../../components/SupportCenterDocument';
+import { useBackendHealth } from '../../components/SupportPrimitives';
 import { paletteFor } from '../../theme/palette';
 import { darkScreen } from '../../theme/screenStyles';
 import { darkColors, fontFamily, radius, spacing, typography } from '../../theme/tokens';

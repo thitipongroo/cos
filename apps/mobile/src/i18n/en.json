@@ -501,10 +501,12 @@
       "checking": "Checking system status",
       "lastChecked": "Last checked: {when}",
       "justNow": "just now",
-      "minutesAgo": "{minutes} min ago"
+      "minutesAgo": "{minutes} min ago",
+      "heading": "System status"
     },
     "search": {
-      "placeholder": "Search help articles…"
+      "placeholder": "Search help articles…",
+      "hubPlaceholder": "Search guides, tutorials, or system status…"
     },
     "comingSoon": "Coming soon",
     "emergency": {
@@ -563,6 +565,60 @@
     "modules": {
       "heading": "What your role can open",
       "note": "The modules your role has access to. Not a help-article list — this platform has none."
+    },
+    "categories": {
+      "siteReporting": {
+        "title": "Site reporting",
+        "role": "Site Eng / Worker"
+      },
+      "safety": {
+        "title": "Safety",
+        "role": "Safety Officer"
+      },
+      "finance": {
+        "title": "Finance & budget",
+        "role": "Finance / PM"
+      },
+      "procurement": {
+        "title": "Procurement & materials",
+        "role": "Procurement"
+      },
+      "tasks": {
+        "title": "Project schedule",
+        "role": "All Field Roles"
+      },
+      "bim": {
+        "title": "BIM & Twin",
+        "role": "Site / PM / Exec"
+      },
+      "crm": {
+        "title": "CRM & Sales",
+        "role": "CRM Manager"
+      },
+      "admin": {
+        "title": "User & Admin",
+        "role": "Tenant Admin"
+      }
+    },
+    "faq": {
+      "heading": "Top FAQs",
+      "viewAll": "View all",
+      "exportDailyLogs": "How do I export Daily Logs?",
+      "addFieldMembers": "Adding field team members",
+      "progressBilling": "Setting up progress billing",
+      "cloudSync": "Cloud sync troubleshooting"
+    },
+    "article": {
+      "heading": "Featured tutorial",
+      "tag": "NEW TUTORIAL",
+      "title": "Mastering AI Site Estimation",
+      "byline": "Product Team",
+      "meta": "{minutes} min read • By {author}"
+    },
+    "footer": {
+      "liveChat": "Live Chat",
+      "emailSupport": "Email Support",
+      "available": "Technical support is available at this address"
     }
   },
   "supportHotline": {

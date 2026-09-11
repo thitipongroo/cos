@@ -1037,6 +1037,8 @@ paths:
           description: RFQ not CLOSED or no quotations
   /procurement/purchase-orders:
     get:
+      description: |
+        VIEWER may call this since 2026-09-11 (ADR-103). The role has read on this module in §6.8 and every GET here answered 403 for it until then; the six routes its own screens read were opened per-route rather than by widening the shared READ_ROLES constant, which 24 other handlers use.
       tags:
         - Purchase Orders
       summary: List purchase orders across the tenant (filterable) — AIP-132
@@ -1407,6 +1409,8 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
   /procurement/deliveries:
     get:
+      description: |
+        VIEWER may call this since 2026-09-11 (ADR-103). The role has read on this module in §6.8 and every GET here answered 403 for it until then; the six routes its own screens read were opened per-route rather than by widening the shared READ_ROLES constant, which 24 other handlers use.
       tags:
         - Deliveries
       summary: List deliveries across the tenant (filterable by PO) — AIP-132

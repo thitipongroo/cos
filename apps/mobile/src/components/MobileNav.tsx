@@ -259,8 +259,10 @@ export function MobileNav() {
           pushes here from every screen. */}
       {/* Post-auth Privacy Policy — drawer entry (PO 2026-08-04); same document as the (auth) route. */}
       <Tabs.Screen name="privacy-policy" options={{ href: null }} />
-      {/* Post-auth Support Centre — the TopBar "?" (PO 2026-08-17); shares SupportCenterDocument with
-          the (auth) route but adds identity, project and diagnostics. It is NOT a tab for any role:
+      {/* Post-auth Support Centre — the TopBar "?" (PO 2026-08-17). It renders `SupportHubDocument`,
+          its OWN screen: the Support Centre split in two on 2026-09-11 and this side is the redrawn
+          `mockup/mobile/support_center/01_dashboard`, while `(auth)/support` keeps the help that
+          matters to someone who cannot sign in. It is NOT a tab for any role:
           the withdrawn mockup drew a Field | Tasks | Support | Profile bar, which is no role's set,
           and §32.7 fixes each role at exactly four tabs. */}
       <Tabs.Screen name="support" options={{ href: null }} />

@@ -2,7 +2,9 @@
 // capture-android-*.mjs (deliberately NOT Detox; see capture-android-login.mjs for why).
 //
 // Produces, under docs/screens/android/01-authen/05-get-help/:
-//   01-home-support      the Support Centre, with the two cards that now carry chevrons
+//   01-home-support      the Support Centre — redrawn 2026-09-11 (mockup/mobile/support_center/
+//                        01_dashboard): Quick Help categories, Top FAQs, a featured article and a
+//                        pinned support footer, on top of what was already there
 //   02-hotline-details   the IT Support Hotline detail screen
 //   03-help-chat         the Help Chat screen
 //
@@ -67,7 +69,7 @@ async function dump() {
 function centreOf(node) {
   const m = /bounds="\[(\d+),(\d+)\]\[(\d+),(\d+)\]"/.exec(node);
   if (!m) throw new Error('capture: node has no bounds');
-  return { x: (+m[1] + +m[3]) / 2 | 0, y: (+m[2] + +m[4]) / 2 | 0 };
+  return { x: ((+m[1] + +m[3]) / 2) | 0, y: ((+m[2] + +m[4]) / 2) | 0 };
 }
 
 const byId = (id) => (n) => n.includes(`resource-id="${id}"`);
@@ -102,8 +104,25 @@ function grab(path) {
   writeFileSync(path, png);
 }
 
+/**
+ * The band a pinned overlay occupies, read from its OWN node rather than guessed.
+ *
+ * The 2026-09-11 redraw gave the Support Centre a footer pinned over the scroll area, and the first
+ * capture of it stitched SIX copies of that footer down the page — one per viewport — each sitting
+ * on top of the content behind it. `stitch-fullpage.py --fab` exists for exactly this: erase the
+ * overlay from every shot, composite it once at the foot. It needs the band in viewport pixels, and
+ * measuring the live node is the only way that survives a copy change or a taller safe area.
+ */
+async function bandOf(pred, what) {
+  const node = (await dump()).find((n) => pred(n) && n.includes('bounds='));
+  if (!node) return null;
+  const m = /bounds="\[(\d+),(\d+)\]\[(\d+),(\d+)\]"/.exec(node);
+  if (!m) throw new Error(`capture: ${what} has no bounds`);
+  return [Number(m[1]), Number(m[2]), Number(m[3]), Number(m[4])];
+}
+
 /** Rewind, shoot descending viewports, stitch ONE full-page PNG (docs/screens/android/README.md). */
-async function stitchFull(name, shots = 6) {
+async function stitchFull(name, shots = 6, fab = null) {
   const dest = join(OUT, `${name}.png`);
   mkdirSync(dirname(dest), { recursive: true });
   for (let i = 0; i < 6; i++) {
@@ -121,10 +140,13 @@ async function stitchFull(name, shots = 6) {
       await delay(1500);
     }
   }
+  const extra = fab === null ? [] : ['--fab', fab.join(',')];
   process.stdout.write(
-    execFileSync('python', [STITCH, dest, String(TOP), String(BOT), '--max-scroll', '900', ...frames], {
-      encoding: 'utf-8',
-    }),
+    execFileSync(
+      'python',
+      [STITCH, dest, String(TOP), String(BOT), ...extra, '--max-scroll', '900', ...frames],
+      { encoding: 'utf-8' },
+    ),
   );
   console.log(`  stitched ${name}.png`);
 }
@@ -159,7 +181,16 @@ async function main() {
   await find(byId('support'), 'Support Centre', 30);
   // One health probe settles behind the status card.
   await delay(4000);
-  if (wanted('home')) await stitchFull('01-home-support');
+  if (wanted('home')) {
+    // The sticky footer is pinned over the scroll area, so it must be erased from every shot and
+    // drawn once — otherwise the stitch shows it six times, each copy over the content behind it.
+    // The band comes from the LIVE node: the footer's height depends on whether the availability
+    // line renders and on this device's safe area, neither of which a constant can know.
+    const footer = await bandOf(byId('support-live-chat'), 'live chat button');
+    const fab = footer === null ? null : [0, footer[1] - 24, 1080, BOT];
+    if (fab === null) console.log('  · no sticky footer on screen — stitching without --fab');
+    await stitchFull('01-home-support', 6, fab);
+  }
 
   if (wanted('hotline')) {
     console.log('· IT Support Hotline');

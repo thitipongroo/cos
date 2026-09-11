@@ -20,7 +20,9 @@ const OTP_PHONE = process.env['E2E_OTP_PHONE'] ?? '0811000002';
 const OTP_CODE = process.env['E2E_TEST_OTP'] ?? '123456';
 
 const SDK = process.env['ANDROID_HOME'] ?? process.env['ANDROID_SDK_ROOT'] ?? '';
-const ADB = SDK ? join(SDK, 'platform-tools', process.platform === 'win32' ? 'adb.exe' : 'adb') : 'adb';
+const ADB = SDK
+  ? join(SDK, 'platform-tools', process.platform === 'win32' ? 'adb.exe' : 'adb')
+  : 'adb';
 const adb = (...a) => execFileSync(ADB, a, { maxBuffer: 16 * 1024 * 1024 }).toString();
 const delay = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -69,7 +71,9 @@ async function tapUserByName(name) {
 }
 async function dismissDevBanners() {
   for (let i = 0; i < 6; i++) {
-    const node = (await dump()).find((n) => n.includes('content-desc="!,') && n.includes('clickable="true"'));
+    const node = (await dump()).find(
+      (n) => n.includes('content-desc="!,') && n.includes('clickable="true"'),
+    );
     if (!node) return;
     const m = /bounds="\[(\d+),(\d+)\]\[(\d+),(\d+)\]"/.exec(node);
     if (!m) return;
@@ -129,7 +133,11 @@ async function stitchFull(name, top = 180, bot = 1780) {
     }
   }
   const out = join(OUT, `${name}.png`);
-  process.stdout.write(execFileSync('python', [STITCH, out, String(top), String(bot), ...shots], { encoding: 'utf-8' }));
+  process.stdout.write(
+    execFileSync('python', [STITCH, out, String(top), String(bot), ...shots], {
+      encoding: 'utf-8',
+    }),
+  );
   console.log(`  stitched ${name}.png`);
 }
 

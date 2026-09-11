@@ -4,8 +4,10 @@
 // That card no longer dials in place; `CALL NOW` on this screen is the dial (§32.7, ADR-093
 // decision 4).
 //
-// TWO ROUTES, ONE DOCUMENT — the shape `SupportCenterDocument` and `PrivacyPolicyDocument` already
-// use. The post-auth twin is `app/(app)/support-hotline.tsx`. It exists for the same reason theirs
+// TWO ROUTES, ONE DOCUMENT — the shape `PrivacyPolicyDocument` uses. `SupportCenterDocument` was
+// the other example until 2026-09-11, when the Support Centre STOPPED being one document rendered
+// twice: it is two screens now, doing two jobs, and the hotline is not. This one really is one
+// document, so the shape still applies here. The post-auth twin is `app/(app)/support-hotline.tsx`. It exists for the same reason theirs
 // do: AuthGate in `app/_layout.tsx` redirects an authenticated user out of the `(auth)` group
 // (`isAuthenticated && inAuthGroup → /(app)/home`), so a push from a signed-in screen to this route
 // would land on Home.

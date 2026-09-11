@@ -226,7 +226,10 @@ async function main() {
     // or the portfolio tiles are photographed showing fewer projects than the manager has.
     await delay(4000);
     // Measured, not hardcoded: the button's own bounds from the live view hierarchy.
-    await stitchFull('03-Finance/01-pm-finance-dashboard', await boundsOf(byId('finance-fab'), 'Finance FAB'));
+    await stitchFull(
+      '03-Finance/01-pm-finance-dashboard',
+      await boundsOf(byId('finance-fab'), 'Finance FAB'),
+    );
   }
 
   if (wanted('more')) {

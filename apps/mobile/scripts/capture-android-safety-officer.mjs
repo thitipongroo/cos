@@ -271,10 +271,7 @@ async function main() {
     await tap(byId('permits-tab'), 'Permits tab');
     await find(byId('permits-screen'), 'permits-screen', 20);
     await delay(2500);
-    await stitchFull(
-      '04-Permits/01-sa-permits',
-      await boundsOf(byId('permit-fab'), 'Permits FAB'),
-    );
+    await stitchFull('04-Permits/01-sa-permits', await boundsOf(byId('permit-fab'), 'Permits FAB'));
   }
 
   // THE REQUEST FORM, behind the Permits FAB (mockup 04_permit_management/02_permit_request).

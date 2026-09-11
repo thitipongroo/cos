@@ -1,4 +1,4 @@
-<!DOCTYPE html><html class="dark" lang="en"><head>
+<!DOCTYPE html><html class="dark" lang="en" style=""><head>
 <meta charset="utf-8">
 <meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport">
 <title>Construction OS - Support Center</title>
@@ -152,7 +152,7 @@
 <span class="material-symbols-outlined text-primary">arrow_back</span>
 </button>
 <div class="flex flex-col">
-<span class="font-display-web text-[20px] leading-tight text-primary tracking-tight font-extrabold">CONSTRUCTION OS</span>
+
 <span class="font-tiny-web text-on-surface-variant uppercase tracking-widest">Support Center</span>
 </div>
 </div>
@@ -168,7 +168,7 @@
 <div class="w-3 h-3 bg-mobile-success rounded-full pulse-green"></div>
 <div>
 <h3 class="font-label-mobile text-on-surface">All Systems Operational</h3>
-<p class="font-tiny-web text-on-surface-variant">ระบบทำงานปกติ • Last checked 2m ago</p>
+<p class="font-tiny-web text-on-surface-variant">Last checked 2m ago</p>
 </div>
 </div>
 <span class="material-symbols-outlined text-on-surface-variant text-[20px]">chevron_right</span>
@@ -178,40 +178,129 @@
 <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant">search</span>
 <input class="w-full h-touch-target bg-surface-container border-none rounded-xl pl-12 pr-4 text-body-mobile focus:ring-2 focus:ring-primary placeholder:text-on-surface-variant/50" placeholder="Search guides, tutorials, or system status..." type="text">
 <div class="mt-2 flex gap-2">
-<span class="font-tiny-web text-on-surface-variant">Thai: ค้นหาคู่มือหรือสถานะระบบ...</span>
+
 </div>
 </section>
 <!-- Quick Help Categories (Bento) -->
-<section class="grid grid-cols-2 gap-space-3">
-<button class="glass-card rounded-xl p-space-4 flex flex-col items-start gap-space-2 text-left active:scale-95 transition-all">
-<div class="w-10 h-10 bg-primary-container/20 rounded-lg flex items-center justify-center mb-2">
-<span class="material-symbols-outlined text-primary">rocket_launch</span>
-</div>
-<span class="font-label-mobile text-on-surface">Getting Started</span>
-<span class="font-tiny-web text-on-surface-variant uppercase">เริ่มต้นใช้งาน</span>
+<section class="grid grid-cols-2 gap-space-3"><!-- 1. Site Reporting -->
+<button class="glass-card rounded-xl p-space-3 flex flex-col items-start gap-space-2 text-left active:scale-95 transition-all border-l-4 border-primary hover:bg-surface-container/95 group relative overflow-hidden">
+  <div class="flex justify-between items-start w-full">
+    <div class="w-9 h-9 bg-primary-container/20 rounded-lg flex items-center justify-center text-primary">
+      <span class="material-symbols-outlined text-[20px]">description</span>
+    </div>
+    <span class="material-symbols-outlined text-on-surface-variant text-[20px] transition-transform group-hover:translate-x-0.5">chevron_right</span>
+  </div>
+  <div class="w-full mt-1">
+    <span class="font-tiny-web text-primary block text-[10px] tracking-wide uppercase font-semibold">Site Eng / Worker</span>
+    
+    <p class="font-tiny-web text-on-surface-variant line-clamp-1 opacity-80">รายงานหน้างาน</p>
+  </div>
 </button>
-<button class="glass-card rounded-xl p-space-4 flex flex-col items-start gap-space-2 text-left active:scale-95 transition-all">
-<div class="w-10 h-10 bg-secondary/10 rounded-lg flex items-center justify-center mb-2">
-<span class="material-symbols-outlined text-secondary">manage_accounts</span>
-</div>
-<span class="font-label-mobile text-on-surface">User Management</span>
-<span class="font-tiny-web text-on-surface-variant uppercase">จัดการผู้ใช้</span>
+
+<!-- 2. Safety & Permits -->
+<button class="glass-card rounded-xl p-space-3 flex flex-col items-start gap-space-2 text-left active:scale-95 transition-all border-l-4 border-mobile-danger hover:bg-surface-container/95 group relative overflow-hidden">
+  <div class="flex justify-between items-start w-full">
+    <div class="w-9 h-9 bg-error-container/30 rounded-lg flex items-center justify-center text-error">
+      <span class="material-symbols-outlined text-[20px]">health_and_safety</span>
+    </div>
+    <span class="material-symbols-outlined text-on-surface-variant text-[20px] transition-transform group-hover:translate-x-0.5">chevron_right</span>
+  </div>
+  <div class="w-full mt-1">
+    <span class="font-tiny-web text-error block text-[10px] tracking-wide uppercase font-semibold">Safety Officer</span>
+    
+    <p class="font-tiny-web text-on-surface-variant line-clamp-1 opacity-80">ความปลอดภัย</p>
+  </div>
 </button>
-<button class="glass-card rounded-xl p-space-4 flex flex-col items-start gap-space-2 text-left active:scale-95 transition-all">
-<div class="w-10 h-10 bg-mobile-warning/10 rounded-lg flex items-center justify-center mb-2">
-<span class="material-symbols-outlined text-mobile-warning">assessment</span>
-</div>
-<span class="font-label-mobile text-on-surface">Site Reporting</span>
-<span class="font-tiny-web text-on-surface-variant uppercase">รายงานหน้างาน</span>
+
+<!-- 3. Financial & Budget -->
+<button class="glass-card rounded-xl p-space-3 flex flex-col items-start gap-space-2 text-left active:scale-95 transition-all border-l-4 border-mobile-success hover:bg-surface-container/95 group relative overflow-hidden">
+  <div class="flex justify-between items-start w-full">
+    <div class="w-9 h-9 bg-mobile-success/15 rounded-lg flex items-center justify-center text-mobile-success">
+      <span class="material-symbols-outlined text-[20px]">payments</span>
+    </div>
+    <span class="material-symbols-outlined text-on-surface-variant text-[20px] transition-transform group-hover:translate-x-0.5">chevron_right</span>
+  </div>
+  <div class="w-full mt-1">
+    <span class="font-tiny-web text-mobile-success block text-[10px] tracking-wide uppercase font-semibold">Finance / PM</span>
+    
+    <p class="font-tiny-web text-on-surface-variant line-clamp-1 opacity-80">การเงินและงบฯ</p>
+  </div>
 </button>
-<button class="glass-card rounded-xl p-space-4 flex flex-col items-start gap-space-2 text-left active:scale-95 transition-all">
-<div class="w-10 h-10 bg-tertiary/20 rounded-lg flex items-center justify-center mb-2">
-<span class="material-symbols-outlined text-tertiary">payments</span>
-</div>
-<span class="font-label-mobile text-on-surface">Financial Tools</span>
-<span class="font-tiny-web text-on-surface-variant uppercase">เครื่องมือการเงิน</span>
+
+<!-- 4. Procurement & Orders -->
+<button class="glass-card rounded-xl p-space-3 flex flex-col items-start gap-space-2 text-left active:scale-95 transition-all border-l-4 border-mobile-warning hover:bg-surface-container/95 group relative overflow-hidden">
+  <div class="flex justify-between items-start w-full">
+    <div class="w-9 h-9 bg-mobile-warning/15 rounded-lg flex items-center justify-center text-mobile-warning">
+      <span class="material-symbols-outlined text-[20px]">inventory_2</span>
+    </div>
+    <span class="material-symbols-outlined text-on-surface-variant text-[20px] transition-transform group-hover:translate-x-0.5">chevron_right</span>
+  </div>
+  <div class="w-full mt-1">
+    <span class="font-tiny-web text-mobile-warning block text-[10px] tracking-wide uppercase font-semibold">Procurement</span>
+    
+    <p class="font-tiny-web text-on-surface-variant line-clamp-1 opacity-80">จัดซื้อและพัสดุ</p>
+  </div>
 </button>
-</section>
+
+<!-- 5. Tasks & Progress -->
+<button class="glass-card rounded-xl p-space-3 flex flex-col items-start gap-space-2 text-left active:scale-95 transition-all border-l-4 border-primary hover:bg-surface-container/95 group relative overflow-hidden">
+  <div class="flex justify-between items-start w-full">
+    <div class="w-9 h-9 bg-primary-container/20 rounded-lg flex items-center justify-center text-primary">
+      <span class="material-symbols-outlined text-[20px]">task_alt</span>
+    </div>
+    <span class="material-symbols-outlined text-on-surface-variant text-[20px] transition-transform group-hover:translate-x-0.5">chevron_right</span>
+  </div>
+  <div class="w-full mt-1">
+    <span class="font-tiny-web text-primary block text-[10px] tracking-wide uppercase font-semibold">All Field Roles</span>
+    
+    <p class="font-tiny-web text-on-surface-variant line-clamp-1 opacity-80">แผนงานโครงการ</p>
+  </div>
+</button>
+
+<!-- 6. BIM & Digital Twin -->
+<button class="glass-card rounded-xl p-space-3 flex flex-col items-start gap-space-2 text-left active:scale-95 transition-all border-l-4 border-secondary hover:bg-surface-container/95 group relative overflow-hidden">
+  <div class="flex justify-between items-start w-full">
+    <div class="w-9 h-9 bg-secondary/15 rounded-lg flex items-center justify-center text-secondary">
+      <span class="material-symbols-outlined text-[20px]">view_in_ar</span>
+    </div>
+    <span class="material-symbols-outlined text-on-surface-variant text-[20px] transition-transform group-hover:translate-x-0.5">chevron_right</span>
+  </div>
+  <div class="w-full mt-1">
+    <span class="font-tiny-web text-secondary block text-[10px] tracking-wide uppercase font-semibold">Site / PM / Exec</span>
+    <h4 class="font-label-mobile text-on-surface text-sm mt-0.5 line-clamp-1">BIM &amp; Twin</h4>
+    
+  </div>
+</button>
+
+<!-- 7. CRM & Sales -->
+<button class="glass-card rounded-xl p-space-3 flex flex-col items-start gap-space-2 text-left active:scale-95 transition-all border-l-4 border-tertiary hover:bg-surface-container/95 group relative overflow-hidden">
+  <div class="flex justify-between items-start w-full">
+    <div class="w-9 h-9 bg-tertiary/20 rounded-lg flex items-center justify-center text-tertiary">
+      <span class="material-symbols-outlined text-[20px]">groups</span>
+    </div>
+    <span class="material-symbols-outlined text-on-surface-variant text-[20px] transition-transform group-hover:translate-x-0.5">chevron_right</span>
+  </div>
+  <div class="w-full mt-1">
+    <span class="font-tiny-web text-tertiary block text-[10px] tracking-wide uppercase font-semibold">CRM Manager</span>
+    <h4 class="font-label-mobile text-on-surface text-sm mt-0.5 line-clamp-1">CRM &amp; Sales</h4>
+    
+  </div>
+</button>
+
+<!-- 8. User & Admin -->
+<button class="glass-card rounded-xl p-space-3 flex flex-col items-start gap-space-2 text-left active:scale-95 transition-all border-l-4 border-outline hover:bg-surface-container/95 group relative overflow-hidden">
+  <div class="flex justify-between items-start w-full">
+    <div class="w-9 h-9 bg-surface-variant rounded-lg flex items-center justify-center text-on-surface-variant">
+      <span class="material-symbols-outlined text-[20px]">manage_accounts</span>
+    </div>
+    <span class="material-symbols-outlined text-on-surface-variant text-[20px] transition-transform group-hover:translate-x-0.5">chevron_right</span>
+  </div>
+  <div class="w-full mt-1">
+    <span class="font-tiny-web text-on-surface-variant block text-[10px] tracking-wide uppercase font-semibold">Tenant Admin</span>
+    <h4 class="font-label-mobile text-on-surface text-sm mt-0.5 line-clamp-1">User &amp; Admin</h4>
+    
+  </div>
+</button></section>
 <!-- Top FAQs -->
 <section class="space-y-space-3">
 <div class="flex items-center justify-between">
@@ -270,10 +359,7 @@
                 Email Support
             </button>
 </div>
-<p class="text-center font-tiny-web text-on-surface-variant">
-            Technical Support available 24/7 for Enterprise Clients<br>
-<span class="text-secondary/80">ฝ่ายสนับสนุนทางเทคนิคพร้อมให้บริการตลอด 24 ชั่วโมง</span>
-</p>
+<p class="text-center font-tiny-web text-on-surface-variant"><span class="text-secondary/80">Technical Support available 24/7</span></p>
 </footer>
 <!-- Background Decoration -->
 <div class="fixed inset-0 pointer-events-none -z-10 opacity-30">
@@ -290,4 +376,10 @@
             });
         });
     </script>
+
+
+
+
+
+
 </body></html>

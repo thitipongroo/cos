@@ -146,8 +146,7 @@ async function dismissPermissionDialogs() {
     // rather than by id — `permission_deny_button` was renamed more than once upstream.
     const deny = nodes.find(
       (n) =>
-        /text="(Don.t allow|Deny|ไม่อนุญาต)"/.test(n) ||
-        n.includes('id/permission_deny_button'),
+        /text="(Don.t allow|Deny|ไม่อนุญาต)"/.test(n) || n.includes('id/permission_deny_button'),
     );
     if (!deny) return;
     const m = /bounds="\[(\d+),(\d+)\]\[(\d+),(\d+)\]"/.exec(deny);
