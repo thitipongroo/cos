@@ -74,7 +74,6 @@
 
 import type { MaterialIcons } from '@expo/vector-icons';
 import { CosRole } from '@cos/types';
-import { CRM_DRAWER_COUNTS } from './mockupFigures';
 import { overflowTabsFor, visibleTabsFor } from './roleTabs';
 
 export interface DrawerLink {
@@ -95,11 +94,59 @@ export interface DrawerLink {
   href?: string;
   labelKey: string;
   icon: keyof typeof MaterialIcons.glyphMap;
+  /**
+   * The screen is not built. The row draws, and SAYS SO on tap — it never pushes.
+   *
+   * Lifted here from the deleted `DrawerRow` on 2026-09-11, when the grouped drawer ended and every
+   * role went flat (product-owner decision). Six CRM_SALES_MANAGER rows carry it and nothing else
+   * does. Drawn rather than dropped because a menu that silently omits most of a role's future
+   * reads as a complete menu — and the convention since 2026-09-04 is that a control the drawings
+   * show but the platform cannot perform is DRAWN and says so when pressed.
+   */
+  comingSoon?: true;
 }
 
 // ── the link catalogue ────────────────────────────────────────────────────────
 // Labels keep the drawer's own wording where the mockups gave it one ("Project overview", "Daily
 // site reports") and reuse the tab label otherwise, so one screen is named one way per surface.
+
+// CRM_SALES_MANAGER's six unbuilt rows. `route` is a KEY, not a destination — see `comingSoon`.
+const CRM_PROPOSAL: DrawerLink = {
+  route: '/crm-proposal',
+  labelKey: 'crm.drawer.proposal',
+  icon: 'draw',
+  comingSoon: true,
+};
+const CRM_TENDERS: DrawerLink = {
+  route: '/crm-tenders',
+  labelKey: 'crm.drawer.tender',
+  icon: 'gavel',
+  comingSoon: true,
+};
+const CRM_CONTRACTS: DrawerLink = {
+  route: '/crm-contracts',
+  labelKey: 'crm.drawer.contracts',
+  icon: 'article',
+  comingSoon: true,
+};
+const CRM_INVITE_OWNER: DrawerLink = {
+  route: '/crm-invite-owner',
+  labelKey: 'crm.drawer.inviteOwner',
+  icon: 'person-add',
+  comingSoon: true,
+};
+const CRM_UNIT_MATRIX: DrawerLink = {
+  route: '/crm-unit-matrix',
+  labelKey: 'crm.drawer.unitMatrix',
+  icon: 'grid-view',
+  comingSoon: true,
+};
+const CRM_HANDOVER: DrawerLink = {
+  route: '/crm-handover',
+  labelKey: 'crm.drawer.handover',
+  icon: 'key',
+  comingSoon: true,
+};
 
 const PROJECTS: DrawerLink = { route: '/projects', labelKey: 'drawer.projects', icon: 'dashboard' };
 const TASKS: DrawerLink = { route: '/tasks', labelKey: 'nav.tabs.tasks', icon: 'assignment' };
@@ -460,6 +507,26 @@ const NOT_DERIVED: readonly { link: DrawerLink; roles: readonly CosRole[] }[] = 
   // "เก็บทั้งสาม เข้าผ่าน drawer" would have kept only one of the three.
   { link: SAFETY, roles: [EXECUTIVE] },
   { link: MORE, roles: [EXECUTIVE] },
+
+  // ── CRM_SALES_MANAGER's six unbuilt rows, flattened 2026-09-11 ──────────────────────────────
+  //
+  // They were a GROUPED menu until the product owner ruled that every role gets the same body
+  // shape. THE FOUR ROWS THAT DID NOT SURVIVE were `/home`, `/leads`, `/opportunities` and
+  // `/customers` — all four are this role's own bottom tabs, and the rule every other role follows
+  // is that a drawer row may not point at one. That rule is not applied here by hand: it lives in
+  // `drawerLinksFor`, which filters any row whose route is a visible tab, and the grouped table was
+  // the one thing bypassing it. Deleting the table applied it.
+  //
+  // The three badges went with the grouping (product-owner decision 2026-09-11). Two were real
+  // counts and one was a registered figure; the standard drawer draws no badge on any row.
+  //
+  // `route` here is a KEY, not a destination — nothing pushes it. See `comingSoon` on DrawerLink.
+  { link: CRM_PROPOSAL, roles: [CRM_SALES_MANAGER] },
+  { link: CRM_TENDERS, roles: [CRM_SALES_MANAGER] },
+  { link: CRM_CONTRACTS, roles: [CRM_SALES_MANAGER] },
+  { link: CRM_INVITE_OWNER, roles: [CRM_SALES_MANAGER] },
+  { link: CRM_UNIT_MATRIX, roles: [CRM_SALES_MANAGER] },
+  { link: CRM_HANDOVER, roles: [CRM_SALES_MANAGER] },
 ];
 
 /**
@@ -585,12 +652,36 @@ export function drawerLinksFor(role: CosRole | null | undefined): readonly Drawe
 /**
  * How many rows the drawer shows before it folds the rest away (PO decision 2026-08-10).
  *
- * Counts the role's own rows only — SHARED_LINKS sits below the divider and is never folded. That
+ * Counts the role's own rows only — SHARED_LINKS sits below the divider, and since 2026-09-11 it is
+ * PINNED against Logout outside the scroll region, so it is neither folded nor scrollable. That
  * mattered when the Support Centre was one of them ("where do I get help" must not itself be two taps
  * deep) and it matters more now that the Privacy Policy is: a notice PDPA §23 requires to remain
- * available must not be hidden behind a "More" row for the six roles whose section overflows.
+ * available must not be hidden behind a "More" row for the roles whose section overflows.
+ *
+ * SEVEN UNTIL 2026-09-11, THEN NINE, THEN EIGHT THE SAME DAY — and the last step was decided by a
+ * PICTURE, which is why the sequence is written out rather than tidied away.
+ *
+ * The rise came from the pinning above: the shared pair used to sit at the END of this list, so
+ * every row a role owned pushed the Privacy Policy further down the same scrolling column, and the
+ * fold was protecting that pair as much as it was keeping the menu readable. Out of the scroll
+ * region the pair cannot be pushed anywhere, so the fold answers only its own question — how many
+ * of a role's rows are worth reading at a glance.
+ *
+ * NINE WAS ONE TOO MANY, AND THE FRAME SHOWED IT. Measured on
+ * `docs/screens/android/02-shared/03-navigation-drawer/04-project-manager.png` (1080×2400 at
+ * 420 dpi, 2.625 px/dp): rows pitch 54.1 dp — `touchTarget.listItem` 52 plus the 2 dp gap — and
+ * EXACTLY EIGHT fit between the profile card and the pinned pair, the eighth centred at 1711 px
+ * against a scroll edge at 1800 px. A ninth would centre at 1853 px. So at nine, the ninth row —
+ * which for every folding role is `More (N)` — sat BELOW the visible edge: the one control that
+ * opens the rest of a role's menu was itself behind a scroll, and five roles were in that state.
+ * Every test passed; only the capture said so.
+ *
+ * EIGHT KEEPS BOTH THINGS. `SITE_ENGINEER`'s eight rows still draw in full, which is what raising
+ * it from seven set out to do, and a folding role draws seven rows plus a `More` that is on screen.
+ * The constant is a readability rule and the viewport is a measurement; they agree at eight on this
+ * device. If a device with a shorter panel ever matters, measure it on a frame — never from here.
  */
-export const DRAWER_MAX_ROWS = 7;
+export const DRAWER_MAX_ROWS = 8;
 
 export interface DrawerSection {
   /** Rows drawn directly. */
@@ -602,17 +693,21 @@ export interface DrawerSection {
 /**
  * The role's section, split at the point where it stops fitting.
  *
- * EXACTLY SEVEN STILL SHOWS SEVEN. Folding at seven-of-seven would replace one row with a "More"
+ * EXACTLY EIGHT STILL SHOWS EIGHT. Folding at eight-of-eight would replace one row with a "More"
  * that reveals one row — a tap that buys nothing. The split happens only when there is genuinely
- * more than fits, and then row seven becomes "More" and carries everything from seven on, so eight
- * rows render as six + More rather than seven + More.
+ * more than fits, and then row eight becomes "More" and carries everything from eight on, so nine
+ * rows render as seven + More rather than eight + More.
  *
- * Six roles need it today: PROJECT_MANAGER and TENANT_ADMIN (19 rows each), EXECUTIVE (18 — it may
- * read almost every module), FINANCE (10), VIEWER (9, whose §6.8 grant is "Procurement (all) R" and
- * "Finance (all) R") and SITE_ENGINEER (8). PROCUREMENT_OFFICER sits on exactly seven and so shows
- * all seven. The counts moved on 2026-08-14, when TENANT_ADMIN and PROJECT_MANAGER stopped taking
- * their drawing verbatim and began deriving as well; the previous note read 17/10/9 and was already
- * one row stale on EXECUTIVE, which gained /permits on 2026-08-13.
+ * Five roles need it at eight, MEASURED 2026-09-11 rather than recalled: PROJECT_MANAGER,
+ * TENANT_ADMIN and EXECUTIVE at 19 rows each, FINANCE and VIEWER at 10. SITE_ENGINEER, which folded
+ * at seven, has 8 and lands exactly on the line — it shows all eight; PROCUREMENT_OFFICER and
+ * CRM_SALES_MANAGER sit on 7.
+ *
+ * THIS NOTE HAS NOW BEEN STALE TWICE, which is why it says how it was counted. It read 17/10/9
+ * until 2026-08-14; it then read 19/19/18/10/9/8 and was wrong on two of those by 2026-09-11 —
+ * EXECUTIVE had reached 19 and VIEWER 10, the latter on the very day `/map` and `/insights` became
+ * its NOT_DERIVED rows. A count in prose ages against a table that keeps moving. Re-derive it with
+ * `drawerLinksFor(role).length` before trusting the numbers above.
  */
 export function drawerSectionFor(role: CosRole | null | undefined): DrawerSection {
   const links = drawerLinksFor(role);
@@ -623,162 +718,29 @@ export function drawerSectionFor(role: CosRole | null | undefined): DrawerSectio
   };
 }
 
-// ── GROUPED DRAWERS ─────────────────────────────────────────────────────────────────────────────
+// ── ONE BODY SHAPE, AND THE ONE THAT ENDED ──────────────────────────────────────────────────────
 //
-// Everything above renders as ONE flat list under a single "Field tools" heading, folded at seven.
-// That is what eleven of the twelve roles still get, unchanged.
+// Everything above renders as ONE flat list under a single "Field tools" heading, folded at eight
+// (seven, then nine, then eight — all on 2026-09-11; see DRAWER_MAX_ROWS).
+// Every role gets it. That became true on 2026-09-11 (product-owner decision); between 2026-09-10
+// and that day CRM_SALES_MANAGER had a GROUPED menu of its own — four titled groups, badges on two
+// rows — because its drawing is that shape and a flat list under one heading could not express it.
 //
-// CRM_SALES_MANAGER's drawer drawing (mockup/mobile/12_crm_manager/05_profile/02_crm_navigation_
-// drawer, from Stitch 2026-09-10) is a different shape: four titled groups, a badge on two rows, and
-// most of its rows leading to screens this product does not have. A flat seven-row list cannot say
-// any of that, so this role gets a grouped menu and the other eleven keep theirs — which is also why
-// `drawerGroupsFor` returns `null` rather than an empty array for a role with no grouped menu. Null
-// means "render the flat list"; an empty array would mean "render nothing".
+// WHAT ENDED IT was not a better argument about CRM but a standard for everyone: the drawing
+// `mockup/mobile/03_site_engineer/05_profile/01_se_navigation_drawer`, redrawn by Stitch and named
+// by the product owner as the shell every role shares. Eight drawer drawings exist on disk and they
+// disagree with each other — chevrons per drawing 10 · 0 · 0 · 0 · 8 · 1 · 2 · 8, two with no
+// Logout at all — so "follow each role's drawing" cannot produce one structure. One drawing was
+// chosen instead.
 //
-// ── FOUR RULES WERE APPLIED TO THE DRAWING, AND EACH COST IT SOMETHING ─────────────────────────
+// WHAT THE GROUPED MENU COST WHEN IT WENT, each by product-owner decision the same day:
+//   · its four rows onto this role's OWN TABS (`/home`, `/leads`, `/opportunities`, `/customers`).
+//     Every other role is forbidden a drawer row onto a tab, and `drawerLinksFor` has always
+//     enforced it — the grouped table was the one thing bypassing the filter. Deleting it applied
+//     the rule rather than adding one.
+//   · its three badges: two real counts (new leads, open deals) and one registered figure
+//     (closing tenders). The standard drawer draws no badge on any row.
+//   · nothing else. Its six unbuilt rows are in NOT_DERIVED above and still say so on the press.
 //
-// 1. THE ROWS ONTO TABS ARE KEPT HERE, and this is the one place in this file where a drawer row is
-//    also a bottom tab. The rule above — "A DRAWER ENTRY IS NEVER ALSO A TAB" — is suspended for
-//    this role by product-owner decision 2026-09-10 (plan item 4.5, approved: "overview → /home,
-//    leads → /leads, pipeline → /opportunities, customers → /customers"). All four ARE this role's
-//    bar. The drawing puts them in the drawer because they are the group that gives the other two
-//    groups their meaning: a menu whose sales section is empty says this role has no sales screens.
-//    It is a deliberate exception with a named decision behind it, not the rule falling over — and
-//    it is confined to `GROUPED`, so no other role can acquire a duplicate row by accident.
-//
-// 2. THE "รายงานอัจฉริยะ" (AI report) ROW IS NOT BUILT. It has no route, and it is not a screen: the
-//    CRM home dashboard renders that report as a card (`components/home/CrmHome.tsx`). A row onto
-//    `/home` under a second name is the second door onto one room that rule 1's exception was
-//    narrowly opened for, and it is not on the approved list of routed rows. `crm.drawer.
-//    intelligence` was deleted from both catalogues with it rather than left as dead copy.
-//
-// 3. THE GROUP EYEBROWS ARE NOT DRAWN — "COMMERCIAL", "PRE-CON", "V3 REAL ESTATE" opposite the three
-//    group titles. Each restates its own title in an English abbreviation, which is the "a heading
-//    is stated once" rule the token spec already applies to a card sitting under a section label
-//    (`.claude/rules/design-tokens.md`); and the third is a Stitch version marker rather than a
-//    label at all. The titles carry the grouping on their own.
-//
-// 4. THERE IS NO OPERATING-REGION BAR. The drawing heads the menu with "ภูมิภาคปฏิบัติการ: กทม. &
-//    ปริมณฑล (CBD)" and a switch button. NO SCHEMA IN THIS PRODUCT HOLDS A REGION FOR A USER — not
-//    `platform.users`, not `platform.tenants` — so the bar could only ever print a constant and its
-//    button could only ever do nothing. `<ProjectContextBar />` answers "which project", which is a
-//    different question and already has its own component. Recorded here and in the component.
-
-/** A row in a grouped drawer. */
-export interface DrawerRow extends DrawerLink {
-  /**
-   * The screen is not built. The row draws, and says so on tap — it never pushes.
-   *
-   * Drawn rather than dropped because the drawing is the record of what this role's menu is meant
-   * to become, and a menu that silently omits six of its eleven rows reads as a complete menu.
-   */
-  comingSoon?: true;
-  /**
-   * The trailing badge, when the row carries one.
-   *
-   * `count` is a COUNTABLE list — the component fetches it and the badge appears only once a real
-   * number has arrived. `drawn` is a registered figure (ADR-099) for a row with no endpoint behind
-   * it at all. A row has one or the other, never both.
-   */
-  badge?:
-    { labelKey: string; count: 'newLeads' | 'openDeals' } | { labelKey: string; drawn: number };
-}
-
-export interface DrawerGroup {
-  titleKey: string;
-  rows: readonly DrawerRow[];
-}
-
-/**
- * The grouped menus, by role. One role today.
- *
- * Group 4 is not listed: it is `SHARED_LINKS` under a heading, so that Settings and the Privacy
- * Policy cannot fall out of step with the eleven flat drawers by being written down twice.
- */
-const GROUPED: Partial<Record<CosRole, readonly DrawerGroup[]>> = {
-  [CRM_SALES_MANAGER]: [
-    {
-      titleKey: 'crm.drawer.groupSales',
-      rows: [
-        { route: '/home', labelKey: 'crm.drawer.overview', icon: 'dashboard' },
-        {
-          route: '/leads',
-          labelKey: 'crm.drawer.leads',
-          icon: 'groups',
-          // REAL: leads whose status is NEW, counted from `GET /crm/leads`.
-          badge: { labelKey: 'crm.drawer.newBadge', count: 'newLeads' },
-        },
-        {
-          route: '/opportunities',
-          labelKey: 'crm.drawer.pipeline',
-          icon: 'leaderboard',
-          // REAL: opportunities still OPEN, counted from `GET /crm/opportunities`.
-          badge: { labelKey: 'crm.drawer.dealsBadge', count: 'openDeals' },
-        },
-        { route: '/customers', labelKey: 'crm.drawer.customers', icon: 'corporate-fare' },
-      ],
-    },
-    {
-      titleKey: 'crm.drawer.groupPrecon',
-      rows: [
-        {
-          route: '/crm-proposal',
-          labelKey: 'crm.drawer.proposal',
-          icon: 'draw',
-          comingSoon: true,
-        },
-        {
-          route: '/crm-tenders',
-          labelKey: 'crm.drawer.tender',
-          icon: 'gavel',
-          comingSoon: true,
-          // DRAWN, and the only badge here that is: there is no tender table to count.
-          badge: {
-            labelKey: 'crm.drawer.tenderBadge',
-            drawn: CRM_DRAWER_COUNTS.value.closingTenders,
-          },
-        },
-        {
-          route: '/crm-contracts',
-          labelKey: 'crm.drawer.contracts',
-          icon: 'article',
-          comingSoon: true,
-        },
-        {
-          route: '/crm-invite-owner',
-          labelKey: 'crm.drawer.inviteOwner',
-          icon: 'person-add',
-          comingSoon: true,
-        },
-      ],
-    },
-    {
-      titleKey: 'crm.drawer.groupAssets',
-      rows: [
-        {
-          route: '/crm-unit-matrix',
-          labelKey: 'crm.drawer.unitMatrix',
-          icon: 'grid-view',
-          comingSoon: true,
-        },
-        {
-          route: '/crm-handover',
-          labelKey: 'crm.drawer.handover',
-          icon: 'key',
-          comingSoon: true,
-        },
-      ],
-    },
-  ],
-};
-
-/**
- * The role's grouped menu, or `null` where it has none and the flat list above applies.
- *
- * A `comingSoon` row's `route` is a KEY, not a destination: nothing pushes it, and the paths above
- * deliberately do not exist. They are unique and readable so a row can be addressed by test id.
- */
-export function drawerGroupsFor(role: CosRole | null | undefined): readonly DrawerGroup[] | null {
-  if (role == null) return null;
-  return GROUPED[role] ?? null;
-}
+// The operating-region bar it was never given is unaffected: no schema in this product holds a
+// region for a user, so the bar could only print a constant and its button do nothing.

@@ -11,12 +11,12 @@
 // days the app had no way at all to open the notice PDPA §23 requires to remain available. That is
 // what a test on the shared section is for.
 
-import { Alert } from 'react-native';
-import { render, fireEvent, waitFor } from '@testing-library/react-native';
+import { Alert, StyleSheet } from 'react-native';
+import { render, fireEvent, waitFor, within } from '@testing-library/react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { I18nProvider } from '../../i18n';
 import { CosRole } from '@cos/types';
-import { drawerGroupsFor, drawerSectionFor } from '../../lib/drawerLinks';
+import { drawerSectionFor, SHARED_LINKS } from '../../lib/drawerLinks';
 import { useAuthStore } from '../../store/authStore';
 import { useUiStore } from '../../store/uiStore';
 import { NavigationDrawer } from '../NavigationDrawer';
@@ -214,33 +214,27 @@ describe('NavigationDrawer', () => {
     expect(getByTestId('drawer-user-id')).not.toHaveTextContent(/FI-04281/);
   });
 
-  it('says MFA is verified only when the account actually has it', async () => {
-    const { getByTestId, rerender } = await renderDrawer();
-
-    await waitFor(() => expect(getByTestId('drawer-profile-card')).toHaveTextContent(/MFA/i));
-
+  it('carries no status line at all — not MFA, not sync', async () => {
+    // The row used to read "MFA verified · Online & synced" and was removed on 2026-09-11:
+    // neither half was the drawer's to say. Sync state has exactly one indicator in the shell,
+    // and MFA belongs to <AccountSettings />, which keeps its own status row. This test is the
+    // guard against it drifting back in — an account WITH mfa still shows no such line.
     users.getMe.mockResolvedValue({
-      user_id: 'u-2',
-      email: 'x@example.com',
-      display_name: 'Someone Else',
+      user_id: 'u-1',
+      email: 'w@example.com',
+      display_name: 'Waraporn Klinhom',
       photo_url: null,
       role: 'FINANCE',
-      mfa_enabled: false,
-      employee_code: null,
+      mfa_enabled: true,
+      employee_code: 'FI-04281',
     });
-    useAuthStore.setState({
-      displayName: 'Someone Else',
-      role: 'FINANCE',
-      userId: 'u-2',
-      logout,
-    } as never);
-    const second = await renderDrawer();
+    const { getByTestId } = await renderDrawer();
 
-    await waitFor(() => expect(second.getByTestId('drawer-profile-card')).toBeTruthy());
-    expect(second.getByTestId('drawer-profile-card')).not.toHaveTextContent(/MFA/i);
-    // …and the online line is still there, so the row does not simply vanish.
-    expect(second.getByTestId('drawer-profile-card')).toHaveTextContent(/online/i);
-    expect(rerender).toBeTruthy();
+    await waitFor(() => expect(getByTestId('drawer-user-id')).toHaveTextContent(/FI-04281/));
+    const card = getByTestId('drawer-profile-card');
+    expect(card).not.toHaveTextContent(/MFA/i);
+    expect(card).not.toHaveTextContent(/online/i);
+    expect(card).not.toHaveTextContent(/synced/i);
   });
 
   it('keeps the short UUID when the profile request fails', async () => {
@@ -322,11 +316,7 @@ describe('NavigationDrawer', () => {
 // list. The risk that split introduces is not that the groups render wrong -- it is that the two
 // branches leak into each other, so these tests say what each role draws AND what it does not.
 
-describe('NavigationDrawer - the CRM manager grouped menu', () => {
-  let closeDrawer: jest.Mock;
-  let logout: jest.Mock;
-  let alert: jest.SpyInstance;
-
+describe('NavigationDrawer - the CRM manager, after the 2026-09-11 flattening', () => {
   beforeEach(() => {
     mockPush.mockReset();
     users.getMe.mockReset();
@@ -338,136 +328,92 @@ describe('NavigationDrawer - the CRM manager grouped menu', () => {
       role: 'CRM_SALES_MANAGER',
       mfa_enabled: false,
       employee_code: null,
-      position: 'Head of Commercial & CRM',
+      position: 'Sales Manager',
     });
-    crm.listLeads.mockReset();
-    crm.listOpportunities.mockReset();
-    crm.listLeads.mockResolvedValue([
-      { lead_id: 'l-1', status: 'NEW' },
-      { lead_id: 'l-2', status: 'NEW' },
-      { lead_id: 'l-3', status: 'QUALIFIED' },
-    ]);
-    crm.listOpportunities.mockResolvedValue([
-      { opportunity_id: 'o-1', status: 'OPEN' },
-      { opportunity_id: 'o-2', status: 'WON' },
-    ]);
-    alert = jest.spyOn(Alert, 'alert').mockImplementation(() => undefined);
     mockPathname = '/home';
-    closeDrawer = jest.fn();
-    logout = jest.fn().mockResolvedValue(undefined);
-    useUiStore.setState({ drawerOpen: true, closeDrawer } as never);
+    useUiStore.setState({ drawerOpen: true, closeDrawer: jest.fn() } as never);
     useAuthStore.setState({
       displayName: 'Kittipong Wisawakan',
       role: 'CRM_SALES_MANAGER',
       userId: 'u-9',
-      logout,
+      logout: jest.fn(),
     } as never);
   });
 
-  afterEach(() => {
-    alert.mockRestore();
-  });
+  // This role had a GROUPED drawer between 2026-09-10 and 2026-09-11 — four titled groups, badges
+  // on two rows. The product owner ended it so every role shares one body. These tests are what
+  // stops any of it coming back one piece at a time.
 
-  it('draws the four groups the drawing has, the system group included', async () => {
-    const { getByTestId } = await renderDrawer();
-
-    await waitFor(() => expect(getByTestId('drawer-group-crm.drawer.groupSales')).toBeTruthy());
-    expect(getByTestId('drawer-group-crm.drawer.groupPrecon')).toBeTruthy();
-    expect(getByTestId('drawer-group-crm.drawer.groupAssets')).toBeTruthy();
-    expect(getByTestId('drawer-group-crm.drawer.groupSystem')).toBeTruthy();
-  });
-
-  it('renders every grouped row this role is given', async () => {
-    const rows = (drawerGroupsFor(CosRole.CRM_SALES_MANAGER) ?? []).flatMap((g) => g.rows);
-
-    const { getByTestId } = await renderDrawer();
-
-    await waitFor(() => expect(getByTestId(`drawer-link-${rows[0]!.route}`)).toBeTruthy());
-    for (const row of rows) expect(getByTestId(`drawer-link-${row.route}`)).toBeTruthy();
-  });
-
-  // Both badges are REAL: two NEW leads out of three, one OPEN opportunity out of two.
-  it('counts its badges from the lists rather than drawing them', async () => {
-    const { getByTestId } = await renderDrawer();
-
-    await waitFor(() => expect(getByTestId('drawer-badge-/leads')).toHaveTextContent(/2/));
-    expect(getByTestId('drawer-badge-/opportunities')).toHaveTextContent(/1/);
-  });
-
-  // "Could not ask" is not "none". A failed fetch leaves the rows without badges rather than
-  // showing a zero, which would read as an answer.
-  it('shows no counted badge at all when the counts cannot be fetched', async () => {
-    crm.listLeads.mockRejectedValue(new Error('offline'));
-
+  it('renders no group heading at all', async () => {
     const { getByTestId, queryByTestId } = await renderDrawer();
 
-    await waitFor(() => expect(getByTestId('drawer-link-/leads')).toBeTruthy());
-    await waitFor(() => expect(queryByTestId('drawer-badge-/leads')).toBeNull());
-    expect(queryByTestId('drawer-badge-/opportunities')).toBeNull();
-    // The DRAWN badge is unaffected -- it never needed a request.
-    expect(getByTestId('drawer-badge-/crm-tenders')).toBeTruthy();
+    await waitFor(() => expect(getByTestId('drawer-link-/crm-proposal')).toBeTruthy());
+    for (const key of ['groupSales', 'groupPrecon', 'groupAssets', 'groupSystem']) {
+      expect(queryByTestId(`drawer-group-crm.drawer.${key}`)).toBeNull();
+    }
   });
 
-  it('navigates a built row and closes behind it', async () => {
+  it('keeps the six rows whose screens are not built', async () => {
     const { getByTestId } = await renderDrawer();
-    await waitFor(() => expect(getByTestId('drawer-link-/leads')).toBeTruthy());
 
-    await fireEvent.press(getByTestId('drawer-link-/leads'));
-
-    expect(mockPush).toHaveBeenCalledWith('/leads');
-    expect(closeDrawer).toHaveBeenCalled();
+    await waitFor(() => expect(getByTestId('drawer-link-/crm-proposal')).toBeTruthy());
+    for (const route of [
+      '/crm-proposal',
+      '/crm-tenders',
+      '/crm-contracts',
+      '/crm-invite-owner',
+      '/crm-unit-matrix',
+      '/crm-handover',
+    ]) {
+      expect(getByTestId(`drawer-link-${route}`)).toBeTruthy();
+    }
   });
 
-  // A row whose screen does not exist SAYS SO. Pushing it would navigate to nothing, which reads as
-  // a broken app rather than an unbuilt screen.
-  it('says an unbuilt row is unbuilt, and pushes nothing', async () => {
+  it('drops the four rows that are this role’s own tabs', async () => {
+    const { getByTestId, queryByTestId } = await renderDrawer();
+
+    await waitFor(() => expect(getByTestId('drawer-link-/crm-proposal')).toBeTruthy());
+    // Every other role is forbidden a drawer row onto its own tab, and `drawerLinksFor` has always
+    // filtered them — the grouped table was the one thing bypassing it.
+    for (const route of ['/home', '/leads', '/opportunities', '/customers']) {
+      expect(queryByTestId(`drawer-link-${route}`)).toBeNull();
+    }
+  });
+
+  it('draws no badge on any row, and asks for no counts', async () => {
+    const { getByTestId, queryByTestId } = await renderDrawer();
+
+    await waitFor(() => expect(getByTestId('drawer-link-/crm-tenders')).toBeTruthy());
+    for (const route of ['/leads', '/opportunities', '/crm-tenders']) {
+      expect(queryByTestId(`drawer-badge-${route}`)).toBeNull();
+    }
+    expect(crm.listLeads).not.toHaveBeenCalled();
+    expect(crm.listOpportunities).not.toHaveBeenCalled();
+  });
+
+  it('says so on a press rather than pushing an unbuilt route', async () => {
+    const alert = jest.spyOn(Alert, 'alert').mockImplementation(() => undefined);
+
     const { getByTestId } = await renderDrawer();
     await waitFor(() => expect(getByTestId('drawer-link-/crm-tenders')).toBeTruthy());
 
-    await fireEvent.press(getByTestId('drawer-link-/crm-tenders'));
-
-    expect(alert).toHaveBeenCalled();
+    fireEvent.press(getByTestId('drawer-link-/crm-tenders'));
+    await waitFor(() => expect(alert).toHaveBeenCalled());
     expect(mockPush).not.toHaveBeenCalled();
-    expect(closeDrawer).not.toHaveBeenCalled();
+    alert.mockRestore();
   });
 
-  // The grouped branch draws SHARED_LINKS itself, under the system heading -- not a second copy of
-  // them, and not a second time below a divider.
-  it('offers Settings and the Privacy Policy exactly once each', async () => {
-    const { getAllByTestId } = await renderDrawer();
-
-    await waitFor(() => expect(getAllByTestId('drawer-link-/account-settings')).toHaveLength(1));
-    expect(getAllByTestId('drawer-link-/privacy-policy')).toHaveLength(1);
-  });
-
-  // The profile block has no per-role variant (spec 32.7). The drawing's pipeline-target line under
-  // the position is the thing this test exists to keep out.
-  it('keeps the standard profile block, with no pipeline target added to it', async () => {
-    const { getByTestId, queryByText } = await renderDrawer();
-
-    await waitFor(() => expect(getByTestId('drawer-job-title')).toHaveTextContent(/Head of/));
-    expect(getByTestId('drawer-user-id')).toBeTruthy();
-    expect(queryByText(/Pipeline:/)).toBeNull();
-    expect(queryByText(/450M/)).toBeNull();
-  });
-
-  it('draws no operating-region switcher', async () => {
-    const { getByTestId, queryByText } = await renderDrawer();
-
-    await waitFor(() => expect(getByTestId('drawer-group-crm.drawer.groupSales')).toBeTruthy());
-    expect(queryByText(/CBD/)).toBeNull();
-    expect(queryByText(/swap/i)).toBeNull();
-  });
-
-  it('never folds a grouped menu behind a More row', async () => {
+  it('fits under the fold, so this role never sees a More row', async () => {
     const { getByTestId, queryByTestId } = await renderDrawer();
 
-    await waitFor(() => expect(getByTestId('drawer-group-crm.drawer.groupSales')).toBeTruthy());
+    await waitFor(() => expect(getByTestId('drawer-link-/crm-proposal')).toBeTruthy());
+    // Seven rows, under the nine-row fold — and DRAWER_MAX_ROWS counts the role's own only, so
+    // the two shared rows below the divider never brought it closer to folding.
     expect(queryByTestId('drawer-more')).toBeNull();
   });
 });
 
-describe('NavigationDrawer - the two branches do not leak', () => {
+describe('NavigationDrawer - one shape, and it holds for a flat role too', () => {
   beforeEach(() => {
     mockPush.mockReset();
     users.getMe.mockReset();
@@ -495,14 +441,40 @@ describe('NavigationDrawer - the two branches do not leak', () => {
     } as never);
   });
 
-  it('gives a flat role no CRM group and no CRM request', async () => {
+  it('reaches no other role’s rows and asks for no CRM counts', async () => {
     const { getByTestId, queryByTestId } = await renderDrawer();
 
     await waitFor(() => expect(getByTestId('drawer-link-/projects')).toBeTruthy());
-    expect(queryByTestId('drawer-group-crm.drawer.groupSales')).toBeNull();
     expect(queryByTestId('drawer-link-/crm-tenders')).toBeNull();
     expect(crm.listLeads).not.toHaveBeenCalled();
     expect(crm.listOpportunities).not.toHaveBeenCalled();
+  });
+
+  it('puts the drawing’s chevron on the profile header, which opens nothing', async () => {
+    const alert = jest.spyOn(Alert, 'alert').mockImplementation(() => undefined);
+
+    const { getByTestId } = await renderDrawer();
+    await waitFor(() => expect(getByTestId('drawer-profile-card')).toBeTruthy());
+
+    // The header has had no destination since 2026-08-09 — `/profile` was deleted and this panel IS
+    // the profile. The drawing draws a chevron anyway, so it says so on the press rather than
+    // pointing nowhere, and it does NOT open `/account-settings`, which is already a row below.
+    expect(getByTestId('drawer-profile-card')).toHaveTextContent(/chevron-right/);
+    fireEvent.press(getByTestId('drawer-profile-card'));
+    await waitFor(() => expect(alert).toHaveBeenCalled());
+    expect(mockPush).not.toHaveBeenCalled();
+    alert.mockRestore();
+  });
+
+  it('carries the drawing’s trailing chevron on every row it draws', async () => {
+    const { getByTestId } = await renderDrawer();
+
+    await waitFor(() => expect(getByTestId('drawer-link-/projects')).toBeTruthy());
+    // The chevron belonged to the grouped renderer alone until 2026-09-11, so eleven of twelve
+    // roles were missing it. One renderer now draws it for all of them — including the shared rows.
+    for (const route of ['/projects', '/account-settings', '/privacy-policy']) {
+      expect(getByTestId(`drawer-link-${route}`)).toHaveTextContent(/chevron-right/);
+    }
   });
 
   it('keeps the flat role shared rows below their divider, exactly once each', async () => {
@@ -510,5 +482,217 @@ describe('NavigationDrawer - the two branches do not leak', () => {
 
     await waitFor(() => expect(getAllByTestId('drawer-link-/account-settings')).toHaveLength(1));
     expect(getAllByTestId('drawer-link-/privacy-policy')).toHaveLength(1);
+  });
+});
+
+describe('NavigationDrawer — the chevron, on every row of every role (2026-09-11)', () => {
+  // Plan item 5.2. The chevron belonged to the grouped renderer alone until 2026-09-11, so eleven
+  // of twelve roles drew none — and the test that existed asserted three routes of ONE role, which
+  // is exactly why a month passed without anyone noticing. This one renders each role in turn and
+  // walks every row it actually draws: its own, the folded ones behind More, and the shared two.
+  beforeEach(() => {
+    mockPush.mockReset();
+    users.getMe.mockReset();
+    users.getMe.mockResolvedValue({
+      user_id: 'u-1',
+      email: 'w@example.com',
+      display_name: 'Waraporn Klinhom',
+      photo_url: null,
+      role: 'SITE_ENGINEER',
+      mfa_enabled: true,
+      employee_code: 'FI-04281',
+      position: 'Site Engineer',
+    });
+    crm.listLeads.mockReset();
+    crm.listOpportunities.mockReset();
+    crm.listLeads.mockResolvedValue([]);
+    crm.listOpportunities.mockResolvedValue([]);
+    mockPathname = '/nowhere';
+    useUiStore.setState({ drawerOpen: true, closeDrawer: jest.fn() } as never);
+  });
+
+  it.each(Object.values(CosRole))('draws a trailing chevron on every row: %s', async (role) => {
+    useAuthStore.setState({
+      displayName: 'Waraporn Klinhom',
+      role,
+      userId: 'u-1',
+      logout: jest.fn(),
+    } as never);
+    const { visible, overflow } = drawerSectionFor(role);
+
+    const { getByTestId } = await renderDrawer();
+    await waitFor(() => expect(getByTestId('drawer-profile-card')).toBeTruthy());
+
+    // The fold hides the rest away, so open it — a chevron missing behind More is still missing.
+    // The expansion is a state update, so the rows arrive on the next render, not on the press.
+    if (overflow[0] !== undefined) {
+      fireEvent.press(getByTestId('drawer-more'));
+      await waitFor(() =>
+        expect(getByTestId(`drawer-link-${String(overflow[0]?.route)}`)).toBeTruthy(),
+      );
+    }
+
+    // Collected rather than asserted row by row, so a failure names the role and the row that
+    // lacks one instead of stopping at the first.
+    const bare = [...visible, ...overflow, ...SHARED_LINKS]
+      .filter((link) => {
+        // The icon mock renders the glyph NAME as text, so the chevron is findable as one.
+        const row = getByTestId(`drawer-link-${link.route}`);
+        return within(row).queryAllByText('chevron-right').length === 0;
+      })
+      .map((link) => link.route);
+    expect({ role, withoutChevron: bare }).toEqual({ role, withoutChevron: [] });
+    // …and the header carries the drawing's own, for every role and not just the one screenshotted.
+    expect(getByTestId('drawer-profile-card')).toHaveTextContent(/chevron-right/);
+  });
+});
+
+describe('NavigationDrawer — Settings and Privacy policy sit against Logout (2026-09-11)', () => {
+  // "ให้โซน Settings กับ Privacy policy อยู่ติดกับแถว LOG OUT ตลอด". They used to follow the role's
+  // own rows INSIDE the scroll region, so their position moved with the length of the menu: three
+  // rows for a Site Worker left ~700px of empty panel between the pair and Logout, and nineteen
+  // expanded rows for a Tenant Admin pushed them past the bottom. `ตลอด` is the whole assertion —
+  // it has to hold for the shortest drawer and the longest, so both are rendered here.
+  beforeEach(() => {
+    mockPush.mockReset();
+    users.getMe.mockReset();
+    users.getMe.mockResolvedValue({
+      user_id: 'u-1',
+      email: 'w@example.com',
+      display_name: 'Waraporn Klinhom',
+      photo_url: null,
+      role: 'SITE_WORKER',
+      mfa_enabled: false,
+      employee_code: null,
+      position: 'Foreman',
+    });
+    crm.listLeads.mockReset();
+    crm.listOpportunities.mockReset();
+    crm.listLeads.mockResolvedValue([]);
+    crm.listOpportunities.mockResolvedValue([]);
+    mockPathname = '/nowhere';
+    useUiStore.setState({ drawerOpen: true, closeDrawer: jest.fn() } as never);
+  });
+
+  it.each([CosRole.SITE_WORKER, CosRole.TENANT_ADMIN, CosRole.CRM_SALES_MANAGER])(
+    'keeps both shared rows out of the scroll region and pinned above Logout: %s',
+    async (role) => {
+      useAuthStore.setState({
+        displayName: 'Waraporn Klinhom',
+        role,
+        userId: 'u-1',
+        logout: jest.fn(),
+      } as never);
+
+      const { getByTestId } = await renderDrawer();
+      await waitFor(() => expect(getByTestId('drawer-footer-links')).toBeTruthy());
+
+      const scroll = getByTestId('drawer-scroll');
+      const pinned = getByTestId('drawer-footer-links');
+      for (const link of SHARED_LINKS) {
+        // Not in the part that scrolls…
+        expect({ role, route: link.route, inScroll: true }).toEqual({
+          role,
+          route: link.route,
+          inScroll: within(scroll).queryAllByTestId(`drawer-link-${link.route}`).length === 0,
+        });
+        // …and in the block that is fixed to the bottom, exactly once.
+        expect(within(pinned).getAllByTestId(`drawer-link-${link.route}`)).toHaveLength(1);
+      }
+    },
+  );
+
+  it('draws the divider inside the pinned block, not at the end of the scrolling list', async () => {
+    // The divider is what separates the role's rows from the shared pair. Left behind in the scroll
+    // region it would draw a line under the LAST ROW of a long menu and nothing above the pinned
+    // pair — a separator separating nothing.
+    useAuthStore.setState({
+      displayName: 'Waraporn Klinhom',
+      role: CosRole.SITE_WORKER,
+      userId: 'u-1',
+      logout: jest.fn(),
+    } as never);
+
+    const { getByTestId } = await renderDrawer();
+    await waitFor(() => expect(getByTestId('drawer-footer-links')).toBeTruthy());
+
+    const children = getByTestId('drawer-footer-links').children;
+    // divider + one row per shared link, in that order.
+    expect(children).toHaveLength(SHARED_LINKS.length + 1);
+  });
+});
+
+describe('NavigationDrawer — the profile text keeps clear of the chevron (2026-09-11)', () => {
+  // "ถ้าชื่อตำแหน่งชนกับ chevron ให้ย่อส่วนท้ายของชื่อตำแหน่งด้วย ..." — the three lines were already
+  // `numberOfLines={1}`, so they always ellipsized; they ellipsized at the CARD's inner edge, which
+  // is past an absolutely-positioned chevron that takes no part in the layout. The card reserves the
+  // glyph's column now, so the truncation happens before it. Caught on the Viewer frame, where a
+  // long name with no position line under it ended exactly at the chevron.
+  beforeEach(() => {
+    users.getMe.mockReset();
+    users.getMe.mockResolvedValue({
+      user_id: 'u-1',
+      email: 'w@example.com',
+      display_name: 'Somsak Watcharawit',
+      photo_url: null,
+      role: 'VIEWER',
+      mfa_enabled: false,
+      employee_code: null,
+      position: 'Client Representative',
+    });
+    crm.listLeads.mockReset();
+    crm.listOpportunities.mockReset();
+    crm.listLeads.mockResolvedValue([]);
+    crm.listOpportunities.mockResolvedValue([]);
+    mockPathname = '/nowhere';
+    useUiStore.setState({ drawerOpen: true, closeDrawer: jest.fn() } as never);
+    useAuthStore.setState({
+      displayName: 'Somsak Watcharawit',
+      role: CosRole.VIEWER,
+      userId: 'u-1',
+      logout: jest.fn(),
+    } as never);
+  });
+
+  it('keeps the job title clear of the chevron', async () => {
+    const { getByTestId } = await renderDrawer();
+    await waitFor(() => expect(getByTestId('drawer-job-title')).toBeTruthy());
+
+    const card = StyleSheet.flatten(getByTestId('drawer-profile-card').props.style) as {
+      padding?: number;
+    };
+    const chevron = StyleSheet.flatten(getByTestId('drawer-profile-chevron').props.style) as {
+      right?: number;
+    };
+    const title = StyleSheet.flatten(getByTestId('drawer-job-title').props.style) as {
+      paddingRight?: number;
+    };
+    // The glyph occupies `right` + its own size from the card's trailing edge; the card's padding
+    // already covers part of that, and the line itself must reserve the remainder.
+    const needed = (chevron.right ?? 0) + 20 - (card.padding ?? 0);
+    expect(title.paddingRight ?? 0).toBeGreaterThanOrEqual(needed);
+  });
+
+  it('does NOT reserve it on the id line, which cannot afford to lose its tail', async () => {
+    // The first attempt put the reservation on the CARD, so every line paid for the chevron and the
+    // id came out as `User ID: 061A6A…` on 01-site-engineer.png. A truncated name is legible; a
+    // truncated id is a different id. The chevron is vertically centred on the block and never
+    // reaches this line, so the line keeps the full width.
+    const { getByTestId } = await renderDrawer();
+    await waitFor(() => expect(getByTestId('drawer-user-id')).toBeTruthy());
+
+    const id = StyleSheet.flatten(getByTestId('drawer-user-id').props.style) as {
+      paddingRight?: number;
+    };
+    expect(id.paddingRight ?? 0).toBe(0);
+  });
+
+  it('truncates each line rather than wrapping it into the chevron’s row', async () => {
+    const { getByTestId } = await renderDrawer();
+    await waitFor(() => expect(getByTestId('drawer-job-title')).toBeTruthy());
+
+    for (const id of ['drawer-job-title', 'drawer-user-id']) {
+      expect({ id, lines: getByTestId(id).props.numberOfLines }).toEqual({ id, lines: 1 });
+    }
   });
 });

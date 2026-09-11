@@ -1009,11 +1009,15 @@ export const CUSTOMER_DETAIL = figure(
   'a tier, credit terms, contact people and per-customer project counts — none is a column',
 );
 
-/** The drawer's row counts — "24 ใหม่" on leads, "14 ดีล" on the pipeline. */
-export const CRM_DRAWER_COUNTS = figure(
-  { newLeads: 24, deals: 14, closingTenders: 3 },
-  'nothing — these ARE countable from the three list endpoints, and are drawn only where a row has no endpoint behind it (tenders)',
-);
+// `CRM_DRAWER_COUNTS` WAS HERE AND IS GONE (2026-09-11). It backed the closing-tenders badge on
+// the CRM manager's grouped drawer — the one badge on that menu with no endpoint behind it. The
+// product owner ended the grouped drawer the same day so every role shares one body, and the
+// standard drawer draws no badge on any row, so the figure has nothing left to render into.
+//
+// This is the FOURTH entry this register has lost, and the second kind of loss: not real data
+// arriving (PROFILE_JOB_TITLE, VIEWER_OPEN_ISSUES) and not a computation replacing it
+// (APPROVAL_COUNTDOWN), but THE SURFACE ITSELF BEING REMOVED. An entry earns its place by being
+// rendered; when the thing that rendered it goes, so does it.
 
 // ── Get Help — mockup/mobile/01_authen/05_get_help ───────────────────────────────────────────────
 //

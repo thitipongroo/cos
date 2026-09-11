@@ -2,7 +2,6 @@ import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { CosRole } from '@cos/types';
 import {
-  drawerGroupsFor,
   drawerLinksFor,
   drawerSectionFor,
   DRAWER_MAX_ROWS,
@@ -402,7 +401,7 @@ describe('drawerLinksFor — derived from §6.4 / §6.8', () => {
     }
   });
 
-  it('keeps both new Viewer rows reachable after the seven-row fold', () => {
+  it('keeps both new Viewer rows reachable after the fold', () => {
     // Two rows were ADDED to an already long drawer on 2026-09-10 ("Procurement (all) R" and
     // "Finance (all) R" make this role's list one of the longest), so the fold is what decides
     // whether they are on screen or behind More. Either is fine; DISAPPEARING is not, and a
@@ -441,26 +440,34 @@ describe('drawerLinksFor — derived from §6.4 / §6.8', () => {
   });
 });
 
-describe('drawerSectionFor — row seven becomes More', () => {
+describe('drawerSectionFor — the last row becomes More', () => {
   it('shows everything when the list fits, and folds nothing', () => {
-    expect(DRAWER_MAX_ROWS).toBe(7);
-    // PROCUREMENT_OFFICER lands on exactly seven: the four drawn rows minus /incidents (§6.4 Safety
-    // incidents is “—” for it), plus /tasks /invoices /vendors /budget. It took over this case from
-    // PROJECT_MANAGER on 2026-08-14 — that role now derives as well as taking the drawn rows, so it
-    // is far past seven and exercises the folding case below instead.
+    // SEVEN, THEN NINE, THEN EIGHT — all on 2026-09-11 (product-owner decisions). The rise came
+    // from pinning the shared pair above Logout, which freed the fold from protecting it. Nine was
+    // then one too many, and a CAPTURE is what said so: at nine the `More` row landed below the
+    // panel's visible edge for all five folding roles. Eight is what the viewport actually holds.
+    expect(DRAWER_MAX_ROWS).toBe(8);
+    // PROCUREMENT_OFFICER lands on seven: the four drawn rows minus /incidents (§6.4 Safety
+    // incidents is “—” for it), plus /tasks /invoices /vendors /budget — short of the fold. The
+    // exactly-on-the-line case is now SITE_ENGINEER's eight, which is also the role the change
+    // unfolded: it drew six plus `More (2)` at seven and draws all eight at eight.
     const po = drawerSectionFor(CosRole.PROCUREMENT_OFFICER);
-    // Exactly seven — folding here would replace one row with a "More" revealing one row.
     expect(po.visible).toHaveLength(7);
     expect(po.overflow).toEqual([]);
+    const se = drawerSectionFor(CosRole.SITE_ENGINEER);
+    expect(se.visible).toHaveLength(8);
+    expect(se.overflow).toEqual([]);
   });
 
-  it('folds at six-plus-More once there is genuinely more than fits', () => {
-    // The Executive may read almost every module, so its derived list is far past seven: six rows
+  it('folds at seven-plus-More once there is genuinely more than fits', () => {
+    // The Executive may read almost every module, so its derived list is far past eight: seven rows
     // drawn, the rest behind More. The count is read from `drawerLinksFor` rather than written down,
     // because adding a §6.4 row (Permits did, 2026-08-13) legitimately changes it.
     const exec = drawerSectionFor(CosRole.EXECUTIVE);
     expect(exec.visible).toHaveLength(DRAWER_MAX_ROWS - 1);
-    expect(exec.overflow).toHaveLength(drawerLinksFor(CosRole.EXECUTIVE).length - 6);
+    expect(exec.overflow).toHaveLength(
+      drawerLinksFor(CosRole.EXECUTIVE).length - (DRAWER_MAX_ROWS - 1),
+    );
   });
 
   it('loses nothing in the split, and keeps the order', () => {
@@ -484,92 +491,109 @@ describe('drawerSectionFor — row seven becomes More', () => {
   });
 
   it('leaves Settings and the Support Center out of the count — help is never folded away', () => {
-    // They render below the divider, so the seven-row rule cannot bury "where do I get help".
+    // They render below the divider and outside the scroll region, so no row rule can bury them.
     const exec = drawerSectionFor(CosRole.EXECUTIVE);
     const folded = [...exec.visible, ...exec.overflow].map((link) => link.route);
     for (const shared of SHARED_LINKS) expect(folded).not.toContain(shared.route);
   });
 });
 
-describe('drawerGroupsFor — the grouped menu, and who gets one', () => {
-  // The split exists so one role's drawing can be honoured without restructuring eleven other
-  // drawers. `null` is what says "render the flat list"; an empty array would say "render nothing",
-  // which is a different and much worse answer.
-  it('gives every role but the CRM manager no grouped menu at all', () => {
+describe('one structure, every role (2026-09-11)', () => {
+  // The request that produced this was "ทุก role ต้องมีโครงสร้างหลักเหมือนกัน". These three assert
+  // the structural claims for ALL twelve roles rather than for the one a screenshot happened to
+  // show — which is how eleven of them went a month without the chevron the drawing draws.
+
+  it('gives every role the same shape: its own rows, then the shared two', () => {
     for (const role of Object.values(CosRole)) {
-      if (role === CosRole.CRM_SALES_MANAGER) continue;
-      expect({ role, groups: drawerGroupsFor(role) }).toEqual({ role, groups: null });
+      const { visible, overflow } = drawerSectionFor(role);
+      // Folded or not, a role's own rows and the shared rows never overlap and never repeat.
+      const own = [...visible, ...overflow].map((l) => l.route);
+      expect({ role, dupes: own.length - new Set(own).size }).toEqual({ role, dupes: 0 });
+      for (const shared of SHARED_LINKS) {
+        expect({ role, route: shared.route, inOwn: own.includes(shared.route) }).toEqual({
+          role,
+          route: shared.route,
+          inOwn: false,
+        });
+      }
     }
   });
 
-  it('gives a session with no role no grouped menu either', () => {
-    expect(drawerGroupsFor(null)).toBeNull();
-    expect(drawerGroupsFor(undefined)).toBeNull();
+  it('never gives any role a drawer row onto one of its own tabs', () => {
+    // The rule every role follows, and the one the grouped table bypassed until it was deleted.
+    for (const role of Object.values(CosRole)) {
+      const tabs = new Set(visibleTabsFor(role).map((tab) => `/${tab.name}`));
+      for (const link of drawerLinksFor(role)) {
+        expect({ role, route: link.route, isTab: tabs.has(link.route) }).toEqual({
+          role,
+          route: link.route,
+          isTab: false,
+        });
+      }
+    }
   });
 
-  it('gives the CRM manager the drawing’s three built groups, in its order', () => {
-    // The fourth group is SHARED_LINKS under a heading and is rendered by the component, so it is
-    // deliberately not in this table — see drawerLinks.ts.
-    expect(drawerGroupsFor(CosRole.CRM_SALES_MANAGER)?.map((g) => g.titleKey)).toEqual([
-      'crm.drawer.groupSales',
-      'crm.drawer.groupPrecon',
-      'crm.drawer.groupAssets',
+  it('folds only where there is genuinely more than fits, for every role', () => {
+    for (const role of Object.values(CosRole)) {
+      const links = drawerLinksFor(role);
+      const { visible, overflow } = drawerSectionFor(role);
+      expect({ role, total: visible.length + overflow.length }).toEqual({
+        role,
+        total: links.length,
+      });
+      if (links.length <= DRAWER_MAX_ROWS) {
+        expect({ role, overflow: overflow.length }).toEqual({ role, overflow: 0 });
+      } else {
+        // The last row becomes More, so DRAWER_MAX_ROWS - 1 show and the rest folds.
+        expect({ role, visible: visible.length }).toEqual({ role, visible: DRAWER_MAX_ROWS - 1 });
+      }
+    }
+  });
+});
+
+describe('the CRM manager after the 2026-09-11 flattening', () => {
+  // This role had a grouped drawer for one day — three tables of rows plus a System group the
+  // component rendered from SHARED_LINKS. The product owner ended it so every role shares one body.
+  // What follows is what survived, and what did not, asserted rather than described.
+
+  const CRM_ROWS = drawerLinksFor(CosRole.CRM_SALES_MANAGER).map((l) => l.route);
+
+  it('keeps the six rows whose screens are not built, and marks every one of them', () => {
+    const unbuilt = drawerLinksFor(CosRole.CRM_SALES_MANAGER).filter((l) => l.comingSoon === true);
+
+    expect(unbuilt.map((l) => l.route)).toEqual([
+      '/crm-proposal',
+      '/crm-tenders',
+      '/crm-contracts',
+      '/crm-invite-owner',
+      '/crm-unit-matrix',
+      '/crm-handover',
     ]);
   });
 
-  // PO decision 2026-09-10 (plan item 4.5). These four ARE this role's bottom tabs, which the flat
-  // table forbids and this one is the single named exception to. The exception is confined here:
-  // no other role can pick up a duplicate row by accident.
-  it('routes exactly four rows, and every one of them to a screen that exists', () => {
-    const groups = drawerGroupsFor(CosRole.CRM_SALES_MANAGER) ?? [];
-    const routed = groups.flatMap((g) => g.rows).filter((r) => r.comingSoon !== true);
-
-    expect(routed.map((r) => r.route)).toEqual(['/home', '/leads', '/opportunities', '/customers']);
-    for (const row of routed) {
-      expect({
-        route: row.route,
-        exists: existsSync(join(APP_DIR, screenFile(row.route))),
-      }).toEqual({ route: row.route, exists: true });
+  it('drops the four rows that are this role’s own tabs', () => {
+    // Not a rule added for this change: `drawerLinksFor` filters any row whose route is a visible
+    // tab, and it always has. The grouped table was the one thing that bypassed it.
+    for (const route of ['/home', '/leads', '/opportunities', '/customers']) {
+      expect(CRM_ROWS).not.toContain(route);
     }
   });
 
-  // The other six draw and say so on tap. What must never happen is one of them acquiring a real
-  // route by accident, because a `comingSoon` row is never pushed — it would become a dead row.
-  it('leaves the six unbuilt rows pointing at no screen this app has', () => {
-    const groups = drawerGroupsFor(CosRole.CRM_SALES_MANAGER) ?? [];
-    const unbuilt = groups.flatMap((g) => g.rows).filter((r) => r.comingSoon === true);
+  it('fits under the fold, so this role never gets a More row', () => {
+    const { visible, overflow } = drawerSectionFor(CosRole.CRM_SALES_MANAGER);
 
-    expect(unbuilt).toHaveLength(6);
-    for (const row of unbuilt) {
-      expect({
-        route: row.route,
-        exists: existsSync(join(APP_DIR, screenFile(row.route))),
-      }).toEqual({ route: row.route, exists: false });
-      expect(row.href).toBeUndefined();
+    expect(visible.length).toBeLessThanOrEqual(DRAWER_MAX_ROWS);
+    expect(overflow).toHaveLength(0);
+  });
+
+  it('marks no row of any other role as unbuilt', () => {
+    // `comingSoon` is one role's today. A second one appearing without a decision is what this
+    // catches — the property is on DrawerLink now, so nothing type-level would stop it.
+    for (const role of Object.values(CosRole)) {
+      if (role === CosRole.CRM_SALES_MANAGER) continue;
+      const marked = drawerLinksFor(role).filter((l) => l.comingSoon === true);
+      expect({ role, marked: marked.map((l) => l.route) }).toEqual({ role, marked: [] });
     }
-  });
-
-  it('counts two badges from real lists and draws exactly one', () => {
-    const rows = (drawerGroupsFor(CosRole.CRM_SALES_MANAGER) ?? []).flatMap((g) => g.rows);
-    const badged = rows.filter((r) => r.badge !== undefined);
-
-    expect(badged.map((r) => r.route)).toEqual(['/leads', '/opportunities', '/crm-tenders']);
-    // Counted: the two whose lists this app can actually read.
-    expect(badged.slice(0, 2).every((r) => r.badge !== undefined && 'count' in r.badge)).toBe(true);
-    // Drawn: there is no tender table to count (ADR-099, CRM_DRAWER_COUNTS).
-    expect(badged[2]!.badge !== undefined && 'drawn' in badged[2]!.badge).toBe(true);
-  });
-
-  it('draws no operating-region row — no schema here holds a region for a user', () => {
-    const rows = (drawerGroupsFor(CosRole.CRM_SALES_MANAGER) ?? []).flatMap((g) => g.rows);
-    expect(rows.some((r) => /region/i.test(r.route) || /region/i.test(r.labelKey))).toBe(false);
-  });
-
-  // The AI report the drawing lists is a CARD on the CRM home dashboard, not a screen. A row onto
-  // /home under a second name would be the second door onto one room.
-  it('offers no second row onto the home dashboard', () => {
-    const rows = (drawerGroupsFor(CosRole.CRM_SALES_MANAGER) ?? []).flatMap((g) => g.rows);
-    expect(rows.filter((r) => r.route === '/home')).toHaveLength(1);
   });
 });
 
@@ -591,15 +615,11 @@ describe('the CRM drawer’s copy', () => {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const en = require('../../i18n/en.json') as { crm: { drawer: Record<string, string> } };
 
+    // ELEVEN KEYS WERE DELETED on 2026-09-11 with the grouping that used them — the four group
+    // titles, the four rows onto this role's own tabs, and the three badge labels. They are not
+    // pinned here any more because nothing renders them; a pinned key for copy no screen shows is
+    // the same drift in the other direction.
     expect(en.crm.drawer).toMatchObject({
-      groupSales: 'Sales and clients',
-      groupPrecon: 'Pre-construction',
-      groupAssets: 'Property and handover',
-      groupSystem: 'System and policies',
-      overview: 'Sales overview',
-      leads: 'Lead directory',
-      pipeline: 'Sales pipeline',
-      customers: 'customers',
       proposal: 'Draft proposal',
       tender: 'Tender',
       contracts: 'Master contracts',
@@ -626,14 +646,10 @@ describe('the CRM drawer’s copy', () => {
         return undefined;
       }, messages);
 
-    const groups = drawerGroupsFor(CosRole.CRM_SALES_MANAGER) ?? [];
-    const keys = [
-      ...groups.map((g) => g.titleKey),
-      ...groups.flatMap((g) => g.rows.map((r) => r.labelKey)),
-      ...groups.flatMap((g) =>
-        g.rows.flatMap((r) => (r.badge === undefined ? [] : [r.badge.labelKey])),
-      ),
-    ];
+    // The GROUPS and BADGES this used to walk are gone (product-owner decision 2026-09-11), so the
+    // keys come from the role's own flat rows now. The point of the test is unchanged: every label
+    // this role's drawer can render exists in BOTH catalogues.
+    const keys = drawerLinksFor(CosRole.CRM_SALES_MANAGER).map((l) => l.labelKey);
 
     for (const key of keys) {
       expect({ key, en: typeof read(en, key) }).toEqual({ key, en: 'string' });

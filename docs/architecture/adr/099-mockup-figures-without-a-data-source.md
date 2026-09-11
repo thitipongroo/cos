@@ -965,3 +965,37 @@ and the name matched — and the file was never opened. It is a rendered mockup 
 screen, Thai menu labels and a nav sidebar included, so the tutorial card had a picture of a
 different product screen behind its title. Corrected to `construction-site-2.jpg`, a genuine
 photograph. **Open the asset before naming it**; a filename is not a source.
+
+## Amendment — 2026-09-11 (fourth): an entry lost because its SURFACE was removed
+
+`CRM_DRAWER_COUNTS` is gone. It held `{ newLeads: 24, deals: 14, closingTenders: 3 }` and only the
+third was ever drawn — the closing-tenders badge on `CRM_SALES_MANAGER`'s grouped drawer, the one
+badge on that menu with no endpoint behind it. On 2026-09-11 the product owner made the navigation
+drawer one shape for every role, the grouped menu ended, and the standard drawer draws no badge on
+any row. The figure has nothing left to render into.
+
+**This is the fourth entry the register has lost and the first of its kind.** The other three each
+went because the product caught up with them:
+
+| Entry                   | Lost because                                          |
+| ----------------------- | ----------------------------------------------------- |
+| `PROFILE_JOB_TITLE`     | a column arrived (`platform.users.position`, ADR-101) |
+| `APPROVAL_COUNTDOWN`    | a computation replaced it (`lib/approvalDeadline.ts`) |
+| `VIEWER_OPEN_ISSUES`    | a route was opened (ADR-103)                          |
+| **`CRM_DRAWER_COUNTS`** | **the surface that rendered it was removed**          |
+
+Worth separating, because the first three are progress and this one is not. Nothing became more
+knowable on 2026-09-11: the tender count is exactly as uncountable as it was, and `procurement.rfqs`
+still has no tender table. What changed is that no screen asks for it any more. **An entry earns its
+place in this register by being RENDERED**; when the thing that rendered it goes, the entry goes with
+it, and the fact it recorded — that this product cannot count closing tenders — is recorded instead
+by the absence of any screen that claims to.
+
+If a tender badge is ever drawn again, this entry comes back rather than a number being invented for
+it. That is the same rule the register has always had, stated from the other end.
+
+### The register is at one hundred
+
+Counted, not recalled:
+`grep -c "^export const [A-Z_0-9]* = figure(" apps/mobile/src/lib/mockupFigures.ts`.
+One hundred and one, less `CRM_DRAWER_COUNTS`.

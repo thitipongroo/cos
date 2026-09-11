@@ -1360,6 +1360,7 @@
       "filter": "Filter projects (coming soon)",
       "none": "You are not assigned to any site yet.",
       "noMatch": "No site matches “{query}”.",
+      "retry": "Try again",
       "loadFailed": "Your sites could not be loaded. Nothing here is missing — it has not arrived."
     },
     "context": {
@@ -2120,7 +2121,6 @@
     "open": "Open menu",
     "close": "Close menu",
     "member": "Member",
-    "online": "Online & synced",
     "fieldTools": "Field tools",
     "settings": "Settings",
     "more": "More ({count})",
@@ -2132,9 +2132,9 @@
     "inspections": "Inspections",
     "materials": "Materials",
     "deliveries": "Deliveries",
-    "mfaVerified": "MFA verified",
     "map": "Project map",
-    "insights": "Project insights"
+    "insights": "Project insights",
+    "profileDetail": "Profile detail"
   },
   "mfa": {
     "enroll": {
@@ -3271,23 +3271,12 @@
       "moreFilters": "More filters"
     },
     "drawer": {
-      "groupSales": "Sales and clients",
-      "groupPrecon": "Pre-construction",
-      "groupAssets": "Property and handover",
-      "overview": "Sales overview",
-      "leads": "Lead directory",
-      "pipeline": "Sales pipeline",
-      "customers": "customers",
       "proposal": "Draft proposal",
       "tender": "Tender",
       "contracts": "Master contracts",
       "inviteOwner": "Invite a project owner",
       "unitMatrix": "Unit matrix",
-      "handover": "Handover records",
-      "newBadge": "{count} new",
-      "dealsBadge": "{count} deals",
-      "groupSystem": "System and policies",
-      "tenderBadge": "{count} closing"
+      "handover": "Handover records"
     }
   },
   "reattest": {

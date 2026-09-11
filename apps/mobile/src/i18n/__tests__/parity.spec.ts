@@ -53,24 +53,47 @@ describe('en/th parity', () => {
 });
 
 describe('every static key a screen asks for exists', () => {
-  const SCREENS = join(__dirname, '..', '..', 'app', '(app)');
+  const SRC = join(__dirname, '..', '..');
 
   /**
    * Only literal `t('…')` calls are checked. Template calls — `t(\`…\${band}\`)` — cannot be resolved
    * statically, and the groups they index (attestation bands, export stages, connection types) are
    * pinned by the unit tests of the modules that produce those values.
+   *
+   * THE WHOLE OF `src`, NOT THE ROUTES ALONE, since 2026-09-11. This walked `app/(app)/*.tsx` and
+   * nothing else, so a key asked for by a COMPONENT was never checked — and `project.select.retry`
+   * was in neither catalogue from 2026-08-12 until an Android capture photographed
+   * `<SelectProjectSheet />` in its failed state with the raw key printed on the retry button.
+   * Every test passed throughout: that key is reached only when the project fetch fails, which no
+   * test made happen and the screenshot rig did.
    */
+  function sources(dir: string): string[] {
+    return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
+      const here = join(dir, entry.name);
+      if (entry.isDirectory()) return entry.name === '__tests__' ? [] : sources(here);
+      return entry.name.endsWith('.ts') || entry.name.endsWith('.tsx') ? [here] : [];
+    });
+  }
+
   it('resolves in both locales', () => {
-    const files = readdirSync(SCREENS).filter((f) => f.endsWith('.tsx'));
     const missing: string[] = [];
-    for (const file of files) {
-      const src = readFileSync(join(SCREENS, file), 'utf8');
+    for (const file of sources(SRC)) {
+      const src = readFileSync(file, 'utf8');
+      const where = file.slice(SRC.length + 1);
       for (const m of src.matchAll(/\bt\(\s*'([a-zA-Z0-9_.]+)'/g)) {
         const key = m[1]!;
-        if (!enKeys.has(key)) missing.push(`en ${file}: ${key}`);
-        if (!thKeys.has(key)) missing.push(`th ${file}: ${key}`);
+        if (!enKeys.has(key)) missing.push(`en ${where}: ${key}`);
+        if (!thKeys.has(key)) missing.push(`th ${where}: ${key}`);
       }
     }
     expect(missing).toEqual([]);
+  });
+
+  it('reads more than the routes, and reaches the file that proved it had to', () => {
+    // The guard on the guard: a `sources()` that quietly returned the old set would leave the test
+    // above passing for the wrong reason.
+    const files = sources(SRC);
+    expect(files.length).toBeGreaterThan(readdirSync(join(SRC, 'app', '(app)')).length);
+    expect(files.some((f) => f.endsWith('SelectProjectSheet.tsx'))).toBe(true);
   });
 });

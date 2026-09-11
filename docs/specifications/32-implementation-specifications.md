@@ -1490,7 +1490,23 @@ Its order, top to bottom:
 | **Name**     | `auth.displayName`, `drawer.member` otherwise           | Body size, semibold, one line                       |
 | **Position** | `platform.users.position`, **omitted entirely** if null | 11px, muted. ADR-101                                |
 | **Id**       | `workforce.workers.employee_code`, short UUID otherwise | Caption size, **monospaced**, muted                 |
-| Status       | `platform.users.mfa_enabled` + the sync state           | Own inset row on `--cos-dark-bg`, cloud glyph, 11px |
+
+**THE STATUS LINE IS GONE FROM THE DRAWER** (product-owner decision 2026-09-11). It read
+`MFA verified • Online & synced` under the id, on its own inset row, and every word of it was real —
+`platform.users.mfa_enabled` and the live connection. It went because the drawer is where a person
+goes to NAVIGATE, and neither half was the drawer's to say: sync state already has exactly one
+indicator in the shell (`<SyncPill />`, which carries every state including offline) and MFA has its
+own row in Account Settings. **Two indicators of one subject in one shell** is what `OfflineBanner`
+was deleted for on 2026-08-06; this is the same rule applied to the same shell.
+
+`GET /users/me` is still read — the POSITION line needs it (ADR-101) — so the request was not saved
+and was not dropped. `drawer.mfaVerified` and `drawer.online` were deleted from both catalogues with
+the line, and `mfaEnabled` left the drawer's own `me` shape: a field nothing reads is the same drift
+as a key nothing renders.
+
+**`<AccountSettings />` KEEPS ITS OWN STATUS ROW.** The two were never the same line — the block
+takes a status as the CALLER's child, and that surface's says what the sync queue is doing, on a
+screen about the device. Only the drawer's is removed.
 
 **The order is the specification, not an accident of layout.** It descends by how often a line is
 read: a name identifies at a glance, a position gives that name meaning, an id is looked up perhaps
@@ -1514,40 +1530,103 @@ route sets a position, so it arrives by seed or HR import, and an app running ag
 older than migration `20260908000001` receives no such key at all. Both render the same way. A
 placeholder here would be the drawn line returning under another name, which is what ADR-101 ended.
 
-#### Navigation Drawer — one profile block, two body shapes
+#### Navigation Drawer — one profile block, one body shape
 
-The PROFILE BLOCK above is every role's, unchanged. The BODY below it has two shapes as of
-2026-09-10 (product-owner decision), and `drawerGroupsFor(role)` in `lib/drawerLinks.ts` decides
-which — returning `null` for a role with no grouped menu, which means _render the flat list_, where
-an empty array would mean _render nothing_.
+The PROFILE BLOCK above is every role's. **So is the body, as of 2026-09-11** (product-owner
+decision): one `Field tools` heading, the role's own rows, `More (N)` from row seven on, then the
+shared rows below a divider. There is no per-role body variant and no `drawerGroupsFor`.
 
-| Shape       | Roles               | Body                                                                                |
-| ----------- | ------------------- | ----------------------------------------------------------------------------------- |
-| **Flat**    | eleven roles        | one `Field tools` heading, up to `DRAWER_MAX_ROWS` (7) rows, the rest behind `More` |
-| **Grouped** | `CRM_SALES_MANAGER` | four titled groups, badges on two rows, no folding                                  |
+**The drawing is `mockup/mobile/03_site_engineer/05_profile/01_se_navigation_drawer`**, redrawn by
+Stitch as _"Navigation Drawer - Construction OS Mobile"_ and named by the product owner as the shell
+every role shares. It is the SITE ENGINEER's drawing and that is not a contradiction: measured on
+the day, 16,179 B against the 16,098 B file it replaced, rendered strings identical but for an added
+`ID:` line, its rows that role's §6.4 modules and its id `#SE-8842`. **The rows are one role's; only
+the shell generalises.**
 
-**The grouped shape exists because a flat seven-row list cannot express its drawing**
-(`mockup/mobile/12_crm_manager/05_profile/02_crm_navigation_drawer`): four titled groups, of whose
-eleven rows six lead to screens this product does not have. Four rules were applied to that drawing
-and each cost it something; all four are recorded beside the table in `lib/drawerLinks.ts`, and the
-two that are decisions rather than readings are:
+| Element        | Every role                                                                      |
+| -------------- | --------------------------------------------------------------------------------- |
+| Brand row      | `<BrandLogo variant="dark" />`, tagline included                                  |
+| Profile header | the block above, plus the drawing's trailing chevron — which says so on the press |
+| Body           | one `Field tools` heading · the role's rows · `More (N)` past `DRAWER_MAX_ROWS` (8) |
+| Row            | active pill · icon · one-line label · **trailing chevron**                        |
+| Shared rows    | `SHARED_LINKS` below a divider, **pinned above `Logout`** — outside the scroll  |
+| Footer         | `Logout`, with its own chevron                                                    |
 
-- **A drawer row may also be a bottom tab, for this role only.** The rule everywhere else is that it
-  may not — the tabs are one tap away already, so a drawer row onto one is a second door onto one
-  room. `/home`, `/leads`, `/opportunities` and `/customers` are all this role's tabs and are all in
-  its drawer, by product-owner decision 2026-09-10: the drawing puts them there because they are the
-  group that gives the other two groups their meaning, and a menu whose sales section is empty says
-  this role has no sales screens. The exception lives in the `GROUPED` table and nowhere else, so no
-  other role can acquire a duplicate row by accident.
-- **There is no operating-region bar**, which the drawing heads the menu with. No schema in this
-  product holds a region for a user — not `platform.users`, not `platform.tenants` — so the bar could
-  only print a constant and its switch button could only do nothing. `<ProjectContextBar />` answers
-  _which project_, a different question with its own component.
+**The prose lines reserve the chevron's column; the id line does not** (product-owner decision
+2026-09-11). `<ProfileBlock />` takes a `trailingReserve` that applies to the NAME and the POSITION
+only, because the drawer's chevron is absolutely positioned and takes no part in the layout, so
+without it the text runs under the glyph — every line is one line and ellipsizes, but at the card's
+inner edge, which is past the chevron. The first fix reserved the column on the CARD and truncated
+the id to `User ID: 061A6A…`: measured on `01-site-engineer.png`, the id is 17 monospace characters
+needing 342 of the text column's 372 px, so it cannot give up 105. **A name or a job title losing
+its tail to `…` is still legible; an id losing its tail is a different id.** The chevron is centred
+on the block and never reaches that line.
 
-A grouped row's badge is REAL where a list can be counted (new leads, open opportunities — fetched
-once when the drawer first opens, and drawn as nothing at all if the fetch fails, because _could not
-ask_ is not _none_) and a registered figure where nothing can be counted (closing tenders: there is
-no tender table).
+**The shared rows do not scroll** (product-owner decision 2026-09-11: "ให้โซน Settings กับ Privacy
+policy อยู่ติดกับแถว LOG OUT ตลอด"). They sat at the end of the scrolling list until that day, so
+their position was a function of how many rows the role has: `SITE_WORKER` has three and the pair
+sat a third of the way down the panel, while `TENANT_ADMIN`'s nineteen expanded pushed them past
+the bottom edge. Pinned against `Logout` they are in one place for every role — and it is the
+stronger form of the guarantee that keeps them out of `More`: a notice PDPA §23 requires to remain
+available now cannot be scrolled away either, not merely never folded.
+
+**`DRAWER_MAX_ROWS` went 7 → 9 → 8, all on 2026-09-11**, and the last step was settled by a
+picture rather than an argument. The rise came with the pinning, and for the same reason: while the
+shared pair sat at the end of the scrolling column, every row a role owned pushed the Privacy
+Policy further down it, so the fold was protecting that pair as much as it was keeping the menu
+readable. Pinned, the pair cannot be pushed anywhere.
+
+**Nine was one row too many, and only a capture could say so.** Measured on
+`docs/screens/android/02-shared/03-navigation-drawer/04-project-manager.png` (1080×2400 at 420 dpi,
+2.625 px/dp): rows pitch 54.1 dp — `touchTarget.listItem` 52 plus the 2 dp gap — and **exactly
+eight fit** between the profile card and the pinned pair, the eighth centred at 1711 px against a
+scroll edge at 1800 px; a ninth lands at 1853 px. At nine, the ninth row is `More (N)` for every
+folding role, so the one control that opens the rest of a role's menu sat below the visible edge —
+in five roles at once, with every test green.
+
+**Eight holds both ends.** `SITE_ENGINEER`'s eight rows draw in full, which is what leaving seven
+set out to achieve, and a folding role draws seven rows plus a `More` that is on screen. Measured
+after the change: three 19-row roles at 7 + `More (12)`, `FINANCE` and `VIEWER` (10) at
+7 + `More (3)`, `PROCUREMENT_OFFICER` and `CRM_SALES_MANAGER` at 7, `SITE_ENGINEER` at 8. Five
+roles fold. The constant is a readability rule and the viewport is a measurement; on this device
+they agree at eight, and a shorter panel would have to be measured on its own frame.
+
+> **WHAT ENDED THE TWO-SHAPE SPLIT, one day after it began.** From 2026-09-10 `CRM_SALES_MANAGER`
+> had a grouped menu — three tables of rows plus a System group rendered from `SHARED_LINKS`, badges
+> on two rows — because its own drawing is that shape. What ended it was not a better argument about
+> that role. **Eight drawer drawings exist on disk and they disagree with each other**: chevrons per
+> drawing `10 · 0 · 0 · 0 · 8 · 1 · 2 · 8`, and two carry no Logout at all. "Follow each role's
+> drawing" cannot produce one structure, so one drawing was chosen for all twelve.
+>
+> **The split had been hiding a defect in the eleven.** The grouped renderer drew a trailing chevron
+> and the flat one did not, so eleven of the twelve roles were missing the chevron the drawing puts
+> on every row. Two renderers for one row is how that happens — nothing fails when they diverge.
+> There is one renderer now.
+>
+> **What the grouped menu cost when it went**, each by product-owner decision the same day:
+> its four rows onto that role's OWN TABS (`/home`, `/leads`, `/opportunities`, `/customers`); its
+> three badges, two real counts and one registered figure. Its six unbuilt rows survived, in
+> `NOT_DERIVED`, still saying so on the press.
+>
+> **The tab rule was not added, it was applied.** `drawerLinksFor` has always filtered out any row
+> whose route is one of that role's visible tabs; the `GROUPED` table was the single thing bypassing
+> it. Deleting the table enforced the rule the other eleven already followed.
+>
+> **`CRM_DRAWER_COUNTS` left the ADR-099 register with the badge it fed** — the fourth entry that
+> register has lost, and the first lost because THE SURFACE THAT RENDERED IT WAS REMOVED rather than
+> because real data arrived or a computation replaced it.
+
+**The two decisions that outlived the grouped menu.** They were taken on 2026-09-10 for that menu
+and are recorded here because each is still a ruling about this product, not about a shape:
+
+- **A drawer row may not also be a bottom tab.** The tabs are one tap away already, so a drawer row
+  onto one is a second door onto one room. `CRM_SALES_MANAGER` was the single exception, for the
+  single day its menu existed; that exception is gone and the rule is now universal — and enforced
+  by `drawerLinksFor`, which has filtered such rows all along.
+- **There is no operating-region bar**, which that drawing heads the menu with. No schema in this
+  product holds a region for a user — not `platform.users`, not `platform.tenants` — so the bar
+  could only print a constant and its switch button could only do nothing. `<ProjectContextBar />`
+  answers _which project_, a different question with its own component.
 
 #### Account Settings — three groups and a profile head
 

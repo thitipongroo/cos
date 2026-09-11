@@ -413,10 +413,22 @@ Core components (React Native — implement in apps/mobile/):
                         precedence exists once and only the presentation is each pill's own.
   Drawer profile block  THE PROJECT'S STANDARD FOR SHOWING WHO IS SIGNED IN (PO decision
                         2026-09-08). The card at the head of <NavigationDrawer />, in this order and
-                        no other: AVATAR · NAME · POSITION · ID · STATUS. One drawer serves every
-                        role, so this is every role's block — there is no per-role variant.
+                        no other: AVATAR · NAME · POSITION · ID. One drawer serves every role, so
+                        this is every role's block — there is no per-role variant.
+                        NO STATUS LINE since 2026-09-11 (PO decision). It read "MFA verified •
+                        Online & synced" and both halves were REAL; it went because neither is the
+                        drawer's to say — sync already has one indicator in the shell (<SyncPill />)
+                        and MFA has a row in Account Settings, and two indicators of one subject in
+                        one shell is what OfflineBanner was deleted for. <AccountSettings /> keeps
+                        ITS status row: the block takes a status as the CALLER's child and that
+                        one reports the sync queue, on a screen about the device.
                         Descending by how often a line is read: a name identifies at a glance, a
                         position gives it meaning, an id is looked up perhaps twice a year.
+                        That order is also WHO PAYS FOR THE CHEVRON: `trailingReserve` keeps the
+                        glyph's column clear on the NAME and POSITION and never on the ID (PO
+                        decision 2026-09-11). Reserving it on the card truncated the id to
+                        `User ID: 061A6A…` — a name losing its tail to `…` stays legible, an id
+                        losing its tail is a different id.
                         NO ROLE TAG. The name line carried the role enum as a chip until 2026-09-08
                         and it was removed: the position line below already says what the person
                         does, in the words a person uses. The drawings show the chip — 09_finance/

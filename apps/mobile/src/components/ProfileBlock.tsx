@@ -55,6 +55,7 @@ export function ProfileBlock({
   /** The status line, which differs per surface. Rendered directly below the block. */
   children,
   testIDPrefix,
+  trailingReserve,
 }: {
   displayName: string | null | undefined;
   fallbackName: string;
@@ -66,6 +67,20 @@ export function ProfileBlock({
   children?: React.ReactNode;
   /** Prefixes the two testIDs — `drawer` gives `drawer-job-title` / `drawer-user-id`. */
   testIDPrefix: string;
+  /**
+   * Width to keep clear on the right of the PROSE lines, for a control the caller draws over the
+   * block — the drawer's chevron is the only one (added 2026-09-11).
+   *
+   * IT DOES NOT APPLY TO THE ID LINE, and that is the whole point of the prop rather than padding on
+   * the caller's card. Reserving the column on the card truncated the id to `User ID: 061A6A…`,
+   * measured on `02-shared/03-navigation-drawer/01-site-engineer.png`: the id is 17 monospace
+   * characters and needs 342 of the 372 px the text column has, so it cannot give up 105 px. A name
+   * or a job title losing its tail to `…` is legible; an id losing its tail is a different id.
+   *
+   * Vertically the chevron only ever reaches the prose: it is centred on the block, so with a
+   * position line it sits beside that line, and without one it sits between the name and the id.
+   */
+  trailingReserve?: number;
 }): React.JSX.Element {
   const p = usePalette();
   const ink = variant === 'drawer' ? darkColors.text : p.text;
@@ -75,13 +90,16 @@ export function ProfileBlock({
       <View style={styles.row}>
         <Avatar variant={variant === 'drawer' ? 'dark' : 'light'} />
         <View style={styles.text}>
-          <Text style={[styles.name, { color: ink }]} numberOfLines={1}>
+          <Text
+            style={[styles.name, { color: ink }, { paddingRight: trailingReserve ?? 0 }]}
+            numberOfLines={1}
+          >
             {displayName ?? fallbackName}
           </Text>
           {position == null || position === '' ? null : (
             <Text
               testID={`${testIDPrefix}-job-title`}
-              style={[styles.position, { color: muted }]}
+              style={[styles.position, { color: muted }, { paddingRight: trailingReserve ?? 0 }]}
               numberOfLines={1}
             >
               {position}
