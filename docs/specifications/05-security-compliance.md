@@ -419,6 +419,15 @@ Keycloak password credential. `POST /api/v1/users` (§14.3) provisions one or th
 both together — that rejection is now the intended design, not a gap. Moving a person between paths
 means provisioning a new account, not adding a second identifier to theirs.
 
+**A Path A account has no password to change, and the self-service surface says so.** Path A
+provisioning creates the Keycloak user with **no credential** at all; the OTP exchange writes a
+random UUID as an ephemeral credential on every login, so nothing its owner knows or could set is
+ever stored. `POST /api/v1/users/me/password-reset-email` (§14, ADR-104) therefore refuses a Path A
+caller with `COS-AUTH-003` rather than reporting a link it cannot send, and the client omits the
+Password row on those accounts rather than disabling it — a disabled control implies one that could
+be enabled. The client distinguishes the paths from `GET /users/me`, which already returns both
+`email` and `phone_number`.
+
 **What this costs, and why it is affordable.** A field worker cannot fall back to a password when
 they have no signal. That would matter if the OTP path stranded them offline — and until 2026-08-23
 it did, because the refresh token expired after 30 minutes of inactivity. §5.4.2's `offline_access`

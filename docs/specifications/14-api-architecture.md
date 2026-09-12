@@ -976,6 +976,7 @@ which every screen needs. The rest are Tenant Admin.
 | `GET`   | `/api/v1/tenant`                               | The caller's own tenant — name, code, plan              | Bearer token |
 | `GET`   | `/api/v1/users/me`                             | The caller's own user row — roles, department, position | Bearer token |
 | `PATCH` | `/api/v1/users/me/photo`                       | Set or clear own profile photo (a File Service URL)     | Bearer token |
+| `POST`  | `/api/v1/users/me/password-reset-email`        | Email own single-use 15-minute reset link — ADR-104     | Bearer token |
 | `GET`   | `/api/v1/users/{user_id}/roles`                | A user's primary + additional roles                     | Tenant Admin |
 | `PUT`   | `/api/v1/users/{user_id}/roles`                | Replace that set; emits `identity.user.role_changed.v1` | Tenant Admin |
 | `POST`  | `/api/v1/users/{user_id}/reset-password`       | Issue a one-time temporary password, returned ONCE      | Tenant Admin |
@@ -989,6 +990,16 @@ which every screen needs. The rest are Tenant Admin.
   and it puts a plaintext password in an administrator's hands for as long as the hand-off takes.
   The email route is a single-use 15-minute Keycloak `UPDATE_PASSWORD` action token (NIST 800-63B
   Rev.4) — the user sets their own password and COS never sees it.
+
+- **`POST /users/me/password-reset-email` is the self-service twin of that admin route** (ADR-104):
+  the same action-token email, with the target taken from the JWT rather than a path parameter, so
+  it carries no body and no parameter at all. It does NOT ask for the current password — Keycloak's
+  Direct Grant flow denies `TENANT_ADMIN` and `FINANCE` (`mfa-enforcement.md` Step 1b), which are
+  the only two roles guaranteed to HAVE one (§5.4.4), so in-app verification would fail for exactly
+  the accounts it matters most for. **Path B only**: a Path A account has no email and no password,
+  and the route refuses it with `COS-AUTH-003` rather than reporting a send. The `password_changed_at`
+  column that backs the "last changed" line is NOT written by this route — the flow completes inside
+  Keycloak and calls nothing back — only by the admin temporary reset.
 
 - **Consent is append-only.** A grant and a withdrawal both insert a new row; the prior row is never
   mutated, so the history PDPA-22 requires survives. Withdrawal is forward-only — it stops future

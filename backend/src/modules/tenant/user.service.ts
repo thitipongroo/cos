@@ -110,6 +110,19 @@ export interface MeRow extends UserRow {
    * as missing data. In the seeded dev tenant exactly 1 of 19 workers is linked to an account.
    */
   employee_code: string | null;
+  /**
+   * `platform.users.password_changed_at` — when the password was last set through this API.
+   *
+   * NULL FOR EVERY ACCOUNT UNTIL ITS OWNER CHANGES ONE, and callers print nothing rather than
+   * "never": the column observes writes that pass through this service (self-service change, admin
+   * temporary reset) and a Keycloak-side change — the reset-link flow, or the admin console — does
+   * not update it. A lower bound on recency, not an audit record (migration 20260913000001).
+   *
+   * ON `MeRow` AND NOT `UserRow`, for the reason stated above this interface: the admin list and
+   * every other query select `UserRow` columns from `platform.users` alone, and widening that type
+   * would make those results structurally incomplete where raw SQL cannot say so.
+   */
+  password_changed_at: Date | null;
 }
 
 export interface PaginationParams {
@@ -210,6 +223,7 @@ export class UserService implements OnModuleDestroy {
       SELECT
         u.user_id, u.tenant_id, u.keycloak_user_id, u.email, u.phone_number, u.display_name,
         u.photo_url, u.department, u.position, u.is_active, u.mfa_enabled, u.last_seen_at,
+        u.password_changed_at,
         u.created_at, u.updated_at, m.role,
         w.employee_code
       FROM platform.users u
@@ -599,6 +613,17 @@ export class UserService implements OnModuleDestroy {
       tempPassword,
     );
 
+    // Written AFTER Keycloak accepted the credential, never before: the column is read as "a
+    // password was last set at least this recently", and a row updated ahead of a failed Keycloak
+    // call would claim a change that never happened. This is the one credential set that still
+    // passes through this service — the action-token email flows complete inside Keycloak and call
+    // nothing back — so it is the only writer. See `MeRow.password_changed_at`.
+    await this.prisma.$executeRaw`
+      UPDATE platform.users
+      SET password_changed_at = now(), updated_at = now()
+      WHERE user_id = ${userId}::uuid AND tenant_id = ${tenantId}::uuid
+    `;
+
     logger.info({ userId, tenantId, actorId }, 'user.password_reset');
     await this.publishEvent('identity.user.password_reset.v1', {
       tenant_id: tenantId,
@@ -659,6 +684,86 @@ export class UserService implements OnModuleDestroy {
       user_id: userId,
       reset_by: actorId,
       method: 'email_link',
+    });
+
+    return { email: user.email };
+  }
+
+  /**
+   * SELF-SERVICE password reset: the signed-in user asks for their OWN UPDATE_PASSWORD link.
+   *
+   * The same Keycloak action-token email as `sendPasswordResetLink` above, with the target taken
+   * from the JWT instead of from a path parameter — so there is no role check, like every other
+   * `users/me` route (§14 self-service surface). The link is single-use and 15 minutes; the user
+   * sets their own password inside Keycloak and COS never handles a plaintext credential.
+   *
+   * WHY NOT VERIFY THE CURRENT PASSWORD IN-APP FIRST. The obvious design — take the old password,
+   * check it by Direct Grant, then set the new one — cannot work for the two roles it matters most
+   * for. `docs/runbooks/mfa-enforcement.md` Step 1b binds `direct-grant-mfa` as the realm's Direct
+   * Grant flow with `Deny access` for TENANT_ADMIN and FINANCE, and §5.4.4 makes both Path B only:
+   * the accounts guaranteed to HAVE a password are exactly the ones guaranteed to be refused when
+   * verifying one. A second Keycloak client configured to bypass that deny would reopen a Direct
+   * Grant path for a privileged account, which is the thing Step 1b exists to prevent. The email
+   * carries its own proof of possession over a separate channel instead (NIST SP 800-63B Rev.4),
+   * so nothing is weakened by not asking for the old one. Product owner decision, 2026-09-13.
+   *
+   * `password_changed_at` IS DELIBERATELY NOT WRITTEN HERE. The flow completes inside Keycloak and
+   * calls nothing back; writing the column when the link is SENT would record a change that the
+   * user may never finish. See the column's own comment on `MeRow`.
+   *
+   * Emits identity.user.password_reset.v1 with `reset_by` = the user themselves (method =
+   * `self_service_email_link`, distinct from the admin `email_link` so the audit trail can tell
+   * who asked).
+   */
+  async requestMyPasswordResetEmail(tenantId: string, userId: string): Promise<{ email: string }> {
+    const [user] = await this.prisma.$queryRaw<
+      Array<{ keycloak_user_id: string; email: string | null }>
+    >`
+      SELECT keycloak_user_id, email FROM platform.users
+      WHERE user_id = ${userId}::uuid AND tenant_id = ${tenantId}::uuid AND is_active = true
+      LIMIT 1
+    `;
+    if (!user) {
+      throw new NotFoundException({ error: { code: 'COS-USER-404', message: 'User not found' } });
+    }
+
+    // PATH A IS REFUSED, NOT SILENTLY SUCCEEDED. A phone-only account holds a phone number and an
+    // empty email by design (§5.4.4, one identifier per account for its lifetime) and its Keycloak
+    // credential is a random UUID rewritten on every OTP exchange — so there is no address to send
+    // to and no password its owner could set. Reporting "sent" would be a lie the user could only
+    // discover by waiting for mail that never arrives.
+    if (!user.email || user.email.trim() === '') {
+      throw new BadRequestException({
+        error: {
+          code: 'COS-AUTH-003',
+          message:
+            'This account signs in with a phone number and a one-time code, so it has no password ' +
+            'to change and no email to send a link to.',
+          messageKey: 'user.password.pathAHasNoPassword',
+        },
+      });
+    }
+
+    const [tenant] = await this.prisma.$queryRaw<Array<{ keycloak_realm: string }>>`
+      SELECT keycloak_realm FROM platform.tenants
+      WHERE tenant_id = ${tenantId}::uuid AND is_active = true
+      LIMIT 1
+    `;
+    if (!tenant) throw new BadRequestException('Tenant not found or inactive');
+
+    // 15 minutes — NIST 800-63B Rev.4 wants a short (< 60 min), single-use reset token.
+    await this.keycloakAdmin.sendPasswordResetEmail(
+      user.keycloak_user_id,
+      tenant.keycloak_realm,
+      900,
+    );
+
+    logger.info({ userId, tenantId }, 'user.self_service_password_reset_link_sent');
+    await this.publishEvent('identity.user.password_reset.v1', {
+      tenant_id: tenantId,
+      user_id: userId,
+      reset_by: userId,
+      method: 'self_service_email_link',
     });
 
     return { email: user.email };

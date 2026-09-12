@@ -912,6 +912,41 @@ describe('UserService password resets', () => {
       expect(outboxMock.publish).toHaveBeenCalledTimes(1);
     });
 
+    it('stamps password_changed_at only after Keycloak has accepted the credential', async () => {
+      // The column is read as "a password was last set at least this recently" (MeRow), so the
+      // write must follow the Keycloak call, never precede it.
+      (prismaMock.$queryRaw as jest.Mock)
+        .mockResolvedValueOnce([{ keycloak_user_id: KC_USER_ID, display_name: 'สมชาย ใจดี' }])
+        .mockResolvedValueOnce([{ keycloak_realm: REALM }]);
+      const order: string[] = [];
+      keycloakAdmin.setTemporaryPassword.mockImplementation(async () => {
+        order.push('keycloak');
+      });
+      (prismaMock.$executeRaw as jest.Mock).mockImplementation(async () => {
+        order.push('stamp');
+        return 1;
+      });
+
+      await service.resetPassword(USER_ID, TENANT_ID, ACTOR_ID);
+
+      expect(order).toEqual(['keycloak', 'stamp']);
+      const sql = (prismaMock.$executeRaw as jest.Mock).mock.calls[0]?.[0];
+      const text = Array.isArray(sql) ? sql.join('?') : String(sql);
+      expect(text).toContain('password_changed_at = now()');
+    });
+
+    it('does not stamp password_changed_at when Keycloak refuses the credential', async () => {
+      (prismaMock.$queryRaw as jest.Mock)
+        .mockResolvedValueOnce([{ keycloak_user_id: KC_USER_ID, display_name: 'สมชาย ใจดี' }])
+        .mockResolvedValueOnce([{ keycloak_realm: REALM }]);
+      keycloakAdmin.setTemporaryPassword.mockRejectedValueOnce(new Error('Keycloak unreachable'));
+
+      await expect(service.resetPassword(USER_ID, TENANT_ID, ACTOR_ID)).rejects.toThrow(
+        'Keycloak unreachable',
+      );
+      expect(prismaMock.$executeRaw).not.toHaveBeenCalled();
+    });
+
     it('throws NotFoundException when the user is not found (or inactive) in the tenant', async () => {
       (prismaMock.$queryRaw as jest.Mock).mockResolvedValueOnce([]); // no user
 
@@ -972,6 +1007,93 @@ describe('UserService password resets', () => {
         .mockResolvedValueOnce([]); // tenant not found
 
       await expect(service.sendPasswordResetLink(USER_ID, TENANT_ID, ACTOR_ID)).rejects.toThrow(
+        BadRequestException,
+      );
+      expect(keycloakAdmin.sendPasswordResetEmail).not.toHaveBeenCalled();
+    });
+  });
+
+  // The self-service twin of sendPasswordResetLink: same Keycloak action-token email, target taken
+  // from the JWT rather than a path parameter. The differences worth asserting are who the audit
+  // trail names, that a Path A account is REFUSED rather than quietly reported as sent, and that
+  // password_changed_at is NOT stamped — the flow finishes inside Keycloak and calls nothing back.
+  describe('requestMyPasswordResetEmail', () => {
+    it('sends a 15-minute link to the caller’s own address and names them as the actor', async () => {
+      (prismaMock.$queryRaw as jest.Mock)
+        .mockResolvedValueOnce([{ keycloak_user_id: KC_USER_ID, email: 'w@a.com' }]) // user
+        .mockResolvedValueOnce([{ keycloak_realm: REALM }]); // tenant
+
+      const result = await service.requestMyPasswordResetEmail(TENANT_ID, USER_ID);
+
+      expect(result).toEqual({ email: 'w@a.com' });
+      expect(keycloakAdmin.sendPasswordResetEmail).toHaveBeenCalledWith(KC_USER_ID, REALM, 900);
+      expect(outboxMock.publish).toHaveBeenCalledTimes(1);
+      // reset_by is the user themselves, and the method distinguishes this from the admin link so
+      // the audit trail can say who asked.
+      expect(outboxMock.publish.mock.calls[0]?.[0]).toMatchObject({
+        event_type: 'identity.user.password_reset.v1',
+        payload: {
+          tenant_id: TENANT_ID,
+          user_id: USER_ID,
+          reset_by: USER_ID,
+          method: 'self_service_email_link',
+        },
+      });
+    });
+
+    it('does not stamp password_changed_at — the flow completes inside Keycloak', async () => {
+      (prismaMock.$queryRaw as jest.Mock)
+        .mockResolvedValueOnce([{ keycloak_user_id: KC_USER_ID, email: 'w@a.com' }])
+        .mockResolvedValueOnce([{ keycloak_realm: REALM }]);
+
+      await service.requestMyPasswordResetEmail(TENANT_ID, USER_ID);
+
+      // Stamping on SEND would record a change the user may never finish making.
+      expect(prismaMock.$executeRaw).not.toHaveBeenCalled();
+    });
+
+    it('throws NotFoundException with COS-USER-404 when the caller’s row is gone or inactive', async () => {
+      (prismaMock.$queryRaw as jest.Mock).mockResolvedValueOnce([]); // no user
+
+      await expect(service.requestMyPasswordResetEmail(TENANT_ID, USER_ID)).rejects.toMatchObject({
+        response: { error: { code: 'COS-USER-404' } },
+      });
+      expect(keycloakAdmin.sendPasswordResetEmail).not.toHaveBeenCalled();
+    });
+
+    it('refuses a Path A account (email null) with COS-AUTH-003 rather than reporting a send', async () => {
+      (prismaMock.$queryRaw as jest.Mock).mockResolvedValueOnce([
+        { keycloak_user_id: KC_USER_ID, email: null },
+      ]);
+
+      await expect(service.requestMyPasswordResetEmail(TENANT_ID, USER_ID)).rejects.toMatchObject({
+        response: {
+          error: { code: 'COS-AUTH-003', messageKey: 'user.password.pathAHasNoPassword' },
+        },
+      });
+      expect(keycloakAdmin.sendPasswordResetEmail).not.toHaveBeenCalled();
+      expect(outboxMock.publish).not.toHaveBeenCalled();
+    });
+
+    it('refuses a Path A account whose email column is empty or blank, not just null', async () => {
+      // provisionPhoneUser writes `email = ''`, not NULL — a null check alone would let a phone-only
+      // account through to Keycloak with an empty address.
+      (prismaMock.$queryRaw as jest.Mock).mockResolvedValueOnce([
+        { keycloak_user_id: KC_USER_ID, email: '   ' },
+      ]);
+
+      await expect(service.requestMyPasswordResetEmail(TENANT_ID, USER_ID)).rejects.toMatchObject({
+        response: { error: { code: 'COS-AUTH-003' } },
+      });
+      expect(keycloakAdmin.sendPasswordResetEmail).not.toHaveBeenCalled();
+    });
+
+    it('throws BadRequestException when the tenant is not found or inactive', async () => {
+      (prismaMock.$queryRaw as jest.Mock)
+        .mockResolvedValueOnce([{ keycloak_user_id: KC_USER_ID, email: 'w@a.com' }]) // user
+        .mockResolvedValueOnce([]); // tenant not found
+
+      await expect(service.requestMyPasswordResetEmail(TENANT_ID, USER_ID)).rejects.toThrow(
         BadRequestException,
       );
       expect(keycloakAdmin.sendPasswordResetEmail).not.toHaveBeenCalled();

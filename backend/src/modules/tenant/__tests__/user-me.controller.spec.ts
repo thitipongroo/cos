@@ -11,6 +11,7 @@ import type { TenantRequest } from '../tenant.middleware';
 const mockSvc = {
   getMe: jest.fn(),
   updateMyPhoto: jest.fn(),
+  requestMyPasswordResetEmail: jest.fn(),
 };
 
 const TENANT_ID = 'aaaaaaaa-0000-0000-0000-000000000001';
@@ -62,6 +63,28 @@ describe('UserMeController', () => {
       await ctrl.updatePhoto(req, {});
 
       expect(mockSvc.updateMyPhoto).toHaveBeenCalledWith(TENANT_ID, USER_ID, null);
+    });
+  });
+
+  describe('POST /users/me/password-reset-email', () => {
+    it('asks for a link for the JWT’s own user, taking nothing from the request', async () => {
+      mockSvc.requestMyPasswordResetEmail.mockResolvedValue({ email: 'somchai@example.com' });
+
+      expect(await ctrl.requestPasswordResetEmail(req)).toEqual({
+        email: 'somchai@example.com',
+      });
+      // The route has no body and no parameter by design — a caller cannot point it at another
+      // account, which is the whole reason this sits on the self-service controller.
+      expect(mockSvc.requestMyPasswordResetEmail).toHaveBeenCalledWith(TENANT_ID, USER_ID);
+    });
+
+    it('lets the service’s refusal propagate rather than reporting a send that did not happen', async () => {
+      // A Path A account is refused with COS-AUTH-003. The controller must not swallow it into a
+      // 200 — "we sent you a link" is only discoverable as false by waiting for mail forever.
+      const refusal = Object.assign(new Error('path A'), { status: 400 });
+      mockSvc.requestMyPasswordResetEmail.mockRejectedValue(refusal);
+
+      await expect(ctrl.requestPasswordResetEmail(req)).rejects.toBe(refusal);
     });
   });
 });

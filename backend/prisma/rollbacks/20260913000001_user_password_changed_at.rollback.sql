@@ -1,0 +1,28 @@
+-- Rollback: 20260913000001_user_password_changed_at
+--
+-- Drops the password-recency column from platform.users.
+--
+-- WHAT BREAKS, AND WHAT DOES NOT.
+--
+-- `GET /users/me` SELECTs this column by name, so it fails outright once the column is gone — this
+-- rollback requires the application to be rolled back with it. The SELECT list in
+-- `UserService.getMe` is explicit, not `SELECT *`, so there is no version that silently tolerates
+-- the absence. Same shape as the `position` rollback beside this one, and stated for the same
+-- reason: the column looks optional from the mobile side and is not from the SQL side.
+--
+-- The mobile Account Settings screen degrades rather than breaks IF the app is not rolled back:
+-- `Me.password_changed_at` is declared OPTIONAL (QM-9) and the Password row renders its "last
+-- changed" line only when a date is present. A new app against a rolled-back database shows the
+-- Password row with its action and no date line — which is exactly what it shows for an account
+-- that has never changed its password. No blank space, no error.
+--
+-- THE CHANGE-PASSWORD ENDPOINT KEEPS WORKING. `POST /users/me/change-password` verifies the current
+-- credential against Keycloak and writes the new one there; this column is a note taken afterwards.
+-- With the column gone the write fails, so the UPDATE is rolled back with the application — but no
+-- credential state is lost either way, because Keycloak holds it and this table does not.
+--
+-- DATA IS DESTROYED, AND IT IS NOT RECONSTRUCTIBLE FROM HERE. Every observed change date is gone.
+-- Re-running the migration gives back an empty column: Keycloak knows when each credential was
+-- created, this table does not, and nothing in this repository backfills one from the other.
+ALTER TABLE platform.users
+  DROP COLUMN IF EXISTS password_changed_at;
