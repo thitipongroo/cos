@@ -3,7 +3,11 @@
 // Not cached offline: the header avatar's initials come from the persisted session (authStore
 // displayName), so a failed fetch here costs the photo, never the whole header.
 
-import { get, mutate, post } from './client';
+// Expo SDK 54+ moved uploadAsync / FileSystemUploadType to the `expo-file-system/legacy` subpath
+// (same as PhotoUploadQueue and transcribe.ts, ADR-046).
+import * as FileSystem from 'expo-file-system/legacy';
+import { get, mutate, post, API_BASE_URL } from './client';
+import { useAuthStore } from '../store/authStore';
 
 export interface Me {
   user_id: string;
@@ -85,6 +89,49 @@ export async function requestMyPasswordResetEmail(): Promise<{ email: string }> 
 /** Set the profile photo, or pass null to clear it and go back to initials. */
 export async function updateMyPhoto(photoUrl: string | null): Promise<void> {
   await mutate<Me>('PATCH', '/users/me/photo', { photo_url: photoUrl }, 'user-photo', 'me');
+}
+
+/**
+ * Upload a local image and set it as the profile photo (ADR-105).
+ *
+ * TWO CALLS, IN THIS ORDER, because they are two different facts: the File Service owns the bytes
+ * and `platform.users.photo_url` owns which of them is this person's face. The column has meant
+ * "the file-service URL" since its own migration (20260716000001) said so; what was missing until
+ * 2026-09-13 was a file-service URL that does not expire.
+ *
+ * THE URL IS BUILT HERE RATHER THAN RETURNED BY THE UPLOAD. `POST /files/upload` answers with a
+ * `file_id`, and the only URL it offers is the presigned one that dies in an hour. The permanent
+ * route is `GET /files/{id}/image`, addressed by that id — so composing it is the client's job, and
+ * it is done in exactly one place.
+ *
+ * NOT OFFLINE-QUEUED. The upload needs the network by definition, and a photo set hours later out
+ * of a replay queue would surprise someone who had already picked a different one.
+ *
+ * THE NEW PHOTO IS PENDING_SCAN FOR A MOMENT. ClamAV runs asynchronously and the image route
+ * refuses anything not yet CLEAN (409), so a just-set avatar can fall back to initials for a beat
+ * before it appears. That is the scan gate working, not a failure — callers must not read it as one.
+ */
+export async function uploadMyPhoto(localUri: string): Promise<{ photo_url: string }> {
+  const token = useAuthStore.getState().accessToken;
+  if (!token) throw new Error('Not authenticated — cannot upload a profile photo.');
+
+  const upload = await FileSystem.uploadAsync(`${API_BASE_URL}/files/upload`, localUri, {
+    httpMethod: 'POST',
+    uploadType: FileSystem.FileSystemUploadType.MULTIPART,
+    fieldName: 'file',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+
+  if (upload.status < 200 || upload.status >= 300) {
+    throw new Error(`Photo upload failed (HTTP ${upload.status}).`);
+  }
+
+  const fileId = (JSON.parse(upload.body) as { file_id?: string }).file_id;
+  if (!fileId) throw new Error('Photo upload returned no file_id.');
+
+  const photoUrl = `${API_BASE_URL}/files/${fileId}/image`;
+  await updateMyPhoto(photoUrl);
+  return { photo_url: photoUrl };
 }
 
 // ─── Tenant admin — user management (GET /users, TENANT_ADMIN only; spec §14.3) ───

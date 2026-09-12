@@ -121,10 +121,38 @@ describe('Phase 10 · per-role bottom nav', () => {
 });
 
 describe('Phase 10 · the drawer IS the profile (master:3449-3452)', () => {
-  it('there is no self-profile route', () => {
-    // "There is no /profile route any more — the screen was deleted and its content is
-    // <AccountSettings />, rendered inside the drawer the avatar opens."
-    expect(exists(`${mobile}/app/(app)/profile.tsx`)).toBe(false);
+  // THE RULING IS ABOUT THE ENTRY POINT, NOT ABOUT THE FILE — and between 2026-08-09 and
+  // 2026-09-13 this case could not tell the difference, because there was no file to distinguish.
+  //
+  // master:3449-3452 deleted `/profile` and made the drawer the profile. The product owner restored
+  // the route on 2026-09-13 (decision E5, Stitch screen 7367a779…) as a READ-ONLY record, entered
+  // from the drawer's own profile card — the card whose chevron had reported "coming soon" for the
+  // whole intervening period precisely because the destination was missing.
+  //
+  // What the ruling actually forbids is a SECOND door to identity: an avatar or a tab that reaches
+  // a self-profile without going through the drawer. That is what this case now asserts.
+  it('the self-profile route is entered from the drawer, and only from there', () => {
+    expect(exists(`${mobile}/app/(app)/profile.tsx`)).toBe(true);
+    expect(read(`${mobile}/components/NavigationDrawer.tsx`)).toContain("go('/profile')");
+
+    // No OTHER file pushes it. A source scan, because a second entry point renders perfectly and
+    // nothing else would ever see it.
+    const pushers: string[] = [];
+    const scan = (d: string): void => {
+      for (const e of fs.readdirSync(d, { withFileTypes: true })) {
+        const full = path.join(d, e.name);
+        if (e.isDirectory()) {
+          if (!['node_modules', 'dist', '.expo', '__tests__'].includes(e.name)) scan(full);
+        } else if (/\.tsx?$/.test(e.name) && e.name !== 'NavigationDrawer.tsx') {
+          if (/push\(\s*['\"`]\/profile['\"`]/.test(fs.readFileSync(full, 'utf8'))) {
+            pushers.push(full);
+          }
+        }
+      }
+    };
+    scan(path.join(repoRoot, mobile, 'app'));
+    scan(path.join(repoRoot, mobile, 'components'));
+    expect(pushers).toEqual([]);
   });
 
   it('account settings exists as the drawer content', () => {

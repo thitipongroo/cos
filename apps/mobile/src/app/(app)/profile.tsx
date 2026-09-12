@@ -25,6 +25,11 @@
 // (§32.7 / ADR-085). A SAVE button over three fields that nothing writes is the drawn control this
 // project keeps refusing to ship — the same treatment START SCAN and Change Secure PIN get.
 //
+// THE PHOTO IS THE EXCEPTION, and it is a real one. `แก้ไขรูปภาพ` picks an image, uploads it to the
+// File Service and points `platform.users.photo_url` at the permanent image URL (ADR-105) — a URL
+// that had to be built for this, because the only one that service could previously issue expired
+// after an hour. It saves on pick; there is no SAVE button for one control.
+//
 // ── WHAT THE DRAWING ASKS FOR AND DOES NOT GET ────────────────────────────────────────────────
 //
 //   `SAVE PROFILE` / `CANCEL` — nothing to save. See above.
@@ -49,9 +54,11 @@
 // Palette-resolved — it follows the user's theme like every other post-auth screen.
 
 import { useEffect, useMemo, useState } from 'react';
-import { View, Text, Image, ScrollView, StyleSheet } from 'react-native';
+import { View, Text, Image, Pressable, Alert, ScrollView, StyleSheet } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
-import { getMe } from '../../api/users';
+import * as ImagePicker from 'expo-image-picker';
+import { getMe, uploadMyPhoto } from '../../api/users';
+import { fileImageSource } from '../../lib/fileImageSource';
 import { initialsOf } from '../../lib/initials';
 import { shortId } from '../../lib/shortId';
 import { useAuthStore } from '../../store/authStore';
@@ -151,7 +158,53 @@ export default function ProfileScreen(): React.JSX.Element {
     };
   }, []);
 
+  const [uploading, setUploading] = useState(false);
+
   const showPhoto = me?.photoUrl != null && me.photoUrl !== '' && !photoFailed;
+
+  /**
+   * แก้ไขรูปภาพ — pick an image, upload it, point the account at it.
+   *
+   * THE ONE THING ON THIS SCREEN A USER CAN CHANGE (product-owner decision E5: read-only except the
+   * photo). Everything else here is somebody else's to write.
+   *
+   * `canceled` is the ordinary outcome, not an error — a user who opens the library and thinks
+   * better of it gets silence, never a dialog.
+   */
+  const onChangePhoto = async (): Promise<void> => {
+    if (uploading) return;
+    // The library, not the camera. `expo-image-picker` offers the OS's own picker, which already
+    // has a "take a photo" affordance on both platforms, so this is the door to both without this
+    // screen having to draw a chooser of its own.
+    const picked = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      // A square crop, because every surface that draws this renders it in a circle — cropping at
+      // pick time is the only point where the user can decide WHICH square.
+      allowsEditing: true,
+      aspect: [1, 1],
+      // The image route caps at the File Service's 20 MB for an image, and an avatar is drawn at
+      // 96px. Re-encoding at 0.7 keeps a face legible at any size this app shows it and keeps a
+      // modern phone's 8 MB capture from being uploaded to be displayed as a thumbnail.
+      quality: 0.7,
+    });
+    if (picked.canceled) return;
+    const uri = picked.assets[0]?.uri;
+    if (uri == null) return;
+
+    setUploading(true);
+    try {
+      const { photo_url } = await uploadMyPhoto(uri);
+      setMe((was) => (was === null ? was : { ...was, photoUrl: photo_url }));
+      // A NEW UPLOAD IS PENDING_SCAN FOR A MOMENT and the image route refuses anything not CLEAN
+      // (409), so the fresh URL may 404/409 for a beat. Clearing the failure flag lets the <Image>
+      // try again on the next render rather than staying stuck on the initials.
+      setPhotoFailed(false);
+    } catch {
+      Alert.alert(t('profile.view.photoFailedTitle'), t('profile.view.photoFailedBody'));
+    } finally {
+      setUploading(false);
+    }
+  };
 
   return (
     <ScrollView
@@ -176,7 +229,11 @@ export default function ProfileScreen(): React.JSX.Element {
         {showPhoto ? (
           <Image
             testID="profile-photo"
-            source={{ uri: me!.photoUrl! }}
+            // THE TOKEN RIDES ALONG (ADR-105). The stored URL is the File Service's permanent image
+            // route, which authenticates per request rather than carrying a signature that expires —
+            // so a bare `{ uri }` here would be a 401 and a blank face. `fileImageSource` attaches
+            // the header only for this deployment's own API, never for an arbitrary stored string.
+            source={fileImageSource(me!.photoUrl)!}
             style={styles.avatar}
             onError={() => setPhotoFailed(true)}
             accessibilityRole="image"
@@ -193,6 +250,19 @@ export default function ProfileScreen(): React.JSX.Element {
             )}
           </View>
         )}
+        <Pressable
+          testID="profile-change-photo"
+          onPress={() => void onChangePhoto()}
+          disabled={uploading}
+          accessibilityRole="button"
+          accessibilityLabel={t('profile.view.changePhoto')}
+          accessibilityState={{ disabled: uploading, busy: uploading }}
+          style={styles.changePhoto}
+        >
+          <Text style={[styles.changePhotoText, uploading && styles.changePhotoBusy]}>
+            {uploading ? t('profile.view.photoUploading') : t('profile.view.changePhoto')}
+          </Text>
+        </Pressable>
       </View>
 
       <View style={styles.identity}>
@@ -305,7 +375,24 @@ const makeStyles = (p: Palette) =>
       padding: spacing.sm,
     },
     syncText: { fontSize: typography.label.fontSize, fontFamily: fontFamily.semibold },
-    avatarBlock: { alignItems: 'center' },
+    avatarBlock: { alignItems: 'center', gap: spacing.xs },
+    // The drawing's uppercase blue caption under the avatar. A 44px target in both directions
+    // without a border or a fill, because it sits on the page rather than inside a control.
+    changePhoto: {
+      minHeight: touchTarget.iconButton,
+      minWidth: touchTarget.iconButton,
+      paddingHorizontal: spacing.sm,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    changePhotoText: {
+      fontSize: typography.label.fontSize,
+      fontFamily: fontFamily.semibold,
+      letterSpacing: 1,
+      textTransform: 'uppercase',
+      color: p.primary,
+    },
+    changePhotoBusy: { color: p.muted },
     avatar: {
       width: AVATAR,
       height: AVATAR,

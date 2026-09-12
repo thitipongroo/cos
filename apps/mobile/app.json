@@ -52,6 +52,12 @@
         }
       ],
       [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow Construction OS to choose a profile photo from your library."
+        }
+      ],
+      [
         "expo-location",
         {
           "locationWhenInUsePermission": "Allow Construction OS to tag site reports with your location."

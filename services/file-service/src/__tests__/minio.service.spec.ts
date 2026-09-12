@@ -122,6 +122,25 @@ describe('MinioService', () => {
     });
   });
 
+  // ADR-105 — what the permanent image route serves through. It must hand back the STREAM rather
+  // than a Buffer: `downloadToBuffer` below exists to give ClamAV whole objects, and serving through
+  // it would put a copy of every concurrent download in the pod's heap.
+  describe('getObjectStream', () => {
+    it('returns the object stream from cos-{tenantId}, unread', async () => {
+      async function* chunks() {
+        yield Buffer.from('image-bytes');
+      }
+      const stream = chunks();
+      mockGetObject.mockResolvedValue(stream);
+
+      const result = await svc.getObjectStream('tid-1', '2026/09/fid-1/avatar.jpg');
+
+      expect(mockGetObject).toHaveBeenCalledWith('cos-tid-1', '2026/09/fid-1/avatar.jpg');
+      // The same object, not a copy of its contents — nothing was consumed on the way out.
+      expect(result).toBe(stream);
+    });
+  });
+
   describe('downloadToBuffer', () => {
     it('streams the object from cos-{tenantId} into a single Buffer', async () => {
       async function* chunks() {

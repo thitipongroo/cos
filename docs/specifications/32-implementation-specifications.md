@@ -1706,6 +1706,18 @@ So the screen names **who can change each thing** instead of offering a control 
 button over three fields that nothing writes is the drawn control this project keeps refusing to
 ship — the same treatment START SCAN and Change Secure PIN get.
 
+**The photo is the exception, and a real one.** `แก้ไขรูปภาพ` picks an image (`expo-image-picker`,
+square crop — every surface draws the avatar in a circle), uploads it to the File Service and points
+`platform.users.photo_url` at `GET /api/v1/files/:fileId/image`. That route had to be built for this
+(ADR-105): the only URL the File Service could previously issue was a presigned one expiring in an
+hour, so a photo stored as one would 403 the next time any screen drew it. The new URL is
+**permanent, not public** — same bearer token, same tenant scope, same CLEAN gate as every other file
+read; what moved is the credential, from the URL into the header. The client attaches it through one
+helper (`lib/fileImageSource.ts`), which sends it only to this deployment's own API origin. It saves
+on pick: there is no SAVE button for one control. A just-uploaded photo is `PENDING_SCAN` for a beat
+and the route refuses anything not CLEAN, so the avatar can fall back to initials briefly — that is
+the scan gate working, not a failure.
+
 **The bottom nav stays** (PO decision 2026-09-13). The drawing suppresses it "as per rules for
 Transactional/Focused screens" — and that rule's own reason is that a form should not let someone
 wander off mid-entry and lose what they typed. With the screen read-only there is no half-finished

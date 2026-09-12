@@ -336,6 +336,48 @@ paths:
         '401':
           description: Unauthenticated
 
+  /users/me/password-reset-email:
+    post:
+      security:
+        - bearerAuth: []
+      summary: Email the signed-in user a link to set their own password
+      description: |
+        Sends Keycloak's single-use, 15-minute `UPDATE_PASSWORD` action-token email (NIST SP
+        800-63B Rev.4). The user sets the password inside Keycloak and COS never handles a
+        plaintext credential.
+
+        No role check and no request body: the target is the JWT's own `user_id`, so there is
+        nothing for a caller to point at another account.
+
+        It does NOT ask for the current password. Keycloak's Direct Grant flow denies
+        `TENANT_ADMIN` and `FINANCE` (`docs/runbooks/mfa-enforcement.md` Step 1b), and those are
+        the only two roles guaranteed to have one (§5.4.4) — so in-app verification would fail for
+        exactly the accounts it matters most for. See ADR-104.
+
+        **Path B only.** A Path A (phone/OTP) account has no email and no password, and is refused
+        with `COS-AUTH-003` rather than told a link was sent.
+      operationId: requestMyPasswordResetEmail
+      tags: [users]
+      responses:
+        '200':
+          description: The address the link was sent to
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  email:
+                    type: string
+                    format: email
+        '400':
+          description: |
+            `COS-AUTH-003` — the account signs in with a phone number and a one-time code, so it
+            has no password to change and no email to send a link to.
+        '401':
+          description: Unauthenticated
+        '404':
+          description: "`COS-USER-404` — the caller's own row is gone or inactive"
+
   /users/{userId}/roles:
     get:
       security:

@@ -93,7 +93,17 @@ Entities (PostgreSQL — schema: files):
 
 APIs:
   POST /api/v1/files/upload                — upload file (multipart/form-data)
-  GET  /api/v1/files/:fileId/url           — get signed download URL
+  GET  /api/v1/files/:fileId/url           — get signed download URL (expires; SIGNED_URL_TTL_SECONDS, default 1h)
+  GET  /api/v1/files/:fileId/image         — stream an image, permanent URL (added 2026-09-13, ADR-105)
+                                             SAME AUTHORISATION as /url: bearer token, caller's own
+                                             tenant, CLEAN only. "Permanent" means the credential is
+                                             in the HEADER rather than in the URL — a presigned URL
+                                             carries its own and therefore has to expire. NOT public;
+                                             this service has no unauthenticated route but its two
+                                             health probes. Images only, so it cannot become a second
+                                             general download path. Exists because
+                                             platform.users.photo_url stores a URL that must outlive
+                                             an hour.
   GET  /api/v1/files/:fileId               — get file metadata
   DELETE /api/v1/files/:fileId             — soft delete
   GET  /api/v1/files                       — list files (tenant-scoped, paginated)

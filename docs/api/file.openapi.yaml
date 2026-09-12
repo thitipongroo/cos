@@ -275,6 +275,80 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/ErrorResponse' }
 
+  /files/{fileId}/image:
+    get:
+      operationId: getFileImage
+      summary: Stream an image by a URL that does not expire
+      description: |
+        The permanent counterpart to `/files/{fileId}/url` (ADR-105), added for profile photos:
+        `platform.users.photo_url` stores a URL that has to outlive the one-hour presigned TTL, or
+        an avatar 403s the next time any screen draws it.
+
+        **Permanent, not public.** The authorisation is identical to the signed-URL route — a
+        verified bearer token, the caller's own tenant, and `file_status = CLEAN`. What moved is
+        where the credential lives: a presigned URL carries its own and therefore has to expire;
+        one that authenticates per request does not. This service has no unauthenticated route but
+        its two health probes.
+
+        The client must send the token with the image request (`apps/mobile
+        lib/fileImageSource.ts`), so such a URL pasted into a browser will not render.
+
+        **Images only** — anything else is `COS-FILE-020`. That keeps this from becoming a second
+        general download path beside the signed-URL route, and bounds the pod: an image caps at
+        20 MB where a DWG may be 200 MB.
+
+        Responses carry `Cache-Control: private, max-age=86400, immutable` and an ETag taken from
+        the stored SHA-256. `private` because the bytes belong to one tenant behind a bearer token;
+        `immutable` because a fresh upload gets a fresh id, so the bytes behind a given URL never
+        change.
+      tags: [Files]
+      parameters:
+        - $ref: '#/components/parameters/XTenantId'
+        - $ref: '#/components/parameters/XUserId'
+        - $ref: '#/components/parameters/XUserRole'
+        - in: path
+          name: fileId
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: The image bytes
+          headers:
+            Cache-Control:
+              schema: { type: string }
+              description: 'private, max-age=86400, immutable'
+            ETag:
+              schema: { type: string }
+              description: The stored SHA-256, quoted. Absent when no hash was recorded.
+          content:
+            image/*:
+              schema: { type: string, format: binary }
+        '401':
+          description: Unauthenticated
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+        '404':
+          description: Not found in the caller's tenant, or deleted
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+        '409':
+          description: '`COS-FILE-016` — the antivirus scan has not cleared the file'
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+        '422':
+          description: '`COS-FILE-020` — the file is not an image'
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+        '500':
+          description: '`COS-FILE-021` — the object store could not be read'
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+
   /files/{fileId}:
     get:
       operationId: getFileMetadata

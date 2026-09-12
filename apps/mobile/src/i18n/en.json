@@ -2272,7 +2272,11 @@
       "phone": "Phone number",
       "phoneNote": "*This is how you sign in, so it stays fixed for this account.",
       "noPhone": "Not set",
-      "changeNote": "These details come from your account record. To correct one, ask your tenant admin."
+      "changeNote": "These details come from your account record. To correct one, ask your tenant admin.",
+      "changePhoto": "Change photo",
+      "photoUploading": "Uploading…",
+      "photoFailedTitle": "Photo not saved",
+      "photoFailedBody": "The photo could not be uploaded. Check your connection and try again."
     }
   },
   "status": {

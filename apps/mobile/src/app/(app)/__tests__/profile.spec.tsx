@@ -9,8 +9,12 @@
 //
 // EVERY ABSENT VALUE HAS A WORD. A missing employee code is information — office roles have no
 // worker record at all — and a blank box is not.
+//
+// THE PHOTO IS THE ONE EXCEPTION to the read-only rule (decision E5), so its cases sit apart at the
+// bottom: pick, upload, point the account at the permanent URL (ADR-105), and say so when it fails.
 
-import { render, waitFor } from '@testing-library/react-native';
+import { render, fireEvent, waitFor } from '@testing-library/react-native';
+import { Alert } from 'react-native';
 import { I18nProvider } from '../../../i18n';
 import { useAuthStore } from '../../../store/authStore';
 import ProfileScreen from '../profile';
@@ -19,10 +23,14 @@ jest.mock('expo-router', () => ({
   useRouter: () => ({ push: jest.fn(), back: jest.fn(), replace: jest.fn() }),
 }));
 
-jest.mock('../../../api/users', () => ({ getMe: jest.fn() }));
+jest.mock('../../../api/users', () => ({ getMe: jest.fn(), uploadMyPhoto: jest.fn() }));
+
+jest.mock('expo-image-picker', () => ({ launchImageLibraryAsync: jest.fn() }));
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
-const users = require('../../../api/users') as { getMe: jest.Mock };
+const users = require('../../../api/users') as { getMe: jest.Mock; uploadMyPhoto: jest.Mock };
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const picker = require('expo-image-picker') as { launchImageLibraryAsync: jest.Mock };
 
 const ME = {
   user_id: 'u-1111-aaaa-bbbb-cccc',
@@ -45,14 +53,26 @@ function renderScreen() {
 }
 
 describe('ProfileScreen', () => {
+  let alert: jest.SpyInstance;
+
   beforeEach(() => {
+    alert = jest.spyOn(Alert, 'alert').mockImplementation(() => undefined);
     users.getMe.mockReset();
     users.getMe.mockResolvedValue(ME);
+    users.uploadMyPhoto.mockReset();
+    users.uploadMyPhoto.mockResolvedValue({ photo_url: 'https://api.test/api/v1/files/f-9/image' });
+    picker.launchImageLibraryAsync.mockReset();
+    picker.launchImageLibraryAsync.mockResolvedValue({
+      canceled: false,
+      assets: [{ uri: 'file:///tmp/picked.jpg' }],
+    });
     useAuthStore.setState({
       displayName: 'สมชาย ใจดี',
       userId: 'u-1111-aaaa-bbbb-cccc',
     } as never);
   });
+
+  afterEach(() => alert.mockRestore());
 
   it('shows the three fields the drawing draws, with their real values', async () => {
     const { getByTestId } = await renderScreen();
@@ -186,5 +206,97 @@ describe('ProfileScreen', () => {
 
     await waitFor(() => expect(getByTestId('profile-name')).toHaveTextContent(/สมชาย/));
     expect(getByTestId('profile-field-user-id')).toBeTruthy();
+  });
+  // ── แก้ไขรูปภาพ — the one control on this screen (E5, ADR-105) ───────────────────────────────
+  describe('change photo', () => {
+    it('uploads the picked image and shows it without a reload', async () => {
+      const { getByTestId } = await renderScreen();
+
+      await waitFor(() => expect(getByTestId('profile-change-photo')).toBeTruthy());
+      await fireEvent.press(getByTestId('profile-change-photo'));
+
+      await waitFor(() =>
+        expect(users.uploadMyPhoto).toHaveBeenCalledWith('file:///tmp/picked.jpg'),
+      );
+      // The new URL replaces the old one in place — a screen that needed a reload to show the photo
+      // you just chose reads as a failed upload.
+      await waitFor(() => expect(getByTestId('profile-photo')).toBeTruthy());
+    });
+
+    // A crop at pick time is the only point where the USER decides which square of their photo is
+    // the face — every surface draws this in a circle.
+    it('asks for a square crop, because the avatar is always a circle', async () => {
+      const { getByTestId } = await renderScreen();
+
+      await waitFor(() => expect(getByTestId('profile-change-photo')).toBeTruthy());
+      await fireEvent.press(getByTestId('profile-change-photo'));
+
+      await waitFor(() => expect(picker.launchImageLibraryAsync).toHaveBeenCalled());
+      expect(picker.launchImageLibraryAsync.mock.calls[0]?.[0]).toMatchObject({
+        allowsEditing: true,
+        aspect: [1, 1],
+      });
+    });
+
+    // CANCELLING IS THE ORDINARY OUTCOME, not an error. Someone who opens the library and thinks
+    // better of it gets silence.
+    it('says nothing and uploads nothing when the picker is cancelled', async () => {
+      picker.launchImageLibraryAsync.mockResolvedValue({ canceled: true, assets: null });
+
+      const { getByTestId } = await renderScreen();
+
+      await waitFor(() => expect(getByTestId('profile-change-photo')).toBeTruthy());
+      await fireEvent.press(getByTestId('profile-change-photo'));
+
+      await waitFor(() => expect(picker.launchImageLibraryAsync).toHaveBeenCalled());
+      expect(users.uploadMyPhoto).not.toHaveBeenCalled();
+      expect(alert).not.toHaveBeenCalled();
+    });
+
+    it('uploads nothing when the picker returns no asset', async () => {
+      picker.launchImageLibraryAsync.mockResolvedValue({ canceled: false, assets: [] });
+
+      const { getByTestId } = await renderScreen();
+
+      await waitFor(() => expect(getByTestId('profile-change-photo')).toBeTruthy());
+      await fireEvent.press(getByTestId('profile-change-photo'));
+
+      await waitFor(() => expect(picker.launchImageLibraryAsync).toHaveBeenCalled());
+      expect(users.uploadMyPhoto).not.toHaveBeenCalled();
+    });
+
+    it('says the photo was not saved rather than leaving it looking saved', async () => {
+      users.uploadMyPhoto.mockRejectedValue(new Error('offline'));
+
+      const { getByTestId } = await renderScreen();
+
+      await waitFor(() => expect(getByTestId('profile-change-photo')).toBeTruthy());
+      await fireEvent.press(getByTestId('profile-change-photo'));
+
+      await waitFor(() => expect(alert).toHaveBeenCalled());
+      expect(String(alert.mock.calls.at(-1))).toMatch(/not saved|could not be uploaded/i);
+    });
+
+    // A second pick mid-upload would race two uploads and leave whichever finished last as the
+    // photo — not necessarily the one the user chose last.
+    it('ignores a second press while an upload is in flight', async () => {
+      let release: (value: { photo_url: string }) => void = () => undefined;
+      users.uploadMyPhoto.mockReturnValue(
+        new Promise<{ photo_url: string }>((resolve) => {
+          release = resolve;
+        }),
+      );
+
+      const { getByTestId } = await renderScreen();
+      await waitFor(() => expect(getByTestId('profile-change-photo')).toBeTruthy());
+
+      await fireEvent.press(getByTestId('profile-change-photo'));
+      await waitFor(() => expect(users.uploadMyPhoto).toHaveBeenCalledTimes(1));
+      await fireEvent.press(getByTestId('profile-change-photo'));
+
+      expect(users.uploadMyPhoto).toHaveBeenCalledTimes(1);
+      release({ photo_url: 'https://api.test/api/v1/files/f-9/image' });
+      await waitFor(() => expect(getByTestId('profile-change-photo')).toBeTruthy());
+    });
   });
 });

@@ -179,6 +179,12 @@ Entities (PostgreSQL — all in schema: platform):
     department      VARCHAR(255) NULL  -- free text for directory display; NOT a role and not an authorisation input
     position        VARCHAR(255) NULL  -- job title, free text, for display (§32.7 drawer profile block); NOT a role and not an authorisation input
     photo_url       TEXT NULL  -- profile photo via the file service; NULL → clients show initials
+                               -- Holds GET /api/v1/files/:id/image, the PERMANENT file-service
+                               -- URL (ADR-105). Never the signed one: that expires in an hour,
+                               -- so a photo stored as one would 403 on every screen the next
+                               -- time it was drawn. The client attaches the bearer token
+                               -- (apps/mobile lib/fileImageSource.ts) — the URL is permanent,
+                               -- not public.
     is_active       BOOLEAN DEFAULT true
     mfa_enabled     BOOLEAN DEFAULT false
     mfa_totp_secret VARCHAR(255) NULL  -- encrypted at rest (app-layer AES-256-GCM, ADR-035)

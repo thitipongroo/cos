@@ -1,6 +1,7 @@
-// Files routes — all 6 endpoints from spec §Phase 9.
+// Files routes — the 6 endpoints from spec §Phase 9, plus the permanent image URL (ADR-105).
 // POST   /api/v1/files/upload
-// GET    /api/v1/files/:fileId/url
+// GET    /api/v1/files/:fileId/url        signed, 1 hour
+// GET    /api/v1/files/:fileId/image      permanent, bearer-authenticated — ADR-105
 // GET    /api/v1/files/:fileId
 // DELETE /api/v1/files/:fileId
 // GET    /api/v1/files
@@ -189,6 +190,74 @@ export async function filesRoutes(app: FastifyInstance): Promise<void> {
     } catch (err) {
       logger.error({ err, file_id: fileId, traceId: request.traceId }, 'file.signed_url.error');
       return reply.status(500).send(buildError('SIGNED_URL_FAILED', request.traceId));
+    }
+  });
+
+  // GET /api/v1/files/:fileId/image
+  //
+  // ── THE ONE URL IN THIS SERVICE THAT DOES NOT EXPIRE ──────────────────────────────────────────
+  //
+  // Added 2026-09-13 (ADR-105) for profile photos. `platform.users.photo_url` stores a URL and is
+  // read on every screen that draws an avatar, but the only URL this service could issue was a
+  // presigned one with a one-hour TTL (`SIGNED_URL_TTL_SECONDS`, default 3600) — so a photo saved
+  // to that column would 403 an hour after it was set. The column's own migration
+  // (20260716000001) always intended "the file-service URL"; this is the URL it meant.
+  //
+  // NOTHING IS RELAXED TO MAKE IT PERMANENT. Same bearer token, same tenant scope, same CLEAN gate
+  // as `/:fileId/url` above. "Permanent" here means only that the AUTHORISATION IS IN THE HEADER
+  // RATHER THAN IN THE URL: a presigned URL carries its own credential and therefore has to expire,
+  // and one that authenticates per request does not. This route is NOT public, and this service
+  // still has no unauthenticated path but its two health probes — see `plugins/auth.ts`, which
+  // explains at length why there is no gateway behind which one could be safe.
+  //
+  // The cost is stated rather than hidden: a photo URL pasted into a browser will not render, and
+  // the client must attach the token (apps/mobile `lib/fileImageSource.ts`). That is the correct
+  // trade for a face — `platform.users.photo_url` is `@pdpa(category: "identity")` and QM-5 makes a
+  // shareable link to one a data-protection question, not a convenience question.
+  //
+  // IMAGES ONLY, and that is a boundary rather than a formality. Serving anything would make this a
+  // second general download path alongside the signed-URL route, free to drift from it, and would
+  // let a 200 MB DWG stream through the pod where an image caps at 20 MB (`sizeLimitFor`).
+  app.get('/:fileId/image', async (request: FastifyRequest, reply: FastifyReply) => {
+    const { fileId } = request.params as { fileId: string };
+    const file = await app.db.findFileById(fileId, request.tenantId);
+
+    if (!file) {
+      return reply.status(404).send(buildError('FILE_NOT_FOUND', request.traceId));
+    }
+    if (file.deleted_at) {
+      return reply.status(404).send(buildError('FILE_DELETED', request.traceId));
+    }
+    if (!file.mime_type.startsWith('image/')) {
+      return reply
+        .status(FILE_ERRORS.NOT_AN_IMAGE.httpStatus)
+        .send(buildError('NOT_AN_IMAGE', request.traceId));
+    }
+    // Same gate as the signed-URL route, for the same reason: the scan is async, so an object is
+    // PENDING_SCAN for a window and QUARANTINED if infected, and serving either would put unscanned
+    // bytes in front of another user.
+    if (file.file_status !== 'CLEAN') {
+      return reply
+        .status(FILE_ERRORS.FILE_NOT_CLEAN.httpStatus)
+        .send(buildError('FILE_NOT_CLEAN', request.traceId));
+    }
+
+    try {
+      const stream = await app.minio.getObjectStream(request.tenantId, file.stored_key);
+      reply.header('content-type', file.mime_type);
+      reply.header('content-length', file.file_size_bytes);
+      // PRIVATE, never `public`: this is one tenant's data behind a bearer token, so a shared proxy
+      // must not keep a copy another caller could be handed. The long max-age is safe because the
+      // URL names an immutable object — `buildStoredKey` mints a fresh uuid per upload, so changing
+      // a photo changes the URL rather than the bytes behind it.
+      reply.header('cache-control', 'private, max-age=86400, immutable');
+      // The content hash we already store. A revisit revalidates to a 304 instead of streaming a
+      // face again on every screen that draws an avatar.
+      if (file.sha256) reply.header('etag', `"${file.sha256}"`);
+      return reply.send(stream);
+    } catch (err) {
+      logger.error({ err, file_id: fileId, traceId: request.traceId }, 'file.image.read_error');
+      return reply.status(500).send(buildError('DOWNLOAD_FAILED', request.traceId));
     }
   });
 

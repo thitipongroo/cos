@@ -64,6 +64,23 @@ export class MinioService {
     return this.client.presignedGetObject(bucket, storedKey, this.ttlSeconds);
   }
 
+  /**
+   * The stored object as a READABLE STREAM, for handing straight to a reply.
+   *
+   * Distinct from `downloadToBuffer` below on purpose, and the difference is not stylistic: that one
+   * exists to hand the whole object to ClamAV, which needs it in memory, and this one exists to send
+   * bytes to a client, which does not. Buffering to serve would put a copy of every concurrent
+   * download in the pod's heap — the same bounded-memory rule `readMultipartBuffer` follows on the
+   * way in (M6).
+   *
+   * The caller is responsible for having checked that the file exists, belongs to the tenant and is
+   * CLEAN — this method knows nothing about any of that.
+   */
+  async getObjectStream(tenantId: string, storedKey: string): Promise<NodeJS.ReadableStream> {
+    const bucket = this.bucketName(tenantId);
+    return this.client.getObject(bucket, storedKey);
+  }
+
   // Streams an object from cos-{tenantId} into a Buffer. Used by AntivirusService.scan(fileId)
   // to fetch the stored bytes for scanning (spec §Phase 9: scan takes a fileId, not a buffer).
   async downloadToBuffer(tenantId: string, storedKey: string): Promise<Buffer> {

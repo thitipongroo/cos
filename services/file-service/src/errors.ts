@@ -68,6 +68,18 @@ export const FILE_ERRORS = {
     message: 'Invalid or expired authentication token',
     httpStatus: 401,
   },
+  // COS-FILE-019 is the backend's "annotation push for a file_id not visible in the caller's tenant"
+  // (see docs/api/error-codes.md) — next free code here is 020.
+  NOT_AN_IMAGE: {
+    code: 'COS-FILE-020',
+    message: 'This endpoint serves images only',
+    httpStatus: 422,
+  },
+  DOWNLOAD_FAILED: {
+    code: 'COS-FILE-021',
+    message: 'Failed to read the stored file',
+    httpStatus: 500,
+  },
 } as const;
 
 export type FileErrorKey = keyof typeof FILE_ERRORS;

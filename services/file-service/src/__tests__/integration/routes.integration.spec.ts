@@ -83,6 +83,11 @@ function buildMockServices() {
     bucketName: jest.fn().mockReturnValue('cos-tid-test'),
     uploadFile: jest.fn().mockResolvedValue(undefined),
     getSignedUrl: jest.fn().mockResolvedValue('https://minio/signed-url'),
+    getObjectStream: jest.fn().mockImplementation(async () => {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const { Readable } = require('node:stream');
+      return Readable.from([JPEG_BYTES]);
+    }),
     deleteFile: jest.fn().mockResolvedValue(undefined),
     moveToQuarantine: jest.fn().mockResolvedValue(undefined),
     moveFromQuarantine: jest.fn().mockResolvedValue(undefined),
@@ -412,6 +417,175 @@ describe('Files routes (integration)', () => {
       });
       expect(res.statusCode).toBe(500);
       expect(JSON.parse(res.body).error.code).toBe('COS-FILE-008');
+    });
+  });
+
+  // ── The permanent image URL (ADR-105) ───────────────────────────────────────────────────────
+  //
+  // It exists because the signed URL above expires in an hour and `platform.users.photo_url` stores
+  // a URL that must outlive that. What must NOT differ from the signed route is the authorisation:
+  // same bearer token, same tenant scope, same CLEAN gate. These cases assert that sameness, since
+  // a permanent URL is exactly where a relaxation would be tempting and invisible.
+  describe('GET /api/v1/files/:fileId/image', () => {
+    it('200 — streams the bytes with the stored MIME type and length', async () => {
+      const { app, mocks } = await buildTestApp();
+
+      const res = await app.inject({
+        method: 'GET',
+        url: `/api/v1/files/${FILE_ID}/image`,
+        headers: AUTH_HEADERS,
+      });
+
+      expect(res.statusCode).toBe(200);
+      expect(res.headers['content-type']).toBe('image/jpeg');
+      expect(res.headers['content-length']).toBe('1024');
+      expect(mocks.minio.getObjectStream).toHaveBeenCalledWith(TENANT, CLEAN_ROW.stored_key);
+      // STREAMED, not buffered: `downloadToBuffer` exists to hand whole objects to ClamAV, and
+      // serving through it would put a copy of every concurrent download in the pod's heap.
+      expect(mocks.minio.downloadToBuffer).toBeUndefined();
+    });
+
+    it('caches PRIVATE and carries the stored sha256 as an ETag', async () => {
+      const { app } = await buildTestApp();
+
+      const res = await app.inject({
+        method: 'GET',
+        url: `/api/v1/files/${FILE_ID}/image`,
+        headers: AUTH_HEADERS,
+      });
+
+      // `private`, never `public`: one tenant's data behind a bearer token must not sit in a shared
+      // proxy where another caller could be handed it.
+      expect(res.headers['cache-control']).toContain('private');
+      expect(res.headers['cache-control']).not.toContain('public');
+      expect(res.headers['etag']).toBe(`"${'b'.repeat(64)}"`);
+    });
+
+    it('401 — no bearer token, exactly like every other route on this service', async () => {
+      const { app } = await buildTestApp();
+      mockVerifyBearer.mockResolvedValue(null);
+
+      const res = await app.inject({
+        method: 'GET',
+        url: `/api/v1/files/${FILE_ID}/image`,
+        headers: { 'x-tenant-id': TENANT, 'x-user-id': USER },
+      });
+
+      expect(res.statusCode).toBe(401);
+    });
+
+    // TENANT SCOPE. `findFileById` is keyed on the caller's tenant, so another tenant's file is
+    // NOT FOUND rather than forbidden — the id does not confirm its own existence.
+    it('404 — the file belongs to another tenant', async () => {
+      const { app, mocks } = await buildTestApp();
+      (mocks.db.findFileById as jest.Mock).mockResolvedValue(null);
+
+      const res = await app.inject({
+        method: 'GET',
+        url: `/api/v1/files/${FILE_ID}/image`,
+        headers: AUTH_HEADERS,
+      });
+
+      expect(res.statusCode).toBe(404);
+      expect(res.json().error.code).toBe('COS-FILE-005');
+    });
+
+    it('404 — the file was deleted', async () => {
+      const { app, mocks } = await buildTestApp();
+      (mocks.db.findFileById as jest.Mock).mockResolvedValue({
+        ...CLEAN_ROW,
+        deleted_at: new Date('2026-02-02'),
+      });
+
+      const res = await app.inject({
+        method: 'GET',
+        url: `/api/v1/files/${FILE_ID}/image`,
+        headers: AUTH_HEADERS,
+      });
+
+      expect(res.statusCode).toBe(404);
+      expect(res.json().error.code).toBe('COS-FILE-006');
+    });
+
+    // THE SCAN GATE IS NOT WHAT WAS RELAXED. A permanent URL that served PENDING_SCAN bytes would
+    // put unscanned content in front of another user, which is the one thing the signed route's own
+    // comment says it exists to prevent.
+    it('409 — the antivirus scan has not cleared the file yet', async () => {
+      const { app, mocks } = await buildTestApp();
+      (mocks.db.findFileById as jest.Mock).mockResolvedValue(FILE_ROW); // PENDING_SCAN
+
+      const res = await app.inject({
+        method: 'GET',
+        url: `/api/v1/files/${FILE_ID}/image`,
+        headers: AUTH_HEADERS,
+      });
+
+      expect(res.statusCode).toBe(409);
+      expect(res.json().error.code).toBe('COS-FILE-016');
+      expect(mocks.minio.getObjectStream).not.toHaveBeenCalled();
+    });
+
+    it('409 — a quarantined file is never served', async () => {
+      const { app, mocks } = await buildTestApp();
+      (mocks.db.findFileById as jest.Mock).mockResolvedValue(QUARANTINED_ROW);
+
+      const res = await app.inject({
+        method: 'GET',
+        url: `/api/v1/files/${FILE_ID}/image`,
+        headers: AUTH_HEADERS,
+      });
+
+      expect(res.statusCode).toBe(409);
+      expect(mocks.minio.getObjectStream).not.toHaveBeenCalled();
+    });
+
+    // IMAGES ONLY — the boundary that stops this becoming a second general download path, and that
+    // keeps a 200 MB DWG from streaming through the pod where an image caps at 20 MB.
+    it('422 — refuses a non-image, so this cannot become a general download route', async () => {
+      const { app, mocks } = await buildTestApp();
+      (mocks.db.findFileById as jest.Mock).mockResolvedValue({
+        ...CLEAN_ROW,
+        mime_type: 'application/pdf',
+      });
+
+      const res = await app.inject({
+        method: 'GET',
+        url: `/api/v1/files/${FILE_ID}/image`,
+        headers: AUTH_HEADERS,
+      });
+
+      expect(res.statusCode).toBe(422);
+      expect(res.json().error.code).toBe('COS-FILE-020');
+      expect(mocks.minio.getObjectStream).not.toHaveBeenCalled();
+    });
+
+    it('500 — the object store failed, and the error does not leak why', async () => {
+      const { app, mocks } = await buildTestApp();
+      (mocks.minio.getObjectStream as jest.Mock).mockRejectedValue(new Error('minio down'));
+
+      const res = await app.inject({
+        method: 'GET',
+        url: `/api/v1/files/${FILE_ID}/image`,
+        headers: AUTH_HEADERS,
+      });
+
+      expect(res.statusCode).toBe(500);
+      expect(res.json().error.code).toBe('COS-FILE-021');
+      expect(res.payload).not.toContain('minio down');
+    });
+
+    it('omits the ETag rather than inventing one when no hash is stored', async () => {
+      const { app, mocks } = await buildTestApp();
+      (mocks.db.findFileById as jest.Mock).mockResolvedValue({ ...CLEAN_ROW, sha256: null });
+
+      const res = await app.inject({
+        method: 'GET',
+        url: `/api/v1/files/${FILE_ID}/image`,
+        headers: AUTH_HEADERS,
+      });
+
+      expect(res.statusCode).toBe(200);
+      expect(res.headers['etag']).toBeUndefined();
     });
   });
 

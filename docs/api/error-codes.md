@@ -19,15 +19,15 @@ All API error responses follow the structure:
 
 ## COS-AUTH — Authentication & Authorization (Phase 2)
 
-| Code         | HTTP | messageKey                        | Message                                                                | Trigger                                                                                                 |
-| ------------ | ---- | --------------------------------- | ---------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
-| COS-AUTH-001 | 403  | `auth.mfa.required`               | Multi-factor authentication is required for this role                  | TENANT_ADMIN/FINANCE token lacks proof of OTP (`acr`) and `MFA_ENFORCE=true` (§5.4.1) — `mfa-enforcement.ts` |
-| COS-AUTH-001 | 401  | `auth.otp.pathNotAvailable`       | This account cannot sign in with an OTP — use email sign-in            | Keycloak answered `invalid_grant` on Direct Grant — `keycloak-admin.service.ts`                         |
-| COS-AUTH-002 | 503  | `auth.sms.providerUnavailable`    | SMS delivery is not configured for this deployment                     | `SMS_PROVIDER=onprem` with no concrete gateway wired (ADR-040) — `onprem-sms.adapter.ts`                 |
-| COS-AUTH-002 | 400  | `user.role.pathBRequiresEmail`    | {role} sign in by email and password only, and this account has no email | Promoting a phone-only (Path A) account to TENANT_ADMIN/FINANCE — `user.service.ts` `changeRole`         |
-| COS-AUTH-003 | 400  | `user.password.pathAHasNoPassword` | This account signs in with a phone number and a one-time code           | Self-service reset email requested on a Path A account — `POST /users/me/password-reset-email`           |
-| COS-AUTH-101 | 401  | `auth.phone.ambiguous`            | This phone number is registered to more than one account               | One phone number resolves to several active accounts — `identity.service.ts`                            |
-| COS-AUTH-503 | 503  | —                                 | Identity provider unavailable                                          | Keycloak unreachable or misconfigured during Direct Grant — `keycloak-admin.service.ts`                 |
+| Code         | HTTP | messageKey                         | Message                                                                  | Trigger                                                                                                      |
+| ------------ | ---- | ---------------------------------- | ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------ |
+| COS-AUTH-001 | 403  | `auth.mfa.required`                | Multi-factor authentication is required for this role                    | TENANT_ADMIN/FINANCE token lacks proof of OTP (`acr`) and `MFA_ENFORCE=true` (§5.4.1) — `mfa-enforcement.ts` |
+| COS-AUTH-001 | 401  | `auth.otp.pathNotAvailable`        | This account cannot sign in with an OTP — use email sign-in              | Keycloak answered `invalid_grant` on Direct Grant — `keycloak-admin.service.ts`                              |
+| COS-AUTH-002 | 503  | `auth.sms.providerUnavailable`     | SMS delivery is not configured for this deployment                       | `SMS_PROVIDER=onprem` with no concrete gateway wired (ADR-040) — `onprem-sms.adapter.ts`                     |
+| COS-AUTH-002 | 400  | `user.role.pathBRequiresEmail`     | {role} sign in by email and password only, and this account has no email | Promoting a phone-only (Path A) account to TENANT_ADMIN/FINANCE — `user.service.ts` `changeRole`             |
+| COS-AUTH-003 | 400  | `user.password.pathAHasNoPassword` | This account signs in with a phone number and a one-time code            | Self-service reset email requested on a Path A account — `POST /users/me/password-reset-email`               |
+| COS-AUTH-101 | 401  | `auth.phone.ambiguous`             | This phone number is registered to more than one account                 | One phone number resolves to several active accounts — `identity.service.ts`                                 |
+| COS-AUTH-503 | 503  | —                                  | Identity provider unavailable                                            | Keycloak unreachable or misconfigured during Direct Grant — `keycloak-admin.service.ts`                      |
 
 > **`COS-AUTH-001` and `COS-AUTH-002` each carry two unrelated meanings**, and have done since
 > before this registry listed any of them; the rows above are what the code actually throws, read
@@ -61,6 +61,8 @@ All API error responses follow the structure:
 | COS-FILE-017 | 422  | File content does not match declared type | Magic-byte sniff contradicts the declared MIME (M7)                     |
 | COS-FILE-018 | 401  | Invalid or expired authentication token   | In-service JWT verify failed, or token/Kong-header tenant mismatch (M1) |
 | COS-FILE-019 | 404  | File not found                            | Annotation push for a file_id not visible in the caller's tenant        |
+| COS-FILE-020 | 422  | This endpoint serves images only          | `GET /files/:id/image` on a non-image (ADR-105)                         |
+| COS-FILE-021 | 500  | Failed to read the stored file            | MinIO read error while streaming `GET /files/:id/image`                 |
 
 ---
 

@@ -107,6 +107,9 @@ importers:
       expo-font:
         specifier: ~56.0.7
         version: 56.0.7(expo@56.0.13)(react-native@0.85.3(patch_hash=e5cd5e539043730f8be38dd20185cd3c184e422e9f4987588999c6f2ad252ee3)(@babel/core@7.29.7)(@react-native/jest-preset@0.85.3(@babel/core@7.29.7)(react@19.2.3))(@react-native/metro-config@0.86.0(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3)
+      expo-image-picker:
+        specifier: ~56.0.25
+        version: 56.0.25(expo@56.0.13)
       expo-linking:
         specifier: ~56.0.14
         version: 56.0.14(expo@56.0.13)(react-native@0.85.3(patch_hash=e5cd5e539043730f8be38dd20185cd3c184e422e9f4987588999c6f2ad252ee3)(@babel/core@7.29.7)(@react-native/jest-preset@0.85.3(@babel/core@7.29.7)(react@19.2.3))(@react-native/metro-config@0.86.0(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3)
@@ -2715,6 +2718,16 @@ packages:
       expo: '*'
       react: '*'
       react-native: '*'
+
+  expo-image-loader@56.0.3:
+    resolution: {integrity: sha512-JgUo4fUeU1ZC+z8iBFj8v7yoGQnZrLbOVPyNE+DWVrld55F2F6R1ck+rmdm/8TNWLz1LhNQfD7c3XYP1ZikxXA==}
+    peerDependencies:
+      expo: '*'
+
+  expo-image-picker@56.0.25:
+    resolution: {integrity: sha512-RSQgyMqSvJnAdoXio7gHF9uDI1duNzkxycE7b86zH7Loq2JmOfSGZpamfwDJJJyKgpD0dwlngD+lHo5L1PRXiw==}
+    peerDependencies:
+      expo: '*'
 
   expo-keep-awake@56.0.3:
     resolution: {integrity: sha512-CLMJXtEiMKknD3Rpm8CRwE6ZJUzu2yCEmRk1sgfHAJ1zIbuEWY3dpPDubtsnuzWm+2k6Sru+yaFbYsvPWmTiBA==}
@@ -8004,6 +8017,15 @@ snapshots:
       expo: 56.0.13(84c275129f1d8546fe38d929dece52c6)
       react: 19.2.3
       react-native: 0.85.3(patch_hash=e5cd5e539043730f8be38dd20185cd3c184e422e9f4987588999c6f2ad252ee3)(@babel/core@7.29.7)(@react-native/jest-preset@0.85.3(@babel/core@7.29.7)(react@19.2.3))(@react-native/metro-config@0.86.0(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3)
+
+  expo-image-loader@56.0.3(expo@56.0.13):
+    dependencies:
+      expo: 56.0.13(84c275129f1d8546fe38d929dece52c6)
+
+  expo-image-picker@56.0.25(expo@56.0.13):
+    dependencies:
+      expo: 56.0.13(84c275129f1d8546fe38d929dece52c6)
+      expo-image-loader: 56.0.3(expo@56.0.13)
 
   expo-keep-awake@56.0.3(expo@56.0.13)(react@19.2.3):
     dependencies:
