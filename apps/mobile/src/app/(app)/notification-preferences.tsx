@@ -16,9 +16,11 @@
 // Wired to the REAL model (PO decision 2026-07-26 — "event catalog จริง + โครง mockup"):
 //   - Per (event_type × channel) enable flags → GET/PATCH /notifications/preferences (writable).
 //   - Critical safety (safety.incident.created.v1) is locked ON and never quieted (§19.6).
-//   - Quiet-hours window is READ from the stored preferences and shown, but NOT written back: the
-//     PATCH body carries channel flags only, so there is no quiet-hours write endpoint yet. The
-//     section is a read-only display of the stored window rather than an invented save path.
+//   - Quiet-hours window is read from the stored preferences AND written back by SAVE — the ±hour
+//     steppers below edit it and `onSave` sends both edges to the PATCH. (This header claimed the
+//     opposite until 2026-09-13, describing the section as read-only "because there is no write
+//     endpoint"; the endpoint existed and this screen was already using it. The stale claim had
+//     been copied from `api/notifications.ts`, which carried it too.)
 // The mockup's ±2mm structural-sensor and weekly-AI-digest rows are dropped — no such events exist in
 // the §19.4 catalog (would be UNSPECIFIED).
 //
@@ -337,7 +339,8 @@ export default function NotificationPreferencesScreen(): React.JSX.Element {
           </View>
         ))}
 
-        {/* Quiet hours — read-only display of the stored window (no write endpoint yet, §19.6) */}
+        {/* Quiet hours (§19.6) — editable: the ±hour steppers move the window and SAVE writes both
+            edges through the PATCH. */}
         <Text style={[styles.sectionLabel, styles.sectionSpacer, { color: darkColors.cyan }]}>
           {t('notifications.preferences.section.quiet')}
         </Text>

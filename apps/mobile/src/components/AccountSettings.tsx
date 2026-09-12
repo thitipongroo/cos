@@ -3,7 +3,8 @@
 // Rendered by `app/(app)/account-settings.tsx`, pushed from the navigation drawer's Settings row.
 // It lived INSIDE the drawer for one build — the first shape of the 2026-08-09 "the drawer IS the
 // profile" ruling — until the panel was carrying both navigation and settings with ~900px below the
-// fold. There is still no `/profile` route: identity lives in the drawer, this is reached from it.
+// fold. Identity lives in the drawer and this screen is reached from it; `/profile` returned on
+// 2026-09-13 as the READ-ONLY record the drawer's own profile card opens (spec §32.7).
 //
 // LAYOUT IS mockup/mobile/05_site_worker/05_profile/01_sw_account_settings: an uppercase section label
 // over a bordered card, and inside it hairline-separated rows that all share one anatomy —
@@ -25,9 +26,11 @@
 // WHAT THE DRAWING ASKS FOR AND DOES NOT GET:
 //
 //   PERSONAL INFO row — omitted. The card directly above it IS the personal information it would
-//     open, and this product has no editable self-profile: `/profile` was deleted on 2026-08-09
-//     when the drawer became the profile, and `/user-profile` is the Tenant Admin looking at
-//     SOMEBODY ELSE, driven by params. A chevron onto the card six pixels above it is not a row.
+//     open, and a chevron onto the card six pixels above it is not a row. `/user-profile` is the
+//     Tenant Admin looking at SOMEBODY ELSE, driven by params. Since 2026-09-13 the full record IS
+//     a screen again — `/profile`, read-only — but it is entered from the DRAWER's profile card,
+//     which is the one place identity lives; a second door one tap away would be the duplicate the
+//     Privacy Policy row was moved to avoid.
 //   "Last sync: 2 min ago" — not drawn. Nothing here records when the last flush finished; what
 //     IS known is the current sync state, and that is what the head says instead, through the same
 //     `useSyncPillView` precedence every other sync indicator in the app reads.
@@ -65,9 +68,43 @@
 //     `app/(auth)/terms-of-use.tsx`), and adding one is a route, not a row — out of this round's
 //     scope and reported rather than smuggled in.
 //
+// ── THE STITCH SCREEN, AND WHAT IT CHANGED (2026-09-13) ────────────────────────────────────────
+//
+// `stitch/screens/63c6dccafa734761a077835aabd70838` — "Account & Notification Settings - Site
+// Engineer (Unified)". Despite the name it is EVERY ROLE's screen, by the same argument as the
+// paragraph above: one component serves all twelve, and a per-role settings layout would be twelve
+// screens to keep in step. It draws three groups — Application Settings · Notification Settings ·
+// Security & Access — and this file now carries them in that order, with SYSTEM kept at the end.
+//
+// WHAT IT CHANGED:
+//   Language and Theme became SEGMENTED controls. Both were misdrawn as something else before: the
+//     language row showed the current language and a swap glyph, so the user had to infer that
+//     tapping it meant "become the other one", and Theme was a "Dark" SWITCH, which makes light the
+//     absence of a thing rather than the other of two. See <SegmentedControl />.
+//   SECURITY & ACCESS is a new group. The MFA row and the biometric switch MOVED into it from
+//     `Account`, which no longer exists as a group, and the Password row is new.
+//   The biometric switch also moved OFF `/account-security`, where a second copy had been living.
+//     One preference was settable in two places and stale in whichever you were not looking at.
+//
+// WHAT IT ASKS FOR AND DOES NOT GET (ADR-085 — style is the drawing's, composition is ours):
+//   A THIRD THEME SEGMENT (`settings_brightness`, follow the system). `ThemeMode` is
+//     `'dark' | 'light'`; there is no system mode in the store and adding one is a behaviour change,
+//     not a restyle. PO decision E1, 2026-09-13: two modes, the drawing's shape.
+//   A FIXED "SAVE CHANGES" FOOTER BAR. Every control here saves on change and always has — the bar
+//     would be a button that does nothing, and worse, it would teach that nothing else took effect
+//     until it was pressed. PO decision E4, 2026-09-13.
+//   AN IN-CONTENT `Settings` H2. §32.7 names a screen once and the breadcrumb already reads
+//     HOME › SETTINGS; `account-settings.tsx` says the same thing at the route.
+//   32px-TALL SEGMENTS (`min-h-[32px]`). Under the 44px this project holds itself to (§32.7,
+//     WCAG 2.2 AA), so the shape is followed and the height is not.
+//   A `Push` NOTIFICATION CHANNEL and four topical switches with no event behind them — see
+//     <NotificationSettings />, which owns that half of the screen.
+//
 // Palette-resolved, because it is a page now rather than the always-dark drawer panel.
 //
-// Offline-safe: everything here is local state except the MFA row's target screen.
+// Offline-safe except two things, both of which report rather than pretend: the MFA row's target
+// screen, and the Password row's request (which is not offline-queued — a reset link replayed hours
+// later arrives already expired).
 
 import { useEffect, useMemo, useState } from 'react';
 import { View, Text, Pressable, Switch, Alert, StyleSheet } from 'react-native';
@@ -81,7 +118,9 @@ import { useBiometricStore } from '../store/biometricStore';
 import { CosRole } from '@cos/types';
 import { useAuthStore } from '../store/authStore';
 import { useSyncPillView } from '../hooks/useSyncPillView';
-import { getMe } from '../api/users';
+import { getMe, requestMyPasswordResetEmail } from '../api/users';
+import { SegmentedControl } from './SegmentedControl';
+import { formatDate } from '../i18n';
 import { localDbSizeBytes } from '../db/database';
 import { MAX_LOCAL_DB_BYTES } from '../sync/localDbLimit';
 import { formatBytes } from '../lib/formatBytes';
@@ -118,7 +157,10 @@ function Row({
   valueTone,
   onPress,
   trailingIcon = 'chevron-right',
+  trailingTone,
   toggle,
+  trailing,
+  action,
 }: {
   testID?: string;
   icon: IconName;
@@ -130,7 +172,25 @@ function Row({
   valueTone?: 'muted' | 'success';
   onPress?: () => void;
   trailingIcon?: IconName;
+  /** Ink for `trailingIcon`. Default is the muted chevron grey; `success` is the drawing's green
+   *  tick, which says the state is GOOD and not merely set. */
+  trailingTone?: 'success';
   toggle?: { on: boolean; onChange: (next: boolean) => void; disabled?: boolean };
+  /**
+   * An arbitrary trailing control — a segmented control, a glyph. Takes the place of the value and
+   * the chevron, and NEVER combines with `onPress`: a row whose trailing edge is itself a control
+   * cannot also be one, or a tap near the edge does two different things depending on the pixel.
+   */
+  trailing?: React.ReactNode;
+  /**
+   * A trailing WORD that acts — the drawing's blue `Change` on the Password row.
+   *
+   * Distinct from `onPress` (which makes the whole row a button with a chevron): here the row
+   * carries two lines of information and one verb, and the verb is what is pressed. The label still
+   * names the action for a screen reader, so "Password, Change" is what is announced rather than a
+   * bare "Change".
+   */
+  action?: { label: string; onPress: () => void; disabled?: boolean };
 }) {
   const p = usePalette();
   const styles = useMemo(() => makeStyles(p), [p]);
@@ -158,6 +218,22 @@ function Row({
             {value}
           </Text>
         ) : null}
+        {trailing ?? null}
+        {action ? (
+          <Pressable
+            testID={testID ? `${testID}-action` : undefined}
+            onPress={action.onPress}
+            disabled={action.disabled}
+            accessibilityRole="button"
+            accessibilityLabel={`${label}, ${action.label}`}
+            accessibilityState={{ disabled: action.disabled === true }}
+            style={styles.rowAction}
+          >
+            <Text style={[styles.rowActionText, action.disabled === true && styles.rowActionOff]}>
+              {action.label}
+            </Text>
+          </Pressable>
+        ) : null}
         {toggle ? (
           <Switch
             testID={testID ? `${testID}-switch` : undefined}
@@ -168,7 +244,11 @@ function Row({
             trackColor={{ true: p.primary, false: p.border }}
           />
         ) : onPress ? (
-          <MaterialIcons name={trailingIcon} size={20} color={p.muted} />
+          <MaterialIcons
+            name={trailingIcon}
+            size={20}
+            color={trailingTone === 'success' ? p.success : p.muted}
+          />
         ) : null}
       </View>
     </>
@@ -237,6 +317,8 @@ export function AccountSettings() {
   const role = useAuthStore((s) => s.role);
   const sync = useSyncPillView();
   const [busy, setBusy] = useState(false);
+  /** The device declined the last attempt to turn the lock ON — see the biometric row. */
+  const [refused, setRefused] = useState(false);
 
   /**
    * The head's own fields, and the MFA row's state.
@@ -249,6 +331,17 @@ export function AccountSettings() {
     employeeCode: string | null;
     mfaEnabled: boolean;
     position: string | null;
+    /**
+     * WHETHER THIS ACCOUNT HAS A PASSWORD AT ALL, which is what decides the Password row.
+     *
+     * `email` non-empty means Path B — an email plus a Keycloak password credential. A Path A
+     * account holds a phone number and `email = ''` by design (§5.4.4, one identifier per account
+     * for its lifetime) and its Keycloak credential is a random UUID rewritten on every OTP
+     * exchange, so there is nothing its owner knows or could change. `GET /users/me` has always
+     * returned both fields, so nothing new was needed on the wire to tell them apart (ADR-104).
+     */
+    hasPassword: boolean;
+    passwordChangedAt: string | null;
   } | null>(null);
 
   useEffect(() => {
@@ -260,16 +353,39 @@ export function AccountSettings() {
             employeeCode: row.employee_code ?? null,
             mfaEnabled: row.mfa_enabled === true,
             position: row.position ?? null,
+            hasPassword: (row.email ?? '').trim() !== '',
+            passwordChangedAt: row.password_changed_at ?? null,
           });
         }
       })
       .catch(() => {
-        /* offline — the head keeps the short UUID and the MFA row says nothing it cannot see */
+        /* offline — the head keeps the short UUID, and the rows that report a fetched fact say
+           nothing rather than guessing one: no MFA state, and no Password row at all (an account
+           whose path is unknown must not be offered a reset that may not apply to it). */
       });
     return () => {
       cancelled = true;
     };
   }, []);
+
+  /**
+   * Ask for the password-reset email, once, and report what happened in place.
+   *
+   * An Alert rather than a route: there is no screen to go to — the user continues in their mail
+   * app. `busySend` blocks a second tap while the first is in flight, because a second action token
+   * invalidates the first and a user who taps twice would be handed a link that is already dead.
+   */
+  const [sendingReset, setSendingReset] = useState(false);
+  const onChangePassword = (): void => {
+    if (sendingReset) return;
+    setSendingReset(true);
+    requestMyPasswordResetEmail()
+      .then(({ email }) =>
+        Alert.alert(t('profile.password.sentTitle'), t('profile.password.sentBody', { email })),
+      )
+      .catch(() => Alert.alert(t('profile.password.title'), t('profile.password.failed')))
+      .finally(() => setSendingReset(false));
+  };
 
   /**
    * The offline database's size on disk, or null where it cannot be measured.
@@ -324,62 +440,52 @@ export function AccountSettings() {
         </View>
       </View>
 
-      <Section label={t('profile.main.accountSection')}>
+      {/* ── APPLICATION SETTINGS ────────────────────────────────────────────────────────────────
+          The Stitch screen's first group, and the reason both rows below are SEGMENTED rather than
+          what they were: a row showing the current language with a swap glyph, and a "Dark mode"
+          switch. Neither of these is an on/off — a switch makes light the ABSENCE of dark — and a
+          picker screen to choose between two items is a screen too many. See <SegmentedControl />
+          for the full argument and for why the segments are 44px where the drawing's are 32. */}
+      <Section label={t('profile.main.appSection')}>
         <Row
-          testID="profile-mfa-row"
-          icon="shield"
-          label={t('mfa.enroll.title')}
-          // REAL: `platform.users.mfa_enabled`. Silent until the answer is known — an unanswered
-          // fetch is not "not enrolled".
-          value={
-            me === null
-              ? undefined
-              : me.mfaEnabled
-                ? t('profile.main.mfaOn')
-                : t('profile.main.mfaOff')
-          }
-          valueTone={me?.mfaEnabled === true ? 'success' : 'muted'}
-          onPress={() =>
-            MFA_ENROLLMENT_ENABLED
-              ? router.push('/mfa-enrollment')
-              : Alert.alert(t('mfa.enroll.title'), t('common.comingSoon'))
+          testID="locale-row"
+          icon="language"
+          label={t('profile.main.language')}
+          trailing={
+            <SegmentedControl
+              testID="locale-segmented"
+              accessibilityLabel={t('profile.main.language')}
+              value={locale}
+              onChange={(next) => setLocale(next)}
+              options={[
+                // TH first, as the drawing orders them.
+                { value: 'th' as const, label: t('profile.main.thaiShort') },
+                { value: 'en' as const, label: t('profile.main.englishShort') },
+              ]}
+            />
           }
         />
-        {/* Biometric login. Disabled rather than hidden when the device has nothing enrolled: the
-            mockup shows the row, and hiding it would leave a worker wondering where it went. */}
+        {/* TWO MODES, NOT THE DRAWING'S THREE (PO decision E1, 2026-09-13). Its pill has a third
+            `settings_brightness` button for "follow the system", and `ThemeMode` is
+            `'dark' | 'light'` — there is no system mode in the store, nothing reads one, and adding
+            one is a behaviour change rather than a restyle. The SHAPE is adopted; the third segment
+            is not drawn, because a segment that cannot be selected is worse than one fewer. */}
         <Row
-          testID="biometric-row"
-          icon="fingerprint"
-          label={t('profile.biometric.title')}
-          // No explanatory line — the mockup's row is a label and a switch, nothing else (PO
-          // 2026-08-09). When the device cannot do it the switch is simply disabled; the OS is where
-          // a biometric gets enrolled, and this row is not the place to teach that.
-          toggle={{
-            on: enabled,
-            disabled: !available || busy,
-            onChange: (next) => {
-              setBusy(true);
-              // setEnabled awaits SecureStore and the biometric prompt and guards neither, so it
-              // can reject — and `.finally()` would then reject too, with nobody listening. The
-              // switch reads `enabled` from the store, so a failed enable already shows as the
-              // toggle staying where it was; this only stops the rejection escaping.
-              void Promise.resolve(setEnabled(next))
-                .catch(() => undefined)
-                .finally(() => setBusy(false));
-            },
-          }}
-        />
-        {/* "Change Secure PIN" is drawn because the mockup draws it and the product owner asked for
-            it on 2026-08-09. It REPORTS BEING UNAVAILABLE rather than opening anything: this product
-            has no PIN — device unlock is the biometric row above, and there is no PIN column, no
-            set/verify endpoint and no recovery path. Shipping a credential dialog with nothing
-            behind it would be a security feature in name only, so this is the same treatment START
-            SCAN and the directory's chat button get. */}
-        <Row
-          testID="change-pin-row"
-          icon="dialpad"
-          label={t('profile.main.changePin')}
-          onPress={() => Alert.alert(t('profile.main.changePin'), t('common.comingSoon'))}
+          testID="theme-row"
+          icon="dark-mode"
+          label={t('profile.main.theme')}
+          trailing={
+            <SegmentedControl
+              testID="theme-segmented"
+              accessibilityLabel={t('profile.main.theme')}
+              value={mode}
+              onChange={(next) => void setMode(next)}
+              options={[
+                { value: 'light' as const, label: t('profile.main.themeLight') },
+                { value: 'dark' as const, label: t('profile.main.themeDarkShort') },
+              ]}
+            />
+          }
         />
       </Section>
 
@@ -420,39 +526,118 @@ export function AccountSettings() {
         </View>
       ) : null}
 
-      <Section label={t('profile.main.preferencesSection')}>
-        {/* The mockup shows the current language with a chevron. With exactly two locales a picker
-            screen would be a screen to choose between two items, so the row TOGGLES and names what
-            it will switch to — the chevron is dropped for a swap glyph, which is what it does. */}
-        <Row
-          testID="locale-row"
-          icon="language"
-          label={t('profile.main.language')}
-          value={locale === 'th' ? t('profile.main.thai') : t('profile.main.english')}
-          trailingIcon="swap-horiz"
-          onPress={() => setLocale(locale === 'th' ? 'en' : 'th')}
-        />
-        {/* The row that pushed /notification-preferences was removed on 2026-08-14: that screen is
-            the TENANT_ADMIN panel, reached from its Settings tab. Every role's own notification
-            settings are the <NotificationSettings /> section below, which mockup
-            02_shared/03_account_settings drew inside this screen rather than behind a row (that
-            drawing was withdrawn 2026-08-16 — see the NotificationSettings header; ADR-085). */}
-        <Row
-          testID="theme-row"
-          icon="dark-mode"
-          label={t('profile.main.themeDark')}
-          toggle={{
-            on: mode === 'dark',
-            onChange: (next) => void setMode(next ? 'dark' : 'light'),
-          }}
-        />
-      </Section>
-
       {/* Notification Settings — drawn INSIDE this screen by mockup 02_shared/03_account_settings
           (withdrawn 2026-08-16), and the one part of Account Settings that differs by role: it
           offers only the types §19.4 routes to the signed-in role. Its own component because it
           owns server state. */}
       <NotificationSettings />
+
+      {/* ── SECURITY & ACCESS ───────────────────────────────────────────────────────────────────
+          The Stitch screen's third group. Password · Two-Factor Authentication · Biometric, in its
+          order. The first is new; the other two were already on this screen under `Account` and are
+          MOVED here rather than duplicated — and the biometric switch was in TWO places until
+          2026-09-13, here and on `/account-security`, which is a preference a user could set in one
+          and see stale in the other. `/account-security` keeps the devices it is named for. */}
+      <Section label={t('profile.main.securitySection')}>
+        {/* PASSWORD — PATH B ONLY, and ABSENT rather than disabled on Path A (ADR-104).
+            A phone/OTP account has no password its owner knows: `provisionPhoneUser` creates the
+            Keycloak user with no credential and every OTP exchange writes a fresh random UUID. A
+            disabled row would say "not now" where the truth is "never, on this account".
+            Also absent while `me` is null — an unanswered fetch is not a Path B account. */}
+        {me?.hasPassword === true ? (
+          <Row
+            testID="password-row"
+            icon="lock"
+            label={t('profile.password.title')}
+            // The drawing's "Last changed 3 months ago". SILENT WHEN NULL, which is the ordinary
+            // case and will stay so: the reset completes inside Keycloak and calls nothing back, so
+            // only an admin temporary reset ever stamps the column. "Never" would be a claim about
+            // the password; the truth is only that this service has not observed a change.
+            description={
+              me.passwordChangedAt === null
+                ? undefined
+                : t('profile.password.lastChanged', {
+                    date: formatDate(me.passwordChangedAt, locale),
+                  })
+            }
+            action={{
+              label: t('profile.password.change'),
+              onPress: onChangePassword,
+              disabled: sendingReset,
+            }}
+          />
+        ) : null}
+        {/* TWO-FACTOR AUTHENTICATION — the row that was `profile-mfa-row` under Account. REAL:
+            `platform.users.mfa_enabled`, silent until the fetch answers, because an unanswered
+            fetch is not "not enrolled".
+            THE DRAWING SHOWS NO ACTION on this row — a status line and a green tick. This build has
+            a working enrolment screen behind a flag, and ADR-085 says a drawing does not remove
+            reviewed working capability, so the row stays pressable and gains the drawing's status
+            line and glyph. */}
+        <Row
+          testID="profile-mfa-row"
+          icon="security"
+          label={t('mfa.enroll.title')}
+          description={
+            me === null
+              ? undefined
+              : t('profile.main.mfaStatus', {
+                  state: me.mfaEnabled ? t('profile.main.mfaOn') : t('profile.main.mfaOff'),
+                })
+          }
+          trailingIcon={me?.mfaEnabled === true ? 'check-circle' : 'chevron-right'}
+          trailingTone={me?.mfaEnabled === true ? 'success' : undefined}
+          onPress={() =>
+            MFA_ENROLLMENT_ENABLED
+              ? router.push('/mfa-enrollment')
+              : Alert.alert(t('mfa.enroll.title'), t('common.comingSoon'))
+          }
+        />
+        {/* Biometric login. Disabled rather than hidden when the device has nothing enrolled: both
+            drawings show the row, and hiding it would leave a worker wondering where it went. */}
+        <Row
+          testID="biometric-row"
+          icon="fingerprint"
+          label={t('profile.biometric.title')}
+          // No standing explanatory line — the drawing's row is a label and a switch. The line
+          // below appears ONLY after the device refused, and it is the report `/account-security`
+          // used to make with an InfoCard: THE DEVICE'S ANSWER DECIDES, not the tap. A switch that
+          // shows "on" for a lock that never engages is the worst kind of security UI, and moving
+          // the control here must not lose the sentence that said so (ADR-085).
+          description={refused ? t('accountSecurity.biometricUnavailableBody') : undefined}
+          toggle={{
+            on: enabled,
+            disabled: !available || busy,
+            onChange: (next) => {
+              setBusy(true);
+              // setEnabled awaits SecureStore and the biometric prompt and guards neither, so it
+              // can reject — and `.finally()` would then reject too, with nobody listening. The
+              // switch reads `enabled` from the store, so a failed enable already shows as the
+              // toggle staying where it was; this only stops the rejection escaping.
+              //
+              // It RESOLVES false when the OS prompt was declined or nothing is enrolled, which is
+              // a different outcome from throwing and the one the line above reports. Only an
+              // attempt to turn the lock ON can be refused; switching off always succeeds.
+              void Promise.resolve(setEnabled(next))
+                .then((ok) => setRefused(next && ok === false))
+                .catch(() => undefined)
+                .finally(() => setBusy(false));
+            },
+          }}
+        />
+        {/* "Change Secure PIN" is kept from the mockup the product owner asked for on 2026-08-09;
+            the Stitch screen does not draw it, and ADR-085 does not let a drawing remove a reviewed
+            row. It REPORTS BEING UNAVAILABLE rather than opening anything: this product has no PIN
+            — device unlock is the biometric row above, and there is no PIN column, no set/verify
+            endpoint and no recovery path. Shipping a credential dialog with nothing behind it would
+            be a security feature in name only. */}
+        <Row
+          testID="change-pin-row"
+          icon="dialpad"
+          label={t('profile.main.changePin')}
+          onPress={() => Alert.alert(t('profile.main.changePin'), t('common.comingSoon'))}
+        />
+      </Section>
 
       {/* The Privacy Policy row left this card on 2026-08-14 for the drawer, where mockup
           02_shared/01_navigation_drawer drew it and where spec §32.7 (Bottom Navigation) puts
@@ -619,4 +804,19 @@ const makeStyles = (p: Palette) =>
       maxWidth: 140,
     },
     rowValueSuccess: { color: p.success },
+    // The drawing's blue `Change` — a word that acts. Padded to a 44px target in both directions
+    // without a border or a fill, because it sits INSIDE a row that is already a surface (§32.7).
+    rowAction: {
+      minHeight: touchTarget.iconButton,
+      minWidth: touchTarget.iconButton,
+      paddingHorizontal: spacing.xs,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    rowActionText: {
+      fontSize: typography.label.fontSize,
+      fontFamily: fontFamily.semibold,
+      color: p.primary,
+    },
+    rowActionOff: { color: p.muted },
   });

@@ -111,9 +111,16 @@ ARCHITECTURE DECISION (resolves previous contradiction — aligned with source �
                   01_dashboard/ in the 2026-08-11 restructure). Four tabs is within the 4–5
                   that spec §32.7 allows for <MobileNav />.
                   SUPERSEDED 2026-08-09 (product-owner): THE NAVIGATION DRAWER IS THE PROFILE, for
-                  every role. There is no /profile route any more — the screen was deleted and its
-                  content is <AccountSettings />, rendered inside the drawer the avatar opens. The
-                  avatar is still the way in; what it opens changed.
+                  every role. The screen was deleted and its content became <AccountSettings />,
+                  rendered inside the drawer the avatar opens. The avatar is still the way in; what
+                  it opens changed.
+                  /profile EXISTS AGAIN SINCE 2026-09-13 (product-owner decision E5, Stitch screen
+                  7367a77950f24c7e877c97aafc124350) and this does not undo the ruling above. The
+                  drawer is still the profile and still the only way in — the route is what its
+                  profile CARD now opens, where that chevron had reported "coming soon" since the
+                  day the old screen was deleted. It is READ-ONLY: none of the three fields it
+                  shows has a self-service write. Spec §32.7 "Profile — the signed-in user's own
+                  record, read-only".
       Material requisition: SITE_ENGINEER raises purchase requests — 06-rbac-permission-matrix
                   gives the role RW on "Purchase requests", and a shortage is noticed on site.
 

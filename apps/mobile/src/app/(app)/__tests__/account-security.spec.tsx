@@ -1,4 +1,4 @@
-// Behaviour of the account-security screen — trusted devices and the biometric lock.
+// Behaviour of the account-security screen — the user's trusted devices.
 //
 // Revocation asks WHY — three named reasons (USER_REVOKED, LOST_OR_STOLEN, COMPROMISED) and a way
 // out — rather than confirming. That is a trust decision, not a layout one: COMPROMISED is the
@@ -8,13 +8,12 @@
 // Revoking the device in your hand ends its trust, so the next login on it needs a full OTP again.
 // That is said BEFORE the tap, not discovered after it.
 //
-// And the biometric switch follows the DEVICE's answer, not the tap. `setEnabled` returns false when
-// the OS prompt was declined or nothing is enrolled; a control showing "on" for a lock that never
-// engages is the worst kind of security UI.
+// THE BIOMETRIC CASES LEFT WITH THE SWITCH on 2026-09-13 — it now lives once, under Security &
+// Access in <AccountSettings />, and its tests moved to that component's spec rather than being
+// deleted. See the screen header.
 
 import { render, fireEvent, waitFor } from '@testing-library/react-native';
 import { I18nProvider } from '../../../i18n';
-import { useBiometricStore } from '../../../store/biometricStore';
 import AccountSecurityScreen from '../account-security';
 
 jest.mock('expo-router', () => ({
@@ -60,17 +59,13 @@ function renderScreen() {
 }
 
 describe('AccountSecurityScreen', () => {
-  let setEnabled: jest.Mock;
-
   beforeEach(() => {
-    setEnabled = jest.fn().mockResolvedValue(true);
     api.listDevices.mockReset();
     api.revokeDevice.mockReset();
     api.revokeDevice.mockResolvedValue(undefined);
     trust.getDeviceId.mockReset();
     trust.getDeviceId.mockResolvedValue(THIS_DEVICE);
     api.listDevices.mockResolvedValue([device(THIS_DEVICE), device('dev-other')]);
-    useBiometricStore.setState({ enabled: false, setEnabled } as never);
   });
 
   it('lists the trusted devices', async () => {
@@ -166,40 +161,5 @@ describe('AccountSecurityScreen', () => {
     await fireEvent.press(getByTestId('revoke-USER_REVOKED'));
 
     await waitFor(() => expect(api.listDevices).toHaveBeenCalledTimes(2));
-  });
-
-  it('turns the biometric lock on', async () => {
-    const { getByTestId } = await renderScreen();
-
-    await waitFor(() => expect(getByTestId('biometric-toggle')).toBeTruthy());
-    await fireEvent(getByTestId('biometric-toggle'), 'valueChange', true);
-
-    await waitFor(() => expect(setEnabled).toHaveBeenCalledWith(true));
-  });
-
-  // THE DEVICE'S ANSWER, not the tap. A switch that shows "on" for a lock that never engages is
-  // worse than no switch.
-  it('says so when the device refused, instead of showing the lock as on', async () => {
-    setEnabled.mockResolvedValue(false);
-
-    const { getByTestId } = await renderScreen();
-
-    await waitFor(() => expect(getByTestId('biometric-toggle')).toBeTruthy());
-    await fireEvent(getByTestId('biometric-toggle'), 'valueChange', true);
-
-    await waitFor(() => expect(getByTestId('biometric-refused')).toBeTruthy());
-  });
-
-  it('says nothing about a refusal when switching the lock OFF', async () => {
-    setEnabled.mockResolvedValue(false);
-    useBiometricStore.setState({ enabled: true, setEnabled } as never);
-
-    const { getByTestId, queryByTestId } = await renderScreen();
-
-    await waitFor(() => expect(getByTestId('biometric-toggle')).toBeTruthy());
-    await fireEvent(getByTestId('biometric-toggle'), 'valueChange', false);
-
-    await waitFor(() => expect(setEnabled).toHaveBeenCalledWith(false));
-    expect(queryByTestId('biometric-refused')).toBeNull();
   });
 });

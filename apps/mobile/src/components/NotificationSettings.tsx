@@ -16,6 +16,21 @@
 //   ช่วงเวลาพัก     — a switch row, then Start → End boxes, then the note that critical safety
 //                    notifications are exempt.
 //
+// THE STITCH SCREEN `63c6dccafa734761a077835aabd70838` (2026-09-13) DRAWS THE SAME THREE BLOCKS and
+// is the reason quiet hours are now EDITABLE here. Its ปิดการแจ้งเตือนอัตโนมัติ switch and its two
+// time inputs replaced a tick and two read-only values, which had been read-only for a reason that
+// stopped being true: `api/notifications.ts` claimed "quiet-hours EDITING has no endpoint yet" long
+// after `update-preferences.dto.ts` had grown the two validated HH:MM fields and after the admin
+// panel had started writing them. The claim, not the endpoint, was the blocker.
+//
+// WHAT THAT SCREEN ASKS FOR AND DOES NOT GET:
+//   `<input type="time">` — a native time WHEEL. Replaced by the ±hour steppers `/notification-
+//     preferences` already uses: the stored column is a TIME, an hour is the resolution a sleep
+//     window is picked at, and two 44px buttons are usable with a glove where a wheel is not.
+//   A `Push` CHANNEL — see THE CHANNELS ARE IN_APP · EMAIL · LINE below; the PATCH DTO rejects it.
+//   ITS FOUR TOPICAL SWITCHES (Task Assignments · Status Changes · Delivery Updates · Low Stock)
+//     — no event type exists behind any of them. See WHAT DECIDES THE CONTENT below.
+//
 // TOKENS, NOT HEXES (DESIGN.md §2.7): every colour is `usePalette()`, every radius is `radius.*` or
 // `plateRadius()`, every gap is `spacing.*`, and weight comes from `fontFamily.*` — never
 // `fontWeight`. Switches set `trackColor`/`thumbColor` the way AccountSettings and system-settings
@@ -36,7 +51,7 @@
 // Online-required: §17.4 lists no notification preference as offline-writable.
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { View, Text, Switch, StyleSheet } from 'react-native';
+import { View, Text, Switch, Pressable, StyleSheet } from 'react-native';
 import { LoadingState } from './LoadingState';
 import { MaterialIcons } from '@expo/vector-icons';
 import {
@@ -64,6 +79,15 @@ const CHANNEL_ICON: Record<Channel, keyof typeof MaterialIcons.glyphMap> = {
 /** Glyph plate side — ≥28, so its corner is `plateRadius()` (a quarter of the side), per §2.5. */
 const PLATE = 40;
 
+/**
+ * The window a user gets when they switch quiet hours ON without one.
+ *
+ * The same 22:00–07:00 the database column defaults to (migration
+ * `20260723000003_notification_delivery_rules`), so the control reopens on the value the server
+ * would have had anyway rather than on a second opinion held only by this screen.
+ */
+const QUIET_DEFAULT = { start: '22:00', end: '07:00' } as const;
+
 /** Per-group glyph + accent: the drawing's pairing, carried onto the §19.3 groups. */
 const GROUP_META: Record<
   NotificationGroup,
@@ -82,6 +106,59 @@ const GROUP_LABEL: Record<NotificationGroup, string> = {
 };
 
 const key = (eventType: string, channel: string): string => `${eventType}:${channel}`;
+
+/**
+ * One edge of the quiet-hours window — a caption, the time, and a ±hour button either side of it.
+ *
+ * Its own component rather than a mapped fragment so each button keeps a literal `testID` and a
+ * literal accessibility label: a stepper whose label is assembled from an index is one nobody can
+ * find in a screen reader's rotor, and this row has four of them.
+ */
+function QuietEdge({
+  edge,
+  value,
+  onStep,
+  styles,
+  p,
+}: {
+  edge: 'start' | 'end';
+  value: string;
+  onStep: (edge: 'start' | 'end', delta: number) => void;
+  styles: ReturnType<typeof makeStyles>;
+  p: Palette;
+}): React.JSX.Element {
+  const t = useT();
+  const capKey = edge === 'start' ? 'quietStart' : 'quietEnd';
+  const name = t(`notifications.settings.${capKey}`);
+  return (
+    <View style={styles.quietBox}>
+      <Text style={styles.quietCap}>{name}</Text>
+      <View style={styles.quietStepper}>
+        <Pressable
+          testID={`notification-quiet-${edge}-dec`}
+          onPress={() => onStep(edge, -1)}
+          accessibilityRole="button"
+          accessibilityLabel={t('notifications.settings.quietEarlier', { edge: name })}
+          style={styles.quietStepBtn}
+        >
+          <MaterialIcons name="remove" size={18} color={p.primary} />
+        </Pressable>
+        <Text testID={`notification-quiet-${edge}`} style={styles.quietValue}>
+          {value}
+        </Text>
+        <Pressable
+          testID={`notification-quiet-${edge}-inc`}
+          onPress={() => onStep(edge, 1)}
+          accessibilityRole="button"
+          accessibilityLabel={t('notifications.settings.quietLater', { edge: name })}
+          style={styles.quietStepBtn}
+        >
+          <MaterialIcons name="add" size={18} color={p.primary} />
+        </Pressable>
+      </View>
+    </View>
+  );
+}
 
 export function NotificationSettings(): React.JSX.Element {
   const t = useT();
@@ -150,6 +227,83 @@ export function NotificationSettings(): React.JSX.Element {
   /** Type switch — writes every channel for that one type. */
   const setType = (eventType: string, on: boolean): void =>
     persist(CHANNELS.map((channel) => ({ event_type: eventType, channel, is_enabled: on })));
+
+  /**
+   * QUIET HOURS ARE OFF WHEN THE WINDOW IS EMPTY — `start === end`.
+   *
+   * There is no enabled flag to read: migration `20260723000003_notification_delivery_rules` gives
+   * `notification_preferences` exactly two columns, `quiet_hours_start` and `quiet_hours_end`, both
+   * `TIME NOT NULL`. An empty window is nevertheless a real, DELIBERATE off state rather than
+   * something inferred here — `isWithinQuietHours` returns false for every instant when the edges
+   * meet (same-day branch, `nowMin >= start && nowMin < end` over a zero-width range), and
+   * `notification.service.spec.ts` pins it by name: "empty window (start==end) is never quiet".
+   * The switch is that tested convention given a control, not a new meaning invented for one.
+   */
+  const quietOn = quiet.start !== quiet.end;
+
+  /**
+   * Write a quiet-hours window, WITH the role's current flags rather than on its own.
+   *
+   * `NotificationService.updatePreferences` upserts the preference rows first and then stamps the
+   * window across the rows the user owns — so a PATCH carrying a window and an empty `preferences`
+   * array writes NOTHING for anyone who has never touched a switch, and `updateQuietHours` says so
+   * in its own comment ("0 when the user has no rows yet"). Sending the current flags alongside
+   * guarantees the rows exist to be stamped. The admin panel does the same on its SAVE.
+   */
+  const saveQuiet = useCallback(
+    (next: { start: string; end: string }): void => {
+      setQuiet(next);
+      const flags: PreferenceUpdate[] = [];
+      for (const type of types) {
+        if (type.locked) continue; // §19.6 — never written, and never quieted either
+        for (const channel of CHANNELS) {
+          flags.push({
+            event_type: type.eventType,
+            channel,
+            is_enabled: enabled[key(type.eventType, channel)] ?? true,
+          });
+        }
+      }
+      void updateNotificationPreferences(flags, next).catch(() => setFailed(true));
+    },
+    [enabled, types],
+  );
+
+  /**
+   * Step one edge by whole hours, wrapping at midnight. Minutes stay at :00.
+   *
+   * Hour granularity and ± buttons rather than a picker, matching `/notification-preferences`: the
+   * stored column is a TIME, an hour is the resolution a sleep window is chosen at, and two 44px
+   * buttons are reachable with a glove on where a wheel picker is not (§32.7, WCAG 2.2 AA).
+   *
+   * The far edge is pushed along if the two would MEET, because equal edges mean OFF (above) — a
+   * user stepping End back onto Start would silently disable the feature they were adjusting.
+   */
+  const stepQuiet = (edge: 'start' | 'end', delta: number): void => {
+    const hh = Number(quiet[edge].slice(0, 2));
+    const moved = `${((hh + delta + 24) % 24).toString().padStart(2, '0')}:00`;
+    const other = edge === 'start' ? quiet.end : quiet.start;
+    if (moved === other) return;
+    saveQuiet(
+      edge === 'start' ? { start: moved, end: quiet.end } : { start: quiet.start, end: moved },
+    );
+  };
+
+  /**
+   * The switch. OFF collapses the window onto its own start; ON reopens it.
+   *
+   * Collapsing onto `start` rather than onto a constant keeps half the user's choice in the row —
+   * re-entering the screen later, the START they picked is still there to reopen from, and only the
+   * END falls back to the 07:00 default. Writing `00:00`/`00:00` instead would throw both away.
+   */
+  const toggleQuiet = (on: boolean): void => {
+    if (!on) {
+      saveQuiet({ start: quiet.start, end: quiet.start });
+      return;
+    }
+    const end = quiet.start === QUIET_DEFAULT.end ? QUIET_DEFAULT.start : QUIET_DEFAULT.end;
+    saveQuiet({ start: quiet.start, end });
+  };
 
   /**
    * Is this channel on?
@@ -267,26 +421,28 @@ export function NotificationSettings(): React.JSX.Element {
           <Text style={[styles.rowLabel, styles.grow]}>
             {t('notifications.settings.quietWindow')}
           </Text>
-          {/* A tick, not a switch: the PATCH body carries a window but this screen has no time
-              picker yet, so quiet hours are shown, not edited. A switch here would be a control
-              with nothing behind it. */}
-          <MaterialIcons name="check-circle" size={24} color={p.primary} />
+          {/* A SWITCH SINCE 2026-09-13, where a tick stood before. The tick was there because this
+              screen believed quiet hours could not be written — a claim `api/notifications.ts` had
+              carried after it stopped being true. Both are corrected together. */}
+          <Switch
+            testID="notification-quiet-toggle"
+            value={quietOn}
+            onValueChange={toggleQuiet}
+            accessibilityLabel={t('notifications.settings.quietWindow')}
+            {...switchColors}
+          />
         </View>
-        <View style={styles.quietRow}>
-          <View style={styles.quietBox}>
-            <Text style={styles.quietCap}>{t('notifications.settings.quietStart')}</Text>
-            <Text testID="notification-quiet-start" style={styles.quietValue}>
-              {quiet.start}
-            </Text>
+        {/* Hidden rather than disabled when the switch is off: there is no window in force, and a
+            dimmed 22:00 → 07:00 would still read as one that is merely paused. */}
+        {quietOn ? (
+          <View style={styles.quietRow}>
+            <QuietEdge edge="start" value={quiet.start} onStep={stepQuiet} styles={styles} p={p} />
+            {/* The drawing's arrow between the two boxes — it says the window RUNS from one to the
+                other, which "22:00  07:00" alone does not. */}
+            <MaterialIcons name="arrow-forward" size={18} color={p.muted} />
+            <QuietEdge edge="end" value={quiet.end} onStep={stepQuiet} styles={styles} p={p} />
           </View>
-          <MaterialIcons name="arrow-forward" size={18} color={p.muted} />
-          <View style={styles.quietBox}>
-            <Text style={styles.quietCap}>{t('notifications.settings.quietEnd')}</Text>
-            <Text testID="notification-quiet-end" style={styles.quietValue}>
-              {quiet.end}
-            </Text>
-          </View>
-        </View>
+        ) : null}
         <Text style={styles.quietNote}>{t('notifications.settings.quietExempt')}</Text>
       </View>
 
@@ -399,7 +555,7 @@ const makeStyles = (p: Palette) =>
     quietRow: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: spacing.sm,
+      gap: spacing.xs,
       paddingBottom: spacing.sm,
     },
     quietBox: {
@@ -408,7 +564,7 @@ const makeStyles = (p: Palette) =>
       borderWidth: 1,
       borderColor: p.border,
       backgroundColor: p.elevated,
-      paddingHorizontal: spacing.sm,
+      paddingHorizontal: spacing.xs,
       paddingVertical: spacing.xs,
       minHeight: touchTarget.formInput,
       justifyContent: 'center',
@@ -417,11 +573,27 @@ const makeStyles = (p: Palette) =>
       fontFamily: fontFamily.regular,
       fontSize: typography.label.fontSize,
       color: p.muted,
+      textAlign: 'center',
+    },
+    // The two ± buttons and the time between them. `justifyContent: space-between` rather than a
+    // gap: the buttons must stay pinned to the edges of the box at every width, because their 44px
+    // targets are the thing the layout exists to protect (§32.7, WCAG 2.2 AA).
+    quietStepper: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+    },
+    quietStepBtn: {
+      width: touchTarget.iconButton,
+      height: touchTarget.iconButton,
+      alignItems: 'center',
+      justifyContent: 'center',
     },
     quietValue: {
       fontFamily: fontFamily.semibold,
       fontSize: typography.body.fontSize,
       color: p.text,
+      textAlign: 'center',
     },
     quietNote: {
       fontFamily: fontFamily.regular,

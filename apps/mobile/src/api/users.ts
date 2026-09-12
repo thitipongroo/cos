@@ -41,10 +41,45 @@ export interface Me {
    * on a current deployment — no route sets a position; it arrives by seed or HR import.
    */
   position?: string | null;
+  /**
+   * `platform.users.phone_number` — the Path A login identifier, null on a Path B account.
+   *
+   * Declared 2026-09-13. `getMe` has selected it by name since the route existed; this type simply
+   * did not say so. OPTIONAL FOR QM-9, and it decides two things rather than one:
+   *   - the profile screen prints it as a READ-ONLY field (PO decision E6 — it is the identifier a
+   *     Path A account signs in with, and §5.4.4 gives an account one identifier for its lifetime);
+   *   - together with `email` it is how the client tells the paths apart, which is what the Password
+   *     row keys off (ADR-104). No new field was needed for that.
+   */
+  phone_number?: string | null;
+  /**
+   * `platform.users.password_changed_at` — when a password was last set THROUGH THE API.
+   *
+   * NULL IS THE ORDINARY CASE AND WILL STAY THAT WAY (ADR-104): the self-service flow completes
+   * inside Keycloak and calls nothing back, so only an admin temporary reset writes this. Callers
+   * print NOTHING when it is absent or null — never "never", which reads as a fact about the
+   * password rather than about what this column can see. ISO 8601 on the wire.
+   */
+  password_changed_at?: string | null;
 }
 
 export async function getMe(): Promise<Me> {
   return get<Me>('/users/me');
+}
+
+/**
+ * Ask for an email link to set your own password (POST /users/me/password-reset-email; ADR-104).
+ *
+ * Keycloak sends a single-use, 15-minute UPDATE_PASSWORD action token — the user sets the password
+ * there and COS never handles it. NOT offline-queued: a reset link replayed hours later from a queue
+ * would arrive already expired, and the caller needs the refusal below in the moment it is given.
+ *
+ * PATH B ONLY. A phone/OTP account has no email and no password, and the backend refuses it with
+ * `COS-AUTH-003` rather than reporting a send. The screen does not offer the row on such an account,
+ * so this rejection is the second line of defence, not the first.
+ */
+export async function requestMyPasswordResetEmail(): Promise<{ email: string }> {
+  return post<{ email: string }>('/users/me/password-reset-email', {});
 }
 
 /** Set the profile photo, or pass null to clear it and go back to initials. */

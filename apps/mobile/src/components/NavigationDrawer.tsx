@@ -277,7 +277,12 @@ export function NavigationDrawer(): React.JSX.Element | null {
           testID="drawer-profile-card"
           accessibilityRole="button"
           accessibilityLabel={displayName ?? t('drawer.member')}
-          onPress={() => soon('drawer.profileDetail')}
+          // THE CHEVRON NOW POINTS SOMEWHERE. It reported "coming soon" from the day the card
+          // became pressable until 2026-09-13, because the destination did not exist — `/profile`
+          // was deleted on 2026-08-09 when the drawer became the profile. The Stitch screen
+          // `7367a77950f24c7e877c97aafc124350` is that destination, read-only (PO decision E5), and
+          // this card is its one entry point: the block a user taps to see themselves in full.
+          onPress={() => go('/profile')}
           style={styles.profileCard}
         >
           {/* THE PROJECT'S PROFILE BLOCK — <ProfileBlock />, which is also what heads Account

@@ -213,6 +213,7 @@ export function MobileNav() {
           entered automatically when no project has been chosen; never a tab. */}
       {/* The signed-in user's own account settings — pushed from the drawer's Settings row. */}
       <Tabs.Screen name="account-settings" options={{ href: null }} />
+      <Tabs.Screen name="profile" options={{ href: null }} />
       <Tabs.Screen name="conflict-review" options={{ href: null }} />
       {/* Notification inbox — reached from the top-bar bell (router.push). No role lists it as a tab. */}
       <Tabs.Screen name="notifications" options={{ href: null }} />

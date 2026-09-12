@@ -1,10 +1,11 @@
-// Account Security (mockup 03_04_manage_account_access) — the user's own devices, and the one
-// security control they can actually turn on.
+// Account Security (mockup 03_04_manage_account_access) — the user's own trusted devices.
 //
-// THE BIOMETRIC TOGGLE HAS HAD NO HOME UNTIL NOW. `biometricStore.setEnabled` has existed since the
-// unlock work landed, and `BiometricLock` is mounted in the root layout, but no screen ever called
-// the setter — the preference was unreachable. This is the screen the mockup put it on, and it is
-// the right one: it is the only place a user is already looking at how their account is accessed.
+// THE BIOMETRIC TOGGLE LEFT THIS SCREEN ON 2026-09-13. It landed here because `biometricStore
+// .setEnabled` had no caller at all and this was the screen the mockup put it on — but
+// <AccountSettings /> had grown its own copy, so one preference was settable in two places and a
+// user who changed it here saw the other one stale until that screen refetched. The Stitch screen
+// `63c6dccafa734761a077835aabd70838` groups it under Security & Access with the password and the
+// second factor, which is where it now lives, ONCE. This screen keeps the devices it is named for.
 //
 // TWO CORRECTIONS to the mockup:
 //   - It lists a MacBook and an iPad. This platform enrols MOBILE installs only (ADR-054: the key
@@ -15,7 +16,7 @@
 //     user's, never a client-side default.
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { LoadingState } from '../../components/LoadingState';
 import { useRouter } from 'expo-router';
 import { useT } from '../../i18n';
@@ -24,7 +25,6 @@ import { fontFamily, radius, spacing, touchTarget, typography } from '../../them
 import { InfoCard, Lede, SectionLabel } from '../../components/TransparencyKit';
 import { listDevices, revokeDevice, type TrustedDeviceSummary } from '../../api/devices';
 import { getDeviceId } from '../../lib/deviceTrust';
-import { useBiometricStore } from '../../store/biometricStore';
 import { screenChrome } from '../../theme/screenStyles';
 import {
   REVOCATION_REASONS,
@@ -43,10 +43,6 @@ export default function AccountSecurityScreen(): React.JSX.Element {
   const [thisDeviceId, setThisDeviceId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [revoking, setRevoking] = useState<string | null>(null);
-
-  const biometricEnabled = useBiometricStore((s) => s.enabled);
-  const setBiometricEnabled = useBiometricStore((s) => s.setEnabled);
-  const [biometricRefused, setBiometricRefused] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -173,33 +169,6 @@ export default function AccountSecurityScreen(): React.JSX.Element {
           </View>
         );
       })}
-
-      <SectionLabel>{t('accountSecurity.settings')}</SectionLabel>
-      <View style={styles.toggleRow}>
-        <View style={styles.toggleLabel}>
-          <Text style={styles.toggleTitle}>{t('accountSecurity.biometric')}</Text>
-          <Text style={styles.toggleNote}>{t('accountSecurity.biometricNote')}</Text>
-        </View>
-        <Switch
-          testID="biometric-toggle"
-          accessibilityLabel={t('accountSecurity.biometric')}
-          value={biometricEnabled}
-          onValueChange={(next) => {
-            // setEnabled returns false when the OS prompt was declined or no biometric is
-            // enrolled. The switch must follow the DEVICE's answer, not the tap: a control that
-            // shows "on" for a lock that never engages is the worst kind of security UI.
-            void setBiometricEnabled(next).then((ok) => setBiometricRefused(next && !ok));
-          }}
-        />
-      </View>
-      {biometricRefused ? (
-        <InfoCard
-          testID="biometric-refused"
-          icon="fingerprint"
-          title={t('accountSecurity.biometricUnavailable')}
-          body={t('accountSecurity.biometricUnavailableBody')}
-        />
-      ) : null}
     </ScrollView>
   );
 }
@@ -226,16 +195,4 @@ const makeStyles = (p: ReturnType<typeof usePalette>) =>
     reasonRow: { minHeight: touchTarget.listItem, justifyContent: 'center' },
     reasonText: { fontSize: typography.body.fontSize, color: p.text },
     reasonCancel: { fontSize: typography.body.fontSize, color: p.muted },
-    toggleRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: spacing.sm,
-      backgroundColor: p.surface,
-      borderRadius: radius.md, // list row (minHeight: listItem)
-      padding: spacing.sm,
-      minHeight: touchTarget.listItem,
-    },
-    toggleLabel: { flex: 1, gap: 2 },
-    toggleTitle: { fontFamily: fontFamily.bold, fontSize: typography.body.fontSize, color: p.text },
-    toggleNote: { fontSize: typography.caption.fontSize, color: p.muted },
   });

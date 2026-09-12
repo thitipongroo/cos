@@ -87,6 +87,8 @@ const BREADCRUMB_MAP: Record<string, Crumb[]> = {
     { key: 'safety.permitRequest.title' },
   ],
   '/account-settings': [{ key: 'nav.tabs.home', href: '/home' }, { key: 'drawer.settings' }],
+  // Pushed from the navigation drawer's profile card, which is the only way in.
+  '/profile': [{ key: 'nav.tabs.home', href: '/home' }, { key: 'profile.view.title' }],
   // Home FAB / Quick-Add flows
   '/system-integration': [
     { key: 'nav.tabs.home', href: '/home' },

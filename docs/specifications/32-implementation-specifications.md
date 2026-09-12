@@ -1630,24 +1630,90 @@ and are recorded here because each is still a ruling about this product, not abo
 
 #### Account Settings — three groups and a profile head
 
-`<AccountSettings />` is **Account · Preferences · System** under the profile block above, for
-**every role** (product-owner decision 2026-09-10, from
-`mockup/mobile/12_crm_manager/05_profile/01_account_settings`). One component serves all twelve
-roles; a per-role settings layout would be twelve screens to keep in step.
+`<AccountSettings />` is **Application Settings · Notification Settings · Security & Access**, plus a
+**System** group, under the profile block above, for **every role** (product-owner decision
+2026-09-13, from Stitch screen `63c6dccafa734761a077835aabd70838` "Account & Notification Settings -
+Site Engineer (Unified)"). One component serves all twelve roles; a per-role settings layout would be
+twelve screens to keep in step. The previous grouping — Account · Preferences · System, from
+`mockup/mobile/12_crm_manager/05_profile/01_account_settings`, 2026-09-10 — is what this replaced.
 
-`Security` and `About` are gone as group NAMES only — security is two rows of Account, the build
-version is one row of System. **Nothing was dropped in the regrouping:** Change Secure PIN, the theme
-switch and the version row are all still there, because ADR-085 gives composition to the
-implementation and says in as many words that a drawing does not remove reviewed working capability.
+**Nothing was dropped in either regrouping:** Change Secure PIN, the theme control, the offline-data
+row and the version row are all still there, because ADR-085 gives composition to the implementation
+and says in as many words that a drawing does not remove reviewed working capability.
 
-What the drawing asks for and does not get, each for a stated reason:
+Three rows changed shape or place on 2026-09-13:
 
-| Drawn                     | Rendered instead                                                                                                                                                                                                          |
-| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `Personal Info` row       | **Nothing.** The profile card directly above it IS that information, and this product has no editable self-profile: `/profile` was deleted on 2026-08-09 and `/user-profile` is the Tenant Admin looking at somebody else |
-| `Last sync: 2 min ago`    | The CURRENT sync state, through the same `useSyncPillView` precedence every other sync indicator reads. Nothing here records when the last flush finished                                                                 |
-| `MFA Active` (as a label) | `platform.users.mfa_enabled`, from `GET /users/me` — and **silence** until the answer arrives, because an unanswered fetch is not "not enrolled"                                                                          |
-| `2.4 GB` cached           | The measured on-disk size of the offline database (`localDbSizeBytes()`), against the §17.7 ceiling it is measured for. The row REPORTS and does not manage: nothing in this app prunes that cache on request             |
+- **Language and Theme are SEGMENTED**, both options visible at once, the selected one announced as
+  selected (`<SegmentedControl />`). Neither is an on/off: a "Dark" switch makes light the absence of
+  a thing rather than the other of two, and a language row showing the CURRENT language behind a swap
+  glyph made the user infer that tapping it meant "become the other one".
+- **`Security & Access` is a new group** — Password · Two-Factor Authentication · Biometric ·
+  Change Secure PIN. The second factor and the biometric switch MOVED here; the Password row is new.
+- **The biometric switch also left `/account-security`**, where a second copy had been living. One
+  preference was settable in two places and stale in whichever the user was not looking at. That
+  screen keeps the trusted devices it is named for, and the "the device's answer, not the tap"
+  refusal line moved with the switch.
+
+**The Password row is PATH B ONLY and ABSENT — not disabled — on a Path A account** (ADR-104). A
+phone/OTP account has no password its owner knows, so a disabled control would say "not now" where
+the truth is "never, on this account". Its action asks `POST /api/v1/users/me/password-reset-email`
+for a single-use 15-minute Keycloak link; its `Last changed` line reads `password_changed_at` and
+prints **nothing** when that is null, which is the ordinary case and will stay so.
+
+What the drawings ask for and do not get, each for a stated reason:
+
+| Drawn                            | Rendered instead                                                                                                                                                                                                                 |
+| -------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Personal Info` row              | **Nothing.** The profile card directly above it IS that information, and the full record is one tap away on `/profile` (below), reached from the drawer's profile card                                                            |
+| `Last sync: 2 min ago`           | The CURRENT sync state, through the same `useSyncPillView` precedence every other sync indicator reads. Nothing here records when the last flush finished                                                                        |
+| `MFA Active` (as a label)        | `platform.users.mfa_enabled`, from `GET /users/me` — and **silence** until the answer arrives, because an unanswered fetch is not "not enrolled"                                                                                 |
+| `2.4 GB` cached                  | The measured on-disk size of the offline database (`localDbSizeBytes()`), against the §17.7 ceiling it is measured for. The row REPORTS and does not manage: nothing in this app prunes that cache on request                    |
+| A THIRD theme segment (`system`) | **Two segments.** `ThemeMode` is dark-or-light; there is no system mode in the store, and adding one is a behaviour change rather than a restyle (PO decision E1). A segment that cannot be selected is worse than one fewer     |
+| A fixed `SAVE CHANGES` footer    | **No bar.** Every control saves on change and always has, so the bar would be a button that does nothing — and worse, it would teach that nothing else had taken effect until it was pressed (PO decision E4)                    |
+| An in-content `Settings` H2      | **Nothing.** A screen is named once and the breadcrumb already reads HOME › SETTINGS                                                                                                                                             |
+| 32px-tall segments               | **44px.** `min-h-[32px]` is under the target size this platform holds itself to (WCAG 2.2 AA); the shape is followed and the height is not                                                                                       |
+| A `Push` notification channel    | **IN_APP · EMAIL · LINE.** The PATCH DTO accepts IN_APP, EMAIL, LINE and SMS only, so a PUSH switch would be rejected by the backend                                                                                             |
+
+**Quiet hours are editable** (2026-09-13). They were shown read-only until then because
+`api/notifications.ts` claimed "quiet-hours EDITING has no endpoint yet" — a claim that outlived the
+endpoint long enough for two screens to copy it into their own headers. `update-preferences.dto.ts`
+validates both edges as `HH:MM`. The switch keys off the window itself: **`start === end` is the OFF
+state**, which is the backend's own tested convention rather than a meaning invented by the client —
+`isWithinQuietHours` returns false for every instant when the edges meet, pinned by name in
+`notification.service.spec.ts` ("empty window (start==end) is never quiet"). The ± steppers move one
+edge an hour at a time and refuse a step that would land one edge on the other, because that would
+silently disable the feature the user was adjusting. A window is never written alone: the PATCH
+carries the role's current flags too, since `updatePreferences` upserts the rows before stamping the
+window across them.
+
+#### Profile — the signed-in user's own record, read-only
+
+`/profile`, for **every role** (product-owner decision E5, 2026-09-13, from Stitch screen
+`7367a77950f24c7e877c97aafc124350` "แก้ไขข้อมูลโปรไฟล์"). Reached from the navigation drawer's
+profile card, whose chevron had reported "coming soon" since 2026-08-09 — the route was deleted that
+day, when the drawer became the profile, and this is it returning with something to show.
+
+**It reads. It does not edit.** The drawing is an edit form with three inputs, `SAVE PROFILE` and
+`CANCEL`, and none of the three fields has a self-service write:
+
+| Field         | Column                            | Why it is read-only                                                                                                                                    |
+| ------------- | --------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| ชื่อ-นามสกุล  | `platform.users.display_name`     | No self-service write exists. §14's user-management writes are all `@Roles(TENANT_ADMIN)` and address somebody else by path parameter                   |
+| รหัสพนักงาน   | `workforce.workers.employee_code` | The EMPLOYER's identifier for the person, not the person's own. The drawing disables this input itself and says why; the note is kept                   |
+| เบอร์โทรศัพท์ | `platform.users.phone_number`     | The Path A login identifier (PO decision E6). §5.4.4 gives an account one identifier for its lifetime, so a field that edited it could lock someone out |
+
+So the screen names **who can change each thing** instead of offering a control that cannot. A SAVE
+button over three fields that nothing writes is the drawn control this project keeps refusing to
+ship — the same treatment START SCAN and Change Secure PIN get.
+
+**The bottom nav stays** (PO decision 2026-09-13). The drawing suppresses it "as per rules for
+Transactional/Focused screens" — and that rule's own reason is that a form should not let someone
+wander off mid-entry and lose what they typed. With the screen read-only there is no half-finished
+input to protect, so the reason does not reach it, and no other post-auth screen hides the bar.
+
+Every absent value carries a WORD rather than a blank: a null `employee_code` reads "no code issued"
+(the common case — office roles have no worker record at all), a null `phone_number` reads "not set",
+and a null `position` draws nothing at all (ADR-101).
 
 #### AI Card Footer (`<AiCardFooter />`)
 

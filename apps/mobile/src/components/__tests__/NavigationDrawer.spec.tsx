@@ -450,19 +450,21 @@ describe('NavigationDrawer - one shape, and it holds for a flat role too', () =>
     expect(crm.listOpportunities).not.toHaveBeenCalled();
   });
 
-  it('puts the drawing’s chevron on the profile header, which opens nothing', async () => {
+  it('puts the drawing’s chevron on the profile header, and it now opens the profile', async () => {
     const alert = jest.spyOn(Alert, 'alert').mockImplementation(() => undefined);
 
     const { getByTestId } = await renderDrawer();
     await waitFor(() => expect(getByTestId('drawer-profile-card')).toBeTruthy());
 
-    // The header has had no destination since 2026-08-09 — `/profile` was deleted and this panel IS
-    // the profile. The drawing draws a chevron anyway, so it says so on the press rather than
-    // pointing nowhere, and it does NOT open `/account-settings`, which is already a row below.
+    // The header had NO destination between 2026-08-09 and 2026-09-13 — `/profile` was deleted when
+    // this panel became the profile — so the chevron reported "coming soon" rather than pointing
+    // nowhere. The route exists again (Stitch 7367a779…, read-only), and this card is its one way
+    // in. It must still not open `/account-settings`, which is a row below.
     expect(getByTestId('drawer-profile-card')).toHaveTextContent(/chevron-right/);
     fireEvent.press(getByTestId('drawer-profile-card'));
-    await waitFor(() => expect(alert).toHaveBeenCalled());
-    expect(mockPush).not.toHaveBeenCalled();
+
+    await waitFor(() => expect(mockPush).toHaveBeenCalledWith('/profile'));
+    expect(alert).not.toHaveBeenCalled();
     alert.mockRestore();
   });
 

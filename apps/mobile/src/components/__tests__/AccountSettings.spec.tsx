@@ -11,8 +11,12 @@
 // PIN: no column, no set/verify endpoint, no recovery path. A credential dialog with nothing behind
 // it is a security feature in name only.
 //
-// The language row TOGGLES rather than pushing a picker. With exactly two locales, a picker screen
-// would be a screen for choosing between two items.
+// Language and Theme are SEGMENTED — both options visible, the selected one announced as selected.
+// Neither is an on/off, and a picker screen to choose between two items is a screen too many.
+//
+// THE PASSWORD ROW IS ABSENT ON A PATH A ACCOUNT, not disabled (ADR-104). A phone/OTP account has
+// no password its owner knows: the Keycloak user is created with no credential and every OTP
+// exchange writes a fresh random UUID. A disabled row says "not now" where the truth is "never".
 //
 // And the version is the REAL build version, not the mockup's "2.4.0-stable" — it is the one thing
 // on this card a user might quote in a support request, so it must never be decorative.
@@ -45,10 +49,16 @@ jest.mock('../../api/notifications', () => ({
 
 // `GET /users/me` feeds the profile head and the MFA row's state — the same call the drawer makes
 // for the same block. Mocked rather than left to reject, so each answer can be asserted.
-jest.mock('../../api/users', () => ({ getMe: jest.fn() }));
+jest.mock('../../api/users', () => ({
+  getMe: jest.fn(),
+  requestMyPasswordResetEmail: jest.fn(),
+}));
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
-const users = require('../../api/users') as { getMe: jest.Mock };
+const users = require('../../api/users') as {
+  getMe: jest.Mock;
+  requestMyPasswordResetEmail: jest.Mock;
+};
 
 const ME = {
   user_id: 'u-1111-aaaa',
@@ -59,7 +69,12 @@ const ME = {
   mfa_enabled: true,
   employee_code: null,
   position: 'CRM Manager',
+  phone_number: null,
+  password_changed_at: null,
 };
+
+/** A Path A account: a phone number, and `email = ''` — what `provisionPhoneUser` writes. */
+const PATH_A_ME = { ...ME, email: '', phone_number: '+66812345678' };
 
 function renderCard() {
   return render(
@@ -82,6 +97,8 @@ describe('AccountSettings', () => {
     alert = jest.spyOn(Alert, 'alert').mockImplementation(() => undefined);
     users.getMe.mockReset();
     users.getMe.mockResolvedValue(ME);
+    users.requestMyPasswordResetEmail.mockReset();
+    users.requestMyPasswordResetEmail.mockResolvedValue({ email: 'v@example.com' });
     useAuthStore.setState({ displayName: 'Vorawee S.', userId: 'u-1111-aaaa' } as never);
     // The language row toggles the locale and persists it, so a test running after it would
     // otherwise render in Thai and every assertion on English copy would be an accident.
@@ -151,28 +168,50 @@ describe('AccountSettings', () => {
     expect(alert).toHaveBeenCalled();
   });
 
-  // Two locales: a picker screen would be a screen for choosing between two items.
-  it('swaps the language in place', async () => {
+  // BOTH OPTIONS ARE ON SCREEN AT ONCE since 2026-09-13 (Stitch 63c6dcca…). The language row used
+  // to show the CURRENT language behind a swap glyph, so a reader had to infer that tapping it
+  // meant "become the other one".
+  it('switches the language by pressing the other segment', async () => {
     const { getByTestId } = await renderCard();
 
-    await fireEvent.press(getByTestId('locale-row'));
+    await fireEvent.press(getByTestId('locale-segmented-th'));
 
-    // The row now names the other language, which is what it will switch to next.
-    await waitFor(() => expect(getByTestId('locale-row')).toBeTruthy());
+    await waitFor(() => expect(getByTestId('locale-segmented-th')).toBeTruthy());
   });
 
-  it('switches the theme', async () => {
+  it('marks the signed-in locale as the selected segment and the other as not', async () => {
     const { getByTestId } = await renderCard();
 
-    await fireEvent(getByTestId('theme-row-switch'), 'valueChange', false);
+    // A screen reader must be able to say WHICH of the two is in effect — the whole information a
+    // segmented control carries, and what a row of plain buttons loses.
+    expect(getByTestId('locale-segmented-en').props.accessibilityState.selected).toBe(true);
+    expect(getByTestId('locale-segmented-th').props.accessibilityState.selected).toBe(false);
+  });
+
+  it('switches the theme to light', async () => {
+    const { getByTestId } = await renderCard();
+
+    await fireEvent.press(getByTestId('theme-segmented-light'));
 
     expect(setMode).toHaveBeenCalledWith('light');
   });
 
-  it('shows the theme switch on for a dark session', async () => {
+  it('marks dark as the selected segment for a dark session', async () => {
     const { getByTestId } = await renderCard();
 
-    expect(getByTestId('theme-row-switch').props.value).toBe(true);
+    expect(getByTestId('theme-segmented-dark').props.accessibilityState.selected).toBe(true);
+    expect(getByTestId('theme-segmented-light').props.accessibilityState.selected).toBe(false);
+  });
+
+  // TWO MODES, NOT THE DRAWING'S THREE (PO decision E1). Its pill has a third
+  // `settings_brightness` "follow the system" button, and there is no system mode in the store —
+  // a segment that cannot be selected is worse than one fewer.
+  it('draws exactly two theme segments', async () => {
+    const { getByTestId, queryByTestId } = await renderCard();
+
+    expect(getByTestId('theme-segmented-light')).toBeTruthy();
+    expect(getByTestId('theme-segmented-dark')).toBeTruthy();
+    expect(queryByTestId('theme-segmented-system')).toBeNull();
   });
 
   // The one thing here a user might quote in a support request.
@@ -203,6 +242,8 @@ describe('AccountSettings - the profile head', () => {
     alert = jest.spyOn(Alert, 'alert').mockImplementation(() => undefined);
     users.getMe.mockReset();
     users.getMe.mockResolvedValue(ME);
+    users.requestMyPasswordResetEmail.mockReset();
+    users.requestMyPasswordResetEmail.mockResolvedValue({ email: 'v@example.com' });
     useAuthStore.setState({ displayName: 'Vorawee S.', userId: 'u-1111-aaaa' } as never);
     // The language row toggles the locale and persists it, so a test running after it would
     // otherwise render in Thai and every assertion on English copy would be an accident.
@@ -281,6 +322,8 @@ describe('AccountSettings - the system group', () => {
     alert = jest.spyOn(Alert, 'alert').mockImplementation(() => undefined);
     users.getMe.mockReset();
     users.getMe.mockResolvedValue(ME);
+    users.requestMyPasswordResetEmail.mockReset();
+    users.requestMyPasswordResetEmail.mockResolvedValue({ email: 'v@example.com' });
     useAuthStore.setState({ displayName: 'Vorawee S.', userId: 'u-1111-aaaa' } as never);
     // The language row toggles the locale and persists it, so a test running after it would
     // otherwise render in Thai and every assertion on English copy would be an accident.
@@ -356,5 +399,162 @@ describe('AccountSettings - the system group', () => {
     expect(getByTestId('change-pin-row')).toBeTruthy();
     expect(getByTestId('theme-row')).toBeTruthy();
     expect(getByTestId('profile-version')).toBeTruthy();
+  });
+});
+
+describe('AccountSettings - security & access', () => {
+  let setEnabled: jest.Mock;
+  let alert: jest.SpyInstance;
+
+  beforeEach(() => {
+    setEnabled = jest.fn().mockResolvedValue(undefined);
+    useBiometricStore.setState({ available: true, enabled: false, setEnabled } as never);
+    useThemeStore.setState({ mode: 'dark', setMode: jest.fn() } as never);
+    alert = jest.spyOn(Alert, 'alert').mockImplementation(() => undefined);
+    users.getMe.mockReset();
+    users.getMe.mockResolvedValue(ME);
+    users.requestMyPasswordResetEmail.mockReset();
+    users.requestMyPasswordResetEmail.mockResolvedValue({ email: 'v@example.com' });
+    useAuthStore.setState({ displayName: 'Vorawee S.', userId: 'u-1111-aaaa' } as never);
+    useLocaleStore.setState({ locale: 'en' } as never);
+  });
+
+  afterEach(() => alert.mockRestore());
+
+  // ── Security & Access: the Password row (Stitch 63c6dcca…, ADR-104) ───────────────────────────
+
+  describe('Password row', () => {
+    it('offers it on a Path B account — one with an email and a real credential', async () => {
+      const { getByTestId } = await renderCard();
+
+      await waitFor(() => expect(getByTestId('password-row')).toBeTruthy());
+    });
+
+    // ABSENT, NOT DISABLED. There is no password on this account and there never will be, so a
+    // control that looks like it could be enabled is a promise the product cannot keep.
+    it('does not draw it at all on a Path A account', async () => {
+      users.getMe.mockResolvedValue(PATH_A_ME);
+
+      const { queryByTestId, getByTestId } = await renderCard();
+
+      await waitFor(() => expect(getByTestId('biometric-row')).toBeTruthy());
+      expect(queryByTestId('password-row')).toBeNull();
+    });
+
+    // An unanswered fetch is not a Path B account. Offering a reset before the path is known would
+    // mean offering it to a phone-only user who cannot use it.
+    it('does not draw it while the fetch is still out, or after it failed', async () => {
+      users.getMe.mockRejectedValue(new Error('offline'));
+
+      const { queryByTestId, getByTestId } = await renderCard();
+
+      await waitFor(() => expect(getByTestId('biometric-row')).toBeTruthy());
+      expect(queryByTestId('password-row')).toBeNull();
+    });
+
+    it('asks for the email link and reports where it went', async () => {
+      const { getByTestId } = await renderCard();
+
+      await waitFor(() => expect(getByTestId('password-row-action')).toBeTruthy());
+      await fireEvent.press(getByTestId('password-row-action'));
+
+      await waitFor(() => expect(users.requestMyPasswordResetEmail).toHaveBeenCalled());
+      await waitFor(() => expect(alert).toHaveBeenCalled());
+      expect(String(alert.mock.calls.at(-1))).toContain('v@example.com');
+    });
+
+    // A second action token invalidates the first, so a double tap would hand the user a link that
+    // is already dead. The control refuses the second press rather than racing.
+    it('ignores a second press while the first request is in flight', async () => {
+      let release: (value: { email: string }) => void = () => undefined;
+      users.requestMyPasswordResetEmail.mockReturnValue(
+        new Promise<{ email: string }>((resolve) => {
+          release = resolve;
+        }),
+      );
+
+      const { getByTestId } = await renderCard();
+      await waitFor(() => expect(getByTestId('password-row-action')).toBeTruthy());
+
+      await fireEvent.press(getByTestId('password-row-action'));
+      await fireEvent.press(getByTestId('password-row-action'));
+
+      expect(users.requestMyPasswordResetEmail).toHaveBeenCalledTimes(1);
+      release({ email: 'v@example.com' });
+      await waitFor(() => expect(alert).toHaveBeenCalled());
+    });
+
+    it('says the link could not be sent rather than claiming it was', async () => {
+      users.requestMyPasswordResetEmail.mockRejectedValue(new Error('COS-AUTH-003'));
+
+      const { getByTestId } = await renderCard();
+      await waitFor(() => expect(getByTestId('password-row-action')).toBeTruthy());
+      await fireEvent.press(getByTestId('password-row-action'));
+
+      await waitFor(() => expect(alert).toHaveBeenCalled());
+      expect(String(alert.mock.calls.at(-1))).toMatch(/could not be sent/i);
+    });
+
+    // NULL IS THE ORDINARY CASE and will stay so: the reset finishes inside Keycloak and calls
+    // nothing back, so only an admin temporary reset ever stamps the column. "Never" would be a
+    // claim about the password; the truth is only that this service has not observed a change.
+    it('prints no last-changed line when the column has never been stamped', async () => {
+      const { getByTestId } = await renderCard();
+
+      await waitFor(() => expect(getByTestId('password-row')).toBeTruthy());
+      expect(getByTestId('password-row')).not.toHaveTextContent(/last changed|never/i);
+    });
+
+    it('prints the date when the column carries one', async () => {
+      users.getMe.mockResolvedValue({ ...ME, password_changed_at: '2026-07-04T09:30:00.000Z' });
+
+      const { getByTestId } = await renderCard();
+
+      await waitFor(() => expect(getByTestId('password-row')).toHaveTextContent(/Last changed/));
+      expect(getByTestId('password-row')).toHaveTextContent(/2026/);
+    });
+  });
+
+  // ── Security & Access: the moved rows ─────────────────────────────────────────────────────────
+
+  it('states the second factor as a status line, and marks an enrolled one with a tick', async () => {
+    const { getByTestId } = await renderCard();
+
+    await waitFor(() => expect(getByTestId('profile-mfa-row')).toHaveTextContent(/Status:/));
+    expect(getByTestId('profile-mfa-row')).toHaveTextContent(/MFA active/);
+  });
+
+  // THE DEVICE'S ANSWER, not the tap — the sentence `/account-security` used to make with an
+  // InfoCard, carried across with the switch rather than lost with it (ADR-085).
+  it('says so when the device refused the lock, instead of showing it as on', async () => {
+    setEnabled.mockResolvedValue(false);
+
+    const { getByTestId } = await renderCard();
+
+    await fireEvent(getByTestId('biometric-row-switch'), 'valueChange', true);
+
+    await waitFor(() =>
+      expect(getByTestId('biometric-row')).toHaveTextContent(/unlock|biometric|device/i),
+    );
+  });
+
+  it('says nothing about a refusal when switching the lock OFF', async () => {
+    setEnabled.mockResolvedValue(false);
+    useBiometricStore.setState({ available: true, enabled: true, setEnabled } as never);
+
+    const { getByTestId } = await renderCard();
+
+    await fireEvent(getByTestId('biometric-row-switch'), 'valueChange', false);
+
+    await waitFor(() => expect(setEnabled).toHaveBeenCalledWith(false));
+    expect(getByTestId('biometric-row')).not.toHaveTextContent(/unlock|device/i);
+  });
+
+  // E4 — every control saves on change, so the drawing's fixed footer would be a button that does
+  // nothing, and worse, would teach that nothing else had taken effect until it was pressed.
+  it('carries no SAVE bar', async () => {
+    const { queryByText } = await renderCard();
+
+    expect(queryByText(/save changes/i)).toBeNull();
   });
 });

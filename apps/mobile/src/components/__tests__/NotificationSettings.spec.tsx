@@ -235,8 +235,8 @@ describe('NotificationSettings', () => {
     await waitFor(() => expect(getByTestId('notification-settings-error')).toBeTruthy());
   });
 
-  // Quiet hours come from the stored row and are DISPLAYED only — the PATCH body is channel flags,
-  // so there is no endpoint to edit them through yet.
+  // Quiet hours come from the stored row and, since 2026-09-13, are EDITABLE — see the block of
+  // cases below for why that changed.
   it('shows the stored quiet-hours window, trimmed to HH:MM', async () => {
     api.getNotificationPreferences.mockResolvedValue([
       {
@@ -251,5 +251,150 @@ describe('NotificationSettings', () => {
     await waitFor(() => expect(getByTestId('notification-quiet-start')).toBeTruthy());
     expect(String(getByTestId('notification-quiet-start').props.children)).toBe('21:30');
     expect(String(getByTestId('notification-quiet-end').props.children)).toBe('06:15');
+  });
+  // ── Quiet hours: editable since 2026-09-13 (Stitch 63c6dcca…) ────────────────────────────────
+  //
+  // They were read-only because `api/notifications.ts` said "quiet-hours EDITING has no endpoint
+  // yet" — a claim that outlived the endpoint by long enough for two screens to copy it. The DTO
+  // validates both edges as HH:MM and the repository writes them as `::time`.
+  describe('quiet hours', () => {
+    it('is ON when the stored window has width, and draws the two edges', async () => {
+      const { getByTestId } = await renderSection();
+
+      await waitFor(() => expect(getByTestId('notification-quiet-toggle')).toBeTruthy());
+      expect(getByTestId('notification-quiet-toggle').props.value).toBe(true);
+      expect(getByTestId('notification-quiet-start')).toBeTruthy();
+      expect(getByTestId('notification-quiet-end')).toBeTruthy();
+    });
+
+    // START === END IS THE OFF STATE, and it is the backend's own tested convention rather than a
+    // meaning invented here: `isWithinQuietHours` returns false for every instant when the edges
+    // meet, pinned by "empty window (start==end) is never quiet" in notification.service.spec.ts.
+    it('is OFF when the stored window is empty, and then draws no edges at all', async () => {
+      api.getNotificationPreferences.mockResolvedValue([
+        {
+          ...row(UNLOCKED[0]!, 'IN_APP', true),
+          quiet_hours_start: '22:00:00',
+          quiet_hours_end: '22:00:00',
+        },
+      ]);
+
+      const { getByTestId, queryByTestId } = await renderSection();
+
+      await waitFor(() => expect(getByTestId('notification-quiet-toggle')).toBeTruthy());
+      expect(getByTestId('notification-quiet-toggle').props.value).toBe(false);
+      // Hidden rather than dimmed: a greyed 22:00 → 07:00 still reads as a window merely paused.
+      expect(queryByTestId('notification-quiet-start')).toBeNull();
+      expect(queryByTestId('notification-quiet-end')).toBeNull();
+    });
+
+    it('collapses the window onto its own start when switched off', async () => {
+      const { getByTestId } = await renderSection();
+
+      await waitFor(() => expect(getByTestId('notification-quiet-toggle')).toBeTruthy());
+      await fireEvent(getByTestId('notification-quiet-toggle'), 'valueChange', false);
+
+      await waitFor(() => expect(api.updateNotificationPreferences).toHaveBeenCalled());
+      const [, window] = api.updateNotificationPreferences.mock.calls.at(-1)!;
+      expect(window).toEqual({ start: '22:00', end: '22:00' });
+    });
+
+    it('reopens on the stored start and the default end when switched back on', async () => {
+      api.getNotificationPreferences.mockResolvedValue([
+        {
+          ...row(UNLOCKED[0]!, 'IN_APP', true),
+          quiet_hours_start: '23:00:00',
+          quiet_hours_end: '23:00:00',
+        },
+      ]);
+
+      const { getByTestId } = await renderSection();
+
+      await waitFor(() => expect(getByTestId('notification-quiet-toggle')).toBeTruthy());
+      await fireEvent(getByTestId('notification-quiet-toggle'), 'valueChange', true);
+
+      // The START the user picked survives being switched off; only the END falls back.
+      const [, window] = api.updateNotificationPreferences.mock.calls.at(-1)!;
+      expect(window).toEqual({ start: '23:00', end: '07:00' });
+    });
+
+    it('steps an edge by a whole hour and saves it', async () => {
+      const { getByTestId } = await renderSection();
+
+      await waitFor(() => expect(getByTestId('notification-quiet-start-inc')).toBeTruthy());
+      await fireEvent.press(getByTestId('notification-quiet-start-inc'));
+
+      await waitFor(() => expect(api.updateNotificationPreferences).toHaveBeenCalled());
+      const [, window] = api.updateNotificationPreferences.mock.calls.at(-1)!;
+      expect(window).toEqual({ start: '23:00', end: '07:00' });
+      expect(String(getByTestId('notification-quiet-start').props.children)).toBe('23:00');
+    });
+
+    it('wraps an edge at midnight rather than running past 23:00', async () => {
+      api.getNotificationPreferences.mockResolvedValue([
+        {
+          ...row(UNLOCKED[0]!, 'IN_APP', true),
+          quiet_hours_start: '23:00:00',
+          quiet_hours_end: '07:00:00',
+        },
+      ]);
+
+      const { getByTestId } = await renderSection();
+
+      await waitFor(() => expect(getByTestId('notification-quiet-start-inc')).toBeTruthy());
+      await fireEvent.press(getByTestId('notification-quiet-start-inc'));
+
+      expect(String(getByTestId('notification-quiet-start').props.children)).toBe('00:00');
+    });
+
+    // EQUAL EDGES MEAN OFF, so a user stepping End back onto Start would silently disable the
+    // feature they were in the middle of adjusting.
+    it('refuses a step that would land one edge on the other', async () => {
+      api.getNotificationPreferences.mockResolvedValue([
+        {
+          ...row(UNLOCKED[0]!, 'IN_APP', true),
+          quiet_hours_start: '22:00:00',
+          quiet_hours_end: '23:00:00',
+        },
+      ]);
+
+      const { getByTestId } = await renderSection();
+
+      await waitFor(() => expect(getByTestId('notification-quiet-end-dec')).toBeTruthy());
+      await fireEvent.press(getByTestId('notification-quiet-end-dec'));
+
+      expect(String(getByTestId('notification-quiet-end').props.children)).toBe('23:00');
+      expect(api.updateNotificationPreferences).not.toHaveBeenCalled();
+    });
+
+    // THE WINDOW CANNOT BE WRITTEN ALONE. `updatePreferences` upserts the preference rows first and
+    // then stamps the window across the rows the user owns, so a PATCH with an empty `preferences`
+    // array writes nothing for anyone who has never touched a switch — `updateQuietHours` says so
+    // itself ("0 when the user has no rows yet").
+    it('sends the current flags alongside the window, never the window alone', async () => {
+      const { getByTestId } = await renderSection();
+
+      await waitFor(() => expect(getByTestId('notification-quiet-start-inc')).toBeTruthy());
+      await fireEvent.press(getByTestId('notification-quiet-start-inc'));
+
+      await waitFor(() => expect(api.updateNotificationPreferences).toHaveBeenCalled());
+      const [flags] = api.updateNotificationPreferences.mock.calls.at(-1)!;
+      expect(flags.length).toBeGreaterThan(0);
+      // §19.6 — the locked safety type is never written, and is never quieted either.
+      for (const locked of LOCKED) {
+        expect(flags.some((f: { event_type: string }) => f.event_type === locked)).toBe(false);
+      }
+    });
+
+    it('reports a rejected window save rather than leaving the control looking saved', async () => {
+      api.updateNotificationPreferences.mockRejectedValue(new Error('offline'));
+
+      const { getByTestId } = await renderSection();
+
+      await waitFor(() => expect(getByTestId('notification-quiet-start-inc')).toBeTruthy());
+      await fireEvent.press(getByTestId('notification-quiet-start-inc'));
+
+      await waitFor(() => expect(getByTestId('notification-settings-error')).toBeTruthy());
+    });
   });
 });

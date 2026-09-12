@@ -44,8 +44,14 @@ export function unreadCount(items: Notification[]): number {
 // ── Preferences (§19.6) ──────────────────────────────────────────────────────
 // GET /notifications/preferences returns one row per (event_type, channel) the user has an explicit
 // setting for, plus the stored quiet-hours window. PATCH updates the per-(event_type, channel) enable
-// flags. Quiet-hours EDITING has no endpoint yet (the PATCH body is channel flags only), so the screen
-// reads the stored window but does not write it back — see notification-preferences.tsx.
+// flags AND, when both edges are supplied, the quiet-hours window — `update-preferences.dto.ts`
+// validates them as HH:MM and `notification.repository.ts` writes them as `::time`.
+//
+// THAT LAST SENTENCE USED TO SAY THE OPPOSITE. "Quiet-hours EDITING has no endpoint yet" stood here
+// after the endpoint had been built and after `updateNotificationPreferences` below had grown the
+// `quietHours` argument that writes it — so the one place a reader checks before building a control
+// said the control was impossible. Both screens that show quiet hours had copied the claim into
+// their own headers. Corrected 2026-09-13, with the two callers.
 
 /** One stored per-(event_type, channel) enable flag. Quiet-hours columns ride along on every row. */
 export interface PreferenceRow {
