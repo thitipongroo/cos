@@ -1694,17 +1694,32 @@ profile card, whose chevron had reported "coming soon" since 2026-08-09 — the 
 day, when the drawer became the profile, and this is it returning with something to show.
 
 **It reads. It does not edit.** The drawing is an edit form with three inputs, `SAVE PROFILE` and
-`CANCEL`, and none of the three fields has a self-service write:
+`CANCEL`, and neither field the screen keeps has a self-service write:
 
-| Field         | Column                            | Why it is read-only                                                                                                                                    |
-| ------------- | --------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| ชื่อ-นามสกุล  | `platform.users.display_name`     | No self-service write exists. §14's user-management writes are all `@Roles(TENANT_ADMIN)` and address somebody else by path parameter                   |
-| รหัสพนักงาน   | `workforce.workers.employee_code` | The EMPLOYER's identifier for the person, not the person's own. The drawing disables this input itself and says why; the note is kept                   |
-| เบอร์โทรศัพท์ | `platform.users.phone_number`     | The Path A login identifier (PO decision E6). §5.4.4 gives an account one identifier for its lifetime, so a field that edited it could lock someone out |
+| Field         | Column                        | Why it is read-only                                                                                                                                    |
+| ------------- | ----------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| ชื่อ-นามสกุล  | `platform.users.display_name` | No self-service write exists. §14's user-management writes are all `@Roles(TENANT_ADMIN)` and address somebody else by path parameter                   |
+| เบอร์โทรศัพท์ | `platform.users.phone_number` | The Path A login identifier (PO decision E6). §5.4.4 gives an account one identifier for its lifetime, so a field that edited it could lock someone out |
 
-So the screen names **who can change each thing** instead of offering a control that cannot. A SAVE
-button over three fields that nothing writes is the drawn control this project keeps refusing to
-ship — the same treatment START SCAN and Change Secure PIN get.
+A `USER ID` line follows them, from `shortId(userId)`. A SAVE button over fields that nothing writes
+is the drawn control this project keeps refusing to ship — the same treatment START SCAN and Change
+Secure PIN get.
+
+**Three things were stripped on 2026-09-13** (product-owner decision, after the first capture): the
+explanatory note under every field, the `EMPLOYEE ID` field, and the closing "these details come
+from your account record" line. Two of the three are in the drawing, so the deviation is recorded
+here and in the screen's header per ADR-085.
+
+- The notes said who could change the name, why the employee code is fixed
+  (`*ไม่สามารถแก้ไขรหัสพนักงานได้`, the drawing's own words) and why the phone number is. Every fact
+  remains true; the screen has stopped stating them. How much a read-only record explains itself is
+  a product judgement.
+- **Removing `EMPLOYEE ID` cost the product no information**, and that was measured rather than
+  assumed: `<ProfileBlock />` prints `workforce.workers.employee_code` on BOTH the navigation drawer
+  and the Account Settings head, as `{idLabel}: {employeeCode ?? shortId(userId)}`. `GET /users/me`
+  is no longer read for it on this screen.
+- The closing line was the second half of "say who can do it rather than showing a dead control".
+  The first half stands — there is still no SAVE button.
 
 **The photo is the exception, and a real one.** `แก้ไขรูปภาพ` picks an image (`expo-image-picker`,
 square crop — every surface draws the avatar in a circle), uploads it to the File Service and points
@@ -1723,9 +1738,8 @@ Transactional/Focused screens" — and that rule's own reason is that a form sho
 wander off mid-entry and lose what they typed. With the screen read-only there is no half-finished
 input to protect, so the reason does not reach it, and no other post-auth screen hides the bar.
 
-Every absent value carries a WORD rather than a blank: a null `employee_code` reads "no code issued"
-(the common case — office roles have no worker record at all), a null `phone_number` reads "not set",
-and a null `position` draws nothing at all (ADR-101).
+Every absent value carries a WORD rather than a blank: a null `phone_number` reads "not set" — the
+ordinary case on a Path B (email) account — and a null `position` draws nothing at all (ADR-101).
 
 #### AI Card Footer (`<AiCardFooter />`)
 

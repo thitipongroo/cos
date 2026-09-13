@@ -7,23 +7,40 @@
 //
 // ── IT READS. IT DOES NOT EDIT (product-owner decision E5, 2026-09-13) ─────────────────────────
 //
-// The drawing is an EDIT form: three text inputs, a SAVE PROFILE button and a CANCEL. Two of the
-// three fields cannot be edited by anyone through this product, and the third has no route:
+// The drawing is an EDIT form: three text inputs, a SAVE PROFILE button and a CANCEL. Neither field
+// this screen keeps can be edited by anyone through this product:
 //
 //   ชื่อ-นามสกุล    `platform.users.display_name`. No self-service write exists — `users/me` carries
 //                   `GET` and `PATCH me/photo`, and §14's user-management writes are all
 //                   @Roles(TENANT_ADMIN) and address SOMEBODY ELSE by path parameter.
-//   รหัสพนักงาน     `workforce.workers.employee_code` — the EMPLOYER's identifier for the person,
-//                   not the person's own. The drawing disables this input and says why in its own
-//                   note, which this screen keeps.
 //   เบอร์โทรศัพท์   `platform.users.phone_number` — THE PATH A LOGIN IDENTIFIER (E6). §5.4.4: an
 //                   account carries exactly one identifier for its lifetime, and moving a person
 //                   between paths means provisioning a new account. A field that edited this would
 //                   be a field that could lock someone out of their own account.
 //
-// So the screen states who can change each thing rather than offering a control that cannot
-// (§32.7 / ADR-085). A SAVE button over three fields that nothing writes is the drawn control this
-// project keeps refusing to ship — the same treatment START SCAN and Change Secure PIN get.
+// A SAVE button over fields that nothing writes is the drawn control this project keeps refusing to
+// ship — the same treatment START SCAN and Change Secure PIN get.
+//
+// ── STRIPPED ON 2026-09-13, AT THE PRODUCT OWNER'S REQUEST ────────────────────────────────────
+//
+// Three things left the screen the day it was built, after they were seen in a capture. All three
+// reverse what the plan of that morning approved, and two depart from the drawing — recorded here
+// because ADR-085 asks a deviation to carry its reason, and "the drawing draws it" was the reason
+// each of them was there.
+//
+//   THE NOTE UNDER EVERY FIELD. Three lines: who could change the name, why the employee code is
+//     fixed (`*ไม่สามารถแก้ไขรหัสพนักงานได้`, printed verbatim from the drawing) and why the phone
+//     number is (§5.4.4 / E6, said to the user in words). Every one of those facts is still true —
+//     the screen has stopped stating them. How much a read-only record should explain itself is a
+//     product judgement, and it is the product owner's.
+//   THE `EMPLOYEE ID` FIELD, which the drawing draws. **No information left the product**, and that
+//     was checked rather than assumed: `<ProfileBlock />` prints `workforce.workers.employee_code`
+//     on BOTH the navigation drawer and the Account Settings head — `{idLabel}: {employeeCode ??
+//     shortId(userId)}` — so the code is still two taps away on two surfaces. `getMe` is no longer
+//     read for it here either; see the state below.
+//   THE CLOSING "These details come from your account record" LINE. What it bought was the second
+//     half of "say who can do it rather than showing a dead control". The FIRST half stands — there
+//     is still no SAVE button — but the screen no longer names who to ask.
 //
 // THE PHOTO IS THE EXCEPTION, and it is a real one. `แก้ไขรูปภาพ` picks an image, uploads it to the
 // File Service and points `platform.users.photo_url` at the permanent image URL (ADR-105) — a URL
@@ -36,9 +53,9 @@
 //   A HEADSHOT OF A WORKER IN A HARD HAT — §32.7:622 prohibits hard-hat imagery, and it was an
 //     externally hosted image. <Avatar /> refuses it for the same reason and has since it was
 //     written; this screen shows the account's own photo, or initials.
-//   `Alex Rivers` / `Supervisor - Site A` / `SE-0942` / `+66 81 234 5678` — every one of these is
-//     REAL here: display_name, position (ADR-101, null draws nothing), employee_code (null is the
-//     common case — office roles have no worker record) and phone_number.
+//   `Alex Rivers` / `Supervisor - Site A` / `+66 81 234 5678` — every one of these is REAL here:
+//     display_name, position (ADR-101, null draws nothing) and phone_number. `SE-0942` is not: the
+//     EMPLOYEE ID field it belonged to was removed on 2026-09-13, see above.
 //   `SYNCED` + `ออนไลน์` AS TWO SEPARATE READINGS. This shell has one sync indicator and one
 //     precedence (`useSyncPillView` — error > syncing > pending > synced); offline is not a fifth
 //     state, it PRODUCES pending. Two indicators of one subject in one shell is what OfflineBanner
@@ -57,6 +74,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { View, Text, Image, Pressable, Alert, ScrollView, StyleSheet } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
+import { formatNationalPhone } from '@cos/ui-logic';
 import { getMe, uploadMyPhoto } from '../../api/users';
 import { fileImageSource } from '../../lib/fileImageSource';
 import { initialsOf } from '../../lib/initials';
@@ -75,12 +93,17 @@ type IconName = keyof typeof MaterialIcons.glyphMap;
 /**
  * One read-only field — the drawing's input shape, without the input.
  *
- * It keeps the caption, the leading glyph, the bordered box and the note, because those are what
- * make it legible as one fact. What it drops is the caret and the focus ring: a box that looks
- * editable and is not is worse than a box that never claimed to be.
+ * It keeps the caption, the leading glyph and the bordered box, because those are what make it
+ * legible as one fact. What it drops is the caret and the focus ring: a box that looks editable and
+ * is not is worse than a box that never claimed to be.
  *
- * `value` null or empty draws the EMPTY WORD the caller passes rather than a blank box — an absent
- * employee code is information ("no code issued"), and a gap is not.
+ * NO EXPLANATORY NOTE. It carried one until 2026-09-13 — one line under each box saying who could
+ * change the value and why it was fixed. The product owner removed all three. The facts have not
+ * changed; the screen has simply stopped stating them, which is a judgement about how much a
+ * read-only record should explain itself and is the product owner's to make.
+ *
+ * `value` null or empty draws the EMPTY WORD the caller passes rather than a blank box — a Path B
+ * account with no phone number is information ("not set"), and a gap is not.
  */
 function ReadOnlyField({
   testID,
@@ -88,7 +111,6 @@ function ReadOnlyField({
   label,
   value,
   empty,
-  note,
   styles,
   p,
 }: {
@@ -98,7 +120,6 @@ function ReadOnlyField({
   value: string | null | undefined;
   /** Pre-translated stand-in for a value the account genuinely does not have (QM-3). */
   empty: string;
-  note?: string;
   styles: ReturnType<typeof makeStyles>;
   p: Palette;
 }): React.JSX.Element {
@@ -112,7 +133,6 @@ function ReadOnlyField({
           {shown ? value : empty}
         </Text>
       </View>
-      {note ? <Text style={styles.fieldNote}>{note}</Text> : null}
     </View>
   );
 }
@@ -130,10 +150,13 @@ export default function ProfileScreen(): React.JSX.Element {
    * then falls back to the persisted session's name and the short UUID, exactly as the drawer does,
    * rather than showing a page of blanks.
    */
+  // `employee_code` is NOT read here any more. It left with the EMPLOYEE ID field on 2026-09-13,
+  // and fetching a value nothing renders is how a screen grows a field it does not have.
+  // The code is still on screen elsewhere: <ProfileBlock /> prints it on the navigation drawer and
+  // on the Account Settings head, so removing the field cost the product no information.
   const [me, setMe] = useState<{
     photoUrl: string | null;
     position: string | null;
-    employeeCode: string | null;
     phoneNumber: string | null;
   } | null>(null);
   const [photoFailed, setPhotoFailed] = useState(false);
@@ -146,7 +169,6 @@ export default function ProfileScreen(): React.JSX.Element {
         setMe({
           photoUrl: row.photo_url,
           position: row.position ?? null,
-          employeeCode: row.employee_code ?? null,
           phoneNumber: row.phone_number ?? null,
         });
       })
@@ -294,20 +316,6 @@ export default function ProfileScreen(): React.JSX.Element {
           label={t('profile.view.fullName')}
           value={displayName}
           empty={t('drawer.member')}
-          note={t('profile.view.nameNote')}
-          styles={styles}
-          p={p}
-        />
-        <ReadOnlyField
-          testID="profile-field-employee-code"
-          icon="badge"
-          label={t('profile.view.employeeId')}
-          // NULL IS THE COMMON CASE, not an edge case: `workforce.workers.user_id` is nullable and
-          // only site workers have a worker record. Office roles legitimately have no code, and
-          // that must read as "no code issued" rather than as missing data.
-          value={me?.employeeCode}
-          empty={t('profile.view.noEmployeeId')}
-          note={t('profile.view.employeeIdNote')}
           styles={styles}
           p={p}
         />
@@ -315,11 +323,21 @@ export default function ProfileScreen(): React.JSX.Element {
           testID="profile-field-phone"
           icon="phone-iphone"
           label={t('profile.view.phone')}
+          // FORMATTED PER §20.5 — `+66811000009` reads `(+66) 081-100-0009`, the number a Thai
+          // reader recognises from their own handset, over the dial code that says which country
+          // the platform filed it under. The same call `transparency-identity.tsx` and
+          // `user-profile.tsx` already make; this screen was the one printing raw E.164.
+          //
+          // IT REFUSES RATHER THAN GUESSES, and that is why nothing is written here. §20.5 groups
+          // only `+66`, so a Singapore number — eight national digits and NO trunk '0' — comes back
+          // UNCHANGED instead of being forced into a ten-digit mask. A number rendered wrong is
+          // worse than one rendered plainly: the reader cannot tell a regrouping from a typo in
+          // their own record.
+          //
           // Null on a Path B (email) account, which is not a gap either — that account signs in
           // with an email and never had a phone number on it.
-          value={me?.phoneNumber}
+          value={me?.phoneNumber == null ? null : formatNationalPhone(me.phoneNumber)}
           empty={t('profile.view.noPhone')}
-          note={t('profile.view.phoneNote')}
           styles={styles}
           p={p}
         />
@@ -331,18 +349,13 @@ export default function ProfileScreen(): React.JSX.Element {
           // POSITION · ID) and it is the one line a support desk asks for, so a profile screen that
           // omitted it would send the user back to the drawer to read it.
           value={shortId(userId)}
+          // A signed-in session always has a user id, so this stand-in is unreachable in practice —
+          // it exists because the prop is required, and `noPhone` is reused rather than adding a
+          // seventh key for a string nobody can see.
           empty={t('profile.view.noPhone')}
           styles={styles}
           p={p}
         />
-      </View>
-
-      {/* WHO CAN CHANGE THIS, instead of a SAVE button that writes nothing. The drawing ends with
-          SAVE PROFILE and CANCEL; this screen ends by naming the route a correction actually takes
-          (§32.7 — a screen says what is possible, not what would be convenient). */}
-      <View testID="profile-change-note" style={styles.noteCard}>
-        <MaterialIcons name="info" size={16} color={p.muted} />
-        <Text style={styles.noteText}>{t('profile.view.changeNote')}</Text>
       </View>
     </ScrollView>
   );
@@ -472,22 +485,4 @@ const makeStyles = (p: Palette) =>
       color: p.text,
     },
     fieldValueEmpty: { color: p.muted, fontFamily: fontFamily.regular },
-    fieldNote: {
-      fontSize: typography.label.fontSize,
-      fontFamily: fontFamily.regular,
-      color: p.muted,
-    },
-    noteCard: {
-      flexDirection: 'row',
-      alignItems: 'flex-start',
-      gap: spacing.xs,
-      paddingHorizontal: spacing.xs,
-    },
-    noteText: {
-      flex: 1,
-      fontSize: typography.label.fontSize,
-      fontFamily: fontFamily.regular,
-      lineHeight: typography.label.lineHeight,
-      color: p.muted,
-    },
   });

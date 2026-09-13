@@ -7,8 +7,14 @@
 // NOT on the screen as about what is — a SAVE button over fields nothing writes is the drawn
 // control this project keeps refusing to ship.
 //
-// EVERY ABSENT VALUE HAS A WORD. A missing employee code is information — office roles have no
-// worker record at all — and a blank box is not.
+// EVERY ABSENT VALUE HAS A WORD. A Path B account with no phone number is information, and a blank
+// box is not.
+//
+// THREE THINGS WERE STRIPPED ON 2026-09-13 at the product owner's request: the note under every
+// field, the EMPLOYEE ID field, and the closing "these details come from your account record" line.
+// The cases that held them are NOT deleted — each asserts the ABSENCE instead. A removal nothing
+// tests for is a removal that comes back, and two of these were in the drawing, so the pressure to
+// restore them is real.
 //
 // THE PHOTO IS THE ONE EXCEPTION to the read-only rule (decision E5), so its cases sit apart at the
 // bottom: pick, upload, point the account at the permanent URL (ADR-105), and say so when it fails.
@@ -41,7 +47,7 @@ const ME = {
   mfa_enabled: true,
   employee_code: 'SE-0942',
   position: 'Site Supervisor',
-  phone_number: '+66812345678',
+  phone_number: '+66811000009',
 };
 
 function renderScreen() {
@@ -74,30 +80,69 @@ describe('ProfileScreen', () => {
 
   afterEach(() => alert.mockRestore());
 
-  it('shows the three fields the drawing draws, with their real values', async () => {
-    const { getByTestId } = await renderScreen();
-
-    await waitFor(() => expect(getByTestId('profile-field-employee-code')).toBeTruthy());
-    expect(getByTestId('profile-field-name')).toHaveTextContent(/สมชาย/);
-    expect(getByTestId('profile-field-employee-code')).toHaveTextContent(/SE-0942/);
-    expect(getByTestId('profile-field-phone')).toHaveTextContent(/\+66812345678/);
-  });
-
-  // The drawing's own note, kept verbatim in Thai — the employer issues the code.
-  it('keeps the note saying the employee code cannot be changed here', async () => {
-    const { getByTestId } = await renderScreen();
-
-    await waitFor(() => expect(getByTestId('profile-field-employee-code')).toBeTruthy());
-    expect(getByTestId('profile-field-employee-code')).toHaveTextContent(/cannot be changed/i);
-  });
-
-  // E6 — the phone is the Path A login identifier, and §5.4.4 fixes one identifier per account for
-  // its lifetime. A field that edited it would be a field that could lock someone out.
-  it('says the phone number is what you sign in with', async () => {
+  it('shows the fields it keeps, with their real values', async () => {
     const { getByTestId } = await renderScreen();
 
     await waitFor(() => expect(getByTestId('profile-field-phone')).toBeTruthy());
-    expect(getByTestId('profile-field-phone')).toHaveTextContent(/sign in/i);
+    expect(getByTestId('profile-field-name')).toHaveTextContent(/สมชาย/);
+    expect(getByTestId('profile-field-user-id')).toBeTruthy();
+  });
+
+  // ── The phone number is FORMATTED, per §20.5 ─────────────────────────────────────────────────
+  //
+  // `formatNationalPhone` from `@cos/ui-logic` — the same call `transparency-identity.tsx` and
+  // `user-profile.tsx` already make. Nothing was written for this screen: a second copy of the
+  // grouping is how two screens start disagreeing about a reader's own number.
+  it('prints the phone number in the national format, not raw E.164', async () => {
+    const { getByTestId } = await renderScreen();
+
+    await waitFor(() => expect(getByTestId('profile-field-phone')).toBeTruthy());
+    expect(getByTestId('profile-field-phone')).toHaveTextContent(/\(\+66\) 081-100-0009/);
+    // The stored form must not survive anywhere in the row.
+    expect(getByTestId('profile-field-phone')).not.toHaveTextContent(/\+66811000009/);
+  });
+
+  // IT REFUSES RATHER THAN GUESSES. §20.5 groups only `+66`; Singapore is eight national digits
+  // with no trunk '0', so `0xx-xxx-xxxx` cannot express one. An ungrouped number beats a wrongly
+  // grouped one — the reader cannot tell a regrouping from a typo in their own record.
+  it('leaves a number it cannot group UNCHANGED rather than forcing the mask', async () => {
+    users.getMe.mockResolvedValue({ ...ME, phone_number: '+6581234567' });
+
+    const { getByTestId } = await renderScreen();
+
+    await waitFor(() => expect(getByTestId('profile-field-phone')).toBeTruthy());
+    expect(getByTestId('profile-field-phone')).toHaveTextContent(/\+6581234567/);
+    // `\d-\d`, not a bare `-`: the leading glyph's own name is `phone-iphone` and sits in the
+    // rendered tree, so a bare hyphen test passes on the icon and proves nothing about the number.
+    expect(getByTestId('profile-field-phone')).not.toHaveTextContent(/\d-\d/);
+    expect(getByTestId('profile-field-phone')).not.toHaveTextContent(/\(\+65\)/);
+  });
+
+  // REMOVED 2026-09-13. The drawing draws this field and this screen kept it, with the drawing's
+  // own Thai note, until the product owner removed both. No information left the product:
+  // <ProfileBlock /> still prints `workforce.workers.employee_code` on the navigation drawer and on
+  // the Account Settings head.
+  it('draws no EMPLOYEE ID field, and does not fetch one', async () => {
+    const { getByTestId, queryByTestId, queryByText } = await renderScreen();
+
+    await waitFor(() => expect(getByTestId('profile-field-phone')).toBeTruthy());
+    expect(queryByTestId('profile-field-employee-code')).toBeNull();
+    expect(queryByText(/employee id/i)).toBeNull();
+    // The seeded code must not appear anywhere on the screen either — a field can be removed while
+    // its value leaks into another line.
+    expect(queryByText(/SE-0942/)).toBeNull();
+  });
+
+  // REMOVED 2026-09-13 — one line under each box, saying who could change the value and why it was
+  // fixed. E6 and §5.4.4 still hold; the screen has stopped stating them.
+  it('carries no explanatory note under any field', async () => {
+    const { getByTestId } = await renderScreen();
+
+    await waitFor(() => expect(getByTestId('profile-field-phone')).toBeTruthy());
+    expect(getByTestId('profile-field-phone')).not.toHaveTextContent(/sign in/i);
+    expect(getByTestId('profile-field-name')).not.toHaveTextContent(/tenant admin/i);
+    // A field is now exactly its caption and its value — nothing else.
+    expect(getByTestId('profile-field-phone')).not.toHaveTextContent(/\*/);
   });
 
   // NOT A CONTROL. None of the four boxes may become an input by accident — the whole screen's
@@ -125,24 +170,27 @@ describe('ProfileScreen', () => {
     expect(queryAllByProp('editable')).toHaveLength(0);
   });
 
-  // It says WHO can change these instead, which is what a screen owes a user who came to change one.
-  it('names who can correct the record', async () => {
-    const { getByTestId } = await renderScreen();
+  // REMOVED 2026-09-13. Its first half stands — there is still no SAVE button, asserted below —
+  // but the screen no longer names who to ask.
+  it('carries no closing note about where the details come from', async () => {
+    const { getByTestId, queryByTestId, queryByText } = await renderScreen();
 
-    await waitFor(() => expect(getByTestId('profile-change-note')).toBeTruthy());
-    expect(getByTestId('profile-change-note')).toHaveTextContent(/tenant admin/i);
+    await waitFor(() => expect(getByTestId('profile-field-phone')).toBeTruthy());
+    expect(queryByTestId('profile-change-note')).toBeNull();
+    expect(queryByText(/come from your account record/i)).toBeNull();
   });
 
-  // NULL IS THE COMMON CASE — `workforce.workers.user_id` is nullable and office roles have no
-  // worker record. It must read as "no code issued", never as a blank.
-  it('says no code issued rather than leaving the box empty', async () => {
+  // The account with no worker record is the common case — office roles have none — and it used to
+  // read "no code issued" here. With the field gone it reads nothing, and the screen must be
+  // unchanged by it rather than drawing a gap where the field was.
+  it('renders identically whether or not the account has an employee code', async () => {
     users.getMe.mockResolvedValue({ ...ME, employee_code: null });
 
-    const { getByTestId } = await renderScreen();
+    const { getByTestId, queryByText } = await renderScreen();
 
-    await waitFor(() =>
-      expect(getByTestId('profile-field-employee-code')).toHaveTextContent(/No code issued/i),
-    );
+    await waitFor(() => expect(getByTestId('profile-field-phone')).toBeTruthy());
+    expect(queryByText(/no code issued/i)).toBeNull();
+    expect(getByTestId('profile-field-name')).toHaveTextContent(/สมชาย/);
   });
 
   it('says not set for a Path B account with no phone number', async () => {

@@ -82,12 +82,25 @@ gets its own full-page file (the Invite-user `email` method, the Alerts `diff`-e
 | -------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | [`00-loading/`](00-loading/)                 | The two frames before the app has a screen — the Android 12+ native splash (`00`) and the app-launch loading state (`01`) the JS layer holds while the session hydrates.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
 | [`01-authen/`](01-authen/)                   | Getting in — four flows: [`01-login/`](01-authen/01-login/) (`01`–`04`), [`02-mfa/`](01-authen/02-mfa/) (`01`–`07`, back from `02-shared/` on 2026-08-18), [`03-privacy-policy/`](01-authen/03-privacy-policy/) (`01`–`07`, the screens the policy pushes) and [`04-terms-of-use/`](01-authen/04-terms-of-use/) (`01`–`02`, back on 2026-08-18 — ADR-092). Four sets left on 2026-08-17 (product-owner decision): the Privacy Policy in both entry states, the Transparency Portal beneath it (`01-data-collection/`, 14 screens `00`–`13`), `04-terms-of-use/` and `05-get-support/`. **The Privacy Policy came back the same day** — its five sections became five routes, and those screens are documented nowhere else; the `00-…-postauth` drawer frame and the portal did NOT. On 2026-08-18 the policy DOCUMENT itself moved on to `02-shared/`, leaving this folder the seven screens it pushes, and **the Terms of Use came back on the same reasoning**: its download went live (ADR-092), so the flow has a second screen and the first one changed. The Transparency Portal and the Support Center are kept below, marked retired; their capture scripts stay deleted.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
-| [`02-shared/`](02-shared/)                   | Cross-role screens that belong to no role. **Three flows since 2026-09-11**: [`03-navigation-drawer/`](02-shared/03-navigation-drawer/) joined the same day the drawer became one structure for every role — eleven frames, one per role, and a cross-role folder again for the first time since 2026-08-16. Before it came [`02-support-centre/`](02-shared/02-support-centre/) — `01-support-hub`, the POST-AUTH Support screen, which had never been captured because nothing in the repo signed in and tapped the TopBar's `?`. It belongs here on the same test as the policy below: every role reaches it the same way and it belongs to none of them. Before that it held exactly one flow: [`01-privacy-policy/`](02-shared/01-privacy-policy/) — the policy document (`00-policy-dashboard`), which one `<PrivacyPolicyDocument />` renders at BOTH `(auth)/privacy-policy` and `(app)/privacy-policy` and which therefore belongs to neither. MFA sat here from 2026-08-16 and **went back to `01-authen/02-mfa/`** on 2026-08-18, following its drawing; the notification-preferences frames (`01`, `02`) and the navigation drawer (`03`) were **retired on 2026-08-16**. Those sections are kept below, marked retired, because what they documented is still true of the app.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| [`02-shared/`](02-shared/)                   | Cross-role screens that belong to no role. **Two flows since 2026-09-13**, when the navigation drawer left for the role folders — see the note below the table. [`02-support-centre/`](02-shared/02-support-centre/) — `01-support-hub`, the POST-AUTH Support screen, which had never been captured because nothing in the repo signed in and tapped the TopBar's `?`. It belongs here on the same test as the policy: every role reaches it the same way and it belongs to none of them. And [`01-privacy-policy/`](02-shared/01-privacy-policy/) — the policy document (`00-policy-dashboard`), which one `<PrivacyPolicyDocument />` renders at BOTH `(auth)/privacy-policy` and `(app)/privacy-policy` and which therefore belongs to neither. MFA sat here from 2026-08-16 and **went back to `01-authen/02-mfa/`** on 2026-08-18, following its drawing; the notification-preferences frames were **retired on 2026-08-16**. Those sections are kept below, marked retired, because what they documented is still true of the app.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
 | [`03-site-engineer/`](03-site-engineer/)     | Tabs: **Home \| Issues \| Tasks \| Reports** — `Tasks` replaced `Inspections` on 2026-08-12 (PO decision; [`roleTabs.ts`](../../../apps/mobile/src/lib/roleTabs.ts) is the source, and `/inspections` became a derived drawer row for the role rather than being dropped). [`01-Home/`](03-site-engineer/01-Home/) — the **project picker** overlay (`00-se-project-selection`), the dashboard's loading state (`00-se-home-loading`) and the dashboard itself (`01`). [`02-Issues/`](03-site-engineer/02-Issues/) — the issue board (`01`). [`03-Tasks/`](03-site-engineer/03-Tasks/) — the task list (`01`). [`04-Reports/`](03-site-engineer/04-Reports/) — the submitted-report review list (`01`). Both `00-` frames sort before the dashboard because each precedes it: the picker is answered first, then the dashboard loads.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
 | [`04-tenant-admin/`](04-tenant-admin/)       | Tabs: **Home \| Users \| Alerts \| Settings**. [`01-Home/`](04-tenant-admin/01-Home/) — dashboard (`01`), Quick-Add (`02`) and the FAB flows: Invite-user (`03`), Role-permissions (`04`), Roles-selection (`05`), Invitation-success (`06`), System-integration (`07`), Apps-&-Services (`08`). [`02-Users/`](04-tenant-admin/02-Users/) — the users list (`01`), the per-user action sheet (`02`), the user profile (`03`), the multi-role permission editor (`04`) + the save-success screen (`05`), and the password-reset form (`06`) + its two done screens — temp-password (`07`) and email-link-sent (`08`). [`03-Alerts/`](04-tenant-admin/03-Alerts/) — the sync-review queue (`01`). [`04-Settings/`](04-tenant-admin/04-Settings/) — System Settings (`01`, one full-page).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
 | [`05-site-worker/`](05-site-worker/)         | Tabs: **Home \| Tasks \| Safety \| Directory**. [`01-Home/`](05-site-worker/01-Home/) — the **site picker** overlay in both its states (`00-sw-select-project` forced, `00-sw-change-project` dismissible), the field dashboard (`01`), the FAB's **Quick actions** overlay (`02`), and the two screens that overlay opens: **Report issue** (`03`) and **Daily report** (`04`). Those four are named for the mockup folders they implement (`01_dashboard`, `02_quick_actions`, `03_issue`, `04_daily_report`). [`02-Tasks/`](05-site-worker/02-Tasks/) (`01`), [`03-Safety/`](05-site-worker/03-Safety/) (`01`), [`04-Directory/`](05-site-worker/04-Directory/) (`01`). [`05-Drawer/`](05-site-worker/05-Drawer/) — the **navigation drawer** (`01`), which IS the profile, and the **account settings** screen its Settings row pushes to (`02`).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
 | [`07-safety-officer/`](07-safety-officer/)   | Tabs: **Home \| Incidents \| Checklists \| Permits** — the bar the product owner settled on 2026-08-13 from [`mockup/mobile/07_safety_officer`](../../../mockup/mobile/07_safety_officer), whose three drawings agree on `Home \| Incidents \| Checklists \| Profile`; Profile is no role's tab (§32.7), so Permits took the slot. [`01-Home/`](07-safety-officer/01-Home/) — the safety dashboard (`01`): open-incident tile, the two unavailable KPI tiles, the daily-checklist card, recent incidents. [`02-Incidents/`](07-safety-officer/02-Incidents/) — the feed (`01`): four filter pills, the incident card with its photo plate, the AI-risk panel. [`03-Checklists/`](07-safety-officer/03-Checklists/) — the inspection list (`01`) and the checklist being filled (`02`), which is what the mockup actually draws. [`04-Permits/`](07-safety-officer/04-Permits/) — the permit register (`01`), the request form behind its FAB (`02`) and the confirmation that follows a real submission (`03`). The `03` frame is reached by ACTUALLY submitting the form, the route being `router.replace`-only from a successful POST, so each run leaves one extra PENDING permit in the demo tenant and the REQUEST ID on screen is the number the server stored. **"Checklists" is the `/inspections` route relabelled**, not a new screen, which is why its tab testID is still `inspection-tab`. FOUR PANELS IN THESE FRAMES READ "not available yet", AND THAT IS THE HONEST STATE: the drawings show a compliance percentage, safe-hours-since-last-LTI, an AI-predicted risk per incident and a weather-sourced hazard alert, and none of the four has a source anywhere in this platform (`GET /safety/compliance` returns four counts and no score; nothing records hours against a lost-time injury; `/ai/reports/*` has no safety surface; nothing ingests weather). Product-owner ruling 2026-08-13: draw the zone, say plainly it is not ready, never print an invented figure. What IS real in these frames — the counts, the incident feed, the checklist templates and their Thai item text, the permit row and its validity dates — comes from the live backend against seeded data. Captured by [`capture-android-safety-officer.mjs`](../../../apps/mobile/scripts/capture-android-safety-officer.mjs) as `+66811000007` (Decha Phumipat).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
 | [`06-project-manager/`](06-project-manager/) | Tabs: **Home \| Procurement \| Finance \| More** — the bar from the CORRECTED [`mockup/mobile/06_project_manager`](../../../mockup/mobile/06_project_manager) set (2026-08-10). [`01-Home/`](06-project-manager/01-Home/) — the manager dashboard (`01`): two KPI tiles, the critical-blockers card, the AI panel and YOUR PROJECTS. [`02-Procurement/`](06-project-manager/02-Procurement/) — three counters, the AI panel and the approvals queue (`01`). [`03-Finance/`](06-project-manager/03-Finance/) — portfolio financial summary, AI panel, per-project budget health (`01`). [`04-More/`](06-project-manager/04-More/) — the More menu (`01`); the vendor directory it pushes to was `02` until 2026-08-11, when it left the committed set (see the restructure note above) — the screen itself is unchanged. [`05-Drawer/`](06-project-manager/05-Drawer/) — the navigation drawer (`01`), which from 2026-08-10 is PER ROLE: only **Settings** and **Support Center** are shared, and the section above them comes from [`lib/drawerLinks.ts`](../../../apps/mobile/src/lib/drawerLinks.ts). **Superseded 2026-08-14:** the drawer drawing was copied to `mockup/mobile/02_shared/01_navigation_drawer`, byte-identical to `04_tenant_admin/05_navigation_drawer`, so it is nobody's role menu any more. (**Both drawings were withdrawn on 2026-08-16**, in one commit. The ruling stands — ADR-085; `apps/mobile/src/lib/drawerLinks.ts` now carries the four rows and is the record of what they specified.) Its four buildable rows — Project Overview, Daily Site Reports, Safety Incident Logs, Material Inventory — now LEAD every role's drawer, and the role's own rows follow. No role takes a drawing verbatim now: the four are the first entries of the DERIVED table, so each still appears only where §6.4 grants the module behind it and no drawer row can lead to a 403. The 2026-08-10 arrangement this replaces gave `04_tenant_admin/` and `06_project_manager/05_navigation_drawer` their drawing verbatim and derived the other ten; what it was protecting is kept, since the list every role used to share was not neutral — it was the TENANT_ADMIN drawing plus two extra rows. **This frame was recaptured on 2026-08-14 and shows the new model**: the four drawn rows lead (Project overview · Daily site reports · Safety incident logs · Materials), Tasks and Inspections follow, and `More (13)` carries the rest — this role derives now as well as taking the drawn rows, where before it stopped at its drawing's seven. The earlier `03-Approvals/` and `04-Vendors/` folders were removed with the bar they were numbered for. `PROC_MANAGER` does not share these screens: the corrected mockup set is a PROJECT_MANAGER app end to end, and master 3490 keeps that role on Home \| RFQs \| Orders \| Deliveries. |
+
+> **The drawer, Account Settings and Profile moved OUT of `02-shared/` on 2026-09-13** (product-owner
+> decision), into each role's own `05-Drawer/` — `06-Drawer/` for `11-proc-manager`, whose five tabs
+> already occupy `01`–`05`, so its drawer is the sixth in flow order. Each role folder now carries
+> its three shell frames beside its tab frames, which is what makes a role's set complete in one
+> place.
+>
+> **This reverses an argument the drawer section below used to make.** It read: "A single frame
+> cannot show that a structure holds for every role. Eleven can" — and that was true of the claim
+> being tested on 2026-09-11, when the drawer had just become one structure. It is a different
+> question from where a reader looks up one role's screens, and the product owner answered the
+> second one. The eleven frames are the same eleven; only where they live changed, and `git mv`
+> carried their history.
 
 The two adb dashboard scripts write straight into their role's menu subfolders —
 [`capture-android-home.mjs`](../../../apps/mobile/scripts/capture-android-home.mjs) → `03-site-engineer/01-Home/`,
@@ -1144,7 +1157,7 @@ Shot as `+66811000012` (Chalermsak Nithat) over **Path A, phone OTP**: `MFA_ROLE
 | [`02-Leads/`](12-crm-manager/02-Leads/)         | `01-leads-directory` — search, state chips, the AI score per lead                   |
 | [`03-Pipeline/`](12-crm-manager/03-Pipeline/)   | `01-opportunities` — the forecast card, the deal cards, convert                     |
 | [`04-Customers/`](12-crm-manager/04-Customers/) | `01-customers` — the relationship card and the client list                          |
-| [`05-Profile/`](12-crm-manager/05-Profile/)     | `01-navigation-drawer` (**pre-2026-09-11**, see below) and `02-account-settings`    |
+| [`05-Drawer/`](12-crm-manager/05-Drawer/)       | `01-crm-navigation-drawer`, `02-crm-account-settings`, `03-crm-profile`             |
 
 **The SCREENS are untouched.** `CRM_SALES_MANAGER` still has its four tabs in the app, still backed by
 `crm.controller.ts` and the same role-gated routes `apps/web` uses; only their screenshots left this
@@ -1253,13 +1266,22 @@ rendering works, not evidence of a broken check.
 > row, never down: the content cards use the same `#0F172A` surface as the bottom nav, so a downward
 > scan stops in the middle of the page.
 
-## Shared — Navigation drawer — one frame per role — [`02-shared/03-navigation-drawer/`](02-shared/03-navigation-drawer/)
+## Navigation drawer — one frame per role, in each role's own folder
 
 **The drawer became ONE structure for every role on 2026-09-11** (product-owner decision, from Stitch
-_"Navigation Drawer - Construction OS Mobile"_), which is what makes a cross-role folder honest again
-after a month of per-role frames — and why it holds **eleven** of them rather than one. A
-single frame cannot show that a structure holds for every role. Eleven can, and that claim is the
-whole of the change.
+_"Navigation Drawer - Construction OS Mobile"_) — which is why there are **eleven** frames rather
+than one. A single frame cannot show that a structure holds for every role; eleven can, and that
+claim is the whole of the 2026-09-11 change.
+
+**They lived in `02-shared/03-navigation-drawer/` until 2026-09-13**, filed together because the
+subject was the shell rather than any role. The product owner then moved them into the role folders,
+so a reader looking up one role finds its drawer beside its tabs. Both arrangements answer real
+questions — "does this hold for everyone?" and "what does this role see?" — and the second is the
+one a reader asks more often. The frames are the same eleven; `git mv` carried their history.
+
+Each now sits at `<role>/05-Drawer/01-<prefix>-navigation-drawer.png` — `06-Drawer/` for
+`11-proc-manager`, whose five tabs already occupy `01`–`05`, so its drawer is sixth in flow order.
+The table below keeps them side by side, which is what the cross-role folder was for.
 
 **Eleven, not twelve.** `SYSTEM_ADMIN` is cross-tenant and provisioned to no tenant
 ([`06-rbac-permission-matrix.md`](../../specifications/06-rbac-permission-matrix.md) §6.7), so no
@@ -1267,19 +1289,19 @@ demo account signs in as it. Its drawer is derivable — `drawerSectionFor(SYSTE
 rows of its own and the two shared ones — but it is not photographable, and a drawn stand-in would
 be the one frame here that is not a picture of the running app.
 
-| #                                                             | Role                  | Own rows | Shown | Behind `More` |
-| ------------------------------------------------------------- | --------------------- | -------- | ----- | ------------- |
-| [`01`](02-shared/03-navigation-drawer/01-site-engineer.png)   | `SITE_ENGINEER`       | 8        | 8     | —             |
-| [`02`](02-shared/03-navigation-drawer/02-site-worker.png)     | `SITE_WORKER`         | 3        | 3     | —             |
-| [`03`](02-shared/03-navigation-drawer/03-safety-officer.png)  | `SAFETY_OFFICER`      | 5        | 5     | —             |
-| [`04`](02-shared/03-navigation-drawer/04-project-manager.png) | `PROJECT_MANAGER`     | 19       | 7     | 12            |
-| [`05`](02-shared/03-navigation-drawer/05-executive.png)       | `EXECUTIVE`           | 19       | 7     | 12            |
-| [`06`](02-shared/03-navigation-drawer/06-proc-officer.png)    | `PROCUREMENT_OFFICER` | 7        | 7     | —             |
-| [`07`](02-shared/03-navigation-drawer/07-proc-manager.png)    | `PROC_MANAGER`        | 5        | 5     | —             |
-| [`08`](02-shared/03-navigation-drawer/08-crm-manager.png)     | `CRM_SALES_MANAGER`   | 7        | 7     | —             |
-| [`09`](02-shared/03-navigation-drawer/09-viewer.png)          | `VIEWER`              | 10       | 7     | 3             |
-| [`10`](02-shared/03-navigation-drawer/10-finance.png)         | `FINANCE`             | 10       | 7     | 3             |
-| [`11`](02-shared/03-navigation-drawer/11-tenant-admin.png)    | `TENANT_ADMIN`        | 19       | 7     | 12            |
+| #                                                                | Role                  | Own rows | Shown | Behind `More` |
+| ---------------------------------------------------------------- | --------------------- | -------- | ----- | ------------- |
+| [`01`](03-site-engineer/05-Drawer/01-se-navigation-drawer.png)   | `SITE_ENGINEER`       | 8        | 8     | —             |
+| [`02`](05-site-worker/05-Drawer/01-sw-navigation-drawer.png)     | `SITE_WORKER`         | 3        | 3     | —             |
+| [`03`](07-safety-officer/05-Drawer/01-sa-navigation-drawer.png)  | `SAFETY_OFFICER`      | 5        | 5     | —             |
+| [`04`](06-project-manager/05-Drawer/01-pm-navigation-drawer.png) | `PROJECT_MANAGER`     | 19       | 7     | 12            |
+| [`05`](08-executive/05-Drawer/01-ex-navigation-drawer.png)       | `EXECUTIVE`           | 19       | 7     | 12            |
+| [`06`](10-proc-officer/05-Drawer/01-po-navigation-drawer.png)    | `PROCUREMENT_OFFICER` | 7        | 7     | —             |
+| [`07`](11-proc-manager/06-Drawer/01-pom-navigation-drawer.png)   | `PROC_MANAGER`        | 5        | 5     | —             |
+| [`08`](12-crm-manager/05-Drawer/01-crm-navigation-drawer.png)    | `CRM_SALES_MANAGER`   | 7        | 7     | —             |
+| [`09`](13-viewer/05-Drawer/01-viewer-navigation-drawer.png)      | `VIEWER`              | 10       | 7     | 3             |
+| [`10`](09-finance/05-Drawer/01-fn-navigation-drawer.png)         | `FINANCE`             | 10       | 7     | 3             |
+| [`11`](04-tenant-admin/05-Drawer/01-ta-navigation-drawer.png)    | `TENANT_ADMIN`        | 19       | 7     | 12            |
 
 Counted from `drawerSectionFor(role)` on the day, not read off the pictures. **Five roles fold** —
 the three with nineteen rows and the two with ten. The fold is `DRAWER_MAX_ROWS`, and it moved
@@ -1330,25 +1352,22 @@ shortest drawer in the product and `04` the longest, and the row is the same row
   unbuilt route, per the 2026-09-04 convention. Nothing in the frame marks them — a badge reading
   "soon" on six of seven rows would describe the backlog rather than the menu.
 
-### The frames these replace
+### The frames these replaced, and which are now deleted
 
-Seven role folders still hold a drawer frame of their own —
-[`05-site-worker/05-Drawer/`](05-site-worker/05-Drawer/),
-[`06-project-manager/05-Drawer/`](06-project-manager/05-Drawer/),
-[`08-executive/05-Drawer/`](08-executive/05-Drawer/), [`09-finance/05-Drawer/`](09-finance/05-Drawer/),
-[`10-proc-officer/05-Drawer/`](10-proc-officer/05-Drawer/),
-[`11-proc-manager/06-Drawer/`](11-proc-manager/06-Drawer/) and
-[`12-crm-manager/05-Profile/01-navigation-drawer.png`](12-crm-manager/05-Profile/01-navigation-drawer.png).
-**All seven predate 2026-09-11**, so they show a drawer this app no longer draws: no trailing
-chevron on any row, a status line in the profile block where the capture date carried one
-(`01-fn-navigation-drawer.png` reads `MFA verified • Online & synced`), and in the CRM manager's
-case four titled groups with badges. They are superseded by the table above and will be replaced the next time each
-role's own script runs. The sections below them are kept because what they say about WHY the drawer
-holds each role's off-bar routes is still true.
+Seven role folders held a drawer frame of their own until 2026-09-13 — site-worker, project-manager,
+executive, finance, proc-officer, proc-manager and crm-manager. **All seven predated 2026-09-11**,
+so they showed a drawer this app no longer draws: no trailing chevron on any row, a status line in
+the profile block where the capture date carried one (`01-fn-navigation-drawer.png` read
+`MFA verified • Online & synced`), and in the CRM manager's case four titled groups with badges.
+
+They were deleted in the same commit that moved the eleven in, rather than left beside them — two
+frames of one screen in one folder, one of them wrong, is worse than the gap it filled. The sections
+below them are kept because what they say about WHY the drawer holds each role's off-bar routes is
+still true.
 
 ### What the retired cross-role frame showed (2026-08-16 → 2026-09-11)
 
-`02-shared/03-navigation-drawer.png` — one file, not this folder — was retired on 2026-08-16 when
+`02-shared/03-navigation-drawer.png` — one file, not the eleven above — was retired on 2026-08-16 when
 the drawer became per role, and the step that wrote it was removed from
 `capture-android-shared-mfa.mjs`. It showed the drawer as Somsak Duangdee (`SITE_WORKER`): the
 identity card with the initials avatar, the role, and an **Online & synced** pill; **FIELD TOOLS**
@@ -1361,8 +1380,12 @@ the routes that are deliberately not bottom tabs, so they stay reachable without
 
 ### Re-running this capture
 
-`apps/mobile/scripts/capture-android-drawer.mjs` writes all eleven frames, one per role, and nothing
-else — it opens the drawer and photographs it. Three things it needs, each of which has cost a run:
+`apps/mobile/scripts/capture-android-drawer.mjs` writes all eleven drawer frames, one per role, and
+nothing else — it opens the drawer and photographs it. **Its sibling
+`capture-android-role-profile.mjs` writes the other two frames in each role's folder**, Account
+Settings and Profile, from the same eleven-role table and the same two login legs.
+
+Three things they need, each of which has cost a run:
 
 - **Metro started with `EXPO_PUBLIC_CAPTURE=1`.** `apps/mobile/.env` does not carry the key and the
   flag is read at BUNDLE time, so exporting it in the capture shell does nothing.
@@ -1378,23 +1401,40 @@ The OTP endpoint enforces a **60-second resend cooldown**, and a role re-run ins
 step at all; the script waits the cooldown out and asks again rather than reporting the screen as
 missing.
 
-## Shared — Account settings — [`02-shared/04-account-settings/`](02-shared/04-account-settings/)
+## Account settings — one frame per role
 
 One page: **Application settings · Delivery channels · Notification types · Quiet hours · Security &
-access · System**, for **every role**. `<AccountSettings />` serves all twelve — a per-role settings
-layout would be twelve screens to keep in step — so this is a cross-role folder on the same test as
-the drawer above.
+access · System**, and it is the SAME page for every role — `<AccountSettings />` serves all twelve.
+It was restructured on 2026-09-13 from Stitch screen `63c6dccafa734761a077835aabd70838` _"Account &
+Notification Settings - Site Engineer (Unified)"_; despite the drawing's name it is nobody's screen
+in particular.
 
-Restructured on **2026-09-13** from Stitch screen `63c6dccafa734761a077835aabd70838` _"Account &
-Notification Settings - Site Engineer (Unified)"_. Despite the drawing's name it is not the site
-engineer's screen; `01-site-engineer` is simply the role shot, because its seeded account reaches
-the page by Path A and the drawing is drawn for it.
+| Role                  | Frame                                                                               |
+| --------------------- | ----------------------------------------------------------------------------------- |
+| `SITE_ENGINEER`       | [`02-se-account-settings`](03-site-engineer/05-Drawer/02-se-account-settings.png)   |
+| `TENANT_ADMIN`        | [`02-ta-account-settings`](04-tenant-admin/05-Drawer/02-ta-account-settings.png)    |
+| `SITE_WORKER`         | [`02-sw-account-settings`](05-site-worker/05-Drawer/02-sw-account-settings.png)     |
+| `PROJECT_MANAGER`     | [`02-pm-account-settings`](06-project-manager/05-Drawer/02-pm-account-settings.png) |
+| `SAFETY_OFFICER`      | [`02-sa-account-settings`](07-safety-officer/05-Drawer/02-sa-account-settings.png)  |
+| `EXECUTIVE`           | [`02-ex-account-settings`](08-executive/05-Drawer/02-ex-account-settings.png)       |
+| `FINANCE`             | [`02-fn-account-settings`](09-finance/05-Drawer/02-fn-account-settings.png)         |
+| `PROCUREMENT_OFFICER` | [`02-po-account-settings`](10-proc-officer/05-Drawer/02-po-account-settings.png)    |
+| `PROC_MANAGER`        | [`02-pom-account-settings`](11-proc-manager/06-Drawer/02-pom-account-settings.png)  |
+| `CRM_SALES_MANAGER`   | [`02-crm-account-settings`](12-crm-manager/05-Drawer/02-crm-account-settings.png)   |
+| `VIEWER`              | [`02-viewer-account-settings`](13-viewer/05-Drawer/02-viewer-account-settings.png)  |
 
-| #                                                          | Role            |
-| ---------------------------------------------------------- | --------------- |
-| [`01`](02-shared/04-account-settings/01-site-engineer.png) | `SITE_ENGINEER` |
+**Eleven, not twelve** — `SYSTEM_ADMIN` is cross-tenant, has no seeded demo account and belongs to
+the `/admin` panel rather than this app (§20.7.11).
 
-### What this frame is evidence of
+### What differs between these eleven, and what does not
+
+Almost nothing differs, which is the point of looking at them together. **The notification section**
+offers the §19.4 types routed to the signed-in role, so its group cards and switches vary.
+**The profile head** carries that person's name, position and id. **`VIEWER` alone** gets the
+System Permissions block, from that role's own drawing — the one question only a read-only role
+asks. Everything else is identical by construction.
+
+### What these frames are evidence of
 
 - **Language and Theme are SEGMENTED**, both options on screen with the selected one filled. Neither
   was before: the language row showed the CURRENT language behind a swap glyph, so a reader had to
@@ -1404,8 +1444,8 @@ the page by Path A and the drawing is drawn for it.
   "follow the system" button; `ThemeMode` is dark-or-light and nothing in the store holds a system
   mode (product-owner decision E1). A segment that cannot be selected is worse than one fewer.
 - **Quiet hours are EDITABLE** — the switch, and ± steppers on each edge. They were read-only until
-  this day for a reason that had stopped being true: `api/notifications.ts` claimed the PATCH had no
-  quiet-hours field long after it had two.
+  2026-09-13 for a reason that had stopped being true: `api/notifications.ts` claimed the PATCH had
+  no quiet-hours field long after it had two.
 - **Security & access is a new group** — Password · Two-factor authentication · Biometric login ·
   Change Secure PIN. The second factor and the biometric switch MOVED here, and the biometric one
   also left `/account-security`, where a second copy had been living.
@@ -1415,17 +1455,17 @@ the page by Path A and the drawing is drawn for it.
 - **`Status: Not enrolled`** under Two-factor authentication is `platform.users.mfa_enabled`, live.
   The row prints nothing at all until `GET /users/me` answers: an unanswered fetch is not "not
   enrolled".
-- **`228.0 KB of 500.0 MB`** against Offline data is the measured size of the device's own SQLite
-  file against the §17.7 ceiling — not the drawing's `2.4 GB`, which is a figure no device reported.
+- **The offline-data figure** is the measured size of that device's own SQLite file against the
+  §17.7 ceiling — not the drawing's `2.4 GB`, which is a figure no device reported.
 
-### The Password row is visible here, and that is correct
+### The Password row is visible on every one, and that is correct
 
 [ADR-104](../../architecture/adr/104-self-service-password-reset.md) makes the row **absent — not
-disabled — on a Path A account**, because a phone/OTP account has no password its owner knows.
-This frame shows it present, and the reason is the seed rather than the rule: **every one of the
-thirteen accounts `seed-realistic.ts` writes carries BOTH a phone number and an email** (measured
-against the running database on 2026-09-13; this one is `waraporn.k@ekachai.co.th`). By the only
-test the client has — is there an email — the account is Path B, so the row belongs on it.
+disabled — on a Path A account**, because a phone/OTP account has no password its owner knows. Every
+frame here shows it present, and the reason is the seed rather than the rule: **all thirteen accounts
+`seed-realistic.ts` writes carry BOTH a phone number and an email** (measured against the running
+database on 2026-09-13). By the only test the client has — is there an email — every seeded account
+is Path B, so the row belongs on all of them.
 
 **No seeded account is Path A**, so these captures cannot photograph the absent row at all. §5.4.4
 says an account carries exactly one identifier and `UserService.createUser` refuses a request
@@ -1433,51 +1473,62 @@ carrying both; the seed writes its rows directly and is not bound by that check.
 behaviour is held by `AccountSettings.spec.tsx` instead ("does not draw it at all on a Path A
 account"), where `email: ''` — what `provisionPhoneUser` actually writes — can be set.
 
-## Shared — Profile — [`02-shared/05-profile/`](02-shared/05-profile/)
+## Profile — one frame per role
 
-The signed-in user's own record, **read-only**, for every role. Reached from the drawer's profile
-card, which is its only entry point.
+The signed-in user's own record, **read-only**, reached from the drawer's profile card, which is its
+only entry point. From Stitch screen `7367a77950f24c7e877c97aafc124350` _"แก้ไขข้อมูลโปรไฟล์"_
+(product-owner decision E5, 2026-09-13).
 
-From Stitch screen `7367a77950f24c7e877c97aafc124350` _"แก้ไขข้อมูลโปรไฟล์"_, built on **2026-09-13**
-(product-owner decision E5).
+| Role                  | Frame                                                             |
+| --------------------- | ----------------------------------------------------------------- |
+| `SITE_ENGINEER`       | [`03-se-profile`](03-site-engineer/05-Drawer/03-se-profile.png)   |
+| `TENANT_ADMIN`        | [`03-ta-profile`](04-tenant-admin/05-Drawer/03-ta-profile.png)    |
+| `SITE_WORKER`         | [`03-sw-profile`](05-site-worker/05-Drawer/03-sw-profile.png)     |
+| `PROJECT_MANAGER`     | [`03-pm-profile`](06-project-manager/05-Drawer/03-pm-profile.png) |
+| `SAFETY_OFFICER`      | [`03-sa-profile`](07-safety-officer/05-Drawer/03-sa-profile.png)  |
+| `EXECUTIVE`           | [`03-ex-profile`](08-executive/05-Drawer/03-ex-profile.png)       |
+| `FINANCE`             | [`03-fn-profile`](09-finance/05-Drawer/03-fn-profile.png)         |
+| `PROCUREMENT_OFFICER` | [`03-po-profile`](10-proc-officer/05-Drawer/03-po-profile.png)    |
+| `PROC_MANAGER`        | [`03-pom-profile`](11-proc-manager/06-Drawer/03-pom-profile.png)  |
+| `CRM_SALES_MANAGER`   | [`03-crm-profile`](12-crm-manager/05-Drawer/03-crm-profile.png)   |
+| `VIEWER`              | [`03-viewer-profile`](13-viewer/05-Drawer/03-viewer-profile.png)  |
 
-| #                                                 | Role            |
-| ------------------------------------------------- | --------------- |
-| [`01`](02-shared/05-profile/01-site-engineer.png) | `SITE_ENGINEER` |
+### What these frames are evidence of
 
-### What this frame is evidence of
-
-- **It reads. It does not edit.** The drawing is an edit form — three text inputs, `SAVE PROFILE`
-  and `CANCEL` — and none of the three fields has a self-service write. The frame carries no input,
-  no save and no cancel; it names **who can change each thing** instead. There is not one
-  `TextInput` on the screen, and a render test asserts that so it cannot quietly become one.
-- **`No code issued`** in EMPLOYEE ID is the null case working. `workforce.workers.user_id` is
-  nullable and office roles have no worker record at all, so an absent code is information, not a
-  gap — and this seeded engineer genuinely has none.
-- **`*This is how you sign in, so it stays fixed for this account.`** under the phone number is
-  §5.4.4 stated to the user: an account carries one identifier for its lifetime (decision E6), so a
-  field that edited it could lock someone out.
-- **`CHANGE PHOTO` is the one control**, and it is real — it uploads to the File Service and points
+- **It reads. It does not edit.** The drawing is an edit form with three inputs, `SAVE PROFILE` and
+  `CANCEL`, and neither field the screen keeps has a self-service write. There is no input, no save
+  and no cancel — not one `TextInput` on the screen, and a render test asserts that so it cannot
+  quietly become one.
+- **Three things were stripped on 2026-09-13**, after the first capture: the explanatory note under
+  every field, the `EMPLOYEE ID` field, and the closing "these details come from your account
+  record" line. Two are in the drawing, so both deviations are recorded at the screen and in §32.7
+  per ADR-085. **Removing `EMPLOYEE ID` cost the product no information** — measured, not assumed:
+  `<ProfileBlock />` still prints `workforce.workers.employee_code` on the navigation drawer and on
+  the Account Settings head.
+- **The phone number is formatted per §20.5** — `(+66) 081-100-0009`, the number a Thai reader
+  recognises from their own handset over the dial code that says which country the platform filed it
+  under. `formatNationalPhone` groups only `+66` and returns anything else UNCHANGED: a Singapore
+  number is eight national digits with no trunk '0', and a number rendered wrong is worse than one
+  rendered plainly.
+- **The avatar is initials, not a photograph.** The drawing's stock headshot of a worker in a hard
+  hat is an externally hosted image and §32.7 prohibits hard-hat imagery. No seeded account has a
+  photo, so every frame here shows the fallback — which is also what makes them a good record of it.
+- **`CHANGE PHOTO` is the one control**, and it is real: it uploads to the File Service and points
   `platform.users.photo_url` at the permanent image URL that had to be built for it
   ([ADR-105](../../architecture/adr/105-permanent-profile-photo-url.md)).
-- **The avatar is initials, not a photograph.** The drawing's stock headshot of a worker in a hard
-  hat is an externally hosted image and §32.7 prohibits hard-hat imagery; this account has no photo,
-  so the frame shows the fallback every surface in the app uses.
 - **The bottom nav is present.** The drawing suppresses it "as per rules for Transactional/Focused
   screens" — and that rule's own reason is that a form should not let someone wander off mid-entry
   and lose what they typed. With the screen read-only there is nothing to protect, so the bar stays,
-  as it does on every other post-auth screen (product-owner decision, reversing the original plan
-  item).
-- **One sync reading, not the drawing's two.** It draws `SYNCED` and `ออนไลน์` as separate
-  statements; this shell has one indicator and one precedence, and offline is not a fifth state — it
-  produces pending.
+  as it does on every other post-auth screen.
+- **A null position draws nothing** (ADR-101), so the roles whose seeded account has no position
+  show the name alone. That is the ordinary case, not a gap.
 
-### Re-running these two captures
+### Re-running these two sets
 
-`apps/mobile/scripts/capture-android-settings-profile.mjs` writes both frames in one pass: it logs
-in by Path A, answers the project picker, opens Settings from the drawer, then opens the profile
-from the drawer's profile card. Beyond the three prerequisites the drawer script lists
-(`EXPO_PUBLIC_CAPTURE=1`, `ANDROID_HOME`, seeded data), one is specific to these:
+`apps/mobile/scripts/capture-android-role-profile.mjs` writes both frames for every role in one pass:
+it logs in, answers the project picker, opens Settings from the drawer, then opens the profile from
+the drawer's profile card. Pass role keys to capture a subset. Beyond the three prerequisites the
+drawer script lists (`EXPO_PUBLIC_CAPTURE=1`, `ANDROID_HOME`, seeded data), one is specific to these:
 
 - **The debug APK must be rebuilt at or after 2026-09-13.** `/profile` imports `expo-image-picker`,
   whose JS calls `requireNativeModule` at module scope — an older APK does not carry that native
@@ -1486,9 +1537,26 @@ from the drawer's profile card. Beyond the three prerequisites the drawer script
 
 Both pages are shot by **lowering the display density** rather than by stitching scrolled shots, and
 the two use different values because they are different lengths — settings at 200, the profile at
-300 — for a measured reason. At the device's own 420 the profile's USER ID row and closing note fall
-below the fold; at 200 the same page fits with half the frame left empty. The density is always
-restored.
+300 — for a measured reason. At the device's own 420 the profile's USER ID row falls below the fold;
+at 200 the same page fits with half the frame left empty. The density is always restored, including
+when a run dies mid-capture.
+
+**Two roles take 180 for their settings page**, and the reason is on the screen. `PROJECT_MANAGER`
+carries the most §19.4 notification types of any role, so its Notification Types section is the
+tallest; `VIEWER` is the one role that gets the System Permissions block, which adds a whole group.
+The first eleven-role run filed both at 200 with the `Version` row — the last thing on the page —
+simply absent. The other nine stay at 200: these frames are meant to be read side by side, and 10 %
+is a difference a reader will not notice where a missing row is one they cannot recover.
+
+**The check after a run is "is `Version` in the frame", not "does the frame look right".** A page
+that ran past the fold is invisible unless someone looks for its last row. The same run also filed
+one frame showing a red "could not save your notification settings" line and NO Password row — a
+picture of a transient network failure rather than of the screen, since the row is deliberately
+absent until `GET /users/me` answers. Both were recaptured.
+
+**One role's failure does not end the run.** Eleven roles at several minutes each is a long wall
+clock, and losing the nine that worked because the tenth hit a transient is the wrong trade — each
+failure is caught, named again at the end, and the run exits non-zero.
 
 ## MFA enrolment — [`01`](01-authen/02-mfa/01-app-intro.png) · [`02`](01-authen/02-mfa/02-keycloak-login.png) · [`03`](01-authen/02-mfa/03-keycloak-totp-setup.png) · [`04`](01-authen/02-mfa/04-keycloak-totp-verify.png) · [`05`](01-authen/02-mfa/05-app-enrollment-success.png) · [`06`](01-authen/02-mfa/06-keycloak-recovery-codes.png) · [`07`](01-authen/02-mfa/07-keycloak-backup-codes-copied.png)
 
@@ -1866,10 +1934,10 @@ needed**: `workforce.workers` already carried `full_name`, `trade_type` and `con
   `surface` that an unbordered circle vanished and the initials read as loose letters beside the
   name. A person glyph stands in when a name yields no initials, so the shape is never empty.
 
-### Navigation drawer — the profile — [`05-Drawer/01-sw-drawer-profile.png`](05-site-worker/05-Drawer/01-sw-drawer-profile.png)
+### Navigation drawer — the profile — [`05-Drawer/01-sw-navigation-drawer.png`](05-site-worker/05-Drawer/01-sw-navigation-drawer.png)
 
 > **This frame predates 2026-09-11** and shows the drawer before it became one structure for every
-> role. The current one is [`02-shared/03-navigation-drawer/`](02-shared/03-navigation-drawer/);
+> role. The current ones live in each role's own `05-Drawer/` (moved there 2026-09-13);
 > what this section says about WHY these routes live in the drawer is unchanged.
 
 **THE DRAWER IS THE PROFILE** (product-owner decision 2026-08-09). There is no `/profile` route: the
@@ -1884,6 +1952,11 @@ mockups split them the same way, the tenant-admin drawer drawing being Field Too
 Logout and `05_profile/01_sw_account_settings` a full screen.
 
 ### Account settings — [`05-Drawer/02-sw-account-settings.png`](05-site-worker/05-Drawer/02-sw-account-settings.png)
+
+> **Recaptured 2026-09-13.** The frame this section was written against showed the screen as
+> Account · Preferences · System with a "Dark" switch and no Security & Access group — a layout the
+> app no longer draws. What the section says below about WHY each row is what it is still holds; the
+> grouping around them changed. See "Account settings — every role" for the current shape.
 
 [`app/(app)/account-settings.tsx`](<../../../apps/mobile/src/app/(app)/account-settings.tsx>), pushed
 from the drawer's Settings row. **Not `system-settings`** — that is the Tenant Admin tab for
@@ -2460,7 +2533,7 @@ failed report looks like, at the cost of that distinction on one screen.
 ### Navigation drawer — [`05-Drawer/01-ex-navigation-drawer.png`](08-executive/05-Drawer/01-ex-navigation-drawer.png)
 
 > **This frame predates 2026-09-11** and shows the drawer before it became one structure for every
-> role. The current one is [`02-shared/03-navigation-drawer/`](02-shared/03-navigation-drawer/);
+> role. The current ones live in each role's own `05-Drawer/` (moved there 2026-09-13);
 > what this section says about WHY these routes live in the drawer is unchanged.
 
 **Not a fifth tab.** `mockup/mobile/08_executive/05_profile/` draws the OVERLAY every role opens from
@@ -2788,7 +2861,7 @@ neither.
 | [`02-Projects/`](13-viewer/02-Projects/)       | `01-project-list` — a working search over the cached rows, the drawn category chips, and a card per assigned project                                                            |
 | [`03-Map/`](13-viewer/03-Map/)                 | `01-project-map` — the pins, the four map controls and the Active Sites sheet                                                                                                   |
 | [`04-Insights/`](13-viewer/04-Insights/)       | `01-project-insights` — the progress curve, safety performance, the risk forecast and the issue-severity breakdown                                                              |
-| [`05-Profile/`](13-viewer/05-Profile/)         | `01-account-settings` — the shared screen, plus the **System Permissions** block that renders for this role and no other                                                        |
+| [`05-Drawer/`](13-viewer/05-Drawer/)           | `01-viewer-navigation-drawer`, `02-viewer-account-settings`, `03-viewer-profile`                                                                                                |
 | [`06-Procurement/`](13-viewer/06-Procurement/) | `01-procurement` — the ACCESS PROFILE banner, four PO counters, the Delivery Predictor, a four-step route tracker and four monitored PO lines                                   |
 | [`07-Budget/`](13-viewer/07-Budget/)           | `01-budget` — total / committed / actual, the absorption bar and its legend, Audit & Forecast, four BOQ divisions, the progress photo and the VERIFIED LOG                      |
 
