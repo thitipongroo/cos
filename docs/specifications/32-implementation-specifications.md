@@ -1985,6 +1985,27 @@ card colour; `<MobileNav />` overrides `tabBarStyle` only on dark.
   the breadcrumb shows depth and can jump more than one level. "Is a child screen" has a single
   source of truth — `isChildRoute()` in `components/Breadcrumb.tsx`, backed by the breadcrumb map —
   so a route cannot get one affordance without the other. Top-level tab screens get neither.
+- **Two screens return to the NAVIGATION DRAWER on Back** (product-owner decision 2026-09-13):
+  `/account-settings` and `/profile`. `NavigationDrawer.go()` closes the panel before pushing, so
+  Back from a screen the drawer opened landed on the previous screen with the menu shut — and
+  reaching the row beside the one just used cost three taps instead of one. On a menu that serves
+  every role that is the wrong default.
+
+  **Both Backs, one rule.** A child screen can be left by the TopBar chevron and by Android's
+  hardware button, handled in `components/TopBar.tsx` and `app/(app)/_layout.tsx` respectively. The
+  list of routes lives in neither: it is `lib/drawerReturn.ts`, because two copies would drift and
+  then the gesture a user happened to reach for would decide what the app did. The hardware handler
+  is registered by the SHELL, keyed on the path, so a route joining the list needs no code of its
+  own — and on every other route nothing is registered at all, leaving the navigator's default Back
+  alone rather than putting a no-op in front of it. It does not fight the drawer's own back handler,
+  which exists only while the panel is open: `BackHandler` runs subscribers most-recently-added
+  first, so Back with the drawer open still closes it.
+
+  **Not every drawer row.** The same argument reaches all nineteen routes the drawer can open and
+  may yet be extended to them. It is not, because the other seventeen are also reachable from bottom
+  tabs, quick actions and each other — for those, "you came from the drawer" is a guess about one of
+  several entry points. These two are not: Account Settings is a `SHARED_LINKS` row, and Profile has
+  exactly one way in, held by `tests/conformance/mobile/04-role-screens.spec.ts`.
 - **A screen is named ONCE, and a top-level tab screen is named by its TAB.** A tab screen must not
   render an in-content page title: the active bottom-nav item already carries the name, and repeating
   it inside the content states it twice — the same defect `headingStutter.spec.ts` guards between a

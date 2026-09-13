@@ -1297,8 +1297,9 @@ as six plus `More (2)` at seven now draw in full.
 ### What is the same in all eleven
 
 Brand row with the tagline · the profile block (avatar · name · position · `User ID`, and the
-drawing's trailing chevron, which says so on the press rather than opening a `/profile` route that
-has not existed since 2026-08-09) · one `FIELD TOOLS` heading · rows of icon + one-line label +
+drawing's trailing chevron, which reported "coming soon" on the press until 2026-09-13 because
+`/profile` had not existed since 2026-08-09, and which now OPENS that route — restored read-only
+that day, see the Profile section below) · one `FIELD TOOLS` heading · rows of icon + one-line label +
 **trailing chevron** · a divider · `Settings` and `Privacy policy` **pinned against** `LOG OUT`.
 
 **That pair does not move between frames.** It sat at the end of the scrolling list until
@@ -1376,6 +1377,118 @@ ENOENT` — while exiting 0.
 The OTP endpoint enforces a **60-second resend cooldown**, and a role re-run inside it reaches no OTP
 step at all; the script waits the cooldown out and asks again rather than reporting the screen as
 missing.
+
+## Shared — Account settings — [`02-shared/04-account-settings/`](02-shared/04-account-settings/)
+
+One page: **Application settings · Delivery channels · Notification types · Quiet hours · Security &
+access · System**, for **every role**. `<AccountSettings />` serves all twelve — a per-role settings
+layout would be twelve screens to keep in step — so this is a cross-role folder on the same test as
+the drawer above.
+
+Restructured on **2026-09-13** from Stitch screen `63c6dccafa734761a077835aabd70838` _"Account &
+Notification Settings - Site Engineer (Unified)"_. Despite the drawing's name it is not the site
+engineer's screen; `01-site-engineer` is simply the role shot, because its seeded account reaches
+the page by Path A and the drawing is drawn for it.
+
+| #                                                          | Role            |
+| ---------------------------------------------------------- | --------------- |
+| [`01`](02-shared/04-account-settings/01-site-engineer.png) | `SITE_ENGINEER` |
+
+### What this frame is evidence of
+
+- **Language and Theme are SEGMENTED**, both options on screen with the selected one filled. Neither
+  was before: the language row showed the CURRENT language behind a swap glyph, so a reader had to
+  infer that tapping it meant "become the other one", and Theme was a `Dark` switch, which makes
+  light the absence of a thing rather than the other of two.
+- **Two theme segments, not the drawing's three.** Its pill carries a third `settings_brightness`
+  "follow the system" button; `ThemeMode` is dark-or-light and nothing in the store holds a system
+  mode (product-owner decision E1). A segment that cannot be selected is worse than one fewer.
+- **Quiet hours are EDITABLE** — the switch, and ± steppers on each edge. They were read-only until
+  this day for a reason that had stopped being true: `api/notifications.ts` claimed the PATCH had no
+  quiet-hours field long after it had two.
+- **Security & access is a new group** — Password · Two-factor authentication · Biometric login ·
+  Change Secure PIN. The second factor and the biometric switch MOVED here, and the biometric one
+  also left `/account-security`, where a second copy had been living.
+- **No `SAVE CHANGES` bar**, which the drawing pins to the bottom of the viewport. Every control
+  saves on change and always has, so the bar would be a button that does nothing — and worse, would
+  teach that nothing else had taken effect until it was pressed (decision E4).
+- **`Status: Not enrolled`** under Two-factor authentication is `platform.users.mfa_enabled`, live.
+  The row prints nothing at all until `GET /users/me` answers: an unanswered fetch is not "not
+  enrolled".
+- **`228.0 KB of 500.0 MB`** against Offline data is the measured size of the device's own SQLite
+  file against the §17.7 ceiling — not the drawing's `2.4 GB`, which is a figure no device reported.
+
+### The Password row is visible here, and that is correct
+
+[ADR-104](../../architecture/adr/104-self-service-password-reset.md) makes the row **absent — not
+disabled — on a Path A account**, because a phone/OTP account has no password its owner knows.
+This frame shows it present, and the reason is the seed rather than the rule: **every one of the
+thirteen accounts `seed-realistic.ts` writes carries BOTH a phone number and an email** (measured
+against the running database on 2026-09-13; this one is `waraporn.k@ekachai.co.th`). By the only
+test the client has — is there an email — the account is Path B, so the row belongs on it.
+
+**No seeded account is Path A**, so these captures cannot photograph the absent row at all. §5.4.4
+says an account carries exactly one identifier and `UserService.createUser` refuses a request
+carrying both; the seed writes its rows directly and is not bound by that check. The absent-row
+behaviour is held by `AccountSettings.spec.tsx` instead ("does not draw it at all on a Path A
+account"), where `email: ''` — what `provisionPhoneUser` actually writes — can be set.
+
+## Shared — Profile — [`02-shared/05-profile/`](02-shared/05-profile/)
+
+The signed-in user's own record, **read-only**, for every role. Reached from the drawer's profile
+card, which is its only entry point.
+
+From Stitch screen `7367a77950f24c7e877c97aafc124350` _"แก้ไขข้อมูลโปรไฟล์"_, built on **2026-09-13**
+(product-owner decision E5).
+
+| #                                                 | Role            |
+| ------------------------------------------------- | --------------- |
+| [`01`](02-shared/05-profile/01-site-engineer.png) | `SITE_ENGINEER` |
+
+### What this frame is evidence of
+
+- **It reads. It does not edit.** The drawing is an edit form — three text inputs, `SAVE PROFILE`
+  and `CANCEL` — and none of the three fields has a self-service write. The frame carries no input,
+  no save and no cancel; it names **who can change each thing** instead. There is not one
+  `TextInput` on the screen, and a render test asserts that so it cannot quietly become one.
+- **`No code issued`** in EMPLOYEE ID is the null case working. `workforce.workers.user_id` is
+  nullable and office roles have no worker record at all, so an absent code is information, not a
+  gap — and this seeded engineer genuinely has none.
+- **`*This is how you sign in, so it stays fixed for this account.`** under the phone number is
+  §5.4.4 stated to the user: an account carries one identifier for its lifetime (decision E6), so a
+  field that edited it could lock someone out.
+- **`CHANGE PHOTO` is the one control**, and it is real — it uploads to the File Service and points
+  `platform.users.photo_url` at the permanent image URL that had to be built for it
+  ([ADR-105](../../architecture/adr/105-permanent-profile-photo-url.md)).
+- **The avatar is initials, not a photograph.** The drawing's stock headshot of a worker in a hard
+  hat is an externally hosted image and §32.7 prohibits hard-hat imagery; this account has no photo,
+  so the frame shows the fallback every surface in the app uses.
+- **The bottom nav is present.** The drawing suppresses it "as per rules for Transactional/Focused
+  screens" — and that rule's own reason is that a form should not let someone wander off mid-entry
+  and lose what they typed. With the screen read-only there is nothing to protect, so the bar stays,
+  as it does on every other post-auth screen (product-owner decision, reversing the original plan
+  item).
+- **One sync reading, not the drawing's two.** It draws `SYNCED` and `ออนไลน์` as separate
+  statements; this shell has one indicator and one precedence, and offline is not a fifth state — it
+  produces pending.
+
+### Re-running these two captures
+
+`apps/mobile/scripts/capture-android-settings-profile.mjs` writes both frames in one pass: it logs
+in by Path A, answers the project picker, opens Settings from the drawer, then opens the profile
+from the drawer's profile card. Beyond the three prerequisites the drawer script lists
+(`EXPO_PUBLIC_CAPTURE=1`, `ANDROID_HOME`, seeded data), one is specific to these:
+
+- **The debug APK must be rebuilt at or after 2026-09-13.** `/profile` imports `expo-image-picker`,
+  whose JS calls `requireNativeModule` at module scope — an older APK does not carry that native
+  module and the screen throws on import. Autolinking picks it up from `node_modules`, so
+  `./gradlew assembleDebug` is enough; no `expo prebuild` is needed for Android.
+
+Both pages are shot by **lowering the display density** rather than by stitching scrolled shots, and
+the two use different values because they are different lengths — settings at 200, the profile at
+300 — for a measured reason. At the device's own 420 the profile's USER ID row and closing note fall
+below the fold; at 200 the same page fits with half the frame left empty. The density is always
+restored.
 
 ## MFA enrolment — [`01`](01-authen/02-mfa/01-app-intro.png) · [`02`](01-authen/02-mfa/02-keycloak-login.png) · [`03`](01-authen/02-mfa/03-keycloak-totp-setup.png) · [`04`](01-authen/02-mfa/04-keycloak-totp-verify.png) · [`05`](01-authen/02-mfa/05-app-enrollment-success.png) · [`06`](01-authen/02-mfa/06-keycloak-recovery-codes.png) · [`07`](01-authen/02-mfa/07-keycloak-backup-codes-copied.png)
 

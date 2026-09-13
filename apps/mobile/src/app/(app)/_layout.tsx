@@ -3,8 +3,8 @@
 // (<MobileNav /> — spec §32.7). The tab set per role lives in components/MobileNav.
 
 import { useEffect } from 'react';
-import { View, StyleSheet } from 'react-native';
-import { usePathname } from 'expo-router';
+import { View, StyleSheet, BackHandler } from 'react-native';
+import { usePathname, useRouter } from 'expo-router';
 import { SelectProjectSheet } from '../../components/SelectProjectSheet';
 import { CosRole } from '@cos/types';
 import { runSyncCycle } from '../../sync/syncRunner';
@@ -19,9 +19,13 @@ import { useAuthStore } from '../../store/authStore';
 import { useProjectStore } from '../../store/projectStore';
 import { useNetworkStatus } from '../../hooks/useNetworkStatus';
 import { useOfflineStore } from '../../store/offlineStore';
+import { useUiStore } from '../../store/uiStore';
+import { returnsToDrawer } from '../../lib/drawerReturn';
 
 export default function AppLayout() {
   const pathname = usePathname();
+  const router = useRouter();
+  const openDrawer = useUiStore((s) => s.openDrawer);
   const role = useAuthStore((s) => s.role);
   const hydrateProject = useProjectStore((s) => s.hydrate);
   const { isOnline } = useNetworkStatus();
@@ -58,6 +62,30 @@ export default function AppLayout() {
       useOfflineStore.getState().setLocalDbStatus(checkLocalDbLimit());
     });
   }, [isOnline]);
+
+  // ANDROID'S BACK BUTTON, ON THE TWO SCREENS THAT RETURN TO THE DRAWER (`lib/drawerReturn.ts`).
+  //
+  // The TopBar chevron is the same rule in `components/TopBar.tsx`; a child screen has both Backs
+  // and handling only the visible one would let the gesture the user reached for decide what the
+  // app did. The list is shared so the two cannot drift.
+  //
+  // IT DOES NOT FIGHT THE DRAWER'S OWN HANDLER. `NavigationDrawer` registers one only while the
+  // panel is OPEN, to close it — and `BackHandler` runs subscribers most-recently-added first, so
+  // the drawer's is reached before this one whenever it exists. Back with the drawer open closes it
+  // (unchanged); Back with the drawer shut, on one of these screens, reopens it and pops.
+  //
+  // In the SHELL rather than on each screen: one subscription for the whole `(app)` group, keyed on
+  // the path, so a route joining the list needs no code of its own. `returnsToDrawer` is false
+  // everywhere else, and then nothing is registered at all — the navigator keeps its default Back.
+  useEffect(() => {
+    if (!returnsToDrawer(pathname)) return;
+    const sub = BackHandler.addEventListener('hardwareBackPress', () => {
+      openDrawer();
+      router.back();
+      return true;
+    });
+    return () => sub.remove();
+  }, [pathname, openDrawer, router]);
 
   // Shell colour follows the USER'S theme, not the role (PO decision 2026-08-04: dark is the product
   // default for every role, light is selectable in Profile). This replaces the previous rule where

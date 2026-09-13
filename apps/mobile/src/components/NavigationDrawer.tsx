@@ -171,6 +171,16 @@ export function NavigationDrawer(): React.JSX.Element | null {
     return () => sub.remove();
   }, [open, closeDrawer]);
 
+  /**
+   * Open a route from the drawer. The panel closes on the way — it is a menu, not a sidebar.
+   *
+   * THAT CLOSE IS WHY `lib/drawerReturn.ts` EXISTS. Back from a screen opened here used to land on
+   * the previous screen with this panel shut, so reaching the row beside the one just used cost
+   * three taps instead of one. Two routes now reopen it on Back — `/account-settings` and
+   * `/profile`, the two the drawer is the only way into (product-owner decision 2026-09-13). The
+   * rule is not applied here because Back is not pressed here: it is read by the TopBar chevron
+   * (`TopBar.tsx`) and by the shell's hardware-button handler (`app/(app)/_layout.tsx`).
+   */
   const go = (route: string): void => {
     closeDrawer();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any -- expo-router's typed href union

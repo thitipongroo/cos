@@ -12,6 +12,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BrandLogo } from './BrandLogo';
 import { isChildRoute } from './Breadcrumb';
+import { returnsToDrawer } from '../lib/drawerReturn';
 import { Avatar } from './Avatar';
 import { SyncPill } from './SyncPill';
 import { listNotifications, unreadCount } from '../api/notifications';
@@ -42,6 +43,21 @@ export function TopBar({ variant = 'light' }: { variant?: 'light' | 'dark' }) {
 
   const fg = dark ? darkColors.text : colors.textPrimary;
 
+  /**
+   * Back — and on two screens, back TO THE DRAWER (`lib/drawerReturn.ts`).
+   *
+   * `openDrawer()` runs BEFORE the navigation rather than after it, because there is no "after":
+   * `router.back()` is fire-and-forget and this component is not remounted by it. Setting the flag
+   * first means the drawer is already open on the screen the pop lands on, which is what the
+   * product owner asked for — the panel the row was pressed from.
+   *
+   * The hardware button is the same rule in the other file that can see it, `app/(app)/_layout.tsx`.
+   */
+  const onBack = (): void => {
+    if (returnsToDrawer(pathname)) openDrawer();
+    router.back();
+  };
+
   return (
     <View
       style={[
@@ -61,7 +77,7 @@ export function TopBar({ variant = 'light' }: { variant?: 'light' | 'dark' }) {
             testID="topbar-back"
             accessibilityRole="button"
             accessibilityLabel={t('common.back')}
-            onPress={() => router.back()}
+            onPress={onBack}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             style={styles.back}
           >

@@ -125,6 +125,37 @@ describe('TopBar', () => {
     expect(mockPush).not.toHaveBeenCalled();
   });
 
+  // ── Back TO THE DRAWER, on the two screens it is the only way into ──────────────────────────
+  //
+  // Product-owner decision 2026-09-13. `go()` closes the drawer before pushing, so Back used to land
+  // on the previous screen with the menu shut and the next pick cost three taps instead of one.
+  // The list is `lib/drawerReturn.ts`, shared with the hardware-button handler in the shell so the
+  // gesture a user happens to reach for cannot decide what the app does.
+  it.each(['/account-settings', '/profile'])('reopens the drawer on Back from %s', async (path) => {
+    mockPathname = path;
+
+    const { getByTestId } = await renderBar();
+    await fireEvent.press(getByTestId('topbar-back'));
+
+    // Opened BEFORE the pop, because there is no "after": `router.back()` is fire-and-forget and
+    // this component is not remounted by it. The drawer is therefore already open on the screen the
+    // pop lands on, which is the panel the row was pressed from.
+    expect(openDrawer).toHaveBeenCalledTimes(1);
+    expect(mockBack).toHaveBeenCalledTimes(1);
+  });
+
+  // NOT EVERY CHILD SCREEN. The other routes are reachable from bottom tabs, quick actions and each
+  // other, so reopening the drawer would be acting on a guess about where the user came from.
+  it('leaves the drawer shut on Back from a screen outside that list', async () => {
+    mockPathname = '/dashboard';
+
+    const { getByTestId } = await renderBar();
+    await fireEvent.press(getByTestId('topbar-back'));
+
+    expect(openDrawer).not.toHaveBeenCalled();
+    expect(mockBack).toHaveBeenCalledTimes(1);
+  });
+
   // The wordmark doubles as the drawer trigger, and so does the avatar — there is no /profile route
   // to push any more (2026-08-09).
   it('opens the drawer from the wordmark', async () => {
