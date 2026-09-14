@@ -23,6 +23,11 @@ export const DEFAULT_FLAGS: Readonly<Record<string, boolean>> = {
   // the CURRENT behaviour. Turning it OFF reverts to trusting the token, which re-opens the finding;
   // it exists only so an auth-path incident can be mitigated in <60s without a rollback deploy.
   's1.identity.authoritative-role-check': true,
+  // Retrofit kill-switch for ADR-106: the JWT `sub` must equal the named account's keycloak_user_id, so a
+  // user in a realm shared by several tenants cannot claim another tenant's user. Default ON (security fix,
+  // retrofit convention). OFF re-opens that impersonation; it exists to recover, in <60s, from an account
+  // whose stored keycloak_user_id is wrong — scripts/readiness/check-keycloak-subject-binding.sh finds those.
+  's1.identity.subject-binding': true,
   's1.finance.payment-mutations': true,
   // New feature, not a retrofit kill-switch — defaults OFF until rollout. Failing closed is the
   // safe direction here: with it off, web forms fall back to server-only validation (QM-4

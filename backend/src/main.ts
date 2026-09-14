@@ -14,6 +14,8 @@ import { GlobalExceptionFilter } from './shared/filters/http-exception.filter';
 import { appDatabaseUrl } from './shared/prisma/app-database-url';
 import { resolveTrustProxy } from './shared/net/trusted-proxy';
 import { assertSecurityTogglesConfigured } from './shared/config/security-toggles';
+import type { Server } from 'node:http';
+import { closeServer, startInternalListener } from './shared/net/internal-listener';
 
 async function bootstrap(): Promise<void> {
   // Fail fast at startup if the non-superuser app DB role is not configured — every tenant-scoped
@@ -85,8 +87,18 @@ async function bootstrap(): Promise<void> {
   // in production they would be severed abruptly when the pod is killed.
   app.enableShutdownHooks();
 
+  // The internal listener (ADR-107) — service-to-service routes on INTERNAL_PORT, which the public edge
+  // never reaches. Its close is registered BEFORE listen: Fastify refuses new hooks once it has booted,
+  // and the server itself can only start once it has (see internal-listener.ts).
+  const internal: { server?: Server } = {};
+  app
+    .getHttpAdapter()
+    .getInstance()
+    .addHook('onClose', async () => closeServer(internal.server));
+
   const port = parseInt(process.env['PORT'] ?? '3000', 10);
   await app.listen(port, '0.0.0.0');
+  internal.server = await startInternalListener(app);
 }
 
 // A rejected bootstrap must terminate the process with a non-zero exit code and a logged reason.

@@ -689,6 +689,24 @@ importers:
         specifier: ^6.0.3
         version: 6.0.3
 
+  packages/@cos/service-identity:
+    devDependencies:
+      '@types/jest':
+        specifier: ^30.0.0
+        version: 30.0.0
+      '@types/node':
+        specifier: ^20.12.0
+        version: 20.19.43
+      jest:
+        specifier: ^30.4.2
+        version: 30.4.2(@types/node@20.19.43)(supports-color@8.1.1)(ts-node@10.9.2(@swc/core@1.15.43(@swc/helpers@0.5.23))(@types/node@20.19.43)(typescript@6.0.3))
+      ts-jest:
+        specifier: ^29.1.0
+        version: 29.4.11(@babel/core@7.29.7(supports-color@8.1.1))(@jest/transform@30.4.1(supports-color@8.1.1))(@jest/types@30.4.1)(babel-jest@30.4.1(@babel/core@7.29.7(supports-color@8.1.1))(supports-color@8.1.1))(esbuild@0.28.1)(jest-util@30.4.1)(jest@30.4.2(@types/node@20.19.43)(supports-color@8.1.1)(ts-node@10.9.2(@swc/core@1.15.43(@swc/helpers@0.5.23))(@types/node@20.19.43)(typescript@6.0.3)))(typescript@6.0.3)
+      typescript:
+        specifier: ^6.0.3
+        version: 6.0.3
+
   packages/@cos/shared:
     dependencies:
       '@cos/types':
@@ -842,6 +860,9 @@ importers:
 
   services/credential-service:
     dependencies:
+      '@cos/service-identity':
+        specifier: workspace:*
+        version: link:../../packages/@cos/service-identity
       '@digitalbazaar/did-io':
         specifier: ^2.2.0
         version: 2.2.0
@@ -942,6 +963,9 @@ importers:
       '@cos/logger':
         specifier: workspace:*
         version: link:../../packages/@cos/logger
+      '@cos/service-identity':
+        specifier: workspace:*
+        version: link:../../packages/@cos/service-identity
       '@cos/shared':
         specifier: workspace:*
         version: link:../../packages/@cos/shared

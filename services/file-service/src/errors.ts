@@ -80,6 +80,12 @@ export const FILE_ERRORS = {
     message: 'Failed to read the stored file',
     httpStatus: 500,
   },
+  // ADR-107: the backend could not confirm a user's identity, and the token's claims are never used instead.
+  IDENTITY_UNAVAILABLE: {
+    code: 'COS-FILE-022',
+    message: 'Identity could not be verified right now — try again',
+    httpStatus: 503,
+  },
 } as const;
 
 export type FileErrorKey = keyof typeof FILE_ERRORS;

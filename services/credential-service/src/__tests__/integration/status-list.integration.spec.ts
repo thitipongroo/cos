@@ -32,6 +32,17 @@ jest.unstable_mockModule('../../plugins/jwt-verify.js', () => ({
   InvalidTokenError: class InvalidTokenError extends Error {},
 }));
 
+// ADR-107: a user's identity comes from the backend's /auth/identity. No backend runs here, so the stub
+// answers with the identity the stubbed token names — this suite is about Postgres and RLS.
+jest.unstable_mockModule('@cos/service-identity', () => ({
+  resolveUserIdentity: async () => {
+    const i = identity as { tenantId: string; userId: string; role: string };
+    return { tenantId: i.tenantId, userId: i.userId, role: i.role };
+  },
+  IdentityRejectedError: class IdentityRejectedError extends Error {},
+  IdentityUnavailableError: class IdentityUnavailableError extends Error {},
+}));
+
 // Import AFTER the mock so did-method-web picks up the stubbed transport.
 const { credentialRoutes } = await import('../../routes/credentials.routes.js');
 const { registerTrace } = await import('../../plugins/trace.js');

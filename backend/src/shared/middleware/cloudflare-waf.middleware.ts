@@ -20,6 +20,7 @@ import { Injectable, NestMiddleware } from '@nestjs/common';
 import type { IncomingMessage, ServerResponse } from 'http';
 import { createLogger } from '@cos/logger';
 import { ipInAnyCidr, parseCidrList } from '../net/cidr-match';
+import { isInternalRequest, isInternalRoute } from '../net/internal-listener';
 
 const log = createLogger('cloudflare-waf');
 
@@ -37,6 +38,26 @@ export class CloudflareWafMiddleware implements NestMiddleware {
   private warnedUnenforced = false;
 
   use(req: IncomingMessage, res: ServerResponse, next: () => void): void {
+    // The internal listener is not behind the edge by design (ADR-107): its callers are pods in the cluster,
+    // admitted to that port by NetworkPolicy. Both layers below describe the PUBLIC path — a CF-Ray header
+    // and an edge peer address — and would refuse every legitimate internal call. `localPort` is the
+    // accepting socket's own port, which a caller cannot set.
+    if (isInternalRequest(req)) {
+      // `originalUrl`, not `url`: under Fastify, Nest's bundled middie strips the mount prefix from `req.url`
+      // and keeps the full path in `req.originalUrl` (@nestjs/platform-fastify 11.1.27 adapters/middie/engine.js).
+      if (
+        isInternalRoute((req as IncomingMessage & { originalUrl?: string }).originalUrl ?? req.url)
+      ) {
+        next();
+        return;
+      }
+      // Only the routes named in INTERNAL_ROUTES exist on this port — everything else looks absent.
+      res.statusCode = 404;
+      res.setHeader('Content-Type', 'application/json');
+      res.end(JSON.stringify({ error: { code: 'COS-GENERAL-404', message: 'Not found' } }));
+      return;
+    }
+
     const cfRay = (req.headers as Record<string, string | undefined>)['cf-ray'];
 
     // Layer 1 — in production: reject requests without CF-Ray (WAF not traversed).

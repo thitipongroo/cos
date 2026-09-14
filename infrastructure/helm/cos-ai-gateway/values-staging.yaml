@@ -2,3 +2,7 @@ replicaCount: 2
 autoscaling:
   minReplicas: 2
   maxReplicas: 4
+env:
+  # Merged over values.yaml env. Application cos-backend-staging → release cos-backend-staging →
+  # Service cos-backend-staging-cos-backend.
+  BACKEND_INTERNAL_URL: 'http://cos-backend-staging-cos-backend:3100'

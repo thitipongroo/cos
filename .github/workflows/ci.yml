@@ -427,6 +427,11 @@ jobs:
       - name: Unit tests + coverage — @cos/config
         working-directory: packages/@cos/config
         run: pnpm run test:cov
+      # The identity client file-service and credential-service share (ADR-107): fail-closed, cached, and
+      # the only thing between a service and trusting a token's attribute claims.
+      - name: Unit tests + coverage — @cos/service-identity
+        working-directory: packages/@cos/service-identity
+        run: pnpm run test:cov
       # Shared client-side form rules (Rule 35). Its bundle-guards spec also pins the two measured
       # constraints that would otherwise regress silently: zod/mini over classic zod, and the ESM
       # build being what bundlers resolve (CJS measures 69,352 B gzipped vs 6,905 B for ESM).
@@ -464,6 +469,11 @@ jobs:
       - name: Unit tests + coverage — file-service
         working-directory: services/file-service
         run: pnpm run test:cov
+      # credential-service is ESM and resolves @cos/service-identity through its built dist: a jest mapping to
+      # the package's TypeScript source fails under ESM (see services/credential-service/jest.config.js), and
+      # nothing earlier in this job builds dist.
+      - name: Build @cos/service-identity (credential-service resolves its dist)
+        run: pnpm --filter @cos/service-identity build
       # ESM service — jest runs under --experimental-vm-modules (see its package.json scripts).
       - name: Unit tests + coverage — credential-service (QM-1 crypto/DID-VC)
         working-directory: services/credential-service
@@ -490,6 +500,7 @@ jobs:
             packages/@cos/logger/coverage/
             packages/@cos/tracing/coverage/
             packages/@cos/config/coverage/
+            packages/@cos/service-identity/coverage/
             services/file-service/coverage/
             apps/web/coverage/
             services/credential-service/coverage/
@@ -731,6 +742,9 @@ jobs:
       - name: Run integration tests — services/file-service (MinIO)
         working-directory: services/file-service
         run: pnpm run test:integration
+      # Same reason as in unit-tests: credential-service resolves @cos/service-identity through its dist.
+      - name: Build @cos/service-identity (credential-service resolves its dist)
+        run: pnpm --filter @cos/service-identity build
       # Testcontainers Postgres + the credentials migration: RLS isolation, did:web verification and
       # the Status List revocation loop (ADR-019 CS-9/CS-6).
       - name: Run integration tests — credential-service

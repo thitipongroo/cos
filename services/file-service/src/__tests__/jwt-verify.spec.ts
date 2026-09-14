@@ -55,12 +55,19 @@ describe('verifyBearer', () => {
 
   it('returns identity from user_id + role claims', async () => {
     mockDecode.mockReturnValue({ header: { kid: 'k1' } });
-    mockVerify.mockReturnValue({ tenant_id: 't1', user_id: 'u1', role: 'FINANCE' });
-    expect(await verifyBearer('Bearer a')).toEqual({
+    mockVerify.mockReturnValue({
+      tenant_id: 't1',
+      user_id: 'u1',
+      role: 'FINANCE',
+      exp: 1900000000,
+    });
+    expect(await verifyBearer('Bearer a')).toStrictEqual({
       kind: 'user',
       tenantId: 't1',
       userId: 'u1',
       role: 'FINANCE',
+      // Carried so the backend's identity answer is never cached past the token (ADR-107).
+      exp: 1900000000,
     });
   });
 

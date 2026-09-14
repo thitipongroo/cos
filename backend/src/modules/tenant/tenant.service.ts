@@ -3,6 +3,13 @@
 // Uses platform PrismaClient directly (cross-tenant operations).
 // Emits identity.tenant.* and platform.enterprise.* events through the Phase 8 OUTBOX
 // (§35.13 ESC-13) — never published directly to Kafka.
+//
+// EVERY SYSTEM_ADMIN ACTION HERE IS AUDITED WITH A JUSTIFICATION (§6.7, product-owner decision
+// 2026-09-14): create, deactivate, assign dedicated DB, mark contracted, approve and abort. Until that
+// day none of them wrote platform.audit_logs, although §20.4 said "All actions are logged". The row is
+// written INSIDE the action's transaction, so an action that cannot be audited does not happen — §6.7
+// "No System Admin action is silent". An actor with no platform.users row fails the actor_id foreign
+// key, and that failure is the action's failure too, on purpose.
 
 import {
   Injectable,
@@ -10,19 +17,28 @@ import {
   NotFoundException,
   BadRequestException,
   OnModuleDestroy,
+  ServiceUnavailableException,
 } from '@nestjs/common';
 import { randomUUID } from 'crypto';
 import { createPrismaClient } from '../../shared/prisma/create-prisma-client';
 import { OutboxPublisher } from '@cos/kafka';
 import { buildOutboxEvent } from '../../shared/outbox/outbox.types';
 import { createLogger } from '@cos/logger';
-import { Connection, Client } from '@temporalio/client';
+import { Connection, Client, WorkflowNotFoundError } from '@temporalio/client';
+import type { Prisma } from '@prisma/client';
 import { CreateTenantDto } from './dto/create-tenant.dto';
 import { FeatureFlagService } from '../../shared/feature-flags/feature-flag.service';
 import {
+  decryptDedicatedDbUrl,
   encryptDedicatedDbUrl,
   ENCRYPTED_DB_URL_FLAG,
 } from '../../shared/crypto/dedicated-db-url-cipher';
+import { assertSafeTenantId } from '../../shared/prisma/assert-safe-tenant-id';
+import {
+  abortSignal,
+  approveSignal,
+  workflowStateQuery,
+} from './workflows/enterprise-provisioning.workflow';
 
 const logger = createLogger('tenant-service');
 
@@ -68,6 +84,55 @@ export interface TenantSummaryRow {
   updated_at: Date;
 }
 
+/**
+ * A tenant row as the SYSTEM_ADMIN list returns it: the summary plus the dedicated DB's HOSTNAME.
+ *
+ * §20.4.1 asks the list to show "URL hostname (dedicated, truncated)". The URL itself carries the
+ * password and was taken off the wire for that reason (see listTenants), so the server decrypts it,
+ * parses it and sends the host alone. `null` means the tenant is on the shared database.
+ */
+export interface TenantListRow extends TenantSummaryRow {
+  dedicated_db_host: string | null;
+}
+
+/** One ENTERPRISE tenant's provisioning run, as §34.3's `workflowState` query reports it. */
+export interface TenantProvisioningRow {
+  tenant_id: string;
+  /**
+   * The §34.3 state, or `null` when the run EXISTS but did not answer within
+   * PROVISIONING_QUERY_DEADLINE_MS — a query is answered by a worker, and with none polling the
+   * `enterprise-provisioning` queue there is nobody to answer. `null` says "could not be read", never
+   * a state the run is not in. A tenant with no run at all is absent from the list instead.
+   */
+  workflow_state: string | null;
+}
+
+/** The six audited SYSTEM_ADMIN actions (§6.7). The value is what `audit_logs.action` records. */
+export type TenantAdminAction =
+  | 'tenant.create'
+  | 'tenant.deactivate'
+  | 'tenant.assign_dedicated_db'
+  | 'tenant.mark_contracted'
+  | 'tenant.provisioning.approve'
+  | 'tenant.provisioning.abort';
+
+/** How long one provisioning-state query may take before the run is reported as unreadable. */
+export const PROVISIONING_QUERY_DEADLINE_MS = 5_000;
+
+/**
+ * Interactive transactions that also call Temporal get more than Prisma's 5 s default: the audit row,
+ * the workflow call and the outbox write commit together, and a Temporal round-trip is not bounded by
+ * the database.
+ */
+const TEMPORAL_TX_TIMEOUT_MS = 15_000;
+
+/** Hostname of a stored (possibly encrypted) dedicated-DB URL. Throws on an undecryptable value. */
+export function dedicatedDbHost(stored: string): string {
+  return new URL(decryptDedicatedDbUrl(stored)).hostname;
+}
+
+type Tx = Prisma.TransactionClient;
+
 @Injectable()
 export class TenantService implements OnModuleDestroy {
   // Platform PrismaClient — NOT TenantPrismaService (this operates cross-tenant)
@@ -88,7 +153,65 @@ export class TenantService implements OnModuleDestroy {
     await this.prisma.$disconnect();
   }
 
-  async createTenant(dto: CreateTenantDto, createdBy: string): Promise<TenantSummaryRow> {
+  /**
+   * Write one audit row for a SYSTEM_ADMIN action, inside the caller's transaction.
+   *
+   * `tenant_id` is the TARGET tenant, not the admin's own — an auditor reading one tenant's trail must
+   * find what was done TO it. RLS on audit_logs checks `tenant_id` against app.current_tenant_id (the
+   * same WITH CHECK AuditInterceptor satisfies), so the GUC is set in this transaction first. The id is
+   * UUID-validated before interpolation because a GUC cannot be a bound parameter (QM-4).
+   *
+   * `metadata` holds the justification and IDs only — never a URL, which may carry credentials.
+   */
+  private async writeAdminAudit(
+    tx: Tx,
+    entry: {
+      tenantId: string;
+      actorId: string;
+      action: TenantAdminAction;
+      justification: string;
+      extra?: Record<string, string | null>;
+    },
+  ): Promise<void> {
+    assertSafeTenantId(entry.tenantId);
+    await tx.$executeRawUnsafe(`SET LOCAL app.current_tenant_id = '${entry.tenantId}'`);
+    await tx.$executeRaw`
+      INSERT INTO platform.audit_logs (tenant_id, actor_id, action, resource_type, resource_id, metadata)
+      VALUES (
+        ${entry.tenantId}::uuid,
+        ${entry.actorId}::uuid,
+        ${entry.action},
+        'tenant',
+        ${entry.tenantId}::uuid,
+        ${JSON.stringify({ justification: entry.justification, ...entry.extra })}::jsonb
+      )
+    `;
+  }
+
+  /**
+   * Run `fn` with a Temporal client and CLOSE its connection afterwards (Rule 39). getTemporalClient
+   * below opens one per call and never closes it; the new provisioning reads are called on every list
+   * load, so they must not inherit that leak.
+   */
+  private async withTemporal<T>(
+    fn: (client: Client, connection: Connection) => Promise<T>,
+  ): Promise<T> {
+    const connection = await Connection.connect({
+      address: process.env['TEMPORAL_ADDRESS'] ?? 'localhost:7233',
+    });
+    try {
+      return await fn(new Client({ connection }), connection);
+    } finally {
+      await connection.close();
+    }
+  }
+
+  async createTenant(
+    // The justification travels as its own argument, so it cannot be mistaken for a tenant column.
+    dto: Omit<CreateTenantDto, 'justification'>,
+    createdBy: string,
+    justification: string,
+  ): Promise<TenantSummaryRow> {
     const existing = await this.prisma.$queryRaw<Array<{ tenant_id: string }>>`
       SELECT tenant_id FROM platform.tenants
       WHERE tenant_code = ${dto.tenantCode}
@@ -111,11 +234,17 @@ export class TenantService implements OnModuleDestroy {
     const keycloakRealm =
       dto.planType === 'ENTERPRISE' ? `cos-${dto.tenantCode}` : 'construction-os';
 
-    // Create tenant record (ADR-008: shared DB + tenant_id, no per-tenant schema)
+    // Create tenant record (ADR-008: shared DB + tenant_id, no per-tenant schema).
+    //
+    // The enum is SCHEMA-QUALIFIED: `PlanType` lives in `platform`, and an unqualified `::"PlanType"`
+    // failed on a real database with `type "PlanType" does not exist` (42704) — on every create, since
+    // the first commit. Unit tests mock Prisma and the provisioning integration spec stubs this
+    // service, so nothing ran the SQL until the SYSTEM_ADMIN panel did on 2026-09-14.
+    // test/provisioning/02-admin-audit.integration.spec.ts now creates a tenant for real.
     const tenant = await this.prisma.$transaction(async (tx) => {
       const [created] = await tx.$queryRaw<TenantSummaryRow[]>`
         INSERT INTO platform.tenants (tenant_code, tenant_name, keycloak_realm, plan_type, dedicated_db_url, data_region, timezone)
-        VALUES (${dto.tenantCode}, ${dto.tenantName}, ${keycloakRealm}, ${dto.planType}::"PlanType", ${dto.dedicatedDbUrl ? this.encryptDbUrl(dto.dedicatedDbUrl) : null},${dto.dataRegion ?? 'ap-southeast-1'}, ${dto.timezone ?? defaultTimezoneForRegion(dto.dataRegion ?? 'ap-southeast-1')})
+        VALUES (${dto.tenantCode}, ${dto.tenantName}, ${keycloakRealm}, ${dto.planType}::platform."PlanType", ${dto.dedicatedDbUrl ? this.encryptDbUrl(dto.dedicatedDbUrl) : null},${dto.dataRegion ?? 'ap-southeast-1'}, ${dto.timezone ?? defaultTimezoneForRegion(dto.dataRegion ?? 'ap-southeast-1')})
         RETURNING tenant_id, tenant_code, tenant_name, keycloak_realm, plan_type, is_active,
                   data_region, timezone, created_at, updated_at
       `;
@@ -171,6 +300,14 @@ export class TenantService implements OnModuleDestroy {
         ON CONFLICT ON CONSTRAINT wht_rules_unique DO NOTHING
       `;
 
+      await this.writeAdminAudit(tx, {
+        tenantId: row.tenant_id,
+        actorId: createdBy,
+        action: 'tenant.create',
+        justification,
+        extra: { tenant_code: row.tenant_code, plan_type: row.plan_type },
+      });
+
       logger.info({ tenantCode: dto.tenantCode, createdBy }, 'Tenant record created');
 
       return created!;
@@ -194,7 +331,7 @@ export class TenantService implements OnModuleDestroy {
     return tenant;
   }
 
-  async deactivateTenant(tenantId: string, actorId: string): Promise<void> {
+  async deactivateTenant(tenantId: string, actorId: string, justification: string): Promise<void> {
     // Outbox (§35.13 ESC-13): the UPDATE and its event share one transaction, so a tenant is never
     // deactivated without the event, and never emits the event without being deactivated.
     //
@@ -222,6 +359,13 @@ export class TenantService implements OnModuleDestroy {
         }),
       );
 
+      await this.writeAdminAudit(tx, {
+        tenantId,
+        actorId,
+        action: 'tenant.deactivate',
+        justification,
+      });
+
       logger.info({ tenantId, actorId }, 'Tenant deactivated');
     });
   }
@@ -241,6 +385,7 @@ export class TenantService implements OnModuleDestroy {
     tenantId: string,
     dedicatedDbUrl: string,
     actorId: string,
+    justification: string,
   ): Promise<void> {
     if (!dedicatedDbUrl.startsWith('postgresql://') && !dedicatedDbUrl.startsWith('postgres://')) {
       throw new BadRequestException('dedicatedDbUrl must start with postgresql:// or postgres://');
@@ -267,6 +412,15 @@ export class TenantService implements OnModuleDestroy {
         }),
       );
 
+      // The HOST goes in the audit row, never the URL: the URL carries the password.
+      await this.writeAdminAudit(tx, {
+        tenantId,
+        actorId,
+        action: 'tenant.assign_dedicated_db',
+        justification,
+        extra: { dedicated_db_host: new URL(dedicatedDbUrl).hostname },
+      });
+
       logger.info({ tenantId, actorId }, 'Tenant dedicated DB assigned');
     });
   }
@@ -275,6 +429,12 @@ export class TenantService implements OnModuleDestroy {
     tenantId: string,
     contractReference: string | undefined,
     actorId: string,
+    /**
+     * The SYSTEM_ADMIN's reason, audited per §6.7. `null` ONLY for the CRM webhook (Path B, §34.2):
+     * no person acted there, so there is no SYSTEM_ADMIN action to audit and no one to give a reason —
+     * `actorId` is the literal 'system', which the audit row's actor_id foreign key could not hold.
+     */
+    justification: string | null,
   ): Promise<{ workflowId: string }> {
     const [tenant] = await this.prisma.$queryRaw<
       Array<{
@@ -298,50 +458,65 @@ export class TenantService implements OnModuleDestroy {
       throw new BadRequestException('Tenant already has a dedicated DB assigned');
 
     const workflowId = `enterprise-provisioning-${tenantId}`;
-    const client = await this.getTemporalClient();
 
-    try {
-      await client.workflow.start('enterpriseProvisioningWorkflow', {
-        taskQueue: 'enterprise-provisioning',
-        workflowId,
-        args: [{ tenantId, contractReference: contractReference ?? null, actorId }],
-      });
-    } catch (err: unknown) {
-      if ((err as { name?: string }).name === 'WorkflowExecutionAlreadyStartedError') {
-        throw new ConflictException(
-          `Provisioning workflow already running or completed for tenant ${tenantId}`,
-        );
-      }
-      throw err;
-    }
-
-    logger.info({ tenantId, workflowId, actorId }, 'Enterprise provisioning workflow started');
-
-    // Outbox (§35.13 ESC-13). NOTE: this method performs no business DB write — the state change
-    // lives in Temporal — so there is no row to be atomic *with*. The outbox is used here purely as
-    // the durable at-least-once relay: the previous direct publish silently LOST the event whenever
-    // Kafka was unavailable. `platform.*` events route to the shared platform.events topic (§15.7).
+    // The audit row, the workflow start and the outbox event commit together (§6.7). The workflow is
+    // started INSIDE the transaction, after the audit insert: a start that throws rolls the audit row
+    // back, so nothing is recorded that did not happen. The remaining window — Temporal accepted the
+    // start and the COMMIT then fails — cannot be closed from here; the workflow is idempotent on its
+    // id (§34.7), so a retry after such a failure is answered 409, not a second RDS instance.
     //
     // tenant_name / tenant_code travel on the payload because §19.8 pins the notification body to
     // "Automated DB provisioning workflow started for {tenant_name} ({tenant_code})" — the Notification
     // Service renders templates from the event payload alone and has no tenant lookup of its own.
-    await this.prisma.$transaction(async (tx) => {
-      await OutboxPublisher.write(
-        tx,
-        buildOutboxEvent({
-          eventType: 'platform.enterprise.contract_signed.v1',
-          tenantId,
-          actorId,
-          correlationId: randomUUID(),
-          payload: {
-            tenant_id: tenantId,
-            tenant_name: tenant.tenant_name,
-            tenant_code: tenant.tenant_code,
-            contract_reference: contractReference ?? null,
-          },
-        }),
-      );
-    });
+    // `platform.*` events route to the shared platform.events topic (§15.7).
+    await this.prisma.$transaction(
+      async (tx) => {
+        if (justification !== null) {
+          await this.writeAdminAudit(tx, {
+            tenantId,
+            actorId,
+            action: 'tenant.mark_contracted',
+            justification,
+            extra: { contract_reference: contractReference ?? null, workflow_id: workflowId },
+          });
+        }
+
+        const client = await this.getTemporalClient();
+        try {
+          await client.workflow.start('enterpriseProvisioningWorkflow', {
+            taskQueue: 'enterprise-provisioning',
+            workflowId,
+            args: [{ tenantId, contractReference: contractReference ?? null, actorId }],
+          });
+        } catch (err: unknown) {
+          if ((err as { name?: string }).name === 'WorkflowExecutionAlreadyStartedError') {
+            throw new ConflictException(
+              `Provisioning workflow already running or completed for tenant ${tenantId}`,
+            );
+          }
+          throw err;
+        }
+
+        await OutboxPublisher.write(
+          tx,
+          buildOutboxEvent({
+            eventType: 'platform.enterprise.contract_signed.v1',
+            tenantId,
+            actorId,
+            correlationId: randomUUID(),
+            payload: {
+              tenant_id: tenantId,
+              tenant_name: tenant.tenant_name,
+              tenant_code: tenant.tenant_code,
+              contract_reference: contractReference ?? null,
+            },
+          }),
+        );
+      },
+      { timeout: TEMPORAL_TX_TIMEOUT_MS },
+    );
+
+    logger.info({ tenantId, workflowId, actorId }, 'Enterprise provisioning workflow started');
 
     return { workflowId };
   }
@@ -390,19 +565,124 @@ export class TenantService implements OnModuleDestroy {
   /**
    * List all tenants for the SYSTEM_ADMIN panel (§20.4.1).
    *
-   * Columns are listed explicitly to EXCLUDE `dedicated_db_url`. It holds a full
-   * `postgresql://user:password@host/db` string (it is handed straight to createPrismaClient), so the
-   * previous `SELECT *` shipped live database credentials in the response body of
-   * GET /api/v1/admin/tenants — into browser history, proxy logs and client-side error reporting.
-   * SYSTEM_ADMIN-gating is the wrong control for a secret that has no reason to leave the server at
-   * all; getDbUrlForTenant() reads the column server-side when it is actually needed.
+   * `dedicated_db_url` is READ here but never RETURNED. It holds a full
+   * `postgresql://user:password@host/db` string, so the previous `SELECT *` shipped live database
+   * credentials in the response body of GET /api/v1/admin/tenants — into browser history, proxy logs
+   * and client-side error reporting. Since 2026-09-14 the row carries `dedicated_db_host` instead, which
+   * §20.4.1 asks for and which cannot be used to connect.
+   *
+   * A stored value that cannot be decrypted THROWS, as decryptDedicatedDbUrl does everywhere: a list
+   * that quietly showed such a tenant as pooled would be telling the operator something false about
+   * where that tenant's data lives.
    */
-  async listTenants(): Promise<TenantSummaryRow[]> {
-    return this.prisma.$queryRaw<TenantSummaryRow[]>`
+  async listTenants(): Promise<TenantListRow[]> {
+    const rows = await this.prisma.$queryRaw<
+      Array<TenantSummaryRow & { dedicated_db_url: string | null }>
+    >`
       SELECT tenant_id, tenant_code, tenant_name, keycloak_realm, plan_type, is_active,
-             data_region, timezone, created_at, updated_at
+             data_region, timezone, created_at, updated_at, dedicated_db_url
         FROM platform.tenants
        ORDER BY created_at DESC
     `;
+    return rows.map(({ dedicated_db_url, ...row }) => ({
+      ...row,
+      dedicated_db_host: dedicated_db_url === null ? null : dedicatedDbHost(dedicated_db_url),
+    }));
+  }
+
+  /**
+   * The provisioning state of every ENTERPRISE tenant that has a run (§34.3), for the panel's
+   * Provisioning column, its Migration Gates count and its gate banner.
+   *
+   * One query per ENTERPRISE tenant, each capped at PROVISIONING_QUERY_DEADLINE_MS so one run with no
+   * worker behind it cannot stall the list. A tenant with no run (WorkflowNotFoundError) is left out.
+   */
+  async listProvisioning(): Promise<TenantProvisioningRow[]> {
+    const tenants = await this.prisma.$queryRaw<Array<{ tenant_id: string }>>`
+      SELECT tenant_id FROM platform.tenants
+       WHERE plan_type = 'ENTERPRISE'
+       ORDER BY created_at DESC
+    `;
+    if (tenants.length === 0) return [];
+
+    return this.withTemporal(async (client, connection) => {
+      const rows: TenantProvisioningRow[] = [];
+      for (const { tenant_id } of tenants) {
+        try {
+          const state = await connection.withDeadline(
+            Date.now() + PROVISIONING_QUERY_DEADLINE_MS,
+            () =>
+              client.workflow
+                .getHandle(`enterprise-provisioning-${tenant_id}`)
+                .query(workflowStateQuery),
+          );
+          rows.push({ tenant_id, workflow_state: state });
+        } catch (err: unknown) {
+          if (err instanceof WorkflowNotFoundError) continue;
+          logger.warn(
+            { tenantId: tenant_id, err: err instanceof Error ? err.message : String(err) },
+            'tenant.provisioning.state_unreadable',
+          );
+          rows.push({ tenant_id, workflow_state: null });
+        }
+      }
+      return rows;
+    });
+  }
+
+  /**
+   * Send the human-gate decision (§34.5) — `approve` continues to data migration, `abort` compensates.
+   *
+   * Refused unless the run is AT the gate: a signal sent earlier would be recorded by Temporal and
+   * acted on the moment the run arrives, which is a decision taken before its facts existed. 404 when
+   * there is no run, 409 when it is elsewhere, 503 when the state cannot be read to check.
+   */
+  async decideProvisioning(
+    tenantId: string,
+    decision: 'approve' | 'abort',
+    actorId: string,
+    justification: string,
+  ): Promise<{ workflowId: string; decision: 'approve' | 'abort' }> {
+    const workflowId = `enterprise-provisioning-${tenantId}`;
+    return this.withTemporal(async (client, connection) => {
+      const handle = client.workflow.getHandle(workflowId);
+      let state: string;
+      try {
+        state = await connection.withDeadline(Date.now() + PROVISIONING_QUERY_DEADLINE_MS, () =>
+          handle.query(workflowStateQuery),
+        );
+      } catch (err: unknown) {
+        if (err instanceof WorkflowNotFoundError) {
+          throw new NotFoundException(`No provisioning run for tenant ${tenantId}`);
+        }
+        throw new ServiceUnavailableException(
+          'Provisioning state could not be read, so the gate decision was not sent',
+        );
+      }
+      if (state !== 'AWAITING_APPROVAL') {
+        throw new ConflictException(
+          `Provisioning run is in ${state}, not AWAITING_APPROVAL — nothing to ${decision}`,
+        );
+      }
+
+      // Audit row first, signal second, one transaction: a signal that throws rolls the row back.
+      await this.prisma.$transaction(
+        async (tx) => {
+          await this.writeAdminAudit(tx, {
+            tenantId,
+            actorId,
+            action:
+              decision === 'approve' ? 'tenant.provisioning.approve' : 'tenant.provisioning.abort',
+            justification,
+            extra: { workflow_id: workflowId },
+          });
+          await handle.signal(decision === 'approve' ? approveSignal : abortSignal);
+        },
+        { timeout: TEMPORAL_TX_TIMEOUT_MS },
+      );
+
+      logger.info({ tenantId, workflowId, actorId, decision }, 'tenant.provisioning.decision_sent');
+      return { workflowId, decision };
+    });
   }
 }

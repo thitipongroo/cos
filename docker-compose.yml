@@ -498,6 +498,9 @@ services:
     environment:
       NODE_ENV: ${NODE_ENV:-development}
       PORT: '3000'
+      # The internal listener (ADR-107) — only for file-service, credential-service and ai-gateway on this
+      # network. Deliberately NOT in `ports:`: nothing on the host needs it.
+      INTERNAL_PORT: '3100'
       LOG_LEVEL: ${LOG_LEVEL:-debug}
       # App connects via PgBouncer (QM-18) — never directly to postgres:5432
       DATABASE_URL: postgresql://${POSTGRES_USER:-cos}:${POSTGRES_PASSWORD:-cos_dev_password}@pgbouncer:5432/${POSTGRES_DB:-construction_os}
@@ -631,6 +634,8 @@ services:
     environment:
       NODE_ENV: ${NODE_ENV:-development}
       FILE_SERVICE_PORT: '3002'
+      # The backend, for a user's verified identity (ADR-107). No default in code: unset = 503.
+      BACKEND_INTERNAL_URL: http://backend:3100
       # Names the service in logs/traces and on the Prometheus scrape endpoint (:9464, opened by
       # initTracing in main.ts — the port prometheus.yml has always scraped).
       OTEL_SERVICE_NAME: file-service
@@ -687,6 +692,8 @@ services:
     environment:
       NODE_ENV: ${NODE_ENV:-development}
       PORT: '3009'
+      # The backend, for a user's verified identity (ADR-107). No default in code: unset = 503.
+      BACKEND_INTERNAL_URL: http://backend:3100
       # Names the service in every structured log line (src/logger.ts); without it logs claim
       # "cos-backend", the default inherited from @cos/logger's configuration.
       OTEL_SERVICE_NAME: credential-service
@@ -765,6 +772,8 @@ services:
       # case auth.py documents at _ISSUER.
       KEYCLOAK_URL: http://keycloak:8080
       KEYCLOAK_REALM: ${KEYCLOAK_REALM:-construction-os-dev}
+      # The backend, for a user's verified identity (ADR-107). No default in code: unset = 503.
+      BACKEND_INTERNAL_URL: http://backend:3100
       # Internal transcription pipeline the gateway delegates /api/v1/ai/transcribe to.
       TRANSCRIPTION_SERVICE_URL: http://ai-transcription-pipeline:8000
       # Prompt templates live at repo-root ai/prompts (not inside the service build context),

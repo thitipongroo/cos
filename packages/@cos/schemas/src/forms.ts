@@ -34,6 +34,23 @@ import {
   riskScore,
 } from './primitives';
 
+/**
+ * The mandatory reason on every SYSTEM_ADMIN tenant action (§6.7; product-owner decision 2026-09-14).
+ * Bounds mirror AdminJustificationDto: 10–500 characters after trimming, so blanks are not a reason.
+ */
+export const adminJustification = z
+  .string()
+  .check(
+    z.trim(),
+    z.minLength(1, 'validation.required'),
+    z.minLength(10, 'validation.tooShort'),
+    z.maxLength(500, 'validation.tooLong'),
+  );
+
+/** Deactivate · assign DB · mark contracted · approve · abort — a reason and nothing else. */
+export const adminJustificationSchema = z.object({ justification: adminJustification });
+export type AdminJustificationValues = z.infer<typeof adminJustificationSchema>;
+
 /** POST /site/issues — apps/web/src/app/(app)/site/issues/new. */
 export const issueCreateSchema = z.object({
   project_id: requiredId,
@@ -221,10 +238,38 @@ export const tenantSettingsSchema = z.object({
 
 /** §20.4 platform admin tenant provisioning → POST /platform/tenants (`CreateTenantInput`). */
 export const tenantCreateSchema = z.object({
-  tenantCode: requiredText(64),
-  tenantName: requiredText(200),
+  // §20.4.2, and CreateTenantDto's own @Matches. This was requiredText(64) / requiredText(200) until
+  // 2026-09-14 — a code like "ACME Corp" passed the form and was refused by the API, so the operator
+  // learned the rule from a 400 instead of from the field.
+  tenantCode: z
+    .string()
+    .check(
+      z.trim(),
+      z.minLength(1, 'validation.required'),
+      z.regex(/^[a-z0-9_]{2,50}$/, 'validation.notATenantCode'),
+    ),
+  tenantName: z
+    .string()
+    .check(
+      z.trim(),
+      z.minLength(1, 'validation.required'),
+      z.minLength(2, 'validation.tooShort'),
+      z.maxLength(255, 'validation.tooLong'),
+    ),
   planType,
-  dedicatedDbUrl: optionalText(500),
+  // Optional; when given it must be a PostgreSQL URL (§20.4.2 "Must start with postgresql://" — the
+  // server also accepts postgres://, and so does this).
+  dedicatedDbUrl: z.optional(
+    z.string().check(
+      z.trim(),
+      z.maxLength(500, 'validation.tooLong'),
+      // `\/{2}`, not two escaped slashes in a row: scripts/readiness/check-schema-contract.sh strips
+      // `//…` as a comment, and a literal double slash here cut the line short and hid every field
+      // after it from that check (measured 2026-09-14).
+      z.refine((v) => v === '' || /^postgres(ql)?:\/{2}/.test(v), 'validation.notAPostgresUrl'),
+    ),
+  ),
+  justification: adminJustification,
 });
 
 /**

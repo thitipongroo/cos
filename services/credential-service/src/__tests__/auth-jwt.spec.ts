@@ -8,23 +8,39 @@
 import { jest } from '@jest/globals';
 
 type Verified =
-  | { kind: 'user'; tenantId: string; userId: string; role: string }
+  | { kind: 'user'; tenantId: string; userId: string; role: string; exp?: number }
   | { kind: 'service'; clientId: string };
+type Identity = { tenantId: string; userId: string; role: string };
 
 const mockVerifyBearer = jest.fn<(h: unknown) => Promise<Verified | null>>();
 
+// The CLAIMS — deliberately not what the backend answers, so a test can tell which one was used.
 const user = (over: Partial<Extract<Verified, { kind: 'user' }>> = {}): Verified => ({
   kind: 'user',
-  tenantId: 't1',
-  userId: 'u1',
-  role: 'FINANCE',
+  tenantId: 't-claimed',
+  userId: 'u-claimed',
+  role: 'TENANT_ADMIN',
+  exp: 1_900_000_000,
   ...over,
 });
+const backendIdentity: Identity = { tenantId: 't1', userId: 'u1', role: 'FINANCE' };
+const mockResolveUserIdentity =
+  jest.fn<(auth: string, exp: number | undefined) => Promise<Identity>>();
 const service: Verified = { kind: 'service', clientId: 'cos-backend' };
 
 jest.unstable_mockModule('../plugins/jwt-verify.js', () => ({
   verifyBearer: mockVerifyBearer,
   InvalidTokenError: class InvalidTokenError extends Error {},
+}));
+
+// ADR-107: a user's identity comes from the backend. The hook imports these same classes from the mock,
+// so `instanceof` there sees the ones thrown here.
+class IdentityRejectedError extends Error {}
+class IdentityUnavailableError extends Error {}
+jest.unstable_mockModule('@cos/service-identity', () => ({
+  resolveUserIdentity: mockResolveUserIdentity,
+  IdentityRejectedError,
+  IdentityUnavailableError,
 }));
 
 const Fastify = (await import('fastify')).default;
@@ -46,28 +62,77 @@ async function buildApp(withTrace = true): Promise<App> {
   return app;
 }
 
-beforeEach(() => mockVerifyBearer.mockReset());
+beforeEach(() => {
+  mockVerifyBearer.mockReset();
+  mockResolveUserIdentity.mockReset();
+});
 
 describe('authPlugin — in-service JWT verify', () => {
-  it('uses the verified token identity (agreeing header is accepted)', async () => {
+  it("takes the identity from the BACKEND, not the token's claims (ADR-107)", async () => {
     mockVerifyBearer.mockResolvedValue(user());
+    mockResolveUserIdentity.mockResolvedValue(backendIdentity);
     const app = await buildApp();
     const res = await app.inject({
       method: 'GET',
       url: '/secure',
       headers: { authorization: 'Bearer tok', 'x-tenant-id': 't1' },
     });
+    // The claims said TENANT_ADMIN of t-claimed — a self-edited attribute. The backend's answer wins.
     expect(res.json()).toEqual({ tenantId: 't1', userId: 'u1', role: 'FINANCE' });
+    expect(mockResolveUserIdentity).toHaveBeenCalledWith('Bearer tok', 1_900_000_000);
     await app.close();
   });
 
-  it('401 INVALID_TOKEN when the token tenant disagrees with the Kong header', async () => {
-    mockVerifyBearer.mockResolvedValue(user({ role: 'R' }));
+  it('401 INVALID_TOKEN when the backend refuses the token', async () => {
+    mockVerifyBearer.mockResolvedValue(user());
+    mockResolveUserIdentity.mockRejectedValue(new IdentityRejectedError('backend answered 401'));
     const app = await buildApp();
     const res = await app.inject({
       method: 'GET',
       url: '/secure',
-      headers: { authorization: 'Bearer tok', 'x-tenant-id': 't2' },
+      headers: { authorization: 'Bearer tok' },
+    });
+    expect(res.statusCode).toBe(401);
+    expect(res.json().error.code).toBe('INVALID_TOKEN');
+    await app.close();
+  });
+
+  it('503 IDENTITY_UNAVAILABLE — never the claims — when the backend cannot answer', async () => {
+    mockVerifyBearer.mockResolvedValue(user());
+    mockResolveUserIdentity.mockRejectedValue(new IdentityUnavailableError('ECONNREFUSED'));
+    const app = await buildApp();
+    const res = await app.inject({
+      method: 'GET',
+      url: '/secure',
+      headers: { authorization: 'Bearer tok' },
+    });
+    expect(res.statusCode).toBe(503);
+    expect(res.json().error.code).toBe('IDENTITY_UNAVAILABLE');
+    await app.close();
+  });
+
+  it('503 on a non-Error rejection too, with an unknown traceId without trace', async () => {
+    mockVerifyBearer.mockResolvedValue(user());
+    mockResolveUserIdentity.mockRejectedValue('boom');
+    const app = await buildApp(false);
+    const res = await app.inject({
+      method: 'GET',
+      url: '/secure',
+      headers: { authorization: 'Bearer tok' },
+    });
+    expect(res.statusCode).toBe(503);
+    expect(res.json().error.traceId).toBe('unknown');
+    await app.close();
+  });
+
+  it("401 INVALID_TOKEN when the header tenant disagrees with the backend's", async () => {
+    mockVerifyBearer.mockResolvedValue(user());
+    mockResolveUserIdentity.mockResolvedValue(backendIdentity);
+    const app = await buildApp();
+    const res = await app.inject({
+      method: 'GET',
+      url: '/secure',
+      headers: { authorization: 'Bearer tok', 'x-tenant-id': 't-claimed' },
     });
     expect(res.statusCode).toBe(401);
     expect(res.json().error.code).toBe('INVALID_TOKEN');
@@ -87,17 +152,16 @@ describe('authPlugin — in-service JWT verify', () => {
     await app.close();
   });
 
-  it('IGNORES x-user-role on a user token — no self-service role upgrade', async () => {
-    mockVerifyBearer.mockResolvedValue(user({ userId: '', role: '' }));
+  it('IGNORES x-user-id and x-user-role on a user token — no self-service identity', async () => {
+    mockVerifyBearer.mockResolvedValue(user());
+    mockResolveUserIdentity.mockResolvedValue(backendIdentity);
     const app = await buildApp();
     const res = await app.inject({
       method: 'GET',
       url: '/secure',
       headers: { authorization: 'Bearer tok', 'x-user-id': 'uH', 'x-user-role': 'VIEWER' },
     });
-    // Claims name no user, and none may be borrowed from a header → not identified.
-    expect(res.statusCode).toBe(401);
-    expect(res.json().error.code).toBe('MISSING_TENANT_HEADER');
+    expect(res.json()).toEqual({ tenantId: 't1', userId: 'u1', role: 'FINANCE' });
     await app.close();
   });
 
@@ -196,8 +260,22 @@ describe('authPlugin — in-service JWT verify', () => {
     await app.close();
   });
 
+  it("defaults traceId to 'unknown' on the backend-refusal path without trace", async () => {
+    mockVerifyBearer.mockResolvedValue(user());
+    mockResolveUserIdentity.mockRejectedValue(new IdentityRejectedError('backend answered 401'));
+    const app = await buildApp(false);
+    const res = await app.inject({
+      method: 'GET',
+      url: '/secure',
+      headers: { authorization: 'Bearer x' },
+    });
+    expect(res.json().error.traceId).toBe('unknown');
+    await app.close();
+  });
+
   it("defaults traceId to 'unknown' on the tenant-mismatch path without trace", async () => {
     mockVerifyBearer.mockResolvedValue(user({ role: 'R' }));
+    mockResolveUserIdentity.mockResolvedValue(backendIdentity);
     const app = await buildApp(false);
     const res = await app.inject({
       method: 'GET',

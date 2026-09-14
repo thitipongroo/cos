@@ -29,6 +29,7 @@ import { TenantService } from '../../src/modules/tenant/tenant.service';
 const SECRET = 'phase-25-webhook-secret';
 const TENANT_ID = '77777777-1111-4000-8000-000000000025';
 const USER_ID = '77777777-2222-4000-8000-000000000025';
+const JUSTIFICATION = 'Customer signed the enterprise contract (ticket OPS-4412).';
 
 const roleOf = (req: Record<string, unknown>): string => {
   const headers = (req['headers'] ?? {}) as Record<string, string>;
@@ -88,6 +89,13 @@ describe('Phase 25 · provisioning entry points', () => {
           started.push({ tenantId });
           return { workflowId: `enterprise-provisioning-${tenantId}` };
         }),
+        listProvisioning: jest.fn(async () => [
+          { tenant_id: TENANT_ID, workflow_state: 'AWAITING_APPROVAL' },
+        ]),
+        decideProvisioning: jest.fn(async (tenantId: string, decision: string) => ({
+          workflowId: `enterprise-provisioning-${tenantId}`,
+          decision,
+        })),
       })
       .overrideGuard(JwtAuthGuard)
       // The user is BUILT here, not read off a property some middleware set. Under Fastify an
@@ -220,8 +228,75 @@ describe('Phase 25 · provisioning entry points', () => {
       const res = await api()
         .patch(`/api/v1/admin/tenants/${TENANT_ID}/mark-contracted`)
         .set('x-test-role', 'SYSTEM_ADMIN')
-        .send({});
+        .send({ justification: JUSTIFICATION });
       expect(res.status).toBeLessThan(400);
+    });
+
+    // §6.7, product-owner decision 2026-09-14: the reason is mandatory, enforced at the edge.
+    it('answers 400 when a SYSTEM_ADMIN gives no justification', async () => {
+      await api()
+        .patch(`/api/v1/admin/tenants/${TENANT_ID}/mark-contracted`)
+        .set('x-test-role', 'SYSTEM_ADMIN')
+        .send({})
+        .expect(400);
+    });
+  });
+
+  // ── The human gate over HTTP (§34.5): read state, approve, abort ───────────
+  //
+  // TenantService is stubbed here, as for mark-contracted: Temporal is not in this harness. What is
+  // proven is the edge — the role guard, the justification, the routes — which the unit specs cannot.
+
+  describe('provisioning gate endpoints (§34.5)', () => {
+    it('lists provisioning state for a SYSTEM_ADMIN', async () => {
+      const res = await api()
+        .get('/api/v1/admin/tenants/provisioning')
+        .set('x-test-role', 'SYSTEM_ADMIN')
+        .expect(200);
+      expect(res.body).toEqual([{ tenant_id: TENANT_ID, workflow_state: 'AWAITING_APPROVAL' }]);
+    });
+
+    it('refuses the provisioning list to a TENANT_ADMIN', async () => {
+      await api()
+        .get('/api/v1/admin/tenants/provisioning')
+        .set('x-test-role', 'TENANT_ADMIN')
+        .expect(403);
+    });
+
+    it.each(['approve', 'abort'])('%s: refuses a TENANT_ADMIN', async (decision) => {
+      await api()
+        .post(`/api/v1/admin/tenants/${TENANT_ID}/provisioning/${decision}`)
+        .set('x-test-role', 'TENANT_ADMIN')
+        .send({ justification: JUSTIFICATION })
+        .expect(403);
+    });
+
+    it.each(['approve', 'abort'])('%s: answers 400 without a justification', async (decision) => {
+      await api()
+        .post(`/api/v1/admin/tenants/${TENANT_ID}/provisioning/${decision}`)
+        .set('x-test-role', 'SYSTEM_ADMIN')
+        .send({ justification: 'too short' })
+        .expect(400);
+    });
+
+    it.each(['approve', 'abort'])('%s: accepts a SYSTEM_ADMIN with a reason', async (decision) => {
+      const res = await api()
+        .post(`/api/v1/admin/tenants/${TENANT_ID}/provisioning/${decision}`)
+        .set('x-test-role', 'SYSTEM_ADMIN')
+        .send({ justification: JUSTIFICATION });
+      expect(res.status).toBeLessThan(400);
+      expect(res.body).toEqual({
+        workflowId: `enterprise-provisioning-${TENANT_ID}`,
+        decision,
+      });
+    });
+
+    it('answers 400 for a tenant id that is not a UUID', async () => {
+      await api()
+        .post('/api/v1/admin/tenants/not-a-uuid/provisioning/approve')
+        .set('x-test-role', 'SYSTEM_ADMIN')
+        .send({ justification: JUSTIFICATION })
+        .expect(400);
     });
   });
 

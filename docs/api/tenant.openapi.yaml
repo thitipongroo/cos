@@ -43,10 +43,31 @@ components:
           type: [string, 'null']
         notifications_enabled:
           type: boolean
+    AdminJustificationRequest:
+      type: object
+      required: [justification]
+      properties:
+        justification:
+          type: string
+          minLength: 10
+          maxLength: 500
+          description: |
+            Required. Why the SYSTEM_ADMIN is taking this action (§6.7 "mandatory justification
+            string"). Trimmed before the length check. Stored in `platform.audit_logs.metadata`.
+          example: Customer signed the enterprise contract on 2026-09-12 (ticket OPS-4412).
+
     CreateTenantRequest:
       type: object
-      required: [tenantCode, tenantName, planType]
+      required: [tenantCode, tenantName, planType, justification]
       properties:
+        justification:
+          type: string
+          minLength: 10
+          maxLength: 500
+          description: |
+            Required. Why the SYSTEM_ADMIN is taking this action (§6.7 "mandatory justification
+            string"). Trimmed before the length check. Stored in `platform.audit_logs.metadata`.
+          example: Customer signed the enterprise contract on 2026-09-12 (ticket OPS-4412).
         tenantCode:
           type: string
           pattern: '^[a-z0-9_]{2,50}$'
@@ -118,9 +139,110 @@ components:
           type: string
           format: date-time
 
+    TenantListRow:
+      type: object
+      description: |
+        One row of `GET /admin/tenants`, in the snake_case the endpoint actually returns.
+        `dedicated_db_url` is deliberately absent — it carries database credentials.
+      required:
+        [
+          tenant_id,
+          tenant_code,
+          tenant_name,
+          keycloak_realm,
+          plan_type,
+          is_active,
+          data_region,
+          timezone,
+          created_at,
+          updated_at,
+          dedicated_db_host,
+        ]
+      properties:
+        tenant_id:
+          type: string
+          format: uuid
+        tenant_code:
+          type: string
+          example: acme_corp
+        tenant_name:
+          type: string
+          example: ACME Construction Co.
+        keycloak_realm:
+          type: string
+          example: cos-acme_corp
+        plan_type:
+          type: string
+          enum: [STARTER, PROFESSIONAL, ENTERPRISE]
+        is_active:
+          type: boolean
+        data_region:
+          type: string
+          example: ap-southeast-1
+        timezone:
+          type: string
+          example: Asia/Bangkok
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        dedicated_db_host:
+          type: [string, 'null']
+          description: |
+            Hostname of the tenant's dedicated database (§20.4.1), parsed server-side from the
+            encrypted connection URL. `null` = the tenant is on the shared database.
+          example: db-ent-042.cos.internal
+
+    TenantProvisioningRow:
+      type: object
+      required: [tenant_id, workflow_state]
+      properties:
+        tenant_id:
+          type: string
+          format: uuid
+        workflow_state:
+          type: [string, 'null']
+          enum:
+            - CREATING_RDS
+            - RUNNING_MIGRATIONS
+            - ASSIGNING_DB
+            - AWAITING_APPROVAL
+            - ABORTING
+            - ABORTED
+            - MIGRATING_DATA
+            - VERIFYING
+            - PROVISIONING_TOPICS
+            - COMPLETED
+            - null
+          description: |
+            The run's `workflowState` query (§34.3). `null` = the run exists but did not answer within
+            5 s (no worker polling `enterprise-provisioning`) — "could not be read", never a guessed state.
+
+    ProvisioningDecisionResponse:
+      type: object
+      required: [workflowId, decision]
+      properties:
+        workflowId:
+          type: string
+          example: enterprise-provisioning-550e8400-e29b-41d4-a716-446655440000
+        decision:
+          type: string
+          enum: [approve, abort]
+
     MarkContractedRequest:
       type: object
+      required: [justification]
       properties:
+        justification:
+          type: string
+          minLength: 10
+          maxLength: 500
+          description: |
+            Required. Why the SYSTEM_ADMIN is taking this action (§6.7 "mandatory justification
+            string"). Trimmed before the length check. Stored in `platform.audit_logs.metadata`.
+          example: Customer signed the enterprise contract on 2026-09-12 (ticket OPS-4412).
         contractReference:
           type: string
           maxLength: 255
@@ -131,8 +253,16 @@ components:
 
     AssignDedicatedDbRequest:
       type: object
-      required: [dedicatedDbUrl]
+      required: [dedicatedDbUrl, justification]
       properties:
+        justification:
+          type: string
+          minLength: 10
+          maxLength: 500
+          description: |
+            Required. Why the SYSTEM_ADMIN is taking this action (§6.7 "mandatory justification
+            string"). Trimmed before the length check. Stored in `platform.audit_logs.metadata`.
+          example: Customer signed the enterprise contract on 2026-09-12 (ticket OPS-4412).
         dedicatedDbUrl:
           type: string
           maxLength: 500
@@ -508,13 +638,13 @@ paths:
         - bearerAuth: []
       responses:
         '200':
-          description: Tenant list
+          description: Tenant list — with the dedicated DB hostname, never its URL
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/TenantResponse'
+                  $ref: '#/components/schemas/TenantListRow'
         '403':
           description: Insufficient role — SYSTEM_ADMIN required
     post:
@@ -558,6 +688,8 @@ paths:
       description: |
         Sets `is_active = false`. Tenant data is preserved.
         Emits Kafka event: `identity.tenant.deactivated.v1`
+
+        Audited as `tenant.deactivate` with the justification, in the same transaction (§6.7).
       tags: [tenants]
       security:
         - bearerAuth: []
@@ -568,7 +700,19 @@ paths:
           schema:
             type: string
             format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminJustificationRequest'
       responses:
+        '400':
+          description: Missing or invalid justification
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '200':
           description: Tenant deactivated
           content:
@@ -681,7 +825,7 @@ paths:
             type: string
             format: uuid
       requestBody:
-        required: false
+        required: true
         content:
           application/json:
             schema:
@@ -729,6 +873,149 @@ paths:
           description: Unauthenticated
         '403':
           description: Insufficient role — SYSTEM_ADMIN required
+
+  /admin/tenants/provisioning:
+    get:
+      operationId: getAdminTenantsProvisioning
+      summary: Provisioning-run state of every ENTERPRISE tenant that has one (SYSTEM_ADMIN only)
+      description: |
+        One entry per ENTERPRISE tenant with an `enterprise-provisioning-{tenantId}` run. A tenant
+        with no run is absent. Each state is read with the §34.3 `workflowState` query.
+      tags: [tenants]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Provisioning state per tenant
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TenantProvisioningRow'
+        '401':
+          description: Unauthenticated
+        '403':
+          description: Insufficient role — SYSTEM_ADMIN required
+
+  /admin/tenants/{tenantId}/provisioning/approve:
+    post:
+      operationId: postAdminTenantsByTenantidProvisioningApprove
+      summary: Approve a provisioning run waiting at the data-migration gate (SYSTEM_ADMIN only)
+      description: |
+        Sends the `approve` signal (§34.5). Accepted only while the run is AWAITING_APPROVAL.
+        Audited as `tenant.provisioning.approve`, in the transaction that sends the signal.
+      tags: [tenants]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: tenantId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminJustificationRequest'
+      responses:
+        '201':
+          description: Signal sent
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProvisioningDecisionResponse'
+        '400':
+          description: Missing or invalid justification, or a tenantId that is not a UUID
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthenticated
+        '403':
+          description: Insufficient role — SYSTEM_ADMIN required
+        '404':
+          description: The tenant has no provisioning run
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: The run is not at AWAITING_APPROVAL
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '503':
+          description: The run's state could not be read, so no signal was sent
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /admin/tenants/{tenantId}/provisioning/abort:
+    post:
+      operationId: postAdminTenantsByTenantidProvisioningAbort
+      summary: Abort a provisioning run waiting at the data-migration gate (SYSTEM_ADMIN only)
+      description: |
+        Sends the `abort` signal (§34.5): the run unassigns the dedicated DB and deletes the RDS
+        instance. Accepted only while the run is AWAITING_APPROVAL. Audited as
+        `tenant.provisioning.abort`, in the transaction that sends the signal.
+      tags: [tenants]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: tenantId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminJustificationRequest'
+      responses:
+        '201':
+          description: Signal sent
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProvisioningDecisionResponse'
+        '400':
+          description: Missing or invalid justification, or a tenantId that is not a UUID
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthenticated
+        '403':
+          description: Insufficient role — SYSTEM_ADMIN required
+        '404':
+          description: The tenant has no provisioning run
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: The run is not at AWAITING_APPROVAL
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '503':
+          description: The run's state could not be read, so no signal was sent
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
 
   # ── User management (TENANT_ADMIN) ──────────────────────────────────────────
 

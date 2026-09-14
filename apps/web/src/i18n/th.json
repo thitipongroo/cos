@@ -12,7 +12,203 @@
     "createTenant": "สร้างองค์กร",
     "markContracted": "ทำเครื่องหมายว่าทำสัญญาแล้ว",
     "markContractedConfirm": "เริ่ม provisioning DB เฉพาะ — พิมพ์รหัส tenant เพื่อยืนยัน:",
-    "contractRef": "เลขอ้างอิงสัญญา (ถ้ามี)"
+    "contractRef": "เลขอ้างอิงสัญญา (ถ้ามี)",
+    "nav": {
+      "section": "งานปฏิบัติการแพลตฟอร์ม",
+      "tenants": "ผู้เช่า",
+      "dbFleet": "ฐานข้อมูลเฉพาะ",
+      "migrations": "การย้ายข้อมูล",
+      "auditLog": "บันทึกการตรวจสอบทั้งระบบ",
+      "centralPrices": "ราคากลาง",
+      "settings": "ตั้งค่าระบบ",
+      "unavailable": "ยังไม่พร้อมใช้งาน",
+      "menu": "เมนูผู้ดูแลระบบ",
+      "clusterInfra": "โครงสร้างคลัสเตอร์",
+      "migrationApprovals": "อนุมัติการย้ายข้อมูล",
+      "auditTrail": "บันทึกตรวจสอบทั้งระบบ",
+      "instances": "อินสแตนซ์"
+    },
+    "list": {
+      "breadcrumbSection": "ผู้ดูแลแพลตฟอร์ม",
+      "breadcrumbPage": "รายชื่อผู้เช่า",
+      "title": "รายชื่อผู้เช่าและฐานข้อมูลเฉพาะ",
+      "subtitle": "จัดการการจัดสรรผู้เช่า การกำหนดเส้นทางฐานข้อมูลเฉพาะ และสัญญาองค์กร",
+      "searchLabel": "ค้นหาผู้เช่า",
+      "searchPlaceholder": "ค้นหารหัส ชื่อ โฮสต์ หรือภูมิภาค…",
+      "planFilter": "กรองตามแผน",
+      "allPlans": "ทุกแผน",
+      "loading": "กำลังโหลดรายชื่อผู้เช่า",
+      "loadError": "โหลดรายชื่อผู้เช่าไม่ได้",
+      "provisioningError": "โหลดสถานะการจัดสรรไม่ได้ — คอลัมน์การจัดสรรจึงไม่ครบ",
+      "empty": "ไม่พบผู้เช่าที่ตรงกัน",
+      "created": "สร้างผู้เช่าแล้ว:",
+      "showing": "แสดง",
+      "of": "จาก",
+      "tenants": "ผู้เช่า",
+      "previous": "ก่อนหน้า",
+      "next": "ถัดไป",
+      "page": "หน้า",
+      "pagination": "การแบ่งหน้า",
+      "importCentralPrices": "นำเข้าราคากลาง",
+      "clusterZone": "โซนคลัสเตอร์"
+    },
+    "plan": {
+      "STARTER": "Starter",
+      "PROFESSIONAL": "Professional",
+      "ENTERPRISE": "Enterprise"
+    },
+    "metrics": {
+      "total": "ผู้เช่าทั้งหมด",
+      "active": "ใช้งานอยู่",
+      "inactive": "ปิดใช้งาน",
+      "thisWeek": "สัปดาห์นี้",
+      "dedicated": "ผู้เช่าที่มีฐานข้อมูลเฉพาะ",
+      "dedicatedNote": "ใช้ฐานข้อมูลของตนเอง",
+      "gates": "จุดอนุมัติการย้ายข้อมูล",
+      "waiting": "รออนุมัติ",
+      "gatesNote": "งานที่รอการอนุมัติ",
+      "enterpriseFleet": "ฐานข้อมูลเฉพาะองค์กร",
+      "instances": "อินสแตนซ์",
+      "isolation": "แยกข้อมูลเด็ดขาด",
+      "avgGateTime": "เวลารออนุมัติเฉลี่ย",
+      "compute": "ทรัพยากรประมวลผล"
+    },
+    "col": {
+      "code": "รหัส",
+      "name": "ชื่อ",
+      "plan": "แผน",
+      "status": "สถานะ",
+      "db": "เส้นทางฐานข้อมูล",
+      "region": "ภูมิภาค",
+      "provisioning": "การจัดสรร",
+      "actions": "การดำเนินการ"
+    },
+    "status": {
+      "active": "ใช้งานอยู่",
+      "inactive": "ปิดใช้งาน",
+      "transit": "ระหว่างย้ายข้อมูล",
+      "pending": "รอดำเนินการ"
+    },
+    "pooled": "(ฐานข้อมูลร่วม)",
+    "provisioning": {
+      "none": "—",
+      "unreadable": "อ่านสถานะไม่ได้",
+      "unrecognised": "สถานะที่ไม่รู้จัก",
+      "state": {
+        "CREATING_RDS": "กำลังสร้างฐานข้อมูล",
+        "RUNNING_MIGRATIONS": "กำลังรัน migration",
+        "ASSIGNING_DB": "กำลังกำหนดฐานข้อมูล",
+        "AWAITING_APPROVAL": "รออนุมัติ",
+        "MIGRATING_DATA": "กำลังย้ายข้อมูล",
+        "VERIFYING": "กำลังตรวจสอบเส้นทาง",
+        "PROVISIONING_TOPICS": "กำลังจัดสรร topic",
+        "COMPLETED": "พร้อมใช้งาน",
+        "ABORTING": "กำลังยกเลิก",
+        "ABORTED": "ยกเลิกแล้ว"
+      },
+      "active": "ใช้งานอยู่"
+    },
+    "gate": {
+      "eyebrow": "จุดอนุมัติการย้ายข้อมูล",
+      "body": "จัดสรรฐานข้อมูลเฉพาะแล้ว และรออนุมัติก่อนย้ายข้อมูล",
+      "approve": "อนุมัติการย้ายข้อมูล",
+      "abort": "ยกเลิก",
+      "kind": "เปลี่ยนระดับการแยกข้อมูล",
+      "tenant": "ผู้เช่า",
+      "reviewPlan": "ดูแผน"
+    },
+    "decision": {
+      "approveTitle": "อนุมัติการย้ายข้อมูล",
+      "abortTitle": "ยกเลิกการจัดสรร",
+      "approveBody": "งานจะดำเนินต่อ: ย้ายข้อมูลผู้เช่าไปยังฐานข้อมูลเฉพาะ และตรวจสอบเส้นทาง",
+      "abortBody": "งานจะหยุดและย้อนกลับ: ยกเลิกการกำหนดฐานข้อมูลเฉพาะ และลบ RDS instance",
+      "confirmApprove": "อนุมัติ",
+      "confirmAbort": "ยกเลิกการจัดสรร",
+      "cancel": "ปิด"
+    },
+    "justification": {
+      "label": "เหตุผล",
+      "help": "เหตุผลของการดำเนินการนี้ จะถูกบันทึกใน audit log (10–500 ตัวอักษร)",
+      "prompt": "เหตุผลของการดำเนินการนี้ — บันทึกใน audit log (อย่างน้อย 10 ตัวอักษร):",
+      "tooShort": "ต้องระบุเหตุผลอย่างน้อย 10 ตัวอักษร ยังไม่มีการเปลี่ยนแปลงใด"
+    },
+    "row": {
+      "assignDbPrompt": "URL ฐานข้อมูลเฉพาะ (postgresql://…):",
+      "view": "ดูรายละเอียด",
+      "auditLog": "บันทึกตรวจสอบ",
+      "approveGate": "อนุมัติ",
+      "enterpriseOnly": "เฉพาะแผน Enterprise"
+    },
+    "errors": {
+      "invalid": "คำขอไม่ถูกต้อง โปรดตรวจสอบข้อมูลและเหตุผล",
+      "forbidden": "บทบาทของคุณทำรายการนี้ไม่ได้",
+      "notFound": "ไม่พบผู้เช่านี้ หรือสถานะไม่อนุญาตให้ทำรายการนี้",
+      "noRun": "ผู้เช่านี้ไม่มีงานจัดสรรฐานข้อมูล",
+      "codeTaken": "รหัสผู้เช่านี้ถูกใช้แล้ว",
+      "notAtGate": "งานไม่ได้รออนุมัติแล้ว โปรดรีเฟรชเพื่อดูสถานะ",
+      "conflict": "สถานะของผู้เช่าไม่อนุญาตให้ทำรายการนี้",
+      "stateUnreadable": "อ่านสถานะงานไม่ได้ จึงยังไม่ได้ส่งคำสั่ง โปรดลองอีกครั้ง",
+      "generic": "เกิดข้อผิดพลาด ยังไม่มีการเปลี่ยนแปลงใด"
+    },
+    "create": {
+      "title": "สร้างผู้เช่าใหม่",
+      "cancel": "ยกเลิก",
+      "submit": "สร้างผู้เช่า",
+      "submitting": "กำลังสร้างผู้เช่า",
+      "required": "จำเป็น",
+      "optionalEnterprise": "ไม่บังคับ",
+      "codeLabel": "รหัสผู้เช่า",
+      "codeRule": "2–50 ตัวอักษร: a–z ตัวพิมพ์เล็ก ตัวเลข 0–9 และขีดล่าง (_) เท่านั้น",
+      "nameLabel": "ชื่อผู้เช่า",
+      "nameRule": "ชื่อบริษัทหรือนิติบุคคลเต็ม (2–255 ตัวอักษร)",
+      "planLabel": "เลือกแผนและระดับสถาปัตยกรรม",
+      "planStarter": "คลัสเตอร์ฐานข้อมูลรวมหลายผู้เช่า",
+      "planProfessional": "ฐานข้อมูลรวม รองรับการใช้งานพร้อมกันสูง",
+      "planEnterprise": "มีสิทธิ์ใช้ฐานข้อมูลเฉพาะ",
+      "dbUrlLabel": "URI ฐานข้อมูลเฉพาะ",
+      "dbUrlRule": "รูปแบบ: postgresql://[user]:[password]@[host]:[port]/[database]",
+      "codeValid": "รูปแบบรหัสผู้เช่าถูกต้องและยังไม่มีผู้ใช้",
+      "nameValid": "ชื่อผู้เช่าถูกต้อง",
+      "dbUrlValid": "รูปแบบ URI การเชื่อมต่อ PostgreSQL ถูกต้อง เข้าถึงโฮสต์ได้ในเครือข่ายภายในคลัสเตอร์",
+      "planEnterpriseNote": "เลือกแผน Enterprise แล้ว — เปิดการตั้งค่าฐานข้อมูลเฉพาะ",
+      "dbUrlEnterpriseOnly": "เลือกแผน Enterprise เพื่อระบุฐานข้อมูลเฉพาะ",
+      "justificationRule": "เหตุผลในการสร้างผู้เช่านี้ บันทึกใน audit log (10–500 ตัวอักษร)",
+      "breadcrumb": "สร้างผู้เช่าใหม่",
+      "subtitle": "จัดสรรองค์กรผู้เช่าใหม่ด้วย schema แยก หรืออินสแตนซ์ฐานข้อมูลเฉพาะ",
+      "close": "ปิดหน้าต่าง",
+      "tierStarter": "ประมวลผลร่วม",
+      "tierProfessional": "IOPS แบบแบ่งระดับ",
+      "tierEnterprise": "● ฐานข้อมูลเฉพาะ",
+      "vpcBadge": "Internal VPC Mesh",
+      "portPrefix": "พอร์ต",
+      "portSuffix": "เปิด",
+      "lifecycleTitle": "วงจรการจัดสรรอัตโนมัติ:",
+      "lifecycleBody": "เมื่อส่งคำขอนี้ ระบบจะจัดสรรความลับของผู้เช่าผ่าน HashiCorp Vault ลงทะเบียน schema ในแคตตาล็อกกลาง และตั้งค่าใบรับรอง mutual TLS สำหรับ EMQX streaming broker โดยอัตโนมัติ",
+      "zone": "โซน: ap-southeast-1a (Headroom: 72%)"
+    },
+    "connection": {
+      "online": "ซิงก์แล้ว",
+      "offline": "เชื่อมต่อ API ไม่ได้",
+      "checking": "กำลังเชื่อมต่อ"
+    },
+    "noDataSource": "ยังไม่มีแหล่งข้อมูล",
+    "pulse": {
+      "title": "สถานะคลัสเตอร์",
+      "emqx": "EMQX Broker:",
+      "timescale": "Timescale Chunks:",
+      "mesh": "Mesh Latency:",
+      "queue": "Queue Backlog:"
+    },
+    "telemetry": {
+      "emqx": "EMQX",
+      "pgFleet": "PG Fleet",
+      "ded": "เฉพาะ",
+      "pool": "ร่วม"
+    },
+    "account": {
+      "menu": "บัญชี"
+    },
+    "globalSearch": "ค้นหาผู้เช่า รหัส ฐานข้อมูลเฉพาะ..."
   },
   "auth": {
     "login": {
@@ -525,7 +721,10 @@
     "notAnOtp": "กรุณากรอกรหัส 6 หลัก",
     "outOfRange": "ค่าอยู่นอกช่วงที่กำหนด",
     "required": "กรุณากรอกข้อมูลนี้",
-    "tooLong": "ยาวเกินกำหนด"
+    "tooLong": "ยาวเกินกำหนด",
+    "tooShort": "สั้นเกินไป",
+    "notATenantCode": "ใช้ a–z ตัวเลข หรือขีดล่าง 2–50 ตัวอักษร",
+    "notAPostgresUrl": "ต้องขึ้นต้นด้วย postgresql://"
   },
   "vendor": {
     "portalTitle": "พอร์ทัลผู้ขาย",

@@ -267,6 +267,16 @@ System Admin cannot be assigned to a tenant-level user via the Tenant Admin role
 provisioning flow (section 6.6). It requires direct platform operator provisioning
 by the SaaS operator team.
 
+> **Implementation reading, recorded 2026-09-14 — for the product owner to confirm or amend.**
+> "NOT provisioned to any tenant" is read as *holds no tenant-scoped permissions*, not as *has no row*.
+> A SYSTEM_ADMIN identity has a **home** `platform.users` row and a `SYSTEM_ADMIN` membership in the
+> operator's own tenant, because three things already depend on one: the web client refuses a token
+> without a `tenant_id` claim (`apps/web/src/lib/auth/options.ts`), the §19.8 human-gate notification
+> finds its recipients through `tenant_memberships` (`findSystemAdmins`), and `platform.audit_logs.actor_id`
+> is a foreign key to `platform.users` — the audit row above cannot be written for an actor without one.
+> The panel's actions still target any tenant; the home tenant grants nothing beyond identity.
+> The mandatory justification string is enforced for every tenant action in §20.4 since the same date.
+
 ---
 
 ## 6.8 Implementation Sub-roles

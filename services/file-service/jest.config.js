@@ -37,5 +37,6 @@ module.exports = {
     // while passing locally off a stale dist. That took metrics.ts to 0% and the whole run below
     // the 100% gate.
     '^@cos/tracing$': '<rootDir>/../../packages/@cos/tracing/src/index.ts',
+    '^@cos/service-identity$': '<rootDir>/../../packages/@cos/service-identity/src/index.ts',
   },
 };

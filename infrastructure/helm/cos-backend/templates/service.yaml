@@ -14,4 +14,8 @@ spec:
       targetPort: metrics
       protocol: TCP
       name: metrics
+    - port: {{ .Values.service.internalPort }}
+      targetPort: internal
+      protocol: TCP
+      name: internal
   selector: {{ include "cos-backend.selectorLabels" . | nindent 4 }}

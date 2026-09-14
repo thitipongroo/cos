@@ -241,6 +241,22 @@ Standard OIDC claim `sub` remains the Keycloak user UUID — it maps to `platfor
 - Kong Gateway validates `tenant_id` is present on every inbound request
 - NestJS `KeycloakJwtStrategy.validate()` rejects tokens missing `tenant_id` or `role`, and
   resolves the tenant (active check) into `req.user` during authentication
+- **`sub` is bound to the account (ADR-106, 2026-09-14):** `validate()` refuses a token whose `sub` is not
+  the `keycloak_user_id` of the `platform.users` row its `user_id` claim names. `tenant_id` and `user_id`
+  are user attributes; in a realm several tenants share (§7.6) they alone do not prove which tenant a
+  caller belongs to. Kill switch `s1.identity.subject-binding` (default ON);
+  `scripts/readiness/check-keycloak-subject-binding.sh` measures an environment before relying on it
+- **Identity attributes are admin-only, and the services take identity from the backend (ADR-107,
+  2026-09-14).** `tenant_id`, `user_id` and `role` are unmanaged Keycloak user attributes. With the realm at
+  `unmanagedAttributePolicy: ENABLED` a user rewrote their own through the Account API (measured: a stored
+  `role` of SYSTEM_ADMIN), and renamed their own `username`/`email`. Every realm now runs `ADMIN_EDIT` with
+  `username` and `email` admin-edit only (realm JSON; running realms via
+  `scripts/ops/keycloak-lock-identity-attributes.sh`, `--check` to measure). file-service, credential-service
+  and ai-gateway cannot read `platform.users`; for a user token they call `GET /api/v1/auth/identity` and
+  use that answer — 401 refused, anything else 503, never the claims; cached per token for at most 30 s.
+  The route is served ONLY on the backend's internal listener (`INTERNAL_PORT` 3100, no WAF check, no other
+  route, NetworkPolicy-admitted from those three workloads), is limited per verified user (600/min), answers
+  503 `COS-AUTH-004` when the backend cannot check the token or an identity kill switch is OFF
 - `JwtAuthGuard` publishes `tenant_id` / `user_id` / `role` (+ `tenantCode` / `dedicatedDbUrl`)
   into CLS (AsyncLocalStorage via `nestjs-cls`) — under the Fastify adapter the request is cloned and
   `req.user` does not survive downstream, so CLS is the authoritative carrier. A global
@@ -675,6 +691,7 @@ public `did:web` resolution + internal issue/verify/revoke, ADR-019).
 | D      | Large-file DoS                                                | Size limit + streaming multipart; per-tenant storage quota **[verify]**                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
 | E      | Path traversal / SSRF                                         | No user-supplied fetch URLs                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
 | S      | **Act as another tenant by supplying `x-tenant-id` yourself** | file-service trusts `x-tenant-id`/`x-user-id`/`x-user-role` as gateway-set, but Kong set none of them: the route was simultaneously broken (mobile/web send only a Bearer token → every upload 401'd) and unsafe (a client that supplied them would have been believed). The `/api/v1/files` route now (a) removes those headers unconditionally and (b) re-adds them from the JWT the `jwt` plugin already verified — `tenant_id` / `user_id` / `role` per §5.4.1, matched with a strict `[%w_%-]+` class so a hostile claim cannot inject CR/LF or quotes; a non-matching or absent claim yields `""` and the service 401s (fail closed). Verified end-to-end against the shipped config on Kong 3.9: a valid token carrying spoofed headers reaches the upstream with the token's own claims and no trace of the spoofed values; no token → 401; tampered signature or payload → 401. The backend is unaffected — it reaches file-service over the mesh (`FILE_SERVICE_URL`), never through this route |
+| S      | **Act as another tenant or role by editing your own Keycloak attributes** | The service verifies the token itself, but its `tenant_id` / `user_id` / `role` are user attributes a user could rewrite through the Account API (measured 2026-09-14). ADR-107: realms run `unmanagedAttributePolicy: ADMIN_EDIT`, and for a user token the service takes the identity from the backend's `GET /api/v1/auth/identity` — realm + subject binding + database role — never the claims; backend unavailable → 503 `COS-FILE-022`. The backend serves that route on its internal listener only |
 
 ### 5.9.5 Mobile offline sync (`/sync/delta`, `/sync/push`)
 
@@ -712,9 +729,12 @@ corrected 2026-09-03. ADR-019 option A had the plugin trust Kong/mesh-forwarded 
 `x-user-id` / `x-user-role`; TDD OQ-46 abandoned that, because the premise was a gateway that verifies
 and strips at ingress and Kong is deployed nowhere, while this service is `ClusterIP` with no
 NetworkPolicy and holds every tenant's issuer key material. Today: no token → 401; a **user** token →
-identity from the CLAIMS, and an `x-tenant-id` header may only AGREE with it (a header naming a
-different tenant is a 401, never an override); a **service** token → authenticated as the backend, with
-the identity headers saying on whose behalf. Data classification RESTRICTED (issuer keys + credentials).
+identity from the BACKEND's `GET /api/v1/auth/identity` since 2026-09-14 (ADR-107) — the claims are Keycloak
+user attributes, and the answer comes after realm and subject binding and the database role; backend 401 is
+401, anything else 503 `IDENTITY_UNAVAILABLE`, never the claims — and an `x-tenant-id` header may only
+AGREE with it (a header naming a different tenant is a 401, never an override); a **service** token →
+authenticated as the backend, with the identity headers saying on whose behalf. Data classification
+RESTRICTED (issuer keys + credentials).
 
 | STRIDE | Threat                                                                                                                              | Mitigation                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
 | ------ | ----------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |

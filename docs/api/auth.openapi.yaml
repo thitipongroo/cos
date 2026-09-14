@@ -1430,6 +1430,59 @@ paths:
         '401':
           description: Authentication required
 
+  /auth/identity:
+    get:
+      summary: The caller's verified tenant, user and database role
+      description: |
+        For internal services (ADR-107). file-service, credential-service and ai-gateway forward a
+        user's bearer token here and authorize with the answer instead of the token's claims:
+        `tenant_id`, `user_id` and `role` are Keycloak user attributes, and those services cannot read
+        the platform tables. The answer exists only after the backend's full token validation — realm
+        binding, subject binding (ADR-106), active user and the role read from
+        `platform.tenant_memberships` (ADR-077), which replaces the token's own `role`.
+
+        **Internal listener only** (`INTERNAL_PORT`, default 3100 — revision R8). The public port runs the
+        Cloudflare WAF check, which in production refuses every call from a pod; there this route is a 404.
+        The internal port serves no other route, and the backend chart's NetworkPolicy admits it from
+        file-service, credential-service and ai-gateway pods only.
+
+        Rate-limited per VERIFIED user (600 requests a minute), not per address — every call from one
+        service pod shares its address. While either identity kill switch (`s1.identity.subject-binding`,
+        `s1.identity.authoritative-role-check`) is OFF the backend runs on unverified claims, so this route
+        answers 503 rather than hand them on.
+      operationId: getServiceIdentity
+      tags: [auth]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Verified identity
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [tenant_id, user_id, role]
+                properties:
+                  tenant_id:
+                    type: string
+                    format: uuid
+                  user_id:
+                    type: string
+                    format: uuid
+                  role:
+                    type: string
+                    description: A `CosRole` value, from the database.
+        '401':
+          description: Token invalid, or not bound to an active account
+        '404':
+          description: Called on the public port — the route exists on the internal listener only
+        '429':
+          description: More than 600 requests a minute for this user
+        '503':
+          description: |
+            `COS-AUTH-004` — the backend could not verify the identity (Keycloak JWKS or database unavailable),
+            or an identity kill switch is OFF
+
   # ── The signed-in user's own record (PDPA) ────────────────────────────────
   # `users/me` is one of this codebase's two self-service conventions — `auth` for auth primitives,
   # `users/me` for the caller's own record. ADR-078 rejected a third `/identity/me/...` namespace.

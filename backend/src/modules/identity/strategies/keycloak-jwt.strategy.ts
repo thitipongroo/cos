@@ -18,6 +18,13 @@ const logger = createLogger('keycloak-jwt-strategy');
 /** QM-15 kill switch for ADR-077. Registered in DEFAULT_FLAGS (default ON). */
 export const AUTHORITATIVE_ROLE_CHECK_FLAG = 's1.identity.authoritative-role-check';
 
+/**
+ * QM-15 kill switch for ADR-106: the token's `sub` must be the `keycloak_user_id` of the platform account
+ * named by its `user_id` claim. Default ON. OFF re-opens the shared-realm impersonation ADR-106 closes and
+ * exists only to recover from an account whose stored id is wrong, in under 60 s, without a deploy.
+ */
+export const SUBJECT_BINDING_FLAG = 's1.identity.subject-binding';
+
 // The object attached to req.user after successful auth: the JWT claims plus the
 // tenant context resolved from the DB. TenantContextInterceptor copies these onto
 // req.tenantId/tenantCode/... for the request-scoped contract the app reads.
@@ -105,8 +112,9 @@ export class KeycloakJwtStrategy
   constructor(private readonly flags?: FeatureFlagService) {
     // THE ISSUER IS NOT FIXED (TDD OQ-51). It used to be one value built from a single
     // KEYCLOAK_REALM env var, which contradicted the rest of the platform: §7.6 gives ENTERPRISE
-    // tenants a dedicated realm `cos-{tenantCode}`, `platform.tenants.keycloak_realm` is
-    // NOT NULL UNIQUE, and IdentityService already MINTS tokens against each tenant's own realm.
+    // tenants a dedicated realm `cos-{tenantCode}` (UNIQUE among ENTERPRISE tenants; small tenants share
+    // `construction-os` since 20260914000001), and IdentityService already MINTS tokens against each
+    // tenant's own realm.
     // Only validation was single-realm, so a dedicated-realm token was rejected outright and the
     // feature could not work end to end.
     //
@@ -230,9 +238,11 @@ export class KeycloakJwtStrategy
         dedicated_db_url: string | null;
         keycloak_realm: string;
         role: string | null;
+        bound_subject: string | null;
       }>
     >`
-      SELECT t.tenant_code, t.dedicated_db_url, t.keycloak_realm, m.role
+      SELECT t.tenant_code, t.dedicated_db_url, t.keycloak_realm, m.role,
+             ub.keycloak_user_id AS bound_subject
       FROM platform.tenants t
       LEFT JOIN platform.users u
         ON u.tenant_id = t.tenant_id
@@ -241,6 +251,12 @@ export class KeycloakJwtStrategy
       LEFT JOIN platform.tenant_memberships m
         ON m.tenant_id = t.tenant_id
        AND m.user_id   = u.user_id
+      -- The account the claims name, active or not (ADR-106). Joined separately from u so the subject
+      -- check does not also become an active-user check: with the ADR-077 switch OFF an inactive user
+      -- keeps today's behaviour, and only a token whose subject is not that account is refused.
+      LEFT JOIN platform.users ub
+        ON ub.tenant_id = t.tenant_id
+       AND ub.user_id   = ${payload.user_id}::uuid
       WHERE t.tenant_id = ${payload.tenant_id}::uuid
         AND t.is_active = true
       LIMIT 1
@@ -271,6 +287,31 @@ export class KeycloakJwtStrategy
       logger.error(
         { tokenRealm, tenantRealm: row.keycloak_realm, userId: payload.user_id },
         "auth.realm.mismatch — token issued by a realm that is not this tenant's",
+      );
+      throw new UnauthorizedException('Tenant or user not found or inactive');
+    }
+
+    // THE TOKEN'S SUBJECT MUST BE THE ACCOUNT THE CLAIMS NAME (ADR-106, 2026-09-14).
+    //
+    // The realm check above binds a token to a tenant only while a realm holds one tenant. STARTER and
+    // PROFESSIONAL tenants share `construction-os` (§7.6; possible since 20260914000001), and there
+    // `tenant_id` and `user_id` are just user attributes — whoever can set attributes in that realm can
+    // name another small tenant and one of its users. `sub` is not an attribute: Keycloak issues it as the
+    // user's id and signs it. Requiring it to equal that account's `keycloak_user_id` makes the claims
+    // unforgeable by anyone who cannot sign in as that account.
+    //
+    // Checked on its own, not folded into the ADR-077 join, so turning that switch off does not turn this
+    // off. A missing account (bound_subject NULL) fails the same way. Same message as every rejection here.
+    //
+    // Evaluated WITHOUT a user or tenant context (Rule 41 review, 2026-09-14). Those ids are the claims this
+    // check has not yet verified: turning the switch off for one locked-out account would switch it off
+    // for any token that merely NAMES that account — impersonation of exactly the account being rescued.
+    // The switch is global or nothing.
+    const subjectBinding = this.flags?.isEnabled(SUBJECT_BINDING_FLAG) ?? true;
+    if (subjectBinding && (!payload.sub || row.bound_subject !== payload.sub)) {
+      logger.error(
+        { tenantId: payload.tenant_id, userId: payload.user_id },
+        'auth.subject.mismatch — token subject is not the account its claims name',
       );
       throw new UnauthorizedException('Tenant or user not found or inactive');
     }

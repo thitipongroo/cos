@@ -39,6 +39,9 @@ export class PlatformWebhookService {
       tenantId,
       contractReference,
       'system',
+      // No justification: this is the CRM's signed request, not a SYSTEM_ADMIN action, so §6.7's
+      // audited reason does not apply and no admin audit row is written (see TenantService).
+      null,
     );
     return {
       message: 'Webhook accepted',

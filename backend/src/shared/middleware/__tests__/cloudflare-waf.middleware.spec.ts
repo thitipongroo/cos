@@ -63,6 +63,62 @@ describe('CloudflareWafMiddleware', () => {
     expect(res.end).toHaveBeenCalledWith(expect.stringContaining('COS-SEC-001'));
   });
 
+  // ADR-107: service pods call the internal listener. Neither layer applies there — and it is the socket's
+  // own port that says so, not anything the caller sends.
+  it('lets a request on the internal listener through in production, with no CF-Ray and no edge peer', () => {
+    process.env['NODE_ENV'] = 'production';
+    process.env['WAF_ORIGIN_ENFORCE'] = 'true';
+    process.env['TRUSTED_PROXY_CIDRS'] = '173.245.48.0/20';
+    const { res } = makeRes();
+    const req = {
+      headers: {},
+      url: '/api/v1/auth/identity',
+      socket: { remoteAddress: '10.0.0.7', localPort: 3100 },
+    } as unknown as IncomingMessage;
+    middleware.use(req, res, next);
+    expect(next).toHaveBeenCalledTimes(1);
+  });
+
+  it('reads the full path from originalUrl, where middie keeps it after stripping req.url', () => {
+    process.env['NODE_ENV'] = 'production';
+    const { res } = makeRes();
+    const req = {
+      headers: {},
+      url: '/',
+      originalUrl: '/api/v1/auth/identity',
+      socket: { remoteAddress: '10.0.0.7', localPort: 3100 },
+    } as unknown as IncomingMessage;
+    middleware.use(req, res, next);
+    expect(next).toHaveBeenCalledTimes(1);
+  });
+
+  it('answers 404 for any other route on the internal listener — only named routes exist there', () => {
+    process.env['NODE_ENV'] = 'production';
+    const { res } = makeRes();
+    const req = {
+      headers: {},
+      url: '/api/v1/users/me',
+      socket: { remoteAddress: '10.0.0.7', localPort: 3100 },
+    } as unknown as IncomingMessage;
+    middleware.use(req, res, next);
+    expect(next).not.toHaveBeenCalled();
+    expect((res as unknown as { statusCode: number }).statusCode).toBe(404);
+    expect(res.end).toHaveBeenCalledWith(expect.stringContaining('COS-GENERAL-404'));
+  });
+
+  it('still blocks the same request on the public port', () => {
+    process.env['NODE_ENV'] = 'production';
+    const { res } = makeRes();
+    const req = {
+      headers: {},
+      url: '/api/v1/auth/identity',
+      socket: { remoteAddress: '10.0.0.7', localPort: 3000 },
+    } as unknown as IncomingMessage;
+    middleware.use(req, res, next);
+    expect(next).not.toHaveBeenCalled();
+    expect((res as unknown as { statusCode: number }).statusCode).toBe(403);
+  });
+
   it('passes request without CF-Ray in development (no enforcement)', () => {
     process.env['NODE_ENV'] = 'development';
     const { res } = makeRes();

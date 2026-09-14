@@ -264,22 +264,7 @@ export class UserService implements OnModuleDestroy {
     const isPathA = Boolean(dto.phone_number);
     const emailValue = isPathA ? '' : dto.email!;
 
-    // Conflict guard (parameterized — no string interpolation)
-    const existing = isPathA
-      ? await this.prisma.$queryRaw<Array<{ user_id: string }>>`
-          SELECT user_id FROM platform.users
-          WHERE phone_number = ${dto.phone_number!} LIMIT 1
-        `
-      : await this.prisma.$queryRaw<Array<{ user_id: string }>>`
-          SELECT user_id FROM platform.users
-          WHERE keycloak_user_id = ${dto.keycloak_user_id ?? dto.email!} LIMIT 1
-        `;
-
-    if (existing.length) {
-      throw new ConflictException(`User with this identity already exists`);
-    }
-
-    // Step 1 — get tenant realm for Keycloak provisioning
+    // Step 1 — get tenant realm for Keycloak provisioning (and for the Path B guard below)
     const [tenant] = await this.prisma.$queryRaw<Array<{ keycloak_realm: string }>>`
       SELECT keycloak_realm FROM platform.tenants
       WHERE tenant_id = ${tenantId}::uuid AND is_active = true
@@ -287,31 +272,68 @@ export class UserService implements OnModuleDestroy {
     `;
     if (!tenant) throw new BadRequestException('Tenant not found or inactive');
 
+    // Conflict guard (parameterized — no string interpolation)
+    //
+    // Path B compares the EMAIL, case-insensitively, among the accounts of every tenant on THIS realm
+    // (Rule 41 review, 2026-09-14). It used to compare `keycloak_user_id` — a Keycloak UUID — with the
+    // email, which never matched, so a taken email went on to Keycloak and came back as an uncaught 409.
+    // Realm-scoped because that is Keycloak's own rule: a username is unique per realm. Several small
+    // tenants share `construction-os` (§7.6), so one email can be an account in only one of them; two
+    // ENTERPRISE tenants on their own realms may each have it.
+    const existing = isPathA
+      ? await this.prisma.$queryRaw<Array<{ user_id: string }>>`
+          SELECT user_id FROM platform.users
+          WHERE phone_number = ${dto.phone_number!} LIMIT 1
+        `
+      : await this.prisma.$queryRaw<Array<{ user_id: string }>>`
+          SELECT u.user_id FROM platform.users u
+          JOIN platform.tenants t ON t.tenant_id = u.tenant_id
+          WHERE lower(u.email) = lower(${dto.email!})
+            AND t.keycloak_realm = ${tenant.keycloak_realm}
+          LIMIT 1
+        `;
+
+    if (existing.length) {
+      throw new ConflictException(`User with this identity already exists`);
+    }
+
     // Step 2 — provision Keycloak user; get UUID for keycloak_user_id column
     // userId placeholder: generate early so it can be set as a Keycloak attribute
     const userIdPlaceholder = globalThis.crypto.randomUUID();
     let keycloakUserId: string;
 
-    if (isPathA) {
-      const { keycloakUserId: kcId } = await this.keycloakAdmin.provisionPhoneUser(
-        dto.phone_number!,
-        dto.display_name,
-        tenant.keycloak_realm,
-        tenantId,
-        userIdPlaceholder,
-        dto.role,
-      );
-      keycloakUserId = kcId;
-    } else {
-      const { keycloakUserId: kcId } = await this.keycloakAdmin.createEmailUser(
-        dto.email!,
-        dto.display_name,
-        tenant.keycloak_realm,
-        tenantId,
-        userIdPlaceholder,
-        dto.role,
-      );
-      keycloakUserId = kcId;
+    // A Keycloak 409 is the realm already holding this username — an account the database guard above
+    // could not see (created outside COS, or in a race with it). It is the SAME conflict, so it gets the
+    // same message: the caller must not be able to tell "exists in your tenant" from "exists in another
+    // tenant on this realm" (Rule 41 review, 2026-09-14). The admin client reports it as a NetworkError
+    // carrying `response.status` (@keycloak/keycloak-admin-client 24.0.5, lib/utils/fetchWithError.js).
+    try {
+      if (isPathA) {
+        const { keycloakUserId: kcId } = await this.keycloakAdmin.provisionPhoneUser(
+          dto.phone_number!,
+          dto.display_name,
+          tenant.keycloak_realm,
+          tenantId,
+          userIdPlaceholder,
+          dto.role,
+        );
+        keycloakUserId = kcId;
+      } else {
+        const { keycloakUserId: kcId } = await this.keycloakAdmin.createEmailUser(
+          dto.email!,
+          dto.display_name,
+          tenant.keycloak_realm,
+          tenantId,
+          userIdPlaceholder,
+          dto.role,
+        );
+        keycloakUserId = kcId;
+      }
+    } catch (err) {
+      if ((err as { response?: { status?: number } } | null)?.response?.status === 409) {
+        throw new ConflictException(`User with this identity already exists`);
+      }
+      throw err;
     }
 
     // Step 3 — create COS user record; rollback Keycloak user on failure

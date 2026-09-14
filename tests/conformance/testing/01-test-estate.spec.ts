@@ -282,8 +282,9 @@ describe('Phase 18 · a spec lives where its runner says, not where its phase do
     const misfiled = specsUnder(backendTest).filter((f) => /\.workflow\.spec\.ts$/.test(f));
     expect(misfiled).toEqual([]);
     // CONTROL: they exist somewhere, so the empty list above is a placement fact rather than a
-    // vanished category.
-    expect(specsUnder(backendSrc).filter((f) => /\.workflow\.spec\.ts$/.test(f)).length).toBe(5);
+    // vanished category. Six since 2026-09-14: enterprise-provisioning-query-rename.workflow.spec.ts
+    // proves the §34.3 query rename is safe for a run already parked at the gate.
+    expect(specsUnder(backendSrc).filter((f) => /\.workflow\.spec\.ts$/.test(f)).length).toBe(6);
   });
 
   it('no spec under src/ claims to be an integration test', () => {

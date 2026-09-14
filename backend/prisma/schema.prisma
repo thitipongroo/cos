@@ -58,7 +58,10 @@ model Tenant {
   tenantId       String   @id @default(dbgenerated("gen_random_uuid()")) @map("tenant_id") @db.Uuid
   tenantCode     String   @unique @map("tenant_code") @db.VarChar(50)
   tenantName     String   @map("tenant_name") @db.VarChar(255)
-  keycloakRealm  String   @unique @map("keycloak_realm") @db.VarChar(100)
+  // NOT @unique since 20260914000001: STARTER/PROFESSIONAL tenants share the realm `construction-os` (§7.6).
+  // Uniqueness holds for every other realm, as the partial index `tenants_keycloak_realm_dedicated_key`
+  // (WHERE keycloak_realm <> 'construction-os') — which this schema does not model.
+  keycloakRealm  String   @map("keycloak_realm") @db.VarChar(100)
   planType       PlanType @map("plan_type")
   isActive       Boolean  @default(true) @map("is_active")
   // NULL = shared DB (STARTER/PROFESSIONAL); non-NULL = dedicated DB URL (ENTERPRISE per spec §7.1)

@@ -191,9 +191,11 @@ async function seedInspectionTypes(tx: Tx): Promise<void> {
 async function seedPlatformDevTenant(): Promise<void> {
   // KNOWN DEFECT, left as-is deliberately — documented 2026-08-06, awaiting a decision.
   //
-  // `platform.tenants.keycloak_realm` is UNIQUE (`tenants_keycloak_realm_key`), so the model is one
-  // realm per tenant, and the three seeds are consistent with that: DEV → `construction-os`,
-  // EKC → `construction-os-dev`, TVN → `construction-os-tvn`.
+  // Until 20260914000001 `platform.tenants.keycloak_realm` was UNIQUE (`tenants_keycloak_realm_key`), so
+  // the model was one realm per tenant, and the three seeds are consistent with that: DEV →
+  // `construction-os`, EKC → `construction-os-dev`, TVN → `construction-os-tvn`. The constraint is now
+  // UNIQUE for every realm except the shared `construction-os` (§7.6), so the paragraph's last sentence
+  // below no longer holds — the defect itself (realms that do not exist in Keycloak) is unchanged.
   //
   // Only ONE of those realms is ever provisioned. `infrastructure/keycloak/realms/
   // construction-os-realm.json` declares `"realm": "construction-os-dev"` and compose mounts it

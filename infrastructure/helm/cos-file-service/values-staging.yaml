@@ -4,3 +4,5 @@ image:
   tag: 'staging'
 env:
   NODE_ENV: 'staging'
+  # Application cos-backend-staging → release cos-backend-staging → Service cos-backend-staging-cos-backend.
+  BACKEND_INTERNAL_URL: 'http://cos-backend-staging-cos-backend:3100'

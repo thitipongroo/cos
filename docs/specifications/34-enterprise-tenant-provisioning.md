@@ -134,6 +134,13 @@ AWAITING_APPROVAL ◄── notify all SYSTEM_ADMIN (in-app + email)
 Signals: `approve`, `abort`
 Query: `workflowState` — returns current state string
 
+> The code registered this query as `state` until 2026-09-14 and now registers `workflowState`, as named
+> here (product-owner decision). A run already parked at AWAITING_APPROVAL answers the new name once a
+> worker on the new code picks it up — proven by
+> `backend/src/modules/tenant/__tests__/enterprise-provisioning-query-rename.workflow.spec.ts`, which
+> starts a run on a frozen copy of the old code and resumes it on the new. The code also has a
+> `PROVISIONING_TOPICS` state between VERIFYING and COMPLETED that the diagram above does not show.
+
 ---
 
 ## 34.4 Activity Definitions
@@ -163,6 +170,12 @@ After Activity 3 completes:
 3. SYSTEM_ADMIN sends signal via Admin Panel or API:
    - `approve` → continue to Activities 4-5
    - `abort` → run compensation, reach ABORTED state
+
+   API (2026-09-14): `POST /api/v1/admin/tenants/{tenantId}/provisioning/approve` and `…/abort`, body
+   `{ justification }` (§6.7). Refused unless the run is AT the gate — `404` no run, `409` any other
+   state, `503` when the state cannot be read to check. The audit row and the signal share one
+   transaction. The Admin Panel reads every run's state from `GET /api/v1/admin/tenants/provisioning`
+   (`workflow_state` `null` = the run exists but did not answer within 5 s, e.g. no worker polling).
 
 ---
 
@@ -281,13 +294,16 @@ See §19.8 of `19-notification-architecture.md` for full routing table.
 
 Full OpenAPI specs:
 
-- Admin endpoint: `docs/api/tenant.openapi.yaml` — `PATCH /admin/tenants/{tenantId}/mark-contracted`
+- Admin endpoint: `docs/api/tenant.openapi.yaml` — `PATCH /admin/tenants/{tenantId}/mark-contracted`,
+  and since 2026-09-14 `GET /admin/tenants/provisioning` and `POST /admin/tenants/{tenantId}/provisioning/{approve|abort}`
 - CRM webhook: `docs/api/platform-webhooks.openapi.yaml` — `POST /platform/webhooks/enterprise-contract-signed`
 
 ### PATCH /api/v1/admin/tenants/:tenantId/mark-contracted
 
 - Auth: JWT Bearer, role `SYSTEM_ADMIN`
-- Body: `{ contractReference?: string }` (maxLength 255)
+- Body: `{ contractReference?: string, justification: string }` (maxLength 255; justification 10–500,
+  required since 2026-09-14 — §6.7). The CRM webhook below carries no justification and writes no admin
+  audit row: it is not a SYSTEM_ADMIN action
 - `202 Accepted`: `{ message, workflowId, tenantId }`
 - `409 Conflict`: workflow already running or completed
 - `400 Bad Request`: tenant not ENTERPRISE, not active, or already provisioned

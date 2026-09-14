@@ -39,6 +39,7 @@ import type {
   TenantSettings,
   UpdateTenantSettingsInput,
   TenantRow,
+  TenantProvisioningRow,
   CreateTenantInput,
   LeadRow,
   CreateLeadInput,
@@ -777,6 +778,38 @@ export function useTenants() {
   });
 }
 
+// §34.5 — each ENTERPRISE tenant's provisioning-run state. Its own query, so a slow or unavailable
+// Temporal leaves the tenant table readable and only the Provisioning column says so.
+export function useTenantProvisioning() {
+  const api = useApi();
+  return useQuery({
+    queryKey: ['admin', 'tenants', 'provisioning'],
+    queryFn: () => api<TenantProvisioningRow[]>('/admin/tenants/provisioning'),
+  });
+}
+
+// §34.5 — approve or abort a run waiting at the data-migration gate. A reason is mandatory (§6.7).
+export function useDecideProvisioning() {
+  const api = useApi();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      id,
+      decision,
+      justification,
+    }: {
+      id: string;
+      decision: 'approve' | 'abort';
+      justification: string;
+    }) =>
+      api<{ workflowId: string; decision: 'approve' | 'abort' }>(
+        `/admin/tenants/${id}/provisioning/${decision}`,
+        { method: 'POST', body: JSON.stringify({ justification }) },
+      ),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['admin', 'tenants'] }),
+  });
+}
+
 export function useCreateTenant() {
   const api = useApi();
   const qc = useQueryClient();
@@ -791,7 +824,11 @@ export function useDeactivateTenant() {
   const api = useApi();
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (id: string) => api<void>(`/admin/tenants/${id}/deactivate`, { method: 'PATCH' }),
+    mutationFn: ({ id, justification }: { id: string; justification: string }) =>
+      api<void>(`/admin/tenants/${id}/deactivate`, {
+        method: 'PATCH',
+        body: JSON.stringify({ justification }),
+      }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['admin', 'tenants'] }),
   });
 }
@@ -800,10 +837,18 @@ export function useAssignDedicatedDb() {
   const api = useApi();
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, dedicatedDbUrl }: { id: string; dedicatedDbUrl: string }) =>
+    mutationFn: ({
+      id,
+      dedicatedDbUrl,
+      justification,
+    }: {
+      id: string;
+      dedicatedDbUrl: string;
+      justification: string;
+    }) =>
       api<void>(`/admin/tenants/${id}/dedicated-db`, {
         method: 'PATCH',
-        body: JSON.stringify({ dedicatedDbUrl }),
+        body: JSON.stringify({ dedicatedDbUrl, justification }),
       }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['admin', 'tenants'] }),
   });
@@ -814,10 +859,20 @@ export function useMarkContracted() {
   const api = useApi();
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, contractReference }: { id: string; contractReference?: string }) =>
+    mutationFn: ({
+      id,
+      contractReference,
+      justification,
+    }: {
+      id: string;
+      contractReference?: string;
+      justification: string;
+    }) =>
       api<void>(`/admin/tenants/${id}/mark-contracted`, {
         method: 'PATCH',
-        body: JSON.stringify(contractReference ? { contractReference } : {}),
+        body: JSON.stringify(
+          contractReference ? { contractReference, justification } : { justification },
+        ),
       }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['admin', 'tenants'] }),
   });

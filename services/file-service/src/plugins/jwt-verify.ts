@@ -39,12 +39,17 @@ const JWKS_URI = `${KEYCLOAK_URL}/realms/${REALM}/protocol/openid-connect/certs`
 
 const jwks = jwksRsa({ jwksUri: JWKS_URI, cache: true, rateLimit: true });
 
-/** A human's token: authoritative for tenant, user and role. */
+/**
+ * A human's token. Its tenant, user and role are CLAIMS — Keycloak user attributes, not proof (ADR-107):
+ * authPlugin takes the identity from the backend and uses these only to decide the token is a user's.
+ */
 export interface VerifiedUser {
   kind: 'user';
   tenantId: string;
   userId: string;
   role: string;
+  /** Seconds since the epoch, when the token carries one — bounds how long the backend's answer is cached. */
+  exp: number | undefined;
 }
 
 /** The backend's own token: authoritative for WHO is calling, silent on whose behalf. */
@@ -96,6 +101,7 @@ export async function verifyBearer(authHeader: unknown): Promise<VerifiedIdentit
       tenantId,
       userId: typeof userId === 'string' ? userId : '',
       role: typeof claims['role'] === 'string' ? claims['role'] : '',
+      exp: typeof claims.exp === 'number' ? claims.exp : undefined,
     };
   }
 

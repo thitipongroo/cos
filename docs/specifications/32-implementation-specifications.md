@@ -827,19 +827,19 @@ throughout; only its use as a _brand_ colour is prohibited.
 | `--cos-dark-accent`                 | `#4CD7F6` |
 | `--cos-dark-surface-container`      | `#102034` |
 | `--cos-dark-surface-container-high` | `#1B2B3F` |
-| `--cos-dark-surface-container-low` | `#0B1C30` |
+| `--cos-dark-surface-container-low`  | `#0B1C30` |
 
 > `--cos-dark-surface-container-low` added 2026-09-10 (product-owner decision), and it is the
 > first token in this set that goes **down** from the card rather than up. A panel is not always a
 > raised thing: **panels sink, chips rise**, and the customers card shows both at once —
 >
-> | Element | Mockup class | Direction |
-> | ------- | ------------ | --------- |
-> | the card itself | `bg-surface-container` `#102034` | — |
-> | its two-column fact panel | `bg-surface-container-low` `#0b1c30` | **down** |
-> | its relationship cells | `bg-surface-container-low` `#0b1c30` | **down** |
-> | its avatar plate | `bg-surface-container-high` `#1b2b3f` | up |
-> | its contact circle | `bg-surface-bright` `#2a3a4f` | up |
+> | Element                   | Mockup class                          | Direction |
+> | ------------------------- | ------------------------------------- | --------- |
+> | the card itself           | `bg-surface-container` `#102034`      | —         |
+> | its two-column fact panel | `bg-surface-container-low` `#0b1c30`  | **down**  |
+> | its relationship cells    | `bg-surface-container-low` `#0b1c30`  | **down**  |
+> | its avatar plate          | `bg-surface-container-high` `#1b2b3f` | up        |
+> | its contact circle        | `bg-surface-bright` `#2a3a4f`         | up        |
 >
 > A panel that holds a card's OWN FACTS reads as a recess those facts sit in; one that floats above
 > the card competes with it. A panel that LABELS the card — a plate, a chip — rises.
@@ -941,6 +941,68 @@ throughout; only its use as a _brand_ colour is prohibited.
 > >
 > > Recorded because the count is real and will be re-discovered: anyone re-deriving tokens from
 > > `mockup/mobile/**` will land on `#434655` and should find this note before "correcting" it.
+
+#### SYSTEM_ADMIN Operator Panel Tokens (web — `/admin` only)
+
+Added 2026-09-15 (product-owner decision, revision R10). The `/admin` panel (§20.4) draws in the values of its
+own two Stitch screens — Tenant List & DB Provisioning - SYSTEM_ADMIN (`013fc8f09450…`) and Create Tenant -
+SYSTEM_ADMIN (`0e7adb0302fe…`) — not in the nearest global dark token. The 2026-09-14 build substituted
+`--cos-dark-bg #020617` for the drawing's page `#031427` and cyan for its primary `#b4c5ff`, and did not look like
+its drawing; mockups are authoritative for style (ADR-085). A value the global set already holds is an alias to
+that token in `globals.css`, not a second copy. Tailwind: `cos-op-*`.
+
+| Token                               | Value                                         | Drawing role                                 |
+| ----------------------------------- | --------------------------------------------- | -------------------------------------------- |
+| `--cos-op-surface`                  | `#031427`                                     | page, top bar                                |
+| `--cos-op-container-lowest`         | `#000f21`                                     | Cluster Pulse card                           |
+| `--cos-op-container-low`            | = `--cos-dark-surface-container-low` #0B1C30  | sidebar, cards, table                        |
+| `--cos-op-container`                | = `--cos-dark-surface-container` #102034      | active nav row, hover                        |
+| `--cos-op-container-high`           | = `--cos-dark-surface-container-high` #1B2B3F | gate banner, chips                           |
+| `--cos-op-container-highest`        | `#26364a`                                     | surface-variant, hairlines, PROFESSIONAL tag |
+| `--cos-op-outline-variant`          | `#434655`                                     | hairlines, card and bar borders              |
+| `--cos-op-field-border`             | `#6B7280`                                     | list search border (@tailwindcss/forms)      |
+| `--cos-op-pending`                  | = `--cos-dark-muted` #94A3B8                  | sync-pending                                 |
+| `--cos-op-modal-header` | `#0c2037` | modal header |
+| `--cos-op-modal-footer` | `#071728` | modal footer |
+| `--cos-op-modal-field` | `#071322` | modal inputs, plan cards |
+| `--cos-op-modal-notice` | `#081525` | lifecycle notice |
+| `--cos-op-modal-hover` | `#0c1e33` | plan card hover |
+| `--cos-op-ok` | `#34d399` (emerald-400) | valid notes, checks, port badge ink |
+| `--cos-op-ok-line` | = `--cos-dark-success` #10B981 | valid input border (/70) |
+| `--cos-op-tier` | = `--cos-gray` #64748B | plan tier line |
+| `--cos-op-enterprise` | `#60a5fa` (blue-400) | selected plan name, CTA border |
+| `--cos-op-cyan` | = `--cos-cyan` #06B6D4 | lifecycle shield |
+| `--cos-op-vpc` / `-ink` / `-line` | `#083344` / `#67e8f9` / `#155e75` | "Internal VPC Mesh" badge |
+| `--cos-op-port` / `-line` | `#022c22` / `#065f46` | "Port … Open" badge |
+| `--cos-op-cta-shadow` | `#1e3a8a` (blue-900) | Create Tenant shadow (/40) |
+| `--cos-op-outline`                  | `#8d90a0`                                     | tertiary text                                |
+| `--cos-op-on-surface`               | `#d3e4fe`                                     | primary text                                 |
+| `--cos-op-on-surface-variant`       | `#c3c6d7`                                     | secondary text, icons                        |
+| `--cos-op-primary` / `on-primary`   | `#b4c5ff` / `#002a78`                         | active nav, avatar                           |
+| `--cos-op-primary-container` / on   | = `--cos-blue` #2563EB / `#eeefff`            | Create Tenant, Approve                       |
+| `--cos-op-secondary`                | `#4cd7f6`                                     | codes, dedicated-DB icons                    |
+| `--cos-op-secondary-container` / on | `#03b5d3` / `#00424e`                         | ENTERPRISE tag                               |
+| `--cos-op-success`                  | `#00C853`                                     | Active, Synced                               |
+| `--cos-op-gate` / `on-gate`         | `#FFD60A` / `#161b2b`                         | migration gate                               |
+| `--cos-op-error`                    | `#ffb4ab`                                     | deactivate, offline                          |
+| `--cos-op-error-container` / on     | `#93000a` / `#ffdad6`                         | Abort                                        |
+
+Type (Tailwind `fontSize`): `op-label` 13/18 600 · `op-tiny` 11/12 500 +0.05em · `op-body` 14/20 · `op-h1` 24/32
+600 · `op-display` 32/40 700 −0.02em. Radius maps the drawing's DEFAULT 4 / lg 8 / xl 12 px to `rounded` /
+`rounded-md` / `rounded-lg`.
+
+The `modal-*`, `ok*`, `tier`, `enterprise`, `cyan`, `vpc*`, `port*` and `cta-shadow` rows are the "Create Tenant - Modal
+Overlay - SYSTEM_ADMIN" drawing's (`00b09850702f…`, R13). That drawing uses the Tailwind v3 CDN palette; this app's
+Tailwind v4 palette has different values for the same names, so the shades are carried as their v3 hex values and
+never written as `emerald-400` / `cyan-300` utilities.
+
+> **These tokens are the panel's, not the product's.** Nothing outside `apps/web/src/app/admin`, `components/admin`
+> and the dark tone of `components/form` uses them. They do not replace `--cos-dark-*`; a signed-in tenant screen
+> that reached for `cos-op-*` would be drawing in another screen's palette.
+>
+> **In the list drawing `font-tiny-web` wins over `font-mono`** when an element carries both (its class comes later
+> in the drawing's stylesheet), so those elements render in Inter Tight. Only an element with `font-mono` alone is
+> monospace. Reading the class list instead of the rendered page is how four qualifiers shipped in mono.
 
 ### Mobile Colour Tokens (React Native — field app)
 
@@ -1066,10 +1128,10 @@ edge and numerals stopped being cyan.
 than withdrawn.** One commit on **2026-08-15** restructured `mockup/mobile/01_authen/05_privacy_policy/`
 from **123 drawings to 9**, and deleted `01_authen/07_get_help/01_support_center/` outright:
 
-| Drawing                                   | What happened                                                                                                                                                                                                                                                                        |
-| ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `05_privacy_policy/00_policy_data`        | **Renamed** to `05_privacy_policy/01_privacy_policy` (git records `R075`). Every reference to it is repointed, not withdrawn.                                                                                                                                                        |
-| `05_privacy_policy/01_data_collection/**` | **Withdrawn — about 114 drawings**, the whole Transparency Portal set. It is deliberately NOT repointed at the surviving `02_data_collection`: that is a single-screen folder, not the container, and claiming it would be a lie.                                                    |
+| Drawing                                   | What happened                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `05_privacy_policy/00_policy_data`        | **Renamed** to `05_privacy_policy/01_privacy_policy` (git records `R075`). Every reference to it is repointed, not withdrawn.                                                                                                                                                                                                                                                                                                                                                                           |
+| `05_privacy_policy/01_data_collection/**` | **Withdrawn — about 114 drawings**, the whole Transparency Portal set. It is deliberately NOT repointed at the surviving `02_data_collection`: that is a single-screen folder, not the container, and claiming it would be a lie.                                                                                                                                                                                                                                                                       |
 | `01_authen/07_get_help/01_support_center` | **Withdrawn.** `mockup/mobile/support_center/01_dashboard` existed but was NOT asserted as the successor — a different commit, no rename record, different content (product-owner decision 2026-08-16). **That question closed on 2026-09-11**, from the other end: Stitch redrew `support_center/01_dashboard` and the product owner named the redraw. It is authoritative because it was chosen, not because a rename was inferred, so the 2026-08-16 ruling was never overturned — it was made moot. |
 
 **The Support Centre has drawings again as of 2026-08-17 — three of them, and two are new screens.**
@@ -1487,12 +1549,12 @@ draws nothing.
 
 Its order, top to bottom:
 
-| Line         | Source                                                  | Notes                                               |
-| ------------ | ------------------------------------------------------- | --------------------------------------------------- |
-| Avatar       | `platform.users.photo_url`, initials otherwise          | Leading, centred against the three text lines       |
-| **Name**     | `auth.displayName`, `drawer.member` otherwise           | Body size, semibold, one line                       |
-| **Position** | `platform.users.position`, **omitted entirely** if null | 11px, muted. ADR-101                                |
-| **Id**       | `workforce.workers.employee_code`, short UUID otherwise | Caption size, **monospaced**, muted                 |
+| Line         | Source                                                  | Notes                                         |
+| ------------ | ------------------------------------------------------- | --------------------------------------------- |
+| Avatar       | `platform.users.photo_url`, initials otherwise          | Leading, centred against the three text lines |
+| **Name**     | `auth.displayName`, `drawer.member` otherwise           | Body size, semibold, one line                 |
+| **Position** | `platform.users.position`, **omitted entirely** if null | 11px, muted. ADR-101                          |
+| **Id**       | `workforce.workers.employee_code`, short UUID otherwise | Caption size, **monospaced**, muted           |
 
 **THE STATUS LINE IS GONE FROM THE DRAWER** (product-owner decision 2026-09-11). It read
 `MFA verified • Online & synced` under the id, on its own inset row, and every word of it was real —
@@ -1546,14 +1608,14 @@ the day, 16,179 B against the 16,098 B file it replaced, rendered strings identi
 `ID:` line, its rows that role's §6.4 modules and its id `#SE-8842`. **The rows are one role's; only
 the shell generalises.**
 
-| Element        | Every role                                                                      |
-| -------------- | --------------------------------------------------------------------------------- |
-| Brand row      | `<BrandLogo variant="dark" />`, tagline included                                  |
-| Profile header | the block above, plus the drawing's trailing chevron — which says so on the press |
+| Element        | Every role                                                                          |
+| -------------- | ----------------------------------------------------------------------------------- |
+| Brand row      | `<BrandLogo variant="dark" />`, tagline included                                    |
+| Profile header | the block above, plus the drawing's trailing chevron — which says so on the press   |
 | Body           | one `Field tools` heading · the role's rows · `More (N)` past `DRAWER_MAX_ROWS` (8) |
-| Row            | active pill · icon · one-line label · **trailing chevron**                        |
-| Shared rows    | `SHARED_LINKS` below a divider, **pinned above `Logout`** — outside the scroll  |
-| Footer         | `Logout`, with its own chevron                                                    |
+| Row            | active pill · icon · one-line label · **trailing chevron**                          |
+| Shared rows    | `SHARED_LINKS` below a divider, **pinned above `Logout`** — outside the scroll      |
+| Footer         | `Logout`, with its own chevron                                                      |
 
 **The prose lines reserve the chevron's column; the id line does not** (product-owner decision
 2026-09-11). `<ProfileBlock />` takes a `trailingReserve` that applies to the NAME and the POSITION
@@ -1673,17 +1735,17 @@ prints **nothing** when that is null, which is the ordinary case and will stay s
 
 What the drawings ask for and do not get, each for a stated reason:
 
-| Drawn                            | Rendered instead                                                                                                                                                                                                                 |
-| -------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `Personal Info` row              | **Nothing.** The full record is `/profile` (below), reached from the drawer's profile card — the one place identity lives. A second door from this screen would be a duplicate                                                  |
-| `Last sync: 2 min ago`           | **Nothing on this screen.** Nothing records when the last flush finished; the current state is the TopBar `<SyncPill />`                                                                                                        |
-| `MFA Active` (as a label)        | `platform.users.mfa_enabled`, from `GET /users/me` — and **silence** until the answer arrives, because an unanswered fetch is not "not enrolled"                                                                                 |
-| `2.4 GB` cached                  | The measured on-disk size of the offline database (`localDbSizeBytes()`), against the §17.7 ceiling it is measured for. The row REPORTS and does not manage: nothing in this app prunes that cache on request                    |
-| A THIRD theme segment (`system`) | **Two segments.** `ThemeMode` is dark-or-light; there is no system mode in the store, and adding one is a behaviour change rather than a restyle (PO decision E1). A segment that cannot be selected is worse than one fewer     |
-| A fixed `SAVE CHANGES` footer    | **No bar.** Every control saves on change and always has, so the bar would be a button that does nothing — and worse, it would teach that nothing else had taken effect until it was pressed (PO decision E4)                    |
-| An in-content `Settings` H2      | **Nothing.** A screen is named once and the breadcrumb already reads HOME › SETTINGS                                                                                                                                             |
-| 32px-tall segments               | **44px.** `min-h-[32px]` is under the target size this platform holds itself to (WCAG 2.2 AA); the shape is followed and the height is not                                                                                       |
-| A `Push` notification channel    | **IN_APP · EMAIL · LINE.** The PATCH DTO accepts IN_APP, EMAIL, LINE and SMS only, so a PUSH switch would be rejected by the backend                                                                                             |
+| Drawn                            | Rendered instead                                                                                                                                                                                                             |
+| -------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Personal Info` row              | **Nothing.** The full record is `/profile` (below), reached from the drawer's profile card — the one place identity lives. A second door from this screen would be a duplicate                                               |
+| `Last sync: 2 min ago`           | **Nothing on this screen.** Nothing records when the last flush finished; the current state is the TopBar `<SyncPill />`                                                                                                     |
+| `MFA Active` (as a label)        | `platform.users.mfa_enabled`, from `GET /users/me` — and **silence** until the answer arrives, because an unanswered fetch is not "not enrolled"                                                                             |
+| `2.4 GB` cached                  | The measured on-disk size of the offline database (`localDbSizeBytes()`), against the §17.7 ceiling it is measured for. The row REPORTS and does not manage: nothing in this app prunes that cache on request                |
+| A THIRD theme segment (`system`) | **Two segments.** `ThemeMode` is dark-or-light; there is no system mode in the store, and adding one is a behaviour change rather than a restyle (PO decision E1). A segment that cannot be selected is worse than one fewer |
+| A fixed `SAVE CHANGES` footer    | **No bar.** Every control saves on change and always has, so the bar would be a button that does nothing — and worse, it would teach that nothing else had taken effect until it was pressed (PO decision E4)                |
+| An in-content `Settings` H2      | **Nothing.** A screen is named once and the breadcrumb already reads HOME › SETTINGS                                                                                                                                         |
+| 32px-tall segments               | **44px.** `min-h-[32px]` is under the target size this platform holds itself to (WCAG 2.2 AA); the shape is followed and the height is not                                                                                   |
+| A `Push` notification channel    | **IN_APP · EMAIL · LINE.** The PATCH DTO accepts IN_APP, EMAIL, LINE and SMS only, so a PUSH switch would be rejected by the backend                                                                                         |
 
 **Quiet hours are editable** (2026-09-13). They were shown read-only until then because
 `api/notifications.ts` claimed "quiet-hours EDITING has no endpoint yet" — a claim that outlived the
@@ -1707,8 +1769,8 @@ day, when the drawer became the profile, and this is it returning with something
 **It reads. It does not edit.** The drawing is an edit form with three inputs, `SAVE PROFILE` and
 `CANCEL`, and neither field the screen keeps has a self-service write:
 
-| Field         | Column                        | Why it is read-only                                                                                                                                    |
-| ------------- | ----------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Field         | Column                        | Why it is read-only                                                                                                                                     |
+| ------------- | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | ชื่อ-นามสกุล  | `platform.users.display_name` | No self-service write exists. §14's user-management writes are all `@Roles(TENANT_ADMIN)` and address somebody else by path parameter                   |
 | เบอร์โทรศัพท์ | `platform.users.phone_number` | The Path A login identifier (PO decision E6). §5.4.4 gives an account one identifier for its lifetime, so a field that edited it could lock someone out |
 
@@ -2031,6 +2093,7 @@ card colour; `<MobileNav />` overrides `tabBarStyle` only on dark.
   tabs, quick actions and each other — for those, "you came from the drawer" is a guess about one of
   several entry points. These two are not: Account Settings is a `SHARED_LINKS` row, and Profile has
   exactly one way in, held by `tests/conformance/mobile/04-role-screens.spec.ts`.
+
 - **A screen is named ONCE, and a top-level tab screen is named by its TAB.** A tab screen must not
   render an in-content page title: the active bottom-nav item already carries the name, and repeating
   it inside the content states it twice — the same defect `headingStutter.spec.ts` guards between a
@@ -2056,17 +2119,17 @@ card colour; `<MobileNav />` overrides `tabBarStyle` only on dark.
 The Support Centre has **two** routes as of 2026-08-17 (product-owner decision), and since
 **2026-09-11 they are two SCREENS** rather than one document rendered twice.
 
-|          | Pre-auth                                                            | Post-auth                                                              |
-| -------- | -------------------------------------------------------------------- | ------------------------------------------------------------------------ |
-| Route    | `app/(auth)/support.tsx`                                            | `app/(app)/support.tsx`                                                |
-| Drawing  | `mockup/mobile/01_authen/05_get_help/01_home_support`                | `mockup/mobile/support_center/01_dashboard`                            |
-| Document | `components/SupportCenterDocument.tsx`                              | `components/SupportHubDocument.tsx`                                    |
-| Job      | someone who **cannot get in**                                       | someone **already working**                                            |
-| Entry    | OTP step's `GET SUPPORT` footer item                                | `<TopBar />` Help `?` — the **only** post-auth entry                   |
-| Palette  | pinned dark (§32.7 pinned pre-auth surfaces)                         | follows the user's theme                                               |
-| Chrome   | own back + title bar, connection mark, build                         | none — `<TopBar />` + `Breadcrumb` supply it                           |
+|          | Pre-auth                                                            | Post-auth                                                                                        |
+| -------- | ------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| Route    | `app/(auth)/support.tsx`                                            | `app/(app)/support.tsx`                                                                          |
+| Drawing  | `mockup/mobile/01_authen/05_get_help/01_home_support`               | `mockup/mobile/support_center/01_dashboard`                                                      |
+| Document | `components/SupportCenterDocument.tsx`                              | `components/SupportHubDocument.tsx`                                                              |
+| Job      | someone who **cannot get in**                                       | someone **already working**                                                                      |
+| Entry    | OTP step's `GET SUPPORT` footer item                                | `<TopBar />` Help `?` — the **only** post-auth entry                                             |
+| Palette  | pinned dark (§32.7 pinned pre-auth surfaces)                        | follows the user's theme                                                                         |
+| Chrome   | own back + title bar, connection mark, build                        | none — `<TopBar />` + `Breadcrumb` supply it                                                     |
 | Content  | system status · search · emergency contacts · field troubleshooting | system status · search · Quick Help categories · Top FAQs · a featured article · a pinned footer |
-| Adds     | `FIELD ASSISTANT` panel                                             | **nothing — the route is a frame**                                     |
+| Adds     | `FIELD ASSISTANT` panel                                             | **nothing — the route is a frame**                                                               |
 
 **Shared** (`components/SupportPrimitives.tsx`): the system-status card (a real `GET /health/live`
 probe), the search row, and the `useBackendHealth` hook behind both. Nothing else — and that is the
@@ -2381,13 +2444,13 @@ sheet's grab handle and its collapse chevron sit on a panel that cannot be dragg
 the drawings could not be read.** The product owner requested five Stitch screens under
 `mockup/mobile/role_viewer/`. Their four `<nav>` blocks give **four different bars**:
 
-| Drawing        | Tabs                                          |
-| -------------- | --------------------------------------------- |
-| `01_home`      | Home · Projects · Map · Insights · Profile    |
-| `02_projects`  | Projects · Daily Logs · Safety · Directory    |
-| `03_map`       | Projects · Daily Logs · Map · Directory       |
-| `04_insights`  | Projects · Daily Logs · Safety · Insights     |
-| `05_profile`   | Home · Projects · Map · Insights · Profile    |
+| Drawing       | Tabs                                       |
+| ------------- | ------------------------------------------ |
+| `01_home`     | Home · Projects · Map · Insights · Profile |
+| `02_projects` | Projects · Daily Logs · Safety · Directory |
+| `03_map`      | Projects · Daily Logs · Map · Directory    |
+| `04_insights` | Projects · Daily Logs · Safety · Insights  |
+| `05_profile`  | Home · Projects · Map · Insights · Profile |
 
 No bar appears on more than two of five screens; three of them put `Daily Logs` (not a route),
 `Safety` and `Directory` (neither granted to this role) on the bar; and even the two that agree on

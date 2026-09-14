@@ -433,25 +433,24 @@ export interface UpdateTenantSettingsInput {
 
 // ── System Admin (§20.4 / §20.7.11) ──────────────────────────────────────────
 
-export type PlanType = 'STARTER' | 'PROFESSIONAL' | 'ENTERPRISE';
+// The list and provisioning row shapes live with the logic that reads them (lib/adminTenants.ts).
+// `TenantRow` declared `dedicated_db_url` until 2026-09-14 — a field the API had stopped sending, so
+// every dedicated tenant rendered as shared. The list now carries `dedicated_db_host` instead.
+export type { PlanType, TenantListRow as TenantRow, TenantProvisioningRow } from '../adminTenants';
+import type { PlanType } from '../adminTenants';
 
-/** Raw platform.tenants row (snake_case — returned by $queryRaw). */
-export interface TenantRow {
-  tenant_id: string;
-  tenant_code: string;
-  tenant_name: string;
-  plan_type: PlanType;
-  is_active: boolean;
-  dedicated_db_url: string | null;
-  created_at: string;
+/** Deactivate / assign DB / mark contracted / approve / abort — the §6.7 reason (AdminJustificationDto). */
+export interface AdminJustificationInput {
+  justification: string;
 }
 
-/** Create-tenant body (camelCase — matches CreateTenantDto). */
+/** Create-tenant body (camelCase — matches CreateTenantDto). `justification` is mandatory (§6.7). */
 export interface CreateTenantInput {
   tenantCode: string;
   tenantName: string;
   planType: PlanType;
   dedicatedDbUrl?: string;
+  justification: string;
 }
 
 // ── CRM / Sales Manager (§20.7.10) ───────────────────────────────────────────

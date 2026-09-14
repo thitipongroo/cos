@@ -1,0 +1,38 @@
+{{- if .Values.networkPolicy.enabled }}
+# Ingress policy for cos-backend — confines the internal listener (ADR-107).
+#
+# The backend serves `GET /api/v1/auth/identity` on `internal` only. That port is not behind
+# CloudflareWafMiddleware, because every legitimate caller is a pod and would fail its CF-Ray check. What
+# keeps the edge and other pods off it is this policy: `internal` is admitted from file-service,
+# credential-service and ai-gateway pods only. The route still requires a valid user token, and the
+# listener answers 404 to every other path.
+#
+# Selecting the pod makes Kubernetes deny any ingress not listed, so `http` and `metrics` are listed with
+# no `from` — open to every source, as they are with no policy at all. That keeps the kubelet's httpGet
+# probes, the ingress controller, Kong and Prometheus working unchanged.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "cos-backend.fullname" . }}
+  labels: {{ include "cos-backend.labels" . | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels: {{ include "cos-backend.selectorLabels" . | nindent 6 }}
+  policyTypes:
+    - Ingress
+  ingress:
+    - ports:
+        - protocol: TCP
+          port: {{ .Values.service.port }}
+        - protocol: TCP
+          port: {{ .Values.service.metricsPort }}
+    - from:
+        {{- range .Values.networkPolicy.internalCallerPodLabels }}
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: {{ . }}
+        {{- end }}
+      ports:
+        - protocol: TCP
+          port: {{ .Values.service.internalPort }}
+{{- end }}

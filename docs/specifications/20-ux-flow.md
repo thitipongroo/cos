@@ -162,7 +162,17 @@ Not visible to tenant users.
 
 - Route: `/admin` (protected — SYSTEM_ADMIN role required)
 - Authentication: same Keycloak JWT flow as the main application
-- All actions are logged to `platform.audit_logs`
+- All actions are logged to `platform.audit_logs` — **with a mandatory justification** (§6.7). Since
+  2026-09-14 this is true rather than stated: create, deactivate, assign dedicated DB, mark contracted,
+  approve and abort each write one row (`action` `tenant.*`, `resource_type` `tenant`, `tenant_id` = the
+  TARGET tenant, `metadata.justification`) inside the action's own transaction, so an action that cannot
+  be audited does not happen. The API answers `400` when `justification` is missing or outside 10–500
+  characters after trimming. Until then the tenant module wrote no audit row for any of them.
+- Shell (2026-09-14; redrawn 2026-09-15, R10 and R13): one shell for the whole panel, drawn to the Stitch
+  "Tenant List & DB Provisioning - SYSTEM_ADMIN" screen — a 48 px top bar and a 256 px side menu. The panel is
+  exactly the viewport tall: only the workspace scrolls, the side menu does not scroll with it and keeps Cluster
+  Pulse on its bottom edge (it scrolls on its own only when its entries exceed the height). Entries with no page
+  are shown DISABLED and announced as unavailable, never linked (product-owner decision).
 - `/admin/central-prices` — ราคากลาง catalog: import (CSV/Excel) + API-sync status + browse (ADR-061).
   Tenant-facing: the BOQ editor surfaces `reference_price` / variance + a project BOQ-vs-ราคากลาง view.
 
@@ -179,9 +189,22 @@ Not visible to tenant users.
 | Plan type    | STARTER / PROFESSIONAL / ENTERPRISE               |
 | Status       | Active / Inactive                                 |
 | Dedicated DB | — (shared) or URL hostname (dedicated, truncated) |
+| Region       | `data_region` (§5.6) — added 2026-09-14           |
+| Provisioning | §34.3 run state, `—` without a run — added 2026-09-14 |
 | Created at   | Date                                              |
 
 **Actions per row:** View detail · Deactivate · Assign Dedicated DB (ENTERPRISE only)
+
+**The hostname comes from `dedicated_db_host`** on `GET /api/v1/admin/tenants` (2026-09-14) — parsed
+server-side from the encrypted URL. The URL itself is never returned: it carries the database password.
+
+**Above the table (2026-09-14):** tenant counts (total · active · inactive · created in the last 7 days),
+the count of tenants with a dedicated DB, the count of runs at AWAITING_APPROVAL, a search over code /
+name / host / region and plan filter chips. Every figure is computed from the two list endpoints. One
+**migration-gate banner** per run at AWAITING_APPROVAL carries **Approve** and **Abort** (§34.5), each
+through a dialog that states what it does and asks for the justification.
+
+**View detail is not offered yet** — no tenant-detail page is specified. See §20.4.6.
 
 ### 20.4.2 Create Tenant
 
@@ -195,6 +218,12 @@ Not visible to tenant users.
 | Tenant name      | Yes      | 2-255 characters                    |
 | Plan type        | Yes      | STARTER / PROFESSIONAL / ENTERPRISE |
 | Dedicated DB URL | No       | Must start with postgresql://       |
+| Justification    | Yes      | 10-500 characters (§6.7)            |
+
+The Dedicated DB URL field is enabled only while ENTERPRISE is selected (2026-09-14), matching the note
+below. Presentation (2026-09-15, R13): a modal over the Tenant List on `/admin`, opened by its Create Tenant button
+(Stitch "Create Tenant - Modal Overlay - SYSTEM_ADMIN"); `/admin/tenants/new` opens the list with the modal open.
+On success the modal closes and the new tenant's row is highlighted.
 
 > Dedicated DB URL is optional at creation time — can be assigned later via §20.4.3.
 > If plan type = ENTERPRISE and the DB is already provisioned, it may be set here directly.
@@ -221,7 +250,8 @@ Not visible to tenant users.
 | ---------------- | -------- | ---------------------------------------------- |
 | Dedicated DB URL | Yes      | Must start with `postgresql://`; max 500 chars |
 
-**On submit:** calls `PATCH /api/v1/admin/tenants/{tenantId}/dedicated-db`
+**On submit:** calls `PATCH /api/v1/admin/tenants/{tenantId}/dedicated-db` with `{ dedicatedDbUrl,
+justification }`
 
 **Success state:** tenant row in list shows dedicated DB hostname; routing takes effect immediately on next request.
 
@@ -250,7 +280,8 @@ isolation, triggering `EnterpriseProvisioningWorkflow` via Temporal.
 > The workflow will pause before data migration and notify you for approval.
 > Type the tenant code to confirm: `[ _________ ]`
 
-**On confirm:** calls `PATCH /api/v1/admin/tenants/{tenantId}/mark-contracted`
+**On confirm:** calls `PATCH /api/v1/admin/tenants/{tenantId}/mark-contracted` with
+`{ contractReference?, justification }`
 
 **Success state:** workflow started banner shown; tenant row in Tenant List displays
 provisioning status badge ("Provisioning..."). SYSTEM_ADMIN receives in-app + email notification
@@ -279,9 +310,30 @@ when workflow reaches the human gate (before data migration step).
 > Tenant data is preserved. This action can be reversed by re-activating via the API.
 > Type the tenant code to confirm: `[ _________ ]`
 
-**On confirm:** calls `PATCH /api/v1/admin/tenants/{tenantId}/deactivate`
+**On confirm:** calls `PATCH /api/v1/admin/tenants/{tenantId}/deactivate` with `{ justification }`
 
 **Success state:** tenant row status changes to Inactive; row greyed out.
+
+> **OPEN (2026-09-14):** the web panel still deactivates WITHOUT the type-the-code confirmation above —
+> it asks only for the justification. Kept deliberately for this round (product-owner decision); Stitch
+> "Deactivate Tenant - SYSTEM_ADMIN" is the screen that closes it.
+
+### 20.4.6 Round-2 draft — AWAITING PRODUCT-OWNER APPROVAL
+
+> **Status: DRAFT, not approved. Nothing below is implemented or may be implemented until approved.**
+> These are the parts of Stitch "Tenant List & DB Provisioning - SYSTEM_ADMIN" that had no data source
+> on 2026-09-14 (product-owner decision: specify first, build in round 2). Each names what the
+> repository actually has; where it has nothing, the entry is a question, not a definition.
+
+| Drawn element | What exists in this repository (checked 2026-09-14) | Proposed definition / open question |
+| --- | --- | --- |
+| **Avg Gate Time** (Migration Gates card) | Each run's Temporal history timestamps its events; §31.3 names `approval_pending_duration_seconds` (histogram, `workflow_type`), defined in `@cos/tracing` | PROPOSED: mean time from the `notifyAwaitingApprovalActivity` completion to the `approve`/`abort` signal, over runs that passed the gate, read from run histories by a new `GET /admin/tenants/provisioning/gate-stats`. QUESTION: over what window — all time, or the last N days? |
+| **Import Central Prices** (header button) | Specified by ADR-061: `POST /api/v1/admin/central-prices/import`, `platform.central_price_catalog`, `/admin/central-prices`. **No module is built.** ADR-061 marks it post-MVP | PROPOSED: the button opens `/admin/central-prices` once that ADR is implemented; until then it stays absent. QUESTION: is ADR-061 in scope for round 2, or does the button wait for it? |
+| **View Detail** (row action) | §20.4.3 mentions "tenant detail page" with no contents. `GET /admin/tenants` holds every non-secret tenant column | QUESTION: which fields and actions does the detail page carry? No definition is proposed — the contents are a product decision |
+| **Audit Log** (row action) | `platform.audit_logs` (actor, action, resource, metadata); §6.7 grants SYSTEM_ADMIN "read all tenant audit logs". **No read endpoint exists** | PROPOSED: `GET /api/v1/admin/tenants/{tenantId}/audit-logs?cursor=` — newest first, SYSTEM_ADMIN only, the read itself audited. QUESTION: page size, and whether the justification is shown in full |
+| **Cluster Pulse** — EMQX Broker %, Timescale Chunks, Mesh Latency, Queue Backlog | Prometheus scrapes cos-backend, ai services, file-service, kafka (JMX), node-exporter and annotated pods (`infrastructure/monitoring/prometheus/prometheus.yml`). **No EMQX scrape job.** No service mesh is deployed (no Istio/Linkerd in `infrastructure/`). §31.3 lists Kafka consumer lag. TimescaleDB exposes `timescaledb_information.chunks` | QUESTIONS: (1) "EMQX Broker 99.98%" — a percentage of WHAT (uptime? delivered messages?), and scraped from where? (2) "Mesh Latency" — there is no mesh; which latency is meant? (3) "Queue Backlog" — Kafka consumer lag (§31.3), the outbox, or Temporal task queues? (4) "Timescale Chunks: Healthy" — what makes it unhealthy? |
+| **Status bar** — `EMQX: 99.98%`, `PG Fleet: 42 Ded. / 128 Pool` | "Ded." = tenants with `dedicated_db_host` is computable today. "Pool" has no definition | QUESTION: what is counted as "Pool" — shared-DB tenants, PgBouncer server connections, or database instances? |
+| **Platform Compute 28% · Headroom Ok** | node-exporter + Kubernetes pod metrics in Prometheus; §18 sets a ≤70% steady-state headroom target per layer | QUESTION: which layer's utilisation is "Platform Compute" (cluster CPU requests? usage?), and does "Headroom Ok" mean below §18's 70%? The backend has no Prometheus query client today, so this also needs one |
 
 ---
 

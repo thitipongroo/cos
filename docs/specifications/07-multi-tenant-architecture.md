@@ -368,6 +368,20 @@ Steps :
 2. Tenant record created in `tenants` table with unique `tenant_id` (UUID)
 3. Keycloak assignment: shared realm for SMB/mid-market; dedicated realm created for enterprise.
 
+   > **The shared realm is shareable as of 2026-09-14.** `platform.tenants` carried `UNIQUE (keycloak_realm)`
+   > (§11), so the shared realm could hold exactly one tenant and a second small tenant failed with a duplicate
+   > key. Migration `20260914000001` keeps uniqueness for every realm except `construction-os` — a partial unique
+   > index keyed on the realm, not the plan. The backend carrying ADR-106 must be deployed before it runs.
+   > Because a shared realm now holds many tenants, the realm check below no longer separates them on its own:
+   > **ADR-106** binds the token's `sub` to `platform.users.keycloak_user_id` as well.
+   >
+   > **OPEN — one identifier per shared realm.** Keycloak usernames are unique per realm, so on the shared
+   > realm an email or phone number can be an account in ONE small tenant only: a person cannot hold
+   > accounts in two. `POST /api/v1/users` refuses a second one with 409, looking the email up among the
+   > accounts of every tenant on the realm, and answers a Keycloak 409 the same way — so the reply does not
+   > say which tenant holds it, but it still says the identifier exists. Whether one person may belong to
+   > several small tenants is an account-model decision not yet taken.
+   >
    > **Validation honours this as of 2026-08-23 (TDD OQ-51).** Until then it did not: token MINTING
    > read `platform.tenants.keycloak_realm` per tenant, but `KeycloakJwtStrategy` validated `iss`
    > against ONE realm from a single `KEYCLOAK_REALM` env var — so a dedicated-realm token was

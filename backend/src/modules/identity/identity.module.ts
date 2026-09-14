@@ -12,6 +12,7 @@ import { StepUpService } from './step-up/step-up.service';
 import { DataExportController } from './data-export/data-export.controller';
 import { DataExportService } from './data-export/data-export.service';
 import { IdentityController } from './identity.controller';
+import { ServiceIdentityController } from './service-identity/service-identity.controller';
 import { IdentityService } from './identity.service';
 import { KeycloakAdminService } from './keycloak-admin.service';
 import { MfaService } from './mfa/mfa.service';
@@ -91,6 +92,8 @@ import { JwtAuthGuard } from '../../shared/guards/jwt-auth.guard';
   ],
   controllers: [
     IdentityController,
+    // ADR-107: the identity the internal services take instead of token claims — internal listener only.
+    ServiceIdentityController,
     ConsentController,
     DataExportController,
     // ADR-090: the tenant's own compliance desk for subject requests from people with no account.

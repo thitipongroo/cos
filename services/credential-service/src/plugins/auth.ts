@@ -8,7 +8,8 @@
 // tenant's issuer key material.
 //
 //   no token      → 401.
-//   user token    → identity from the CLAIMS; an x-tenant-id header may only agree with it.
+//   user token    → identity from the BACKEND (ADR-107), never from the claims: they are Keycloak user
+//                   attributes. Backend refuses → 401; unavailable → 503. x-tenant-id may only agree.
 //   service token → authenticated as the backend; the identity headers say on whose behalf.
 //
 // Public paths (health + did:web + status-list resolution) stay exempt: those are fetched by third
@@ -16,6 +17,7 @@
 import type { FastifyInstance } from 'fastify';
 import { buildError } from '../errors.js';
 import { verifyBearer } from './jwt-verify.js';
+import { IdentityRejectedError, resolveUserIdentity } from '@cos/service-identity';
 
 const DID_WEB_PATH = /^\/tenants\/[^/]+\/did\.json(\?.*)?$/;
 // Status List 2021 publication (CS-6): the URL embedded in every revocable VC's `credentialStatus`.
@@ -51,13 +53,31 @@ export function registerAuth(app: FastifyInstance): void {
     let userRole: string;
 
     if (verified.kind === 'user') {
-      // Claims win outright. A header may accompany them but may not change them.
-      if (typeof headerTenant === 'string' && verified.tenantId !== headerTenant) {
+      let identity;
+      try {
+        identity = await resolveUserIdentity(
+          request.headers['authorization'] as string,
+          verified.exp,
+        );
+      } catch (err) {
+        if (err instanceof IdentityRejectedError) {
+          return reply.status(401).send(buildError('INVALID_TOKEN', request.traceId ?? 'unknown'));
+        }
+        request.log.error(
+          { reason: err instanceof Error ? err.message : String(err) },
+          'auth.identity.unavailable — backend could not confirm the caller; refusing rather than trusting claims',
+        );
+        return reply
+          .status(503)
+          .send(buildError('IDENTITY_UNAVAILABLE', request.traceId ?? 'unknown'));
+      }
+      // The backend's answer wins outright. A header may accompany it but may not change it.
+      if (typeof headerTenant === 'string' && identity.tenantId !== headerTenant) {
         return reply.status(401).send(buildError('INVALID_TOKEN', request.traceId ?? 'unknown'));
       }
-      tenantId = verified.tenantId;
-      userId = verified.userId;
-      userRole = verified.role;
+      tenantId = identity.tenantId;
+      userId = identity.userId;
+      userRole = identity.role;
     } else {
       // Trusted subsystem: authenticated as the backend, acting for the principal in the headers.
       tenantId = typeof headerTenant === 'string' ? headerTenant : '';

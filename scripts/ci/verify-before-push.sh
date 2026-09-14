@@ -170,6 +170,11 @@ run "Type check"                   pnpm run type-check
 run "Build"                        pnpm run build
 
 # ── Test jobs that need no Docker ───────────────────────────────────────────
+# Mirrors ci.yml unit-tests' "Build @cos/service-identity" step: credential-service resolves that package
+# through its dist (services/credential-service/jest.config.js says why). The "Build" above happens to build it
+# too, but that is a DIFFERENT CI job on a different runner — the unit-tests job does not inherit it, so the
+# step is mirrored where ci.yml has it rather than relied on by accident.
+run "Unit tests — build @cos/service-identity" pnpm --filter @cos/service-identity build
 run "Unit tests (100/100)"         pnpm run test:cov
 # Temporal workflow specs are EXCLUDED from test:cov and run serially in their own jest config —
 # parallel TestWorkflowEnvironment servers starve each other (QM-1 records the flake). ci.yml runs
@@ -223,6 +228,7 @@ done
 # ── Docker-backed jobs ──────────────────────────────────────────────────────
 if [[ $FULL -eq 1 ]]; then
   if need_docker; then
+    run "Integration — build @cos/service-identity" pnpm --filter @cos/service-identity build
     run "Integration (Testcontainers)" pnpm run test:integration
     # CI runs this one with working-directory: backend — the config lives there,
     # and the base jest.config ignores test/, so it must go through this config.

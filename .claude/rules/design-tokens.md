@@ -176,6 +176,45 @@ Dark theme tokens (source: brand_palette §6):
                                     Value is the outline-variant used by mockup/mobile/**.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SYSTEM_ADMIN OPERATOR PANEL TOKENS (web /admin only — Tailwind cos-op-*)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Added 2026-09-15 (PO decision, R10). The /admin panel draws in its two Stitch screens' OWN values
+(Tenant List 013fc8f09450… · Create Tenant 0e7adb0302fe…), not the nearest --cos-dark-* token — the
+2026-09-14 build substituted #020617 for #031427 and did not look like its drawing (ADR-085: style).
+A value already in the global set is an ALIAS (var()) in globals.css, not a second copy.
+
+  --cos-op-surface:              #031427   page, top bar
+  --cos-op-container-lowest:     #000F21   Cluster Pulse card
+  --cos-op-container-low:        = --cos-dark-surface-container-low   sidebar, cards, table
+  --cos-op-container:            = --cos-dark-surface-container       active nav row
+  --cos-op-container-high:       = --cos-dark-surface-container-high  gate banner, chips
+  --cos-op-container-highest:    #26364A   surface-variant, hairlines
+  --cos-op-outline:              #8D90A0   tertiary text
+  --cos-op-on-surface:           #D3E4FE   primary text
+  --cos-op-on-surface-variant:   #C3C6D7   secondary text, icons
+  --cos-op-primary / on-primary: #B4C5FF / #002A78
+  --cos-op-primary-container:    = --cos-blue   (on: #EEEFFF)
+  --cos-op-secondary:            #4CD7F6
+  --cos-op-secondary-container:  #03B5D3 / on #00424E   ENTERPRISE tag
+  --cos-op-success:              #00C853
+  --cos-op-gate / on-gate:       #FFD60A / #161B2B
+  --cos-op-error:                #FFB4AB   (container #93000A / on #FFDAD6)
+  --cos-op-outline-variant:      #434655   hairlines (list drawing)
+  --cos-op-field-border:         #6B7280   @tailwindcss/forms input border (list search)
+  --cos-op-pending:              = --cos-dark-muted   sync-pending
+  Create Tenant modal (00b09850702f…, R13) — the drawing's Tailwind v3 shades as hex, NEVER as v4 utilities
+  (emerald-400 etc. differ in v4): modal-header #0C2037 · modal-footer #071728 · modal-field #071322 ·
+  modal-notice #081525 · modal-hover #0C1E33 · ok #34D399 · ok-line = --cos-dark-success · tier = --cos-gray ·
+  enterprise #60A5FA · cyan = --cos-cyan · vpc #083344 / vpc-ink #67E8F9 / vpc-line #155E75 ·
+  port #022C22 / port-line #065F46 · cta-shadow #1E3A8A
+  Type: op-label 13/18 600 · op-tiny 11/12 500 +0.05em · op-body 14/20 · op-h1 24/32 600 ·
+        op-display 32/40 700 −0.02em
+  PANEL ONLY: never on a tenant screen. In the list drawing font-tiny-web WINS over font-mono on
+  one element — read the rendered page, not the class list. Authoritative: spec §32.7
+  "SYSTEM_ADMIN Operator Panel Tokens".
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 MOBILE COLOR TOKENS (field app — React Native)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 

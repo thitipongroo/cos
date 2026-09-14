@@ -27,6 +27,62 @@
   --cos-dark-success: #10b981;
   --cos-dark-warning: #f59e0b;
   --cos-dark-danger: #ef4444;
+  /* Wired into web on 2026-09-14 for the SYSTEM_ADMIN panel, values copied from
+     .claude/rules/design-tokens.md (global web + mobile tokens) — not from the Stitch drawings. */
+  --cos-dark-outline: #46464c;
+  --cos-dark-surface-container: #102034;
+  --cos-dark-surface-container-low: #0b1c30;
+  --cos-dark-surface-container-high: #1b2b3f;
+  --cos-dark-surface-bright: #2a3a4f;
+
+  /* SYSTEM_ADMIN operator panel — the Stitch drawings' OWN values (product-owner decision 2026-09-15,
+     revision R10; §32.7 "mockups are authoritative for style"). The panel had used the nearest global
+     token instead (#020617 for the drawing's #031427, cyan for its primary #b4c5ff) and did not look
+     like its drawing. A value the global set already holds is an alias to it, not a second copy. Tenant List & DB Provisioning (screen 013fc8f09450…) — its tailwind.config colours: */
+  --cos-op-surface: #031427;
+  --cos-op-container-lowest: #000f21;
+  --cos-op-container-low: var(--cos-dark-surface-container-low); /* #0b1c30 */
+  --cos-op-container: var(--cos-dark-surface-container); /* #102034 */
+  --cos-op-container-high: var(--cos-dark-surface-container-high); /* #1b2b3f */
+  --cos-op-container-highest: #26364a;
+  --cos-op-outline: #8d90a0;
+  --cos-op-outline-variant: #434655;
+  /* the drawing loads @tailwindcss/forms, which borders a text input in its gray-500 */
+  --cos-op-field-border: #6b7280;
+  --cos-op-pending: var(--cos-dark-muted); /* sync-pending #94a3b8 */
+  /* Create Tenant - Modal Overlay (screen 00b09850702f…, R13). The drawing uses the Tailwind v3 CDN palette; this
+     app's Tailwind v4 palette differs, so its shades are carried here as their v3 hex values. */
+  --cos-op-modal-header: #0c2037;
+  --cos-op-modal-footer: #071728;
+  --cos-op-modal-field: #071322;
+  --cos-op-modal-notice: #081525;
+  --cos-op-modal-hover: #0c1e33;
+  --cos-op-ok: #34d399; /* emerald-400 */
+  --cos-op-ok-line: var(--cos-dark-success); /* emerald-500 #10b981 */
+  --cos-op-tier: var(--cos-gray); /* slate-500 #64748b */
+  --cos-op-enterprise: #60a5fa; /* blue-400 */
+  --cos-op-cyan: var(--cos-cyan); /* cyan-500 #06b6d4 */
+  --cos-op-vpc: #083344; /* cyan-950 */
+  --cos-op-vpc-ink: #67e8f9; /* cyan-300 */
+  --cos-op-vpc-line: #155e75; /* cyan-800 */
+  --cos-op-port: #022c22; /* emerald-950 */
+  --cos-op-port-line: #065f46; /* emerald-800 */
+  --cos-op-cta-shadow: #1e3a8a; /* blue-900 */
+  --cos-op-on-surface: #d3e4fe;
+  --cos-op-on-surface-variant: #c3c6d7;
+  --cos-op-primary: #b4c5ff;
+  --cos-op-on-primary: #002a78;
+  --cos-op-primary-container: var(--cos-blue); /* #2563eb */
+  --cos-op-on-primary-container: #eeefff;
+  --cos-op-secondary: #4cd7f6;
+  --cos-op-secondary-container: #03b5d3;
+  --cos-op-on-secondary-container: #00424e;
+  --cos-op-success: #00c853;
+  --cos-op-gate: #ffd60a;
+  --cos-op-on-gate: #161b2b;
+  --cos-op-error: #ffb4ab;
+  --cos-op-error-container: #93000a;
+  --cos-op-on-error-container: #ffdad6;
 
   /* Web border-radius tokens */
   --web-radius-sm: 4px;
@@ -101,4 +157,14 @@
     background-color: var(--cos-dark-bg);
     color: var(--cos-dark-text);
   }
+}
+
+/* R13 — while the Create Tenant modal is open: the panel underneath is dimmed and softened as the Stitch
+   "Create Tenant - Modal Overlay" draws it (`blur-[1px] opacity-70`), and no migration-gate banner is drawn. */
+body:has([data-create-tenant-modal]) [data-admin-shell] {
+  filter: blur(1px);
+  opacity: 0.7;
+}
+body:has([data-create-tenant-modal]) [data-gate-banner] {
+  display: none;
 }

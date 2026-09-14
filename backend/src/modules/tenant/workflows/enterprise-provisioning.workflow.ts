@@ -45,7 +45,10 @@ export interface EnterpriseProvisioningParams {
 
 export const approveSignal = defineSignal<[void]>('approve');
 export const abortSignal = defineSignal<[void]>('abort');
-export const workflowStateQuery = defineQuery<string>('state');
+// Named per §34.3 ("Query: `workflowState`") since 2026-09-14; it was registered as 'state' until then.
+// An execution already parked at AWAITING_APPROVAL answers the new name once a worker on this code picks
+// it up — measured, not assumed, by enterprise-provisioning-query-rename.workflow.spec.ts.
+export const workflowStateQuery = defineQuery<string>('workflowState');
 
 export async function enterpriseProvisioningWorkflow(
   params: EnterpriseProvisioningParams,

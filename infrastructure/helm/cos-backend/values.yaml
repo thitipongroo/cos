@@ -9,6 +9,10 @@ service:
   type: ClusterIP
   port: 3000
   metricsPort: 9464
+  # The internal listener (ADR-107): routes for file-service, credential-service and ai-gateway only —
+  # today `GET /api/v1/auth/identity`. Not behind the WAF, so it must never be routed from an Ingress or
+  # Kong (both target 3000) and is admitted by the NetworkPolicy below from those three workloads only.
+  internalPort: 3100
 
 ingress:
   enabled: false
@@ -142,3 +146,15 @@ strategy:
   type: RollingUpdate
   maxSurge: 1
   maxUnavailable: 0
+
+networkPolicy:
+  # ON, unlike the service charts' ingress policies: this one exists to confine the internal listener, and it
+  # leaves the public `http` and `metrics` ports open to every source exactly as they are without a policy —
+  # so the httpGet probes (from the node) and the ingress controller keep reaching them. What it changes is
+  # only who reaches `internal`. Schema-valid (`helm template`); NOT yet observed enforced in a live cluster.
+  enabled: true
+  # Pod labels (`app.kubernetes.io/name` = chart name) of the only callers of the internal listener.
+  internalCallerPodLabels:
+    - 'cos-file-service'
+    - 'cos-credential-service'
+    - 'cos-ai-gateway'

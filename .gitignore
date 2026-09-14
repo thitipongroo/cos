@@ -39,6 +39,14 @@ coverage.out
 # (https://nextjs.org/docs/app/api-reference/config/typescript). It stays in tsconfig.json `include`.
 apps/web/next-env.d.ts
 
+# AGENTS.md / CLAUDE.md in apps/web are written by `next dev` itself when it detects it is being run by an
+# AI coding agent (next 16.3.4 dist/server/lib/app-info-log.js: `getAgentName() !== null` and the managed
+# rules block is absent → generate-agent-files.js writeAgentFiles). They were never part of the repository,
+# they fail markdownlint (MD013, MD041), and every agent-run `next dev` recreates them — product-owner
+# decision 2026-09-14: not committed.
+apps/web/AGENTS.md
+apps/web/CLAUDE.md
+
 # Serwist (@serwist/turbopack) serves the service worker from the /serwist/[path] route handler
 # (bundled into .next at build time), so no service-worker artifacts land in apps/web/public — ADR-047.
 # The former next-pwa public/ artifacts (sw.js, workbox-*.js, fallback-*.js) are no longer generated.

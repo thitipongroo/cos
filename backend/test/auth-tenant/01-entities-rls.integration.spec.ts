@@ -103,13 +103,21 @@ describe('Phase 2 · platform entities and RLS (real database)', () => {
       );
     });
 
-    it('tenant_code and keycloak_realm are UNIQUE (master:1880, 1882)', async () => {
+    // keycloak_realm is UNIQUE for every realm except the shared `construction-os` since 20260914000001:
+    // STARTER and PROFESSIONAL tenants share that realm (§7.6), which a full UNIQUE made impossible past the
+    // first. The old assertion (/UNIQUE[\s\S]*keycloak_realm/) also matched the partial index, so it could
+    // not tell the two apart — this one pins the predicate. 04-shared-realm exercises both halves.
+    it('tenant_code is UNIQUE; keycloak_realm is UNIQUE except the shared realm (master:1880, 1882)', async () => {
       const rows = await prisma.$queryRawUnsafe<Array<{ indexdef: string }>>(
         `SELECT indexdef FROM pg_indexes WHERE schemaname='platform' AND tablename='tenants'`,
       );
       const defs = rows.map((r) => r.indexdef).join('\n');
       expect(defs).toMatch(/UNIQUE[\s\S]*tenant_code/);
-      expect(defs).toMatch(/UNIQUE[\s\S]*keycloak_realm/);
+      const realm = rows.map((r) => r.indexdef).filter((d) => d.includes('keycloak_realm'));
+      expect(realm).toHaveLength(1);
+      expect(realm[0]).toMatch(
+        /UNIQUE INDEX[\s\S]*\(keycloak_realm\)[\s\S]*WHERE[\s\S]*<>[\s\S]*'construction-os'/,
+      );
     });
   });
 

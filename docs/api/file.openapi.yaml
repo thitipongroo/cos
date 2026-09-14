@@ -35,8 +35,11 @@ components:
         A bearer token, and it decides where the identity comes from — this service verifies it
         itself rather than trusting a gateway to have done so.
 
-        **User token** — identity comes from the CLAIMS. The identity headers below may accompany
-        it but may only AGREE with it; a header naming a different tenant is a 401, not an override.
+        **User token** — identity comes from the BACKEND (ADR-107): the service forwards the token to
+        `GET /api/v1/auth/identity` and uses its answer, because the token's claims are Keycloak user
+        attributes. A backend refusal is 401; a backend that cannot answer is 503 `COS-FILE-022`, never
+        the claims. The identity headers below may accompany it but may only AGREE with that answer; a
+        header naming a different tenant is a 401, not an override.
 
         **Service token** — the caller is authenticated as the backend, acting on someone's behalf,
         and all three identity headers are then REQUIRED. This path exists because the backend calls

@@ -37,6 +37,14 @@ All endpoints require `Authorization: Bearer <JWT>` (validated by Kong Gateway).
 - Redis (signed URL cache)
 - OpenSearch (file search indexing)
 - Kafka (publishes `file.uploaded`, `file.quarantined` events)
+- The backend — `GET /api/v1/auth/identity`, for every request carrying a user token
+
+**A user's identity comes from the backend, not the token (ADR-107).** For a user token, the auth hook
+forwards the same `Authorization` header to the backend's `GET /api/v1/auth/identity` and uses the
+`tenant_id`, `user_id` and `role` it answers. The token's own claims are Keycloak user attributes, and this
+service cannot read `platform.users`. If the backend refuses the token, the answer is `401`. If it cannot
+be reached, answers `5xx`, or `BACKEND_INTERNAL_URL` is unset, the answer is `503` — never the claims.
+Answers are cached per token for at most 30 s and never past the token's `exp`. Service tokens are unchanged.
 
 ## Extension points
 
@@ -50,6 +58,8 @@ MINIO_PORT=9000
 MINIO_ACCESS_KEY=cos_minio_access_key
 MINIO_SECRET_KEY=cos_minio_secret_key
 DATABASE_URL=postgresql://cos:cos_dev_password@localhost:6432/construction_os
+# The backend, for a user's verified identity (ADR-107). No default: unset = 503 on user requests.
+BACKEND_INTERNAL_URL=http://localhost:3100
 ```
 
 ## Usage

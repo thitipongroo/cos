@@ -12,6 +12,7 @@ import {
   siteReportCreateSchema,
   taskUpdateSchema,
   tenantCreateSchema,
+  adminJustificationSchema,
   tenantSettingsSchema,
   userCreateSchema,
   subjectRequestCreateSchema,
@@ -311,24 +312,71 @@ describe('tenantSettingsSchema', () => {
 });
 
 describe('tenantCreateSchema', () => {
-  const base = { tenantCode: 'acme', tenantName: 'ACME Co', planType: 'PROFESSIONAL' };
+  const base = {
+    tenantCode: 'acme',
+    tenantName: 'ACME Co',
+    planType: 'PROFESSIONAL',
+    justification: 'New customer onboarding (OPS-1).',
+  };
+  const firstMessage = (patch: Record<string, unknown>) => {
+    const r = tenantCreateSchema.safeParse({ ...base, ...patch });
+    return r.success ? null : r.error.issues[0]?.message;
+  };
 
   it('accepts without a dedicated DB url', () => {
     expect(tenantCreateSchema.safeParse(base).success).toBe(true);
   });
 
-  it('accepts with one', () => {
-    expect(tenantCreateSchema.safeParse({ ...base, dedicatedDbUrl: 'postgres://x' }).success).toBe(
-      true,
-    );
-  });
+  it.each(['postgres://x', 'postgresql://u:p@h:5432/db', ''])(
+    'accepts dedicatedDbUrl %j',
+    (url) => {
+      expect(tenantCreateSchema.safeParse({ ...base, dedicatedDbUrl: url }).success).toBe(true);
+    },
+  );
 
   it('rejects a plan outside the vocabulary', () => {
     expect(tenantCreateSchema.safeParse({ ...base, planType: 'FREE' }).success).toBe(false);
   });
 
-  it('rejects a blank code', () => {
-    expect(tenantCreateSchema.safeParse({ ...base, tenantCode: '' }).success).toBe(false);
+  it('rejects a blank code as required', () => {
+    expect(firstMessage({ tenantCode: '' })).toBe('validation.required');
+  });
+
+  // §20.4.2 — a-z, 0-9, underscore; 2-50 chars. The same rule CreateTenantDto enforces.
+  it.each(['ACME', 'acme corp', 'a', 'x'.repeat(51), 'acme-corp'])(
+    'rejects tenant code %j as not a tenant code',
+    (code) => {
+      expect(firstMessage({ tenantCode: code })).toBe('validation.notATenantCode');
+    },
+  );
+
+  it('rejects a one-character name as too short and a 256-character one as too long', () => {
+    expect(firstMessage({ tenantName: 'A' })).toBe('validation.tooShort');
+    expect(firstMessage({ tenantName: 'A'.repeat(256) })).toBe('validation.tooLong');
+  });
+
+  it('rejects a non-PostgreSQL URL, and one over 500 characters', () => {
+    expect(firstMessage({ dedicatedDbUrl: 'mysql://h/db' })).toBe('validation.notAPostgresUrl');
+    expect(firstMessage({ dedicatedDbUrl: `postgresql://${'h'.repeat(500)}` })).toBe(
+      'validation.tooLong',
+    );
+  });
+
+  it('requires a justification of at least 10 characters after trimming (§6.7)', () => {
+    expect(firstMessage({ justification: '' })).toBe('validation.required');
+    expect(firstMessage({ justification: '   short   ' })).toBe('validation.tooShort');
+    expect(firstMessage({ justification: 'x'.repeat(501) })).toBe('validation.tooLong');
+  });
+});
+
+describe('adminJustificationSchema', () => {
+  it('accepts a reason and trims it', () => {
+    const r = adminJustificationSchema.safeParse({ justification: '  Contract ended OPS-9  ' });
+    expect(r.success && r.data.justification).toBe('Contract ended OPS-9');
+  });
+
+  it('rejects a missing reason', () => {
+    expect(adminJustificationSchema.safeParse({}).success).toBe(false);
   });
 });
 

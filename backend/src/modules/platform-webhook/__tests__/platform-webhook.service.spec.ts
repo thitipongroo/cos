@@ -74,6 +74,8 @@ describe('PlatformWebhookService', () => {
         TENANT_ID,
         undefined,
         'system',
+        // No justification — a CRM request is not a SYSTEM_ADMIN action, so no admin audit row.
+        null,
       );
     });
 
@@ -87,6 +89,7 @@ describe('PlatformWebhookService', () => {
         TENANT_ID,
         'CRM-001',
         'system',
+        null,
       );
     });
 

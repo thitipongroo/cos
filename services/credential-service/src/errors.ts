@@ -10,6 +10,8 @@ const ERRORS = {
   INVALID_REQUEST: 'Invalid request body',
   STATUS_LIST_NOT_FOUND: 'No status list exists at this URL',
   INVALID_TOKEN: 'Invalid or expired authentication token',
+  // ADR-107: the backend could not confirm a user's identity; the token's claims are never used instead.
+  IDENTITY_UNAVAILABLE: 'Identity could not be verified right now — try again',
 } as const;
 
 export type ErrorKey = keyof typeof ERRORS;

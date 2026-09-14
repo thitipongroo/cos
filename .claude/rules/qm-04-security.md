@@ -65,6 +65,16 @@ Indexed in: `context.md` §QUALITY MANDATES
       with nothing tying it to the issuer. `KEYCLOAK_REALM` still seeds the dev default and
       `KEYCLOAK_URL` still supplies the JWKS host (split horizon) — a token'''s `iss` host is
       never used to fetch keys.
+    - The shared realm holds MANY tenants since 2026-09-14 (`keycloak_realm` UNIQUE for
+      every realm except it, migration 20260914000001), so the realm check alone no longer separates
+      them: `validate()` ALSO requires `sub` = the named account's `keycloak_user_id` (ADR-106,
+      kill switch `s1.identity.subject-binding`, default ON).
+    - `tenant_id` / `user_id` / `role` are unmanaged user attributes: every realm runs
+      `unmanagedAttributePolicy: ADMIN_EDIT` (a user rewrote their own `role` under ENABLED, 2026-09-14),
+      `username`/`email` are admin-edit only, and a service that cannot read `platform.users` NEVER takes
+      identity from those claims — it calls `GET /api/v1/auth/identity` on the backend's INTERNAL listener
+      (`INTERNAL_PORT` 3100: no WAF check, that route only, NetworkPolicy-admitted) and treats only 401 as a
+      refusal and everything else as 503 (ADR-107). That route is 503 while an identity kill switch is OFF.
 - All inputs validated at the API layer — never trust client-supplied data; use **class-validator** (TypeScript/NestJS
   DTOs) or **Pydantic** (Python/FastAPI) for schema validation — never hand-written `if` checks alone (source: master
   API gateway + spec §30.3; `@cos/validation` uses class-validator)
@@ -78,8 +88,10 @@ Indexed in: `context.md` §QUALITY MANDATES
 - **Immutable audit logging (spec §5.1/§5.2 principle, §5.9 STRIDE)** — every state-changing endpoint (create / update /
   delete / state-transition) must emit an **immutable** (append-only — never updated or deleted) audit-log entry
   capturing actor identity, action, target entity_type/entity_id, `tenant_id`, and timestamp. **All SYSTEM_ADMIN /
-  platform-admin actions** are additionally written to `platform.audit_logs` with the operator's user identity (spec
-  §20.4 admin panel; spec §06 audit-access matrix — SYSTEM_ADMIN = FULL, tenant roles read-only). Audit-log retention
+  platform-admin actions** are additionally written to `platform.audit_logs` with the operator's user identity **and a
+  mandatory justification** (spec §6.7; §20.4 admin panel; spec §06 audit-access matrix — SYSTEM_ADMIN = FULL, tenant
+  roles read-only). For the tenant module this holds since 2026-09-14: the row is written inside the action's
+  transaction, and a missing/short justification is a 400 — an action that cannot be audited does not run. Audit-log retention
   per `docs/policies/data-retention-policy.md`
 - **Security headers** — every HTTP response must include:
   - `Strict-Transport-Security: max-age=31536000; includeSubDomains`

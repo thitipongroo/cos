@@ -137,6 +137,9 @@ describe('Rule 34 — the client-safe packages stay importable from a mobile bun
     'rbac',
     'validation',
     'test-utils',
+    // ADR-107 (2026-09-14): the identity client file-service and credential-service share — node:crypto and
+    // fetch to the backend's internal listener. No client has any reason to reach it.
+    'service-identity',
   ];
 
   const depsOf = (pkgJsonRel: string): string[] =>

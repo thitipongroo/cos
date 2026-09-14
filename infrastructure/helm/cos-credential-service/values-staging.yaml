@@ -4,6 +4,8 @@ image:
   tag: 'staging'
 env:
   NODE_ENV: 'staging'
+  # Application cos-backend-staging → release cos-backend-staging → Service cos-backend-staging-cos-backend.
+  BACKEND_INTERNAL_URL: 'http://cos-backend-staging-cos-backend:3100'
   # Single-label form, matching cos-backend's `api-staging.construction-os.io`: the existing
   # `*.construction-os.io` wildcard certificate does NOT cover a second label
   # (credentials.staging.…), and did:web is HTTPS-only — an uncovered host makes every staging

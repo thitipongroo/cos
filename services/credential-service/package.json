@@ -13,6 +13,7 @@
     "test:integration": "node --experimental-vm-modules node_modules/jest/bin/jest.js --config jest.integration.config.js --runInBand"
   },
   "dependencies": {
+    "@cos/service-identity": "workspace:*",
     "@digitalbazaar/did-io": "^2.2.0",
     "@digitalbazaar/did-method-key": "^5.3.0",
     "@digitalbazaar/did-method-web": "^1.0.1",

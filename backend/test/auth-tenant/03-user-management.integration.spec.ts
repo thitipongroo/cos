@@ -188,6 +188,75 @@ describe('Phase 2 · user management + MFA (master:1967-1991, 1957-1960)', () =>
       );
       expect(rows.length).toBe(1);
     });
+
+    // Rule 41 review, 2026-09-14. The guard compared keycloak_user_id with the email and never matched.
+    // Keycloak usernames are unique PER REALM, and several small tenants share one realm (§7.6), so the
+    // guard looks the email up among the accounts of every tenant on the caller's realm.
+    describe('the email conflict guard, against the shipped schema', () => {
+      const OTHER_SAME_REALM = 'cccccccc-1111-4000-8000-0000000000a2';
+      const OTHER_OWN_REALM = 'cccccccc-1111-4000-8000-0000000000a3';
+
+      beforeAll(async () => {
+        for (const [id, code, realm] of [
+          [OTHER_SAME_REALM, 'sd-p2-um-shared', REALM],
+          [OTHER_OWN_REALM, 'sd-p2-um-own', 'cos-sd-p2-um-own'],
+        ]) {
+          await infra.prisma.$executeRawUnsafe(
+            `INSERT INTO platform.tenants (tenant_id, tenant_code, tenant_name, keycloak_realm, plan_type, is_active)
+             VALUES ($1::uuid, $2, $2, $3, 'ENTERPRISE'::platform."PlanType", true)`,
+            id,
+            code,
+            realm,
+          );
+        }
+      });
+
+      const createIn = (email: string) =>
+        request(app.getHttpServer())
+          .post('/api/v1/users')
+          .set('x-test-role', 'TENANT_ADMIN')
+          .send({ email, display_name: 'Dup', role: 'PROJECT_MANAGER' });
+
+      it('refuses an email another tenant on the same realm already holds — whatever its case', async () => {
+        await infra.prisma.$executeRawUnsafe(
+          `INSERT INTO platform.users (user_id, tenant_id, keycloak_user_id, email, display_name)
+           VALUES (gen_random_uuid(), $1::uuid, 'kc-dup-same-realm', 'Shared.Person@Example.com', 'Elsewhere')`,
+          OTHER_SAME_REALM,
+        );
+        createEmailUser.mockClear();
+        const res = await createIn('shared.person@example.com');
+        expect(res.status).toBe(409);
+        expect(JSON.stringify(res.body)).toContain('User with this identity already exists');
+        expect(createEmailUser).not.toHaveBeenCalled();
+      });
+
+      it('does not refuse an email that exists only in a tenant on a different realm', async () => {
+        await infra.prisma.$executeRawUnsafe(
+          `INSERT INTO platform.users (user_id, tenant_id, keycloak_user_id, email, display_name)
+           VALUES (gen_random_uuid(), $1::uuid, 'kc-dup-own-realm', 'own.realm@example.com', 'Elsewhere')`,
+          OTHER_OWN_REALM,
+        );
+        createEmailUser.mockResolvedValueOnce({
+          keycloakUserId: 'cccccccc-4444-4000-8000-0000000000c1',
+        });
+        const res = await createIn('own.realm@example.com');
+        expect([200, 201]).toContain(res.status);
+      });
+
+      it('answers a Keycloak 409 with the same conflict, and writes nothing', async () => {
+        createEmailUser.mockRejectedValueOnce(
+          Object.assign(new Error('Request failed with status 409'), { response: { status: 409 } }),
+        );
+        const res = await createIn('only.in.keycloak@example.com');
+        expect(res.status).toBe(409);
+        expect(JSON.stringify(res.body)).toContain('User with this identity already exists');
+        const rows = await infra.prisma.$queryRawUnsafe<unknown[]>(
+          `SELECT 1 FROM platform.users WHERE email = $1`,
+          'only.in.keycloak@example.com',
+        );
+        expect(rows).toHaveLength(0);
+      });
+    });
   });
 
   describe('PATCH role and deactivate (master:1972-1973)', () => {

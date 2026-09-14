@@ -127,8 +127,8 @@ describe('UserService', () => {
   describe('createUser', () => {
     function mockCreateSetup(userRow: typeof mockUserRow) {
       (prismaMock.$queryRaw as jest.Mock)
-        .mockResolvedValueOnce([]) // conflict guard
-        .mockResolvedValueOnce([{ keycloak_realm: REALM }]); // tenant lookup
+        .mockResolvedValueOnce([{ keycloak_realm: REALM }]) // tenant lookup
+        .mockResolvedValueOnce([]); // conflict guard
       (prismaMock.$transaction as jest.Mock).mockImplementation(
         async (fn: (tx: unknown) => Promise<unknown>) => {
           const tx = {
@@ -184,8 +184,8 @@ describe('UserService', () => {
 
     it('rolls back Keycloak user when COS DB transaction fails', async () => {
       (prismaMock.$queryRaw as jest.Mock)
-        .mockResolvedValueOnce([]) // conflict guard
-        .mockResolvedValueOnce([{ keycloak_realm: REALM }]); // tenant lookup
+        .mockResolvedValueOnce([{ keycloak_realm: REALM }]) // tenant lookup
+        .mockResolvedValueOnce([]); // conflict guard
       (prismaMock.$transaction as jest.Mock).mockRejectedValueOnce(new Error('DB error'));
 
       const dto = {
@@ -203,8 +203,8 @@ describe('UserService', () => {
     // race by a millisecond, i.e. a 409, not a 500 out of the driver.
     it('maps the phone-number unique violation to the same 409 as the pre-flight conflict guard', async () => {
       (prismaMock.$queryRaw as jest.Mock)
-        .mockResolvedValueOnce([]) // conflict guard — the racing create has not committed yet
-        .mockResolvedValueOnce([{ keycloak_realm: REALM }]); // tenant lookup
+        .mockResolvedValueOnce([{ keycloak_realm: REALM }]) // tenant lookup
+        .mockResolvedValueOnce([]); // conflict guard — the racing create has not committed yet
       (prismaMock.$transaction as jest.Mock).mockRejectedValueOnce(
         new Error('duplicate key value violates unique constraint "users_phone_number_key"'),
       );
@@ -223,8 +223,8 @@ describe('UserService', () => {
     // not throw on `.message` inside the error handler — the rollback above it still has to run.
     it('handles a non-Error rejection without breaking the Keycloak rollback', async () => {
       (prismaMock.$queryRaw as jest.Mock)
-        .mockResolvedValueOnce([])
-        .mockResolvedValueOnce([{ keycloak_realm: REALM }]);
+        .mockResolvedValueOnce([{ keycloak_realm: REALM }])
+        .mockResolvedValueOnce([]);
       (prismaMock.$transaction as jest.Mock).mockRejectedValueOnce('connection reset');
 
       const dto = {
@@ -240,8 +240,8 @@ describe('UserService', () => {
     // at all, so a failure there is always a real error — never "this user already exists".
     it('leaves a Path B failure untranslated even if the message mentions the phone index', async () => {
       (prismaMock.$queryRaw as jest.Mock)
-        .mockResolvedValueOnce([])
-        .mockResolvedValueOnce([{ keycloak_realm: REALM }]);
+        .mockResolvedValueOnce([{ keycloak_realm: REALM }])
+        .mockResolvedValueOnce([]);
       (prismaMock.$transaction as jest.Mock).mockRejectedValueOnce(
         new Error('duplicate key value violates unique constraint "users_phone_number_key"'),
       );
@@ -261,8 +261,8 @@ describe('UserService', () => {
     // is not there.
     it('does not disguise an unrelated DB failure as a conflict', async () => {
       (prismaMock.$queryRaw as jest.Mock)
-        .mockResolvedValueOnce([])
-        .mockResolvedValueOnce([{ keycloak_realm: REALM }]);
+        .mockResolvedValueOnce([{ keycloak_realm: REALM }])
+        .mockResolvedValueOnce([]);
       (prismaMock.$transaction as jest.Mock).mockRejectedValueOnce(new Error('deadlock detected'));
 
       const dto = {
@@ -277,8 +277,8 @@ describe('UserService', () => {
 
     it('logs error but still throws original error when Keycloak deleteUser also fails (covers rollback .catch branch)', async () => {
       (prismaMock.$queryRaw as jest.Mock)
-        .mockResolvedValueOnce([]) // conflict guard
-        .mockResolvedValueOnce([{ keycloak_realm: REALM }]); // tenant lookup
+        .mockResolvedValueOnce([{ keycloak_realm: REALM }]) // tenant lookup
+        .mockResolvedValueOnce([]); // conflict guard
       (prismaMock.$transaction as jest.Mock).mockRejectedValueOnce(new Error('DB error'));
       keycloakAdmin.deleteUser.mockRejectedValueOnce(new Error('Keycloak unreachable'));
 
@@ -289,6 +289,84 @@ describe('UserService', () => {
       };
       await expect(service.createUser(dto, TENANT_ID, ACTOR_ID)).rejects.toThrow('DB error');
       expect(keycloakAdmin.deleteUser).toHaveBeenCalledWith(KC_USER_ID, REALM);
+    });
+
+    // Rule 41 review, 2026-09-14: the Path B guard compared keycloak_user_id with the email and never
+    // matched. It now compares the email, case-insensitively, among accounts of tenants on the same realm.
+    it('Path B guard looks the EMAIL up on this realm, and refuses a taken one with 409', async () => {
+      (prismaMock.$queryRaw as jest.Mock)
+        .mockResolvedValueOnce([{ keycloak_realm: REALM }]) // tenant lookup
+        .mockResolvedValueOnce([{ user_id: 'someone-else' }]); // conflict guard
+      await expect(
+        service.createUser(
+          { display_name: 'วิชัย', email: 'W@A.com', role: CosRole.PROJECT_MANAGER },
+          TENANT_ID,
+          ACTOR_ID,
+        ),
+      ).rejects.toThrow('User with this identity already exists');
+      const guard = (prismaMock.$queryRaw as jest.Mock).mock.calls[1] as unknown[];
+      const sql = (guard[0] as string[]).join('?');
+      expect(sql).toMatch(/lower\(u\.email\) = lower\(\?\)/);
+      expect(sql).toMatch(/t\.keycloak_realm = \?/);
+      expect(guard.slice(1)).toEqual(['W@A.com', REALM]);
+      expect(keycloakAdmin.createEmailUser).not.toHaveBeenCalled();
+    });
+
+    it.each([
+      [
+        'Path B',
+        { display_name: 'วิชัย', email: 'w@a.com', role: CosRole.PROJECT_MANAGER },
+        'createEmailUser',
+      ],
+      [
+        'Path A',
+        { display_name: 'สมชาย', phone_number: '+66812345678', role: CosRole.SITE_ENGINEER },
+        'provisionPhoneUser',
+      ],
+    ] as const)(
+      '%s: a Keycloak 409 becomes the same 409 — nothing says which tenant holds the identity',
+      async (_label, dto, method) => {
+        (prismaMock.$queryRaw as jest.Mock)
+          .mockResolvedValueOnce([{ keycloak_realm: REALM }]) // tenant lookup
+          .mockResolvedValueOnce([]); // conflict guard — not visible to the database
+        (keycloakAdmin[method] as jest.Mock).mockRejectedValueOnce(
+          Object.assign(new Error('Request failed with status 409'), { response: { status: 409 } }),
+        );
+        await expect(service.createUser(dto as never, TENANT_ID, ACTOR_ID)).rejects.toThrow(
+          new ConflictException('User with this identity already exists'),
+        );
+        expect(prismaMock.$transaction).not.toHaveBeenCalled();
+      },
+    );
+
+    it('rethrows any other Keycloak failure unchanged', async () => {
+      (prismaMock.$queryRaw as jest.Mock)
+        .mockResolvedValueOnce([{ keycloak_realm: REALM }])
+        .mockResolvedValueOnce([]);
+      keycloakAdmin.createEmailUser.mockRejectedValueOnce(
+        Object.assign(new Error('Keycloak down'), { response: { status: 503 } }),
+      );
+      await expect(
+        service.createUser(
+          { display_name: 'วิชัย', email: 'w@a.com', role: CosRole.PROJECT_MANAGER },
+          TENANT_ID,
+          ACTOR_ID,
+        ),
+      ).rejects.toThrow('Keycloak down');
+    });
+
+    it('rethrows a thrown null from Keycloak unchanged', async () => {
+      (prismaMock.$queryRaw as jest.Mock)
+        .mockResolvedValueOnce([{ keycloak_realm: REALM }])
+        .mockResolvedValueOnce([]);
+      keycloakAdmin.provisionPhoneUser.mockRejectedValueOnce(null);
+      await expect(
+        service.createUser(
+          { display_name: 'สมชาย', phone_number: '+66812345678', role: CosRole.SITE_ENGINEER },
+          TENANT_ID,
+          ACTOR_ID,
+        ),
+      ).rejects.toBeNull();
     });
 
     it('throws BadRequestException when neither phone_number nor email provided', async () => {
@@ -311,7 +389,9 @@ describe('UserService', () => {
     });
 
     it('throws ConflictException when identity already exists', async () => {
-      (prismaMock.$queryRaw as jest.Mock).mockResolvedValueOnce([{ user_id: USER_ID }]);
+      (prismaMock.$queryRaw as jest.Mock)
+        .mockResolvedValueOnce([{ keycloak_realm: REALM }]) // tenant lookup
+        .mockResolvedValueOnce([{ user_id: USER_ID }]); // conflict guard
       const dto = {
         display_name: 'สมชาย',
         phone_number: '+66812345678',
@@ -321,9 +401,8 @@ describe('UserService', () => {
     });
 
     it('throws BadRequestException when tenant is not found or inactive (covers !tenant branch)', async () => {
-      (prismaMock.$queryRaw as jest.Mock)
-        .mockResolvedValueOnce([]) // conflict guard — no existing user
-        .mockResolvedValueOnce([]); // tenant lookup returns empty — tenant not found
+      // The tenant lookup runs first, so an unknown tenant is refused before any identity is probed.
+      (prismaMock.$queryRaw as jest.Mock).mockResolvedValueOnce([]); // tenant lookup — not found
       const dto = {
         display_name: 'สมชาย',
         phone_number: '+66812345678',
@@ -515,8 +594,8 @@ describe('UserService', () => {
   describe('outbox writes', () => {
     it('writes identity.user.created.v1 inside the user + membership transaction', async () => {
       (prismaMock.$queryRaw as jest.Mock)
-        .mockResolvedValueOnce([]) // conflict guard
-        .mockResolvedValueOnce([{ keycloak_realm: REALM }]); // tenant lookup
+        .mockResolvedValueOnce([{ keycloak_realm: REALM }]) // tenant lookup
+        .mockResolvedValueOnce([]); // conflict guard
       const tx = {
         $queryRaw: jest.fn().mockResolvedValueOnce([mockUserRow]).mockResolvedValueOnce([{}]),
       };
@@ -549,8 +628,8 @@ describe('UserService', () => {
 
     it('rolls the Keycloak user back and emits nothing when the transaction fails', async () => {
       (prismaMock.$queryRaw as jest.Mock)
-        .mockResolvedValueOnce([])
-        .mockResolvedValueOnce([{ keycloak_realm: REALM }]);
+        .mockResolvedValueOnce([{ keycloak_realm: REALM }])
+        .mockResolvedValueOnce([]);
       (prismaMock.$transaction as jest.Mock).mockRejectedValue(new Error('duplicate key'));
 
       await expect(

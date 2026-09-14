@@ -9,6 +9,8 @@ export default {
   rootDir: '.',
   testMatch: ['<rootDir>/src/**/*.integration.spec.ts'],
   extensionsToTreatAsEsm: ['.ts'],
+  // @cos/service-identity is deliberately NOT mapped to source — see jest.config.js. It resolves to its built
+  // dist, which ci.yml builds before this suite runs.
   moduleNameMapper: { '^(\\.{1,2}/.*)\\.js$': '$1' },
   transform: {
     '^.+\\.ts$': [

@@ -20,7 +20,18 @@ interface NotificationItem {
  * native EventSource cannot set), the stream is consumed with a fetch +
  * ReadableStream reader that injects the session access token.
  */
-export function NotificationBell() {
+export function NotificationBell({
+  buttonClassName,
+  icon,
+  unreadDotClassName,
+}: {
+  /** Overrides the light app-shell button colours, for a dark surface (the SYSTEM_ADMIN panel). */
+  buttonClassName?: string;
+  /** Replaces the default glyph — the SYSTEM_ADMIN drawing draws Material `notifications`, 22 px. */
+  icon?: React.ReactNode;
+  /** Draws unread as a plain dot with these classes instead of the red count — the SYSTEM_ADMIN drawing's dot. */
+  unreadDotClassName?: string;
+} = {}) {
   const t = useT();
   const { data } = useSession();
   const token = data?.accessToken;
@@ -118,10 +129,13 @@ export function NotificationBell() {
         type="button"
         aria-label={t('shell.notifications')}
         onClick={() => setOpen((v) => !v)}
-        className="relative rounded p-2 text-gray-600 hover:bg-gray-100"
+        className={`relative rounded p-2 ${buttonClassName ?? 'text-gray-600 hover:bg-gray-100'}`}
       >
-        <span aria-hidden>🔔</span>
-        {unread > 0 && (
+        {icon ?? <span aria-hidden>🔔</span>}
+        {unread > 0 && unreadDotClassName ? (
+          <span aria-hidden="true" className={unreadDotClassName} />
+        ) : null}
+        {unread > 0 && !unreadDotClassName && (
           <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white">
             {unread > 99 ? '99+' : unread}
           </span>

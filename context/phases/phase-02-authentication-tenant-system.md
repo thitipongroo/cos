@@ -161,7 +161,7 @@ Entities (PostgreSQL — all in schema: platform):
     tenant_id        UUID PK DEFAULT gen_random_uuid()
     tenant_code      VARCHAR(50) UNIQUE NOT NULL
     tenant_name      VARCHAR(255) NOT NULL
-    keycloak_realm   VARCHAR(100) UNIQUE NOT NULL
+    keycloak_realm   VARCHAR(100) NOT NULL  -- UNIQUE except the shared realm (partial index, 20260914000001); STARTER/PROFESSIONAL share `construction-os` (spec §7.6)
     plan_type        ENUM('STARTER','PROFESSIONAL','ENTERPRISE') NOT NULL
     is_active        BOOLEAN DEFAULT true
     dedicated_db_url VARCHAR(500) NULL  -- NULL = shared DB; non-NULL = enterprise dedicated DB URL
@@ -258,6 +258,10 @@ Generate:
                                      POST /api/v1/admin/tenants                 — create tenant (SYSTEM_ADMIN, §20.4.2)
                                      PATCH /api/v1/admin/tenants/{id}/dedicated-db — attach dedicated DB → EnterpriseProvisioningWorkflow (SYSTEM_ADMIN, §20.4.3)
                                      PATCH /api/v1/admin/tenants/{id}/deactivate   — deactivate tenant (SYSTEM_ADMIN, §20.4.5)
+                                     GET  /api/v1/admin/tenants/provisioning    — provisioning-run state per ENTERPRISE tenant (SYSTEM_ADMIN, §34.5)
+                                     POST /api/v1/admin/tenants/{id}/provisioning/{approve|abort} — human-gate decision (SYSTEM_ADMIN, §34.5)
+                                     (since 2026-09-14 every SYSTEM_ADMIN tenant mutation above REQUIRES `justification`, 10–500 chars,
+                                      and writes one platform.audit_logs row in its own transaction — §6.7, §20.4 Access)
                                      GET  /api/v1/tenant/settings               — get tenant settings (TENANT_ADMIN, ADR-028)
                                      PATCH /api/v1/tenant/settings              — update tenant settings (variance/retention/LINE/notif)
 - Refresh token rotation flow

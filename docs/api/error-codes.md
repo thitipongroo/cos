@@ -26,6 +26,7 @@ All API error responses follow the structure:
 | COS-AUTH-002 | 503  | `auth.sms.providerUnavailable`     | SMS delivery is not configured for this deployment                       | `SMS_PROVIDER=onprem` with no concrete gateway wired (ADR-040) — `onprem-sms.adapter.ts`                     |
 | COS-AUTH-002 | 400  | `user.role.pathBRequiresEmail`     | {role} sign in by email and password only, and this account has no email | Promoting a phone-only (Path A) account to TENANT_ADMIN/FINANCE — `user.service.ts` `changeRole`             |
 | COS-AUTH-003 | 400  | `user.password.pathAHasNoPassword` | This account signs in with a phone number and a one-time code            | Self-service reset email requested on a Path A account — `POST /users/me/password-reset-email`               |
+| COS-AUTH-004 | 503  | `auth.identity.unavailable`        | Identity could not be verified right now — try again                     | `GET /auth/identity` (internal listener): JWKS/database failure, or an identity kill switch OFF (ADR-107)    |
 | COS-AUTH-101 | 401  | `auth.phone.ambiguous`             | This phone number is registered to more than one account                 | One phone number resolves to several active accounts — `identity.service.ts`                                 |
 | COS-AUTH-503 | 503  | —                                  | Identity provider unavailable                                            | Keycloak unreachable or misconfigured during Direct Grant — `keycloak-admin.service.ts`                      |
 
@@ -40,29 +41,30 @@ All API error responses follow the structure:
 
 ## COS-FILE — File Service (Phase 9)
 
-| Code         | HTTP | Message                                   | Trigger                                                                 |
-| ------------ | ---- | ----------------------------------------- | ----------------------------------------------------------------------- |
-| COS-FILE-001 | 401  | Missing X-Tenant-ID or X-User-ID header   | Kong headers absent (unauthenticated)                                   |
-| COS-FILE-002 | 422  | MIME type not allowed                     | Uploaded MIME not in allowed list                                       |
-| COS-FILE-003 | 422  | File exceeds maximum allowed size         | File size > per-MIME limit                                              |
-| COS-FILE-004 | 422  | File extension is not permitted           | .exe, .sh, .bat, .js uploaded                                           |
-| COS-FILE-005 | 404  | File not found                            | fileId not found for tenant                                             |
-| COS-FILE-006 | 404  | File has been deleted                     | File exists but deleted_at is set                                       |
-| COS-FILE-007 | 500  | File upload failed                        | MinIO write error                                                       |
-| COS-FILE-008 | 500  | Failed to generate signed URL             | MinIO presign error                                                     |
-| COS-FILE-009 | 500  | Antivirus scan failed                     | ClamAV unreachable or scan error                                        |
-| COS-FILE-010 | 422  | File is not in quarantine status          | Recover on non-quarantined file                                         |
-| COS-FILE-011 | 403  | Insufficient permissions                  | Caller lacks the required role                                          |
-| COS-FILE-012 | 422  | Archive exceeds max entry count           | ZIP bulk upload — too many entries                                      |
-| COS-FILE-013 | 422  | Archive rejected (zip-bomb guard)         | Ratio/total-size limit exceeded                                         |
-| COS-FILE-014 | 422  | Invalid retention policy                  | Bad category or retention_days                                          |
-| COS-FILE-015 | 404  | No annotation for this file               | GET annotation on a photo with none (ADR-056)                           |
-| COS-FILE-016 | 409  | File not available (scan pending/failed)  | Signed-URL requested before ClamAV cleared the file (not CLEAN)         |
-| COS-FILE-017 | 422  | File content does not match declared type | Magic-byte sniff contradicts the declared MIME (M7)                     |
-| COS-FILE-018 | 401  | Invalid or expired authentication token   | In-service JWT verify failed, or token/Kong-header tenant mismatch (M1) |
-| COS-FILE-019 | 404  | File not found                            | Annotation push for a file_id not visible in the caller's tenant        |
-| COS-FILE-020 | 422  | This endpoint serves images only          | `GET /files/:id/image` on a non-image (ADR-105)                         |
-| COS-FILE-021 | 500  | Failed to read the stored file            | MinIO read error while streaming `GET /files/:id/image`                 |
+| Code         | HTTP | Message                                   | Trigger                                                                             |
+| ------------ | ---- | ----------------------------------------- | ----------------------------------------------------------------------------------- |
+| COS-FILE-001 | 401  | Missing X-Tenant-ID or X-User-ID header   | Kong headers absent (unauthenticated)                                               |
+| COS-FILE-002 | 422  | MIME type not allowed                     | Uploaded MIME not in allowed list                                                   |
+| COS-FILE-003 | 422  | File exceeds maximum allowed size         | File size > per-MIME limit                                                          |
+| COS-FILE-004 | 422  | File extension is not permitted           | .exe, .sh, .bat, .js uploaded                                                       |
+| COS-FILE-005 | 404  | File not found                            | fileId not found for tenant                                                         |
+| COS-FILE-006 | 404  | File has been deleted                     | File exists but deleted_at is set                                                   |
+| COS-FILE-007 | 500  | File upload failed                        | MinIO write error                                                                   |
+| COS-FILE-008 | 500  | Failed to generate signed URL             | MinIO presign error                                                                 |
+| COS-FILE-009 | 500  | Antivirus scan failed                     | ClamAV unreachable or scan error                                                    |
+| COS-FILE-010 | 422  | File is not in quarantine status          | Recover on non-quarantined file                                                     |
+| COS-FILE-011 | 403  | Insufficient permissions                  | Caller lacks the required role                                                      |
+| COS-FILE-012 | 422  | Archive exceeds max entry count           | ZIP bulk upload — too many entries                                                  |
+| COS-FILE-013 | 422  | Archive rejected (zip-bomb guard)         | Ratio/total-size limit exceeded                                                     |
+| COS-FILE-014 | 422  | Invalid retention policy                  | Bad category or retention_days                                                      |
+| COS-FILE-015 | 404  | No annotation for this file               | GET annotation on a photo with none (ADR-056)                                       |
+| COS-FILE-016 | 409  | File not available (scan pending/failed)  | Signed-URL requested before ClamAV cleared the file (not CLEAN)                     |
+| COS-FILE-017 | 422  | File content does not match declared type | Magic-byte sniff contradicts the declared MIME (M7)                                 |
+| COS-FILE-018 | 401  | Invalid or expired authentication token   | In-service JWT verify failed, or token/Kong-header tenant mismatch (M1)             |
+| COS-FILE-019 | 404  | File not found                            | Annotation push for a file_id not visible in the caller's tenant                    |
+| COS-FILE-020 | 422  | This endpoint serves images only          | `GET /files/:id/image` on a non-image (ADR-105)                                     |
+| COS-FILE-021 | 500  | Failed to read the stored file            | MinIO read error while streaming `GET /files/:id/image`                             |
+| COS-FILE-022 | 503  | Identity could not be verified right now  | Backend `/auth/identity` unreachable, 5xx or unset URL — never the claims (ADR-107) |
 
 ---
 

@@ -43,11 +43,16 @@ spec:
               containerPort: {{ .Values.service.port }}
             - name: metrics
               containerPort: {{ .Values.service.metricsPort }}
+            - name: internal
+              containerPort: {{ .Values.service.internalPort }}
           env:
             {{- range $k, $v := .Values.env }}
             - name: {{ $k }}
               value: {{ $v | quote }}
             {{- end }}
+            # The listener must bind the port the Service and NetworkPolicy name (src/shared/net/internal-listener.ts).
+            - name: INTERNAL_PORT
+              value: {{ .Values.service.internalPort | quote }}
           envFrom: {{ toYaml .Values.envFrom | nindent 12 }}
           resources: {{ toYaml .Values.resources | nindent 12 }}
           livenessProbe: {{ toYaml .Values.livenessProbe | nindent 12 }}

@@ -10,8 +10,10 @@ import {
 } from 'class-validator';
 import { ApiPropertyOptional, ApiProperty } from '@nestjs/swagger';
 import { PlanType } from '@prisma/client';
+import { AdminJustificationDto } from './admin-justification.dto';
 
-export class CreateTenantDto {
+/** Extends the §6.7 justification: creating a tenant is an audited SYSTEM_ADMIN action. */
+export class CreateTenantDto extends AdminJustificationDto {
   @ApiProperty({ example: 'acme_corp', description: 'Unique tenant code (lowercase, underscores)' })
   @IsString()
   @Matches(/^[a-z0-9_]{2,50}$/, {

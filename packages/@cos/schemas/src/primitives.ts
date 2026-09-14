@@ -19,6 +19,9 @@ export const MESSAGE_KEYS = [
   'validation.notACurrency',
   'validation.notAPhone',
   'validation.notAnOtp',
+  'validation.tooShort',
+  'validation.notATenantCode',
+  'validation.notAPostgresUrl',
 ] as const;
 
 export type MessageKey = (typeof MESSAGE_KEYS)[number];

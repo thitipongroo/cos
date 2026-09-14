@@ -12,7 +12,203 @@
     "createTenant": "Create tenant",
     "markContracted": "Mark as Contracted",
     "markContractedConfirm": "Start dedicated DB provisioning — type the tenant code to confirm:",
-    "contractRef": "Contract reference (optional)"
+    "contractRef": "Contract reference (optional)",
+    "nav": {
+      "section": "Platform operations",
+      "tenants": "Tenants",
+      "dbFleet": "Dedicated DB Fleet",
+      "migrations": "Data Migrations",
+      "auditLog": "Global Audit Log",
+      "centralPrices": "Central Prices",
+      "settings": "System Settings",
+      "unavailable": "Not available yet",
+      "menu": "Admin navigation",
+      "clusterInfra": "Cluster Infrastructure",
+      "migrationApprovals": "Data Migration Approvals",
+      "auditTrail": "Global Audit Trail",
+      "instances": "Inst."
+    },
+    "list": {
+      "breadcrumbSection": "Platform operator",
+      "breadcrumbPage": "Tenant directory",
+      "title": "Tenant Directory & Dedicated DB",
+      "subtitle": "Manage multi-tenant provisioning, dedicated database routing and enterprise contracts.",
+      "searchLabel": "Search tenants",
+      "searchPlaceholder": "Search tenant code, name, host or region…",
+      "planFilter": "Filter by plan",
+      "allPlans": "All Plans",
+      "loading": "Loading tenants",
+      "loadError": "Tenants could not be loaded.",
+      "provisioningError": "Provisioning state could not be loaded — the Provisioning column is incomplete.",
+      "empty": "No tenants match.",
+      "created": "Tenant created:",
+      "showing": "Showing",
+      "of": "of",
+      "tenants": "tenants",
+      "previous": "Previous",
+      "next": "Next",
+      "page": "Page",
+      "pagination": "Pagination",
+      "importCentralPrices": "Import Central Prices",
+      "clusterZone": "Cluster Zone"
+    },
+    "plan": {
+      "STARTER": "Starter",
+      "PROFESSIONAL": "Professional",
+      "ENTERPRISE": "Enterprise"
+    },
+    "metrics": {
+      "total": "Total tenants",
+      "active": "active",
+      "inactive": "inactive",
+      "thisWeek": "this week",
+      "dedicated": "Dedicated DB tenants",
+      "dedicatedNote": "routed to their own database",
+      "gates": "Migration gates",
+      "waiting": "waiting",
+      "gatesNote": "runs waiting for approval",
+      "enterpriseFleet": "Enterprise DB fleet",
+      "instances": "instances",
+      "isolation": "Strict Isolation",
+      "avgGateTime": "Avg Gate Time",
+      "compute": "Platform compute"
+    },
+    "col": {
+      "code": "Code",
+      "name": "Name",
+      "plan": "Plan type",
+      "status": "Status",
+      "db": "DB routing",
+      "region": "Region",
+      "provisioning": "Provisioning",
+      "actions": "Actions"
+    },
+    "status": {
+      "active": "Active",
+      "inactive": "Inactive",
+      "transit": "Transit",
+      "pending": "Pending"
+    },
+    "pooled": "(Pooled Multi-tenant)",
+    "provisioning": {
+      "none": "—",
+      "unreadable": "State unavailable",
+      "unrecognised": "Unrecognised state",
+      "state": {
+        "CREATING_RDS": "Creating database",
+        "RUNNING_MIGRATIONS": "Running migrations",
+        "ASSIGNING_DB": "Assigning database",
+        "AWAITING_APPROVAL": "Waiting",
+        "MIGRATING_DATA": "Migrating data",
+        "VERIFYING": "Verifying routing",
+        "PROVISIONING_TOPICS": "Provisioning topics",
+        "COMPLETED": "Ready",
+        "ABORTING": "Aborting",
+        "ABORTED": "Aborted"
+      },
+      "active": "Active"
+    },
+    "gate": {
+      "eyebrow": "Migration gate",
+      "body": "has a dedicated database provisioned and is waiting for approval before data migration",
+      "approve": "Approve migration",
+      "abort": "Abort",
+      "kind": "ISOLATION TIER CHANGE",
+      "tenant": "Tenant",
+      "reviewPlan": "Review Plan"
+    },
+    "decision": {
+      "approveTitle": "Approve data migration",
+      "abortTitle": "Abort provisioning",
+      "approveBody": "The run continues: tenant data is migrated to the dedicated database and routing is verified.",
+      "abortBody": "The run stops and compensates: the dedicated database is unassigned and its RDS instance is deleted.",
+      "confirmApprove": "Approve",
+      "confirmAbort": "Abort provisioning",
+      "cancel": "Cancel"
+    },
+    "justification": {
+      "label": "Justification",
+      "help": "Why you are taking this action. Recorded in the audit log (10–500 characters).",
+      "prompt": "Justification for this action — recorded in the audit log (at least 10 characters):",
+      "tooShort": "A justification of at least 10 characters is required. Nothing was changed."
+    },
+    "row": {
+      "assignDbPrompt": "Dedicated database URL (postgresql://…):",
+      "view": "View detail",
+      "auditLog": "Audit log",
+      "approveGate": "Approve gate",
+      "enterpriseOnly": "Enterprise plan only"
+    },
+    "errors": {
+      "invalid": "The request was refused as invalid. Check the fields and the justification.",
+      "forbidden": "Your role cannot do this.",
+      "notFound": "That tenant was not found, or is not in a state that allows this.",
+      "noRun": "This tenant has no provisioning run.",
+      "codeTaken": "That tenant code is already in use.",
+      "notAtGate": "The run is no longer waiting at the gate. Refresh to see its state.",
+      "conflict": "The tenant is not in a state that allows this.",
+      "stateUnreadable": "The run’s state could not be read, so nothing was sent. Try again.",
+      "generic": "Something went wrong. Nothing was changed."
+    },
+    "create": {
+      "title": "Create New Tenant",
+      "cancel": "Cancel",
+      "submit": "Create Tenant",
+      "submitting": "Creating tenant",
+      "required": "Required",
+      "optionalEnterprise": "Optional",
+      "codeLabel": "Tenant Code",
+      "codeRule": "Rules: 2–50 characters, lowercase letters (a–z), numbers (0–9), and underscores (_) only.",
+      "nameLabel": "Tenant Name",
+      "nameRule": "Full company or organization entity name (2–255 characters).",
+      "planLabel": "Select Plan Type & Architectural Tier",
+      "planStarter": "Pooled multi-tenant DB cluster",
+      "planProfessional": "High concurrency pooled DB",
+      "planEnterprise": "Dedicated DB eligible",
+      "dbUrlLabel": "Dedicated Database URI",
+      "dbUrlRule": "Format: postgresql://[user]:[password]@[host]:[port]/[database]",
+      "codeValid": "Valid tenant code format and identifier is available.",
+      "nameValid": "Valid tenant name.",
+      "dbUrlValid": "Valid PostgreSQL connection URI format. Host is reachable on cluster internal network.",
+      "planEnterpriseNote": "Enterprise plan selected — dedicated database configuration unlocked.",
+      "dbUrlEnterpriseOnly": "Choose the Enterprise plan to set a dedicated database.",
+      "justificationRule": "Why this tenant is being created. Recorded in the audit log (10–500 characters).",
+      "breadcrumb": "Create New Tenant",
+      "subtitle": "Provision a new tenant organization with isolated schema or dedicated database instance",
+      "close": "Close dialog",
+      "tierStarter": "Shared Compute",
+      "tierProfessional": "Tiered IOPS",
+      "tierEnterprise": "● Dedicated Fleet",
+      "vpcBadge": "Internal VPC Mesh",
+      "portPrefix": "Port",
+      "portSuffix": "Open",
+      "lifecycleTitle": "Automatic Provisioning Lifecycle:",
+      "lifecycleBody": "Submitting this request will automatically allocate tenant secrets via HashiCorp Vault, register schema schemas in the central catalog, and configure mutual TLS certs for EMQX streaming broker.",
+      "zone": "Zone: ap-southeast-1a (Headroom: 72%)"
+    },
+    "connection": {
+      "online": "Synced",
+      "offline": "API unreachable",
+      "checking": "Connecting"
+    },
+    "noDataSource": "No data source yet",
+    "pulse": {
+      "title": "Cluster pulse",
+      "emqx": "EMQX Broker:",
+      "timescale": "Timescale Chunks:",
+      "mesh": "Mesh Latency:",
+      "queue": "Queue Backlog:"
+    },
+    "telemetry": {
+      "emqx": "EMQX",
+      "pgFleet": "PG Fleet",
+      "ded": "Ded.",
+      "pool": "Pool"
+    },
+    "account": {
+      "menu": "Account"
+    },
+    "globalSearch": "Search tenants, code, dedicated DB..."
   },
   "auth": {
     "login": {
@@ -525,7 +721,10 @@
     "notAnOtp": "Enter the 6-digit code",
     "outOfRange": "Out of the allowed range",
     "required": "This field is required",
-    "tooLong": "Too long"
+    "tooLong": "Too long",
+    "tooShort": "Too short",
+    "notATenantCode": "Use 2–50 lowercase letters, numbers or underscores",
+    "notAPostgresUrl": "Must start with postgresql://"
   },
   "vendor": {
     "portalTitle": "Vendor Portal",

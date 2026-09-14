@@ -14,7 +14,12 @@ jest.mock('@cos/logger', () => ({
 }));
 
 import { UnauthorizedException } from '@nestjs/common';
-import { KeycloakJwtStrategy, realmFromIssuer } from '../strategies/keycloak-jwt.strategy';
+import {
+  AUTHORITATIVE_ROLE_CHECK_FLAG,
+  KeycloakJwtStrategy,
+  SUBJECT_BINDING_FLAG,
+  realmFromIssuer,
+} from '../strategies/keycloak-jwt.strategy';
 import type { JwtPayload } from '../../../shared/context/jwt-payload';
 
 describe('KeycloakJwtStrategy', () => {
@@ -71,9 +76,11 @@ describe('KeycloakJwtStrategy', () => {
       (strategy as unknown as { platformPrisma: { $queryRaw: jest.Mock } }).platformPrisma = {
         // keycloak_realm defaults to the realm the fixture token is issued by — the binding check
         // (OQ-51) rejects a row whose realm is not the token's, so it can no longer be omitted.
-        $queryRaw: jest
-          .fn()
-          .mockResolvedValue(rows.map((r) => ({ keycloak_realm: 'construction-os', ...r }))),
+        $queryRaw: jest.fn().mockResolvedValue(
+          // bound_subject defaults to the fixture token's `sub` — ADR-106 refuses a row whose account
+          // is not the token's subject, so it can no longer be omitted either.
+          rows.map((r) => ({ keycloak_realm: 'construction-os', bound_subject: 'user-1', ...r })),
+        ),
       };
     };
 
@@ -125,9 +132,13 @@ describe('KeycloakJwtStrategy', () => {
       function withFlag(enabled: boolean, rows: Array<Record<string, unknown>>) {
         const s = new KeycloakJwtStrategy({ isEnabled: () => enabled } as never);
         (s as unknown as { platformPrisma: { $queryRaw: jest.Mock } }).platformPrisma = {
-          $queryRaw: jest
-            .fn()
-            .mockResolvedValue(rows.map((r) => ({ keycloak_realm: 'construction-os', ...r }))),
+          $queryRaw: jest.fn().mockResolvedValue(
+            rows.map((r) => ({
+              keycloak_realm: 'construction-os',
+              bound_subject: 'user-1',
+              ...r,
+            })),
+          ),
         };
         return s;
       }
@@ -256,6 +267,7 @@ describe('KeycloakJwtStrategy — issuer bound to tenant', () => {
     dedicated_db_url: null,
     keycloak_realm: 'cos-acme',
     role: 'PROJECT_MANAGER',
+    bound_subject: 'user-1',
   };
 
   it("accepts a dedicated-realm token whose realm is the tenant's", async () => {
@@ -445,5 +457,104 @@ describe('KeycloakJwtStrategy — trusted-issuer allowlist', () => {
       provider.call(s, null, tokenFor('https://kc/realms/unknown'), (err, key) => done(err ?? key)),
     );
     expect(failed).toBeInstanceOf(Error);
+  });
+});
+
+// ─── Subject binding (ADR-106) ──────────────────────────────────────────────
+//
+// On a realm several tenants share, `tenant_id` and `user_id` are user attributes anyone able to edit
+// attributes there can set. `sub` is issued and signed by Keycloak, so it must be the account the claims
+// name. These pin that, and that it survives the ADR-077 switch being turned off.
+describe('KeycloakJwtStrategy — subject bound to the platform account', () => {
+  const payload: JwtPayload = {
+    sub: 'kc-alice',
+    jti: 'jwt-id-1',
+    tenant_id: 'tenant-b',
+    user_id: 'user-bob',
+    role: 'SITE_ENGINEER',
+    iss: 'http://localhost:8090/realms/construction-os',
+    aud: 'cos-backend',
+    exp: Math.floor(Date.now() / 1000) + 3600,
+    iat: Math.floor(Date.now() / 1000),
+  };
+  const ROW = {
+    tenant_code: 'shared-b',
+    dedicated_db_url: null,
+    keycloak_realm: 'construction-os',
+    role: 'SITE_ENGINEER',
+    bound_subject: 'kc-bob',
+  };
+
+  /** Flags answered by NAME, so one switch can be off while the other stays on. */
+  function strategy(row: Record<string, unknown>, flags: Record<string, boolean> = {}) {
+    const s = new KeycloakJwtStrategy({
+      isEnabled: (name: string) => flags[name] ?? true,
+    } as never);
+    (s as unknown as { platformPrisma: { $queryRaw: jest.Mock } }).platformPrisma = {
+      $queryRaw: jest.fn().mockResolvedValue([row]),
+    } as never;
+    return s;
+  }
+
+  it("accepts a token whose subject is the named account's keycloak_user_id", async () => {
+    await expect(strategy(ROW).validate({ ...payload, sub: 'kc-bob' })).resolves.toMatchObject({
+      tenantCode: 'shared-b',
+      user_id: 'user-bob',
+    });
+  });
+
+  it("REFUSES alice's token presenting bob's tenant_id and user_id on the shared realm", async () => {
+    await expect(strategy(ROW).validate(payload)).rejects.toThrow(
+      'Tenant or user not found or inactive',
+    );
+  });
+
+  it('refuses a token with no subject, and a claim naming no account at all', async () => {
+    await expect(strategy(ROW).validate({ ...payload, sub: undefined } as never)).rejects.toThrow(
+      UnauthorizedException,
+    );
+    await expect(
+      strategy({ ...ROW, bound_subject: null }).validate({ ...payload, sub: 'kc-bob' }),
+    ).rejects.toThrow(UnauthorizedException);
+  });
+
+  it('still applies with the ADR-077 authoritative-role-check switch OFF', async () => {
+    const s = strategy(ROW, { [AUTHORITATIVE_ROLE_CHECK_FLAG]: false });
+    await expect(s.validate(payload)).rejects.toThrow(UnauthorizedException);
+  });
+
+  it('is skipped when its own switch is OFF — the <60 s recovery path', async () => {
+    const s = strategy(ROW, { [SUBJECT_BINDING_FLAG]: false });
+    await expect(s.validate(payload)).resolves.toMatchObject({ tenantCode: 'shared-b' });
+  });
+
+  it('is evaluated with NO user or tenant context — the claims it checks cannot choose the switch', async () => {
+    const isEnabled = jest.fn((name: string, ctx?: { userId?: string; tenantId?: string }) =>
+      // A per-account OFF: it must never be reachable by a token that only names that account.
+      name === SUBJECT_BINDING_FLAG && ctx?.userId === 'user-bob' ? false : true,
+    );
+    const s = new KeycloakJwtStrategy({ isEnabled } as never);
+    (s as unknown as { platformPrisma: { $queryRaw: jest.Mock } }).platformPrisma = {
+      $queryRaw: jest.fn().mockResolvedValue([ROW]),
+    } as never;
+    await expect(s.validate(payload)).rejects.toThrow(UnauthorizedException);
+    expect(isEnabled).toHaveBeenCalledWith(SUBJECT_BINDING_FLAG);
+  });
+
+  it('refuses an empty-string subject even where the account has no bound subject', async () => {
+    await expect(
+      strategy({ ...ROW, bound_subject: null }).validate({ ...payload, sub: '' }),
+    ).rejects.toThrow(UnauthorizedException);
+    await expect(strategy(ROW).validate({ ...payload, sub: '' })).rejects.toThrow(
+      UnauthorizedException,
+    );
+  });
+
+  it('defaults ON when no flag service is wired', async () => {
+    const s = new KeycloakJwtStrategy();
+    (s as unknown as { platformPrisma: { $queryRaw: jest.Mock } }).platformPrisma = {
+      $queryRaw: jest.fn().mockResolvedValue([ROW]),
+    } as never;
+    await expect(s.validate(payload)).rejects.toThrow(UnauthorizedException);
   });
 });

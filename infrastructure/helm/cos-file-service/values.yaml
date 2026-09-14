@@ -41,6 +41,11 @@ env:
   # cannot drift from service.port and the probes below.
   FILE_SERVICE_PORT: '3002'
   PROMETHEUS_PORT: '9464'
+  # The backend, for a user's verified identity (ADR-107) — no default in code, unset = 503 on every user
+  # request. ArgoCD's release name is the Application name (argo-cd docs, Helm user guide), and the backend
+  # chart names its Service <release>-cos-backend: `helm template cos-backend` renders cos-backend-cos-backend. Port 3100 is
+  # the backend's internal listener — the public port 3000 refuses these calls in production.
+  BACKEND_INTERNAL_URL: 'http://cos-backend-cos-backend:3100'
 
 envFrom:
   - secretRef:

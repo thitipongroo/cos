@@ -24,21 +24,44 @@ NetworkPolicy, which keeps the internet out but leaves every pod in the cluster 
 than one.
 
 Requiring the token costs nothing: the only callers of these endpoints are the web and mobile apps,
-which always send `Authorization`. The backend never calls this service, and the MLOps
+which always send `Authorization` (the backend's AiProxyController forwards their tokens; since ADR-107 this
+service in turn asks the backend who they are). The MLOps
 model-promotion job uses `/internal/models/{name}/reload` with `X-Internal-Token`, which does not go
 through this dependency.
 
 If a verifying gateway is deployed later it still cannot be the only check: a header that agrees with
 the token is accepted, a header that disagrees fails closed, and a header alone is refused.
 
+WHY THE TOKEN'S OWN CLAIM IS NO LONGER THE TENANT EITHER (ADR-107)
+------------------------------------------------------------------
+`tenant_id` is a Keycloak USER ATTRIBUTE. Until the realm ran `unmanagedAttributePolicy: ADMIN_EDIT` a
+signed-in user could rewrite their own through the Account API (measured 2026-09-14), and even under
+ADMIN_EDIT anything able to set attributes can. A valid signature says Keycloak minted the token, not that
+the attribute is true, and this service cannot read platform.users. So a verified USER token is forwarded
+to the backend's `GET /api/v1/auth/identity`, which answers after realm binding, subject binding (ADR-106)
+and the database role check (ADR-077), and the tenant is taken from that answer.
+
+Fail closed: a backend refusal is 401; an unreachable backend, a non-2xx, or an answer without a tenant is
+503 — never the claim. Answers are cached per SHA-256 of the Authorization header for the shorter of the
+token's remaining lifetime and 30 s, in a map capped at 10 000 entries. Mirrors
+packages/@cos/service-identity (the Node services' shared client).
+
 `get_verified_tenant` is a *sync* dependency on purpose: FastAPI runs sync dependencies in a
-threadpool, so the (cached) JWKS network fetch never blocks the event loop.
+threadpool, so the (cached) JWKS fetch and the backend call never block the event loop. The cache is
+therefore shared between threads, hence the lock.
 """
 from __future__ import annotations
 
 import functools
+import hashlib
+import logging
 import os
+import threading
+import time
+from collections import OrderedDict
+from typing import Callable
 
+import httpx
 import jwt
 from fastapi import HTTPException, Request
 
@@ -50,6 +73,75 @@ _ISSUER = os.environ.get("KEYCLOAK_ISSUER", f"{_KEYCLOAK_URL}/realms/{_KEYCLOAK_
 _AUDIENCE = os.environ.get("KEYCLOAK_AUDIENCE", "cos-backend")
 _JWKS_URL = f"{_KEYCLOAK_URL}/realms/{_KEYCLOAK_REALM}/protocol/openid-connect/certs"
 
+CACHE_MAX_S = 30.0
+CACHE_MAX_ENTRIES = 10_000
+_BACKEND_TIMEOUT_S = 5.0
+_UNAVAILABLE = "Identity could not be verified right now — try again"
+
+_logger = logging.getLogger("cos.ai.auth")
+_identity_cache: "OrderedDict[str, tuple[str, float]]" = OrderedDict()
+_identity_cache_lock = threading.Lock()
+
+
+def clear_identity_cache() -> None:
+    """Test seam: the cache is module state."""
+    with _identity_cache_lock:
+        _identity_cache.clear()
+
+
+def _unavailable(reason: str) -> HTTPException:
+    _logger.error("auth.identity.unavailable — refusing rather than trusting claims: %s", reason)
+    return HTTPException(status_code=503, detail=_UNAVAILABLE)
+
+
+def _tenant_from_backend(
+    authorization: str, exp: object, now: Callable[[], float] = time.time
+) -> str:
+    """The caller's tenant as the backend verified it (ADR-107). Never the token's own claim."""
+    key = hashlib.sha256(authorization.encode()).hexdigest()
+    with _identity_cache_lock:
+        hit = _identity_cache.get(key)
+        if hit and hit[1] > now():
+            return hit[0]
+        if hit:
+            del _identity_cache[key]
+
+    base = os.environ.get("BACKEND_INTERNAL_URL")
+    if not base:
+        raise _unavailable("BACKEND_INTERNAL_URL is not set")
+    try:
+        with httpx.Client(timeout=_BACKEND_TIMEOUT_S) as client:
+            resp = client.get(
+                f"{base.rstrip('/')}/api/v1/auth/identity",
+                headers={"authorization": authorization},
+            )
+    # InvalidURL is not an HTTPError in httpx 0.28.1 — a malformed BACKEND_INTERNAL_URL would otherwise
+    # escape as a 500 (Rule 41 review, 2026-09-14).
+    except (httpx.HTTPError, httpx.InvalidURL) as exc:
+        raise _unavailable(f"backend unreachable: {exc}") from exc
+
+    # Only 401 is the token being refused. 503 means the backend could not check it; a 403 or 404 is not a
+    # verified identity either — fail closed as unavailable (revision R8).
+    if resp.status_code == 401:
+        raise HTTPException(status_code=401, detail="Invalid or expired token")
+    if not resp.is_success:
+        raise _unavailable(f"backend answered {resp.status_code}")
+    try:
+        body = resp.json()
+    except ValueError as exc:
+        raise _unavailable("backend answered a body that is not JSON") from exc
+    tenant = body.get("tenant_id") if isinstance(body, dict) else None
+    if not isinstance(tenant, str) or not tenant:
+        raise _unavailable("backend answered without tenant_id")
+
+    ttl = min(CACHE_MAX_S, float(exp) - now()) if isinstance(exp, (int, float)) else 0.0
+    if ttl > 0:
+        with _identity_cache_lock:
+            if len(_identity_cache) >= CACHE_MAX_ENTRIES:
+                _identity_cache.popitem(last=False)
+            _identity_cache[key] = (tenant, now() + ttl)
+    return tenant
+
 
 @functools.lru_cache(maxsize=1)
 def _jwks_client() -> "jwt.PyJWKClient":
@@ -58,7 +150,11 @@ def _jwks_client() -> "jwt.PyJWKClient":
 
 
 def _tenant_from_bearer(request: Request) -> str | None:
-    """Verify the Authorization bearer token (if any) and return its tenant_id claim, else None."""
+    """Verify the Authorization bearer token (if any) and return the tenant the BACKEND gives for it.
+
+    None when there is no bearer token. The token's own `tenant_id` claim only decides that this is a
+    user's token; the tenant returned is the backend's (ADR-107).
+    """
     auth = request.headers.get("authorization", "")
     if not auth.lower().startswith("bearer "):
         return None
@@ -75,10 +171,9 @@ def _tenant_from_bearer(request: Request) -> str | None:
         )
     except Exception as exc:  # bad signature / expired / wrong aud|iss / malformed
         raise HTTPException(status_code=401, detail="Invalid or expired token") from exc
-    tenant = claims.get("tenant_id")
-    if not tenant:
+    if not claims.get("tenant_id"):
         raise HTTPException(status_code=401, detail="Token missing tenant_id claim")
-    return str(tenant)
+    return _tenant_from_backend(auth.strip(), claims.get("exp"))
 
 
 def get_verified_tenant(request: Request) -> str:

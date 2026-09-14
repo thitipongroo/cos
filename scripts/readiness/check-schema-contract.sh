@@ -65,6 +65,8 @@ PAIRS = [
     ('userCreateSchema', 'CreateUserInput'),
     ('tenantSettingsSchema', 'UpdateTenantSettingsInput'),
     ('tenantCreateSchema', 'CreateTenantInput'),
+    # §6.7 — the reason every other SYSTEM_ADMIN tenant action sends (2026-09-14).
+    ('adminJustificationSchema', 'AdminJustificationInput'),
     ('leadCreateSchema', 'CreateLeadInput'),
     ('opportunityCreateSchema', 'CreateOpportunityInput'),
     ('quotationSubmitSchema', 'SubmitQuotationInput'),

@@ -60,19 +60,29 @@ added the same day; the table above is the summary, that document is the contrac
 - **VC/DID stack:** `@digitalbazaar/vc`, `ed25519-signature-2020`, `ed25519-verification-key-2020`,
   `did-method-key`, `did-method-web`, `did-io`, `vc-status-list`, `security-document-loader`, `jsonld`
 - **HTTP:** `fastify`, `@fastify/helmet`, `@fastify/cors`, `@fastify/rate-limit`
-- **Identity:** `jsonwebtoken`, `jwks-rsa` (Keycloak JWKS)
+- **Identity:** `jsonwebtoken`, `jwks-rsa` (Keycloak JWKS); the backend's `GET /api/v1/auth/identity`
+  for every request carrying a user token
+
+**A user's identity comes from the backend, not the token (ADR-107).** For a user token, the auth hook
+forwards the same `Authorization` header to the backend's `GET /api/v1/auth/identity` and uses the
+`tenant_id`, `user_id` and `role` it answers. The token's own claims are Keycloak user attributes, and this
+service cannot read `platform.users`. If the backend refuses the token, the answer is `401`. If it cannot
+be reached, answers `5xx`, or `BACKEND_INTERNAL_URL` is unset, the answer is `503` — never the claims.
+Answers are cached per token for at most 30 s and never past the token's `exp`. Service tokens are unchanged.
+
 - **Storage:** `pg` (PostgreSQL; tenant-scoped via `withTenant`)
 - **Logging:** `pino`
 
 ## Configuration
 
-| Variable                    | Default       | Purpose                                                       |
-| --------------------------- | ------------- | ------------------------------------------------------------- |
-| `PORT`                      | `3009`        | HTTP listen port                                              |
-| `NODE_ENV`                  | `development` | Runtime mode                                                  |
-| `DATABASE_URL`              | — (required)  | PostgreSQL connection (via PgBouncer — QM-18)                 |
-| `DID_WEB_BASE_DOMAIN`       | — (required)  | Domain that `did:web:{domain}:tenants:{tenantId}` resolves to |
-| `APP_SECRET_ENCRYPTION_KEY` | — (required)  | AES key wrapping issuer private keys at rest (QM-4)           |
+| Variable                    | Default       | Purpose                                                            |
+| --------------------------- | ------------- | ------------------------------------------------------------------ |
+| `PORT`                      | `3009`        | HTTP listen port                                                   |
+| `NODE_ENV`                  | `development` | Runtime mode                                                       |
+| `DATABASE_URL`              | — (required)  | PostgreSQL connection (via PgBouncer — QM-18)                      |
+| `DID_WEB_BASE_DOMAIN`       | — (required)  | Domain that `did:web:{domain}:tenants:{tenantId}` resolves to      |
+| `APP_SECRET_ENCRYPTION_KEY` | — (required)  | AES key wrapping issuer private keys at rest (QM-4)                |
+| `BACKEND_INTERNAL_URL`      | — (none)      | The backend, for a user's verified identity (ADR-107); unset = 503 |
 
 Values come from the repo-root `.env` locally; from AWS Secrets Manager / Vault in staging and
 production — never from a file.

@@ -56,6 +56,9 @@ module.exports = {
     // Locale widening + document lang/dir (QM-3). A regression here is invisible on screen but
     // makes a screen reader announce Thai with an English voice, and would drop the Buddhist Era.
     'src/lib/locale.ts',
+    // SYSTEM_ADMIN Tenant List (§20.4.1) — every figure, filter, page and provisioning label the
+    // page shows is decided here, so a wrong count or a mislabelled run state is caught by a spec.
+    'src/lib/adminTenants.ts',
   ],
   coveragePathIgnorePatterns: ['/node_modules/', '\\.spec\\.ts$'],
   coverageThreshold: {
