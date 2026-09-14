@@ -104,7 +104,7 @@ Risk legend: 🟢 in-range/same-major · 🟡 same-major minor/patch · 🔴 ≥
 | neo4j                              | 5.19-community   | 2026.05.0-community                                                     | 5.26.27-community | 🔴                |
 | clickhouse/clickhouse-server       | 24.3-alpine      | 26.5.4 (LTS 26.3)                                                       | —                 | 🔴                |
 | quay.io/keycloak/keycloak          | 24.0.4           | 26.6.4                                                                  | —                 | 🔴                |
-| minio/minio                        | latest (mutable) | pin explicit                                                            | —                 | ⚠ reproducibility |
+| quay.io/minio/minio                | latest (mutable) | pin explicit                                                            | —                 | ⚠ reproducibility |
 | edoburu/pgbouncer                  | latest (mutable) | pin explicit                                                            | —                 | ⚠ reproducibility |
 | clamav/clamav                      | stable (mutable) | pin explicit                                                            | —                 | ⚠ reproducibility |
 | provectuslabs/kafka-ui             | latest (mutable) | pin explicit                                                            | —                 | ⚠ reproducibility |

@@ -91,7 +91,8 @@ export async function startContainers(opts: TestContainersOptions = {}): Promise
 
   if (opts.minio) {
     independentPromises.push(
-      new MinioContainer('minio/minio:latest')
+      // quay.io, not Docker Hub: hub.docker.com's `minio/minio` repository returns 404 (measured 2026-09-14); quay.io serves the same tag.
+      new MinioContainer('quay.io/minio/minio:latest')
         .withUsername('minioadmin')
         .withPassword('minioadmin')
         .start()

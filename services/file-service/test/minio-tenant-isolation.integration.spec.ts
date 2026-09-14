@@ -28,7 +28,8 @@ describe('TC-P09-ISO-001 â€” object storage is tenant-isolated (Testcontainers â
   let baseUrl: string;
 
   beforeAll(async () => {
-    container = await new GenericContainer('minio/minio:RELEASE.2024-09-13T20-26-02Z')
+    // quay.io, not Docker Hub: hub.docker.com's `minio/minio` repository returns 404 (measured 2026-09-14); quay.io serves the same tag.
+    container = await new GenericContainer('quay.io/minio/minio:RELEASE.2024-09-13T20-26-02Z')
       .withEnvironment({
         MINIO_ROOT_USER: ROOT_USER,
         MINIO_ROOT_PASSWORD: ROOT_PASSWORD,
