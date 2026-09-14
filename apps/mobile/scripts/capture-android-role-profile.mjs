@@ -13,8 +13,9 @@
 // They lived in `02-shared/` for that reason until 2026-09-13, when the product owner moved them
 // into the role folders so each role's set is complete in one place. What differs between the
 // frames is real but narrow: the notification section offers the §19.4 types routed to the
-// signed-in role, the profile block carries that person's name, position and id, and the Password
-// row appears only where the account has an email. Everything else is identical by construction,
+// signed-in role, the profile carries that person's name, position and phone, and the Password row
+// appears only where the account has an email. (Account Settings carried a profile head with the
+// name, position and id too, until it was removed on 2026-09-14.) Everything else is identical by construction,
 // and that is worth being able to see side by side.
 //
 // ── ELEVEN, NOT TWELVE ────────────────────────────────────────────────────────────────────────
@@ -49,7 +50,15 @@
 // provision-keycloak-demo · emulator booted with a debug APK BUILT ON OR AFTER 2026-09-13
 // (`/profile` imports expo-image-picker, whose JS calls `requireNativeModule` at module scope — an
 // older APK does not carry it and the screen throws on import) · Metro with EXPO_PUBLIC_CAPTURE=1.
-// Run: node scripts/capture-android-role-profile.mjs [role-key …]
+// Run: node scripts/capture-android-role-profile.mjs [--settings-only] [role-key …]
+//
+// ── --settings-only ───────────────────────────────────────────────────────────────────────────
+//
+// Shoots the Account Settings frame and NOT the profile (added 2026-09-14, when the settings head
+// was removed and only that screen changed). Re-shooting an unchanged screen is not free: a PNG of
+// the same page is never byte-identical — the clock, the sync glyph, the avatar's antialiasing — so
+// every run would re-churn eleven files in git for no change, and a reviewer could not tell the
+// frames that moved from the ones that merely re-encoded.
 
 import { execFileSync } from 'node:child_process';
 import { createHmac } from 'node:crypto';
@@ -140,24 +149,14 @@ const ROLES = [
 
 const DENSITY = { settings: '200', profile: '300' };
 
-/**
- * Roles whose Account Settings page does not fit at 200, with the value that does.
- *
- * MEASURED 2026-09-13, not guessed: the first eleven-role run filed two frames whose SYSTEM group
- * ran past the bottom nav — the `Version` row, the last thing on the page, was simply absent. Both
- * are longer pages for a reason the screen itself shows. PROJECT_MANAGER carries the most §19.4
- * notification types of any role, so its Notification Types section is the tallest; VIEWER is the
- * one role that gets the System Permissions block, which adds a whole group.
- *
- * A truncated page filed as a full page is the exact failure lowering the density exists to
- * prevent, and it is invisible unless someone looks for the last row — which is why the check after
- * a run is "is `Version` in the frame", not "does the frame look right".
- *
- * The other nine stay at 200 rather than all eleven dropping to 180: these frames are meant to be
- * read side by side, and 10 % is a difference a reader will not notice where a missing row is one
- * they cannot recover.
- */
-const SETTINGS_DENSITY = { 'project-manager': '180', viewer: '180' };
+// NO PER-ROLE OVERRIDE SINCE 2026-09-14. PROJECT_MANAGER and VIEWER took 180 on 2026-09-13, when
+// the page still opened on a profile head and both ran past the bottom nav at 200 — the `Version`
+// row, the last thing on the page, was simply absent. With the head removed the page is shorter, and
+// both were RE-MEASURED at 200 rather than kept on inertia: `Version` sits clear of the nav in both
+// frames. All eleven are shot at one density again, which is what reading them side by side wants.
+//
+// If a role's page grows past the fold again, the check that catches it is still "is `Version` in
+// the frame", not "does the frame look right".
 
 const SDK = process.env['ANDROID_HOME'] ?? process.env['ANDROID_SDK_ROOT'] ?? '';
 const ADB = SDK
@@ -452,17 +451,19 @@ async function captureRole(role) {
   await find(byId('navigation-drawer'), 'navigation drawer', 30);
   await tap((n) => n.includes('resource-id="drawer-link-/account-settings"'), 'Settings row');
   await find(byId('account-settings'), 'account settings screen', 40);
-  // The screen fetches /users/me (the head, the MFA row, the Password row's path) and
+  // The screen fetches /users/me (the MFA row, the Password row's path) and
   // <NotificationSettings /> fetches its preferences. Give both a moment so the frame shows the
   // loaded page rather than a skeleton and a silent MFA row.
   await delay(9000);
   await dismissDevBanners();
-  await withShrunkScreen(SETTINGS_DENSITY[role.key] ?? DENSITY.settings, async () => {
+  await withShrunkScreen(DENSITY.settings, async () => {
     await find(byId('account-settings'), 'account settings at capture density', 30);
     await delay(3000);
     grab(join(SCREENS, role.dir, `02-${role.prefix}-account-settings.png`));
     console.log(`  shot ${role.dir}/02-${role.prefix}-account-settings.png`);
   });
+
+  if (SETTINGS_ONLY) return;
 
   // ── PROFILE ─────────────────────────────────────────────────────────────────────────────────
   // Entered from the DRAWER's profile card, which is its only entry point — the same path a user
@@ -481,7 +482,8 @@ async function captureRole(role) {
   });
 }
 
-const ONLY = new Set(process.argv.slice(2));
+const SETTINGS_ONLY = process.argv.includes('--settings-only');
+const ONLY = new Set(process.argv.slice(2).filter((a) => !a.startsWith('--')));
 const wanted = (key) => ONLY.size === 0 || ONLY.has(key);
 const METRO_PORT = process.env['METRO_PORT'] ?? '8081';
 

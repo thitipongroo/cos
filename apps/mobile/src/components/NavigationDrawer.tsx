@@ -295,14 +295,12 @@ export function NavigationDrawer(): React.JSX.Element | null {
           onPress={() => go('/profile')}
           style={styles.profileCard}
         >
-          {/* THE PROJECT'S PROFILE BLOCK — <ProfileBlock />, which is also what heads Account
-              Settings. It was 18 lines of JSX here and 18 more there until 2026-09-10, when the
-              jscpd gate caught the pair on the run that added the second one. §32.7 says there is
-              "no second SHAPE anywhere in the app", and two hand-maintained copies of one shape is
-              precisely how a second shape appears — one prop at a time, with nothing failing when
-              it does. The component's own header carries the order and the reasons behind it. */}
+          {/* THE PROJECT'S PROFILE BLOCK — <ProfileBlock />. It was extracted on 2026-09-10, when
+              Account Settings grew a copy of this card and the jscpd gate caught the pair; that
+              copy went with the settings head on 2026-09-14, and this is the block's one caller.
+              It stays a component so §32.7's "no second SHAPE anywhere in the app" has one place
+              to hold. The component's own header carries the order and the reasons behind it. */}
           <ProfileBlock
-            variant="drawer"
             testIDPrefix="drawer"
             /* THE CHEVRON'S OWN COLUMN, reserved on the PROSE lines rather than on the card
                (product-owner decision 2026-09-11: "ถ้าชื่อตำแหน่งชนกับ chevron ให้ย่อส่วนท้าย…

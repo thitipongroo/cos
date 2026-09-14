@@ -1475,12 +1475,15 @@ The card at the head of `<NavigationDrawer />`, and **the project's standard for
 signed in** (product-owner decision 2026-09-08). One drawer serves every role, so this is every
 role's block; there is no per-role variant and no second shape anywhere in the app.
 
-**IT HEADS TWO SURFACES SINCE 2026-09-10, AND THEY DRAW THE SAME BLOCK.** `<AccountSettings />`
-gained the same card when that screen was regrouped (see _Account Settings_ below), because its
-drawing opens on a profile header and the standard is what such a header is. Two INSTANCES of one
-shape is what the paragraph above requires; a second shape is what it forbids. The drawing's photo
-avatar and its hardcoded "CRM Manager" line are not used on either surface — the position is
-`platform.users.position` in both, and null draws nothing in both.
+**IT HEADS ONE SURFACE AGAIN SINCE 2026-09-14.** `<AccountSettings />` gained the same card on
+2026-09-10, when that screen was regrouped from a drawing that opens on a profile header, and the
+block was extracted as `<ProfileBlock />` so the two would be one shape. That head was **removed on
+2026-09-14** (product-owner decision): the Stitch screen that replaced the drawing opens straight on
+Application Settings. The component stays, with the drawer as its only caller, so the next surface
+that says who is signed in reaches for it rather than growing a copy. Its `screen` variant and its
+`children` slot, which only the settings head used, went with it. The drawings' photo avatar and
+hardcoded "CRM Manager" line are not used — the position is `platform.users.position`, and null
+draws nothing.
 
 Its order, top to bottom:
 
@@ -1628,14 +1631,22 @@ and are recorded here because each is still a ruling about this product, not abo
   could only print a constant and its switch button could only do nothing. `<ProjectContextBar />`
   answers _which project_, a different question with its own component.
 
-#### Account Settings — three groups and a profile head
+#### Account Settings — grouped settings, no profile head
 
 `<AccountSettings />` is **Application Settings · Notification Settings · Security & Access**, plus a
-**System** group, under the profile block above, for **every role** (product-owner decision
+**System** group, for **every role** (product-owner decision
 2026-09-13, from Stitch screen `63c6dccafa734761a077835aabd70838` "Account & Notification Settings -
 Site Engineer (Unified)"). One component serves all twelve roles; a per-role settings layout would be
 twelve screens to keep in step. The previous grouping — Account · Preferences · System, from
 `mockup/mobile/12_crm_manager/05_profile/01_account_settings`, 2026-09-10 — is what this replaced.
+
+**There is no profile head since 2026-09-14** (product-owner decision, reversing the one of
+2026-09-10 that added it). It was the Drawer Profile Block with the sync state under it, taken from
+the CRM drawing; the Stitch screen opens on Application Settings with no such header, so it had
+become the one block on the page no current drawing asks for. **No information left the product**,
+checked rather than assumed: the name, position and id are on the navigation drawer and on
+`/profile`, and the sync state is the TopBar `<SyncPill />`, the shell's one sync indicator. `GET
+/users/me` is still read here, for the MFA row's state and the Password row's Path B test only.
 
 **Nothing was dropped in either regrouping:** Change Secure PIN, the theme control, the offline-data
 row and the version row are all still there, because ADR-085 gives composition to the implementation
@@ -1664,8 +1675,8 @@ What the drawings ask for and do not get, each for a stated reason:
 
 | Drawn                            | Rendered instead                                                                                                                                                                                                                 |
 | -------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `Personal Info` row              | **Nothing.** The profile card directly above it IS that information, and the full record is one tap away on `/profile` (below), reached from the drawer's profile card                                                            |
-| `Last sync: 2 min ago`           | The CURRENT sync state, through the same `useSyncPillView` precedence every other sync indicator reads. Nothing here records when the last flush finished                                                                        |
+| `Personal Info` row              | **Nothing.** The full record is `/profile` (below), reached from the drawer's profile card — the one place identity lives. A second door from this screen would be a duplicate                                                  |
+| `Last sync: 2 min ago`           | **Nothing on this screen.** Nothing records when the last flush finished; the current state is the TopBar `<SyncPill />`                                                                                                        |
 | `MFA Active` (as a label)        | `platform.users.mfa_enabled`, from `GET /users/me` — and **silence** until the answer arrives, because an unanswered fetch is not "not enrolled"                                                                                 |
 | `2.4 GB` cached                  | The measured on-disk size of the offline database (`localDbSizeBytes()`), against the §17.7 ceiling it is measured for. The row REPORTS and does not manage: nothing in this app prunes that cache on request                    |
 | A THIRD theme segment (`system`) | **Two segments.** `ThemeMode` is dark-or-light; there is no system mode in the store, and adding one is a behaviour change rather than a restyle (PO decision E1). A segment that cannot be selected is worse than one fewer     |
@@ -1715,9 +1726,9 @@ here and in the screen's header per ADR-085.
   remains true; the screen has stopped stating them. How much a read-only record explains itself is
   a product judgement.
 - **Removing `EMPLOYEE ID` cost the product no information**, and that was measured rather than
-  assumed: `<ProfileBlock />` prints `workforce.workers.employee_code` on BOTH the navigation drawer
-  and the Account Settings head, as `{idLabel}: {employeeCode ?? shortId(userId)}`. `GET /users/me`
-  is no longer read for it on this screen.
+  assumed: `<ProfileBlock />` prints `workforce.workers.employee_code` on the navigation drawer, as
+  `{idLabel}: {employeeCode ?? shortId(userId)}`. `GET /users/me` is no longer read for it on this
+  screen.
 - The closing line was the second half of "say who can do it rather than showing a dead control".
   The first half stands — there is still no SAVE button.
 

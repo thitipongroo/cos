@@ -1430,12 +1430,19 @@ the `/admin` panel rather than this app (§20.7.11).
 
 Almost nothing differs, which is the point of looking at them together. **The notification section**
 offers the §19.4 types routed to the signed-in role, so its group cards and switches vary.
-**The profile head** carries that person's name, position and id. **`VIEWER` alone** gets the
+**`VIEWER` alone** gets the
 System Permissions block, from that role's own drawing — the one question only a read-only role
 asks. Everything else is identical by construction.
 
 ### What these frames are evidence of
 
+- **No profile head since 2026-09-14.** The page opens on `APPLICATION SETTINGS`, as the Stitch
+  drawing does. Until that day it opened on a profile card — name, position, id and a sync-state line
+  — added on 2026-09-10 from the CRM drawing this screen was grouped from before; the product owner
+  removed it because the Stitch screen has none. Nothing left the product with it: the name, position
+  and id are on the navigation drawer's profile card and on `/profile`, and the sync state is the top
+  bar's glyph. All eleven frames were recaptured on 2026-09-14 for this change alone; the drawer and
+  profile frames were not, because neither screen changed.
 - **Language and Theme are SEGMENTED**, both options on screen with the selected one filled. Neither
   was before: the language row showed the CURRENT language behind a swap glyph, so a reader had to
   infer that tapping it meant "become the other one", and Theme was a `Dark` switch, which makes
@@ -1503,8 +1510,8 @@ only entry point. From Stitch screen `7367a77950f24c7e877c97aafc124350` _"แก
   every field, the `EMPLOYEE ID` field, and the closing "these details come from your account
   record" line. Two are in the drawing, so both deviations are recorded at the screen and in §32.7
   per ADR-085. **Removing `EMPLOYEE ID` cost the product no information** — measured, not assumed:
-  `<ProfileBlock />` still prints `workforce.workers.employee_code` on the navigation drawer and on
-  the Account Settings head.
+  `<ProfileBlock />` still prints `workforce.workers.employee_code` on the navigation drawer, the
+  screen `/profile` is opened from.
 - **The phone number is formatted per §20.5** — `(+66) 081-100-0009`, the number a Thai reader
   recognises from their own handset over the dial code that says which country the platform filed it
   under. `formatNationalPhone` groups only `+66` and returns anything else UNCHANGED: a Singapore
@@ -1527,7 +1534,9 @@ only entry point. From Stitch screen `7367a77950f24c7e877c97aafc124350` _"แก
 
 `apps/mobile/scripts/capture-android-role-profile.mjs` writes both frames for every role in one pass:
 it logs in, answers the project picker, opens Settings from the drawer, then opens the profile from
-the drawer's profile card. Pass role keys to capture a subset. Beyond the three prerequisites the
+the drawer's profile card. Pass role keys to capture a subset, and `--settings-only` to shoot the
+settings frame without the profile — a PNG of an unchanged page is never byte-identical, so
+re-shooting one churns eleven files for no change. Beyond the three prerequisites the
 drawer script lists (`EXPO_PUBLIC_CAPTURE=1`, `ANDROID_HOME`, seeded data), one is specific to these:
 
 - **The debug APK must be rebuilt at or after 2026-09-13.** `/profile` imports `expo-image-picker`,
@@ -1541,12 +1550,12 @@ the two use different values because they are different lengths — settings at 
 at 200 the same page fits with half the frame left empty. The density is always restored, including
 when a run dies mid-capture.
 
-**Two roles take 180 for their settings page**, and the reason is on the screen. `PROJECT_MANAGER`
-carries the most §19.4 notification types of any role, so its Notification Types section is the
-tallest; `VIEWER` is the one role that gets the System Permissions block, which adds a whole group.
-The first eleven-role run filed both at 200 with the `Version` row — the last thing on the page —
-simply absent. The other nine stay at 200: these frames are meant to be read side by side, and 10 %
-is a difference a reader will not notice where a missing row is one they cannot recover.
+**All eleven settings pages are shot at 200 since 2026-09-14.** On 2026-09-13 two roles took 180:
+`PROJECT_MANAGER` carries the most §19.4 notification types of any role and `VIEWER` alone gets the
+System Permissions block, and with the profile head on top both ran past the bottom nav at 200 —
+the `Version` row, the last thing on the page, simply absent. Removing the head made the page
+shorter, so both were re-measured at 200 rather than kept at 180 on inertia, and `Version` sits
+clear of the nav in both.
 
 **The check after a run is "is `Version` in the frame", not "does the frame look right".** A page
 that ran past the fold is invisible unless someone looks for its last row. The same run also filed

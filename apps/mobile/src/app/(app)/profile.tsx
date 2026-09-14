@@ -35,9 +35,9 @@
 //     product judgement, and it is the product owner's.
 //   THE `EMPLOYEE ID` FIELD, which the drawing draws. **No information left the product**, and that
 //     was checked rather than assumed: `<ProfileBlock />` prints `workforce.workers.employee_code`
-//     on BOTH the navigation drawer and the Account Settings head — `{idLabel}: {employeeCode ??
-//     shortId(userId)}` — so the code is still two taps away on two surfaces. `getMe` is no longer
-//     read for it here either; see the state below.
+//     on the navigation drawer — `{idLabel}: {employeeCode ?? shortId(userId)}` — the surface this
+//     screen is opened from. (It was on the Account Settings head too, until that head was removed
+//     on 2026-09-14.) `getMe` is no longer read for it here either; see the state below.
 //   THE CLOSING "These details come from your account record" LINE. What it bought was the second
 //     half of "say who can do it rather than showing a dead control". The FIRST half stands — there
 //     is still no SAVE button — but the screen no longer names who to ask.
@@ -152,8 +152,8 @@ export default function ProfileScreen(): React.JSX.Element {
    */
   // `employee_code` is NOT read here any more. It left with the EMPLOYEE ID field on 2026-09-13,
   // and fetching a value nothing renders is how a screen grows a field it does not have.
-  // The code is still on screen elsewhere: <ProfileBlock /> prints it on the navigation drawer and
-  // on the Account Settings head, so removing the field cost the product no information.
+  // The code is still on screen elsewhere: <ProfileBlock /> prints it on the navigation drawer, so
+  // removing the field cost the product no information.
   const [me, setMe] = useState<{
     photoUrl: string | null;
     position: string | null;

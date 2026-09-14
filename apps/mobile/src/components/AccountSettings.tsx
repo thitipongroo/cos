@@ -11,13 +11,19 @@
 // leading icon, label, then either a value, a value + chevron, or a switch. That regularity is the
 // point of the drawing, so <Row /> below is the only row this file knows how to draw.
 //
-// ── THREE GROUPS, AND A PROFILE HEAD (PO decision 2026-09-10) ──────────────────────────────────
+// ── ONE SCREEN FOR EVERY ROLE, AND NO PROFILE HEAD SINCE 2026-09-14 ────────────────────────────
 //
-// mockup/mobile/12_crm_manager/05_profile/01_account_settings regroups the same rows as ACCOUNT ·
-// PREFERENCES · SYSTEM under a profile header carrying the sync state. That is what this screen is
-// now, FOR EVERY ROLE — one component serves all twelve, and a per-role settings layout would be
-// twelve screens to keep in step. `Security` and `About` are gone as group names: security is two
-// rows of Account, and the build version is one row of System.
+// One component serves all twelve roles; a per-role settings layout would be twelve screens to keep
+// in step. The grouping came from mockup/mobile/12_crm_manager/05_profile/01_account_settings on
+// 2026-09-10 and was replaced by the Stitch screen's on 2026-09-13 (see below).
+//
+// THE PROFILE HEAD WAS REMOVED ON 2026-09-14 (product-owner decision), reversing the 2026-09-10
+// decision that added it. It was a <ProfileBlock /> — name, position, id — with the sync state
+// under it, taken from the CRM drawing. The Stitch screen that replaced that drawing opens straight
+// on Application Settings, so the head had become the one block on this page no current drawing
+// asks for. NOTHING LEFT THE PRODUCT with it, and that was checked: the name, position and id are
+// on the navigation drawer's profile block and on `/profile`, and the sync state is the TopBar's
+// <SyncPill />, the shell's one sync indicator on every screen.
 //
 // NOTHING WAS DROPPED IN THE REGROUPING. Change Secure PIN, the theme switch and the version row
 // are all still here — ADR-085 gives composition to the implementation, and it says in as many
@@ -25,15 +31,12 @@
 //
 // WHAT THE DRAWING ASKS FOR AND DOES NOT GET:
 //
-//   PERSONAL INFO row — omitted. The card directly above it IS the personal information it would
-//     open, and a chevron onto the card six pixels above it is not a row. `/user-profile` is the
-//     Tenant Admin looking at SOMEBODY ELSE, driven by params. Since 2026-09-13 the full record IS
-//     a screen again — `/profile`, read-only — but it is entered from the DRAWER's profile card,
-//     which is the one place identity lives; a second door one tap away would be the duplicate the
-//     Privacy Policy row was moved to avoid.
-//   "Last sync: 2 min ago" — not drawn. Nothing here records when the last flush finished; what
-//     IS known is the current sync state, and that is what the head says instead, through the same
-//     `useSyncPillView` precedence every other sync indicator in the app reads.
+//   PERSONAL INFO row — omitted. The full record is `/profile`, read-only, entered from the
+//     DRAWER's profile card, which is the one place identity lives; a second door from this screen
+//     would be the duplicate the Privacy Policy row was moved to avoid. `/user-profile` is the
+//     Tenant Admin looking at SOMEBODY ELSE, driven by params.
+//   "Last sync: 2 min ago" — not drawn, here or anywhere. Nothing records when the last flush
+//     finished; the current sync state is the TopBar's <SyncPill />.
 //   "2.4 GB" against Offline Data — replaced by the REAL on-disk size of the offline database
 //     (`localDbSizeBytes()`, db/database.ts), shown against the §17.7 ceiling it is measured for.
 //     The row REPORTS and does not manage: nothing in this app prunes that cache on request, and a
@@ -53,12 +56,8 @@
 // tiles it draws say READ ONLY, which is true of every grant §6.8 gives this role.
 //
 // WHAT THE VIEWER DRAWING ASKS FOR AND DOES NOT GET, beyond the grouping:
-//   `ID: COS-8842-V` — already drawn, and REAL. <ProfileBlock /> prints the employee code, or the
-//     short UUID where there is none. A formatted member id is not a column, and the line it would
-//     have gone on is already occupied by one that is.
-//   A `Viewer` ROLE CHIP beside the name — the profile block carried the role enum until 2026-09-08
-//     and it was removed by decision: the position line says what the person does in a person's
-//     words. §32.7 "Drawer Profile Block" states it, and this screen is its second surface.
+//   `ID: COS-8842-V` and a `Viewer` ROLE CHIP — both belonged to a profile header, and this screen
+//     has had none since 2026-09-14. The id is on the navigation drawer's profile block.
 //   A DISABLED Dark Mode switch with "Mandatory for field environments." — this app has a working
 //     theme control on every role and ADR-085 says a drawing does not remove reviewed working
 //     capability.
@@ -112,12 +111,10 @@ import { useRouter } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import Constants from 'expo-constants';
 import { NotificationSettings } from './NotificationSettings';
-import { ProfileBlock } from './ProfileBlock';
 import { useThemeStore } from '../store/themeStore';
 import { useBiometricStore } from '../store/biometricStore';
 import { CosRole } from '@cos/types';
 import { useAuthStore } from '../store/authStore';
-import { useSyncPillView } from '../hooks/useSyncPillView';
 import { getMe, requestMyPasswordResetEmail } from '../api/users';
 import { SegmentedControl } from './SegmentedControl';
 import { formatDate } from '../i18n';
@@ -276,21 +273,6 @@ function Row({
   );
 }
 
-/**
- * The palette tone for a sync state, keyed on the glyph the state already chose.
- *
- * `useSyncPillView` hardcodes the dark-shell colours — it was written for the top bar, which is
- * pinned dark. This screen follows the user's theme, and `--cos-dark-success` #10B981 measures
- * 2.5:1 on a white card, well under the 4.5:1 §20.8 gate for text. So the state comes from the hook
- * and only the ink is decided here. The glyph is the key rather than a second copy of the
- * precedence, which is the whole reason that hook exists.
- */
-function syncTone(p: Palette, icon: string): string {
-  if (icon === 'sync-problem') return p.danger;
-  if (icon === 'sync' || icon === 'cloud-upload') return p.warning;
-  return p.success;
-}
-
 function Section({ label, children }: { label: string; children: React.ReactNode }) {
   const p = usePalette();
   const styles = useMemo(() => makeStyles(p), [p]);
@@ -312,25 +294,21 @@ export function AccountSettings() {
   const available = useBiometricStore((s) => s.available);
   const enabled = useBiometricStore((s) => s.enabled);
   const setEnabled = useBiometricStore((s) => s.setEnabled);
-  const displayName = useAuthStore((s) => s.displayName);
-  const userId = useAuthStore((s) => s.userId);
   const role = useAuthStore((s) => s.role);
-  const sync = useSyncPillView();
   const [busy, setBusy] = useState(false);
   /** The device declined the last attempt to turn the lock ON — see the biometric row. */
   const [refused, setRefused] = useState(false);
 
   /**
-   * The head's own fields, and the MFA row's state.
+   * What `GET /users/me` answers for the two rows that need it — the MFA status and the Password
+   * row's Path B test.
    *
-   * `GET /users/me` is the same call the drawer makes for the same block — position, employee code
-   * and whether a second factor is enrolled. A failure leaves it null, and then the head falls back
-   * to the short UUID and the MFA row simply carries no state word rather than claiming one.
+   * NOT `employee_code` OR `position` since 2026-09-14: only the profile head displayed them, and
+   * fetching a value nothing renders is how a screen grows a field it does not have. A failure
+   * leaves this null, and then neither row claims a fact it could not see.
    */
   const [me, setMe] = useState<{
-    employeeCode: string | null;
     mfaEnabled: boolean;
-    position: string | null;
     /**
      * WHETHER THIS ACCOUNT HAS A PASSWORD AT ALL, which is what decides the Password row.
      *
@@ -350,18 +328,16 @@ export function AccountSettings() {
       .then((row) => {
         if (!cancelled) {
           setMe({
-            employeeCode: row.employee_code ?? null,
             mfaEnabled: row.mfa_enabled === true,
-            position: row.position ?? null,
             hasPassword: (row.email ?? '').trim() !== '',
             passwordChangedAt: row.password_changed_at ?? null,
           });
         }
       })
       .catch(() => {
-        /* offline — the head keeps the short UUID, and the rows that report a fetched fact say
-           nothing rather than guessing one: no MFA state, and no Password row at all (an account
-           whose path is unknown must not be offered a reset that may not apply to it). */
+        /* offline — the rows that report a fetched fact say nothing rather than guessing one: no
+           MFA state, and no Password row at all (an account whose path is unknown must not be
+           offered a reset that may not apply to it). */
       });
     return () => {
       cancelled = true;
@@ -409,37 +385,6 @@ export function AccountSettings() {
 
   return (
     <View testID="account-settings" style={styles.root}>
-      {/* THE PROFILE HEAD. The block is the project's standard (§32.7 "Drawer Profile Block") —
-          AVATAR · NAME · POSITION · ID · STATUS, the same order and the same fields the drawer
-          draws, because the standard says there is no per-role variant of it and this is the second
-          surface that shows it. The drawing's photo avatar and its hardcoded "CRM Manager" line are
-          NOT used: the avatar is the app's own, and the line under the name is `platform.users.
-          position`, which is real and is null for most accounts. */}
-      <View testID="account-profile-card" style={styles.profileCard}>
-        <ProfileBlock
-          variant="screen"
-          testIDPrefix="settings"
-          displayName={displayName}
-          fallbackName={t('drawer.member')}
-          position={me?.position}
-          idLabel={t('profile.main.userId')}
-          employeeCode={me?.employeeCode}
-          userId={userId}
-        />
-        {/* THE REAL SYNC STATE, through the same precedence <SyncPill /> and <OverlaySyncPill />
-            read — error > syncing > pending > synced — rather than the drawing's "Last sync: 2 min
-            ago", which nothing here records. The hook's colours are the dark-shell tokens because
-            its first caller was the top bar; this is a themed page, so the TONE is mapped from the
-            state's own glyph and the LABEL and GLYPH come from the hook unchanged. Mapping the tone
-            here rather than re-deriving the state is deliberate: the precedence exists once. */}
-        <View testID="settings-sync-row" style={styles.syncRow}>
-          <MaterialIcons name={sync.icon} size={16} color={syncTone(p, sync.icon)} />
-          <Text style={[styles.syncText, { color: syncTone(p, sync.icon) }]} numberOfLines={1}>
-            {sync.label}
-          </Text>
-        </View>
-      </View>
-
       {/* ── APPLICATION SETTINGS ────────────────────────────────────────────────────────────────
           The Stitch screen's first group, and the reason both rows below are SEGMENTED rather than
           what they were: a row showing the current language with a swap glyph, and a "Dark mode"
@@ -682,28 +627,6 @@ export function AccountSettings() {
 const makeStyles = (p: Palette) =>
   StyleSheet.create({
     root: { gap: spacing.md, paddingTop: spacing.sm },
-    profileCard: {
-      backgroundColor: p.surface,
-      borderRadius: radius.xl,
-      borderWidth: 1,
-      borderColor: p.border,
-      padding: spacing.md,
-      gap: spacing.sm,
-    },
-    syncRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 6,
-      // `p.bg` until 2026-09-10, which is the page colour and therefore DARKER than the card it
-      // sits on — the "reads as a hole" defect the product owner reported on three panels of the
-      // CRM screens the same week. `surfaceSunk` is the step INTO a card rather than through it
-      // (design-tokens.md: "NEITHER IS EVER --cos-dark-bg on a card").
-      backgroundColor: p.surfaceSunk,
-      borderRadius: radius.md,
-      paddingHorizontal: spacing.sm,
-      paddingVertical: 6,
-    },
-    syncText: { fontSize: 11, fontFamily: fontFamily.medium },
     section: { gap: spacing.xs },
     sectionLabel: {
       fontSize: 11,

@@ -47,8 +47,8 @@ jest.mock('../../api/notifications', () => ({
   updateNotificationPreferences: jest.fn().mockResolvedValue(undefined),
 }));
 
-// `GET /users/me` feeds the profile head and the MFA row's state — the same call the drawer makes
-// for the same block. Mocked rather than left to reject, so each answer can be asserted.
+// `GET /users/me` feeds the MFA row's state and the Password row's Path B test. Mocked rather than
+// left to reject, so each answer can be asserted.
 jest.mock('../../api/users', () => ({
   getMe: jest.fn(),
   requestMyPasswordResetEmail: jest.fn(),
@@ -222,14 +222,14 @@ describe('AccountSettings', () => {
   });
 });
 
-// -- THE THREE-GROUP LAYOUT AND ITS PROFILE HEAD (2026-09-10) -----------------------------------
+// -- NO PROFILE HEAD (2026-09-14) -----------------------------------------------------------------
 //
-// The rows did not change; where they sit did, and a profile head was added above them. What these
-// tests hold is the part of that which is a CLAIM rather than a layout: the head's fields are the
-// standard block, the MFA row's state is read rather than drawn, the sync line is the app's own
-// precedence rather than a timestamp nothing records, and the cache figure is measured.
+// The head added on 2026-09-10 was removed by product-owner decision: the Stitch screen this page
+// follows opens straight on Application Settings. These tests hold the ABSENCE rather than being
+// deleted with it — a head that came back would render perfectly, and nothing else would notice.
+// The name, position and id live on the navigation drawer's block; the sync state is the TopBar's.
 
-describe('AccountSettings - the profile head', () => {
+describe('AccountSettings - no profile head', () => {
   let alert: jest.SpyInstance;
 
   beforeEach(() => {
@@ -252,38 +252,40 @@ describe('AccountSettings - the profile head', () => {
 
   afterEach(() => alert.mockRestore());
 
-  // AVATAR - NAME - POSITION - ID - STATUS, the standard block (spec 32.7). The drawing's photo
-  // avatar and its hardcoded "CRM Manager" line are not what render: the position is real.
-  it('draws the standard profile block, in its order', async () => {
-    const { getByTestId, getByText } = await renderCard();
+  // Asserted AFTER `/users/me` has answered — before it, a position could not render anyway, and
+  // an absence checked too early proves nothing.
+  it('draws no profile card, no sync row, and none of the fields the head carried', async () => {
+    const { getByTestId, queryByTestId, queryByText } = await renderCard();
 
-    await waitFor(() => expect(getByTestId('settings-job-title')).toHaveTextContent(/CRM Manager/));
-    expect(getByText('Vorawee S.')).toBeTruthy();
-    expect(getByTestId('settings-user-id')).toBeTruthy();
-    expect(getByTestId('settings-sync-row')).toBeTruthy();
-  });
-
-  // A null position draws NOTHING - no placeholder, no role. Null is the ordinary case: no route
-  // sets one.
-  it('draws no position line when the account has no position', async () => {
-    users.getMe.mockResolvedValue({ ...ME, position: null });
-
-    const { getByTestId, queryByTestId } = await renderCard();
-
-    await waitFor(() => expect(getByTestId('settings-user-id')).toBeTruthy());
+    await waitFor(() => expect(getByTestId('profile-mfa-row')).toHaveTextContent(/MFA active/));
+    expect(queryByTestId('account-profile-card')).toBeNull();
+    expect(queryByTestId('settings-sync-row')).toBeNull();
     expect(queryByTestId('settings-job-title')).toBeNull();
+    expect(queryByTestId('settings-user-id')).toBeNull();
+    expect(queryByText('Vorawee S.')).toBeNull();
+    expect(queryByText(/CRM Manager/)).toBeNull();
   });
 
-  it('falls back to a short id, and says nothing about a factor it could not read', async () => {
+  // The employee code was the head's too. A worker account that has one must not surface it here.
+  it('does not print an employee code the account has', async () => {
+    users.getMe.mockResolvedValue({ ...ME, employee_code: 'EMP-0042' });
+
+    const { getByTestId, queryByText } = await renderCard();
+
+    await waitFor(() => expect(getByTestId('profile-mfa-row')).toHaveTextContent(/MFA active/));
+    expect(queryByText(/EMP-0042/)).toBeNull();
+  });
+
+  it('says nothing about a factor it could not read', async () => {
     users.getMe.mockRejectedValue(new Error('offline'));
 
     const { getByTestId } = await renderCard();
 
-    await waitFor(() => expect(getByTestId('settings-user-id')).toHaveTextContent(/AAAA/));
+    await waitFor(() => expect(users.getMe).toHaveBeenCalled());
     expect(getByTestId('profile-mfa-row')).not.toHaveTextContent(/MFA active|Not enrolled/);
   });
 
-  // REAL: platform.users.mfa_enabled, the same column the drawer's status line reads.
+  // REAL: platform.users.mfa_enabled.
   it('says the second factor is enrolled when it is', async () => {
     const { getByTestId } = await renderCard();
 
@@ -296,16 +298,6 @@ describe('AccountSettings - the profile head', () => {
     const { getByTestId } = await renderCard();
 
     await waitFor(() => expect(getByTestId('profile-mfa-row')).toHaveTextContent(/Not enrolled/));
-  });
-
-  // The drawing prints "Last sync: 2 min ago". Nothing here records when the last flush finished,
-  // so the head says the CURRENT state instead, through the same precedence every other sync
-  // indicator reads.
-  it('reports the current sync state rather than a time nothing records', async () => {
-    const { getByTestId } = await renderCard();
-
-    await waitFor(() => expect(getByTestId('settings-sync-row')).toBeTruthy());
-    expect(getByTestId('settings-sync-row')).not.toHaveTextContent(/ago/i);
   });
 });
 

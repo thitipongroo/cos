@@ -120,8 +120,7 @@ describe('ProfileScreen', () => {
 
   // REMOVED 2026-09-13. The drawing draws this field and this screen kept it, with the drawing's
   // own Thai note, until the product owner removed both. No information left the product:
-  // <ProfileBlock /> still prints `workforce.workers.employee_code` on the navigation drawer and on
-  // the Account Settings head.
+  // <ProfileBlock /> still prints `workforce.workers.employee_code` on the navigation drawer.
   it('draws no EMPLOYEE ID field, and does not fetch one', async () => {
     const { getByTestId, queryByTestId, queryByText } = await renderScreen();
 

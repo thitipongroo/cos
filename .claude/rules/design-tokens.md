@@ -419,9 +419,11 @@ Core components (React Native — implement in apps/mobile/):
                         Online & synced" and both halves were REAL; it went because neither is the
                         drawer's to say — sync already has one indicator in the shell (<SyncPill />)
                         and MFA has a row in Account Settings, and two indicators of one subject in
-                        one shell is what OfflineBanner was deleted for. <AccountSettings /> keeps
-                        ITS status row: the block takes a status as the CALLER's child and that
-                        one reports the sync queue, on a screen about the device.
+                        one shell is what OfflineBanner was deleted for. <AccountSettings /> had
+                        its own copy of the block, with a sync row under it, from 2026-09-10 until
+                        2026-09-14, when that head was removed (PO decision — the Stitch screen has
+                        none). <ProfileBlock /> now has the drawer as its one caller, no status slot
+                        and no themed variant.
                         Descending by how often a line is read: a name identifies at a glance, a
                         position gives it meaning, an id is looked up perhaps twice a year.
                         That order is also WHO PAYS FOR THE CHEVRON: `trailingReserve` keeps the

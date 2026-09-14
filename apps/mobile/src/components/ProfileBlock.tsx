@@ -1,25 +1,27 @@
 // ProfileBlock — THE PROJECT'S STANDARD FOR SHOWING WHO IS SIGNED IN (§32.7 "Drawer Profile Block",
 // product-owner decision 2026-09-08).
 //
-// AVATAR · NAME · POSITION · ID, in that order and no other. The STATUS line below it is the
-// caller's, because the two surfaces state different things there — the drawer says whether a second
-// factor is enrolled, Account Settings says what the sync queue is doing — and both are passed in
-// as children rather than branched on here.
+// AVATAR · NAME · POSITION · ID, in that order and no other. No status line: the drawer's went on
+// 2026-09-11, and the `children` slot that carried Account Settings' sync row went with that screen's
+// head on 2026-09-14.
 //
 // THE ORDER IS THE SPECIFICATION, NOT AN ACCIDENT OF LAYOUT. It descends by how often a line is
 // read: a name identifies at a glance, a position gives that name meaning, an id is looked up
 // perhaps twice a year. A reordered block renders perfectly — nothing throws and no query fails —
 // so the sequence is its own only witness, which is why `NavigationDrawer.spec.tsx` pins it.
 //
-// ── WHY IT IS A COMPONENT AS OF 2026-09-10 ─────────────────────────────────────────────────────
+// ── WHY IT IS A COMPONENT, WITH ONE CALLER ─────────────────────────────────────────────────────
 //
-// It headed one surface until that day. The CRM account-settings drawing opens on a profile header,
-// and the standard is what such a header IS, so `<AccountSettings />` grew the same card — and the
-// two copies were immediately 18 duplicated lines that the jscpd gate caught on the same run.
+// It was extracted on 2026-09-10, when `<AccountSettings />` grew a profile head from the CRM
+// account-settings drawing and the two copies were 18 duplicated lines the jscpd gate caught on the
+// same run. That head was REMOVED on 2026-09-14 (product-owner decision — the Stitch screen that
+// replaced the drawing has none), leaving the navigation drawer as the only caller.
 //
-// That gate was right for a reason bigger than the duplication. The rule above says there is "no
-// second SHAPE anywhere in the app"; two hand-maintained copies of one shape is exactly how a second
-// shape appears, one prop at a time, and nothing would have failed when it did. Now there is one.
+// It stays a component anyway. The rule above says there is "no second SHAPE anywhere in the app",
+// and the next surface that wants to say who is signed in should reach for this rather than grow a
+// copy. What went with the second caller is what only it used: the `screen` variant, which followed
+// the user's theme, and the `children` slot its sync row came through. A branch kept for nobody is
+// a branch nobody tests — the same reasoning that removed `ReadOnlyField`'s `note` on 2026-09-13.
 //
 // NO ROLE TAG. The name line carried the role enum as a chip until 2026-09-08 and it was removed:
 // the position line directly below already says what this person does, in the words a person uses,
@@ -30,14 +32,13 @@
 // route sets a position, so it arrives by seed or HR import, and an app running against a deployment
 // older than migration `20260908000001` receives no such key at all. Both render the same way.
 //
-// THEME. The drawer's panel is pinned dark; Account Settings follows the user's theme. `variant`
-// picks which palette the block's own type takes, so neither caller has to restyle it.
+// THEME. Pinned dark, because the drawer's panel is. A caller on a themed surface would bring the
+// `variant` back, and would bring a test for it with it.
 
 import { View, Text, StyleSheet } from 'react-native';
 import { Avatar } from './Avatar';
 import { shortId } from '../lib/shortId';
 import { darkColors, fontFamily, spacing, typography } from '../theme/tokens';
-import { usePalette } from '../theme/usePalette';
 
 export function ProfileBlock({
   displayName,
@@ -50,10 +51,6 @@ export function ProfileBlock({
   /** `workforce.workers.employee_code`, or null — the short UUID stands in. */
   employeeCode,
   userId,
-  /** `drawer` for the pinned-dark panel, `screen` to follow the user's theme. */
-  variant,
-  /** The status line, which differs per surface. Rendered directly below the block. */
-  children,
   testIDPrefix,
   trailingReserve,
 }: {
@@ -63,8 +60,6 @@ export function ProfileBlock({
   idLabel: string;
   employeeCode: string | null | undefined;
   userId: string | null | undefined;
-  variant: 'drawer' | 'screen';
-  children?: React.ReactNode;
   /** Prefixes the two testIDs — `drawer` gives `drawer-job-title` / `drawer-user-id`. */
   testIDPrefix: string;
   /**
@@ -82,44 +77,40 @@ export function ProfileBlock({
    */
   trailingReserve?: number;
 }): React.JSX.Element {
-  const p = usePalette();
-  const ink = variant === 'drawer' ? darkColors.text : p.text;
-  const muted = variant === 'drawer' ? darkColors.muted : p.muted;
+  const ink = darkColors.text;
+  const muted = darkColors.muted;
   return (
-    <>
-      <View style={styles.row}>
-        <Avatar variant={variant === 'drawer' ? 'dark' : 'light'} />
-        <View style={styles.text}>
+    <View style={styles.row}>
+      <Avatar variant="dark" />
+      <View style={styles.text}>
+        <Text
+          style={[styles.name, { color: ink }, { paddingRight: trailingReserve ?? 0 }]}
+          numberOfLines={1}
+        >
+          {displayName ?? fallbackName}
+        </Text>
+        {position == null || position === '' ? null : (
           <Text
-            style={[styles.name, { color: ink }, { paddingRight: trailingReserve ?? 0 }]}
+            testID={`${testIDPrefix}-job-title`}
+            style={[styles.position, { color: muted }, { paddingRight: trailingReserve ?? 0 }]}
             numberOfLines={1}
           >
-            {displayName ?? fallbackName}
+            {position}
           </Text>
-          {position == null || position === '' ? null : (
-            <Text
-              testID={`${testIDPrefix}-job-title`}
-              style={[styles.position, { color: muted }, { paddingRight: trailingReserve ?? 0 }]}
-              numberOfLines={1}
-            >
-              {position}
-            </Text>
-          )}
-          {/* MONOSPACED, as the mockups set it: an id is read character by character, and a
-              proportional face makes 0/O and 1/l ambiguous exactly there. The code is REAL where
-              there is one; office roles have no worker record and legitimately have none, so those
-              fall back to a short form of the UUID (PO 2026-08-09). A display aid, never a key. */}
-          <Text
-            testID={`${testIDPrefix}-user-id`}
-            style={[styles.id, { color: muted }]}
-            numberOfLines={1}
-          >
-            {idLabel}: {employeeCode ?? shortId(userId)}
-          </Text>
-        </View>
+        )}
+        {/* MONOSPACED, as the mockups set it: an id is read character by character, and a
+            proportional face makes 0/O and 1/l ambiguous exactly there. The code is REAL where
+            there is one; office roles have no worker record and legitimately have none, so those
+            fall back to a short form of the UUID (PO 2026-08-09). A display aid, never a key. */}
+        <Text
+          testID={`${testIDPrefix}-user-id`}
+          style={[styles.id, { color: muted }]}
+          numberOfLines={1}
+        >
+          {idLabel}: {employeeCode ?? shortId(userId)}
+        </Text>
       </View>
-      {children}
-    </>
+    </View>
   );
 }
 
