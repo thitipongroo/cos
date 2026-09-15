@@ -2,7 +2,7 @@
 
 /**
  * SYSTEM_ADMIN — Dedicated DB Fleet Management (`/admin/db-fleet`), the Stitch "Dedicated DB Fleet Management -
- * SYSTEM_ADMIN" screen (3e635a2fb7e5…, HTML fetched 2026-09-15; revision R17). The workspace only; the shell is
+ * SYSTEM_ADMIN" screen (3e635a2fb7e5…, HTML fetched 2026-09-15; revision R17, re-synced R18). The workspace only; the shell is
  * <AdminShell /> (product-owner decision R10).
  *
  * ── PRODUCT-OWNER DECISION D6 (2026-09-15): the drawn structure, real values only ──────────────────
@@ -17,6 +17,8 @@
  *     Export CSV, and each row's CONFIG / METRICS / terminal.
  *   The envelope cards' titles and body copy are the drawing's labels, not measured states. The drawing's page title
  *     is empty; the page's heading is screen-reader only.
+ *   R18 (the drawing as listed 2026-09-15): the ISOLATION and PG 16.4 tags are gone; NEW DEDICATED DB, MAINTENANCE,
+ *     legend REPLICATED / STANDBY / MIGRATING, and card titles without a section citation.
  */
 
 import { useMemo, useState } from 'react';
@@ -73,14 +75,7 @@ export function DedicatedDbFleet() {
     <div className="flex flex-col gap-4">
       <h1 className="sr-only">{t('admin.fleet.title')}</h1>
       <div className="flex shrink-0 items-center justify-between">
-        <div className="flex items-center gap-3">
-          <span className="rounded border border-cos-v3-cyan-500/40 bg-cos-v3-cyan-500/15 px-2 py-0.5 font-mono text-[11px] font-semibold text-cos-v3-cyan-500">
-            {t('admin.fleet.tagIsolation')}
-          </span>
-          <span className="rounded border border-cos-v3-emerald-500/40 bg-cos-v3-emerald-500/15 px-2 py-0.5 font-mono text-[11px] font-semibold text-cos-v3-emerald-400">
-            {t('admin.fleet.tagPg')}
-          </span>
-        </div>
+        <div className="flex items-center gap-3" />
         <div className="flex items-center gap-2">
           <button type="button" disabled title={unavailable} className={TOOL_BTN}>
             <AdminIcon name="sync" size={15} className="text-cos-v3-slate-400" />

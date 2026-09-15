@@ -2,7 +2,7 @@
 
 /**
  * SYSTEM_ADMIN — System Settings (`/admin/settings`), the Stitch "System Settings - SYSTEM_ADMIN" screen
- * (630ea9023263…, HTML fetched 2026-09-15; revision R17). The workspace only; the shell is <AdminShell /> (R10). The
+ * (630ea9023263…, HTML fetched 2026-09-15; revision R17, re-synced R18). The workspace only; the shell is <AdminShell /> (R10). The
  * drawing's own palette is Tailwind v3 slate / blue / green / amber / red / cyan, carried as `cos-v3-*`, plus two
  * one-off bands (`cos-op-set-head`, `cos-op-set-thead`).
  *
@@ -11,7 +11,7 @@
  *     cadence, failover TTL, auto-fallback, the safety non-suspension flag, the shared-tier window, the enterprise mode,
  *     broadcast lead time and channels, the shared-tenant cap, default max pool conns, and each tier's DB strategy,
  *     storage, API and token quotas. ACTIVE SHARED TENANTS and DEDICATED FLEET NODES are the live counts the same GET
- *     returns. CONFIG shows the stored version; LAST COMMIT the stored time and who saved it. Save sends the whole
+ *     returns. LAST COMMIT is the stored time and who saved it. Save sends the whole
  *     document with the §6.7 justification and the version it was read at — a 409 means someone saved in between.
  *     Reset to defaults puts the "nothing set" document in the form; nothing is saved until Save.
  *   A VALUE IS NEVER INVENTED — every field starts blank ("not set") until an operator saves one; the drawing's
@@ -21,7 +21,9 @@
  *   CHANGED — the footer says every save is audited, which is true, in place of "Security Protocol Tier-4 Isolation
  *     Enforced", which nothing here establishes. The drawing's justification banner cites DESIGN.md §16.4; the
  *     justification mandate is §6.7, and no citation is drawn on the banner.
- *   STORED ONLY — nothing reads these values to change behaviour (ADR-108); the page says so under the header.
+ *   STORED ONLY — nothing reads these values to change behaviour (ADR-108). R18 (the drawing as listed 2026-09-15):
+ *     its CONFIG chip is gone and the header is only the two buttons, so the page no longer shows the stored version
+ *     or a stored-only line under the header (product-owner decision D15); ADR-108 and the footer's audit line say it.
  */
 
 import { adminJustificationSchema } from '@cos/schemas';
@@ -177,15 +179,7 @@ export function SystemSettings() {
       <div className="mx-auto max-w-[1140px] space-y-6">
         <div className="flex items-start justify-between">
           <div>
-            <h1 className="flex items-center gap-3 text-[24px] font-semibold tracking-tight">
-              <span className="sr-only">{t('admin.nav.settings')}</span>
-              <span className="rounded border border-cos-v3-slate-700 bg-cos-v3-slate-800 px-2 py-0.5 font-mono text-[12px] font-medium text-cos-v3-slate-400">
-                {t('admin.settings.config')} {version === 0 ? NO_DATA : `v${version}`}
-              </span>
-            </h1>
-            <p className="mt-1 text-[12px] text-cos-v3-slate-400">
-              {t('admin.settings.storedOnly')}
-            </p>
+            <h1 className="sr-only">{t('admin.nav.settings')}</h1>
           </div>
           <div className="flex items-center gap-3">
             <button

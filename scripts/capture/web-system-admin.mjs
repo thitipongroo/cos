@@ -592,7 +592,8 @@ async function saveSettings(page) {
   const save = page.getByRole('button', { name: /^Save changes$/ });
   await save.waitFor({ timeout: 30_000 });
   await sleep(2500);
-  if ((await page.getByText(/CONFIG: v\d+/).count()) > 0) {
+  // A saved document has a LAST COMMIT time; a never-saved one reads LAST COMMIT: — (the CONFIG chip went in R18).
+  if ((await page.getByText(/LAST COMMIT: (?!—)/).count()) > 0) {
     console.log('settings already saved');
     return;
   }

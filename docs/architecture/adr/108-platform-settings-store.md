@@ -104,6 +104,9 @@ tenant-scoped under RLS and is a different concept.
 
 - The screen presents settings that have no effect. An operator may reasonably assume that changing the
   shared-tenant cap caps shared tenants; it does not. The screen must say so, and this ADR is the record.
+  **Amended 2026-09-15 (R18, product-owner decision D15):** the Stitch drawing draws no such notice, and the
+  screen follows the drawing — its header is only Reset and Save. This ADR remains the record that nothing reads
+  the values; the screen's footer states that every save is audited.
 - Any future consumer must be designed on its own — where it reads the value, how it reacts to a change, what
   it does while a value is null. None of that is decided here.
 - `GET` reads `platform.tenants` directly for the shared / dedicated counts, a table the tenant module owns.

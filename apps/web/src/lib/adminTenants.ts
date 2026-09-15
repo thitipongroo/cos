@@ -306,6 +306,21 @@ export function runPreflight(state: string | null): { provisioned: boolean; migr
   };
 }
 
+/** What the Assign DB modal shows in place of a URI password while the field is not focused (D13, as drawn). */
+export const MASKED_PASSWORD = '••••••••';
+
+/**
+ * A connection URL with its password replaced by MASKED_PASSWORD, for display only (R18, D13): the Stitch drawing
+ * shows `postgresql://db_admin:••••••••@db-ent-043…`. The userinfo ends at the LAST `@` before the path, as a URL
+ * parser reads it. A URL without a password is returned as it is — there is nothing to hide.
+ */
+export function maskDbUrlPassword(url: string): string {
+  return url.replace(
+    /^([a-z][a-z0-9+.-]*:\/\/[^:/@]*:)([^/]+)@/i,
+    (_m, head: string) => `${head}${MASKED_PASSWORD}@`,
+  );
+}
+
 /** PostgreSQL's default port, used when a connection URL names none. */
 export const POSTGRES_DEFAULT_PORT = '5432';
 

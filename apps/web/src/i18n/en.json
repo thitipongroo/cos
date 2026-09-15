@@ -416,11 +416,9 @@
       "crumb2": "CLUSTER_TOPOLOGY",
       "crumb3": "INFRASTRUCTURE_NODES",
       "title": "Cluster Infrastructure",
-      "tagEmqx": "EMQX 25K msg/s QoS1 CERTIFIED",
-      "tagHa": "HA MULTI-AZ ACTIVE",
       "refresh": "REFRESH",
       "ssh": "SSH",
-      "provision": "PROVISION",
+      "provision": "PROVISIONING",
       "kpi": {
         "cluster": "Cluster",
         "vcpu": "vCPU Pool",
@@ -502,11 +500,9 @@
     },
     "fleet": {
       "title": "Dedicated DB Fleet Management",
-      "tagIsolation": "ENTERPRISE TIER ISOLATION (§7 & §34.5)",
-      "tagPg": "PG 16.4 COMPLIANT",
       "refresh": "REFRESH FLEET",
       "pool": "PGBOUNCER POOL",
-      "provision": "PROVISION NEW DEDICATED DB",
+      "provision": "NEW DEDICATED DB",
       "kpi": {
         "compute": "FLEET COMPUTE CAPACITY",
         "computeUnit": "Headroom",
@@ -521,7 +517,7 @@
       "filter": {
         "all": "ALL FLEET",
         "healthy": "HEALTHY",
-        "gate": "MAINTENANCE/GATE",
+        "gate": "MAINTENANCE",
         "failover": "FAILOVER READY"
       },
       "zone": "ZONE:",
@@ -536,9 +532,9 @@
       "directory": "DEDICATED INSTANCES DIRECTORY",
       "showing": "SHOWING",
       "legend": {
-        "replicated": "REPLICATED (SYNC)",
-        "standby": "STANDBY READY",
-        "gate": "GATE/MIGRATING"
+        "replicated": "REPLICATED",
+        "standby": "STANDBY",
+        "gate": "MIGRATING"
       },
       "col": {
         "instance": "INSTANCE ID & ENDPOINT",
@@ -568,11 +564,11 @@
       },
       "envelope": {
         "boundary": {
-          "title": "ZERO-DATA-LEAKAGE BOUNDARY (§7)",
+          "title": "ZERO-DATA-LEAKAGE BOUNDARY",
           "body": "Each dedicated DB node sits in its own VPC enclave with a dedicated per-tenant KMS key; no connection pool, memory buffer or memory bus is shared with the pooled DB."
         },
         "justification": {
-          "title": "MANDATORY OPERATOR JUSTIFICATION (§6.7)",
+          "title": "MANDATORY OPERATOR JUSTIFICATION",
           "body": "Every fleet-level command (scale, config, failover, snapshot) requires a justification under §6.7 and is recorded in the Global Audit Log."
         },
         "standby": {
@@ -586,7 +582,6 @@
       "crumb2": "DATABASE INFRASTRUCTURE",
       "crumb3": "DATA_MIGRATIONS",
       "title": "Data Migrations & Approval Gate",
-      "tag": "PIPELINE GATE: §34.5 ENFORCED",
       "archive": "ARCHIVE",
       "newJob": "NEW JOB",
       "kpis": "Migration summary",
@@ -686,7 +681,7 @@
         "severity": "Severity",
         "actor": "Actor",
         "tenant": "Tenant",
-        "target": "Action & Target Entity",
+        "target": "Action & Target",
         "metadata": "Metadata"
       }
     },
@@ -764,8 +759,6 @@
     },
     "settings": {
       "loading": "Loading system settings",
-      "config": "CONFIG:",
-      "storedOnly": "Stored only — nothing in the platform reads these values yet (ADR-108). Every save is recorded in the Global Audit Log.",
       "reset": "Reset to defaults",
       "save": "Save changes",
       "reload": "Reload the saved settings",

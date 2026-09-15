@@ -1,6 +1,8 @@
 import {
   connectionState,
   dbUrlPort,
+  MASKED_PASSWORD,
+  maskDbUrlPassword,
   provisioningRuns,
   provisioningWorkflowId,
   runPreflight,
@@ -153,6 +155,24 @@ describe('runPreflight', () => {
   });
   it('knows nothing of an unreadable run', () => {
     expect(runPreflight(null)).toEqual({ provisioned: false, migrated: false });
+  });
+});
+
+describe('maskDbUrlPassword', () => {
+  it('replaces the password with the drawn mask', () => {
+    expect(
+      maskDbUrlPassword('postgresql://db_admin:s3cret@db-ent-043.cos.internal:5432/siam'),
+    ).toBe(`postgresql://db_admin:${MASKED_PASSWORD}@db-ent-043.cos.internal:5432/siam`);
+  });
+  it('reads the userinfo to the last @ before the path', () => {
+    expect(maskDbUrlPassword('postgres://u:p@ss@host/db')).toBe(
+      `postgres://u:${MASKED_PASSWORD}@host/db`,
+    );
+  });
+  it('leaves a URL without a password, and text that is not a URL, as it is', () => {
+    expect(maskDbUrlPassword('postgresql://u@host/db')).toBe('postgresql://u@host/db');
+    expect(maskDbUrlPassword('postgresql://host:5432/db')).toBe('postgresql://host:5432/db');
+    expect(maskDbUrlPassword('')).toBe('');
   });
 });
 

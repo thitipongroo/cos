@@ -21,6 +21,10 @@
  *         the tenant's next request. §20.4.3's own warning follows it in the same callout.
  *       "Zone: ap-southeast-1a | Routing Mesh: Ready" — fixed strings.
  *
+ *   D13 (R18) — the drawing masks the URI password (`db_admin:••••••••@`): it is shown as typed while the field has
+ *     focus and masked when it does not (lib/adminTenants.ts maskDbUrlPassword). Display only — the value sent is the
+ *     URL as typed.
+ *
  * ── DIFFERENCES FROM THE DRAWING, AND WHY ────────────────────────────────────────────────────────
  *   JUSTIFICATION (§6.7, required) under the selects. §20.4.3's warning text inside the notice.
  *   The URL is validated as §20.4.3 says (`postgresql://`, ≤ 500) and holds a placeholder, not a masked credential.
@@ -40,7 +44,12 @@ import {
   TextField,
 } from 'react-aria-components';
 import { useT } from '../../i18n';
-import { dbUrlPort, errorKeyForStatus, type TenantListRow } from '../../lib/adminTenants';
+import {
+  maskDbUrlPassword,
+  dbUrlPort,
+  errorKeyForStatus,
+  type TenantListRow,
+} from '../../lib/adminTenants';
 import { ApiError } from '../../lib/api/client';
 import { useAssignDedicatedDb } from '../../lib/api/queries';
 import { TextInputField } from '../form/TextInputField';
@@ -77,6 +86,8 @@ export function AssignDedicatedDbModal({
     dataMoved: false,
   });
   const [url, setUrl] = useState('');
+  // D13 (R18): the password is shown as typed while the field has focus, masked as drawn when it does not.
+  const [uriFocused, setUriFocused] = useState(false);
   const [justification, setJustification] = useState('');
   const [touched, setTouched] = useState(false);
 
@@ -241,7 +252,7 @@ export function AssignDedicatedDbModal({
 
             {/* URI */}
             <TextField
-              value={url}
+              value={uriFocused ? url : maskDbUrlPassword(url)}
               onChange={setUrl}
               isDisabled={!gatesClear || busy}
               isRequired
@@ -266,6 +277,8 @@ export function AssignDedicatedDbModal({
                   spellCheck={false}
                   autoComplete="off"
                   placeholder="postgresql://"
+                  onFocus={() => setUriFocused(true)}
+                  onBlur={() => setUriFocused(false)}
                   className="w-full rounded border border-cos-op-assign-field-line bg-cos-op-assign-field px-3 py-2 pr-32 font-mono text-[12px] text-cos-v3-cyan-300 placeholder:text-cos-v3-slate-500 focus:border-cos-v3-cyan-400 focus:outline-none focus:ring-1 focus:ring-cos-v3-cyan-400 disabled:cursor-not-allowed disabled:opacity-60"
                 />
                 {port ? (

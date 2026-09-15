@@ -416,11 +416,9 @@
       "crumb2": "CLUSTER_TOPOLOGY",
       "crumb3": "INFRASTRUCTURE_NODES",
       "title": "โครงสร้างพื้นฐานคลัสเตอร์",
-      "tagEmqx": "EMQX 25K msg/s QoS1 CERTIFIED",
-      "tagHa": "HA MULTI-AZ ACTIVE",
       "refresh": "รีเฟรช",
       "ssh": "SSH",
-      "provision": "จัดสรร",
+      "provision": "PROVISIONING",
       "kpi": {
         "cluster": "คลัสเตอร์",
         "vcpu": "vCPU Pool",
@@ -502,11 +500,9 @@
     },
     "fleet": {
       "title": "การจัดการฐานข้อมูลเฉพาะ",
-      "tagIsolation": "ENTERPRISE TIER ISOLATION (§7 & §34.5)",
-      "tagPg": "PG 16.4 COMPLIANT",
       "refresh": "รีเฟรช FLEET",
       "pool": "PGBOUNCER POOL",
-      "provision": "จัดสรรฐานข้อมูลเฉพาะใหม่",
+      "provision": "NEW DEDICATED DB",
       "kpi": {
         "compute": "ความจุการประมวลผล",
         "computeUnit": "Headroom",
@@ -521,7 +517,7 @@
       "filter": {
         "all": "ทั้งหมด",
         "healthy": "ปกติ",
-        "gate": "บำรุงรักษา/GATE",
+        "gate": "MAINTENANCE",
         "failover": "พร้อม FAILOVER"
       },
       "zone": "โซน:",
@@ -536,9 +532,9 @@
       "directory": "รายการอินสแตนซ์เฉพาะ",
       "showing": "แสดง",
       "legend": {
-        "replicated": "REPLICATED (SYNC)",
-        "standby": "STANDBY READY",
-        "gate": "GATE/MIGRATING"
+        "replicated": "REPLICATED",
+        "standby": "STANDBY",
+        "gate": "MIGRATING"
       },
       "col": {
         "instance": "อินสแตนซ์และ ENDPOINT",
@@ -568,11 +564,11 @@
       },
       "envelope": {
         "boundary": {
-          "title": "ZERO-DATA-LEAKAGE BOUNDARY (§7)",
+          "title": "ZERO-DATA-LEAKAGE BOUNDARY",
           "body": "โหนด Dedicated DB แต่ละโหนดแยก VPC Enclave มี Dedicated KMS Key ประจำ Tenant อย่างสมบูรณ์ ไม่มีการแชร์ Connection Pool, MemBuffer หรือ Memory Bus ร่วมกับระบบ Pooled DB"
         },
         "justification": {
-          "title": "MANDATORY OPERATOR JUSTIFICATION (§6.7)",
+          "title": "MANDATORY OPERATOR JUSTIFICATION",
           "body": "ทุกการสั่งการระดับ Fleet (Scale, Config, Failover, Snapshot) บังคับระบุเหตุผลตาม §6.7 และบันทึกใน Global Audit Log"
         },
         "standby": {
@@ -586,7 +582,6 @@
       "crumb2": "DATABASE INFRASTRUCTURE",
       "crumb3": "DATA_MIGRATIONS",
       "title": "การย้ายข้อมูลและขั้นอนุมัติ",
-      "tag": "PIPELINE GATE: §34.5 ENFORCED",
       "archive": "เก็บถาวร",
       "newJob": "งานใหม่",
       "kpis": "สรุปการย้ายข้อมูล",
@@ -764,8 +759,6 @@
     },
     "settings": {
       "loading": "กำลังโหลดการตั้งค่าระบบ",
-      "config": "CONFIG:",
-      "storedOnly": "จัดเก็บเท่านั้น — ยังไม่มีส่วนใดของแพลตฟอร์มอ่านค่าเหล่านี้ (ADR-108) ทุกการบันทึกถูกเก็บใน Global Audit Log",
       "reset": "คืนค่าดีฟอลต์",
       "save": "บันทึกการเปลี่ยนแปลง",
       "reload": "โหลดค่าที่บันทึกไว้ใหม่",
@@ -902,9 +895,9 @@
           "GOV_API": "ซิงค์ API ภาครัฐ"
         },
         "outcomes": {
-          "SUCCEEDED": "Succeeded (สำเร็จ)",
-          "FAILED": "Failed (ล้มเหลว)",
-          "NOT_CONFIGURED": "Not configured (ยังไม่ได้ตั้งค่า)"
+          "SUCCEEDED": "Succeeded",
+          "FAILED": "Failed",
+          "NOT_CONFIGURED": "Not configured"
         }
       },
       "failed": {

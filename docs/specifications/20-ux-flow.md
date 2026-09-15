@@ -408,7 +408,8 @@ mandate is §6.7, and §6.7 is shown.
 **System Settings** — `/admin/settings`, Stitch "System Settings" (decision D10, ADR-108). `GET` / `PUT
 /api/v1/admin/settings`: one versioned document, saved whole with the §6.7 justification and the version it was
 read at (a stale version is `409 COS-PSET-001`); every save is audited with before / after. STORED ONLY — nothing
-reads these values yet, and the screen says so. Every field starts "not set"; no default is invented.
+reads these values yet; ADR-108 records it and the screen's footer states that every save is audited (the drawing has
+no stored-only line, product-owner decision D15, 2026-09-15). Every field starts "not set"; no default is invented.
 
 ---
 

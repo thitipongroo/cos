@@ -2,7 +2,7 @@
 
 /**
  * SYSTEM_ADMIN — Cluster Infrastructure & Fleet Telemetry (`/admin/cluster`), the Stitch "Cluster Infrastructure &
- * Fleet Telemetry - SYSTEM_ADMIN" screen (bc1de8c630e1…, HTML fetched 2026-09-15; revision R17). The workspace only:
+ * Fleet Telemetry - SYSTEM_ADMIN" screen (bc1de8c630e1…, HTML fetched 2026-09-15; revision R17, re-synced R18). The workspace only:
  * the drawing's own top bar and sidebar are the panel's one shell (<AdminShell />, product-owner decision R10).
  *
  * ── PRODUCT-OWNER DECISION D6 (2026-09-15): the drawn structure, real values only ──────────────────
@@ -15,8 +15,10 @@
  *   NO FABRICATED NODES — the node table has its header, filters and an empty state; the drawing's eight hosts are not
  *     drawn. The filter tabs show no counts.
  *   DISABLED — Refresh, SSH, Provision, the node filters and pager, Configure Cluster Sizing Params.
- *   The headings, tags and descriptive copy ("EMQX 25K msg/s QoS1 CERTIFIED", "HA MULTI-AZ ACTIVE", the integration
- *   names, the envelope policies, "PO RATIFIED") are the drawing's labels, not measured states.
+ *   The descriptive copy (the integration names, the envelope policies, "PO RATIFIED") is the drawing's labels, not
+ *   measured states.
+ *   R18 (the drawing as listed 2026-09-15): its page title and the EMQX / HA tags are gone — the title is screen-reader
+ *   only, the tags are not drawn — and its primary button reads PROVISIONING.
  */
 
 import { useMemo } from 'react';
@@ -57,15 +59,7 @@ export function ClusterInfrastructure() {
             </span>
           </nav>
           <div className="flex items-center gap-3">
-            <h1 className="text-[20px] font-bold tracking-tight text-cos-white">
-              {t('admin.cluster.title')}
-            </h1>
-            <span className="rounded border border-cos-v3-cyan-500/40 bg-cos-v3-cyan-500/15 px-2 py-0.5 font-mono text-[11px] font-semibold text-cos-v3-cyan-500">
-              {t('admin.cluster.tagEmqx')}
-            </span>
-            <span className="rounded border border-cos-v3-emerald-500/40 bg-cos-v3-emerald-500/15 px-2 py-0.5 font-mono text-[11px] font-semibold text-cos-v3-emerald-500">
-              {t('admin.cluster.tagHa')}
-            </span>
+            <h1 className="sr-only">{t('admin.cluster.title')}</h1>
           </div>
         </div>
         <div className="flex items-center gap-2.5">

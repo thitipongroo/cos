@@ -132,6 +132,10 @@ prices imported from a CSV after one file with the wrong columns (a real FAILED 
 a stub: NOT_CONFIGURED), and the drawing's values typed into System Settings and saved once. Nothing reads those
 settings (ADR-108).
 
+Re-synced 2026-09-15 (revision R18) to the thirteen drawings as Stitch listed them that day: eight had changed
+(page titles and unsupported tags removed, shorter labels) and every frame was retaken; the Assign DB frame shows the
+URI password masked, as drawn (product-owner decision D13).
+
 ### What these frames are evidence of
 
 - **Every row was written through the panel.** The capture creates `bkk_metro_corp`, `siam_infra_eng`,

@@ -2,7 +2,7 @@
 
 /**
  * SYSTEM_ADMIN — Data Migrations & Approval Gate (`/admin/migrations`), the Stitch "Data Migrations & Approval Gate -
- * SYSTEM_ADMIN" screen (b6f080f520bb…, HTML fetched 2026-09-15; revision R17). The workspace only; the shell is
+ * SYSTEM_ADMIN" screen (b6f080f520bb…, HTML fetched 2026-09-15; revision R17, re-synced R18). The workspace only; the shell is
  * <AdminShell /> (product-owner decision R10).
  *
  * ── PRODUCT-OWNER DECISION D7 (2026-09-15): real runs, `—` for figures without a source ───────────
@@ -15,6 +15,8 @@
  *   `—` — transfer volume, verification seal, target node (no host exists before approval), payload size, schema
  *     objects, row count, snapshot and replication pre-flight lines, root checksum, enclave, progress, CDC lag,
  *     operator, the ledger footer's replication / TLS labels.
+ *   R18 (the drawing as listed 2026-09-15): its page title and the PIPELINE GATE tag are gone; the heading is
+ *     screen-reader only.
  *   DISABLED — Archive, New Job, and View / Audit / Receipt on runs that are not at the gate.
  */
 
@@ -138,12 +140,7 @@ export function DataMigrations() {
             </span>
           </nav>
           <div className="mt-1 flex items-center gap-3">
-            <h1 className="text-[20px] font-bold tracking-tight text-white">
-              {t('admin.migrations.title')}
-            </h1>
-            <span className="rounded border border-cos-v3-amber-500/40 bg-cos-op-container px-2 py-0.5 font-mono text-[10px] font-medium text-cos-v3-amber-300">
-              {t('admin.migrations.tag')}
-            </span>
+            <h1 className="sr-only">{t('admin.migrations.title')}</h1>
           </div>
         </div>
         <div className="flex items-center gap-2.5">

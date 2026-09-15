@@ -2,7 +2,7 @@
 
 /**
  * SYSTEM_ADMIN — Global Audit Log (`/admin/audit`), the Stitch "Global Audit Log - SYSTEM_ADMIN" screen
- * (efb47c60bdad…, HTML fetched 2026-09-15; revision R17). The workspace only; the shell is <AdminShell /> (product-owner
+ * (efb47c60bdad…, HTML fetched 2026-09-15; revision R17, re-synced R18). The workspace only; the shell is <AdminShell /> (product-owner
  * decision R10). Reads GET /admin/audit-logs, /summary and /export (tenant.openapi.yaml); the backend audits each read.
  *
  * ── PRODUCT-OWNER DECISION D4 (2026-09-15): the API, its filters and Export — no integrity / Merkle ─────────────────
@@ -19,6 +19,7 @@
  *   `—` — AUDIT_DAEMON version, ENCLAVE, DATA INTEGRITY SEAL, the "Cryptographically Sealed" line, the KMS cipher.
  *   DISABLED — the event-tier select past "All": nothing assigns a tier to an audit row; "Gateway & e-GP Config": no
  *     recorded action yet (ADR-061's adapter is a stub).
+ *   R18 (the drawing as listed 2026-09-15): its page title and both tags are gone; the heading is screen-reader only.
  *   CORRECTED — the drawing cites §16.4 for the mandatory justification; §16.4 is "Cross-functional Enterprise Flow".
  *     The mandate is §6.7 (06-rbac-permission-matrix.md, "enforced for every tenant action in §20.4"), so §6.7 is cited.
  *   KEPT AS DRAWN — "IMMUTABLE": platform.audit_logs denies UPDATE / DELETE to app_user (rls_policies migration, QM-4).
@@ -182,9 +183,9 @@ export function GlobalAuditLog() {
       </div>
 
       <div className="mb-3 flex flex-col justify-between gap-3 pb-3 lg:flex-row lg:items-center">
-        <h1 className="text-op-h1 tracking-tight text-cos-op-on-surface">
-          {t('admin.audit.title')}
-        </h1>
+        <div className="flex flex-col gap-1">
+          <h1 className="sr-only">{t('admin.audit.title')}</h1>
+        </div>
         <div className="flex items-center gap-2 self-start lg:self-center">
           <MenuTrigger>
             <Button

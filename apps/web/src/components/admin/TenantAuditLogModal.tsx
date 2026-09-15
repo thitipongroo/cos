@@ -2,7 +2,7 @@
 
 /**
  * SYSTEM_ADMIN — one tenant's audit trail, the Stitch "Tenant Audit Log — Modal Overlay — SYSTEM_ADMIN" dialog
- * (screen 4578413eabff…, HTML fetched 2026-09-15; revision R17). Opened by the row's Audit Log action or from Tenant
+ * (screen 4578413eabff…, HTML fetched 2026-09-15; revision R17, re-synced R18). Opened by the row's Audit Log action or from Tenant
  * Detail. Reads `GET /admin/tenants/{id}/audit-logs` (newest first, 50 per page) and exports through
  * `…/audit-logs/export.csv`; the backend audits both (§20.4.6 as answered, decision D3).
  *
@@ -14,6 +14,7 @@
  *   `—` — the SECURITY flagged count and the ACTIVE compliance regime: nothing classifies audit rows that way.
  *   The event-type select keeps the drawing's categories; only "All Event Types" is enabled — the per-tenant endpoint
  *   filters by text, not by category. The footer carries the paging instead of Trigger / Verify.
+ *   R18 (the drawing as listed 2026-09-15): the column reads "Action & Target".
  *   The drawing's title slot is empty; the dialog's heading is screen-reader only. The Severity chip is the action's
  *   family (lib/adminAudit.ts `auditTone`), not a severity the platform assigns; the actor's second line shows the
  *   actor's name where the drawing shows a role, because the audit row stores no role.

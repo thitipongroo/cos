@@ -2,7 +2,7 @@
 
 /**
  * SYSTEM_ADMIN — ราคากลาง Central Price Register (`/admin/central-prices`), the Stitch "ราคากลาง Central Price Register -
- * SYSTEM_ADMIN" screen (5cd46d052ac0…, HTML fetched 2026-09-15; revision R17). The workspace only; the shell is
+ * SYSTEM_ADMIN" screen (5cd46d052ac0…, HTML fetched 2026-09-15; revision R17, re-synced R18). The workspace only; the shell is
  * <AdminShell /> (R10). The drawing's palette is Tailwind v3 slate / blue / green / amber / red, carried as `cos-v3-*`.
  *
  * ── PRODUCT-OWNER DECISIONS D8 / D9 / D12 (2026-09-15): ADR-061 in full, e-GP a stub seam, BOQ stops at the API ──────
@@ -15,6 +15,8 @@
  *     POST /sync with a justification — today it records NOT_CONFIGURED (D9), and the panel says so.
  *   `—` — the drawn "HTTP 200 OK · Payload Signature Verified", the retry count, the impact line's cached baseline and
  *     "Fallback: In-Memory Cache Active": nothing in the platform does any of it.
+ *   R18 (the drawing as listed 2026-09-15): its page title is gone (the heading is screen-reader only) and the outcome
+ *     reads "Succeeded" — product-owner decision D14: the outcome labels are English in both locales, as drawn.
  *   DISABLED — ดู Log เชิงเทคนิค: there is no log view.
  *   ADDED — Previous / Next under the table (the drawing shows five rows of 24,810 and no way to the rest), and the
  *     empty state of the failed-sync panel when no run has failed.
@@ -96,7 +98,9 @@ export function CentralPriceRegister() {
   return (
     <div className="-m-6 flex flex-1 flex-col gap-6 bg-cos-v3-slate-900 p-8 text-cos-white">
       <div className="flex items-center justify-between">
-        <h1 className="text-[24px] font-bold leading-tight">{t('admin.centralPrices.title')}</h1>
+        <div>
+          <h1 className="sr-only">{t('admin.centralPrices.title')}</h1>
+        </div>
         <div className="flex items-center gap-3">
           <button
             type="button"
@@ -169,7 +173,7 @@ export function CentralPriceRegister() {
           ) : (
             <table className="w-full border-collapse text-left">
               <thead>
-                <tr className="h-[40px] border-b border-cos-v3-slate-700 bg-cos-v3-slate-900/60 text-[13px] font-medium uppercase whitespace-nowrap text-cos-v3-slate-400">
+                <tr className="h-[40px] border-b border-cos-v3-slate-700 bg-cos-v3-slate-900/60 text-[13px] font-medium uppercase text-cos-v3-slate-400">
                   <th scope="col" className="w-[120px] px-4 py-2">
                     {t('admin.centralPrices.col.code')}
                   </th>
