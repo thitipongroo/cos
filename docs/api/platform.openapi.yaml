@@ -121,7 +121,9 @@ paths:
         same flag.
 
         The key set is the built-in defaults plus whatever the Unleash client currently knows about,
-        so it varies with provider state and is not a fixed enumeration.
+        so it varies with provider state and is not a fixed enumeration. The built-in defaults include
+        the identity retrofit kill switches `s1.identity.authoritative-role-check` (ADR-077) and
+        `s1.identity.subject-binding` (ADR-106), both defaulting ON.
       tags: [Feature Flags]
       security:
         - bearerAuth: []

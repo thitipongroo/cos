@@ -440,7 +440,10 @@ components:
 
   responses:
     Unauthorized:
-      description: Missing or invalid Bearer token
+      description: |
+        Missing or invalid Bearer token. Since ADR-107 the gateway verifies the token and then asks the backend
+        who the caller is (`GET /api/v1/auth/identity` on its internal listener); a refusal from the backend is
+        also a 401.
       content:
         application/json:
           schema:
@@ -458,7 +461,10 @@ components:
           schema:
             $ref: '#/components/schemas/HTTPValidationError'
     ServiceUnavailable:
-      description: LLM provider, vector store, or database not yet configured
+      description: |
+        LLM provider, vector store, or database not yet configured — or the caller's identity could not be
+        verified (ADR-107): the backend was unreachable, answered anything but 2xx or 401, or returned no tenant.
+        The gateway fails closed with 503 and never falls back to the token's own claims.
       content:
         application/json:
           schema:

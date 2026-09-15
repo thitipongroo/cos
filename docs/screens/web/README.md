@@ -144,9 +144,9 @@ version of it and substituted global tokens for its colours.
   not offered Mark as Contracted again.
 - **The layout is the drawing's**, element by element, compared region by region against the drawing's HTML
   rendered at the same 1440px width: fixed top bar (brand, the global search centred in the bar — R14 — status pill,
-  bell, avatar), a side menu that does not scroll
-  with the page — only the workspace scrolls, so the Cluster Pulse card is always at its bottom edge (R13) — breadcrumb chips, four metric cards, search with plan chips, the eight table
-  columns with icon row actions, and the Cluster Zone footer — in the drawing's own colours and type
+  bell, avatar), a side menu that does not scroll with the page — only the workspace scrolls, so the Cluster Pulse
+  card is always at its bottom edge (R13) — breadcrumb chips, four metric cards, search with plan chips, the eight
+  table columns with icon row actions, and the Cluster Zone footer — in the drawing's own colours and type
   (`cos-op-*`, spec §32.7 "SYSTEM_ADMIN Operator Panel Tokens"). Because only the workspace scrolls, the capture
   makes the viewport as tall as the workspace's content so the whole list is in `01`.
 - **Create Tenant is a modal over the list** (R13, product-owner decisions 2026-09-15), opened by the list's Create

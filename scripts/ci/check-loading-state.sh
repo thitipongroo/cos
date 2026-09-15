@@ -59,7 +59,13 @@ fi
 # verification screen, which §32.7 "Exception 1" gives its own mockup
 # (mockup/desktop/01_authen/01_login/04_verification_loading_web) and its own motif.
 echo "--> apps/web: no hand-rolled skeleton / spinner outside <LoadingState />"
-WEB_ALLOW='apps/web/src/components/ui/LoadingState.tsx|apps/web/src/app/post-login/page.tsx'
+#
+# The SYSTEM_ADMIN panel's two files are allowed for a different reason (product-owner decision 2026-09-15, R16):
+# they pulse DECORATIVE dots the Stitch drawings draw, none of which stands in for data being loaded — the bell's
+# unread dot, the Cluster Pulse LIVE dot and the migration-gate ping (AdminShell.tsx), the selected ENTERPRISE
+# ping and the "Port … Open" badge dot (CreateTenantModal.tsx). Each is `motion-safe:`. A loading state added to
+# either file is still bound by Rule 40; this entry does not cover one.
+WEB_ALLOW='apps/web/src/components/ui/LoadingState.tsx|apps/web/src/app/post-login/page.tsx|apps/web/src/components/admin/AdminShell.tsx|apps/web/src/components/admin/CreateTenantModal.tsx'
 WEB_HITS="$(grep -rnE "animate-(pulse|spin|ping)" "$ROOT/apps/web/src" --include=*.tsx --include=*.ts \
   | sed "s|^$ROOT/||" | grep -Ev "^($WEB_ALLOW):" || true)"
 if [[ -n "$WEB_HITS" ]]; then

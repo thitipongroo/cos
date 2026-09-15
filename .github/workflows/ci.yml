@@ -309,6 +309,10 @@ jobs:
       - name: Generate Prisma client
         working-directory: backend
         run: pnpm exec prisma generate
+      # credential-service and file-service resolve @cos/service-identity through its built dist (git-ignored), and
+      # turbo's type-check task builds nothing first — same step as in unit-tests and integration-tests.
+      - name: Build @cos/service-identity (credential-service and file-service resolve its dist)
+        run: pnpm --filter @cos/service-identity build
       - run: pnpm run type-check
 
   # ─── Step 2b: Build (turbo run build) ───────────────────────────────────────

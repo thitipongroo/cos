@@ -98,9 +98,11 @@ paths:
         Generic webhook endpoint. Called by any external system (CRM, contract management
         platform) when an Enterprise tenant signs a contract requiring dedicated DB isolation.
 
-        Starts `EnterpriseProvisioningWorkflow` via Temporal (task queue: enterprise-provisioning).
-        Behavior is identical to calling `PATCH /api/v1/admin/tenants/{tenantId}/mark-contracted`
-        via the Admin Panel — both paths start the same workflow.
+        Starts `EnterpriseProvisioningWorkflow` via Temporal (task queue: enterprise-provisioning) —
+        the same workflow `PATCH /api/v1/admin/tenants/{tenantId}/mark-contracted` starts from the
+        Admin Panel. The two paths differ in one respect: this is a signed system request, not a
+        SYSTEM_ADMIN action, so it carries no justification and writes no admin audit row; §6.7's
+        mandatory reason and audit apply to the admin path only.
 
         **Authentication:** HMAC-SHA256 signature verification over `timestamp.body`.
 

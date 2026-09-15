@@ -164,6 +164,9 @@ run_if pip-audit "Audit — pip-audit (Python services)" \
 
 # ── Type check job ──────────────────────────────────────────────────────────
 run_in backend "Type check — prisma generate" pnpm exec prisma generate
+# Mirrors ci.yml type-check's "Build @cos/service-identity" step: credential-service and file-service resolve that
+# package through its git-ignored dist, so a fresh checkout has nothing to type-check against without it.
+run "Type check — build @cos/service-identity" pnpm --filter @cos/service-identity build
 run "Type check"                   pnpm run type-check
 
 # ── Build job (ADR-033: tsc --noEmit is not a build) ────────────────────────
