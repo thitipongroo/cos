@@ -74,7 +74,7 @@
       "compute": "Platform compute"
     },
     "col": {
-      "code": "Code",
+      "code": "Tenant Code",
       "name": "Name",
       "plan": "Plan type",
       "status": "Status",
