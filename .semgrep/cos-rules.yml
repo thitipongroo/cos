@@ -165,7 +165,11 @@ rules:
       # set this` in tasks.repository.ts was reported as an unqualified table on a statement
       # whose target is `projects.tasks`. `\K` drops the prefix so the finding still points at
       # the statement.
-      - pattern-regex: '(?m)^(?:[^\n-]|-(?!-))*\K\b(?:INSERT\s+INTO|UPDATE|DELETE\s+FROM)\s+(?!(?i:SET|SELECT|ONLY)\b)[a-zA-Z_][a-zA-Z0-9_]*[\s\n(),;]'
+      # `OF` is excluded for the row-lock clause `FOR UPDATE OF <alias>`: `FOR UPDATE OF s` in
+      # platform-settings.service.ts was reported as an unqualified UPDATE target on a SELECT whose
+      # table is `platform.platform_settings` (Semgrep run on 8399cd68, 2026-09-15). The alias names
+      # a FROM item, never a DML target.
+      - pattern-regex: '(?m)^(?:[^\n-]|-(?!-))*\K\b(?:INSERT\s+INTO|UPDATE|DELETE\s+FROM)\s+(?!(?i:SET|SELECT|ONLY|OF)\b)[a-zA-Z_][a-zA-Z0-9_]*[\s\n(),;]'
 
   # ── Deprecated / removed technology ────────────────────────────────────────
   - id: cos-no-watermelondb
