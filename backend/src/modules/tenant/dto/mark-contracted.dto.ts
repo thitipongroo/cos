@@ -1,6 +1,6 @@
 import { IsOptional, IsString, MaxLength } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { AdminJustificationDto } from './admin-justification.dto';
+import { AdminJustificationDto } from '../public/admin-justification.dto';
 
 /** Extends the §6.7 justification: marking a tenant contracted is an audited SYSTEM_ADMIN action. */
 export class MarkContractedDto extends AdminJustificationDto {

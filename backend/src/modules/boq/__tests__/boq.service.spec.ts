@@ -9,11 +9,14 @@ import {
 } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { REQUEST } from '@nestjs/core';
-import { BoqService } from '../boq.service';
+import { BoqService, centralPriceSnapshot } from '../boq.service';
+import { Decimal } from '@cos/financial';
 import { EventOutboxService } from '../../../shared/events/event-outbox.service';
 import { makeOutboxDouble } from '../../../shared/events/__tests__/outbox-double';
 import { BoqRepository } from '../boq.repository';
 import type { BoqVersionRow, BoqCategoryRow, BoqItemRow } from '../boq.repository';
+import { CentralPriceCatalogService } from '../../central-prices/central-price-catalog.service';
+import type { CentralPriceReference } from '../../central-prices/public/boq-central-price';
 
 // ── Mocks ─────────────────────────────────────────────────────────────────
 jest.mock('@cos/kafka', () => ({
@@ -45,6 +48,11 @@ const mockRepo = {
   findItemById: jest.fn(),
   findItemsByCategoryIds: jest.fn(),
   copyVersionContents: jest.fn(),
+};
+
+// ADR-061 — the central price lookup BoqService links lines through. Null unless a test says otherwise.
+const mockCentralPrices = {
+  findReferencePrice: jest.fn(),
 };
 
 const mockRequest = {
@@ -105,6 +113,9 @@ const item: BoqItemRow = {
   sort_order: 0,
   carbon_factor_kg_co2e: null,
   carbon_total_kg_co2e: null,
+  central_price_id: null,
+  reference_price: null,
+  price_variance: null,
   created_at: new Date(),
   updated_at: new Date(),
 };
@@ -115,12 +126,14 @@ describe('BoqService', () => {
 
   beforeEach(async () => {
     jest.clearAllMocks();
+    mockCentralPrices.findReferencePrice.mockResolvedValue(null);
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         BoqService,
         { provide: EventOutboxService, useValue: makeOutboxDouble().service },
         { provide: BoqRepository, useValue: mockRepo },
         { provide: REQUEST, useValue: mockRequest },
+        { provide: CentralPriceCatalogService, useValue: mockCentralPrices },
       ],
     }).compile();
     service = await module.resolve<BoqService>(BoqService);
@@ -135,6 +148,7 @@ describe('BoqService', () => {
           { provide: EventOutboxService, useValue: makeOutboxDouble().service },
           { provide: BoqRepository, useValue: mockRepo },
           { provide: REQUEST, useValue: {} },
+          { provide: CentralPriceCatalogService, useValue: mockCentralPrices },
         ],
       }).compile();
       const noCtxService = await module.resolve<BoqService>(BoqService);
@@ -829,6 +843,273 @@ describe('BoqService', () => {
         { category_id: 'cat-root', subtotal: '1000000.0000' },
         { category_id: 'cat-child', subtotal: '250000.5000' },
       ]);
+    });
+  });
+
+  // ── ADR-061 central price feed (Mode A reference + variance, Mode B pre-fill) ─────────────────
+  describe('central price feed (ADR-061)', () => {
+    const reference: CentralPriceReference = {
+      price_id: 'cp-uuid-001',
+      code: 'STR-001',
+      unit: 'm3',
+      central_price: '2450.1250',
+      currency_code: 'THB',
+      effective_period: '2569',
+    };
+
+    const baseAdd = {
+      category_id: 'cat-uuid-001',
+      item_code: 'STR-001',
+      description: 'Concrete C30',
+      unit: 'm3',
+      quantity: '2.0000',
+      currency_code: 'THB',
+    };
+
+    const linkedItem: BoqItemRow = {
+      ...item,
+      item_code: 'STR-001',
+      central_price_id: 'cp-uuid-000',
+      reference_price: '2000.0000',
+      price_variance: '800.0000',
+    };
+
+    function primeRecalculation(): void {
+      mockRepo.findVersionById.mockResolvedValue(draftVersion);
+      mockRepo.addItem.mockImplementation(async (p) => ({ ...item, ...p }));
+      mockRepo.updateItem.mockImplementation(async (p) => ({ ...item, ...p }));
+      mockRepo.findItemsByVersion.mockResolvedValue([]);
+      mockRepo.findCategoriesByVersion.mockResolvedValue([category]);
+      mockRepo.updateCategorySubtotals.mockResolvedValue(undefined);
+      mockRepo.updateVersionTotal.mockResolvedValue(undefined);
+    }
+
+    it('centralPriceSnapshot: variance = unit_cost - reference_price in decimal.js, signed', () => {
+      expect(centralPriceSnapshot('cp', '2450.1250', new Decimal('2400'))).toEqual({
+        central_price_id: 'cp',
+        reference_price: '2450.1250',
+        price_variance: '-50.1250',
+      });
+    });
+
+    describe('addItem', () => {
+      beforeEach(primeRecalculation);
+
+      it('Mode A: links the line and records the variance when an active price matches', async () => {
+        mockCentralPrices.findReferencePrice.mockResolvedValue(reference);
+        await service.addItem('version-uuid-001', { ...baseAdd, unit_cost: '2500.0000' });
+
+        expect(mockCentralPrices.findReferencePrice).toHaveBeenCalledWith('STR-001');
+        expect(mockRepo.addItem).toHaveBeenCalledWith(
+          expect.objectContaining({
+            unit_cost: '2500.0000',
+            estimated_total: '5000.0000',
+            central_price: {
+              central_price_id: 'cp-uuid-001',
+              reference_price: '2450.1250',
+              price_variance: '49.8750',
+            },
+          }),
+        );
+      });
+
+      it('Mode A: leaves the line unlinked when no price matches', async () => {
+        await service.addItem('version-uuid-001', { ...baseAdd, unit_cost: '2500.0000' });
+        expect(mockRepo.addItem).toHaveBeenCalledWith(
+          expect.objectContaining({ central_price: null }),
+        );
+      });
+
+      it('Mode A: does not link a price in another currency', async () => {
+        mockCentralPrices.findReferencePrice.mockResolvedValue({
+          ...reference,
+          currency_code: 'USD',
+        });
+        await service.addItem('version-uuid-001', { ...baseAdd, unit_cost: '2500.0000' });
+        expect(mockRepo.addItem).toHaveBeenCalledWith(
+          expect.objectContaining({ central_price: null }),
+        );
+      });
+
+      it('does not look anything up for a line without an item_code', async () => {
+        const { item_code: _omit, ...noCode } = baseAdd;
+        await service.addItem('version-uuid-001', { ...noCode, unit_cost: '1.0000' });
+        expect(mockCentralPrices.findReferencePrice).not.toHaveBeenCalled();
+        expect(mockRepo.addItem).toHaveBeenCalledWith(
+          expect.objectContaining({ item_code: null, central_price: null }),
+        );
+      });
+
+      it('Mode B: takes unit_cost from the central price, variance zero', async () => {
+        mockCentralPrices.findReferencePrice.mockResolvedValue(reference);
+        await service.addItem('version-uuid-001', { ...baseAdd, use_central_price: true });
+        expect(mockRepo.addItem).toHaveBeenCalledWith(
+          expect.objectContaining({
+            unit_cost: '2450.1250',
+            estimated_total: '4900.2500',
+            central_price: expect.objectContaining({ price_variance: '0.0000' }),
+          }),
+        );
+      });
+
+      it('Mode B: refuses unit_cost sent alongside use_central_price (COS-CPRICE-007)', async () => {
+        await expect(
+          service.addItem('version-uuid-001', {
+            ...baseAdd,
+            unit_cost: '1.0000',
+            use_central_price: true,
+          }),
+        ).rejects.toMatchObject({ response: { error: { code: 'COS-CPRICE-007' } } });
+        expect(mockRepo.addItem).not.toHaveBeenCalled();
+      });
+
+      it('Mode B: 422 COS-CPRICE-006 without an item_code', async () => {
+        const { item_code: _omit, ...noCode } = baseAdd;
+        await expect(
+          service.addItem('version-uuid-001', { ...noCode, use_central_price: true }),
+        ).rejects.toMatchObject({ status: 422, response: { error: { code: 'COS-CPRICE-006' } } });
+      });
+
+      it('Mode B: 422 COS-CPRICE-006 when no active price exists for the code', async () => {
+        await expect(
+          service.addItem('version-uuid-001', { ...baseAdd, use_central_price: true }),
+        ).rejects.toMatchObject({
+          status: 422,
+          response: { error: { code: 'COS-CPRICE-006', details: { item_code: 'STR-001' } } },
+        });
+      });
+
+      it('Mode B: 422 COS-CPRICE-006 when the price is in another currency', async () => {
+        mockCentralPrices.findReferencePrice.mockResolvedValue({
+          ...reference,
+          currency_code: 'USD',
+        });
+        await expect(
+          service.addItem('version-uuid-001', { ...baseAdd, use_central_price: true }),
+        ).rejects.toMatchObject({
+          status: 422,
+          response: { error: { details: { central_price_currency: 'USD' } } },
+        });
+      });
+    });
+
+    describe('updateItem', () => {
+      beforeEach(primeRecalculation);
+
+      it('keeps an existing snapshot and recomputes the variance against it', async () => {
+        mockRepo.findItemById.mockResolvedValue(linkedItem);
+        await service.updateItem('item-uuid-001', { unit_cost: '2100.0000' });
+
+        // The catalog is not consulted: the baseline is the snapshot taken when the line was linked.
+        expect(mockCentralPrices.findReferencePrice).not.toHaveBeenCalled();
+        expect(mockRepo.updateItem).toHaveBeenCalledWith(
+          expect.objectContaining({
+            central_price: {
+              central_price_id: 'cp-uuid-000',
+              reference_price: '2000.0000',
+              price_variance: '100.0000',
+            },
+          }),
+        );
+      });
+
+      it('looks the price up again when a link id exists without a snapshot value', async () => {
+        mockRepo.findItemById.mockResolvedValue({ ...linkedItem, reference_price: null });
+        mockCentralPrices.findReferencePrice.mockResolvedValue(reference);
+        await service.updateItem('item-uuid-001', {});
+        expect(mockCentralPrices.findReferencePrice).toHaveBeenCalledWith('STR-001');
+      });
+
+      it('links a line that had no reference yet', async () => {
+        mockRepo.findItemById.mockResolvedValue({ ...item, item_code: 'STR-001' });
+        mockCentralPrices.findReferencePrice.mockResolvedValue(reference);
+        await service.updateItem('item-uuid-001', {});
+        expect(mockRepo.updateItem).toHaveBeenCalledWith(
+          expect.objectContaining({
+            unit_cost: '2800.0000',
+            central_price: expect.objectContaining({
+              central_price_id: 'cp-uuid-001',
+              price_variance: '349.8750',
+            }),
+          }),
+        );
+      });
+
+      it('writes no central price columns when nothing matches', async () => {
+        mockRepo.findItemById.mockResolvedValue({ ...item, item_code: 'STR-001' });
+        await service.updateItem('item-uuid-001', {});
+        expect(mockRepo.updateItem).toHaveBeenCalledWith(
+          expect.objectContaining({ central_price: undefined }),
+        );
+      });
+
+      it('Mode B: re-takes the snapshot from the current price and sets unit_cost to it', async () => {
+        mockRepo.findItemById.mockResolvedValue(linkedItem);
+        mockCentralPrices.findReferencePrice.mockResolvedValue(reference);
+        await service.updateItem('item-uuid-001', { use_central_price: true });
+        expect(mockRepo.updateItem).toHaveBeenCalledWith(
+          expect.objectContaining({
+            unit_cost: '2450.1250',
+            central_price: {
+              central_price_id: 'cp-uuid-001',
+              reference_price: '2450.1250',
+              price_variance: '0.0000',
+            },
+          }),
+        );
+      });
+
+      it('Mode B: refuses unit_cost alongside use_central_price before any read', async () => {
+        await expect(
+          service.updateItem('item-uuid-001', { unit_cost: '1.0000', use_central_price: true }),
+        ).rejects.toMatchObject({ response: { error: { code: 'COS-CPRICE-007' } } });
+        expect(mockRepo.findItemById).not.toHaveBeenCalled();
+      });
+
+      it('Mode B: 422 when the item has no item_code', async () => {
+        mockRepo.findItemById.mockResolvedValue(item);
+        await expect(
+          service.updateItem('item-uuid-001', { use_central_price: true }),
+        ).rejects.toMatchObject({ status: 422 });
+        expect(mockRepo.updateItem).not.toHaveBeenCalled();
+      });
+    });
+
+    describe('getPriceVariance', () => {
+      const v1 = { ...approvedVersion, version_id: 'v-1', version_number: 1 };
+      const v2 = { ...draftVersion, version_id: 'v-2', version_number: 2 };
+
+      it('defaults to the newest version and builds the report from its items', async () => {
+        mockRepo.findVersionsByProject.mockResolvedValue([v1, v2]);
+        mockRepo.findItemsByVersion.mockResolvedValue([linkedItem]);
+
+        const report = await service.getPriceVariance('project-uuid-001');
+
+        expect(mockRepo.findItemsByVersion).toHaveBeenCalledWith('v-2');
+        expect(report.version_id).toBe('v-2');
+        expect(report.totals.items_with_reference).toBe(1);
+      });
+
+      it('reports the requested version of the project', async () => {
+        mockRepo.findVersionsByProject.mockResolvedValue([v1, v2]);
+        mockRepo.findItemsByVersion.mockResolvedValue([]);
+        const report = await service.getPriceVariance('project-uuid-001', 'v-1');
+        expect(report.version_number).toBe(1);
+      });
+
+      it('404 when the requested version is not one of the project versions', async () => {
+        mockRepo.findVersionsByProject.mockResolvedValue([v1]);
+        await expect(service.getPriceVariance('project-uuid-001', 'other')).rejects.toThrow(
+          'BOQ version other not found for project project-uuid-001',
+        );
+      });
+
+      it('404 when the project has no BOQ version at all', async () => {
+        mockRepo.findVersionsByProject.mockResolvedValue([]);
+        await expect(service.getPriceVariance('project-uuid-001')).rejects.toThrow(
+          'Project project-uuid-001 has no BOQ version',
+        );
+      });
     });
   });
 });

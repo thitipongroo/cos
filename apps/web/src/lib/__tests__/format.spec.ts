@@ -5,7 +5,15 @@
  * Thai display uses the Buddhist calendar, so the assertions below pin the BCP-47 tag rather than
  * a rendered string wherever the exact Intl output is runtime-dependent.
  */
-import { defaultDateRange, formatDate, formatMoney, formatPercent, localeTag } from '../format';
+import {
+  defaultDateRange,
+  formatDate,
+  formatDateTime,
+  formatMoney,
+  formatPercent,
+  formatTime,
+  localeTag,
+} from '../format';
 
 describe('localeTag', () => {
   it('uses the Buddhist calendar for Thai (QM-3)', () => {
@@ -115,5 +123,30 @@ describe('formatDate', () => {
 
   it('accepts a date-only ISO string', () => {
     expect(formatDate('en', '2026-06-08')).toContain('2026');
+  });
+});
+
+describe('formatDateTime', () => {
+  it('renders — for a missing timestamp', () => {
+    expect(formatDateTime('en', null)).toBe('—');
+    expect(formatDateTime('th', '')).toBe('—');
+  });
+
+  it('includes the seconds', () => {
+    const out = formatDateTime('en', '2026-06-08T10:14:22Z');
+    expect(out).toMatch(/2026/);
+    expect(out).toMatch(/\d{1,2}:\d{2}:\d{2}/);
+  });
+});
+
+describe('formatTime', () => {
+  it('renders — for a missing timestamp', () => {
+    expect(formatTime('en', null)).toBe('—');
+  });
+
+  it('is the time with seconds and no year', () => {
+    const out = formatTime('en', '2026-06-08T10:14:22Z');
+    expect(out).toMatch(/\d{1,2}:\d{2}:\d{2}/);
+    expect(out).not.toMatch(/2026/);
   });
 });

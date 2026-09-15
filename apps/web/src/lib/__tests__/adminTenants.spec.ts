@@ -1,6 +1,9 @@
 import {
   connectionState,
   dbUrlPort,
+  provisioningRuns,
+  provisioningWorkflowId,
+  runPreflight,
   PAGE_SIZE,
   PROVISIONING_STATES,
   errorKeyForStatus,
@@ -91,6 +94,65 @@ describe('provisioningView', () => {
 
   it('knows every §34.3 state plus PROVISIONING_TOPICS', () => {
     expect(PROVISIONING_STATES).toHaveLength(10);
+  });
+});
+
+describe('provisioningWorkflowId', () => {
+  it('names the run as the backend does', () => {
+    expect(provisioningWorkflowId('t-1')).toBe('enterprise-provisioning-t-1');
+  });
+});
+
+describe('provisioningRuns', () => {
+  const rows = [
+    tenant({ tenant_id: 'g' }),
+    tenant({ tenant_id: 'w' }),
+    tenant({ tenant_id: 'c' }),
+    tenant({ tenant_id: 's' }),
+    tenant({ tenant_id: 'u' }),
+    tenant({ tenant_id: 'x' }),
+    tenant({ tenant_id: 'none' }),
+  ];
+  it('joins each run to its tenant and phases it', () => {
+    const runs = provisioningRuns(rows, [
+      { tenant_id: 'g', workflow_state: 'AWAITING_APPROVAL' },
+      { tenant_id: 'w', workflow_state: 'ABORTING' },
+      { tenant_id: 'c', workflow_state: 'COMPLETED' },
+      { tenant_id: 's', workflow_state: 'ABORTED' },
+      { tenant_id: 'u', workflow_state: null },
+      { tenant_id: 'x', workflow_state: 'SOMETHING_NEW' },
+      { tenant_id: 'orphan', workflow_state: 'CREATING_RDS' },
+    ]);
+    expect(runs.map((r) => [r.tenant.tenant_id, r.phase])).toEqual([
+      ['g', 'gate'],
+      ['w', 'working'],
+      ['c', 'completed'],
+      ['s', 'stopped'],
+      ['u', 'unknown'],
+      ['x', 'unknown'],
+    ]);
+    expect(runs[4]!.state).toBeNull();
+  });
+  it('is empty without a provisioning list', () => {
+    expect(provisioningRuns(rows, undefined)).toEqual([]);
+  });
+});
+
+describe('runPreflight', () => {
+  it.each([
+    ['CREATING_RDS', false, false],
+    ['RUNNING_MIGRATIONS', true, false],
+    ['ASSIGNING_DB', true, true],
+    ['AWAITING_APPROVAL', true, true],
+    ['COMPLETED', true, true],
+    ['ABORTING', false, false],
+    ['ABORTED', false, false],
+    ['SOMETHING_NEW', false, false],
+  ])('%s → provisioned %s, migrated %s', (state, provisioned, migrated) => {
+    expect(runPreflight(state)).toEqual({ provisioned, migrated });
+  });
+  it('knows nothing of an unreadable run', () => {
+    expect(runPreflight(null)).toEqual({ provisioned: false, migrated: false });
   });
 });
 

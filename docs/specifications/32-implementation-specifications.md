@@ -996,6 +996,18 @@ Overlay - SYSTEM_ADMIN" drawing's (`00b09850702f…`, R13). That drawing uses th
 Tailwind v4 palette has different values for the same names, so the shades are carried as their v3 hex values and
 never written as `emerald-400` / `cyan-300` utilities.
 
+**R17 additions (2026-09-15)** — the eleven R17 drawings (§20.4.7–§20.4.13 and the three row-action modals):
+
+- **`--cos-v3-<colour>-<shade>`** (Tailwind `cos-v3-*`) — the Tailwind v3 default-palette shades those drawings use,
+  at their v3 hex values: slate 100–950, red 200–950, rose 300/400/800/950, amber 200–950, blue 300–900, cyan
+  300–950, emerald 300–950, green 600, purple 300–500. Same reason as above: v4's palette differs under the same names.
+- **One-off drawing values**, named by where they are drawn: `--cos-op-dialog-edge` #081525 (row-action modal
+  bands), `--cos-op-assign-*` (18, Assign DB), `--cos-op-deact-*` (3, Deactivate), `--cos-op-mark-confirm-hover`
+  #1d4ed8, `--cos-op-high-privilege` #ff3b30, `--cos-op-detail-*` (27, Tenant Detail), `--cos-op-mig-band` #071729
+  (Data Migrations), `--cos-op-warning` #ff9500 (Global Audit Log), `--cos-op-set-head` #162032 and
+  `--cos-op-set-thead` #121a2b (System Settings). Each value and its role is commented beside it in
+  `apps/web/src/app/globals.css`, which is authoritative for the hex.
+
 > **These tokens are the panel's, not the product's.** Nothing outside `apps/web/src/app/admin`, `components/admin`
 > and the dark tone of `components/form` uses them. They do not replace `--cos-dark-*`; a signed-in tenant screen
 > that reached for `cos-op-*` would be drawing in another screen's palette.

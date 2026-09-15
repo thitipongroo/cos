@@ -657,6 +657,9 @@ Generate: platform.central_price_catalog (shared, RLS-exempt) + boq_items.{centr
 AWAITING_DECISION: กรมบัญชีกลาง/e-GP public-API availability + auth is UNVERIFIED — until confirmed only
   the manual-import path is guaranteed; the adapter is a stub seam. Item-code mapping is a build concern.
 Exit: a BOQ line shows/uses the central reference price; catalog is one shared national dataset.
+Status 2026-09-15 (R17, product-owner decisions D8/D9/D12): built — migration, SYSTEM_ADMIN import + register
+  + sync status (§20.4.12), tenant read, BOQ link / auto-populate / price-variance API, event. The e-GP adapter
+  is the stub seam (records NOT_CONFIGURED); the AWAITING_DECISION above stands. The BOQ editor UI is not built.
 ```
 
 #### e-GP Public Procurement Command (post-MVP — ADR-062)

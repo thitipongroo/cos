@@ -8,7 +8,7 @@ import {
   AdminJustificationDto,
   JUSTIFICATION_MAX,
   JUSTIFICATION_MIN,
-} from '../dto/admin-justification.dto';
+} from '../public/admin-justification.dto';
 import { CreateTenantDto } from '../dto/create-tenant.dto';
 import { AssignDedicatedDbDto } from '../dto/assign-dedicated-db.dto';
 import { MarkContractedDto } from '../dto/mark-contracted.dto';

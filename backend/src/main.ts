@@ -16,6 +16,7 @@ import { resolveTrustProxy } from './shared/net/trusted-proxy';
 import { assertSecurityTogglesConfigured } from './shared/config/security-toggles';
 import type { Server } from 'node:http';
 import { closeServer, startInternalListener } from './shared/net/internal-listener';
+import { registerMultipart } from './shared/http/register-multipart';
 
 async function bootstrap(): Promise<void> {
   // Fail fast at startup if the non-superuser app DB role is not configured — every tenant-scoped
@@ -41,6 +42,10 @@ async function bootstrap(): Promise<void> {
     // that conflicts with Nest's own JSON body parser registered during init.
     { rawBody: true },
   );
+
+  // multipart/form-data for the central price import (ADR-061) — limits and the reason it is global are
+  // in register-multipart.ts. Registered before init so Fastify has it when the routes are mounted.
+  await registerMultipart(app);
 
   // Global prefix — source: backend/src/main.ts (C-04 resolved 2026-05-26)
   app.setGlobalPrefix('api/v1');

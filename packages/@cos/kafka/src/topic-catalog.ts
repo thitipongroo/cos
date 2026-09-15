@@ -91,6 +91,9 @@ export const EVENT_AVSC_MAP: Record<string, string> = {
   // Platform
   'platform.enterprise.contract_signed.v1': 'platform.enterprise.contract_signed.v1.avsc',
   'platform.enterprise.db_provisioned.v1': 'platform.enterprise.db_provisioned.v1.avsc',
+  // ADR-061 ราคากลาง: a SYSTEM_ADMIN import or adapter sync changed the shared central price catalog.
+  // Platform-scope (tenant_id 'platform'), so it rides platform.events like the two above.
+  'platform.central_price_catalog.updated.v1': 'platform.central_price_catalog.updated.v1.avsc',
   // AI
   'ai.risk_prediction.generated.v1': 'ai.risk_prediction.generated.v1.avsc',
   // Digital Twin (Phase 24)

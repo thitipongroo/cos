@@ -47,3 +47,22 @@ export function formatDate(locale: Locale, iso: string | null): string {
   }
   return new Intl.DateTimeFormat(localeTag(locale), { dateStyle: 'medium' }).format(new Date(iso));
 }
+
+/** Date and time, seconds included — an audit timestamp is read to the second (R17 audit screens). */
+export function formatDateTime(locale: Locale, iso: string | null): string {
+  if (!iso) {
+    return '—';
+  }
+  return new Intl.DateTimeFormat(localeTag(locale), {
+    dateStyle: 'medium',
+    timeStyle: 'medium',
+  }).format(new Date(iso));
+}
+
+/** Time of day with seconds — the second half of an audit ledger timestamp, drawn apart from the date (R17). */
+export function formatTime(locale: Locale, iso: string | null): string {
+  if (!iso) {
+    return '—';
+  }
+  return new Intl.DateTimeFormat(localeTag(locale), { timeStyle: 'medium' }).format(new Date(iso));
+}

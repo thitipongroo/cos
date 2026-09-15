@@ -1,0 +1,329 @@
+openapi: '3.1.0'
+info:
+  title: Construction OS — Platform Settings API
+  version: '1.0.0'
+  license:
+    name: Proprietary — all rights reserved
+    identifier: LicenseRef-Proprietary
+  description: |
+    Platform-wide settings a SYSTEM_ADMIN reads and saves on System Settings (§6.7 "Platform
+    configuration"; ADR-108). Source: `backend/src/modules/platform-settings/`.
+
+    **Stored only.** Nothing in the system reads these values to change behaviour. No gateway client,
+    scheduler, throttler, connection pool or quota check consults them. Saving a value changes what the
+    screen shows and what the audit trail records, and nothing else.
+
+    One versioned document. Every save names the `version` it read (a moved version is `409`),
+    carries a mandatory justification, and writes one `platform.audit_logs` row
+    (`action = platform.settings.update`) with the before and after in the same transaction.
+servers:
+  - url: /api/v1
+    description: Current version — relative, so the document works behind whatever host serves it
+
+tags:
+  - name: platform-settings
+    description: SYSTEM_ADMIN platform-wide settings (stored only)
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    NullableText:
+      type: [string, 'null']
+      maxLength: 200
+    NullableHttpsUrl:
+      type: [string, 'null']
+      maxLength: 2048
+      format: uri
+      pattern: '^https://'
+      description: https only. `null` = not set.
+      example: https://gw.example.com/api
+
+    TierLimits:
+      type: object
+      additionalProperties: false
+      required: [db_strategy, storage_quota_gb, api_monthly_quota, token_limit_monthly]
+      properties:
+        db_strategy:
+          $ref: '#/components/schemas/NullableText'
+        storage_quota_gb:
+          type: [integer, 'null']
+          minimum: 0
+          maximum: 1000000000
+        api_monthly_quota:
+          type: [integer, 'null']
+          minimum: 0
+          maximum: 9007199254740991
+        token_limit_monthly:
+          type: [integer, 'null']
+          minimum: 0
+          maximum: 9007199254740991
+
+    PlatformSettings:
+      type: object
+      additionalProperties: false
+      description: |
+        The whole document. Every field is required and nullable, and `null` means "not set". The
+        defaults are all null and `channels` is empty. The `maximum` values are input bounds that catch
+        typos. They are not recommended settings, and nothing enforces them at runtime.
+      required: [gateways, maintenance, broadcast, limits, tiers]
+      properties:
+        gateways:
+          type: object
+          additionalProperties: false
+          required:
+            [
+              primary,
+              secondary,
+              auto_sync_cadence,
+              failover_cache_ttl_hours,
+              auto_fallback_on_timeout,
+            ]
+          properties:
+            primary:
+              type: object
+              additionalProperties: false
+              required: [name, url, protocol]
+              properties:
+                name:
+                  $ref: '#/components/schemas/NullableText'
+                url:
+                  $ref: '#/components/schemas/NullableHttpsUrl'
+                protocol:
+                  $ref: '#/components/schemas/NullableText'
+            secondary:
+              type: object
+              additionalProperties: false
+              required: [name, url, max_retries]
+              properties:
+                name:
+                  $ref: '#/components/schemas/NullableText'
+                url:
+                  $ref: '#/components/schemas/NullableHttpsUrl'
+                max_retries:
+                  type: [integer, 'null']
+                  minimum: 0
+                  maximum: 100
+            auto_sync_cadence:
+              $ref: '#/components/schemas/NullableText'
+            failover_cache_ttl_hours:
+              type: [integer, 'null']
+              minimum: 0
+              maximum: 8760
+            auto_fallback_on_timeout:
+              type: [boolean, 'null']
+        maintenance:
+          type: object
+          additionalProperties: false
+          required: [safety_non_suspension, shared_tiers_window, enterprise_mode]
+          properties:
+            safety_non_suspension:
+              type: [boolean, 'null']
+            shared_tiers_window:
+              $ref: '#/components/schemas/NullableText'
+            enterprise_mode:
+              $ref: '#/components/schemas/NullableText'
+        broadcast:
+          type: object
+          additionalProperties: false
+          required: [lead_time_hours, channels]
+          properties:
+            lead_time_hours:
+              type: [integer, 'null']
+              minimum: 0
+              maximum: 8760
+            channels:
+              type: array
+              uniqueItems: true
+              maxItems: 2
+              items:
+                type: string
+                enum: [IN_APP_BANNER, EMAIL_DIGEST]
+        limits:
+          type: object
+          additionalProperties: false
+          required: [shared_tenant_cap, default_max_pool_conns]
+          properties:
+            shared_tenant_cap:
+              type: [integer, 'null']
+              minimum: 0
+              maximum: 1000000
+            default_max_pool_conns:
+              type: [integer, 'null']
+              minimum: 0
+              maximum: 10000
+        tiers:
+          type: object
+          additionalProperties: false
+          required: [STARTER, PROFESSIONAL, ENTERPRISE]
+          properties:
+            STARTER:
+              $ref: '#/components/schemas/TierLimits'
+            PROFESSIONAL:
+              $ref: '#/components/schemas/TierLimits'
+            ENTERPRISE:
+              $ref: '#/components/schemas/TierLimits'
+
+    PlatformSettingsResponse:
+      type: object
+      required: [version, updated_at, updated_by, settings, counts]
+      properties:
+        version:
+          type: integer
+          minimum: 0
+          description: The version a `PUT` must name. `0` while nothing has ever been saved.
+        updated_at:
+          type: [string, 'null']
+          format: date-time
+        updated_by:
+          type: [object, 'null']
+          required: [user_id, email, name]
+          properties:
+            user_id:
+              type: string
+              format: uuid
+            email:
+              type: string
+            name:
+              type: string
+        settings:
+          $ref: '#/components/schemas/PlatformSettings'
+        counts:
+          type: object
+          description: Active tenants in `platform.tenants`, without and with a dedicated database.
+          required: [shared_tenants, dedicated_tenants]
+          properties:
+            shared_tenants:
+              type: integer
+              minimum: 0
+            dedicated_tenants:
+              type: integer
+              minimum: 0
+
+    UpdatePlatformSettingsRequest:
+      type: object
+      additionalProperties: false
+      required: [version, justification, settings]
+      properties:
+        version:
+          type: integer
+          minimum: 0
+          description: The `version` the settings were read at.
+        justification:
+          type: string
+          minLength: 10
+          maxLength: 500
+          description: |
+            Required (§6.7 "mandatory justification string"). Trimmed before the length check. Stored in
+            `platform.audit_logs.metadata` with the before and after.
+          example: Primary e-GP gateway moved to its new endpoint (ticket OPS-6001).
+        settings:
+          $ref: '#/components/schemas/PlatformSettings'
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            code:
+              type: string
+              example: COS-PSET-001
+            message:
+              type: string
+            messageKey:
+              type: string
+            details:
+              type: object
+            traceId:
+              type: string
+            timestamp:
+              type: string
+              format: date-time
+
+  responses:
+    Unauthenticated:
+      description: Unauthenticated
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Forbidden:
+      description: Insufficient role — SYSTEM_ADMIN required
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+paths:
+  /admin/settings:
+    get:
+      operationId: getAdminSettings
+      summary: Read the platform-wide settings (SYSTEM_ADMIN only)
+      description: |
+        Returns the stored document, or the all-null defaults with `version: 0` when nothing has been
+        saved. The values are stored only, and nothing reads them to change behaviour.
+      tags: [platform-settings]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: The current document
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlatformSettingsResponse'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+    put:
+      operationId: putAdminSettings
+      summary: Replace the platform-wide settings — versioned, justified, audited (SYSTEM_ADMIN only)
+      description: |
+        Replaces the whole document if `version` is still the stored version. The save and its audit row
+        (`platform.settings.update`, metadata `{ justification, before, after }`) commit together or not
+        at all.
+      tags: [platform-settings]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdatePlatformSettingsRequest'
+      responses:
+        '200':
+          description: Saved — the body carries the new version
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlatformSettingsResponse'
+        '400':
+          description: |
+            Validation failed (`COS-GENERAL-400`, field errors in `details.fieldErrors`). Causes: a
+            justification outside 10-500 characters after trimming, a non-https URL, a count out of
+            bounds or not an integer, an unknown channel, a missing field, or an unknown key at any level.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          description: |
+            `COS-PSET-001`. The stored version is not the one named. `details` has
+            `expected_version` and `stored_version` (`null` when two first saves raced). Reload, re-apply
+            and save again.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'

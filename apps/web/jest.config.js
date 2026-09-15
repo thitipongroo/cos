@@ -59,6 +59,10 @@ module.exports = {
     // SYSTEM_ADMIN Tenant List (§20.4.1) — every figure, filter, page and provisioning label the
     // page shows is decided here, so a wrong count or a mislabelled run state is caught by a spec.
     'src/lib/adminTenants.ts',
+    // SYSTEM_ADMIN audit-log screens (R17): query strings, action colouring, UTC day bounds.
+    'src/lib/adminAudit.ts',
+    'src/lib/adminSettings.ts',
+    'src/lib/centralPrices.ts',
   ],
   coveragePathIgnorePatterns: ['/node_modules/', '\\.spec\\.ts$'],
   coverageThreshold: {

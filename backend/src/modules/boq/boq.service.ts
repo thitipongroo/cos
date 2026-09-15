@@ -23,13 +23,39 @@ import type { OutboxEventInput } from '../../shared/outbox/outbox.types';
 import { EventOutboxService } from '../../shared/events/event-outbox.service';
 import { createLogger } from '@cos/logger';
 import { BoqRepository } from './boq.repository';
-import type { BoqVersionRow, BoqCategoryRow, BoqItemRow } from './boq.repository';
+import type {
+  BoqVersionRow,
+  BoqCategoryRow,
+  BoqItemRow,
+  BoqItemCentralPrice,
+} from './boq.repository';
 import type { CreateBoqVersionDto } from './dto/create-boq-version.dto';
 import type { AddBoqCategoryDto } from './dto/add-boq-category.dto';
 import type { AddBoqItemDto } from './dto/add-boq-item.dto';
 import type { UpdateBoqItemDto } from './dto/update-boq-item.dto';
+import { CentralPriceCatalogService } from '../central-prices/central-price-catalog.service';
+import {
+  type CentralPriceReference,
+  centralPriceUnavailable,
+  unitCostWithCentralPrice,
+} from '../central-prices/public/boq-central-price';
+import { buildPriceVarianceReport, type PriceVarianceReport } from './boq-price-variance';
 
 const logger = createLogger('boq-service');
+
+/** ADR-061 columns for a line priced at `cost` against a central price. Both inputs are DECIMAL(19,4). */
+export function centralPriceSnapshot(
+  priceId: string,
+  referencePrice: string,
+  cost: Decimal,
+): BoqItemCentralPrice {
+  const reference = new Decimal(referencePrice);
+  return {
+    central_price_id: priceId,
+    reference_price: reference.toFixed(4),
+    price_variance: cost.minus(reference).toFixed(4),
+  };
+}
 
 @Injectable({ scope: Scope.REQUEST })
 export class BoqService {
@@ -49,6 +75,8 @@ export class BoqService {
       user?: { user_id?: string; role?: string };
     },
     private readonly outbox: EventOutboxService,
+    // ADR-061: the ราคากลาง catalog is read through its owning module's service, never queried from here.
+    private readonly centralPrices: CentralPriceCatalogService,
   ) {
     this.correlationId = randomUUID();
   }
@@ -251,17 +279,34 @@ export class BoqService {
 
   // ── Item Operations ───────────────────────────────────────────────────────
 
+  // ADR-061 BOQ FEED. Every item write looks for a central price (ราคากลาง) for the line's item_code:
+  //   Mode A (always) — when an ACTIVE price in the line's currency exists, the line is linked:
+  //     central_price_id, reference_price (a snapshot of central_price) and
+  //     price_variance = unit_cost − reference_price, all decimal.js.
+  //   Mode B (use_central_price: true) — unit_cost is taken from that price, and a line that cannot be
+  //     priced that way (no item_code, no active price, another currency) is refused with COS-CPRICE-006.
+  // A price in a different currency is never linked in Mode A: a variance between THB and USD is not a
+  // number anyone can act on. Which price is "the" price for a code is CentralPriceCatalogService's rule
+  // (newest effective_period).
+
   async addItem(version_id: string, dto: AddBoqItemDto): Promise<BoqItemRow> {
+    const modeB = dto.use_central_price === true;
+    if (modeB && dto.unit_cost !== undefined) throw unitCostWithCentralPrice();
     await this.assertDraftVersion(version_id);
 
+    const itemCode = dto.item_code ?? null;
+    const reference = await this.lookupCentralPrice(itemCode, dto.currency_code, modeB);
+
     const qty = new Decimal(dto.quantity);
-    const cost = new Decimal(dto.unit_cost);
+    // Mode B guarantees a reference (lookupCentralPrice throws otherwise); outside Mode B the DTO makes
+    // unit_cost required.
+    const cost = new Decimal(modeB ? reference!.central_price : dto.unit_cost!);
     const estimatedTotal = calculateLineTotal(qty, cost);
 
     const item = await this.repo.addItem({
       category_id: dto.category_id,
       version_id,
-      item_code: dto.item_code ?? null,
+      item_code: itemCode,
       description: dto.description,
       unit: dto.unit,
       quantity: qty.toFixed(4),
@@ -269,6 +314,9 @@ export class BoqService {
       estimated_total: estimatedTotal.toFixed(4),
       currency_code: dto.currency_code,
       sort_order: dto.sort_order ?? 0,
+      central_price: reference
+        ? centralPriceSnapshot(reference.price_id, reference.central_price, cost)
+        : null,
     });
 
     await this.recalculateFromCategory(dto.category_id, version_id, 1);
@@ -276,14 +324,33 @@ export class BoqService {
   }
 
   async updateItem(item_id: string, dto: UpdateBoqItemDto): Promise<BoqItemRow> {
+    const modeB = dto.use_central_price === true;
+    if (modeB && dto.unit_cost !== undefined) throw unitCostWithCentralPrice();
     const existing = await this.repo.findItemById(item_id);
     if (!existing) throw new NotFoundException(`BOQ item ${item_id} not found`);
     await this.assertDraftVersion(existing.version_id);
 
+    // Which reference the line carries after this update:
+    //   Mode B              — a FRESH lookup; the caller asked for today's central price.
+    //   already linked      — the existing snapshot, untouched. ADR-061 takes reference_price "at line
+    //                         creation"; a later catalog import must not move an estimate's baseline.
+    //   not yet linked      — looked up now, so a line written before its code was in the catalog gets
+    //                         linked on its next edit.
+    let reference: { price_id: string; central_price: string } | null;
+    if (modeB) {
+      reference = await this.lookupCentralPrice(existing.item_code, existing.currency_code, true);
+    } else if (existing.central_price_id !== null && existing.reference_price !== null) {
+      reference = { price_id: existing.central_price_id, central_price: existing.reference_price };
+    } else {
+      reference = await this.lookupCentralPrice(existing.item_code, existing.currency_code, false);
+    }
+
     const qty =
       dto.quantity !== undefined ? new Decimal(dto.quantity) : new Decimal(existing.quantity);
-    const cost =
-      dto.unit_cost !== undefined ? new Decimal(dto.unit_cost) : new Decimal(existing.unit_cost);
+    let cost: Decimal;
+    if (modeB) cost = new Decimal(reference!.central_price);
+    else if (dto.unit_cost !== undefined) cost = new Decimal(dto.unit_cost);
+    else cost = new Decimal(existing.unit_cost);
     const estimatedTotal = calculateLineTotal(qty, cost);
 
     const updated = await this.repo.updateItem({
@@ -294,10 +361,75 @@ export class BoqService {
       unit_cost: cost.toFixed(4),
       estimated_total: estimatedTotal.toFixed(4),
       sort_order: dto.sort_order,
+      // price_variance is recomputed on every update, because unit_cost may have changed.
+      central_price: reference
+        ? centralPriceSnapshot(reference.price_id, reference.central_price, cost)
+        : undefined,
     });
 
     await this.recalculateFromCategory(existing.category_id, existing.version_id, 1);
     return updated;
+  }
+
+  /**
+   * The central price to link a line to, or null. With `required` (Mode B) every "no" is a 422 naming
+   * why, instead of a null the caller would have to explain.
+   */
+  private async lookupCentralPrice(
+    itemCode: string | null,
+    currencyCode: string,
+    required: boolean,
+  ): Promise<CentralPriceReference | null> {
+    if (!itemCode) {
+      if (required) {
+        throw centralPriceUnavailable('use_central_price requires the item to have an item_code.');
+      }
+      return null;
+    }
+    const reference = await this.centralPrices.findReferencePrice(itemCode);
+    if (!reference) {
+      if (required) {
+        throw centralPriceUnavailable(
+          `No active central price exists for item code "${itemCode}".`,
+          {
+            item_code: itemCode,
+          },
+        );
+      }
+      return null;
+    }
+    if (reference.currency_code !== currencyCode) {
+      if (required) {
+        throw centralPriceUnavailable(
+          `The central price for item code "${itemCode}" is in ${reference.currency_code}; the item is in ${currencyCode}.`,
+          { item_code: itemCode, central_price_currency: reference.currency_code },
+        );
+      }
+      return null;
+    }
+    return reference;
+  }
+
+  // ── Price variance (ADR-061) ──────────────────────────────────────────────
+
+  /**
+   * BOQ-vs-central-price variance for one version of a project: `version_id` when given (it must belong
+   * to the project), otherwise the newest version. Tenant-scoped through the repository like every read.
+   */
+  async getPriceVariance(project_id: string, version_id?: string): Promise<PriceVarianceReport> {
+    const versions = await this.repo.findVersionsByProject(project_id); // version_number ASC
+    const version = version_id
+      ? versions.find((v) => v.version_id === version_id)
+      : versions[versions.length - 1];
+    if (!version) {
+      throw new NotFoundException(
+        version_id
+          ? `BOQ version ${version_id} not found for project ${project_id}`
+          : `Project ${project_id} has no BOQ version`,
+      );
+    }
+    const items = await this.repo.findItemsByVersion(version.version_id);
+    return buildPriceVarianceReport(project_id, version, items);
   }
 
   async deleteItem(item_id: string): Promise<void> {

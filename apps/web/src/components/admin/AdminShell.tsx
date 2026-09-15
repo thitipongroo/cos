@@ -117,11 +117,13 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
     {
       labelKey: 'admin.nav.clusterInfra',
       icon: 'dns',
+      href: '/admin/cluster',
       trailing: <span aria-hidden="true" className="h-2 w-2 rounded-full bg-cos-op-success" />,
     },
     {
       labelKey: 'admin.nav.dbFleet',
       icon: 'database',
+      href: '/admin/db-fleet',
       trailing: (
         <span className="font-mono text-op-tiny text-cos-op-outline">
           {tenants.isSuccess ? `${metrics.dedicated} ${t('admin.nav.instances')}` : NO_DATA}
@@ -131,6 +133,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
     {
       labelKey: 'admin.nav.migrationApprovals',
       icon: 'swap_horiz',
+      href: '/admin/migrations',
       trailing:
         metrics.awaitingGate > 0 ? (
           <span className="rounded bg-cos-op-gate px-1.5 py-0.5 text-[10px] font-bold text-cos-op-on-gate">
@@ -141,21 +144,28 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
     {
       labelKey: 'admin.nav.auditTrail',
       icon: 'history',
+      href: '/admin/audit',
       trailing: <AdminIcon name="chevron_right" size={14} className="text-cos-op-outline" />,
     },
     {
       labelKey: 'admin.nav.centralPrices',
       icon: 'sell',
+      href: '/admin/central-prices',
       trailing: <span className="text-op-tiny text-cos-op-outline">{NO_DATA}</span>,
     },
     {
       labelKey: 'admin.nav.settings',
       icon: 'tune',
+      href: '/admin/settings',
       trailing: <AdminIcon name="tune" size={14} className="text-cos-op-outline" />,
     },
   ];
 
-  const tenantsActive = pathname === '/admin' || pathname.startsWith('/admin/tenants');
+  // Tenants owns `/admin` itself and `/admin/tenants/**`; every other entry owns its own route and what is under it.
+  const isActive = (href: string) =>
+    href === '/admin'
+      ? pathname === '/admin' || pathname.startsWith('/admin/tenants')
+      : pathname === href || pathname.startsWith(`${href}/`);
   // R12.4 / R13.6 (product owner 2026-09-15): no gate banner while Create Tenant is open — on its route here, and
   // when the modal is opened over the list by the `[data-gate-banner]` rule in globals.css.
   const showGateBanners = !pathname.startsWith('/admin/tenants/new');
@@ -314,13 +324,14 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
                       </span>
                     );
                   }
+                  const active = isActive(item.href);
                   return (
                     <Link
                       key={item.labelKey}
                       href={item.href}
-                      aria-current={tenantsActive ? 'page' : undefined}
+                      aria-current={active ? 'page' : undefined}
                       className={`${NAV_ROW} ${
-                        tenantsActive
+                        active
                           ? 'bg-cos-op-primary-container text-cos-op-on-primary-container shadow-sm'
                           : 'text-cos-op-on-surface-variant hover:bg-cos-op-container hover:text-cos-op-on-surface'
                       }`}

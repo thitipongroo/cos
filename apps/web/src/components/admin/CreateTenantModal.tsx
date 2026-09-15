@@ -138,7 +138,7 @@ export function CreateTenantModal({
       onOpenChange={(open) => {
         if (!open) onClose();
       }}
-      data-create-tenant-modal=""
+      data-admin-modal=""
       className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-cos-op-container-lowest/80 p-4 backdrop-blur-sm sm:p-6"
     >
       <Modal className="relative my-auto flex w-full max-w-2xl flex-col overflow-hidden rounded-lg border border-cos-op-container-highest bg-cos-op-container-low text-cos-op-on-surface shadow-2xl">

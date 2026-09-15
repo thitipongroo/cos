@@ -68,6 +68,119 @@
   --cos-op-port: #022c22; /* emerald-950 */
   --cos-op-port-line: #065f46; /* emerald-800 */
   --cos-op-cta-shadow: #1e3a8a; /* blue-900 */
+
+  /* The Tailwind v3 default-palette shades the SYSTEM_ADMIN Stitch drawings use (R17). This app runs Tailwind v4,
+     whose palette has different values under the same names, so the v3 values are carried here and used as
+     `cos-v3-<colour>-<shade>`; never write `bg-red-400` for a drawing's `bg-red-400`. */
+  --cos-v3-slate-100: #f1f5f9;
+  --cos-v3-slate-200: #e2e8f0;
+  --cos-v3-slate-300: #cbd5e1;
+  --cos-v3-slate-400: #94a3b8;
+  --cos-v3-slate-500: #64748b;
+  --cos-v3-slate-600: #475569;
+  --cos-v3-slate-700: #334155;
+  --cos-v3-slate-800: #1e293b;
+  --cos-v3-slate-900: #0f172a;
+  --cos-v3-slate-950: #020617;
+  --cos-v3-red-200: #fecaca;
+  --cos-v3-red-400: #f87171;
+  --cos-v3-red-500: #ef4444;
+  --cos-v3-red-600: #dc2626;
+  --cos-v3-red-700: #b91c1c;
+  --cos-v3-red-800: #991b1b;
+  --cos-v3-red-900: #7f1d1d;
+  --cos-v3-red-950: #450a0a;
+  --cos-v3-rose-300: #fda4af;
+  --cos-v3-rose-400: #fb7185;
+  --cos-v3-rose-800: #9f1239;
+  --cos-v3-rose-950: #4c0519;
+  --cos-v3-amber-200: #fde68a;
+  --cos-v3-amber-300: #fcd34d;
+  --cos-v3-amber-400: #fbbf24;
+  --cos-v3-amber-500: #f59e0b;
+  --cos-v3-amber-700: #b45309;
+  --cos-v3-amber-800: #92400e;
+  --cos-v3-amber-950: #451a03;
+  --cos-v3-blue-300: #93c5fd;
+  --cos-v3-blue-400: #60a5fa;
+  --cos-v3-blue-500: #3b82f6;
+  --cos-v3-blue-600: #2563eb;
+  --cos-v3-blue-800: #1e40af;
+  --cos-v3-blue-900: #1e3a8a;
+  --cos-v3-cyan-300: #67e8f9;
+  --cos-v3-cyan-400: #22d3ee;
+  --cos-v3-cyan-500: #06b6d4;
+  --cos-v3-cyan-700: #0e7490;
+  --cos-v3-cyan-800: #155e75;
+  --cos-v3-cyan-950: #083344;
+  --cos-v3-emerald-300: #6ee7b7;
+  --cos-v3-emerald-400: #34d399;
+  --cos-v3-emerald-500: #10b981;
+  --cos-v3-emerald-600: #059669;
+  --cos-v3-emerald-800: #065f46;
+  --cos-v3-emerald-950: #022c22;
+  --cos-v3-green-600: #16a34a;
+  --cos-v3-purple-300: #d8b4fe;
+  --cos-v3-purple-400: #c084fc;
+  --cos-v3-purple-500: #a855f7;
+  /* Header / footer band of the R17 row-action modals (Stitch `#081525`). */
+  --cos-op-dialog-edge: #081525;
+  /* R17 row-action modals — the drawings' one-off values, named by where they are drawn. */
+  --cos-op-assign-edge: #1e3d64; /* Assign DB: panel border */
+  --cos-op-assign-head: #081729; /* Assign DB: header band */
+  --cos-op-assign-head-line: #1c395c; /* Assign DB: header rule */
+  --cos-op-assign-code: #0c223c; /* Assign DB: code chip */
+  --cos-op-assign-code-line: #1b3d64; /* Assign DB: code chip border */
+  --cos-op-assign-close-hover: #152e4d; /* Assign DB: close hover */
+  --cos-op-assign-gates-line: #1d3a5e; /* Assign DB: checklist box border */
+  --cos-op-assign-gate: #0b1f36; /* Assign DB: checklist card */
+  --cos-op-assign-gate-line: #1e4068; /* Assign DB: checklist card border */
+  --cos-op-assign-field: #061626; /* Assign DB: inputs */
+  --cos-op-assign-field-line: #1f4068; /* Assign DB: input border */
+  --cos-op-assign-pill: #0e2746; /* Assign DB: port pill */
+  --cos-op-assign-pill-line: #214c7d; /* Assign DB: port pill border */
+  --cos-op-assign-foot: #071626; /* Assign DB: footer band */
+  --cos-op-assign-foot-line: #1c3858; /* Assign DB: footer rule */
+  --cos-op-assign-cancel: #0f243b; /* Assign DB: cancel */
+  --cos-op-assign-cancel-hover: #163554; /* Assign DB: cancel hover */
+  --cos-op-assign-cancel-line: #214368; /* Assign DB: cancel border */
+  --cos-op-deact-close-hover: #1a2b40; /* Deactivate: close hover */
+  --cos-op-deact-cancel: #0f243a; /* Deactivate: cancel */
+  --cos-op-deact-cancel-hover: #163352; /* Deactivate: cancel hover */
+  --cos-op-mark-confirm-hover: #1d4ed8; /* Mark Contracted: confirm hover (blue-700) */
+  --cos-op-high-privilege: #ff3b30; /* Mark Contracted: HIGH PRIVILEGE tag (the drawing's #ff3b30) */
+  /* R17 Tenant Detail & Provisioning Console (screen 01955db7b7cd…) — its one-off values. */
+  --cos-op-detail-panel: #081729; /* panel */
+  --cos-op-detail-head: #05111f; /* header / footer band, inset code wells */
+  --cos-op-detail-head-line: #1a2d45; /* header rule */
+  --cos-op-detail-chip: #0f2136; /* realm chip */
+  --cos-op-detail-chip-line: #203650; /* realm chip border */
+  --cos-op-detail-well: #0b1b2d; /* zone pill, close button */
+  --cos-op-detail-well-line: #1c324c; /* zone pill border */
+  --cos-op-detail-close-hover: #162a42; /* close hover; vault well border */
+  --cos-op-detail-close-line: #1f3652; /* close border */
+  --cos-op-detail-kpi-band: #061424; /* KPI band, metric wells */
+  --cos-op-detail-kpi-band-line: #14263b; /* KPI band rule, bar track */
+  --cos-op-detail-kpi: #0a1b2e; /* KPI card */
+  --cos-op-detail-kpi-line: #1b314d; /* KPI card border */
+  --cos-op-detail-tabs: #08182b; /* tab bar */
+  --cos-op-detail-tabs-line: #172c44; /* tab bar rule */
+  --cos-op-detail-body: #071526; /* scrolling body */
+  --cos-op-detail-card-line: #1b324f; /* card border */
+  --cos-op-detail-uri-line: #1f3757; /* URI well border */
+  --cos-op-detail-copy-hover: #14273d; /* copy button hover */
+  --cos-op-detail-well-edge: #172d47; /* metric well border */
+  --cos-op-detail-ops: #0a1829; /* operational card */
+  --cos-op-detail-op: #0e2136; /* operational button / footer Close */
+  --cos-op-detail-op-hover: #152e4a; /* operational button hover */
+  --cos-op-detail-op-line: #213a5a; /* operational button border */
+  --cos-op-detail-foot-line: #182c42; /* footer rule */
+  --cos-op-detail-close2-hover: #162d47; /* footer Close hover */
+  --cos-op-detail-close2-line: #213c5e; /* footer Close border */
+  --cos-op-mig-band: #071729; /* R17 Data Migrations: ledger header / footer band */
+  --cos-op-warning: #ff9500; /* R17 Global Audit Log: HIGH-PRIVILEGE card + migration-gate chip (the drawing's mobile-warning) */
+  --cos-op-set-head: #162032; /* R17 System Settings: panel header band */
+  --cos-op-set-thead: #121a2b; /* R17 System Settings: tier table header */
   --cos-op-on-surface: #d3e4fe;
   --cos-op-on-surface-variant: #c3c6d7;
   --cos-op-primary: #b4c5ff;
@@ -159,12 +272,12 @@
   }
 }
 
-/* R13 — while the Create Tenant modal is open: the panel underneath is dimmed and softened as the Stitch
+/* R13 / R17 — while a panel modal (Create Tenant, the row actions, Tenant Detail, Audit Log) is open: the panel underneath is dimmed and softened as the Stitch
    "Create Tenant - Modal Overlay" draws it (`blur-[1px] opacity-70`), and no migration-gate banner is drawn. */
-body:has([data-create-tenant-modal]) [data-admin-shell] {
+body:has([data-admin-modal]) [data-admin-shell] {
   filter: blur(1px);
   opacity: 0.7;
 }
-body:has([data-create-tenant-modal]) [data-gate-banner] {
+body:has([data-admin-modal]) [data-gate-banner] {
   display: none;
 }

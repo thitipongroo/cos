@@ -2,6 +2,10 @@ import { Transform } from 'class-transformer';
 import { IsString, MaxLength, MinLength } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
+// PUBLIC API of the tenant module (`public/`, tests/conformance/foundation/09-module-boundaries.spec.ts): every
+// SYSTEM_ADMIN action carries this justification — platform-settings and central-prices included — so the rule is
+// published once here rather than copied (moved from dto/ on 2026-09-15, R17).
+
 /** Bounds on a SYSTEM_ADMIN justification. §6.7 names no length; these were set in the 2026-09-14 plan. */
 export const JUSTIFICATION_MIN = 10;
 export const JUSTIFICATION_MAX = 500;

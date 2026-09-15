@@ -10,6 +10,9 @@ import { TenantSettingsService } from './settings.service';
 import { TenantSettingsRepository } from './settings.repository';
 import { TenantSettingsController } from './settings.controller';
 import { IdentityModule } from '../identity/identity.module';
+import { AdminAuditLogService } from './admin-audit-log.service';
+import { TenantAuditLogController } from './tenant-audit-log.controller';
+import { AdminAuditLogController } from './admin-audit-log.controller';
 
 // Tenant context (req.tenantId/tenantCode/userId/userRole) is resolved in
 // KeycloakJwtStrategy.validate(), which runs as part of JwtAuthGuard — AFTER the JWT is
@@ -27,9 +30,12 @@ import { IdentityModule } from '../identity/identity.module';
     UserService,
     TenantSettingsService,
     TenantSettingsRepository,
+    AdminAuditLogService,
   ],
   controllers: [
     TenantController,
+    TenantAuditLogController,
+    AdminAuditLogController,
     UserController,
     UserMeController,
     MyTenantController,

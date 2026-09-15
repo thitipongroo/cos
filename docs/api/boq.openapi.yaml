@@ -16,6 +16,12 @@ info:
     every depth rather than root categories only — which alters the NUMBER a version reports, not
     the shape of any request or response. This line records the comparison the freshness gate asks
     for, which compares commit timestamps and cannot tell an import move from an API change.
+
+    **ADR-061 ราคากลาง feed (2026-09-15).** Additive only (QM-2, QM-9): BoqItem gains nullable
+    `central_price_id`, `reference_price` and `price_variance`; AddBoqItemDto / UpdateBoqItemDto gain
+    optional `use_central_price` (AddBoqItemDto.unit_cost becomes optional exactly when it is true); and
+    `GET /boq/projects/{projectId}/price-variance` is new. The catalog itself is documented in
+    `central-prices.openapi.yaml`.
 servers:
   - url: /api/v1
     description: Production
@@ -30,6 +36,8 @@ tags:
     description: BOQ category management
   - name: boq-items
     description: BOQ line item management
+  - name: boq-price-variance
+    description: BOQ versus ราคากลาง central price (ADR-061)
 
 paths:
   /projects/{projectId}/boq/versions:
@@ -143,7 +151,14 @@ paths:
       tags: [boq-items]
       operationId: addBoqItem
       summary: Add a line item to a DRAFT BOQ version
-      description: estimated_total is calculated server-side as ROUND(quantity × unit_cost, 4) HALF_UP.
+      description: |
+        estimated_total is calculated server-side as ROUND(quantity × unit_cost, 4) HALF_UP.
+
+        ADR-061 ราคากลาง: when `item_code` has an ACTIVE central price (the newest effective_period) in the
+        item's currency, the line is linked — `central_price_id`, `reference_price` (snapshot) and
+        `price_variance` = unit_cost − reference_price (Mode A). With `use_central_price: true` the unit
+        cost is taken from that price (Mode B); a line that cannot be priced that way is refused with
+        COS-CPRICE-006, and sending `unit_cost` as well is refused with COS-CPRICE-007.
       parameters:
         - $ref: '#/components/parameters/versionId'
       requestBody:
@@ -159,14 +174,23 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/BoqItem'
+        '400':
+          $ref: '#/components/responses/BadRequest'
         '403':
           $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
 
   /boq/items/{itemId}:
     patch:
       tags: [boq-items]
       operationId: updateBoqItem
       summary: Update a BOQ line item (DRAFT version only)
+      description: |
+        ADR-061: a line already linked keeps its reference_price snapshot and has price_variance
+        recomputed against the new unit cost; a line not yet linked is looked up again. With
+        `use_central_price: true` the snapshot is re-taken from the current ACTIVE central price and the
+        unit cost set to it (COS-CPRICE-006 when that is impossible, COS-CPRICE-007 with unit_cost).
       parameters:
         - $ref: '#/components/parameters/itemId'
       requestBody:
@@ -182,8 +206,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/BoqItem'
+        '400':
+          $ref: '#/components/responses/BadRequest'
         '403':
           $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
 
     delete:
       tags: [boq-items]
@@ -196,6 +224,45 @@ paths:
           description: Item deleted; totals recalculated
         '403':
           $ref: '#/components/responses/Forbidden'
+
+  /boq/projects/{projectId}/price-variance:
+    get:
+      tags: [boq-price-variance]
+      operationId: getBoqPriceVariance
+      summary: BOQ vs central price (ราคากลาง) variance per item, with totals, for one version
+      description: |
+        ADR-061 §API. Reports one BOQ version of the project: `version_id` when given (it must belong to
+        the project), otherwise the newest version — the DRAFT being estimated when one exists.
+        Per item: the stored snapshot (`reference_price`, `price_variance`) plus
+        `reference_total` = ROUND(quantity × reference_price, 4) HALF_UP and
+        `variance_total` = estimated_total − reference_total. Totals cover LINKED items only, except
+        `estimated_total`, which covers every item; `variance_total` = `referenced_estimated_total` −
+        `reference_total`. Money is DECIMAL(19,4) as strings. Roles: EXECUTIVE, PROJECT_MANAGER, FINANCE,
+        PROCUREMENT_OFFICER, TENANT_ADMIN, SITE_ENGINEER — the BOQ read roles (ADR-061 §RBAC).
+      parameters:
+        - $ref: '#/components/parameters/projectId'
+        - in: query
+          name: version_id
+          required: false
+          schema:
+            type: string
+            format: uuid
+          description: The version to report. Default — the newest version of the project.
+      responses:
+        '200':
+          description: The variance report
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PriceVarianceReport'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          description: Unauthenticated — missing or invalid bearer token
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
 
   /boq/versions/{versionId}/export:
     get:
@@ -405,6 +472,18 @@ components:
         carbon_total_kg_co2e:
           type: [string, 'null']
           description: ROUND(quantity × carbon_factor, 4); NULL if factor is NULL
+        central_price_id:
+          type: [string, 'null']
+          format: uuid
+          description: ADR-061 — the platform.central_price_catalog row this line is linked to; NULL when unlinked
+        reference_price:
+          type: [string, 'null']
+          description: ADR-061 — DECIMAL(19,4) snapshot of the central price when the line was linked
+          example: '2450.0000'
+        price_variance:
+          type: [string, 'null']
+          description: ADR-061 — unit_cost − reference_price, DECIMAL(19,4), signed
+          example: '50.0000'
         created_at:
           type: string
           format: date-time
@@ -461,7 +540,8 @@ components:
 
     AddBoqItemDto:
       type: object
-      required: [category_id, description, unit, quantity, unit_cost]
+      description: unit_cost is required unless use_central_price is true, and must not be sent with it.
+      required: [category_id, description, unit, quantity]
       properties:
         category_id:
           type: string
@@ -491,6 +571,125 @@ components:
           type: integer
           minimum: 0
           default: 0
+        use_central_price:
+          type: boolean
+          default: false
+          description: |
+            ADR-061 Mode B — take unit_cost from the ACTIVE central price for item_code (requires
+            item_code). The unit cost stays editable afterwards.
+
+    PriceVarianceItem:
+      type: object
+      required:
+        [
+          item_id,
+          item_code,
+          description,
+          unit,
+          quantity,
+          unit_cost,
+          estimated_total,
+          currency_code,
+          central_price_id,
+          reference_price,
+          price_variance,
+          reference_total,
+          variance_total,
+        ]
+      properties:
+        item_id:
+          type: string
+          format: uuid
+        item_code:
+          type: [string, 'null']
+        description:
+          type: string
+        unit:
+          type: string
+        quantity:
+          type: string
+          example: '10.0000'
+        unit_cost:
+          type: string
+          example: '2700.0000'
+        estimated_total:
+          type: string
+          example: '27000.0000'
+        currency_code:
+          type: string
+          example: THB
+        central_price_id:
+          type: [string, 'null']
+          format: uuid
+        reference_price:
+          type: [string, 'null']
+          example: '2600.0000'
+        price_variance:
+          type: [string, 'null']
+          example: '100.0000'
+        reference_total:
+          type: [string, 'null']
+          description: ROUND(quantity × reference_price, 4) HALF_UP; NULL when unlinked
+          example: '26000.0000'
+        variance_total:
+          type: [string, 'null']
+          description: estimated_total − reference_total; NULL when unlinked
+          example: '1000.0000'
+
+    PriceVarianceReport:
+      type: object
+      required:
+        [project_id, version_id, version_number, version_status, currency_code, items, totals]
+      properties:
+        project_id:
+          type: string
+          format: uuid
+        version_id:
+          type: string
+          format: uuid
+        version_number:
+          type: integer
+          minimum: 1
+        version_status:
+          type: string
+          enum: [DRAFT, APPROVED, SUPERSEDED]
+        currency_code:
+          type: string
+          example: THB
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/PriceVarianceItem'
+        totals:
+          type: object
+          required:
+            [
+              items,
+              items_with_reference,
+              estimated_total,
+              referenced_estimated_total,
+              reference_total,
+              variance_total,
+            ]
+          properties:
+            items:
+              type: integer
+            items_with_reference:
+              type: integer
+            estimated_total:
+              type: string
+              description: Every item
+              example: '29880.0000'
+            referenced_estimated_total:
+              type: string
+              description: Linked items only
+              example: '29875.0000'
+            reference_total:
+              type: string
+              example: '28875.0000'
+            variance_total:
+              type: string
+              example: '1000.0000'
 
     ErrorResponse:
       type: object
@@ -533,8 +732,19 @@ components:
         sort_order:
           type: integer
           minimum: 0
+        use_central_price:
+          type: boolean
+          description: |
+            ADR-061 Mode B — set unit_cost to the ACTIVE central price for the item's item_code and re-take
+            the reference snapshot. Must not be sent with unit_cost.
 
   responses:
+    BadRequest:
+      description: Validation failed, or unit_cost sent with use_central_price (COS-CPRICE-007)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
     NotFound:
       description: Resource not found
       content:
@@ -554,7 +764,7 @@ components:
           schema:
             $ref: '#/components/schemas/ErrorResponse'
     UnprocessableEntity:
-      description: Business rule violation
+      description: Business rule violation — incl. COS-CPRICE-006, no usable central price for use_central_price
       content:
         application/json:
           schema:

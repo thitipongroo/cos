@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsInt, Length, Matches, Min } from 'class-validator';
+import { IsBoolean, IsString, IsOptional, IsInt, Length, Matches, Min } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 
 const DECIMAL_RE = /^\d{1,19}(\.\d{1,4})?$/;
@@ -37,4 +37,14 @@ export class UpdateBoqItemDto {
   @IsInt()
   @Min(0)
   sort_order?: number;
+
+  @ApiPropertyOptional({
+    example: false,
+    description:
+      'ADR-061 Mode B: set unit_cost to the active central price (ราคากลาง) for the item`s item_code and ' +
+      're-take the reference snapshot. Must not be sent with unit_cost.',
+  })
+  @IsOptional()
+  @IsBoolean()
+  use_central_price?: boolean;
 }

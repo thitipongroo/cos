@@ -25,6 +25,35 @@ POST /api/v1/admin/tenants/:id/deactivate — deactivate tenant
 
 Middleware (applied globally): `TenantMiddleware` — extracts `tenantId` from JWT, sets `req.tenantId`.
 
+### Audit-log reads (SYSTEM_ADMIN, 2026-09-15)
+
+```text
+GET /api/v1/admin/tenants/:tenantId/audit-logs?cursor=&limit=&q=          — one tenant, newest first
+GET /api/v1/admin/tenants/:tenantId/audit-logs/export.csv?q=              — one tenant, CSV
+GET /api/v1/admin/audit-logs?tenantId=&actorId=&action=&from=&to=&q=&cursor=&limit=  — all tenants
+GET /api/v1/admin/audit-logs/summary?from=&to=                            — total · today · with_justification · privileged · privileged_7d
+GET /api/v1/admin/audit-logs/export?format=csv|json&<the list filters>    — all tenants, CSV or JSON
+```
+
+`TenantAuditLogController` and `AdminAuditLogController` over `AdminAuditLogService`
+(`admin-audit-log.service.ts`), documented in `docs/api/tenant.openapi.yaml`.
+
+- **Every read is itself audited** — one `platform.audit_logs` row per call, action `audit.read` or
+  `audit.export`, resource_type `audit_log`, filters in `metadata`, written in the read's transaction.
+  A read whose audit row cannot be written fails. The row's tenant is the path tenant, else the
+  `tenantId` filter's tenant, else the caller's own tenant.
+- **RLS:** `audit_logs` policies apply `TO app_user` and allow one tenant at a time, so these reads run
+  on the platform connection (`createPrismaClient()`, `DATABASE_URL`), the RLS-bypassing role that
+  `TenantService` and the other cross-tenant jobs already use. Each read first checks that the role
+  does bypass RLS, and answers 503 when it does not, instead of returning one tenant's rows as if they
+  were all of them.
+- Paging is keyset on `(occurred_at DESC, log_id DESC)`. The cursor holds the timestamp to the
+  microsecond, so rows written within the same millisecond are not skipped. `limit` is 1-100, 50 by default.
+- Exports stop at **50 000 rows** (`AUDIT_EXPORT_ROW_CAP`) and say whether they were cut:
+  `X-Export-Truncated` on the response, and `truncated` in the JSON body. The CSV escaping is
+  `shared/csv/escape-csv.ts`, which the BOQ export also uses.
+- A credential-bearing URL inside `metadata` or `justification` is replaced by `[REDACTED]`.
+
 ## Dependencies
 
 - `@cos/database` — `TenantPrismaService` pattern for RLS-scoped transactions (ADR-008)

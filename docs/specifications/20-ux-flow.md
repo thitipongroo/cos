@@ -172,9 +172,16 @@ Not visible to tenant users.
   "Tenant List & DB Provisioning - SYSTEM_ADMIN" screen — a 48 px top bar and a 256 px side menu. The panel is
   exactly the viewport tall: only the workspace scrolls, the side menu does not scroll with it and keeps Cluster
   Pulse on its bottom edge (it scrolls on its own only when its entries exceed the height). Entries with no page
-  are shown DISABLED and announced as unavailable, never linked (product-owner decision).
+  are shown DISABLED and announced as unavailable, never linked (product-owner decision). Since 2026-09-15 (R17)
+  every entry has a page and is linked, active on its own route: Tenants `/admin`, Cluster Infrastructure
+  `/admin/cluster`, Dedicated DB Fleet `/admin/db-fleet`, Data Migration Approvals `/admin/migrations`, Global
+  Audit Trail `/admin/audit`, Central Prices `/admin/central-prices`, System Settings `/admin/settings`.
+- **Real values or `—` (R17, product-owner decisions D5–D7):** every screen draws its Stitch drawing's full
+  structure; a figure the platform has a source for is shown, a figure it has none for reads `—`, and a control
+  with nothing behind it is disabled. Each screen's header comment names what it shows as `—` and why.
 - `/admin/central-prices` — ราคากลาง catalog: import (CSV/Excel) + API-sync status + browse (ADR-061).
-  Tenant-facing: the BOQ editor surfaces `reference_price` / variance + a project BOQ-vs-ราคากลาง view.
+  Tenant-facing: the BOQ editor surfaces `reference_price` / variance + a project BOQ-vs-ราคากลาง view — the
+  API is built (R17); the BOQ editor UI is not (decision D12).
 
 ### 20.4.1 Tenant List
 
@@ -193,7 +200,8 @@ Not visible to tenant users.
 | Provisioning | §34.3 run state, `—` without a run — added 2026-09-14 |
 | Created at   | Date                                              |
 
-**Actions per row:** View detail · Deactivate · Assign Dedicated DB (ENTERPRISE only)
+**Actions per row:** View detail (§20.4.7) · Audit Log (§20.4.8) · Assign Dedicated DB (ENTERPRISE only) ·
+Mark as Contracted · Deactivate · Approve (a run at the gate)
 
 **The hostname comes from `dedicated_db_host`** on `GET /api/v1/admin/tenants` (2026-09-14) — parsed
 server-side from the encrypted URL. The URL itself is never returned: it carries the database password.
@@ -204,7 +212,7 @@ name / host / region and plan filter chips. Every figure is computed from the tw
 **migration-gate banner** per run at AWAITING_APPROVAL carries **Approve** and **Abort** (§34.5), each
 through a dialog that states what it does and asks for the justification.
 
-**View detail is not offered yet** — no tenant-detail page is specified. See §20.4.6.
+Every row action opens its Stitch modal over the list (R17); none uses a browser prompt.
 
 ### 20.4.2 Create Tenant
 
@@ -238,6 +246,10 @@ On success the modal closes and the new tenant's row is highlighted.
 
 **Trigger:** operator clicks "Assign Dedicated DB" on a tenant row, or via tenant detail page.
 
+**Presentation (R17):** Stitch "Assign Dedicated Database - Modal Overlay". The three prerequisites are cards the
+operator TICKS — the platform cannot check them — and the URI field is enabled only when all three are ticked
+(decision D2). The drawing's pool and proxy selects are shown and send nothing.
+
 **Prerequisites shown in UI (checklist before form is enabled):**
 
 - [ ] Dedicated PostgreSQL instance provisioned and reachable
@@ -266,6 +278,10 @@ justification }`
 isolation, triggering `EnterpriseProvisioningWorkflow` via Temporal.
 
 **Trigger:** operator clicks "Mark as Contracted" on an ENTERPRISE tenant row.
+
+**Presentation (R17):** Stitch "Mark Tenant as Enterprise Contracted - Modal Overlay", its copy word for word
+(decision D1); the three prerequisites below are its checklist cards, computed from the tenant row (D2); the
+type-the-code field, contract reference and justification are the confirmation below.
 
 **Prerequisites shown before button is enabled:**
 
@@ -314,13 +330,16 @@ when workflow reaches the human gate (before data migration step).
 
 **Success state:** tenant row status changes to Inactive; row greyed out.
 
-> **OPEN (2026-09-14):** the web panel still deactivates WITHOUT the type-the-code confirmation above —
-> it asks only for the justification. Kept deliberately for this round (product-owner decision); Stitch
-> "Deactivate Tenant - SYSTEM_ADMIN" is the screen that closes it.
+**Presentation (R17):** Stitch "Deactivate Tenant - Modal Overlay", its copy word for word (decision D1), with the
+type-the-code confirmation above and the justification. The OPEN item of 2026-09-14 is closed.
 
-### 20.4.6 Round-2 draft — AWAITING PRODUCT-OWNER APPROVAL
+### 20.4.6 Round-2 draft — partly answered
 
-> **Status: DRAFT, not approved. Nothing below is implemented or may be implemented until approved.**
+> **Answered 2026-09-15 (R17):** Import Central Prices — ADR-061 is in scope and built (D8; the button's page is
+> §20.4.12). View Detail — §20.4.7 (D5). Audit Log — §20.4.8 (D3: 50 per page, justification in full, Export CSV).
+> The Cluster Pulse, status-bar and Platform Compute rows are unchanged: they still read `—` (D6).
+>
+> **Status of the rows not answered: DRAFT, not approved. Nothing below them may be implemented until approved.**
 > These are the parts of Stitch "Tenant List & DB Provisioning - SYSTEM_ADMIN" that had no data source
 > on 2026-09-14 (product-owner decision: specify first, build in round 2). Each names what the
 > repository actually has; where it has nothing, the entry is a question, not a definition.
@@ -334,6 +353,62 @@ when workflow reaches the human gate (before data migration step).
 | **Cluster Pulse** — EMQX Broker %, Timescale Chunks, Mesh Latency, Queue Backlog | Prometheus scrapes cos-backend, ai services, file-service, kafka (JMX), node-exporter and annotated pods (`infrastructure/monitoring/prometheus/prometheus.yml`). **No EMQX scrape job.** No service mesh is deployed (no Istio/Linkerd in `infrastructure/`). §31.3 lists Kafka consumer lag. TimescaleDB exposes `timescaledb_information.chunks` | QUESTIONS: (1) "EMQX Broker 99.98%" — a percentage of WHAT (uptime? delivered messages?), and scraped from where? (2) "Mesh Latency" — there is no mesh; which latency is meant? (3) "Queue Backlog" — Kafka consumer lag (§31.3), the outbox, or Temporal task queues? (4) "Timescale Chunks: Healthy" — what makes it unhealthy? |
 | **Status bar** — `EMQX: 99.98%`, `PG Fleet: 42 Ded. / 128 Pool` | "Ded." = tenants with `dedicated_db_host` is computable today. "Pool" has no definition | QUESTION: what is counted as "Pool" — shared-DB tenants, PgBouncer server connections, or database instances? |
 | **Platform Compute 28% · Headroom Ok** | node-exporter + Kubernetes pod metrics in Prometheus; §18 sets a ≤70% steady-state headroom target per layer | QUESTION: which layer's utilisation is "Platform Compute" (cluster CPU requests? usage?), and does "Headroom Ok" mean below §18's 70%? The backend has no Prometheus query client today, so this also needs one |
+
+### 20.4.7 Tenant Detail & Provisioning Console
+
+Stitch "Tenant Detail & Provisioning Console" as a modal over the Tenant List (decision D5). Every panel is drawn.
+Real: the tenant's code, name, plan, realm, region, active state, dedicated host or "shared database", created date
+and provisioning run state. Everything else — cluster state figures, telemetry, Vault / mTLS, compliance lines —
+reads `—`. Its Operational card opens the real row actions (Audit Log, Assign DB, Mark as Contracted, Deactivate);
+the drawn operations with nothing behind them are disabled.
+
+### 20.4.8 Tenant Audit Log
+
+Stitch "Tenant Audit Log - Modal Overlay" (decision D3). `GET /api/v1/admin/tenants/{tenantId}/audit-logs?cursor&limit&q`
+— newest first, 50 per page, keyset cursor, `q` over action, actor e-mail and justification; the justification is
+shown in full. Export CSV is `GET …/audit-logs/export.csv`. TOTAL (30D) is real; SECURITY and ACTIVE read `—`. No
+hash column, Trigger or Verify: `audit_logs` carries no hash chain. Every read and export is itself written to
+`platform.audit_logs` (`audit.read` / `audit.export`).
+
+### 20.4.9 Cluster Infrastructure
+
+`/admin/cluster`, Stitch "Cluster Infrastructure & Fleet Telemetry" (decision D6). The DB fleet tile counts tenants
+with and without a dedicated database; the node table is empty with its reason; every other figure reads `—` and
+its controls are disabled. No node is invented.
+
+### 20.4.10 Dedicated DB Fleet
+
+`/admin/db-fleet`, Stitch "Dedicated DB Fleet Management" (decision D6). One row per tenant with a dedicated host,
+with the gate filter, sort and paging; instance figures read `—`.
+
+### 20.4.11 Data Migrations & Approval Gate
+
+`/admin/migrations`, Stitch "Data Migrations & Approval Gate" (decision D7). The ledger is every provisioning run
+(§34.3) with its state; the gate panel is the selected run at AWAITING_APPROVAL with Approve / Abort and the
+justification (§34.5). Transfer volume, payload, checksums, progress and CDC lag read `—`; New Job and Archive are
+disabled.
+
+### 20.4.12 Central Price Register (ราคากลาง)
+
+`/admin/central-prices`, Stitch "ราคากลาง Central Price Register" (ADR-061, decisions D8, D9). The register is
+`GET /api/v1/admin/central-prices` with its period filter and cursor paging; Download CSV template and Import
+Central Prices (file, effective period, source reference, justification) are the real endpoints. The sync panel is
+`GET …/sync-status`; the failed-sync panel is the newest FAILED run, and Force Retry Sync is `POST …/sync` — the
+e-GP adapter is a stub, so it records NOT_CONFIGURED. Prices are shown from their stored decimal text, never through
+a JS number.
+
+### 20.4.13 Global Audit Log and System Settings
+
+**Global Audit Log** — `/admin/audit`, Stitch "Global Audit Log" (decision D4). `GET /api/v1/admin/audit-logs` with
+tenant, actor, action (exact, or a prefix ending in `.`), `from` / `to` (a date is 00:00 UTC; a date-time needs `Z`
+or an offset; `to` is exclusive) and `q`; `GET …/summary` for the cards; `GET …/export?format=csv|json`. No
+integrity seal, hash or Merkle element is drawn. The drawing cites §16.4 for the mandatory justification; the
+mandate is §6.7, and §6.7 is shown.
+
+**System Settings** — `/admin/settings`, Stitch "System Settings" (decision D10, ADR-108). `GET` / `PUT
+/api/v1/admin/settings`: one versioned document, saved whole with the §6.7 justification and the version it was
+read at (a stale version is `409 COS-PSET-001`); every save is audited with before / after. STORED ONLY — nothing
+reads these values yet, and the screen says so. Every field starts "not set"; no default is invented.
 
 ---
 

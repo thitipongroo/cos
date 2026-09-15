@@ -63,6 +63,7 @@ const mockService = {
   deleteItem: jest.fn(),
   exportVersion: jest.fn(),
   exportVersionCsv: jest.fn(),
+  getPriceVariance: jest.fn(),
 };
 
 const makeRes = () => ({ header: jest.fn() });
@@ -184,5 +185,15 @@ describe('BoqController', () => {
   it('getVersionDetail propagates NotFoundException from service', async () => {
     mockService.getVersionDetail.mockRejectedValue(new NotFoundException('Not found'));
     await expect(controller.getVersionDetail('p-001', 'bad-id')).rejects.toThrow(NotFoundException);
+  });
+
+  it('getPriceVariance passes the project and the optional version_id through (ADR-061)', async () => {
+    mockService.getPriceVariance.mockResolvedValue({ version_id: 'v-001' });
+    await expect(controller.getPriceVariance('p-001', { version_id: 'v-001' })).resolves.toEqual({
+      version_id: 'v-001',
+    });
+    expect(mockService.getPriceVariance).toHaveBeenCalledWith('p-001', 'v-001');
+    await controller.getPriceVariance('p-001', {});
+    expect(mockService.getPriceVariance).toHaveBeenLastCalledWith('p-001', undefined);
   });
 });

@@ -53,8 +53,20 @@ export interface BoqItemRow {
   sort_order: number;
   carbon_factor_kg_co2e: string | null;
   carbon_total_kg_co2e: string | null;
+  // ราคากลาง reference (ADR-061, migration 20260915000002). NULL until the line is linked to an active
+  // published central price for its item_code.
+  central_price_id: string | null;
+  reference_price: string | null;
+  price_variance: string | null;
   created_at: Date;
   updated_at: Date;
+}
+
+/** The ADR-061 reference columns an item write sets. All three together, or none. */
+export interface BoqItemCentralPrice {
+  central_price_id: string;
+  reference_price: string;
+  price_variance: string;
 }
 
 @Injectable({ scope: Scope.REQUEST })
@@ -385,19 +397,25 @@ export class BoqRepository {
     estimated_total: string;
     currency_code: string;
     sort_order: number;
+    /** ADR-061 reference, or null when no active published central price matched the item code. */
+    central_price: BoqItemCentralPrice | null;
   }): Promise<BoqItemRow> {
+    const cp = params.central_price;
     const rows = await this.db.run(async (prisma) => {
       return prisma.$queryRaw<BoqItemRow[]>`
         INSERT INTO boq.boq_items (
           category_id, version_id, tenant_id,
           item_code, description, unit,
-          quantity, unit_cost, estimated_total, currency_code, sort_order
+          quantity, unit_cost, estimated_total, currency_code, sort_order,
+          central_price_id, reference_price, price_variance
         )
         VALUES (
           ${params.category_id}::uuid, ${params.version_id}::uuid, ${this.tenantId}::uuid,
           ${params.item_code}, ${params.description}, ${params.unit},
           ${params.quantity}::decimal, ${params.unit_cost}::decimal,
-          ${params.estimated_total}::decimal, ${params.currency_code}, ${params.sort_order}
+          ${params.estimated_total}::decimal, ${params.currency_code}, ${params.sort_order},
+          ${cp ? cp.central_price_id : null}::uuid, ${cp ? cp.reference_price : null}::decimal,
+          ${cp ? cp.price_variance : null}::decimal
         )
         RETURNING *
       `;
@@ -413,7 +431,13 @@ export class BoqRepository {
     unit_cost?: string;
     estimated_total?: string;
     sort_order?: number;
+    /**
+     * ADR-061 reference. Undefined leaves the three columns as they are; a value overwrites all three.
+     * A link is never removed by an update — reference_price is a snapshot, not a live lookup.
+     */
+    central_price?: BoqItemCentralPrice;
   }): Promise<BoqItemRow> {
+    const cp = params.central_price;
     const rows = await this.db.run(async (prisma) => {
       return prisma.$queryRaw<BoqItemRow[]>`
         UPDATE boq.boq_items
@@ -429,6 +453,9 @@ export class BoqRepository {
           unit_cost       = COALESCE(${params.unit_cost ?? null}::decimal, unit_cost),
           estimated_total = COALESCE(${params.estimated_total ?? null}::decimal, estimated_total),
           sort_order      = COALESCE(${params.sort_order ?? null}, sort_order),
+          central_price_id = COALESCE(${cp ? cp.central_price_id : null}::uuid, central_price_id),
+          reference_price  = COALESCE(${cp ? cp.reference_price : null}::decimal, reference_price),
+          price_variance   = COALESCE(${cp ? cp.price_variance : null}::decimal, price_variance),
           updated_at      = now()
         WHERE item_id   = ${params.item_id}::uuid
           AND tenant_id = ${this.tenantId}::uuid
@@ -555,12 +582,17 @@ export class BoqRepository {
           category_id, version_id, tenant_id,
           item_code, description, unit,
           quantity, unit_cost, estimated_total, currency_code,
-          sort_order, carbon_factor_kg_co2e, carbon_total_kg_co2e
+          sort_order, carbon_factor_kg_co2e, carbon_total_kg_co2e,
+          central_price_id, reference_price, price_variance
         )
         SELECT m.new_id, ${to_version_id}::uuid, i.tenant_id,
                i.item_code, i.description, i.unit,
                i.quantity, i.unit_cost, i.estimated_total, i.currency_code,
-               i.sort_order, i.carbon_factor_kg_co2e, i.carbon_total_kg_co2e
+               i.sort_order, i.carbon_factor_kg_co2e, i.carbon_total_kg_co2e,
+               -- ADR-061: the snapshot travels with the line. A new version is a copy of what was
+               -- estimated, so it keeps the reference the line was estimated against rather than
+               -- silently re-pricing against today's catalog.
+               i.central_price_id, i.reference_price, i.price_variance
         FROM boq.boq_items i
         JOIN id_map m ON m.old_id = i.category_id
         WHERE i.version_id = ${from_version_id}::uuid

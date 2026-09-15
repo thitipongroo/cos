@@ -1,6 +1,6 @@
 import { IsString, IsUrl } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
-import { AdminJustificationDto } from './admin-justification.dto';
+import { AdminJustificationDto } from '../public/admin-justification.dto';
 
 /** Extends the §6.7 justification: assigning a dedicated DB is an audited SYSTEM_ADMIN action. */
 export class AssignDedicatedDbDto extends AdminJustificationDto {

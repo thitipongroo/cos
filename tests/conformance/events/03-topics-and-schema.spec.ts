@@ -69,6 +69,8 @@ describe('the Schema Registry is set to BACKWARD_TRANSITIVE (master:3057, 3063-3
  */
 const ENUM_SYMBOL_ORDER: Record<string, readonly string[]> = {
   CashflowDetectedBy: ['AI_FORECAST', 'RULE_ENGINE'],
+  // platform.central_price_catalog.updated.v1 — ADR-061 source (2026-09-15).
+  CentralPriceSource: ['MANUAL_IMPORT', 'GOV_API'],
   CheckinMethod: ['QR_CODE', 'GPS', 'BIOMETRIC', 'MANUAL'],
   ConflictType: ['FIELD_CONFLICT', 'STATUS_CONFLICT', 'REJECTED'],
   DelayCause: ['PROCUREMENT', 'WEATHER', 'WORKFORCE', 'EQUIPMENT', 'SCOPE_CHANGE', 'OTHER'],

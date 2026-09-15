@@ -26,21 +26,25 @@
  * · the footer's Cluster Zone. Specified in §20.4.6 for round 2.
  *
  * ── ROW ACTIONS — icon buttons as drawn (R3) ────────────────────────────────────────────────────
- * visibility (View Detail) and history (Audit Log) are drawn and DISABLED — no page yet. database = Assign
- * DB (ENTERPRISE only; disabled elsewhere), block = Deactivate, and on a row whose run is at the gate the
- * drawing's filled gavel opens Approve. Mark as Contracted is one more icon on an active ENTERPRISE row
- * with no dedicated DB — §20.4.4 requires the action; the drawing has no icon for it.
- * Each keeps its existing prompt flow (decision D4) plus the §6.7 justification. OPEN: §20.4.5's
- * type-the-code confirmation for Deactivate is still not implemented.
+ * visibility opens <TenantDetailModal />, history <TenantAuditLogModal />, database = Assign DB (ENTERPRISE only;
+ * disabled elsewhere) <AssignDedicatedDbModal />, block = Deactivate <DeactivateTenantModal /> (§20.4.5 type-the-code),
+ * and on a row whose run is at the gate the drawing's filled gavel opens Approve. Mark as Contracted
+ * (<MarkContractedModal />) is one more icon on an active ENTERPRISE row with no dedicated DB — §20.4.4 requires the
+ * action; the drawing has no icon for it. R17: the window.prompt flows are gone; every modal carries the §6.7
+ * justification.
  */
 
-import { adminJustificationSchema } from '@cos/schemas';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useEffect, useMemo, useState } from 'react';
 import { AdminIcon, type AdminIconName } from './AdminIcon';
 import { NO_DATA } from './AdminShell';
+import { AssignDedicatedDbModal } from './AssignDedicatedDbModal';
 import { CreateTenantModal } from './CreateTenantModal';
+import { DeactivateTenantModal } from './DeactivateTenantModal';
+import { TenantAuditLogModal } from './TenantAuditLogModal';
 import { GateDecisionDialog } from './GateDecisionDialog';
+import { MarkContractedModal } from './MarkContractedModal';
+import { TenantDetailModal } from './TenantDetailModal';
 import { LoadingState } from '../../components/ui/LoadingState';
 import { useI18n } from '../../i18n';
 import {
@@ -61,14 +65,7 @@ import {
   type TenantListRow,
 } from '../../lib/adminTenants';
 import { ApiError } from '../../lib/api/client';
-import {
-  useAssignDedicatedDb,
-  useDeactivateTenant,
-  useDecideProvisioning,
-  useMarkContracted,
-  useTenantProvisioning,
-  useTenants,
-} from '../../lib/api/queries';
+import { useDecideProvisioning, useTenantProvisioning, useTenants } from '../../lib/api/queries';
 import { formatDate } from '../../lib/format';
 
 const PLAN_FILTERS: PlanFilter[] = ['ALL', 'ENTERPRISE', 'PROFESSIONAL', 'STARTER'];
@@ -119,15 +116,16 @@ function TenantList({ createOpen }: { createOpen: boolean }) {
   const globalQuery = params?.get('q') ?? null;
   const tenants = useTenants();
   const provisioning = useTenantProvisioning();
-  const deactivate = useDeactivateTenant();
-  const assignDb = useAssignDedicatedDb();
-  const markContracted = useMarkContracted();
   const decide = useDecideProvisioning();
 
   const [query, setQuery] = useState('');
   const [plan, setPlan] = useState<PlanFilter>('ALL');
   const [page, setPage] = useState(1);
-  const [rowError, setRowError] = useState<string | undefined>();
+  // R17: the row actions open their Stitch modals; each modal owns its request, justification and errors.
+  const [rowAction, setRowAction] = useState<{
+    kind: 'detail' | 'assign' | 'mark' | 'deactivate' | 'audit';
+    row: TenantListRow;
+  } | null>(null);
   const [approving, setApproving] = useState<TenantListRow | null>(null);
   const [creating, setCreating] = useState(createOpen);
 
@@ -158,21 +156,6 @@ function TenantList({ createOpen }: { createOpen: boolean }) {
     if (created && all.length > 0) setPage(pageOf(rows, created));
     // Keyed on the list's arrival, not on `rows`: a later search must not jump back to the new row.
   }, [created, all.length]);
-
-  /** The row actions' shared reason step. `null` = cancelled or too short; nothing is sent. */
-  const askJustification = (): string | null => {
-    const answer = window.prompt(t('admin.justification.prompt'));
-    if (answer === null) return null;
-    const parsed = adminJustificationSchema.safeParse({ justification: answer });
-    if (!parsed.success) {
-      setRowError(t('admin.justification.tooShort'));
-      return null;
-    }
-    return parsed.data.justification;
-  };
-
-  const onRowError = (err: unknown) =>
-    setRowError(t(errorKeyForStatus(statusOf(err), 'rowAction')));
 
   return (
     <>
@@ -341,11 +324,6 @@ function TenantList({ createOpen }: { createOpen: boolean }) {
         </div>
       </div>
 
-      {rowError ? (
-        <p role="alert" className="text-op-tiny text-cos-op-error">
-          {rowError}
-        </p>
-      ) : null}
       {provisioning.isError ? (
         <p role="status" className="text-op-tiny text-cos-op-gate">
           {t('admin.list.provisioningError')}
@@ -396,51 +374,12 @@ function TenantList({ createOpen }: { createOpen: boolean }) {
                       highlighted={row.tenant_code === created}
                       locale={locale}
                       t={t}
-                      busy={{
-                        assign: assignDb.isPending,
-                        mark: markContracted.isPending,
-                        deactivate: deactivate.isPending,
-                      }}
+                      onView={() => setRowAction({ kind: 'detail', row })}
                       onApprove={() => setApproving(row)}
-                      onAssign={() => {
-                        const url = window.prompt(t('admin.row.assignDbPrompt'));
-                        if (!url) return;
-                        const justification = askJustification();
-                        if (!justification) return;
-                        setRowError(undefined);
-                        assignDb.mutate(
-                          { id: row.tenant_id, dedicatedDbUrl: url, justification },
-                          { onError: onRowError },
-                        );
-                      }}
-                      onMarkContracted={() => {
-                        // Type-to-confirm safety (§20.4.4): the operator retypes the code.
-                        const confirmCode = window.prompt(
-                          `${t('admin.markContractedConfirm')} ${row.tenant_code}`,
-                        );
-                        if (confirmCode !== row.tenant_code) return;
-                        const ref = window.prompt(t('admin.contractRef')) ?? '';
-                        const justification = askJustification();
-                        if (!justification) return;
-                        setRowError(undefined);
-                        markContracted.mutate(
-                          {
-                            id: row.tenant_id,
-                            contractReference: ref.trim() || undefined,
-                            justification,
-                          },
-                          { onError: onRowError },
-                        );
-                      }}
-                      onDeactivate={() => {
-                        const justification = askJustification();
-                        if (!justification) return;
-                        setRowError(undefined);
-                        deactivate.mutate(
-                          { id: row.tenant_id, justification },
-                          { onError: onRowError },
-                        );
-                      }}
+                      onAssign={() => setRowAction({ kind: 'assign', row })}
+                      onMarkContracted={() => setRowAction({ kind: 'mark', row })}
+                      onDeactivate={() => setRowAction({ kind: 'deactivate', row })}
+                      onAudit={() => setRowAction({ kind: 'audit', row })}
                     />
                   ))
                 )}
@@ -516,6 +455,41 @@ function TenantList({ createOpen }: { createOpen: boolean }) {
         />
       ) : null}
 
+      {rowAction?.kind === 'detail' ? (
+        <TenantDetailModal
+          tenant={rowAction.row}
+          state={
+            states.has(rowAction.row.tenant_id) ? states.get(rowAction.row.tenant_id) : undefined
+          }
+          onClose={() => setRowAction(null)}
+          onAction={(action) => setRowAction({ kind: action, row: rowAction.row })}
+        />
+      ) : null}
+      {rowAction?.kind === 'mark' ? (
+        <MarkContractedModal
+          tenant={rowAction.row}
+          onClose={() => setRowAction(null)}
+          onDone={() => setRowAction(null)}
+        />
+      ) : null}
+      {rowAction?.kind === 'assign' ? (
+        <AssignDedicatedDbModal
+          tenant={rowAction.row}
+          onClose={() => setRowAction(null)}
+          onDone={() => setRowAction(null)}
+        />
+      ) : null}
+      {rowAction?.kind === 'audit' ? (
+        <TenantAuditLogModal tenant={rowAction.row} onClose={() => setRowAction(null)} />
+      ) : null}
+      {rowAction?.kind === 'deactivate' ? (
+        <DeactivateTenantModal
+          tenant={rowAction.row}
+          onClose={() => setRowAction(null)}
+          onDone={() => setRowAction(null)}
+        />
+      ) : null}
+
       {approving ? (
         <GateDecisionDialog
           isOpen
@@ -548,11 +522,12 @@ function TenantRow({
   highlighted,
   locale,
   t,
-  busy,
+  onView,
   onApprove,
   onAssign,
   onMarkContracted,
   onDeactivate,
+  onAudit,
 }: {
   row: TenantListRow;
   state: string | null | undefined;
@@ -560,16 +535,16 @@ function TenantRow({
   highlighted: boolean;
   locale: Parameters<typeof formatDate>[0];
   t: (key: string) => string;
-  busy: { assign: boolean; mark: boolean; deactivate: boolean };
+  onView: () => void;
   onApprove: () => void;
   onAssign: () => void;
   onMarkContracted: () => void;
   onDeactivate: () => void;
+  onAudit: () => void;
 }) {
   const view = provisioningLoading ? null : provisioningView(state, row.is_active);
   const atGate = state === GATE_STATE;
   const enterprise = row.plan_type === 'ENTERPRISE';
-  const unavailable = t('admin.nav.unavailable');
   const toneIcon = view ? TONE[view.tone].icon : null;
   const status = statusView(provisioningLoading ? undefined : state, row.is_active);
   // A run in progress takes no row action but View and Audit Log, as drawn; a tenant with ANY run is never
@@ -662,11 +637,7 @@ function TenantRow({
       </td>
       <td className="whitespace-nowrap px-4 py-3 text-right">
         <span className="inline-flex items-center gap-1">
-          <IconButton
-            icon="visibility"
-            label={`${t('admin.row.view')} — ${unavailable}`}
-            disabled
-          />
+          <IconButton icon="visibility" label={t('admin.row.view')} onClick={onView} />
           {atGate ? (
             <IconButton
               icon="gavel"
@@ -683,7 +654,7 @@ function TenantRow({
                   : `${t('admin.assignDb')} — ${t('admin.row.enterpriseOnly')}`
               }
               onClick={onAssign}
-              disabled={!enterprise || busy.assign}
+              disabled={!enterprise}
               tone={enterprise ? 'cyan' : 'muted'}
             />
           ) : null}
@@ -696,21 +667,15 @@ function TenantRow({
               icon="verified"
               label={t('admin.markContracted')}
               onClick={onMarkContracted}
-              disabled={busy.mark}
               tone="warning"
             />
           ) : null}
-          <IconButton
-            icon="history"
-            label={`${t('admin.row.auditLog')} — ${unavailable}`}
-            disabled
-          />
+          <IconButton icon="history" label={t('admin.row.auditLog')} onClick={onAudit} />
           {row.is_active && !atGate && !inProgress ? (
             <IconButton
               icon="block"
               label={t('settings.deactivate')}
               onClick={onDeactivate}
-              disabled={busy.deactivate}
               tone="danger"
             />
           ) : null}

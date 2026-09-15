@@ -11,6 +11,7 @@ import { LastSeenModule } from './shared/last-seen/last-seen.module';
 import { TenantModule } from './modules/tenant/tenant.module';
 import { ProjectModule } from './modules/project/project.module';
 import { BoqModule } from './modules/boq/boq.module';
+import { CentralPricesModule } from './modules/central-prices/central-prices.module';
 import { ProcurementModule } from './modules/procurement/procurement.module';
 import { FinanceModule } from './modules/finance/finance.module';
 import { SiteOpsModule } from './modules/site-ops/site-ops.module';
@@ -24,6 +25,7 @@ import { CrmModule } from './modules/crm/crm.module';
 import { VendorPortalModule } from './modules/vendor-portal/vendor-portal.module';
 import { NotificationModule } from './modules/notification/notification.module';
 import { PlatformWebhookModule } from './modules/platform-webhook/platform-webhook.module';
+import { PlatformSettingsModule } from './modules/platform-settings/platform-settings.module';
 import { MasterDataModule } from './modules/master-data/master-data.module';
 import { GraphModule } from './modules/graph/graph.module';
 import { AnalyticsModule } from './modules/analytics/analytics.module';
@@ -99,6 +101,7 @@ import { ServiceAuthModule } from './shared/auth/auth.module';
     TenantModule,
     ProjectModule,
     BoqModule,
+    CentralPricesModule, // ADR-061 — ราคากลาง catalog: SYSTEM_ADMIN import/sync, tenant read, BOQ reference
     ProcurementModule,
     FinanceModule,
     SiteOpsModule,
@@ -112,6 +115,7 @@ import { ServiceAuthModule } from './shared/auth/auth.module';
     VendorPortalModule,
     NotificationModule,
     PlatformWebhookModule,
+    PlatformSettingsModule, // ADR-108 — SYSTEM_ADMIN platform settings, stored only (nothing reads them)
     MasterDataModule,
     GraphModule,
     AnalyticsModule,

@@ -1,0 +1,560 @@
+openapi: 3.1.0
+info:
+  title: Construction OS — Central Prices (ราคากลาง) API
+  version: v1
+  license:
+    name: Proprietary — all rights reserved
+    identifier: LicenseRef-Proprietary
+  description: |
+    ราคากลาง — the Comptroller General's Department central reference prices used for Thai public-works
+    estimating — as a platform-shared catalog (ADR-061). One national dataset, versioned by
+    `effective_period`, that every tenant reads and nobody but SYSTEM_ADMIN writes.
+
+    **Two audiences.** `/admin/central-prices/*` is SYSTEM_ADMIN only: the register (every status),
+    file import, the adapter sync and its status. `/central-prices` is every tenant role, read-only, and
+    returns ACTIVE rows only — active and published. A PENDING (unpublished) or INACTIVE row is never
+    served to a tenant and never linked to a BOQ line. BOQ lines are linked to central prices through
+    the BOQ API (`boq.openapi.yaml`: item create/update and `/boq/projects/{projectId}/price-variance`).
+
+    **Ingestion.** File import (CSV UTF-8 or .xlsx) is the working path. The government API path is a
+    `CentralPriceAdapter` whose only implementation today is a stub for e-GP / กรมบัญชีกลาง that reports
+    "not configured" (product-owner decision D9, 2026-09-15): `POST /admin/central-prices/sync` runs it
+    and records an honest NOT_CONFIGURED run.
+
+    **Every import and sync is audited** in `platform.audit_logs` (`central_prices.import` /
+    `central_prices.sync`, resource_type `central_price_catalog`, resource_id = the run, metadata =
+    justification + counts), in the same transaction as the catalog rows, the run record and — when a
+    row changed — the `platform.central_price_catalog.updated.v1` outbox event.
+
+    Written 2026-09-15 against `backend/src/modules/central-prices/`.
+
+servers:
+  - url: /api/v1
+    description: Current version
+
+security:
+  - bearerAuth: []
+
+tags:
+  - name: central-prices-admin
+    description: SYSTEM_ADMIN catalog management
+  - name: central-prices
+    description: Tenant read of active central prices
+
+paths:
+  /admin/central-prices:
+    get:
+      tags: [central-prices-admin]
+      operationId: listCentralPrices
+      summary: Browse the central price catalog, every status (SYSTEM_ADMIN only)
+      description: |
+        Ordered by code, then newest effective_period first within a code (byte order). Keyset paging:
+        pass `next_cursor` back as `cursor`. `total` counts rows matching the filters, ignoring the
+        cursor; `periods` lists every effective_period in the catalog, newest first.
+      parameters:
+        - $ref: '#/components/parameters/q'
+        - in: query
+          name: category
+          required: false
+          schema:
+            type: string
+            maxLength: 255
+          description: Exact category (หมวดหมู่งาน).
+        - in: query
+          name: effective_period
+          required: false
+          schema:
+            type: string
+            pattern: '^[0-9A-Za-z][0-9A-Za-z._/-]{0,31}$'
+          description: Exact effective_period, e.g. `2569`.
+        - $ref: '#/components/parameters/cursor'
+        - $ref: '#/components/parameters/limit'
+      responses:
+        '200':
+          description: One page of the register
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CentralPriceListResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /admin/central-prices/sync-status:
+    get:
+      tags: [central-prices-admin]
+      operationId: getCentralPriceSyncStatus
+      summary: Adapter configuration and the latest import / sync runs (SYSTEM_ADMIN only)
+      description: |
+        `last_run` is the newest attempt of either kind; `last_success` the newest SUCCEEDED;
+        `last_failure` the newest FAILED. NOT_CONFIGURED is not a failure and never appears in
+        `last_failure`.
+      responses:
+        '200':
+          description: Sync status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SyncStatusResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /admin/central-prices/template.csv:
+    get:
+      tags: [central-prices-admin]
+      operationId: getCentralPriceTemplate
+      summary: Download the import template (SYSTEM_ADMIN only)
+      description: |
+        The header row only, CRLF-terminated — an example row would be imported as data.
+        `code`, `description`, `unit` and `central_price` are required columns; `category` and
+        `currency_code` (default THB) are optional. Header matching ignores case and surrounding
+        spaces; unknown columns are ignored.
+      responses:
+        '200':
+          description: The template, as an attachment (`central-prices-template.csv`)
+          content:
+            text/csv:
+              schema:
+                type: string
+              example: "code,description,category,unit,central_price,currency_code\r\n"
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /admin/central-prices/import:
+    post:
+      tags: [central-prices-admin]
+      operationId: importCentralPrices
+      summary: Import a CSV or .xlsx price list for one effective_period (SYSTEM_ADMIN only, audited)
+      description: |
+        Upserts by (code, effective_period). Every written row is published (`published_at` = now,
+        `is_active` = true) with source MANUAL_IMPORT and the given `source_ref`. Rows of the period
+        that are not in the file are left as they are.
+
+        **Row rules.** `code` 1-100, `description` 1-5000, `unit` 1-50, optional `category` ≤ 255 (all
+        trimmed); `central_price` a non-negative decimal with at most 15 integer digits and 4 decimal
+        places — no sign, exponent or thousands separator, and never rounded (a 5th decimal is a
+        rejection); `currency_code` ISO 4217, default THB. A code repeated in the file is rejected
+        after its first occurrence. Blank rows are skipped. At most 20,000 data rows.
+
+        **Outcomes.** At least one valid row → 200, outcome SUCCEEDED, with every rejected row listed.
+        Every row rejected → 200, outcome FAILED (NO_VALID_ROWS), nothing written, rejections listed.
+        A file that cannot be imported as a whole — unreadable, not UTF-8, missing required columns,
+        no data rows, too many rows — records a FAILED run and answers 422 COS-CPRICE-004 carrying its
+        `run_id`. Periods should be written so that text order is time order (`2568` < `2569`,
+        `2569-01` < `2569-02`): the newest period of a code is the one BOQ lines are linked to.
+
+        Limits: file ≤ 5 MiB; one file plus at most three text fields (4 KiB each).
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file, effective_period, justification]
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: A `.csv` (UTF-8, BOM allowed) or `.xlsx`; the name and the content must agree.
+                effective_period:
+                  type: string
+                  pattern: '^[0-9A-Za-z][0-9A-Za-z._/-]{0,31}$'
+                  example: '2569'
+                source_ref:
+                  type: string
+                  maxLength: 500
+                  description: Where the prices were published. Blank means absent.
+                  example: 'กค 0433.2/ว 123'
+                justification:
+                  type: string
+                  minLength: 10
+                  maxLength: 500
+                  description: Why the operator is importing. Trimmed before the length check; stored in the audit row.
+      responses:
+        '200':
+          description: The import report
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ImportResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '413':
+          description: COS-CPRICE-003 — the file exceeds 5 MiB
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '415':
+          description: COS-CPRICE-002 — not a .csv or .xlsx, or the content does not match the name
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          description: COS-CPRICE-004 — the file could not be imported as a whole; a FAILED run was recorded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /admin/central-prices/sync:
+    post:
+      tags: [central-prices-admin]
+      operationId: syncCentralPrices
+      summary: Run the government price adapter once and record the run (SYSTEM_ADMIN only, audited)
+      description: |
+        Runs the configured CentralPriceAdapter. Today that is the e-GP stub, so the recorded outcome is
+        NOT_CONFIGURED with error_code ADAPTER_NOT_CONFIGURED and nothing is written — answered 200,
+        because the run was recorded, not refused. A future adapter's rows go through the same row rules
+        as a file import and are written with source GOV_API.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [justification]
+              properties:
+                justification:
+                  type: string
+                  minLength: 10
+                  maxLength: 500
+      responses:
+        '200':
+          description: The recorded run
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SyncRun'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /central-prices:
+    get:
+      tags: [central-prices]
+      operationId: searchCentralPrices
+      summary: Look up active central prices by code or description (every tenant role, read-only)
+      description: |
+        ACTIVE rows only (active and published), every effective_period, ordered like the register.
+        Roles: TENANT_ADMIN, EXECUTIVE, PROJECT_MANAGER, PROCUREMENT_OFFICER, PROC_MANAGER, FINANCE,
+        SAFETY_OFFICER, SITE_ENGINEER, SITE_WORKER, CRM_SALES_MANAGER, VIEWER.
+      parameters:
+        - $ref: '#/components/parameters/q'
+        - in: query
+          name: code
+          required: false
+          schema:
+            type: string
+            maxLength: 100
+          description: Exact item code.
+        - $ref: '#/components/parameters/cursor'
+        - $ref: '#/components/parameters/limit'
+      responses:
+        '200':
+          description: One page of active central prices
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CentralPriceSearchResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    q:
+      in: query
+      name: q
+      required: false
+      schema:
+        type: string
+        maxLength: 200
+      description: Case-insensitive substring of code or description, matched literally (% and _ are not wildcards).
+    cursor:
+      in: query
+      name: cursor
+      required: false
+      schema:
+        type: string
+        maxLength: 1024
+      description: Opaque — the previous response's `next_cursor`. Anything else is 400 COS-CPRICE-005.
+    limit:
+      in: query
+      name: limit
+      required: false
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 200
+        default: 50
+
+  schemas:
+    CentralPriceRow:
+      type: object
+      required:
+        [
+          price_id,
+          code,
+          description,
+          category,
+          unit,
+          central_price,
+          currency_code,
+          effective_period,
+          source,
+          source_ref,
+          published_at,
+          is_active,
+          status,
+        ]
+      properties:
+        price_id:
+          type: string
+          format: uuid
+        code:
+          type: string
+          example: STR-001
+        description:
+          type: string
+          example: คอนกรีตผสมเสร็จ 240 ksc
+        category:
+          type: [string, 'null']
+          example: งานโครงสร้าง
+        unit:
+          type: string
+          example: ลบ.ม.
+        central_price:
+          type: string
+          description: DECIMAL(19,4) as stored — always four decimal places, never a float
+          example: '2450.0000'
+        currency_code:
+          type: string
+          example: THB
+        effective_period:
+          type: string
+          example: '2569'
+        source:
+          type: string
+          enum: [MANUAL_IMPORT, GOV_API]
+        source_ref:
+          type: [string, 'null']
+        published_at:
+          type: [string, 'null']
+          format: date-time
+          description: NULL while not yet published
+        is_active:
+          type: boolean
+        status:
+          type: string
+          enum: [ACTIVE, PENDING, INACTIVE]
+          description: INACTIVE when not active; PENDING when unpublished; otherwise ACTIVE
+
+    CentralPriceListResponse:
+      type: object
+      required: [rows, total, next_cursor, periods]
+      properties:
+        rows:
+          type: array
+          items:
+            $ref: '#/components/schemas/CentralPriceRow'
+        total:
+          type: integer
+        next_cursor:
+          type: [string, 'null']
+        periods:
+          type: array
+          items:
+            type: string
+          example: ['2570', '2569']
+
+    CentralPriceSearchResponse:
+      type: object
+      required: [rows, next_cursor]
+      properties:
+        rows:
+          type: array
+          items:
+            $ref: '#/components/schemas/CentralPriceRow'
+        next_cursor:
+          type: [string, 'null']
+
+    SyncRun:
+      type: object
+      required:
+        [
+          run_id,
+          kind,
+          source_name,
+          effective_period,
+          started_at,
+          finished_at,
+          outcome,
+          records_total,
+          records_inserted,
+          records_updated,
+          records_rejected,
+          error_code,
+          error_message,
+          actor_id,
+        ]
+      properties:
+        run_id:
+          type: string
+          format: uuid
+        kind:
+          type: string
+          enum: [FILE_IMPORT, GOV_API]
+        source_name:
+          type: string
+          description: The uploaded file's base name, or the adapter's name
+        effective_period:
+          type: [string, 'null']
+        started_at:
+          type: string
+          format: date-time
+        finished_at:
+          type: string
+          format: date-time
+        outcome:
+          type: string
+          enum: [SUCCEEDED, FAILED, NOT_CONFIGURED]
+        records_total:
+          type: integer
+        records_inserted:
+          type: integer
+        records_updated:
+          type: integer
+        records_rejected:
+          type: integer
+        error_code:
+          type: [string, 'null']
+          example: ADAPTER_NOT_CONFIGURED
+        error_message:
+          type: [string, 'null']
+        actor_id:
+          type: [string, 'null']
+          format: uuid
+
+    SyncStatusResponse:
+      type: object
+      required: [adapter, last_run, last_success, last_failure]
+      properties:
+        adapter:
+          type: object
+          required: [name, configured]
+          properties:
+            name:
+              type: string
+              example: e-GP (กรมบัญชีกลาง)
+            configured:
+              type: boolean
+              example: false
+        last_run:
+          oneOf:
+            - $ref: '#/components/schemas/SyncRun'
+            - type: 'null'
+        last_success:
+          oneOf:
+            - $ref: '#/components/schemas/SyncRun'
+            - type: 'null'
+        last_failure:
+          oneOf:
+            - $ref: '#/components/schemas/SyncRun'
+            - type: 'null'
+
+    ImportResult:
+      type: object
+      required: [run_id, outcome, records_total, inserted, updated, rejected]
+      properties:
+        run_id:
+          type: string
+          format: uuid
+        outcome:
+          type: string
+          enum: [SUCCEEDED, FAILED]
+        records_total:
+          type: integer
+          description: Non-blank data rows in the file
+        inserted:
+          type: integer
+        updated:
+          type: integer
+        rejected:
+          type: array
+          items:
+            type: object
+            required: [row, reason]
+            properties:
+              row:
+                type: integer
+                description: Spreadsheet row number — the header is row 1
+              reason:
+                type: string
+
+    ErrorResponse:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message, traceId, timestamp]
+          properties:
+            code:
+              type: string
+              example: COS-CPRICE-004
+            message:
+              type: string
+            messageKey:
+              type: string
+            details:
+              type: object
+            traceId:
+              type: string
+            timestamp:
+              type: string
+              format: date-time
+
+  responses:
+    BadRequest:
+      description: Validation failed (COS-GENERAL-400), a malformed upload (COS-CPRICE-001) or a forged cursor (COS-CPRICE-005)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Unauthorized:
+      description: Missing or invalid bearer token
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Forbidden:
+      description: The caller's role may not use this route
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'

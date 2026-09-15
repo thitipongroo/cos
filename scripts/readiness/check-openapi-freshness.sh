@@ -47,13 +47,15 @@ echo "==> OpenAPI spec freshness checks"
 #
 # FORMAT: one entry per line, "<spec name> <space-separated repo-relative source paths>". The name
 # is everything up to the FIRST space; the alignment padding that follows is absorbed by `read -ra`
-# word splitting, so it costs nothing. Twenty-three entries — the same twenty-three, unchanged, as
-# the associative array this replaced on 2026-09-04. Iteration is now in source order rather than
+# word splitting, so it costs nothing. Twenty-five entries: the twenty-three of the associative array
+# this replaced on 2026-09-04, unchanged, plus central-prices and platform-settings (2026-09-15, R17).
+# Iteration is now in source order rather than
 # `${!MODULE_MAP[@]}`'s undefined order, so the output is stable run to run.
 MODULE_MAP_ENTRIES=(
   "analytics         backend/src/modules/analytics"
   "auth              backend/src/modules/identity"
   "boq               backend/src/modules/boq"
+  "central-prices    backend/src/modules/central-prices"
   "credential        services/credential-service/src"
   "crm               backend/src/modules/crm"
   "equipment         backend/src/modules/equipment"
@@ -63,6 +65,7 @@ MODULE_MAP_ENTRIES=(
   "master-data       backend/src/modules/master-data"
   "notification      backend/src/modules/notification"
   "platform          backend/src/health.controller.ts backend/src/shared/feature-flags"
+  "platform-settings backend/src/modules/platform-settings"
   "platform-webhooks backend/src/modules/platform-webhook"
   "procurement       backend/src/modules/procurement"
   "project           backend/src/modules/project"

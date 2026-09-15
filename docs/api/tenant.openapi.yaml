@@ -29,6 +29,100 @@ components:
       scheme: bearer
       bearerFormat: JWT
 
+  # Shared by the SYSTEM_ADMIN audit-log reads (R17.4 / R17.6).
+  parameters:
+    AuditTenantIdPath:
+      name: tenantId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    AuditTenantIdFilter:
+      name: tenantId
+      in: query
+      required: false
+      description: |
+        Rows whose `audit_logs.tenant_id` is this tenant — the tenant the action was recorded AGAINST.
+        For `tenant.*` actions that is the target tenant, not the operator's home tenant; for a global
+        audit read with no tenant filter it is the reader's own tenant.
+      schema:
+        type: string
+        format: uuid
+    AuditActorId:
+      name: actorId
+      in: query
+      required: false
+      description: Rows whose `actor_id` is this user.
+      schema:
+        type: string
+        format: uuid
+    AuditAction:
+      name: action
+      in: query
+      required: false
+      description: Exact action (`tenant.deactivate`), or a prefix when the value ends with a dot (`tenant.`).
+      schema:
+        type: string
+        maxLength: 255
+    AuditFrom:
+      name: from
+      in: query
+      required: false
+      description: |
+        ISO 8601 date (00:00 UTC) or date-time with `Z` or an offset, to the millisecond; inclusive
+        (`occurred_at >= from`). A date-time without an offset, a signed year or a finer fraction is a 400.
+      schema:
+        type: string
+        example: '2026-09-01'
+    AuditTo:
+      name: to
+      in: query
+      required: false
+      description: |
+        ISO 8601 date (00:00 UTC) or date-time with `Z` or an offset, to the millisecond; EXCLUSIVE
+        (`occurred_at < to`). For a whole last day, send the next day.
+      schema:
+        type: string
+        example: '2026-09-16'
+    AuditQ:
+      name: q
+      in: query
+      required: false
+      description: |
+        Case-insensitive substring over `action`, the actor's email and `metadata.justification`.
+        Matched literally — `%` and `_` are not wildcards. Trimmed; empty means no search.
+      schema:
+        type: string
+        maxLength: 200
+    AuditCursor:
+      name: cursor
+      in: query
+      required: false
+      description: The previous page's `next_cursor`, unchanged.
+      schema:
+        type: string
+        maxLength: 200
+    AuditLimit:
+      name: limit
+      in: query
+      required: false
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 50
+
+  headers:
+    XExportRowCap:
+      description: The most rows the export returns (50000).
+      schema:
+        type: integer
+    XExportTruncated:
+      description: '`true` when more rows matched than the cap; the file then holds the newest of them.'
+      schema:
+        type: boolean
+
   schemas:
     TenantSettings:
       type: object
@@ -230,6 +324,147 @@ components:
         decision:
           type: string
           enum: [approve, abort]
+
+    AuditLogRow:
+      type: object
+      description: |
+        One `platform.audit_logs` row as the SYSTEM_ADMIN audit reads return it (R17.4 / R17.6),
+        joined to its tenant and its actor. Any credential-bearing URL (`scheme://user:pass@…`, or any
+        `postgres://` / `postgresql://` URL) inside `metadata` or `justification` is replaced by
+        `[REDACTED]` before it leaves the server.
+      required:
+        [
+          log_id,
+          occurred_at,
+          tenant_id,
+          tenant_code,
+          tenant_name,
+          action,
+          resource_type,
+          resource_id,
+          actor_id,
+          actor_email,
+          actor_name,
+          ip_address,
+          user_agent,
+          justification,
+          metadata,
+        ]
+      properties:
+        log_id:
+          type: string
+          format: uuid
+        occurred_at:
+          type: string
+          format: date-time
+          description: UTC, millisecond precision.
+        tenant_id:
+          type: string
+          format: uuid
+          description: The tenant the action was recorded against — for `tenant.*` actions, the target.
+        tenant_code:
+          type: string
+        tenant_name:
+          type: string
+        action:
+          type: string
+          example: tenant.deactivate
+        resource_type:
+          type: string
+          example: tenant
+        resource_id:
+          type: [string, 'null']
+          format: uuid
+        actor_id:
+          type: string
+          format: uuid
+        actor_email:
+          type: [string, 'null']
+        actor_name:
+          type: [string, 'null']
+        ip_address:
+          type: [string, 'null']
+        user_agent:
+          type: [string, 'null']
+        justification:
+          type: [string, 'null']
+          description: '`metadata.justification` in full; `null` when absent or blank.'
+        metadata:
+          type: object
+          additionalProperties: true
+          description: The row's metadata; `{}` when the column is NULL.
+
+    AuditLogPage:
+      type: object
+      required: [rows, next_cursor]
+      properties:
+        rows:
+          type: array
+          items:
+            $ref: '#/components/schemas/AuditLogRow'
+        next_cursor:
+          type: [string, 'null']
+          description: |
+            Opaque. Pass it back as `cursor` for the next, older page; `null` on the last page. Rows are
+            ordered by `(occurred_at DESC, log_id DESC)` at the database's microsecond precision.
+
+    TenantAuditLogPage:
+      allOf:
+        - $ref: '#/components/schemas/AuditLogPage'
+        - type: object
+          required: [summary]
+          properties:
+            summary:
+              type: object
+              required: [total_30d]
+              properties:
+                total_30d:
+                  type: integer
+                  description: |
+                    Every audit row of this tenant with `occurred_at` in the last 30 × 24 h, counted
+                    before this read's own audit row is written. Ignores `q` and `cursor`.
+
+    AuditLogSummary:
+      type: object
+      required: [total, today, with_justification, privileged, privileged_7d]
+      description: All five count rows across EVERY tenant. Audit reads (`audit.*`) are rows like any other.
+      properties:
+        total:
+          type: integer
+          description: Rows with `occurred_at` in [`from`, `to`); every row when neither is given.
+        today:
+          type: integer
+          description: Rows with `occurred_at` at or after 00:00 UTC of the current day. Ignores `from` / `to`.
+        with_justification:
+          type: integer
+          description: |
+            Rows in [`from`, `to`) whose `action` starts with `tenant.` and whose
+            `metadata.justification` is present and not blank.
+        privileged:
+          type: integer
+          description: |
+            Rows in [`from`, `to`) whose `action` starts with `tenant.` — the denominator of
+            `with_justification`.
+        privileged_7d:
+          type: integer
+          description: |
+            Rows whose `action` starts with `tenant.` and whose `occurred_at` is within the last
+            7 × 24 h. Ignores `from` / `to`.
+
+    AuditLogExport:
+      type: object
+      required: [rows, row_cap, truncated]
+      properties:
+        rows:
+          type: array
+          items:
+            $ref: '#/components/schemas/AuditLogRow'
+        row_cap:
+          type: integer
+          example: 50000
+        truncated:
+          type: boolean
+          description: '`true` when more rows matched than `row_cap`; `rows` then holds the newest `row_cap`.'
 
     MarkContractedRequest:
       type: object
@@ -1012,6 +1247,267 @@ paths:
                 $ref: '#/components/schemas/Error'
         '503':
           description: The run's state could not be read, so no signal was sent
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  # ── Audit-log reads (SYSTEM_ADMIN) — R17.4, R17.6, 2026-09-15 ──────────────
+  # Source: backend/src/modules/tenant/tenant-audit-log.controller.ts and admin-audit-log.controller.ts.
+  # EVERY route below is itself audited (§20.4.6, product-owner decisions D3 / D4): one
+  # platform.audit_logs row per call, action `audit.read` (list, summary) or `audit.export`,
+  # resource_type `audit_log`, the filters in metadata, written in the same transaction as the read —
+  # a read whose audit row cannot be written fails and returns nothing.
+  /admin/tenants/{tenantId}/audit-logs:
+    get:
+      operationId: getAdminTenantsByTenantidAuditLogs
+      summary: One page of a tenant's audit log, newest first — the read is audited (SYSTEM_ADMIN only)
+      description: |
+        Rows of this tenant ordered by `(occurred_at DESC, log_id DESC)`, keyset-paged. Audited as
+        `audit.read` against the tenant in the path.
+      tags: [tenants]
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/AuditTenantIdPath'
+        - $ref: '#/components/parameters/AuditCursor'
+        - $ref: '#/components/parameters/AuditLimit'
+        - $ref: '#/components/parameters/AuditQ'
+      responses:
+        '200':
+          description: The page and the tenant's 30-day count
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TenantAuditLogPage'
+        '400':
+          description: tenantId not a UUID, limit outside 1-100, a cursor this endpoint did not issue, or an unknown parameter
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthenticated
+        '403':
+          description: Insufficient role — SYSTEM_ADMIN required
+        '404':
+          description: The tenant does not exist
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '503':
+          description: The server's database connection cannot read across tenants (it is subject to RLS)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /admin/tenants/{tenantId}/audit-logs/export.csv:
+    get:
+      operationId: getAdminTenantsByTenantidAuditLogsExportCsv
+      summary: A tenant's audit log as CSV — the export is audited (SYSTEM_ADMIN only)
+      description: |
+        Every row of the tenant matching `q`, newest first, capped at **50 000 rows**. RFC 4180 with
+        CRLF line endings; a cell a spreadsheet would evaluate as a formula is prefixed with `'` and
+        quoted (CWE-1236). Columns: occurred_at, log_id, tenant_id, tenant_code, tenant_name, action,
+        resource_type, resource_id, actor_id, actor_email, actor_name, ip_address, user_agent,
+        justification, metadata (JSON text). Audited as `audit.export` against the tenant in the path.
+      tags: [tenants]
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/AuditTenantIdPath'
+        - $ref: '#/components/parameters/AuditQ'
+      responses:
+        '200':
+          description: The CSV file, as an attachment
+          headers:
+            Content-Disposition:
+              schema:
+                type: string
+                example: attachment; filename="audit-log-550e8400-e29b-41d4-a716-446655440000.csv"
+            X-Export-Row-Cap:
+              $ref: '#/components/headers/XExportRowCap'
+            X-Export-Truncated:
+              $ref: '#/components/headers/XExportTruncated'
+          content:
+            text/csv:
+              schema:
+                type: string
+        '400':
+          description: tenantId not a UUID, or an unknown parameter
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthenticated
+        '403':
+          description: Insufficient role — SYSTEM_ADMIN required
+        '404':
+          description: The tenant does not exist
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '503':
+          description: The server's database connection cannot read across tenants (it is subject to RLS)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /admin/audit-logs:
+    get:
+      operationId: getAdminAuditLogs
+      summary: One page of the audit log across all tenants, filtered — the read is audited (SYSTEM_ADMIN only)
+      description: |
+        Rows of every tenant ordered by `(occurred_at DESC, log_id DESC)`, keyset-paged; filters combine
+        with AND. Audited as `audit.read` — against the `tenantId` filter's tenant when one is given,
+        otherwise against the caller's own tenant.
+      tags: [audit-logs]
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/AuditTenantIdFilter'
+        - $ref: '#/components/parameters/AuditActorId'
+        - $ref: '#/components/parameters/AuditAction'
+        - $ref: '#/components/parameters/AuditFrom'
+        - $ref: '#/components/parameters/AuditTo'
+        - $ref: '#/components/parameters/AuditQ'
+        - $ref: '#/components/parameters/AuditCursor'
+        - $ref: '#/components/parameters/AuditLimit'
+      responses:
+        '200':
+          description: The page
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuditLogPage'
+        '400':
+          description: A malformed filter, `from` later than `to`, limit outside 1-100, a foreign cursor, or an unknown parameter
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthenticated
+        '403':
+          description: Insufficient role — SYSTEM_ADMIN required
+        '404':
+          description: The `tenantId` filter names no tenant
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '503':
+          description: The server's database connection cannot read across tenants (it is subject to RLS)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /admin/audit-logs/summary:
+    get:
+      operationId: getAdminAuditLogsSummary
+      summary: Counts for the Global Audit Log cards — the read is audited (SYSTEM_ADMIN only)
+      description: |
+        See `AuditLogSummary` for exactly what each figure counts. `from` / `to` bound `total`,
+        `with_justification` and `privileged` only. Audited as `audit.read` against the caller's own tenant.
+      tags: [audit-logs]
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/AuditFrom'
+        - $ref: '#/components/parameters/AuditTo'
+      responses:
+        '200':
+          description: The five counts
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuditLogSummary'
+        '400':
+          description: A malformed date, `from` later than `to`, or an unknown parameter
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthenticated
+        '403':
+          description: Insufficient role — SYSTEM_ADMIN required
+        '503':
+          description: The server's database connection cannot read across tenants (it is subject to RLS)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /admin/audit-logs/export:
+    get:
+      operationId: getAdminAuditLogsExport
+      summary: The filtered audit log as CSV or JSON — the export is audited (SYSTEM_ADMIN only)
+      description: |
+        Every row matching the filters, newest first, capped at **50 000 rows**. CSV (default) is the
+        same format as the per-tenant export; JSON is an `AuditLogExport`. Both are sent as attachments.
+        Audited as `audit.export` (metadata carries `format`) — against the `tenantId` filter's tenant
+        when one is given, otherwise against the caller's own tenant.
+      tags: [audit-logs]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: format
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [csv, json]
+            default: csv
+        - $ref: '#/components/parameters/AuditTenantIdFilter'
+        - $ref: '#/components/parameters/AuditActorId'
+        - $ref: '#/components/parameters/AuditAction'
+        - $ref: '#/components/parameters/AuditFrom'
+        - $ref: '#/components/parameters/AuditTo'
+        - $ref: '#/components/parameters/AuditQ'
+      responses:
+        '200':
+          description: The file, as an attachment
+          headers:
+            Content-Disposition:
+              schema:
+                type: string
+                example: attachment; filename="audit-log-2026-09-15.csv"
+            X-Export-Row-Cap:
+              $ref: '#/components/headers/XExportRowCap'
+            X-Export-Truncated:
+              $ref: '#/components/headers/XExportTruncated'
+          content:
+            text/csv:
+              schema:
+                type: string
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuditLogExport'
+        '400':
+          description: A malformed filter, `from` later than `to`, an unknown format, or an unknown parameter
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthenticated
+        '403':
+          description: Insufficient role — SYSTEM_ADMIN required
+        '404':
+          description: The `tenantId` filter names no tenant
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '503':
+          description: The server's database connection cannot read across tenants (it is subject to RLS)
           content:
             application/json:
               schema:

@@ -208,6 +208,11 @@ A value already in the global set is an ALIAS (var()) in globals.css, not a seco
   modal-notice #081525 · modal-hover #0C1E33 · ok #34D399 · ok-line = --cos-dark-success · tier = --cos-gray ·
   enterprise #60A5FA · cyan = --cos-cyan · vpc #083344 / vpc-ink #67E8F9 / vpc-line #155E75 ·
   port #022C22 / port-line #065F46 · cta-shadow #1E3A8A
+  R17 (2026-09-15): cos-v3-<colour>-<shade> = the Tailwind v3 palette shades of the eleven R17 drawings, at v3 hex
+  (slate · red · rose · amber · blue · cyan · emerald · green-600 · purple) — never v4 utilities of the same name.
+  One-offs: dialog-edge #081525 · assign-* (18) · deact-* (3) · mark-confirm-hover #1d4ed8 · high-privilege #ff3b30
+  · detail-* (27) · mig-band #071729 · warning #ff9500 · set-head #162032 · set-thead #121a2b. globals.css holds
+  each hex with its role; §32.7 "R17 additions".
   Type: op-label 13/18 600 · op-tiny 11/12 500 +0.05em · op-body 14/20 · op-h1 24/32 600 ·
         op-display 32/40 700 −0.02em
   PANEL ONLY: never on a tenant screen. In the list drawing font-tiny-web WINS over font-mono on

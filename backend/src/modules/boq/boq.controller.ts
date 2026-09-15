@@ -1,5 +1,5 @@
 // BOQ Controller — Phase 4
-// 9 endpoints per spec. RBAC enforced via JwtAuthGuard + RolesGuard.
+// 9 endpoints per spec, plus the ADR-061 price-variance report (2026-09-15). RBAC enforced via JwtAuthGuard + RolesGuard.
 // Read access: EXECUTIVE, PROJECT_MANAGER, FINANCE, PROCUREMENT_OFFICER, TENANT_ADMIN
 // Write access: PROJECT_MANAGER, TENANT_ADMIN (DRAFT mutations)
 // Approve: TENANT_ADMIN (matches spec §6.2 TENANT_ADMIN full access; PM approves budgets per §6.4)
@@ -31,6 +31,7 @@ import { CreateBoqVersionDto } from './dto/create-boq-version.dto';
 import { AddBoqCategoryDto } from './dto/add-boq-category.dto';
 import { AddBoqItemDto } from './dto/add-boq-item.dto';
 import { UpdateBoqItemDto } from './dto/update-boq-item.dto';
+import { PriceVarianceQueryDto } from './dto/price-variance-query.dto';
 
 @ApiTags('boq')
 @ApiBearerAuth()
@@ -139,6 +140,29 @@ export class BoqController {
   @HttpCode(HttpStatus.NO_CONTENT)
   deleteItem(@Param('itemId', ParseUUIDPipe) itemId: string) {
     return this.boqService.deleteItem(itemId);
+  }
+
+  // GET /api/v1/boq/projects/:projectId/price-variance — ADR-061 BOQ-vs-central-price variance report.
+  // Same read roles as the version detail: the reference price and variance follow existing BOQ
+  // permissions (ADR-061 §RBAC).
+  @Get('boq/projects/:projectId/price-variance')
+  @Roles(
+    CosRole.EXECUTIVE,
+    CosRole.PROJECT_MANAGER,
+    CosRole.FINANCE,
+    CosRole.PROCUREMENT_OFFICER,
+    CosRole.TENANT_ADMIN,
+    CosRole.SITE_ENGINEER,
+  )
+  @ApiOperation({
+    summary: 'BOQ vs central price (ราคากลาง) variance per item, with totals, for one version',
+  })
+  @ApiParam({ name: 'projectId', type: 'string', format: 'uuid' })
+  getPriceVariance(
+    @Param('projectId', ParseUUIDPipe) projectId: string,
+    @Query() query: PriceVarianceQueryDto,
+  ) {
+    return this.boqService.getPriceVariance(projectId, query.version_id);
   }
 
   // GET /api/v1/boq/versions/:versionId/export

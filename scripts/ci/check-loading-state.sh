@@ -65,7 +65,10 @@ echo "--> apps/web: no hand-rolled skeleton / spinner outside <LoadingState />"
 # unread dot, the Cluster Pulse LIVE dot and the migration-gate ping (AdminShell.tsx), the selected ENTERPRISE
 # ping and the "Port … Open" badge dot (CreateTenantModal.tsx). Each is `motion-safe:`. A loading state added to
 # either file is still bound by Rule 40; this entry does not cover one.
-WEB_ALLOW='apps/web/src/components/ui/LoadingState.tsx|apps/web/src/app/post-login/page.tsx|apps/web/src/components/admin/AdminShell.tsx|apps/web/src/components/admin/CreateTenantModal.tsx'
+# R17 (2026-09-15) adds three more on the same ground, each a drawn decorative dot: the "Port … Open" badge ping
+# (AssignDedicatedDbModal.tsx), the gate panel's amber ping (DataMigrations.tsx) and the footer's secure-channel dot
+# (DeactivateTenantModal.tsx). Each is `motion-safe:`; product-owner confirmation is requested in the R17 report.
+WEB_ALLOW='apps/web/src/components/ui/LoadingState.tsx|apps/web/src/app/post-login/page.tsx|apps/web/src/components/admin/AdminShell.tsx|apps/web/src/components/admin/CreateTenantModal.tsx|apps/web/src/components/admin/AssignDedicatedDbModal.tsx|apps/web/src/components/admin/DataMigrations.tsx|apps/web/src/components/admin/DeactivateTenantModal.tsx'
 WEB_HITS="$(grep -rnE "animate-(pulse|spin|ping)" "$ROOT/apps/web/src" --include=*.tsx --include=*.ts \
   | sed "s|^$ROOT/||" | grep -Ev "^($WEB_ALLOW):" || true)"
 if [[ -n "$WEB_HITS" ]]; then

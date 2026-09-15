@@ -247,11 +247,55 @@ describe('BoqRepository', () => {
       estimated_total: '420000.0000',
       currency_code: 'THB',
       sort_order: 0,
+      central_price: null,
     });
 
     expect(result.estimated_total).toBe('420000.0000');
     expect(result.carbon_factor_kg_co2e).toBeNull();
     expect(result.carbon_total_kg_co2e).toBeNull();
+    // Unlinked line: the three ADR-061 columns are written as NULL, bound as parameters.
+    const values = (mockPrisma.$queryRaw.mock.calls[0] as unknown[]).slice(1);
+    expect(values.slice(-3)).toEqual([null, null, null]);
+  });
+
+  it('addItem binds the ADR-061 central price columns when the line is linked', async () => {
+    mockPrisma.$queryRaw.mockResolvedValue([{ item_id: 'i-002' }]);
+    await repo.addItem({
+      category_id: 'cat-001',
+      version_id: 'v-001',
+      item_code: 'STR-001',
+      description: 'Concrete C30',
+      unit: 'm3',
+      quantity: '1.0000',
+      unit_cost: '2500.0000',
+      estimated_total: '2500.0000',
+      currency_code: 'THB',
+      sort_order: 0,
+      central_price: {
+        central_price_id: 'cp-001',
+        reference_price: '2450.0000',
+        price_variance: '50.0000',
+      },
+    });
+    const [strings, ...values] = mockPrisma.$queryRaw.mock.calls[0] as [string[], ...unknown[]];
+    expect(strings.join('?')).toContain('central_price_id, reference_price, price_variance');
+    expect(values.slice(-3)).toEqual(['cp-001', '2450.0000', '50.0000']);
+  });
+
+  it('updateItem binds the central price columns when given, COALESCE-keeping them when not', async () => {
+    mockPrisma.$queryRaw.mockResolvedValue([{ item_id: 'i-001' }]);
+    await repo.updateItem({
+      item_id: 'i-001',
+      unit_cost: '2600.0000',
+      central_price: {
+        central_price_id: 'cp-001',
+        reference_price: '2450.0000',
+        price_variance: '150.0000',
+      },
+    });
+    const [strings, ...values] = mockPrisma.$queryRaw.mock.calls[0] as [string[], ...unknown[]];
+    expect(strings.join('?')).toMatch(/price_variance\s+= COALESCE\(\?::decimal, price_variance\)/);
+    expect(values).toEqual(expect.arrayContaining(['cp-001', '2450.0000', '150.0000']));
   });
 
   it('deleteItem calls $executeRaw', async () => {
@@ -527,6 +571,13 @@ describe('BoqRepository', () => {
     // what makes the copy depth-independent.
     expect(sql).toContain('id_map');
     expect(sql).toMatch(/LEFT JOIN id_map pm\s+ON pm\.old_id = s\.parent_category_id/);
+  });
+
+  it('copyVersionContents carries the ADR-061 reference snapshot into the new version', async () => {
+    mockPrisma.$executeRaw.mockResolvedValue(0);
+    await repo.copyVersionContents('from-v', 'to-v');
+    const sql = (mockPrisma.$executeRaw.mock.calls[0][0] as string[]).join(' ');
+    expect(sql).toContain('i.central_price_id, i.reference_price, i.price_variance');
   });
 
   // ── Outbox writes (Phase 8 / §35.13 ESC-13) ───────────────────────────────

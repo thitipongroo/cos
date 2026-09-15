@@ -1,0 +1,27 @@
+{
+  "type": "record",
+  "name": "CentralPriceCatalogUpdatedEvent",
+  "namespace": "com.constructionos.events.platform",
+  "doc": "platform.central_price_catalog.updated.v1 — ADR-061 §Events (CentralPriceCatalogUpdated); emitted through the outbox when a SYSTEM_ADMIN file import or a CentralPriceAdapter sync inserts or updates ราคากลาง catalog rows. Platform-scope: rides the shared platform.events topic.",
+  "fields": [
+    { "name": "event_id",       "type": "string" },
+    { "name": "event_type",     "type": "string" },
+    { "name": "event_version",  "type": "string" },
+    { "name": "tenant_id",      "type": "string", "doc": "Always the 'platform' sentinel — the catalog is shared by every tenant and belongs to none" },
+    { "name": "actor_id",       "type": "string", "doc": "SYSTEM_ADMIN user_id who ran the import or the sync" },
+    { "name": "occurred_at",    "type": "string" },
+    { "name": "correlation_id", "type": "string" },
+    { "name": "trace_id",       "type": ["null", "string"], "default": null },
+    { "name": "span_id",        "type": ["null", "string"], "default": null },
+    { "name": "payload", "type": {
+      "type": "record", "name": "CentralPriceCatalogUpdatedPayload",
+      "fields": [
+        { "name": "run_id",           "type": "string", "doc": "UUID of the platform.central_price_sync_runs row that made the change" },
+        { "name": "source",           "type": { "type": "enum", "name": "CentralPriceSource", "symbols": ["MANUAL_IMPORT", "GOV_API"] }, "doc": "ADR-061 source: file import or government API adapter" },
+        { "name": "effective_period", "type": "string", "doc": "The catalog version the changed rows belong to (ADR-061 year/version)" },
+        { "name": "records_inserted", "type": "int",    "doc": "Catalog rows created" },
+        { "name": "records_updated",  "type": "int",    "doc": "Existing (code, effective_period) rows overwritten" }
+      ]
+    }}
+  ]
+}

@@ -55,6 +55,7 @@ export type * from './events/identity.user.role_changed.v1';
 export type * from './events/platform.enterprise.contract_signed.v1';
 export type * from './events/platform.enterprise.db_provisioned.v1';
 export type * from './events/platform.sync.exhausted.v1';
+export type * from './events/platform.central_price_catalog.updated.v1';
 export type * from './events/safety.violation.detected.v1';
 export type * from './events/safety.compliance.failed.v1';
 

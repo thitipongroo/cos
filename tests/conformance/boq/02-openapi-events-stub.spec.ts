@@ -182,8 +182,15 @@ describe('QM-1 · mutation testing covers the financial logic (context.md QM-1)'
 
     expect(src).toMatch(/from ['"]@cos\/financial['"]/);
     // A raw JS arithmetic operator applied to a money identifier would bypass decimal.js entirely.
+    // The scan reads CODE: comments and '…' / "…" literals are blanked first, so a route such as 'price-variance'
+    // or an import path such as '../central-prices/…' is not taken for `price - v…` (2026-09-15, R17 — eleven
+    // false positives, none of them arithmetic). Template literals stay in: their ${…} is code.
+    const code = src
+      .replace(/\/\*[\s\S]*?\*\//g, ' ')
+      .replace(/\/\/[^\n]*/g, ' ')
+      .replace(/'(?:[^'\\\n]|\\.)*'|"(?:[^"\\\n]|\\.)*"/g, "''");
     const rawMath = Array.from(
-      src.matchAll(
+      code.matchAll(
         /\b([a-z_]*(?:amount|cost|total|price|quantity|subtotal)[a-z_]*)\s*[*+\-/]\s*[a-z_]/gi,
       ),
     ).map((m) => m[0]);

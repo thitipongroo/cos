@@ -253,6 +253,59 @@ export function errorKeyForStatus(status: number | undefined, context: AdminActi
   return 'admin.errors.generic';
 }
 
+/** The Temporal workflow id of a tenant's provisioning run — the backend's `enterprise-provisioning-<tenantId>`. */
+export function provisioningWorkflowId(tenantId: string): string {
+  return `enterprise-provisioning-${tenantId}`;
+}
+
+export type RunPhase = 'gate' | 'working' | 'completed' | 'stopped' | 'unknown';
+
+export interface ProvisioningRun {
+  tenant: TenantListRow;
+  /** §34.3 state, or `null` when the run exists but could not be read. */
+  state: string | null;
+  phase: RunPhase;
+}
+
+/**
+ * Every provisioning run the panel can see, joined to its tenant, in tenant-list order (R17 Data Migrations). A run
+ * whose tenant is not in the list is dropped — there is nothing to name it by. `phase` groups the §34.3 states the way
+ * the page counts them: at the gate, still working (ABORTING included — the run is winding down), finished,
+ * stopped, or unreadable / unrecognised.
+ */
+export function provisioningRuns(
+  tenants: readonly TenantListRow[],
+  provisioning: readonly TenantProvisioningRow[] | undefined,
+): ProvisioningRun[] {
+  const states = provisioningByTenant(provisioning);
+  return tenants
+    .filter((t) => states.has(t.tenant_id))
+    .map((tenant) => {
+      const state = states.get(tenant.tenant_id) ?? null;
+      return { tenant, state, phase: runPhase(state) };
+    });
+}
+
+function runPhase(state: string | null): RunPhase {
+  if (state === GATE_STATE) return 'gate';
+  if (state === 'COMPLETED') return 'completed';
+  if (state === 'ABORTED') return 'stopped';
+  if (state !== null && (PROVISIONING_STATES as readonly string[]).includes(state))
+    return 'working';
+  return 'unknown';
+}
+
+/** The migration steps a run has certainly finished, read from its §34.3 state: at the gate, RDS and migrations are done. */
+export function runPreflight(state: string | null): { provisioned: boolean; migrated: boolean } {
+  const order = PROVISIONING_STATES as readonly string[];
+  const at = state === null ? -1 : order.indexOf(state);
+  const aborted = state === 'ABORTING' || state === 'ABORTED' || at === -1;
+  return {
+    provisioned: !aborted && at > order.indexOf('CREATING_RDS'),
+    migrated: !aborted && at > order.indexOf('RUNNING_MIGRATIONS'),
+  };
+}
+
 /** PostgreSQL's default port, used when a connection URL names none. */
 export const POSTGRES_DEFAULT_PORT = '5432';
 

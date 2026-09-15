@@ -1,0 +1,23 @@
+-- Rollback: 20260915000001_platform_settings
+--
+-- Drops the platform-wide settings document (ADR-108). DROP TABLE takes its constraints and grants with it.
+--
+-- WHAT BREAKS, AND WHAT DOES NOT.
+--
+-- `GET /api/v1/admin/settings` and `PUT /api/v1/admin/settings` fail once the table is gone, and the
+-- SYSTEM_ADMIN System Settings screen with them. Roll the backend back below the platform-settings module
+-- first, or accept those two routes failing until it is.
+--
+-- NOTHING ELSE CHANGES BEHAVIOUR. The values are stored only — no gateway client, scheduler, throttler,
+-- pool or quota check reads them (ADR-108) — so no running feature loses a setting.
+--
+-- THE ROW IS OPERATOR-AUTHORED DATA. It cannot be rebuilt by the system. The history of every change,
+-- with before / after and the justification, stays in platform.audit_logs (action
+-- `platform.settings.update`), which this rollback does not touch. Export the current document first if it
+-- should survive:
+--
+--   \copy (SELECT * FROM platform.platform_settings) TO 'platform_settings.csv' CSV HEADER
+--
+-- Re-runnable: IF EXISTS.
+
+DROP TABLE IF EXISTS platform.platform_settings;

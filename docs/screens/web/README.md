@@ -7,8 +7,8 @@ last_updated: 2026-07-07
 
 > Part of [`docs/screens/`](../README.md) · platform: **Web** (Next.js + Serwist, tablet/laptop browser).
 
-⚠️ **6 screens committed** — the pre-auth login flow in [`01-public/`](01-public/), and the SYSTEM_ADMIN
-panel's Tenant List and Create Tenant in [`SYSTEM_ADMIN/`](SYSTEM_ADMIN/) (2026-09-14). The 24-route table
+⚠️ **17 screens committed** — the pre-auth login flow in [`01-public/`](01-public/), and 13 frames of the
+SYSTEM_ADMIN panel in [`SYSTEM_ADMIN/`](SYSTEM_ADMIN/) (2026-09-14, 03–13 added 2026-09-15). The 24-route table
 below is the set [`web-screens.mjs`](../../../scripts/capture/web-screens.mjs) _can_ produce; those
 files are **not** in the repo. The earlier per-role captures were deleted by `7d2ba1b`
 ("update: screens out date") and have not been retaken.
@@ -105,14 +105,32 @@ ClickHouse `analytics.*_daily` aggregates.
 
 ## SYSTEM_ADMIN — the `/admin` panel (§20.4)
 
-| File                                                        | Route            | Stitch screen                                                  |
-| ----------------------------------------------------------- | ---------------- | -------------------------------------------------------------- |
-| [`01-tenant-list.png`](SYSTEM_ADMIN/01-tenant-list.png)     | `/admin`         | Tenant List & DB Provisioning - SYSTEM_ADMIN (`013fc8f09450…`) |
-| [`02-create-tenant.png`](SYSTEM_ADMIN/02-create-tenant.png) | `/admin` (modal) | Create Tenant - Modal Overlay - SYSTEM_ADMIN (`00b09850702f…`) |
+| File                                                                    | Route                   | Stitch screen                                                          |
+| ----------------------------------------------------------------------- | ----------------------- | ---------------------------------------------------------------------- |
+| [`01-tenant-list.png`](SYSTEM_ADMIN/01-tenant-list.png)                 | `/admin`                | Tenant List & DB Provisioning - SYSTEM_ADMIN (`013fc8f09450…`)         |
+| [`02-create-tenant.png`](SYSTEM_ADMIN/02-create-tenant.png)             | `/admin` (modal)        | Create Tenant - Modal Overlay - SYSTEM_ADMIN (`00b09850702f…`)         |
+| [`03-mark-contracted.png`](SYSTEM_ADMIN/03-mark-contracted.png)         | `/admin` (modal)        | Mark Tenant as Enterprise Contracted - Modal Overlay (`54bbd25e7f6a…`) |
+| [`04-assign-dedicated-db.png`](SYSTEM_ADMIN/04-assign-dedicated-db.png) | `/admin` (modal)        | Assign Dedicated Database - Modal Overlay (`1cdce051da40…`)            |
+| [`05-tenant-audit-log.png`](SYSTEM_ADMIN/05-tenant-audit-log.png)       | `/admin` (modal)        | Tenant Audit Log - Modal Overlay (`4578413eabff…`)                     |
+| [`06-tenant-detail.png`](SYSTEM_ADMIN/06-tenant-detail.png)             | `/admin` (modal)        | Tenant Detail & Provisioning Console (`01955db7b7cd…`)                 |
+| [`07-deactivate-tenant.png`](SYSTEM_ADMIN/07-deactivate-tenant.png)     | `/admin` (modal)        | Deactivate Tenant - Modal Overlay (`9b65963845ca…`)                    |
+| [`08-cluster.png`](SYSTEM_ADMIN/08-cluster.png)                         | `/admin/cluster`        | Cluster Infrastructure & Fleet Telemetry (`bc1de8c630e1…`)             |
+| [`09-db-fleet.png`](SYSTEM_ADMIN/09-db-fleet.png)                       | `/admin/db-fleet`       | Dedicated DB Fleet Management (`3e635a2fb7e5…`)                        |
+| [`10-data-migrations.png`](SYSTEM_ADMIN/10-data-migrations.png)         | `/admin/migrations`     | Data Migrations & Approval Gate (`b6f080f520bb…`)                      |
+| [`11-global-audit-log.png`](SYSTEM_ADMIN/11-global-audit-log.png)       | `/admin/audit`          | Global Audit Log (`efb47c60bdad…`)                                     |
+| [`12-central-prices.png`](SYSTEM_ADMIN/12-central-prices.png)           | `/admin/central-prices` | ราคากลาง Central Price Register (`5cd46d052ac0…`)                      |
+| [`13-system-settings.png`](SYSTEM_ADMIN/13-system-settings.png)         | `/admin/settings`       | System Settings (`630ea9023263…`)                                      |
 
 Captured 2026-09-15, full page at a 1440×900 viewport, signed in as the local dev SYSTEM_ADMIN. Rebuilt that day
 (revision R10) to the Tenant List screen's HTML as it stood on 2026-09-15 — the 2026-09-14 frames followed an older
 version of it and substituted global tokens for its colours.
+
+`03`–`13` were added 2026-09-15 (revision R17) by the same script. Modals are filled in and NOT submitted; pages are
+full-height. A figure the platform has no source for reads `—` (product-owner decisions D5–D7). The R17 dev data is
+also written through the panel: `thai_rail_infra` (ENTERPRISE, no run — `03`, `04`), the drawing's five central
+prices imported from a CSV after one file with the wrong columns (a real FAILED run) and one sync (the e-GP adapter is
+a stub: NOT_CONFIGURED), and the drawing's values typed into System Settings and saved once. Nothing reads those
+settings (ADR-108).
 
 ### What these frames are evidence of
 

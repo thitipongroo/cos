@@ -14,7 +14,7 @@ import { TenantService } from './tenant.service';
 import { CreateTenantDto } from './dto/create-tenant.dto';
 import { AssignDedicatedDbDto } from './dto/assign-dedicated-db.dto';
 import { MarkContractedDto } from './dto/mark-contracted.dto';
-import { AdminJustificationDto } from './dto/admin-justification.dto';
+import { AdminJustificationDto } from './public/admin-justification.dto';
 import { Roles } from '@cos/rbac';
 import { CosRole } from '@cos/types';
 import { RolesGuard } from '../../shared/guards/roles.guard';

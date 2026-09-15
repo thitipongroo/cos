@@ -127,6 +127,40 @@ constraint — a CHECK cannot see a graph — so both are enforced in `TasksServ
 
 ---
 
+## COS-PSET — Platform settings (§6.7; ADR-108)
+
+The settings are one versioned document. A save names the version it read. Validation failures stay on
+`COS-GENERAL-400`, as every class-validator refusal in this API does.
+
+| Code         | HTTP | Message                                                                             | Trigger                                                                                                                                                                                                 |
+| ------------ | ---- | ----------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| COS-PSET-001 | 409  | Platform settings were changed by someone else. Reload and apply your change again. | `PUT /admin/settings` whose `version` is not the stored version. `details`: `expected_version`, `stored_version` (`null` when two first saves raced). messageKey `admin.settings.error.versionConflict` |
+
+---
+
+## COS-CPRICE — ราคากลาง central prices and the BOQ feed (ADR-061)
+
+Thrown by `backend/src/modules/central-prices` (`central-price-errors.ts`) and by `BoqService` for the
+ADR-061 BOQ feed. Field validation of a JSON body or of the import form's text fields stays on
+`COS-GENERAL-400`, as every class-validator refusal in this API does.
+
+`-004` is `422`, not `400`: the upload was well-formed and the caller authorised; what fails is the file's
+content as a whole. A FAILED run is recorded before it is returned, so `details.run_id` names a row the
+register's Failed-Sync panel shows. A file where only SOME rows fail is not an error — it is a `200`
+listing each rejected row.
+
+| Code           | HTTP | Message                                                    | Trigger                                                                                                                                                                                                                                                                                                 |
+| -------------- | ---- | ---------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| COS-CPRICE-001 | 400  | The import form is not usable (names what is wrong)        | `POST /admin/central-prices/import` that is not multipart, has no `file` or an empty one, a file in another field, an unknown / repeated / over-long text field, or more parts than the form allows. messageKey `admin.centralPrices.error.invalidUpload`                                               |
+| COS-CPRICE-002 | 415  | Upload a .csv (UTF-8) or .xlsx file                        | The file name is not `.csv` / `.xlsx`, or its bytes contradict the name (a workbook named `.csv`, text named `.xlsx`). Nothing is recorded. messageKey `admin.centralPrices.error.unsupportedFileType`                                                                                                  |
+| COS-CPRICE-003 | 413  | The upload exceeds the limit                               | The file is over 5 MiB. `details.max_file_bytes`. messageKey `admin.centralPrices.error.fileTooLarge`                                                                                                                                                                                                   |
+| COS-CPRICE-004 | 422  | The file could not be imported (names why)                 | CSV not UTF-8 or unparseable, unreadable .xlsx, required columns missing, no data rows, more than 20,000 rows. `details`: `run_id`, `reason` (`CSV_NOT_UTF8`, `FILE_UNREADABLE`, `EMPTY_FILE`, `MISSING_COLUMNS`, `NO_DATA_ROWS`, `TOO_MANY_ROWS`). messageKey `admin.centralPrices.error.importFailed` |
+| COS-CPRICE-005 | 400  | cursor is not valid                                        | `GET /admin/central-prices` or `GET /central-prices` with a `cursor` this API did not issue. messageKey `centralPrices.error.invalidCursor`                                                                                                                                                             |
+| COS-CPRICE-006 | 422  | No usable central price for this line (names why)          | BOQ item create / update with `use_central_price: true` when the line has no `item_code`, no ACTIVE central price exists for the code, or the price's currency is not the line's. `details`: `item_code`, `central_price_currency`. messageKey `boq.centralPrice.error.unavailable`                     |
+| COS-CPRICE-007 | 400  | Send either unit_cost or use_central_price: true, not both | BOQ item create / update carrying both. messageKey `boq.centralPrice.error.unitCostConflict`                                                                                                                                                                                                            |
+
+---
+
 ## COS-BLDG / FLOR / ROOM / STRC / UNIT / ASST — Project spatial hierarchy + assets (Phase 3, 2026-07-05)
 
 Full-CRUD backing entities under the project domain (§10.2 / §11.2). `-001` = entity not found;

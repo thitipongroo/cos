@@ -260,6 +260,9 @@ Generate:
                                      PATCH /api/v1/admin/tenants/{id}/deactivate   — deactivate tenant (SYSTEM_ADMIN, §20.4.5)
                                      GET  /api/v1/admin/tenants/provisioning    — provisioning-run state per ENTERPRISE tenant (SYSTEM_ADMIN, §34.5)
                                      POST /api/v1/admin/tenants/{id}/provisioning/{approve|abort} — human-gate decision (SYSTEM_ADMIN, §34.5)
+                                     GET  /api/v1/admin/tenants/{id}/audit-logs (+ /export.csv) — one tenant's audit trail (SYSTEM_ADMIN, §20.4.8)
+                                     GET  /api/v1/admin/audit-logs (+ /summary, /export) — cross-tenant audit trail (SYSTEM_ADMIN, §20.4.13)
+                                     (every audit read and export is itself audited — audit.read / audit.export; added 2026-09-15, R17)
                                      (since 2026-09-14 every SYSTEM_ADMIN tenant mutation above REQUIRES `justification`, 10–500 chars,
                                       and writes one platform.audit_logs row in its own transaction — §6.7, §20.4 Access)
                                      GET  /api/v1/tenant/settings               — get tenant settings (TENANT_ADMIN, ADR-028)

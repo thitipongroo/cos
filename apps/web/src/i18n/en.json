@@ -208,7 +208,738 @@
     "account": {
       "menu": "Account"
     },
-    "globalSearch": "Search tenants, code, dedicated DB..."
+    "globalSearch": "Search tenants, code, dedicated DB...",
+    "rowModal": {
+      "zone": "Zone:"
+    },
+    "markModal": {
+      "title": "Mark Tenant as Enterprise Contracted",
+      "stage": "STAGE: VALIDATION",
+      "privilege": "HIGH PRIVILEGE",
+      "target": "Target Tenant:",
+      "targetInstance": "Target Dedicated Instance",
+      "checklist": "Prerequisite Checklist",
+      "of": "OF",
+      "satisfied": "SATISFIED",
+      "pre": {
+        "plan": {
+          "title": "Tenant plan is ENTERPRISE",
+          "met": "plan_type is ENTERPRISE.",
+          "unmet": "ENTERPRISE plan required"
+        },
+        "active": {
+          "title": "Tenant is active",
+          "met": "is_active is true.",
+          "unmet": "Activate tenant first"
+        },
+        "noDb": {
+          "title": "No dedicated DB assigned",
+          "met": "dedicated_db_url is currently NULL (not already provisioned).",
+          "unmet": "Dedicated DB already assigned"
+        }
+      },
+      "metTag": "Satisfied",
+      "unmetTag": "Not met",
+      "safetyNotice": "All 3 prerequisite gates satisfied. Approving this transition initiates automatic tenant schema separation and strict isolation pipeline under GDPR/PDPA compliance.",
+      "transition": "State Transition Confirmation",
+      "operator": "SUPER_OPERATOR",
+      "shift": "Isolation Architecture Shift",
+      "currentTier": "Current Tier",
+      "pooled": "POOLED MULTI-TENANT",
+      "pooledNote": "Shared compute & schema",
+      "targetTier": "Target Tier",
+      "dedicated": "DEDICATED FLEET",
+      "typePrefix": "Type",
+      "typeSuffix": "below to confirm Enterprise tier transition:",
+      "matches": "Tenant identifier matches active validation target.",
+      "lifecycle": "Submitting triggers Vault token creation, automatic background data schema migration, and emission of event",
+      "zone": "Cluster Zone:",
+      "mesh": "Provisioning Mesh:",
+      "meshValue": "Ready (Latency: 4.2ms)",
+      "confirm": "Confirm Enterprise Contract"
+    },
+    "assignModal": {
+      "title": "Assign Dedicated Database",
+      "tenant": "Tenant:",
+      "code": "Code:",
+      "tier": "Tier:",
+      "gates": "Infrastructure Migration Gates",
+      "gateStatus": "Gate Status:",
+      "allClear": "All Clear",
+      "gate": {
+        "reachable": {
+          "title": "Instance provisioned and reachable",
+          "note": "Dedicated PostgreSQL instance provisioned and reachable"
+        },
+        "migrated": {
+          "title": "Migrations deployed",
+          "note": "`prisma migrate deploy` run against the dedicated DB"
+        },
+        "dataMoved": {
+          "title": "Existing data migrated",
+          "note": "Existing data migrated (if upgrading from shared DB)"
+        }
+      },
+      "confirmed": "Confirmed by operator",
+      "tickToConfirm": "Tick to confirm",
+      "uriLabel": "Dedicated Database Connection URI",
+      "hostValidated": "Host validated & credentials authenticated",
+      "poolLabel": "Cluster Sharding Pool & Node Target",
+      "poolNote": "Allocated to isolated c6i.4xlarge compute instances.",
+      "poolOption1": "db-ent-043.cos.internal (NVMe Tier, 1TB head)",
+      "poolOption2": "db-ent-044.cos.internal (NVMe Tier, 2TB head)",
+      "poolOption3": "db-ent-045.cos.internal (NVMe Tier, Cold Standby)",
+      "proxyLabel": "Ingress Mesh Proxy Strategy",
+      "proxyNote": "Envoy proxy automatically redirects live query pipelines.",
+      "proxyOption1": "Transparent Proxy (0ms downtime cutover)",
+      "proxyOption2": "Strict Drained Session Cutover (30s buffer)",
+      "proxyOption3": "Maintenance Window Hard Shift",
+      "noticeTitle": "Privileged Mutation Notice",
+      "noticeBefore": "Assigning a dedicated database will reconfigure network ingress routing rules and isolate tenant compute resources. Active tenant sessions will experience",
+      "zeroDowntime": "zero downtime",
+      "noticeAfter": "via transparent connection proxying. HashiCorp Vault secrets and EMQX MQTT stream certs will be atomically swapped.",
+      "specWarning": "Once assigned, all new requests for this tenant will route to the dedicated DB. Ensure data migration is complete before proceeding.",
+      "routingMesh": "Routing Mesh:",
+      "ready": "Ready",
+      "confirm": "Confirm DB Assignment"
+    },
+    "deactivateModal": {
+      "title": "Deactivate Tenant",
+      "tag": "CRITICAL STATE TRANSITION",
+      "lead": "High-privilege destructive operation.",
+      "impactA": "Deactivating this tenant immediately revokes all",
+      "impactSessions": "120+ active user sessions",
+      "impactB": ", freezes background delta-sync workers, suspends API access tokens, and puts associated dedicated compute node",
+      "impactC": "into quarantined standby.",
+      "check": {
+        "sessions": {
+          "label": "Active User Sessions:",
+          "value": "14 online (will be terminated immediately)"
+        },
+        "sync": {
+          "label": "In-Flight Sync Jobs:",
+          "value": "0 pending (clean shutdown guaranteed)"
+        },
+        "preservation": {
+          "label": "Data Preservation:",
+          "value": "Immutable snapshot saved under PDPA/GDPR protocol"
+        }
+      },
+      "typeSuffix": "below to confirm tenant deactivation:",
+      "matches": "Tenant code matches",
+      "footnote": "This operation is logged permanently in the Global Audit Trail and cannot be automatically rolled back without Platform Operator dual-key authorization.",
+      "interlock": "Safety Interlock:",
+      "engaged": "Engaged",
+      "confirm": "Confirm..."
+    },
+    "detail": {
+      "title": "Tenant Detail & Provisioning Console",
+      "tier": "TIER",
+      "tabs": "Console sections",
+      "kpi": {
+        "cluster": "DB Cluster State",
+        "compute": "Compute & Pool",
+        "sync": "Delta-Sync Queue",
+        "emqx": "EMQX Stream",
+        "tokens": "AI Token Quota",
+        "reset": "Cycle reset"
+      },
+      "tab": {
+        "overview": "Overview & Health",
+        "topology": "Database Topology",
+        "secrets": "Secrets & mTLS Certs",
+        "audit": "Audit Trail & Events"
+      },
+      "uri": {
+        "title": "Dedicated DB Routing URI",
+        "pooled": "Shared database — no dedicated URI",
+        "copy": "Copy Connection String",
+        "reachability": "Connection check:"
+      },
+      "engine": {
+        "title": "PostgreSQL Engine & TimescaleDB Telemetry",
+        "replica": "sync-replica:",
+        "lag": "Replication Lag",
+        "chunks": "Timescale Chunks",
+        "iops": "IOPS Utilization",
+        "storage": "Dedicated NVMe Allocation",
+        "dedicatedStorage": "Dedicated database",
+        "sharedStorage": "Shared database"
+      },
+      "schema": {
+        "title": "Schema Versioning & Isolation Level",
+        "name": "Database Schema Name:",
+        "ddl": "Last DDL Migration:",
+        "drift": "Schema Drift Status:",
+        "created": "Tenant created:"
+      },
+      "vault": {
+        "title": "mTLS & Vault Lease",
+        "path": "Vault AppRole Token Path",
+        "pathNote": "Lease Duration:",
+        "fingerprint": "mTLS Leaf Certificate Fingerprint (SHA-256)",
+        "fingerprintNote": "Validated by:"
+      },
+      "policy": {
+        "title": "Isolation Compliance Policy",
+        "isolation": "Physical DB Isolation:",
+        "isolationDedicated": "Tenant owns a dedicated PostgreSQL database.",
+        "isolationShared": "Tenant shares the platform database, separated by row-level security.",
+        "compliance": "Regulatory Compliance:",
+        "retention": "Snapshot Retention:"
+      },
+      "ops": {
+        "title": "Operational",
+        "elevated": "REQUIRES ELEVATED ROLE",
+        "rotate": "Rotate HashiCorp Vault Secrets",
+        "rotateNote": "Zero-downtime",
+        "flush": "Flush Synchronous Delta Queue",
+        "flushNote": "Force ACK",
+        "integrity": "Trigger Deep Integrity Check",
+        "integrityNote": "Read-only audit"
+      },
+      "action": {
+        "audit": "Open Audit Log",
+        "assign": "Assign Dedicated DB",
+        "mark": "Mark as Enterprise Contracted",
+        "deactivate": "Deactivate Tenant"
+      },
+      "footer": {
+        "mesh": "Cluster Mesh:"
+      },
+      "close": "Close",
+      "terminal": "Open Telemetry Terminal"
+    },
+    "cluster": {
+      "breadcrumb": "Breadcrumb",
+      "crumb1": "PLATFORM_OPERATOR",
+      "crumb2": "CLUSTER_TOPOLOGY",
+      "crumb3": "INFRASTRUCTURE_NODES",
+      "title": "Cluster Infrastructure",
+      "tagEmqx": "EMQX 25K msg/s QoS1 CERTIFIED",
+      "tagHa": "HA MULTI-AZ ACTIVE",
+      "refresh": "REFRESH",
+      "ssh": "SSH",
+      "provision": "PROVISION",
+      "kpi": {
+        "cluster": "Cluster",
+        "vcpu": "vCPU Pool",
+        "mem": "Mem:",
+        "iot": "IoT Stream",
+        "msgs": "msg/sec",
+        "cap": "Cap:",
+        "fleet": "DB Fleet Topology",
+        "active": "Active",
+        "dedicated": "Dedicated",
+        "pooled": "Pooled",
+        "pgbouncer": "PgBouncer:",
+        "timescale": "TimescaleDB",
+        "chunk": "Chunk Roll",
+        "nvme": "NVMe:"
+      },
+      "nodes": "Cluster & Pod",
+      "filter": {
+        "all": "All",
+        "db": "DB",
+        "compute": "Compute",
+        "iot": "IoT",
+        "gateway": "Gateway"
+      },
+      "filterNodes": "Filter nodes...",
+      "live": "LIVE",
+      "col": {
+        "node": "Node & Hostname",
+        "service": "Service / Role",
+        "zone": "Zone",
+        "status": "Status",
+        "cpu": "CPU Load",
+        "memory": "Memory / Cap",
+        "disk": "Disk & IOPS",
+        "latency": "Latency"
+      },
+      "noSource": "No node inventory source yet — nothing in the platform reads cluster nodes.",
+      "foot": {
+        "mesh": "Mesh:",
+        "provisioned": "Provisioned:",
+        "memory": "Memory Pool:"
+      },
+      "integration": {
+        "title": "Outbound integration",
+        "egp": {
+          "name": "e-GP Gateway",
+          "note": "Department of Comptroller General"
+        },
+        "promptpay": {
+          "name": "PromptPay / BoT",
+          "note": "SCB & KBank Clearing Adapters"
+        },
+        "did": {
+          "name": "W3C DID Resolver",
+          "note": "Contract Signing & VC Verifier"
+        },
+        "line": {
+          "name": "LINE & SES Hub",
+          "note": "Safety Push & Daily Digests"
+        }
+      },
+      "envelope": {
+        "title": "Architecture Envelopes",
+        "ratified": "PO RATIFIED",
+        "chunk": {
+          "label": "Timescale Chunk Policy",
+          "policy": "7-Day Start + 25% Memory Sizing Rule"
+        },
+        "emqx": {
+          "label": "EMQX Telemetry Ceiling",
+          "policy": "Σ(devices × rate) ≤ 25K msg/s QoS1"
+        },
+        "ha": {
+          "label": "High Availability & Multi-AZ",
+          "policy": "Primary BKK-1a, Warm Standby BKK-1b"
+        },
+        "configure": "CONFIGURE CLUSTER SIZING PARAMS"
+      }
+    },
+    "fleet": {
+      "title": "Dedicated DB Fleet Management",
+      "tagIsolation": "ENTERPRISE TIER ISOLATION (§7 & §34.5)",
+      "tagPg": "PG 16.4 COMPLIANT",
+      "refresh": "REFRESH FLEET",
+      "pool": "PGBOUNCER POOL",
+      "provision": "PROVISION NEW DEDICATED DB",
+      "kpi": {
+        "compute": "FLEET COMPUTE CAPACITY",
+        "computeUnit": "Headroom",
+        "iops": "FLEET MEMORY & IOPS SATURATION",
+        "iopsUnit": "Total IOPS",
+        "storage": "STORAGE & VAULT BACKUP",
+        "storageUnit": "Provision",
+        "ha": "HA MULTI-AZ REPLICATION",
+        "haUnit": "SYNCED"
+      },
+      "filters": "Fleet filters",
+      "filter": {
+        "all": "ALL FLEET",
+        "healthy": "HEALTHY",
+        "gate": "MAINTENANCE/GATE",
+        "failover": "FAILOVER READY"
+      },
+      "zone": "ZONE:",
+      "sortBy": "Sort by:",
+      "sort": {
+        "saturation": "CPU / Memory Saturation (High → Low)",
+        "storage": "Storage Volume Used (High → Low)",
+        "code": "Tenant Code (A-Z)",
+        "created": "Instance Creation Date"
+      },
+      "export": "Export Fleet Specs CSV",
+      "directory": "DEDICATED INSTANCES DIRECTORY",
+      "showing": "SHOWING",
+      "legend": {
+        "replicated": "REPLICATED (SYNC)",
+        "standby": "STANDBY READY",
+        "gate": "GATE/MIGRATING"
+      },
+      "col": {
+        "instance": "INSTANCE ID & ENDPOINT",
+        "tenant": "ASSIGNED TENANT",
+        "archetype": "NODE ARCHETYPE",
+        "zone": "ZONE / HA",
+        "cpu": "CPU / MEMORY",
+        "storage": "STORAGE / IOPS",
+        "cdc": "CDC LAG",
+        "operations": "OPERATIONS"
+      },
+      "empty": "No tenant has a dedicated database yet.",
+      "footShowing": "Showing",
+      "footOf": "of",
+      "footUnit": "Dedicated Instances",
+      "tls": "TLS 1.3 Strict Enclave:",
+      "kms": "KMS Root Key ID:",
+      "prev": "PREV",
+      "next": "NEXT",
+      "row": {
+        "gate": "Status: at the migration gate (§34.5)",
+        "port": "Port:",
+        "standby": "Standby:",
+        "config": "CONFIG",
+        "metrics": "METRICS",
+        "terminal": "Terminal SSH Gate"
+      },
+      "envelope": {
+        "boundary": {
+          "title": "ZERO-DATA-LEAKAGE BOUNDARY (§7)",
+          "body": "Each dedicated DB node sits in its own VPC enclave with a dedicated per-tenant KMS key; no connection pool, memory buffer or memory bus is shared with the pooled DB."
+        },
+        "justification": {
+          "title": "MANDATORY OPERATOR JUSTIFICATION (§6.7)",
+          "body": "Every fleet-level command (scale, config, failover, snapshot) requires a justification under §6.7 and is recorded in the Global Audit Log."
+        },
+        "standby": {
+          "title": "AUTOMATED STANDBY & RPO GUARANTEE",
+          "body": "Standby nodes are placed across availability zones (ap-se-1a/b/c) automatically, with a zero-lag sync stream and automatic failover within 30 seconds under the Enterprise SLA."
+        }
+      }
+    },
+    "migrations": {
+      "crumb1": "ADMIN_CONSOLE",
+      "crumb2": "DATABASE INFRASTRUCTURE",
+      "crumb3": "DATA_MIGRATIONS",
+      "title": "Data Migrations & Approval Gate",
+      "tag": "PIPELINE GATE: §34.5 ENFORCED",
+      "archive": "ARCHIVE",
+      "newJob": "NEW JOB",
+      "kpis": "Migration summary",
+      "kpi": {
+        "active": "Active Migrations",
+        "activeUnit": "Jobs Active",
+        "pending": "Pending Approval",
+        "working": "In Progress",
+        "volume": "Transfer Volume (24h)",
+        "gates": "Human Approval Gates",
+        "pendingGate": "Pending Gate",
+        "signoff": "High-Privilege Operator Sign-off Required",
+        "verification": "Verification Status"
+      },
+      "gate": {
+        "title": "Pipeline Gate: High-Privilege Action Requiring Justification",
+        "jobId": "JOB-ID:",
+        "enclave": "Enclave:",
+        "none": "No provisioning run is waiting at the gate.",
+        "target": "Target Tenant",
+        "source": "SOURCE DATABASE",
+        "sharedDb": "shared platform DB",
+        "sharedPool": "(Shared Pool)",
+        "targetNode": "TARGET DATABASE NODE",
+        "dedicated": "(Dedicated)",
+        "payload": "PAYLOAD SIZE",
+        "objects": "SCHEMA OBJECTS",
+        "rows": "TOTAL ROWCOUNT",
+        "preflight": "Pre-flight Automated Audit",
+        "passed": "PASSED",
+        "check": {
+          "provisioned": "Dedicated Fleet Node Provisioned (run state)",
+          "migrated": "Schema Migrations Run on the Dedicated Node (run state)",
+          "snapshot": "Immutable Snapshot Backup Sealed:",
+          "replication": "Replication Stream Lag:"
+        },
+        "checksum": "Root Checksum:",
+        "abort": "ABORT",
+        "approve": "APPROVE & COMMENCE"
+      },
+      "ledger": {
+        "title": "Migration Jobs Ledger",
+        "encrypted": "ENCRYPTED AT REST:",
+        "filter": "Filter by status",
+        "all": "All Statuses",
+        "gate": "Awaiting Approval",
+        "working": "In Progress",
+        "completed": "Completed",
+        "stopped": "Aborted",
+        "refresh": "Refresh",
+        "empty": "No provisioning run yet.",
+        "review": "Review",
+        "action": {
+          "working": "View",
+          "completed": "Receipt",
+          "stopped": "Audit",
+          "unknown": "View"
+        },
+        "cdc": "PostgreSQL Logical Replication (CDC):",
+        "tls": "TLS 1.3 Strict Encrypted:"
+      },
+      "col": {
+        "job": "Job ID",
+        "tenant": "Tenant Code",
+        "route": "Source → Target Node",
+        "status": "Status",
+        "progress": "Progress",
+        "cdc": "CDC Lag",
+        "operator": "Operator"
+      }
+    },
+    "auditModal": {
+      "title": "Tenant audit log",
+      "tenant": "Tenant:",
+      "code": "Code:",
+      "node": "Node:",
+      "export": "Export CSV",
+      "total30d": "TOTAL (30D):",
+      "security": "SECURITY:",
+      "active": "ACTIVE:",
+      "search": "Search audit log",
+      "searchPlaceholder": "Filter actor, action, or reason...",
+      "category": "Filter by event type",
+      "cat": {
+        "all": "All Event Types",
+        "privileged": "Privileged Mutations (§6.7)",
+        "security": "Security & Auth",
+        "tier": "DB Tier Migrations",
+        "quota": "API Quota Thresholds"
+      },
+      "loading": "Loading audit log",
+      "empty": "No audit entries match.",
+      "page": "Page",
+      "rows": "rows",
+      "col": {
+        "time": "Timestamp",
+        "severity": "Severity",
+        "actor": "Actor",
+        "tenant": "Tenant",
+        "target": "Action & Target Entity",
+        "metadata": "Metadata"
+      }
+    },
+    "audit": {
+      "crumb1": "ADMIN_CONSOLE",
+      "crumb2": "GOVERNANCE & SECURITY",
+      "crumb3": "GLOBAL_AUDIT_LOG",
+      "daemon": "AUDIT_DAEMON:",
+      "enclave": "ENCLAVE:",
+      "title": "Global Audit Log",
+      "export": "Export CSV/JSON",
+      "exportAs": {
+        "csv": "Export as CSV",
+        "json": "Export as JSON"
+      },
+      "cards": "Audit summary",
+      "card": {
+        "total": "Total Logged Events",
+        "today": "today",
+        "justifications": "Operator Justifications",
+        "missing": "Missing",
+        "enforced": "Mandatory reason enforced per §6.7",
+        "privileged": "High-Privilege Mutations",
+        "events": "Events",
+        "window": "(7d Window)",
+        "privilegedScope": "DB fleet / Tenant deactivations / Tier shifts",
+        "seal": "Data Integrity Seal"
+      },
+      "search": "Search audit log",
+      "searchPlaceholder": "Search by operator e-mail, action or justification...",
+      "tier": "Filter by event tier",
+      "tiers": {
+        "all": "All Event Tiers (All Scopes)",
+        "critical": "CRITICAL (System Hazard / Security)",
+        "high": "HIGH (Privilege Mutations)",
+        "standard": "STANDARD (Workflows)",
+        "system": "SYSTEM (Telemetry / Syncs)"
+      },
+      "category": "Filter by action category",
+      "categories": {
+        "all": "All Action Categories",
+        "deactivate": "Tenant Deactivation",
+        "provision": "Dedicated DB Fleet Provision",
+        "tier": "Enterprise Tier Upgrade / Downgrade",
+        "gateway": "Gateway & e-GP Config",
+        "gate": "Schema Migration Human Gate"
+      },
+      "range": "Date range (UTC)",
+      "rangeFrom": "From (UTC)",
+      "rangeTo": "To (UTC, inclusive)",
+      "reset": "Reset Filters",
+      "ledger": "IMMUTABLE TIME-SERIES LEDGER",
+      "sort": "SORT: TIMESTAMP DESC (LATEST FIRST)",
+      "encrypted": "ENCRYPTED AT REST:",
+      "col": {
+        "time": "Timestamp",
+        "operator": "Operator (E-mail & Name)",
+        "tenant": "Tenant Target",
+        "action": "Action & Event Type",
+        "justification": "Mandatory Operator Justification (§6.7)",
+        "actions": "Actions"
+      },
+      "details": "View details",
+      "detail": {
+        "resource": "Resource",
+        "ip": "IP",
+        "agent": "User agent",
+        "metadata": "Metadata"
+      },
+      "showing": "Showing",
+      "of": "of",
+      "entries": "logged entries",
+      "page": "Page",
+      "prev": "Prev"
+    },
+    "settings": {
+      "loading": "Loading system settings",
+      "config": "CONFIG:",
+      "storedOnly": "Stored only — nothing in the platform reads these values yet (ADR-108). Every save is recorded in the Global Audit Log.",
+      "reset": "Reset to defaults",
+      "save": "Save changes",
+      "reload": "Reload the saved settings",
+      "saved": "Settings saved.",
+      "notSet": "Not set",
+      "hours": "Hours",
+      "justification": {
+        "title": "Mandatory Operator Justification",
+        "required": "Required for commit",
+        "body": "Under the security requirements, every change to global platform configuration must state its reason and a work reference, recorded in the Global Audit Log.",
+        "placeholder": "State the reason for changing the platform settings (Mandatory Justification String)...",
+        "valid": "Valid",
+        "rule": "10–500 characters"
+      },
+      "gateways": {
+        "title": "External Data Gateways",
+        "active": "ACTIVE:",
+        "primary": "Primary Endpoint:",
+        "secondary": "Secondary Endpoint:",
+        "namePlaceholder": "name not set",
+        "protocol": "Protocol:",
+        "maxRetries": "Max Retries:",
+        "primaryUrl": "Primary endpoint URL",
+        "secondaryUrl": "Secondary endpoint URL",
+        "cadence": "Auto-sync Cadence",
+        "ttl": "Failover Cache TTL",
+        "cadences": {
+          "daily": "Daily at 04:00 GMT+7 (early morning)",
+          "twice": "Twice Daily (04:00, 16:00)",
+          "hourly": "Hourly Polling (High Frequency)"
+        },
+        "fallback": "Auto-Fallback In-Memory Cache on Timeout",
+        "fallbackBody": "Keeps project BOQ calculation running if the upstream server fails"
+      },
+      "maintenance": {
+        "title": "Planned Maintenance Windows",
+        "tiered": "TIERED POLICY",
+        "safety": "Safety Non-Suspension Mandate",
+        "safetyBody": "Even during a maintenance window, critical emergency alerts are not suspended",
+        "shared": "Starter & Professional Tenants",
+        "windowPlaceholder": "Window not set, e.g. Sunday 01:00 - 04:00 (GMT+7)",
+        "enterprise": "Enterprise Contracted Dedicated Fleets",
+        "enterpriseBody": "Set by each organisation’s contract SLA",
+        "mode": "Enterprise maintenance mode",
+        "zeroDowntime": "Zero-Downtime"
+      },
+      "broadcast": {
+        "title": "Advance Broadcast Notice",
+        "lead": "Lead time in hours",
+        "hoursPrior": "Hours Prior",
+        "channels": "Broadcast channels",
+        "channel": {
+          "IN_APP_BANNER": "In-app Banner",
+          "EMAIL_DIGEST": "Email Digest"
+        }
+      },
+      "limits": {
+        "title": "Global Multi-tenant Cluster & Database Fleet Limits",
+        "cluster": "CLUSTER:",
+        "shared": "Active Shared Tenants",
+        "cap": "cap",
+        "capLabel": "Shared tenant cap",
+        "dedicated": "Dedicated Fleet Nodes",
+        "instances": "instances",
+        "pool": "Default Max Pool Conns",
+        "perTenant": "per tenant",
+        "audit": "Security Audit State"
+      },
+      "tiers": {
+        "tier": "Tier",
+        "strategy": "Tenant DB Strategy",
+        "storage": "Storage Quota",
+        "api": "API Mon. Quota",
+        "tokens": "Token Limit / Month",
+        "actions": "Actions",
+        "edit": "Edit",
+        "done": "Done",
+        "reqPerMonth": "req/mo",
+        "tokenUnit": "Tokens"
+      },
+      "error": {
+        "versionConflict": "Someone saved the settings after you opened them, so nothing was saved. Reload to see their version — your unsaved edits will be replaced.",
+        "counts": "Some numbers are not whole numbers in range. Fix the highlighted fields and save again."
+      },
+      "footer": "Every saved change is recorded in the Global Audit Log with its justification.",
+      "lastCommit": "LAST COMMIT:"
+    },
+    "centralPrices": {
+      "title": "Central Price Register",
+      "template": "Download CSV template",
+      "import": "Import Central Prices",
+      "register": "Standard central price register",
+      "showing": "Showing",
+      "of": "of",
+      "items": "items",
+      "period": "Effective period",
+      "allPeriods": "All periods",
+      "loading": "Loading central prices",
+      "empty": "No central prices yet. Import a file to start the register.",
+      "col": {
+        "code": "Material code",
+        "description": "Item and specification",
+        "category": "Work category",
+        "unit": "Unit",
+        "price": "Price",
+        "source": "Reference source",
+        "status": "Status"
+      },
+      "source": {
+        "MANUAL_IMPORT": "File import",
+        "GOV_API": "Government API"
+      },
+      "status": {
+        "ACTIVE": "Active",
+        "PENDING": "Pending",
+        "INACTIVE": "Inactive"
+      },
+      "sync": {
+        "title": "API-Sync Status Panel",
+        "adapter": "Adapter:",
+        "configured": "configured",
+        "notConfigured": "not configured",
+        "loading": "Loading sync status",
+        "lastRun": "Last sync",
+        "never": "No import or sync has run yet",
+        "outcome": "Sync Outcome",
+        "brought": "What it brought in",
+        "records": "records",
+        "inserted": "new",
+        "updated": "updated",
+        "rejected": "rejected",
+        "kind": {
+          "FILE_IMPORT": "File import",
+          "GOV_API": "Government API sync"
+        },
+        "outcomes": {
+          "SUCCEEDED": "Succeeded",
+          "FAILED": "Failed",
+          "NOT_CONFIGURED": "Not configured"
+        }
+      },
+      "failed": {
+        "title": "Failed-Sync State",
+        "code": "Error code:",
+        "none": "No import or sync has failed.",
+        "at": "Failed at:",
+        "retries": "Retries:",
+        "log": "View technical log",
+        "retry": "Force Retry Sync",
+        "impact": "Impact:",
+        "fallback": "Fallback:"
+      },
+      "importForm": {
+        "file": "Price file",
+        "fileHelp": "A UTF-8 CSV or an .xlsx workbook with the template columns, 5 MB at most.",
+        "fileRequired": "Choose a file to import.",
+        "period": "Effective period",
+        "periodRule": "1–32 letters, digits, \".\", \"_\", \"/\" or \"-\", starting with a letter or digit — e.g. 2569 or 2569-01.",
+        "sourceRef": "Source reference (optional)",
+        "submit": "Import",
+        "done": "Done",
+        "row": "Row"
+      },
+      "syncForm": {
+        "body": "Runs the government price adapter once. The e-GP adapter is not configured yet, so the run is recorded as not configured.",
+        "submit": "Run sync"
+      },
+      "error": {
+        "invalidUpload": "The upload was not a usable form. Choose one file and try again.",
+        "unsupportedFileType": "Only a CSV or an .xlsx file can be imported.",
+        "fileTooLarge": "The file is larger than 5 MB.",
+        "importFailed": "The file could not be imported. Nothing was written — check its columns against the template."
+      }
+    }
   },
   "auth": {
     "login": {
@@ -868,5 +1599,18 @@
   "sync": {
     "savedOffline": "Saved on this device — it will sync when you are back online.",
     "photoNotQueued": "The photo was not saved: it needs a connection and was not attached."
+  },
+  "centralPrices": {
+    "error": {
+      "invalidCursor": "The page link has expired. Start again from the first page."
+    }
+  },
+  "boq": {
+    "centralPrice": {
+      "error": {
+        "unavailable": "No active central price exists for this item code.",
+        "unitCostConflict": "Give a unit cost or use the central price, not both."
+      }
+    }
   }
 }
