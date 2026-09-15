@@ -12,7 +12,8 @@
  *     deactivation stops new logins and API access (§20.4.5), it does not count or end sessions.
  *   "freezes background delta-sync workers, suspends API access tokens" — not separate operations in this system.
  *   "puts associated dedicated compute node … into quarantined standby" — nothing is done to a dedicated DB. The host
- *     shown is the tenant's own (`—` when it has none).
+ *     shown is the tenant's own; a tenant with none shows the drawing's node, `MODALS.deactivateNode` (product owner
+ *     2026-09-16).
  *   "0 pending (clean shutdown guaranteed)", "Immutable snapshot saved under PDPA/GDPR protocol" — no job count, no
  *     snapshot is taken; §20.4.5 says "Tenant data is preserved".
  *   "cannot be automatically rolled back without Platform Operator dual-key authorization" — no dual-key exists;
@@ -21,7 +22,9 @@
  *
  * ── DIFFERENCES FROM THE DRAWING, AND WHY ────────────────────────────────────────────────────────
  *   JUSTIFICATION (§6.7, required) under the type-the-code field. The identifier after the name is the Keycloak realm.
- *   The confirm button reads "Confirm…" as drawn.
+ *   R19 re-sync: the title reads "DEACTIVATE TENANT", the CRITICAL STATE TRANSITION tag is gone, and the buttons
+ *     read "CANCEL" and "CONFIRM", as drawn. Every claim above is COMING SOON — its i18n keys are indexed in
+ *     lib/adminDrawnFigures.ts `DRAWN_COPY_KEYS`.
  */
 
 import { adminJustificationSchema } from '@cos/schemas';
@@ -37,6 +40,7 @@ import {
   TextField,
 } from 'react-aria-components';
 import { useT } from '../../i18n';
+import { MODALS } from '../../lib/adminDrawnFigures';
 import { errorKeyForStatus, type TenantListRow } from '../../lib/adminTenants';
 import { ApiError } from '../../lib/api/client';
 import { useDeactivateTenant } from '../../lib/api/queries';
@@ -118,9 +122,6 @@ export function DeactivateTenantModal({
                   <Heading slot="title" className="text-[18px] font-bold tracking-tight text-white">
                     {t('admin.deactivateModal.title')}
                   </Heading>
-                  <span className="rounded border border-cos-v3-red-800/60 bg-cos-v3-red-950/80 px-2 py-0.5 font-mono text-[10px] font-semibold uppercase tracking-wider text-cos-v3-red-400">
-                    {t('admin.deactivateModal.tag')}
-                  </span>
                 </div>
                 <p className="mt-1 text-[12px] text-cos-v3-slate-400">
                   {t('admin.markModal.target')}{' '}
@@ -176,7 +177,8 @@ export function DeactivateTenantModal({
                   </strong>
                   {t('admin.deactivateModal.impactB')}{' '}
                   <code className="rounded bg-cos-v3-red-950/80 px-1 py-0.5 font-mono text-[11px] text-cos-v3-amber-200">
-                    {tenant.dedicated_db_host ?? '—'}
+                    {/* COMING SOON — MODALS.deactivateNode when the tenant has no host of its own */}
+                    {tenant.dedicated_db_host ?? MODALS.deactivateNode}
                   </code>{' '}
                   {t('admin.deactivateModal.impactC')}
                 </div>
@@ -279,7 +281,7 @@ export function DeactivateTenantModal({
                 isDisabled={busy}
                 className="rounded-md border border-cos-op-container-highest bg-cos-op-deact-cancel px-4 py-2 text-[12px] font-semibold text-cos-v3-slate-300 outline-none transition-colors hover:bg-cos-op-deact-cancel-hover data-[focus-visible]:ring-2 data-[focus-visible]:ring-cos-v3-slate-500 disabled:opacity-50"
               >
-                {t('admin.create.cancel')}
+                {t('admin.deactivateModal.cancel')}
               </Button>
               <Button
                 onPress={submit}

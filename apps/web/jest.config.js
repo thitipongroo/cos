@@ -63,6 +63,8 @@ module.exports = {
     'src/lib/adminAudit.ts',
     'src/lib/adminSettings.ts',
     'src/lib/centralPrices.ts',
+    // SYSTEM_ADMIN drawn-figure register (R19, ADR-099): the row cycling and the tenant-code template.
+    'src/lib/adminDrawnFigures.ts',
   ],
   coveragePathIgnorePatterns: ['/node_modules/', '\\.spec\\.ts$'],
   coverageThreshold: {

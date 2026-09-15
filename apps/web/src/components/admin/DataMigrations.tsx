@@ -5,19 +5,21 @@
  * SYSTEM_ADMIN" screen (b6f080f520bb…, HTML fetched 2026-09-15; revision R17, re-synced R18). The workspace only; the shell is
  * <AdminShell /> (product-owner decision R10).
  *
- * ── PRODUCT-OWNER DECISION D7 (2026-09-15): real runs, `—` for figures without a source ───────────
+ * ── PRODUCT-OWNER DECISIONS D16–D19 (R19, 2026-09-15; reversing R17's D7) ───────────────────────
  *   REAL — every provisioning run from GET /admin/tenants/provisioning joined to its tenant: the Job ID (the run's
  *     Temporal workflow id), tenant code and name, its §34.3 state, the ACTIVE / HUMAN APPROVAL GATE counts, the status
- *     filter, paging, Refresh. The gate panel shows the run selected with Review (the first run at the gate by
- *     default): target tenant, source "shared pool", the two pre-flight steps its state proves done (RDS provisioned,
- *     migrations run — §34.3 order), and Approve / Abort with a justification through POST …/provisioning/{decision}
- *     (§34.5), exactly as the Tenant List banner does.
- *   `—` — transfer volume, verification seal, target node (no host exists before approval), payload size, schema
- *     objects, row count, snapshot and replication pre-flight lines, root checksum, enclave, progress, CDC lag,
- *     operator, the ledger footer's replication / TLS labels.
- *   R18 (the drawing as listed 2026-09-15): its page title and the PIPELINE GATE tag are gone; the heading is
- *     screen-reader only.
- *   DISABLED — Archive, New Job, and View / Audit / Receipt on runs that are not at the gate.
+ *     filter, paging, Refresh. A run at the gate reads WAITING_APPROVAL in the ledger and READY_FOR_COMMENCE in the
+ *     gate panel, as drawn (product owner 2026-09-16); every other state keeps the Tenant List's label. The gate panel shows the run selected with Review (the first run at the gate by
+ *     default): target tenant, the two pre-flight steps its state proves done (§34.3 order), and Approve / Abort with a
+ *     justification through POST …/provisioning/{decision} (§34.5).
+ *   COMING SOON — drawn as Stitch draws it, from lib/adminDrawnFigures.ts `MIGRATIONS`: transfer volume, verification
+ *     status, enclave, the target node (no host exists before approval), payload / schema objects / row count, the
+ *     snapshot and replication pre-flight lines (drawn as passed), the root checksum, the ledger's encryption line,
+ *     each real run's progress / CDC lag / operator (the drawn job of the same phase), and — after the real runs, on
+ *     the last page and under All Statuses only — the drawing's five ledger rows (D17), never counted.
+ *   COMING SOON (D18) — Archive, New Job, the actions on runs not at the gate, and every drawn row's action open the
+ *     "coming soon" dialog. An aborted run has no drawn example; its progress, lag and operator read `—`.
+ *   The drawing pulses its gate dot; the migration-gate ping stays (Rule 40 allowlist, R17).
  */
 
 import { adminJustificationSchema } from '@cos/schemas';
@@ -34,11 +36,13 @@ import {
   type ProvisioningRun,
   type RunPhase,
 } from '../../lib/adminTenants';
+import { MIGRATIONS, drawnFor, type MigrationTone } from '../../lib/adminDrawnFigures';
 import { ApiError } from '../../lib/api/client';
 import { useDecideProvisioning, useTenantProvisioning, useTenants } from '../../lib/api/queries';
 import { LoadingState } from '../ui/LoadingState';
 import { AdminIcon } from './AdminIcon';
 import { NO_DATA } from './AdminShell';
+import { useComingSoon } from './ComingSoon';
 
 type StatusFilter = 'all' | RunPhase;
 
@@ -83,7 +87,7 @@ export function DataMigrations() {
   const [selected, setSelected] = useState<string | null>(null);
   const [justification, setJustification] = useState('');
   const [touched, setTouched] = useState(false);
-  const unavailable = t('admin.nav.unavailable');
+  const comingSoon = useComingSoon();
 
   const runs = useMemo(
     () => provisioningRuns(tenants.data ?? [], provisioning.data),
@@ -144,20 +148,19 @@ export function DataMigrations() {
           </div>
         </div>
         <div className="flex items-center gap-2.5">
+          {/* COMING SOON — no job archive or job creation exists (D18) */}
           <button
             type="button"
-            disabled
-            title={unavailable}
-            className="flex cursor-not-allowed items-center gap-1.5 rounded border border-cos-op-container-highest bg-cos-op-container px-3 py-1.5 text-[12px] font-medium text-cos-v3-slate-300"
+            onClick={() => comingSoon(t('admin.migrations.archive'))}
+            className="flex items-center gap-1.5 rounded border border-cos-op-container-highest bg-cos-op-container px-3 py-1.5 text-[12px] font-medium text-cos-v3-slate-300 transition-colors hover:bg-cos-dark-bright"
           >
             <AdminIcon name="archive" size={14} className="text-cos-v3-slate-400" />
             <span>{t('admin.migrations.archive')}</span>
           </button>
           <button
             type="button"
-            disabled
-            title={unavailable}
-            className="flex cursor-not-allowed items-center gap-1.5 rounded bg-cos-v3-blue-600 px-3.5 py-1.5 text-[12px] font-semibold text-white shadow-sm"
+            onClick={() => comingSoon(t('admin.migrations.newJob'))}
+            className="flex items-center gap-1.5 rounded bg-cos-v3-blue-600 px-3.5 py-1.5 text-[12px] font-semibold text-white shadow-sm transition-colors hover:bg-cos-v3-blue-500"
           >
             <AdminIcon name="add" size={14} />
             <span>{t('admin.migrations.newJob')}</span>
@@ -185,10 +188,19 @@ export function DataMigrations() {
           </div>
         </Kpi>
         <Kpi label={t('admin.migrations.kpi.volume')} icon="database" tone="emerald">
+          {/* COMING SOON — MIGRATIONS.volume */}
           <div className="mt-2 flex items-baseline gap-2">
-            <span className="font-mono text-[24px] font-bold text-white">{NO_DATA}</span>
+            <span className="font-mono text-[24px] font-bold text-white">
+              {MIGRATIONS.volume.value}
+            </span>
+            <span className="text-[12px] font-medium text-cos-v3-emerald-400">
+              {MIGRATIONS.volume.delta}
+            </span>
           </div>
-          <div className="mt-1 text-[10px] text-cos-v3-emerald-400/80">{NO_DATA}</div>
+          <div className="mt-1 flex items-center gap-1 text-[10px] text-cos-v3-emerald-400/80">
+            <span aria-hidden="true">●</span>
+            {MIGRATIONS.volume.note}
+          </div>
         </Kpi>
         <div className="relative overflow-hidden rounded-md border border-cos-v3-amber-500/40 bg-cos-op-container-low p-3 ring-1 ring-cos-v3-amber-500/20">
           <div className="flex items-start justify-between">
@@ -212,10 +224,15 @@ export function DataMigrations() {
           </div>
         </div>
         <Kpi label={t('admin.migrations.kpi.verification')} icon="verified_user" tone="cyan">
+          {/* COMING SOON — MIGRATIONS.verification */}
           <div className="mt-2 flex items-baseline gap-2">
-            <span className="text-[24px] font-bold text-white">{NO_DATA}</span>
+            <span className="text-[24px] font-bold text-white">
+              {MIGRATIONS.verification.value}
+            </span>
           </div>
-          <div className="mt-1 font-mono text-[10px] text-cos-v3-cyan-400/90">{NO_DATA}</div>
+          <div className="mt-1 font-mono text-[10px] text-cos-v3-cyan-400/90">
+            {MIGRATIONS.verification.note}
+          </div>
         </Kpi>
       </section>
 
@@ -243,7 +260,8 @@ export function DataMigrations() {
             </span>
           </div>
           <span className="font-mono text-[11px] text-cos-v3-slate-400">
-            {t('admin.migrations.gate.enclave')} {NO_DATA}
+            {/* COMING SOON — MIGRATIONS.enclave */}
+            {t('admin.migrations.gate.enclave')} {MIGRATIONS.enclave}
           </span>
         </div>
 
@@ -288,7 +306,8 @@ export function DataMigrations() {
                       {t('admin.migrations.gate.targetNode')}
                     </div>
                     <div className="flex items-center justify-end gap-1 text-cos-v3-emerald-400">
-                      <span>{gateRun.tenant.dedicated_db_host ?? NO_DATA}</span>
+                      {/* COMING SOON — MIGRATIONS.targetNode */}
+                      <span>{gateRun.tenant.dedicated_db_host ?? MIGRATIONS.targetNode}</span>
                       <span className="rounded bg-cos-v3-emerald-950/60 px-1 text-[9px] text-cos-v3-emerald-400">
                         {t('admin.migrations.gate.dedicated')}
                       </span>
@@ -304,7 +323,8 @@ export function DataMigrations() {
                       <div className="text-[10px] text-cos-v3-slate-400">
                         {t(`admin.migrations.gate.${k}`)}
                       </div>
-                      <div className="font-bold text-white">{NO_DATA}</div>
+                      {/* COMING SOON — MIGRATIONS.payload */}
+                      <div className="font-bold text-white">{MIGRATIONS.payload[k]}</div>
                     </div>
                   ))}
                 </div>
@@ -316,7 +336,8 @@ export function DataMigrations() {
                       {t('admin.migrations.gate.preflight')}
                     </span>
                     <span className="rounded bg-cos-v3-emerald-950/80 px-1.5 py-0.5 font-mono text-[10px] text-cos-v3-emerald-400">
-                      {Number(preflight.provisioned) + Number(preflight.migrated)}/4{' '}
+                      {/* the two drawn checks count as passed, COMING SOON */}
+                      {Number(preflight.provisioned) + Number(preflight.migrated) + 2}/4{' '}
                       {t('admin.migrations.gate.passed')}
                     </span>
                   </div>
@@ -327,21 +348,22 @@ export function DataMigrations() {
                     <Check ok={preflight.migrated}>
                       {t('admin.migrations.gate.check.migrated')}
                     </Check>
-                    <Check ok={null}>
-                      {t('admin.migrations.gate.check.snapshot')} {NO_DATA}
+                    {/* COMING SOON — MIGRATIONS.checks */}
+                    <Check ok>
+                      {t('admin.migrations.gate.check.snapshot')} {MIGRATIONS.checks.snapshot}
                     </Check>
-                    <Check ok={null}>
-                      {t('admin.migrations.gate.check.replication')} {NO_DATA}
+                    <Check ok>
+                      {t('admin.migrations.gate.check.replication')} {MIGRATIONS.checks.replication}
                     </Check>
                   </ul>
                 </div>
                 <div className="mt-2 flex justify-between border-t border-cos-op-container-highest pt-2 font-mono text-[10px] text-cos-v3-slate-400">
                   <span>
-                    {t('admin.migrations.gate.checksum')} {NO_DATA}
+                    {/* COMING SOON — MIGRATIONS.checksum */}
+                    {t('admin.migrations.gate.checksum')} {MIGRATIONS.checksum}
                   </span>
-                  <span className="text-cos-v3-amber-400">
-                    {t(`admin.provisioning.state.${gateRun.state}`)}
-                  </span>
+                  {/* The panel only ever holds a run at AWAITING_APPROVAL; the drawing labels it READY_FOR_COMMENCE. */}
+                  <span className="text-cos-v3-amber-400">{t('admin.migrations.gate.ready')}</span>
                 </div>
               </div>
             </div>
@@ -412,7 +434,8 @@ export function DataMigrations() {
               {t('admin.migrations.ledger.title')}
             </span>
             <span className="font-mono text-[10px] text-cos-v3-slate-400">
-              {t('admin.migrations.ledger.encrypted')} {NO_DATA}
+              {/* COMING SOON — MIGRATIONS.encrypted */}
+              {t('admin.migrations.ledger.encrypted')} {MIGRATIONS.encrypted}
             </span>
           </div>
           <div className="flex items-center gap-2 text-[12px]">
@@ -479,15 +502,20 @@ export function DataMigrations() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-cos-op-container-highest/60">
-                {shown.rows.length === 0 ? (
+                {shown.rows.length === 0 && filter !== 'all' ? (
                   <tr>
                     <td colSpan={8} className="px-4 py-8 text-center text-cos-v3-slate-400">
                       {t('admin.migrations.ledger.empty')}
                     </td>
                   </tr>
                 ) : (
-                  shown.rows.map((run) => {
+                  shown.rows.map((run, index) => {
                     const tone = PHASE_CHIP[run.phase];
+                    // COMING SOON — the drawn job of the same phase gives progress / CDC lag / operator
+                    const drawn = drawnFor(
+                      MIGRATIONS.jobs.filter((j) => j.phase === run.phase),
+                      index,
+                    );
                     return (
                       <tr
                         key={run.tenant.tenant_id}
@@ -514,7 +542,8 @@ export function DataMigrations() {
                             →
                           </span>
                           <span className="text-cos-v3-emerald-400">
-                            {run.tenant.dedicated_db_host ?? NO_DATA}
+                            {/* COMING SOON — before approval there is no host; the drawn job's node stands in */}
+                            {run.tenant.dedicated_db_host ?? drawn?.target ?? NO_DATA}
                           </span>
                         </td>
                         <td className="px-3 py-2.5">
@@ -529,13 +558,19 @@ export function DataMigrations() {
                               ? t('admin.provisioning.unreadable')
                               : run.phase === 'unknown'
                                 ? t('admin.provisioning.unrecognised')
-                                : t(`admin.provisioning.state.${run.state}`)}
+                                : run.state === 'AWAITING_APPROVAL'
+                                  ? t('admin.migrations.ledger.waiting')
+                                  : t(`admin.provisioning.state.${run.state}`)}
                           </span>
                         </td>
-                        <td className="px-3 py-2.5 font-mono text-[11px]">{NO_DATA}</td>
-                        <td className="px-3 py-2.5 font-mono text-[11px]">{NO_DATA}</td>
+                        <td className="px-3 py-2.5 font-mono text-[11px]">
+                          {drawn ? <Progress job={drawn} /> : NO_DATA}
+                        </td>
+                        <td className="px-3 py-2.5 font-mono text-[11px]">
+                          {drawn?.cdc ?? NO_DATA}
+                        </td>
                         <td className="px-3 py-2.5 font-semibold text-cos-v3-slate-200">
-                          {NO_DATA}
+                          {drawn?.operator ?? NO_DATA}
                         </td>
                         <td className="px-3 py-2.5 text-right">
                           {run.phase === 'gate' ? (
@@ -547,11 +582,13 @@ export function DataMigrations() {
                               {t('admin.migrations.ledger.review')}
                             </button>
                           ) : (
+                            // COMING SOON — no receipt / audit / run view exists (D18)
                             <button
                               type="button"
-                              disabled
-                              title={unavailable}
-                              className="cursor-not-allowed rounded border border-cos-op-container-highest bg-cos-op-container px-2.5 py-1 text-[11px] font-medium text-cos-v3-slate-200"
+                              onClick={() =>
+                                comingSoon(t(`admin.migrations.ledger.action.${run.phase}`))
+                              }
+                              className="rounded border border-cos-op-container-highest bg-cos-op-container px-2.5 py-1 text-[11px] font-medium text-cos-v3-slate-200 transition hover:bg-cos-dark-bright"
                             >
                               {t(`admin.migrations.ledger.action.${run.phase}`)}
                             </button>
@@ -561,6 +598,63 @@ export function DataMigrations() {
                     );
                   })
                 )}
+                {/* COMING SOON — MIGRATIONS.jobs: the drawing's ledger rows after the real runs (D17) */}
+                {filter === 'all' && shown.page >= shown.pageCount
+                  ? MIGRATIONS.jobs.map((job) => (
+                      <tr
+                        key={job.id}
+                        className={`transition-colors hover:bg-cos-op-container/70 ${job.phase === 'gate' ? 'bg-cos-v3-amber-500/[0.03]' : ''}`}
+                      >
+                        <td
+                          className={`px-3 py-2.5 font-mono font-medium ${JOB_TONE[job.tone].id}`}
+                        >
+                          {job.id}
+                        </td>
+                        <td className="px-3 py-2.5">
+                          <div className="font-semibold text-white">{job.code}</div>
+                          <div className="text-[10px] text-cos-v3-slate-400">{job.name}</div>
+                        </td>
+                        <td className="px-3 py-2.5 font-mono text-[11px]">
+                          <span className="text-cos-v3-slate-300">{job.source}</span>
+                          <span aria-hidden="true" className="mx-1 text-cos-v3-blue-400">
+                            →
+                          </span>
+                          <span className="text-cos-v3-emerald-400">{job.target}</span>
+                        </td>
+                        <td className="px-3 py-2.5">
+                          <span
+                            className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-semibold tracking-wide ${JOB_TONE[job.tone].chip}`}
+                          >
+                            <span
+                              aria-hidden="true"
+                              className={`h-1.5 w-1.5 rounded-full ${JOB_TONE[job.tone].dot}`}
+                            />
+                            {job.status}
+                          </span>
+                        </td>
+                        <td className="px-3 py-2.5 font-mono text-[11px]">
+                          <Progress job={job} />
+                        </td>
+                        <td className="px-3 py-2.5 font-mono text-[11px]">{job.cdc}</td>
+                        <td className="px-3 py-2.5 font-semibold text-cos-v3-slate-200">
+                          {job.operator}
+                        </td>
+                        <td className="px-3 py-2.5 text-right">
+                          <button
+                            type="button"
+                            onClick={() => comingSoon(`${job.action} · ${job.id}`)}
+                            className={
+                              job.phase === 'gate'
+                                ? 'rounded border border-cos-v3-amber-500/50 bg-cos-v3-amber-500/20 px-2.5 py-1 text-[11px] font-semibold text-cos-v3-amber-300 transition hover:bg-cos-v3-amber-500/30'
+                                : 'rounded border border-cos-op-container-highest bg-cos-op-container px-2.5 py-1 text-[11px] font-medium text-cos-v3-slate-200 transition hover:bg-cos-dark-bright'
+                            }
+                          >
+                            {job.action}
+                          </button>
+                        </td>
+                      </tr>
+                    ))
+                  : null}
               </tbody>
             </table>
           )}
@@ -570,13 +664,12 @@ export function DataMigrations() {
           className="flex flex-col items-center justify-between gap-2 border-t border-cos-op-container-highest bg-cos-op-mig-band p-3 text-[12px] text-cos-v3-slate-400 sm:flex-row"
         >
           <div className="flex items-center gap-2 font-mono text-[11px]">
-            <span>
-              {t('admin.migrations.ledger.cdc')} {NO_DATA}
-            </span>
+            {/* COMING SOON — the drawn footer labels */}
+            <span>{t('admin.migrations.ledger.cdc')}</span>
             <span aria-hidden="true">•</span>
-            <span className="text-cos-v3-emerald-400">
-              {t('admin.migrations.ledger.tls')} {NO_DATA}
-            </span>
+            <span className="text-cos-v3-emerald-400">{t('admin.migrations.ledger.tls')}</span>
+            <span aria-hidden="true">•</span>
+            <span>{t('admin.migrations.ledger.enforced')}</span>
           </div>
           <div className="flex items-center gap-2">
             <span className="text-[11px]">
@@ -625,6 +718,69 @@ export function DataMigrations() {
           </div>
         </nav>
       </section>
+    </div>
+  );
+}
+
+const JOB_TONE: Record<
+  MigrationTone,
+  { chip: string; dot: string; id: string; bar: string; text: string }
+> = {
+  amber: {
+    chip: 'border-cos-v3-amber-500/40 bg-cos-v3-amber-500/20 text-cos-v3-amber-300',
+    dot: 'bg-cos-v3-amber-400',
+    id: 'text-cos-v3-amber-400',
+    bar: 'bg-cos-v3-amber-400',
+    text: 'text-cos-v3-amber-300',
+  },
+  cyan: {
+    chip: 'border-cos-v3-cyan-500/40 bg-cos-v3-cyan-500/20 text-cos-v3-cyan-300',
+    dot: 'bg-cos-v3-cyan-400',
+    id: 'text-cos-v3-cyan-400',
+    bar: 'bg-cos-v3-cyan-400',
+    text: 'text-cos-v3-cyan-300',
+  },
+  purple: {
+    chip: 'border-cos-v3-purple-500/40 bg-cos-v3-purple-500/20 text-cos-v3-purple-300',
+    dot: 'bg-cos-v3-purple-400',
+    id: 'text-cos-v3-purple-400',
+    bar: 'bg-cos-v3-purple-400',
+    text: 'text-cos-v3-purple-300',
+  },
+  emerald: {
+    chip: 'border-cos-v3-emerald-500/40 bg-cos-v3-emerald-500/20 text-cos-v3-emerald-300',
+    dot: 'bg-cos-v3-emerald-400',
+    id: 'text-cos-v3-emerald-400',
+    bar: 'bg-cos-v3-emerald-400',
+    text: 'text-cos-v3-emerald-300',
+  },
+};
+
+/** A drawn progress cell: a bar with the percentage, or the completed line with its row count. COMING SOON. */
+function Progress({ job }: { job: (typeof MIGRATIONS.jobs)[number] }) {
+  const tone = JOB_TONE[job.tone];
+  return job.progressPercent === null ? (
+    <div>
+      <div className={`font-semibold ${tone.text}`}>{job.progress}</div>
+      <div className="text-[10px] text-cos-v3-slate-400">{job.progressNote}</div>
+    </div>
+  ) : (
+    <div>
+      <div className="flex items-center gap-2">
+        <div
+          aria-hidden="true"
+          className="h-1.5 w-16 overflow-hidden rounded-full border border-cos-op-container-highest bg-cos-op-surface"
+        >
+          <div
+            className={`h-1.5 rounded-full ${tone.bar}`}
+            style={{ width: `${job.progressPercent}%` }}
+          />
+        </div>
+        <span className={tone.text}>{job.progress}</span>
+      </div>
+      {job.progressNote ? (
+        <div className="mt-0.5 text-[10px] text-cos-v3-slate-400">{job.progressNote}</div>
+      ) : null}
     </div>
   );
 }

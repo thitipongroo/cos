@@ -288,6 +288,15 @@ async function main() {
     if (ready) await page.getByTestId(ready).waitFor({ timeout: 30_000 });
     await page.waitForLoadState('networkidle').catch(() => {});
     await sleep(3500);
+    if (name === '13-system-settings') {
+      // The drawing shows the banner filled with its own justification, so the field's valid state is in the frame.
+      // Typed only — nothing is saved.
+      await fillAndKeep(
+        page.locator('main').getByLabel(/^Mandatory Operator Justification/),
+        'Scheduled cluster tuning & e-GP v3.2 gateway rate-limit optimization [SEC-REQ-984]',
+      );
+      await sleep(800);
+    }
     await shootWorkspace(page, name);
   }
 
@@ -419,7 +428,7 @@ async function deactivateTenant(page, { code, justification }) {
     (r) => r.request().method() === 'PATCH' && r.url().endsWith('/deactivate'),
     { timeout: 20_000 },
   );
-  await dialog.getByRole('button', { name: /^Confirm/ }).click();
+  await dialog.getByRole('button', { name: /^confirm/i }).click();
   const status = (await answer).status();
   if (status !== 200) throw new Error(`deactivate ${code} answered ${status}`);
   console.log(`deactivated ${code}`);

@@ -20,10 +20,10 @@
  * role). The name's second line is the tenant's Keycloak realm (Q2, reaffirmed 2026-09-15) — the drawing's
  * "883-TH-EN" is an identifier no tenant has. A tenant with no provisioning run reads "✓ Active" when active (Q3).
  *
- * ── LAID OUT WITHOUT DATA (D1) — `—` / "No data source yet", never a made-up figure ──────────────
- * EMQX chip · PG Fleet's pool count · Import Central Prices (disabled; ADR-061 not built) · Enterprise DB
- * Fleet's caption figure · Migration Gates' "Avg Gate Time" and tier · Platform Compute card (value and bar)
- * · the footer's Cluster Zone. Specified in §20.4.6 for round 2.
+ * ── COMING SOON — drawn as Stitch draws it (R19, product-owner decisions D16–D19; reverses R10's D1) ───────────────
+ * From lib/adminDrawnFigures.ts `TENANT_LIST`: the EMQX chip, PG Fleet's pool count, the Enterprise DB Fleet caption
+ * figure, Migration Gates' "Avg Gate Time" and tier, the Platform Compute value, headroom and bar, the footer's
+ * Cluster Zone. Import Central Prices opens `/admin/central-prices` since that page exists (§20.4.12).
  *
  * ── ROW ACTIONS — icon buttons as drawn (R3) ────────────────────────────────────────────────────
  * visibility opens <TenantDetailModal />, history <TenantAuditLogModal />, database = Assign DB (ENTERPRISE only;
@@ -34,6 +34,7 @@
  * justification.
  */
 
+import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useEffect, useMemo, useState } from 'react';
 import { AdminIcon, type AdminIconName } from './AdminIcon';
@@ -66,6 +67,7 @@ import {
 } from '../../lib/adminTenants';
 import { ApiError } from '../../lib/api/client';
 import { useDecideProvisioning, useTenantProvisioning, useTenants } from '../../lib/api/queries';
+import { TENANT_LIST } from '../../lib/adminDrawnFigures';
 import { formatDate } from '../../lib/format';
 
 const PLAN_FILTERS: PlanFilter[] = ['ALL', 'ENTERPRISE', 'PROFESSIONAL', 'STARTER'];
@@ -168,11 +170,13 @@ function TenantList({ createOpen }: { createOpen: boolean }) {
         </nav>
         <div className="flex flex-wrap items-center gap-3 font-mono text-op-tiny text-cos-op-on-surface-variant">
           <Chip icon="hub" iconClass="text-cos-op-success">
-            {t('admin.telemetry.emqx')}: {NO_DATA}
+            {/* COMING SOON — TENANT_LIST.emqx */}
+            {t('admin.telemetry.emqx')}: {TENANT_LIST.emqx}
           </Chip>
           <Chip icon="storage" iconClass="text-cos-op-secondary">
             {t('admin.telemetry.pgFleet')}: {tenants.isSuccess ? metrics.dedicated : NO_DATA}{' '}
-            {t('admin.telemetry.ded')} / {NO_DATA} {t('admin.telemetry.pool')}
+            {/* COMING SOON — TENANT_LIST.pgPool */}
+            {t('admin.telemetry.ded')} / {TENANT_LIST.pgPool} {t('admin.telemetry.pool')}
           </Chip>
         </div>
       </div>
@@ -184,15 +188,14 @@ function TenantList({ createOpen }: { createOpen: boolean }) {
           <h1 className="sr-only">{t('admin.list.title')}</h1>
         </div>
         <div className="flex shrink-0 items-center gap-2">
-          <button
-            type="button"
-            disabled
-            title={t('admin.nav.unavailable')}
-            className="flex h-9 cursor-not-allowed items-center gap-2 rounded-md bg-cos-op-container-high px-3 text-op-label text-cos-op-on-surface shadow-sm"
+          {/* R19: the import now exists — the button opens its page (§20.4.6 row 2, §20.4.12). */}
+          <Link
+            href="/admin/central-prices"
+            className="flex h-9 items-center gap-2 rounded-md bg-cos-op-container-high px-3 text-op-label text-cos-op-on-surface shadow-sm transition-all hover:brightness-110"
           >
             <AdminIcon name="upload_file" size={18} />
             {t('admin.list.importCentralPrices')}
-          </button>
+          </Link>
           <button
             type="button"
             onClick={() => setCreating(true)}
@@ -242,7 +245,8 @@ function TenantList({ createOpen }: { createOpen: boolean }) {
           </MetricValue>
           <MetricFoot>
             <span>{t('admin.metrics.isolation')}</span>
-            <span className="font-mono text-cos-op-secondary">{NO_DATA}</span>
+            {/* COMING SOON — TENANT_LIST.isolation */}
+            <span className="font-mono text-cos-op-secondary">{TENANT_LIST.isolation}</span>
           </MetricFoot>
         </MetricCard>
 
@@ -261,20 +265,29 @@ function TenantList({ createOpen }: { createOpen: boolean }) {
           </MetricValue>
           <MetricFoot>
             <span>
-              {t('admin.metrics.avgGateTime')}: {NO_DATA}
+              {/* COMING SOON — TENANT_LIST.avgGateTime / gateTier */}
+              {t('admin.metrics.avgGateTime')}: {TENANT_LIST.avgGateTime}
             </span>
-            <span className="font-mono text-cos-op-outline">{NO_DATA}</span>
+            <span className="font-mono text-cos-op-outline">{TENANT_LIST.gateTier}</span>
           </MetricFoot>
         </MetricCard>
 
         <MetricCard label={t('admin.metrics.compute')} icon="speed" iconClass="text-cos-op-primary">
-          <MetricValue value={NO_DATA}>
-            <span className="text-op-tiny text-cos-op-outline">{t('admin.noDataSource')}</span>
+          {/* COMING SOON — TENANT_LIST.compute */}
+          <MetricValue value={TENANT_LIST.compute.value}>
+            <span className="font-mono text-op-tiny text-cos-op-success">
+              {TENANT_LIST.compute.headroom}
+            </span>
           </MetricValue>
           <div
             aria-hidden="true"
             className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-cos-op-container"
-          />
+          >
+            <div
+              className="h-full rounded-full bg-cos-op-primary-container"
+              style={{ width: `${TENANT_LIST.compute.barPercent}%` }}
+            />
+          </div>
         </MetricCard>
       </div>
 
@@ -399,7 +412,8 @@ function TenantList({ createOpen }: { createOpen: boolean }) {
                 {t('admin.list.tenants')}
               </span>
               <span className="font-mono text-cos-op-on-surface-variant">
-                {t('admin.list.clusterZone')}: {NO_DATA}
+                {/* COMING SOON — TENANT_LIST.clusterZone */}
+                {t('admin.list.clusterZone')}: {TENANT_LIST.clusterZone}
               </span>
             </span>
             <span className="flex items-center gap-1">

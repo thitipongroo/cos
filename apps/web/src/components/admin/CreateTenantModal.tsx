@@ -10,7 +10,8 @@
  * on the server. Submit → POST /admin/tenants → `onCreated(code)`.
  *
  * ── THE DRAWING'S COPY, EVERY WORD (product-owner decision 2026-09-15, R13 decision 3) ──────────────
- * Some of it claims what this system does NOT do today. Named here so it can be cleared later:
+ * Some of it claims what this system does NOT do today. Named here so it can be cleared later — COMING SOON (R19, D16),
+ * each claim's i18n key is indexed in lib/adminDrawnFigures.ts `DRAWN_COPY_KEYS`:
  *   "identifier is available" — no availability check exists; a taken code is a 409 on submit. The note shows
  *     when the code's FORMAT is valid.
  *   "Port <n> Open" and "Host is reachable on cluster internal network" — nothing probes the host. Both show when

@@ -15,10 +15,11 @@
  * card in a 12-column grid, the banner above it) and substituted the nearest global tokens for the drawing's
  * colours. It did not look like the drawing.
  *
- * ── LAID OUT WITHOUT DATA (D1) ──────────────────────────────────────────────────────────────────
- * Drawn in place, showing `—`: the version (v4.18.2), Central Prices' period (Q2/2025), Cluster
- * Infrastructure's status dot, and every Cluster Pulse row. The pulse card's `LIVE` badge is not drawn —
- * nothing in it is live. Real: the Tenants count, the Dedicated DB Fleet count, the migration-approvals badge.
+ * ── COMING SOON (R19, D16; reversing D1's `—`) ──────────────────────────────────────────────────
+ * Drawn as Stitch draws it, from lib/adminDrawnFigures.ts `SHELL`: the version (v4.18.2), Central Prices' period
+ * (Q2/2025), Cluster Infrastructure's status dot, the pulse card's `LIVE` badge and every Cluster Pulse row — nothing
+ * measures any of it. Real: the Tenants count, the Dedicated DB Fleet count, the migration-approvals badge.
+ * `AdminShell` wraps the frame in <ComingSoonProvider />, so every admin page can open the "coming soon" dialog (D18).
  *
  * ── THE TOP BAR ─────────────────────────────────────────────────────────────────────────────────
  * Brand on the left, the global search at the bar's centre (R14, product owner 2026-09-15 — the drawing places it
@@ -28,9 +29,11 @@
  * and to read the panel in Thai (QM-3).
  *
  * ── GATE BANNERS ────────────────────────────────────────────────────────────────────────────────
- * One per provisioning run at AWAITING_APPROVAL (§34.5), first in the workspace — on the Tenant List only; Create
- * Tenant draws none (R12.4), including while its modal is open over the list (R13.6). "Review Plan" is disabled: no
- * plan view exists. The drawing's `[L-04]` tier tag has no source and is not drawn.
+ * One per provisioning run at AWAITING_APPROVAL (§34.5), first in the workspace — on the Tenant List page (`/admin`)
+ * only, with no modal open (product owner 2026-09-15, after R19); every other panel page draws none, and neither does
+ * Create Tenant, on its route (R12.4) or opened over the list (R13.6). "Review Plan" opens the
+ * "coming soon" dialog (D18): no plan view exists. The eyebrow's `[L-04]` tier tag is drawn from `SHELL.gateTier`
+ * (R19): nothing assigns a tier level to a gate.
  */
 
 import { useSession } from 'next-auth/react';
@@ -40,6 +43,7 @@ import { useMemo, useState } from 'react';
 import { Button, Menu, MenuItem, MenuTrigger, Popover } from 'react-aria-components';
 import { CosRole } from '@cos/types';
 import { useI18n } from '../../i18n';
+import { SHELL } from '../../lib/adminDrawnFigures';
 import {
   connectionState,
   errorKeyForStatus,
@@ -52,6 +56,7 @@ import { ApiError } from '../../lib/api/client';
 import { useDecideProvisioning, useTenantProvisioning, useTenants } from '../../lib/api/queries';
 import { NotificationBell } from '../shell/NotificationBell';
 import { AdminIcon, type AdminIconName } from './AdminIcon';
+import { ComingSoonProvider, useComingSoon } from './ComingSoon';
 import { GateDecisionDialog } from './GateDecisionDialog';
 
 interface NavItem {
@@ -72,8 +77,9 @@ const CONNECTION_TONE = {
 const NAV_ROW =
   'flex items-center justify-between rounded-md px-3 py-2 text-[13px] font-medium transition-colors';
 
-export function AdminShell({ children }: { children: React.ReactNode }) {
+function AdminShellFrame({ children }: { children: React.ReactNode }) {
   const { t, locale, setLocale } = useI18n();
+  const comingSoon = useComingSoon();
   const router = useRouter();
   const pathname = usePathname() ?? '';
   const { data: session, status } = useSession();
@@ -151,7 +157,10 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
       labelKey: 'admin.nav.centralPrices',
       icon: 'sell',
       href: '/admin/central-prices',
-      trailing: <span className="text-op-tiny text-cos-op-outline">{NO_DATA}</span>,
+      // COMING SOON — SHELL.centralPricesPeriod (lib/adminDrawnFigures.ts)
+      trailing: (
+        <span className="text-op-tiny text-cos-op-outline">{SHELL.centralPricesPeriod}</span>
+      ),
     },
     {
       labelKey: 'admin.nav.settings',
@@ -166,9 +175,10 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
     href === '/admin'
       ? pathname === '/admin' || pathname.startsWith('/admin/tenants')
       : pathname === href || pathname.startsWith(`${href}/`);
-  // R12.4 / R13.6 (product owner 2026-09-15): no gate banner while Create Tenant is open — on its route here, and
-  // when the modal is opened over the list by the `[data-gate-banner]` rule in globals.css.
-  const showGateBanners = !pathname.startsWith('/admin/tenants/new');
+  // Product owner 2026-09-15 (after R19): the gate banner belongs to the Tenant List page alone (`/admin`, frame
+  // 01) — never on another panel page, and never on the Create Tenant route. While any panel modal is open over the
+  // list the `[data-gate-banner]` rule in globals.css hides it too (R12.4 / R13.6).
+  const showGateBanners = pathname === '/admin';
   const tone = CONNECTION_TONE[connection];
 
   return (
@@ -298,7 +308,8 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
                 <span className="text-op-tiny font-semibold uppercase tracking-widest text-cos-op-outline">
                   {t('admin.nav.section')}
                 </span>
-                <span className="text-op-tiny text-cos-op-secondary">{NO_DATA}</span>
+                {/* COMING SOON — SHELL.version (lib/adminDrawnFigures.ts) */}
+                <span className="text-op-tiny text-cos-op-secondary">{SHELL.version}</span>
               </div>
               <nav aria-label={t('admin.nav.menu')} className="flex flex-col gap-1">
                 {nav.map((item) => {
@@ -360,7 +371,8 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
                 {(['emqx', 'timescale', 'mesh', 'queue'] as const).map((row) => (
                   <div key={row} className="flex justify-between text-cos-op-on-surface-variant">
                     <dt>{t(`admin.pulse.${row}`)}</dt>
-                    <dd className="text-cos-op-on-surface">{NO_DATA}</dd>
+                    {/* COMING SOON — SHELL.pulse (lib/adminDrawnFigures.ts) */}
+                    <dd className="text-cos-op-on-surface">{SHELL.pulse[row]}</dd>
                   </div>
                 ))}
               </dl>
@@ -385,7 +397,8 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
                   <div className="flex flex-col">
                     <p className="flex items-center gap-2">
                       <span className="text-op-label font-bold uppercase tracking-widest text-cos-op-gate">
-                        {t('admin.gate.eyebrow')}
+                        {/* COMING SOON — SHELL.gateTier */}
+                        {t('admin.gate.eyebrow')} {SHELL.gateTier}
                       </span>
                       <span
                         aria-hidden="true"
@@ -411,11 +424,11 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
                   </div>
                 </div>
                 <div className="flex shrink-0 items-center gap-2 self-end lg:self-center">
+                  {/* COMING SOON — no plan view exists (D18) */}
                   <button
                     type="button"
-                    disabled
-                    title={t('admin.nav.unavailable')}
-                    className="flex h-9 items-center gap-1.5 rounded-md bg-cos-op-container px-3 text-op-label text-cos-op-on-surface disabled:cursor-not-allowed"
+                    onClick={() => comingSoon(t('admin.gate.reviewPlan'))}
+                    className="flex h-9 items-center gap-1.5 rounded-md bg-cos-op-container px-3 text-op-label text-cos-op-on-surface transition-all hover:brightness-110"
                   >
                     <AdminIcon name="visibility" size={16} />
                     {t('admin.gate.reviewPlan')}
@@ -474,5 +487,14 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
         />
       ) : null}
     </div>
+  );
+}
+
+/** The panel shell. Wraps the frame in the "coming soon" dialog's provider so the frame and every page can open it. */
+export function AdminShell(props: Parameters<typeof AdminShellFrame>[0]) {
+  return (
+    <ComingSoonProvider>
+      <AdminShellFrame {...props} />
+    </ComingSoonProvider>
   );
 }

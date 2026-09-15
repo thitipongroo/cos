@@ -11,7 +11,8 @@
  *     "Existing data migrated"). Nothing here can check them, so each card is a box the operator ticks, and the URL
  *     field stays disabled until all three are ticked — §20.4.3 "checklist before form is enabled". The gate status
  *     reads "All Clear" only then.
- *   D1 — every other word is the drawing's, and some of it claims what the system does not do:
+ *   D1 — every other word is the drawing's, and some of it claims what the system does not do (COMING SOON, R19 D16 —
+ *     each claim's i18n key is indexed in lib/adminDrawnFigures.ts `DRAWN_COPY_KEYS`):
  *       "Port 5432 Open" and "✓ Host validated & credentials authenticated" — nothing connects to the host; both show
  *         when the URL's FORMAT is valid, with the port the URL names.
  *       "Cluster Sharding Pool & Node Target" and "Ingress Mesh Proxy Strategy" with their options and notes

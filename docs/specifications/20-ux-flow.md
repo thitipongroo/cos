@@ -176,9 +176,13 @@ Not visible to tenant users.
   every entry has a page and is linked, active on its own route: Tenants `/admin`, Cluster Infrastructure
   `/admin/cluster`, Dedicated DB Fleet `/admin/db-fleet`, Data Migration Approvals `/admin/migrations`, Global
   Audit Trail `/admin/audit`, Central Prices `/admin/central-prices`, System Settings `/admin/settings`.
-- **Real values or `—` (R17, product-owner decisions D5–D7):** every screen draws its Stitch drawing's full
-  structure; a figure the platform has a source for is shown, a figure it has none for reads `—`, and a control
-  with nothing behind it is disabled. Each screen's header comment names what it shows as `—` and why.
+- **Real values, then the drawing's (R19, product-owner decisions D16–D19; replacing R17's D5–D7 "real values or
+  `—`"):** every screen draws its Stitch drawing's full structure. A figure the platform has a source for is shown
+  and always wins; a figure it has none for shows the drawing's own value, from the one register
+  `apps/web/src/lib/adminDrawnFigures.ts`, marked COMING SOON in a code comment and never on screen. The drawing's
+  example rows are drawn after the real rows on Cluster Infrastructure, Dedicated DB Fleet and Data Migrations only
+  (D17), never counted in a real figure. A control with nothing behind it opens a "coming soon" dialog (D18). A drawn
+  value naming a tenant or host takes the open tenant's own (D19). ADR-099 amendment 2026-09-15.
 - `/admin/central-prices` — ราคากลาง catalog: import (CSV/Excel) + API-sync status + browse (ADR-061).
   Tenant-facing: the BOQ editor surfaces `reference_price` / variance + a project BOQ-vs-ราคากลาง view — the
   API is built (R17); the BOQ editor UI is not (decision D12).
@@ -210,7 +214,9 @@ server-side from the encrypted URL. The URL itself is never returned: it carries
 the count of tenants with a dedicated DB, the count of runs at AWAITING_APPROVAL, a search over code /
 name / host / region and plan filter chips. Every figure is computed from the two list endpoints. One
 **migration-gate banner** per run at AWAITING_APPROVAL carries **Approve** and **Abort** (§34.5), each
-through a dialog that states what it does and asks for the justification.
+through a dialog that states what it does and asks for the justification. The banner is drawn on the Tenant List
+page (`/admin`) only, and not while a modal is open over it — no other panel page shows it (product owner
+2026-09-15).
 
 Every row action opens its Stitch modal over the list (R17); none uses a browser prompt.
 
@@ -337,7 +343,8 @@ type-the-code confirmation above and the justification. The OPEN item of 2026-09
 
 > **Answered 2026-09-15 (R17):** Import Central Prices — ADR-061 is in scope and built (D8; the button's page is
 > §20.4.12). View Detail — §20.4.7 (D5). Audit Log — §20.4.8 (D3: 50 per page, justification in full, Export CSV).
-> The Cluster Pulse, status-bar and Platform Compute rows are unchanged: they still read `—` (D6).
+> The Cluster Pulse, status-bar and Platform Compute rows show the drawing's values (R19, D16) — the sources below
+> are still undecided.
 >
 > **Status of the rows not answered: DRAFT, not approved. Nothing below them may be implemented until approved.**
 > These are the parts of Stitch "Tenant List & DB Provisioning - SYSTEM_ADMIN" that had no data source
@@ -359,34 +366,38 @@ type-the-code confirmation above and the justification. The OPEN item of 2026-09
 Stitch "Tenant Detail & Provisioning Console" as a modal over the Tenant List (decision D5). Every panel is drawn.
 Real: the tenant's code, name, plan, realm, region, active state, dedicated host or "shared database", created date
 and provisioning run state. Everything else — cluster state figures, telemetry, Vault / mTLS, compliance lines —
-reads `—`. Its Operational card opens the real row actions (Audit Log, Assign DB, Mark as Contracted, Deactivate);
-the drawn operations with nothing behind them are disabled.
+shows the drawing's values (R19, D16), the Vault path with the open tenant's code (D19). Its Operational card opens
+the real row actions (Audit Log, Assign DB, Mark as Contracted, Deactivate); the tabs and drawn operations with
+nothing behind them open the "coming soon" dialog (D18).
 
 ### 20.4.8 Tenant Audit Log
 
 Stitch "Tenant Audit Log - Modal Overlay" (decision D3). `GET /api/v1/admin/tenants/{tenantId}/audit-logs?cursor&limit&q`
 — newest first, 50 per page, keyset cursor, `q` over action, actor e-mail and justification; the justification is
-shown in full. Export CSV is `GET …/audit-logs/export.csv`. TOTAL (30D) is real; SECURITY and ACTIVE read `—`. No
-hash column, Trigger or Verify: `audit_logs` carries no hash chain. Every read and export is itself written to
+shown in full. Export CSV is `GET …/audit-logs/export.csv`. TOTAL (30D) is real; SECURITY, ACTIVE, the Hash column
+and the integrity footer show the drawing's values (R19, D16) — `audit_logs` carries no hash chain — and Trigger,
+Verify and every event category but "All" open the "coming soon" dialog (D18). Every read and export is itself written to
 `platform.audit_logs` (`audit.read` / `audit.export`).
 
 ### 20.4.9 Cluster Infrastructure
 
 `/admin/cluster`, Stitch "Cluster Infrastructure & Fleet Telemetry" (decision D6). The DB fleet tile counts tenants
-with and without a dedicated database; the node table is empty with its reason; every other figure reads `—` and
-its controls are disabled. No node is invented.
+with and without a dedicated database. Every other figure, and the drawing's eight node rows, show the drawing's
+values (R19, D16–D17); its controls open the "coming soon" dialog (D18). No real node exists behind any row.
 
 ### 20.4.10 Dedicated DB Fleet
 
 `/admin/db-fleet`, Stitch "Dedicated DB Fleet Management" (decision D6). One row per tenant with a dedicated host,
-with the gate filter, sort and paging; instance figures read `—`.
+with the gate filter, sort and paging. Instance figures show the drawing's values, and the drawing's six instance
+rows follow the real ones (R19, D16–D17); controls with nothing behind them open the "coming soon" dialog (D18).
 
 ### 20.4.11 Data Migrations & Approval Gate
 
 `/admin/migrations`, Stitch "Data Migrations & Approval Gate" (decision D7). The ledger is every provisioning run
 (§34.3) with its state; the gate panel is the selected run at AWAITING_APPROVAL with Approve / Abort and the
-justification (§34.5). Transfer volume, payload, checksums, progress and CDC lag read `—`; New Job and Archive are
-disabled.
+justification (§34.5). Transfer volume, payload, checksums, progress and CDC lag show the drawing's values, and
+the drawing's five ledger rows follow the real runs (R19, D16–D17); New Job and Archive open the "coming soon" dialog
+(D18).
 
 ### 20.4.12 Central Price Register (ราคากลาง)
 
@@ -395,21 +406,24 @@ disabled.
 Central Prices (file, effective period, source reference, justification) are the real endpoints. The sync panel is
 `GET …/sync-status`; the failed-sync panel is the newest FAILED run, and Force Retry Sync is `POST …/sync` — the
 e-GP adapter is a stub, so it records NOT_CONFIGURED. Prices are shown from their stored decimal text, never through
-a JS number.
+a JS number. The payload-signature line, retry count, impact and fallback lines show the drawing's copy where a real
+run does not contradict them (R19, D16); the technical log opens the "coming soon" dialog (D18).
 
 ### 20.4.13 Global Audit Log and System Settings
 
 **Global Audit Log** — `/admin/audit`, Stitch "Global Audit Log" (decision D4). `GET /api/v1/admin/audit-logs` with
 tenant, actor, action (exact, or a prefix ending in `.`), `from` / `to` (a date is 00:00 UTC; a date-time needs `Z`
-or an offset; `to` is exclusive) and `q`; `GET …/summary` for the cards; `GET …/export?format=csv|json`. No
-integrity seal, hash or Merkle element is drawn. The drawing cites §16.4 for the mandatory justification; the
-mandate is §6.7, and §6.7 is shown.
+or an offset; `to` is exclusive) and `q`; `GET …/summary` for the cards; `GET …/export?format=csv|json`. The
+integrity seal, VALID chips, hash column, ROOT_CHAIN and Merkle callout show the drawing's values (R19, D16) —
+nothing computes them — and Verify Ledger Integrity and the event tiers open the "coming soon" dialog (D18). The
+drawing cites §16.4 for the mandatory justification; the mandate is §6.7, and §6.7 is shown.
 
 **System Settings** — `/admin/settings`, Stitch "System Settings" (decision D10, ADR-108). `GET` / `PUT
 /api/v1/admin/settings`: one versioned document, saved whole with the §6.7 justification and the version it was
 read at (a stale version is `409 COS-PSET-001`); every save is audited with before / after. STORED ONLY — nothing
-reads these values yet; ADR-108 records it and the screen's footer states that every save is audited (the drawing has
-no stored-only line, product-owner decision D15, 2026-09-15). Every field starts "not set"; no default is invented.
+reads these values yet; ADR-108 records it (the drawing has no stored-only line, product-owner decision D15,
+2026-09-15). Every field starts "not set"; no default is invented. The feed count, Active Window chip, cluster
+region, fleet health, pool mode, audit state and the footer show the drawing's copy (R19, D16).
 
 ---
 

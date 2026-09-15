@@ -2,21 +2,20 @@
 
 /**
  * SYSTEM_ADMIN — Tenant Detail & Provisioning Console, the Stitch "Tenant Detail & Provisioning Console — SYSTEM_ADMIN"
- * dialog (screen 01955db7b7cd…, HTML fetched 2026-09-15; revision R17). Opened by the row's View action.
+ * dialog (screen 01955db7b7cd…, HTML as listed 2026-09-15; revisions R17, R19). Opened by the row's View action.
  *
- * ── PRODUCT-OWNER DECISION D5 (2026-09-15) ──────────────────────────────────────────────────────
- * Every panel is drawn. A value shows only where this repository has a source; everything else is `—`.
- *   REAL — from GET /admin/tenants and GET /admin/tenants/provisioning: tenant code, name, plan, active state, Keycloak
- *     realm (in the drawing's "883-TH-EN" chip), data region (the zone pill), dedicated DB host (cluster-state card
- *     and routing URI — the URL itself is never sent to the browser, so the URI well shows the host alone), shared
- *     or dedicated storage, and the provisioning run's state.
- *   `—` — cluster availability %, compute & pool, delta-sync queue, EMQX stream, AI token quota, port / reachability,
- *     replication lag, Timescale chunks, IOPS, NVMe allocation, schema name / version / last DDL / drift, Vault
- *     AppRole path and lease, mTLS fingerprint, the compliance-policy values after the first, the footer's mesh and
- *     snapshot line, and the drawing's latency.
- *   DISABLED — the Database Topology, Secrets & mTLS Certs and Audit Trail & Events tabs (no content), Copy (no URL
- *     reaches the browser), Rotate Vault Secrets / Flush Delta Queue / Trigger Deep Integrity Check, Open Telemetry
- *     Terminal. None has a backend.
+ * ── PRODUCT-OWNER DECISIONS D16–D19 (R19, 2026-09-15; reversing R17's D5) ───────────────────────
+ *   REAL — from GET /admin/tenants and GET /admin/tenants/provisioning: tenant code, name, active state, data region
+ *     (the zone pill), dedicated DB host (cluster-state card and routing URI — the URL itself is never sent to the
+ *     browser, so the URI well shows the host alone), shared or dedicated isolation, created date, and the run state.
+ *   COMING SOON — drawn as Stitch draws it, from lib/adminDrawnFigures.ts `DETAIL`: the latency, every KPI figure and
+ *     bar, the VPC port badge and reachability line, the engine telemetry and NVMe allocation with its legend, the
+ *     schema version / name / last DDL / drift, the Vault path and lease, the certificate fingerprint and its CA, the
+ *     compliance and retention lines, and the footer. The schema name and Vault path take the open tenant's code (D19).
+ *   COMING SOON (D18) — the three empty tabs, Copy, Rotate Vault Secrets / Flush Delta Queue / Trigger Deep Integrity
+ *     Check and Open Telemetry Terminal open the "coming soon" dialog. None has a backend.
+ *   R19 re-sync — the drawing dropped its title, the ENTERPRISE TIER tag and the "883-TH-EN" chip (so the Keycloak realm
+ *     is no longer shown), and reads "PostgreSQL & TimescaleDB Telemetry" and a last-DDL time without "UTC".
  *
  * ── DIFFERENCES FROM THE DRAWING, AND WHY (ADR-085) ─────────────────────────────────────────────
  *   The Operational card also carries the row actions that DO exist — Audit Log, Assign DB, Mark as Contracted,
@@ -31,11 +30,19 @@ import {
   statusView,
   type TenantListRow,
 } from '../../lib/adminTenants';
+import { DETAIL, forTenant } from '../../lib/adminDrawnFigures';
 import { formatDate } from '../../lib/format';
 import { AdminIcon, type AdminIconName } from './AdminIcon';
-import { NO_DATA } from './AdminShell';
+import { useComingSoon } from './ComingSoon';
 
 export type TenantDetailAction = 'audit' | 'assign' | 'mark' | 'deactivate';
+
+/** The drawing's ink for each engine figure (replication lag emerald, chunks cyan, IOPS slate). */
+const ENGINE_INK = {
+  lag: 'text-cos-v3-emerald-400',
+  chunks: 'text-cos-v3-cyan-300',
+  iops: 'text-cos-v3-slate-200',
+} as const;
 
 export function TenantDetailModal({
   tenant,
@@ -50,6 +57,7 @@ export function TenantDetailModal({
   onAction: (action: TenantDetailAction) => void;
 }) {
   const { t, locale } = useI18n();
+  const comingSoon = useComingSoon();
   const dedicated = tenant.dedicated_db_host !== null;
   const enterprise = tenant.plan_type === 'ENTERPRISE';
   const hasRun = state !== undefined;
@@ -104,18 +112,9 @@ export function TenantDetailModal({
               </span>
               <div>
                 <div className="flex items-center gap-2">
-                  <Heading
-                    slot="title"
-                    className="text-[16px] font-semibold tracking-tight text-cos-v3-slate-100"
-                  >
+                  <Heading slot="title" className="sr-only">
                     {t('admin.detail.title')}
                   </Heading>
-                  <span className="inline-flex items-center rounded border border-cos-v3-cyan-500/30 bg-cos-v3-cyan-500/10 px-2 py-0.5 font-mono text-[10px] font-semibold uppercase tracking-wide text-cos-v3-cyan-400">
-                    {tenant.plan_type} {t('admin.detail.tier')}
-                  </span>
-                  <span className="inline-flex items-center rounded border border-cos-op-detail-chip-line bg-cos-op-detail-chip px-1.5 py-0.5 font-mono text-[10px] text-cos-v3-slate-400">
-                    {tenant.keycloak_realm}
-                  </span>
                 </div>
                 <p className="mt-0.5 flex items-center gap-2 font-mono text-[12px] text-cos-v3-slate-400">
                   <span className="font-medium text-cos-v3-cyan-300">{tenant.tenant_code}</span>
@@ -148,7 +147,8 @@ export function TenantDetailModal({
                 <span aria-hidden="true" className="text-cos-v3-slate-600">
                   |
                 </span>
-                <span className="text-cos-v3-cyan-400">{NO_DATA}</span>
+                {/* COMING SOON — DETAIL.latency */}
+                <span className="text-cos-v3-cyan-400">{DETAIL.latency}</span>
               </div>
               <Button
                 aria-label={t('admin.create.close')}
@@ -164,7 +164,7 @@ export function TenantDetailModal({
           <section className="grid shrink-0 grid-cols-1 gap-4 border-b border-cos-op-detail-kpi-band-line bg-cos-op-detail-kpi-band/90 p-6 sm:grid-cols-2 lg:grid-cols-4">
             <Kpi
               label={t('admin.detail.kpi.cluster')}
-              badge={NO_DATA}
+              badge={DETAIL.cluster.badge /* COMING SOON */}
               badgeTone="text-cos-v3-emerald-400"
             >
               <div className="flex items-center gap-1.5 text-[14px] font-bold tracking-tight text-white">
@@ -178,50 +178,61 @@ export function TenantDetailModal({
                 className="mt-1 truncate font-mono text-[11px] text-cos-v3-cyan-300/80"
                 title={tenant.dedicated_db_host ?? undefined}
               >
-                {tenant.dedicated_db_host ?? NO_DATA}
+                {/* COMING SOON — DETAIL.cluster.host when the tenant has no host of its own */}
+                {tenant.dedicated_db_host ?? DETAIL.cluster.host}
               </div>
             </Kpi>
             <Kpi
               label={t('admin.detail.kpi.compute')}
-              badge={NO_DATA}
+              badge={DETAIL.compute.badge /* COMING SOON */}
               badgeTone="text-cos-v3-cyan-400"
             >
+              {/* COMING SOON — DETAIL.compute */}
               <div className="flex items-baseline gap-2 text-[14px] font-bold tracking-tight text-white">
-                <span>{NO_DATA}</span>
+                <span>{DETAIL.compute.active}</span>
                 <span className="font-mono text-[12px] font-normal text-cos-v3-slate-400">
-                  / {NO_DATA}
+                  {DETAIL.compute.max}
                 </span>
               </div>
               <div
                 aria-hidden="true"
                 className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-cos-op-detail-kpi-band-line"
-              />
+              >
+                <div
+                  className="h-full rounded-full bg-cos-v3-cyan-500"
+                  style={{ width: `${DETAIL.compute.barPercent}%` }}
+                />
+              </div>
             </Kpi>
             <Kpi
               label={t('admin.detail.kpi.sync')}
-              badge={NO_DATA}
+              badge={DETAIL.sync.badge /* COMING SOON */}
               badgeTone="text-cos-v3-emerald-400"
             >
-              <div className="text-[14px] font-bold tracking-tight text-white">{NO_DATA}</div>
+              {/* COMING SOON — DETAIL.sync */}
+              <div className="text-[14px] font-bold tracking-tight text-white">
+                {DETAIL.sync.pending}
+              </div>
               <div className="mt-1 flex items-center justify-between font-mono text-[11px] text-cos-v3-slate-400">
                 <span>{t('admin.detail.kpi.emqx')}</span>
-                <span className="font-semibold text-cos-v3-cyan-300">{NO_DATA}</span>
+                <span className="font-semibold text-cos-v3-cyan-300">{DETAIL.sync.emqx}</span>
               </div>
             </Kpi>
             <Kpi
               label={t('admin.detail.kpi.tokens')}
-              badge={NO_DATA}
+              badge={DETAIL.tokens.badge /* COMING SOON */}
               badgeTone="text-cos-v3-amber-400"
             >
+              {/* COMING SOON — DETAIL.tokens */}
               <div className="text-[14px] font-bold tracking-tight text-white">
-                {NO_DATA}{' '}
+                {DETAIL.tokens.used}{' '}
                 <span className="font-mono text-[12px] font-normal text-cos-v3-slate-400">
-                  / {NO_DATA}
+                  {DETAIL.tokens.quota}
                 </span>
               </div>
               <div className="mt-1 flex items-center justify-between font-mono text-[11px] text-cos-v3-slate-400">
                 <span>{t('admin.detail.kpi.reset')}</span>
-                <span className="text-cos-v3-slate-300">{NO_DATA}</span>
+                <span className="text-cos-v3-slate-300">{DETAIL.tokens.reset}</span>
               </div>
             </Kpi>
           </section>
@@ -249,12 +260,12 @@ export function TenantDetailModal({
                   {t(`admin.detail.tab.${key}`)}
                 </span>
               ) : (
+                // COMING SOON — the tab has no content yet (D18)
                 <button
                   key={key}
                   type="button"
-                  disabled
-                  title={t('admin.nav.unavailable')}
-                  className="flex cursor-not-allowed items-center gap-2 border-b-2 border-transparent px-3.5 py-3 text-cos-v3-slate-400"
+                  onClick={() => comingSoon(t(`admin.detail.tab.${key}`))}
+                  className="flex items-center gap-2 border-b-2 border-transparent px-3.5 py-3 text-cos-v3-slate-400 transition-colors hover:text-cos-v3-slate-200"
                 >
                   <AdminIcon name={icon} size={16} />
                   {t(`admin.detail.tab.${key}`)}
@@ -270,7 +281,8 @@ export function TenantDetailModal({
                   <div className="mb-2.5 flex items-center justify-between">
                     <CardTitle icon="link">{t('admin.detail.uri.title')}</CardTitle>
                     <span className="rounded border border-cos-v3-emerald-500/30 bg-cos-v3-emerald-950/60 px-2 py-0.5 font-mono text-[10px] text-cos-v3-emerald-400">
-                      {t('admin.create.vpcBadge')}: {NO_DATA}
+                      {/* COMING SOON — DETAIL.vpc */}
+                      {t('admin.create.vpcBadge')}: {DETAIL.vpc}
                     </span>
                   </div>
                   <div className="flex items-center gap-2 rounded border border-cos-op-detail-uri-line bg-cos-op-detail-head p-1.5 px-2.5">
@@ -279,17 +291,22 @@ export function TenantDetailModal({
                         ? `postgresql://••••••••@${tenant.dedicated_db_host}`
                         : t('admin.detail.uri.pooled')}
                     </code>
+                    {/* COMING SOON — no connection string reaches the browser (D18) */}
                     <button
                       type="button"
-                      disabled
-                      aria-label={`${t('admin.detail.uri.copy')} — ${t('admin.nav.unavailable')}`}
-                      className="cursor-not-allowed rounded p-1.5 text-cos-v3-slate-400"
+                      aria-label={t('admin.detail.uri.copy')}
+                      onClick={() => comingSoon(t('admin.detail.uri.copy'))}
+                      className="rounded p-1.5 text-cos-v3-slate-400 transition-colors hover:bg-cos-op-detail-copy-hover hover:text-cos-v3-slate-200"
                     >
                       <AdminIcon name="content_copy" size={16} />
                     </button>
                   </div>
-                  <p className="mt-2 flex items-center gap-1.5 font-mono text-[11px] text-cos-v3-slate-400">
-                    {t('admin.detail.uri.reachability')} {NO_DATA}
+                  {/* COMING SOON — DETAIL.reachability */}
+                  <p className="mt-2 flex items-start gap-1.5 font-mono text-[11px] text-cos-v3-slate-400">
+                    <span aria-hidden="true" className="text-cos-v3-emerald-400">
+                      ✓
+                    </span>
+                    <span>{DETAIL.reachability}</span>
                   </p>
                 </Card>
 
@@ -297,7 +314,8 @@ export function TenantDetailModal({
                   <h2 className="mb-3 flex items-center justify-between font-mono text-[12px] font-semibold uppercase tracking-wider text-cos-v3-slate-200">
                     <span>{t('admin.detail.engine.title')}</span>
                     <span className="text-[11px] font-normal lowercase text-cos-v3-slate-400">
-                      {t('admin.detail.engine.replica')} {NO_DATA}
+                      {/* COMING SOON — DETAIL.engine */}
+                      {t('admin.detail.engine.replica')} {DETAIL.engine.replica}
                     </span>
                   </h2>
                   <div className="grid grid-cols-3 gap-3">
@@ -309,10 +327,12 @@ export function TenantDetailModal({
                         <div className="font-mono text-[10px] uppercase text-cos-v3-slate-400">
                           {t(`admin.detail.engine.${k}`)}
                         </div>
-                        <div className="mt-1 font-mono text-[14px] font-bold text-cos-v3-slate-200">
-                          {NO_DATA}
+                        <div className={`mt-1 font-mono text-[14px] font-bold ${ENGINE_INK[k]}`}>
+                          {DETAIL.engine[k].value}
                         </div>
-                        <div className="mt-0.5 text-[10px] text-cos-v3-slate-400">{NO_DATA}</div>
+                        <div className="mt-0.5 text-[10px] text-cos-v3-slate-400">
+                          {DETAIL.engine[k].note}
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -321,19 +341,31 @@ export function TenantDetailModal({
                       <span className="text-cos-v3-slate-300">
                         {t('admin.detail.engine.storage')}
                       </span>
+                      {/* COMING SOON — DETAIL.engine.storage / segments */}
                       <span className="font-semibold text-cos-v3-cyan-400">
-                        {t(
-                          dedicated
-                            ? 'admin.detail.engine.dedicatedStorage'
-                            : 'admin.detail.engine.sharedStorage',
-                        )}{' '}
-                        · {NO_DATA}
+                        {DETAIL.engine.storage}
                       </span>
                     </div>
                     <div
                       aria-hidden="true"
                       className="flex h-2 w-full overflow-hidden rounded-full bg-cos-op-detail-kpi-band"
-                    />
+                    >
+                      {DETAIL.engine.segments.map((seg) => (
+                        <div
+                          key={seg.label}
+                          className={`h-full ${seg.tone}`}
+                          style={{ width: `${seg.percent}%` }}
+                        />
+                      ))}
+                    </div>
+                    <div className="mt-2 flex flex-wrap items-center gap-4 font-mono text-[10px] text-cos-v3-slate-400">
+                      {DETAIL.engine.segments.map((seg) => (
+                        <span key={seg.label} className="flex items-center gap-1.5">
+                          <span aria-hidden="true" className={`h-2 w-2 rounded ${seg.tone}`} />
+                          {seg.label}
+                        </span>
+                      ))}
+                    </div>
                   </div>
                 </Card>
 
@@ -342,15 +374,18 @@ export function TenantDetailModal({
                     <span className="font-mono text-[12px] font-semibold uppercase tracking-wider text-cos-v3-slate-200">
                       {t('admin.detail.schema.title')}
                     </span>
+                    {/* COMING SOON — DETAIL.schema */}
                     <span className="rounded border border-cos-v3-cyan-800/40 bg-cos-v3-cyan-950/40 px-2 py-0.5 font-mono text-[12px] text-cos-v3-cyan-400">
-                      {NO_DATA}
+                      {DETAIL.schema.version}
                     </span>
                   </div>
                   <dl className="space-y-1.5 rounded border border-cos-op-detail-well-edge bg-cos-op-detail-head p-3 font-mono text-[12px] text-cos-v3-slate-300">
                     {(['name', 'ddl', 'drift'] as const).map((k) => (
                       <div key={k} className="flex justify-between">
                         <dt className="text-cos-v3-slate-400">{t(`admin.detail.schema.${k}`)}</dt>
-                        <dd className="font-semibold text-cos-v3-slate-200">{NO_DATA}</dd>
+                        <dd className="text-right font-semibold text-cos-v3-slate-200">
+                          {forTenant(DETAIL.schema[k], tenant.tenant_code)}
+                        </dd>
                       </div>
                     ))}
                     <div className="flex justify-between">
@@ -367,8 +402,12 @@ export function TenantDetailModal({
                 <Card>
                   <h2 className="mb-3 flex items-center justify-between font-mono text-[12px] font-semibold uppercase tracking-wider text-cos-v3-slate-200">
                     <span>{t('admin.detail.vault.title')}</span>
-                    <span aria-hidden="true" className="h-2 w-2 rounded-full bg-cos-v3-slate-500" />
+                    <span
+                      aria-hidden="true"
+                      className="h-2 w-2 rounded-full bg-cos-v3-emerald-400"
+                    />
                   </h2>
+                  {/* COMING SOON — DETAIL.vault (the path takes the open tenant's code, D19) */}
                   <div className="space-y-2.5 font-mono text-[12px]">
                     {(['path', 'fingerprint'] as const).map((k) => (
                       <div
@@ -378,12 +417,24 @@ export function TenantDetailModal({
                         <div className="text-[10px] uppercase text-cos-v3-slate-400">
                           {t(`admin.detail.vault.${k}`)}
                         </div>
-                        <div className="mt-0.5 truncate text-[11px] text-cos-v3-cyan-300">
-                          {NO_DATA}
+                        <div
+                          className={`mt-0.5 truncate text-[11px] ${k === 'path' ? 'text-cos-v3-cyan-300' : 'text-cos-v3-slate-300'}`}
+                        >
+                          {k === 'path'
+                            ? forTenant(DETAIL.vault.path, tenant.tenant_code)
+                            : DETAIL.vault.fingerprint}
                         </div>
-                        <div className="mt-1 text-[10px] text-cos-v3-slate-400">
-                          {t(`admin.detail.vault.${k}Note`)} {NO_DATA}
-                        </div>
+                        {k === 'path' ? (
+                          <div className="mt-1 text-[10px] text-cos-v3-slate-400">
+                            {t('admin.detail.vault.pathNote')}{' '}
+                            <span className="text-cos-v3-slate-200">{DETAIL.vault.lease}</span>
+                          </div>
+                        ) : (
+                          <div className="mt-1 flex items-center gap-1 text-[10px] text-cos-v3-emerald-400">
+                            <AdminIcon name="check" size={12} />
+                            {t('admin.detail.vault.fingerprintNote')} {DETAIL.vault.validatedBy}
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>
@@ -413,7 +464,8 @@ export function TenantDetailModal({
                           ▸
                         </span>
                         <span>
-                          <strong>{t(`admin.detail.policy.${k}`)}</strong> {NO_DATA}
+                          {/* COMING SOON — DETAIL.policy */}
+                          <strong>{t(`admin.detail.policy.${k}`)}</strong> {DETAIL.policy[k]}
                         </span>
                       </li>
                     ))}
@@ -457,12 +509,12 @@ export function TenantDetailModal({
                         ['integrity', 'task_alt', 'text-cos-v3-emerald-400'],
                       ] as const
                     ).map(([key, icon, tone]) => (
+                      // COMING SOON — no process behind the operation (D18)
                       <button
                         key={key}
                         type="button"
-                        disabled
-                        title={t('admin.nav.unavailable')}
-                        className="flex w-full cursor-not-allowed items-center justify-between rounded border border-cos-op-detail-op-line bg-cos-op-detail-op px-3 py-2 text-[12px] font-medium text-cos-v3-slate-200"
+                        onClick={() => comingSoon(t(`admin.detail.ops.${key}`))}
+                        className="flex w-full items-center justify-between rounded border border-cos-op-detail-op-line bg-cos-op-detail-op px-3 py-2 text-[12px] font-medium text-cos-v3-slate-200 transition-colors hover:bg-cos-op-detail-op-hover"
                       >
                         <span className="flex items-center gap-2">
                           <AdminIcon name={icon} size={16} className={tone} />
@@ -481,10 +533,15 @@ export function TenantDetailModal({
 
           <footer className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-t border-cos-op-detail-foot-line bg-cos-op-detail-head px-6 py-3.5">
             <div className="flex items-center gap-2 font-mono text-[12px] text-cos-v3-slate-300">
-              <span aria-hidden="true" className="h-2.5 w-2.5 rounded-full bg-cos-v3-slate-500" />
-              <span className="font-semibold text-cos-v3-slate-400">
-                {t('admin.detail.footer.mesh')} {NO_DATA}
+              {/* COMING SOON — DETAIL.footer */}
+              <span aria-hidden="true" className="h-2.5 w-2.5 rounded-full bg-cos-v3-emerald-400" />
+              <span className="font-semibold text-cos-v3-emerald-400">
+                {t('admin.detail.footer.mesh')} {DETAIL.footer.mesh}
               </span>
+              <span aria-hidden="true" className="text-cos-v3-slate-600">
+                •
+              </span>
+              <span className="text-cos-v3-slate-400">{DETAIL.footer.snapshot}</span>
             </div>
             <div className="flex items-center gap-3">
               <Button
@@ -493,11 +550,11 @@ export function TenantDetailModal({
               >
                 {t('admin.detail.close')}
               </Button>
+              {/* COMING SOON — no telemetry terminal exists (D18) */}
               <button
                 type="button"
-                disabled
-                title={t('admin.nav.unavailable')}
-                className="flex cursor-not-allowed items-center gap-2 rounded-md bg-cos-v3-blue-600 px-4 py-2 text-[12px] font-semibold text-white shadow-lg shadow-cos-v3-blue-600/30"
+                onClick={() => comingSoon(t('admin.detail.terminal'))}
+                className="flex items-center gap-2 rounded-md bg-cos-v3-blue-600 px-4 py-2 text-[12px] font-semibold text-white shadow-lg shadow-cos-v3-blue-600/30 transition-colors hover:bg-cos-v3-blue-600/90"
               >
                 <AdminIcon name="terminal" size={16} />
                 <span>{t('admin.detail.terminal')}</span>

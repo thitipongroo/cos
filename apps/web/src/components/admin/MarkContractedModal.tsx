@@ -12,9 +12,9 @@
  *     shows §20.4.4's message and keeps Confirm disabled.
  *   D1 — every other word is the drawing's, and some of it claims what the system does not do. Named here so it can
  *     be cleared later:
- *       "STAGE: VALIDATION", "HIGH PRIVILEGE", "SUPER_OPERATOR" — labels, no role or stage by those names exists.
  *       "Target Dedicated Instance db-ent-043.cos.internal" and the target tier's host — no instance exists before the
- *         run creates one; the string is the drawing's.
+ *         run creates one; COMING SOON, lib/adminDrawnFigures.ts `MODALS.markTargetInstance`.
+ *       R19 re-sync: the drawing dropped the "STAGE: VALIDATION", "HIGH PRIVILEGE" and "SUPER_OPERATOR" tags.
  *       "All 3 prerequisite gates satisfied. Approving this transition initiates automatic tenant schema separation
  *         and strict isolation pipeline under GDPR/PDPA compliance." — the run creates an RDS instance (§34.4).
  *       "Submitting triggers Vault token creation, automatic background data schema migration, and emission of
@@ -41,14 +41,13 @@ import {
   TextField,
 } from 'react-aria-components';
 import { useT } from '../../i18n';
+import { MODALS } from '../../lib/adminDrawnFigures';
 import { errorKeyForStatus, type TenantListRow } from '../../lib/adminTenants';
 import { ApiError } from '../../lib/api/client';
 import { useMarkContracted } from '../../lib/api/queries';
 import { TextInputField } from '../form/TextInputField';
 import { LoadingState } from '../ui/LoadingState';
 import { AdminIcon } from './AdminIcon';
-
-const DRAWN_INSTANCE = 'db-ent-043.cos.internal';
 
 interface Prerequisite {
   key: 'plan' | 'active' | 'noDb';
@@ -129,8 +128,6 @@ export function MarkContractedModal({
                   <Heading slot="title" className="text-[16px] font-bold tracking-tight text-white">
                     {t('admin.markModal.title')}
                   </Heading>
-                  <Tag tone="gate">{t('admin.markModal.stage')}</Tag>
-                  <Tag tone="danger">{t('admin.markModal.privilege')}</Tag>
                 </div>
                 <div className="mt-0.5 flex items-center gap-2 text-[12px] text-cos-v3-slate-400">
                   <span>
@@ -150,7 +147,10 @@ export function MarkContractedModal({
                 <div className="font-mono text-[10px] uppercase text-cos-v3-slate-500">
                   {t('admin.markModal.targetInstance')}
                 </div>
-                <div className="font-mono text-[12px] text-cos-op-secondary">{DRAWN_INSTANCE}</div>
+                {/* COMING SOON — MODALS.markTargetInstance */}
+                <div className="font-mono text-[12px] text-cos-op-secondary">
+                  {MODALS.markTargetInstance}
+                </div>
               </div>
               <Button
                 aria-label={t('admin.create.close')}
@@ -254,9 +254,6 @@ export function MarkContractedModal({
                   <AdminIcon name="lock_reset" size={18} className="text-cos-op-gate" />
                   {t('admin.markModal.transition')}
                 </span>
-                <span className="rounded border border-cos-op-gate/30 bg-cos-op-gate/10 px-2 py-0.5 font-mono text-[11px] text-cos-op-gate">
-                  {t('admin.markModal.operator')}
-                </span>
               </div>
 
               <div className="flex flex-col gap-2.5 rounded-md border border-cos-op-container-highest bg-cos-op-surface p-3.5">
@@ -287,7 +284,7 @@ export function MarkContractedModal({
                       />
                     </div>
                     <div className="mt-1 font-mono text-[10px] text-cos-op-secondary">
-                      {DRAWN_INSTANCE}
+                      {MODALS.markTargetInstance /* COMING SOON */}
                     </div>
                   </div>
                 </div>
@@ -417,17 +414,5 @@ export function MarkContractedModal({
         </Dialog>
       </Modal>
     </ModalOverlay>
-  );
-}
-
-function Tag({ tone, children }: { tone: 'gate' | 'danger'; children: React.ReactNode }) {
-  const cls: Record<typeof tone, string> = {
-    gate: 'border-cos-op-gate/30 bg-cos-op-gate/15 text-cos-op-gate',
-    danger: 'border-cos-op-high-privilege/30 bg-cos-op-high-privilege/15 text-cos-op-error',
-  };
-  return (
-    <span className={`rounded border px-2 py-0.5 font-mono text-[10px] font-semibold ${cls[tone]}`}>
-      {children}
-    </span>
   );
 }

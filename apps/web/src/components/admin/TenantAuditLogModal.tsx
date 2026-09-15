@@ -6,15 +6,15 @@
  * Detail. Reads `GET /admin/tenants/{id}/audit-logs` (newest first, 50 per page) and exports through
  * `…/audit-logs/export.csv`; the backend audits both (§20.4.6 as answered, decision D3).
  *
- * ── PRODUCT-OWNER DECISION D3 (2026-09-15) ──────────────────────────────────────────────────────
+ * ── PRODUCT-OWNER DECISION D3 (2026-09-15), with R19's D16 / D18 ─────────────────────────────────
  *   REAL — TOTAL (30D); each row's time, action, actor e-mail, IP, the resource it targeted and the justification IN
  *     FULL (the drawing's Metadata column truncates; D3 says full); the search (`q`: action, actor e-mail,
- *     justification); paging by cursor; Export CSV.
- *   NOT DRAWN — the Hash column, the INTEGRITY chain line, Trigger and Verify: audit_logs carries no hash chain.
- *   `—` — the SECURITY flagged count and the ACTIVE compliance regime: nothing classifies audit rows that way.
- *   The event-type select keeps the drawing's categories; only "All Event Types" is enabled — the per-tenant endpoint
- *   filters by text, not by category. The footer carries the paging instead of Trigger / Verify.
- *   R18 (the drawing as listed 2026-09-15): the column reads "Action & Target".
+ *     justification); paging by cursor; Export CSV. A row value that is null reads `—`: it is data, and it is empty.
+ *   COMING SOON — lib/adminDrawnFigures.ts `TENANT_AUDIT`: the SECURITY flagged count, the ACTIVE regime, the Hash
+ *     column (the drawing's six digests repeat over the real rows — audit_logs has no hash chain), the INTEGRITY and
+ *     retention line, and the header's Node for a tenant with no host of its own (the tenant's host when it has one;
+ *     product owner 2026-09-16). Trigger, Verify and every event category but "All" open the "coming soon" dialog (D18).
+ *   Paging stays in the footer beside Trigger / Verify — the drawing shows six rows and no way to the rest.
  *   The drawing's title slot is empty; the dialog's heading is screen-reader only. The Severity chip is the action's
  *   family (lib/adminAudit.ts `auditTone`), not a severity the platform assigns; the actor's second line shows the
  *   actor's name where the drawing shows a role, because the audit row stores no role.
@@ -27,10 +27,12 @@ import { auditQuery, auditTone, type AuditTone } from '../../lib/adminAudit';
 import { errorKeyForStatus, type TenantListRow } from '../../lib/adminTenants';
 import { type AuditLogRow, useAuditExport, useTenantAuditLogs } from '../../lib/api/adminAudit';
 import { ApiError } from '../../lib/api/client';
+import { MODALS, TENANT_AUDIT, drawnFor } from '../../lib/adminDrawnFigures';
 import { formatDateTime, localeTag } from '../../lib/format';
 import { LoadingState } from '../ui/LoadingState';
 import { AdminIcon } from './AdminIcon';
 import { NO_DATA } from './AdminShell';
+import { useComingSoon } from './ComingSoon';
 
 /** Chip classes per action family — the drawing's five chip styles. */
 export const AUDIT_TONE: Record<AuditTone, string> = {
@@ -58,7 +60,8 @@ export function TenantAuditLogModal({
   const exportCsv = useAuditExport();
   const [exporting, setExporting] = useState(false);
   const [exportError, setExportError] = useState<string | undefined>();
-  const unavailable = t('admin.nav.unavailable');
+  const comingSoon = useComingSoon();
+  const [category, setCategory] = useState('all');
 
   const applySearch = () => {
     const next = query.trim();
@@ -118,7 +121,10 @@ export function TenantAuditLogModal({
                   {t('admin.auditModal.tenant')} {tenant.tenant_name} ({t('admin.auditModal.code')}{' '}
                   <span className="text-cos-op-on-surface">{tenant.tenant_code}</span>) •{' '}
                   {t('admin.auditModal.node')}{' '}
-                  <span className="text-cos-cyan">{tenant.dedicated_db_host ?? NO_DATA}</span>
+                  {/* COMING SOON — MODALS.auditNode when the tenant has no host of its own */}
+                  <span className="text-cos-cyan">
+                    {tenant.dedicated_db_host ?? MODALS.auditNode}
+                  </span>
                 </p>
               </div>
             </div>
@@ -158,14 +164,16 @@ export function TenantAuditLogModal({
               <span aria-hidden="true" className="h-4 w-px bg-cos-op-outline-variant/40" />
               <span className="flex items-center gap-2">
                 <span className="text-cos-op-outline">{t('admin.auditModal.security')}</span>
+                {/* COMING SOON — TENANT_AUDIT.securityFlagged */}
                 <span className="flex items-center gap-1 font-bold text-cos-op-gate">
-                  <AdminIcon name="warning" size={14} /> {NO_DATA}
+                  <AdminIcon name="warning" size={14} /> {TENANT_AUDIT.securityFlagged}
                 </span>
               </span>
               <span aria-hidden="true" className="h-4 w-px bg-cos-op-outline-variant/40" />
               <span className="flex items-center gap-2">
                 <span className="text-cos-op-outline">{t('admin.auditModal.active')}</span>
-                <span className="font-bold text-cos-op-success">{NO_DATA}</span>
+                {/* COMING SOON — TENANT_AUDIT.active */}
+                <span className="font-bold text-cos-op-success">{TENANT_AUDIT.active}</span>
               </span>
             </div>
             <form
@@ -194,13 +202,19 @@ export function TenantAuditLogModal({
               </label>
               <label>
                 <span className="sr-only">{t('admin.auditModal.category')}</span>
+                {/* COMING SOON — no event categories exist on an audit row; a category opens the dialog (D18) */}
                 <select
-                  defaultValue="all"
+                  value={category}
+                  onChange={(e) => {
+                    if (e.target.value === 'all') return;
+                    comingSoon(e.target.selectedOptions[0]?.text ?? e.target.value);
+                    setCategory('all');
+                  }}
                   className="rounded border border-cos-op-outline-variant/50 bg-cos-op-container-lowest px-2.5 py-1 font-mono text-[12px] text-cos-op-on-surface focus:border-cos-cyan focus:outline-none focus:ring-0"
                 >
                   <option value="all">{t('admin.auditModal.cat.all')}</option>
                   {(['privileged', 'security', 'tier', 'quota'] as const).map((c) => (
-                    <option key={c} value={c} disabled title={unavailable}>
+                    <option key={c} value={c}>
                       {t(`admin.auditModal.cat.${c}`)}
                     </option>
                   ))}
@@ -223,22 +237,34 @@ export function TenantAuditLogModal({
             )}
           </div>
 
-          <footer className="flex items-center justify-between border-t border-cos-op-outline-variant/30 bg-cos-op-detail-tabs p-4 font-mono text-[12px]">
-            <div className="flex items-center gap-2 text-cos-op-outline">
+          <footer className="flex items-center justify-between gap-4 border-t border-cos-op-outline-variant/30 bg-cos-op-detail-tabs p-4 font-mono text-[12px]">
+            <div className="flex min-w-0 flex-wrap items-center gap-4">
               {exportError ? (
                 <span role="alert" className="text-cos-op-error">
                   {exportError}
                 </span>
               ) : (
-                <span>
-                  {t('admin.auditModal.page')} {cursors.length}
-                  {logs.isSuccess
-                    ? ` • ${logs.data.rows.length} ${t('admin.auditModal.rows')}`
-                    : ''}
-                </span>
+                // COMING SOON — TENANT_AUDIT.integrity / compliance / retention
+                <>
+                  <span className="flex items-center gap-2">
+                    <span aria-hidden="true" className="h-2 w-2 rounded-full bg-cos-op-success" />
+                    <span className="text-cos-op-outline">{t('admin.auditModal.integrity')}</span>
+                    <span className="font-bold text-white">{TENANT_AUDIT.integrity}</span>
+                  </span>
+                  <span aria-hidden="true" className="text-cos-op-outline/40">
+                    |
+                  </span>
+                  <span className="text-cos-op-outline">
+                    {TENANT_AUDIT.compliance}{' '}
+                    <span className="text-cos-cyan">{TENANT_AUDIT.retention}</span>
+                  </span>
+                </>
               )}
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex shrink-0 items-center gap-3">
+              <span className="text-cos-op-outline">
+                {t('admin.auditModal.page')} {cursors.length}
+              </span>
               <Button
                 onPress={() => setCursors((c) => c.slice(0, -1))}
                 isDisabled={cursors.length <= 1 || logs.isFetching}
@@ -256,6 +282,20 @@ export function TenantAuditLogModal({
               >
                 {t('admin.list.next')}
               </Button>
+              {/* COMING SOON — no hash chain to trigger or verify (D18) */}
+              <Button
+                onPress={() => comingSoon(t('admin.auditModal.trigger'))}
+                className="rounded border border-cos-op-outline-variant/40 bg-cos-op-container-high px-4 py-2 font-mono text-[12px] font-semibold text-cos-op-on-surface outline-none transition-colors hover:bg-cos-op-container-highest data-[focus-visible]:ring-2 data-[focus-visible]:ring-cos-cyan"
+              >
+                {t('admin.auditModal.trigger')}
+              </Button>
+              <Button
+                onPress={() => comingSoon(t('admin.auditModal.verify'))}
+                className="flex items-center gap-1.5 rounded bg-cos-blue px-4 py-2 font-mono text-[12px] font-semibold text-white shadow-lg shadow-cos-blue/20 outline-none transition-colors hover:bg-cos-op-mark-confirm-hover data-[focus-visible]:ring-2 data-[focus-visible]:ring-cos-cyan"
+              >
+                <AdminIcon name="verified" size={16} />
+                {t('admin.auditModal.verify')}
+              </Button>
             </div>
           </footer>
         </Dialog>
@@ -267,7 +307,7 @@ export function TenantAuditLogModal({
 /** The ledger table both audit screens draw: newest first, justification in full. */
 export function AuditTable({ rows, showTenant }: { rows: AuditLogRow[]; showTenant: boolean }) {
   const { t, locale } = useI18n();
-  const columns = showTenant ? 6 : 5;
+  const columns = showTenant ? 7 : 6;
   return (
     <table className="w-full border-collapse text-left text-[12px]">
       <thead className="sticky top-0 z-10 border-b border-cos-op-outline-variant/40 bg-cos-op-container-low font-mono text-[11px] uppercase tracking-wider text-cos-op-outline">
@@ -292,6 +332,9 @@ export function AuditTable({ rows, showTenant }: { rows: AuditLogRow[]; showTena
           <th scope="col" className="px-4 py-2.5 font-semibold">
             {t('admin.auditModal.col.metadata')}
           </th>
+          <th scope="col" className="px-4 py-2.5 text-right font-semibold">
+            {t('admin.auditModal.col.hash')}
+          </th>
         </tr>
       </thead>
       <tbody className="divide-y divide-cos-op-outline-variant/20 font-mono text-[11.5px]">
@@ -302,7 +345,7 @@ export function AuditTable({ rows, showTenant }: { rows: AuditLogRow[]; showTena
             </td>
           </tr>
         ) : (
-          rows.map((row) => {
+          rows.map((row, index) => {
             const tone = auditTone(row.action);
             return (
               <tr
@@ -348,6 +391,13 @@ export function AuditTable({ rows, showTenant }: { rows: AuditLogRow[]; showTena
                   ) : (
                     NO_DATA
                   )}
+                </td>
+                {/* COMING SOON — TENANT_AUDIT.hashes: no hash chain; the drawn digests repeat over the rows */}
+                <td className="whitespace-nowrap px-4 py-3 text-right">
+                  <span className="inline-flex items-center gap-1 text-[11px] text-cos-op-outline">
+                    {drawnFor(TENANT_AUDIT.hashes, index)}
+                    <AdminIcon name="verified" size={12} />
+                  </span>
                 </td>
               </tr>
             );

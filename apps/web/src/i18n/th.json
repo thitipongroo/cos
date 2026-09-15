@@ -191,7 +191,6 @@
       "offline": "เชื่อมต่อ API ไม่ได้",
       "checking": "กำลังเชื่อมต่อ"
     },
-    "noDataSource": "ยังไม่มีแหล่งข้อมูล",
     "pulse": {
       "title": "สถานะคลัสเตอร์",
       "emqx": "EMQX Broker:",
@@ -214,8 +213,6 @@
     },
     "markModal": {
       "title": "ทำเครื่องหมายผู้เช่าเป็นสัญญาองค์กร",
-      "stage": "ขั้น: ตรวจสอบ",
-      "privilege": "สิทธิ์สูง",
       "target": "ผู้เช่าเป้าหมาย:",
       "targetInstance": "อินสแตนซ์เฉพาะเป้าหมาย",
       "checklist": "รายการตรวจสอบเงื่อนไข",
@@ -242,7 +239,6 @@
       "unmetTag": "ไม่ผ่าน",
       "safetyNotice": "ผ่านเงื่อนไขครบ 3 ข้อ การอนุมัติจะเริ่มการแยก schema ของผู้เช่าอัตโนมัติและกระบวนการแยกข้อมูลเข้มงวดตาม GDPR/PDPA",
       "transition": "ยืนยันการเปลี่ยนสถานะ",
-      "operator": "SUPER_OPERATOR",
       "shift": "การเปลี่ยนสถาปัตยกรรมการแยกข้อมูล",
       "currentTier": "ระดับปัจจุบัน",
       "pooled": "ฐานข้อมูลรวมหลายผู้เช่า",
@@ -305,7 +301,6 @@
     },
     "deactivateModal": {
       "title": "ระงับผู้เช่า",
-      "tag": "การเปลี่ยนสถานะวิกฤต",
       "lead": "การดำเนินการทำลายสิทธิ์สูง",
       "impactA": "การระงับผู้เช่านี้จะเพิกถอน",
       "impactSessions": "เซสชันผู้ใช้ที่ใช้งานอยู่กว่า 120 รายการ",
@@ -330,11 +325,11 @@
       "footnote": "การดำเนินการนี้ถูกบันทึกถาวรใน Global Audit Trail และย้อนกลับอัตโนมัติไม่ได้หากไม่มีการอนุมัติแบบสองกุญแจของ Platform Operator",
       "interlock": "Safety Interlock:",
       "engaged": "เปิดใช้งาน",
-      "confirm": "ยืนยัน..."
+      "confirm": "ยืนยัน",
+      "cancel": "ยกเลิก"
     },
     "detail": {
       "title": "รายละเอียดผู้เช่าและคอนโซลการจัดสรร",
-      "tier": "ระดับ",
       "tabs": "ส่วนของคอนโซล",
       "kpi": {
         "cluster": "สถานะคลัสเตอร์ฐานข้อมูล",
@@ -378,7 +373,7 @@
         "path": "Vault AppRole Token Path",
         "pathNote": "ระยะเวลา Lease:",
         "fingerprint": "ลายนิ้วมือใบรับรอง mTLS (SHA-256)",
-        "fingerprintNote": "ตรวจสอบโดย:"
+        "fingerprintNote": "Validated by"
       },
       "policy": {
         "title": "นโยบายการแยกข้อมูล",
@@ -405,7 +400,7 @@
         "deactivate": "ระงับผู้เช่า"
       },
       "footer": {
-        "mesh": "Cluster Mesh:"
+        "mesh": "Cluster Mesh"
       },
       "close": "ปิด",
       "terminal": "เปิด Telemetry Terminal"
@@ -455,7 +450,6 @@
         "disk": "ดิสก์และ IOPS",
         "latency": "Latency"
       },
-      "noSource": "ยังไม่มีแหล่งข้อมูลรายการโหนด — ระบบยังไม่อ่านข้อมูลโหนดของคลัสเตอร์",
       "foot": {
         "mesh": "Mesh:",
         "provisioned": "จัดสรรแล้ว:",
@@ -505,13 +499,9 @@
       "provision": "NEW DEDICATED DB",
       "kpi": {
         "compute": "ความจุการประมวลผล",
-        "computeUnit": "Headroom",
         "iops": "หน่วยความจำและ IOPS",
-        "iopsUnit": "IOPS รวม",
         "storage": "พื้นที่จัดเก็บและ Vault Backup",
-        "storageUnit": "จัดสรร",
-        "ha": "HA MULTI-AZ REPLICATION",
-        "haUnit": "ซิงก์แล้ว"
+        "ha": "HA MULTI-AZ REPLICATION"
       },
       "filters": "ตัวกรอง Fleet",
       "filter": {
@@ -556,10 +546,6 @@
       "next": "ถัดไป",
       "row": {
         "gate": "สถานะ: รออนุมัติการย้ายข้อมูล (§34.5)",
-        "port": "พอร์ต:",
-        "standby": "Standby:",
-        "config": "CONFIG",
-        "metrics": "METRICS",
         "terminal": "Terminal SSH Gate"
       },
       "envelope": {
@@ -615,16 +601,17 @@
         "check": {
           "provisioned": "จัดสรรโหนด Dedicated แล้ว (จากสถานะการทำงาน)",
           "migrated": "รัน Schema Migration บนโหนดเฉพาะแล้ว (จากสถานะการทำงาน)",
-          "snapshot": "Snapshot สำรองแบบแก้ไขไม่ได้:",
+          "snapshot": "Snapshot สำรองแบบแก้ไขไม่ได้",
           "replication": "Replication Stream Lag:"
         },
         "checksum": "Root Checksum:",
         "abort": "ยกเลิก",
-        "approve": "อนุมัติและเริ่ม"
+        "approve": "อนุมัติและเริ่ม",
+        "ready": "READY_FOR_COMMENCE"
       },
       "ledger": {
         "title": "บันทึกงานย้ายข้อมูล",
-        "encrypted": "เข้ารหัสขณะจัดเก็บ:",
+        "encrypted": "เข้ารหัสขณะจัดเก็บ",
         "filter": "กรองตามสถานะ",
         "all": "ทุกสถานะ",
         "gate": "รออนุมัติ",
@@ -640,8 +627,10 @@
           "stopped": "ตรวจสอบ",
           "unknown": "ดู"
         },
-        "cdc": "PostgreSQL Logical Replication (CDC):",
-        "tls": "TLS 1.3 Strict Encrypted:"
+        "cdc": "PostgreSQL Logical Replication (CDC)",
+        "tls": "TLS 1.3 Strict Encrypted",
+        "enforced": "Ledger Enforced",
+        "waiting": "WAITING_APPROVAL"
       },
       "col": {
         "job": "Job ID",
@@ -682,8 +671,12 @@
         "actor": "ผู้ดำเนินการ",
         "tenant": "ผู้เช่า",
         "target": "การกระทำและเป้าหมาย",
-        "metadata": "ข้อมูลประกอบ"
-      }
+        "metadata": "ข้อมูลประกอบ",
+        "hash": "Hash"
+      },
+      "integrity": "INTEGRITY:",
+      "trigger": "Trigger",
+      "verify": "Verify"
     },
     "audit": {
       "crumb1": "ADMIN_CONSOLE",
@@ -735,14 +728,15 @@
       "reset": "ล้างตัวกรอง",
       "ledger": "บันทึกตามลำดับเวลาที่แก้ไขไม่ได้",
       "sort": "เรียง: เวลาล่าสุดก่อน",
-      "encrypted": "เข้ารหัสขณะจัดเก็บ:",
+      "encrypted": "เข้ารหัสขณะจัดเก็บ",
       "col": {
         "time": "เวลา",
         "operator": "ผู้ดำเนินการ (อีเมลและชื่อ)",
         "tenant": "ผู้เช่าเป้าหมาย",
         "action": "การกระทำและประเภทเหตุการณ์",
         "justification": "เหตุผลกำกับของผู้ดำเนินการ (§6.7)",
-        "actions": "การดำเนินการ"
+        "actions": "การดำเนินการ",
+        "hash": "ตราความถูกต้อง / Hash"
       },
       "details": "ดูรายละเอียด",
       "detail": {
@@ -755,7 +749,10 @@
       "of": "จาก",
       "entries": "รายการ",
       "page": "หน้า",
-      "prev": "ก่อนหน้า"
+      "prev": "ก่อนหน้า",
+      "verify": "ตรวจสอบความถูกต้องของบันทึก",
+      "rootChain": "ROOT_CHAIN:",
+      "hashRoot": "Hash Root ของบันทึก:"
     },
     "settings": {
       "loading": "กำลังโหลดการตั้งค่าระบบ",
@@ -843,12 +840,11 @@
         "versionConflict": "มีผู้บันทึกการตั้งค่าหลังจากที่คุณเปิดหน้านี้ จึงยังไม่ได้บันทึก โหลดใหม่เพื่อดูฉบับล่าสุด — การแก้ไขที่ยังไม่บันทึกจะถูกแทนที่",
         "counts": "มีตัวเลขที่ไม่ใช่จำนวนเต็มหรือเกินขอบเขต แก้ช่องที่ไฮไลต์แล้วบันทึกอีกครั้ง"
       },
-      "footer": "ทุกการเปลี่ยนแปลงที่บันทึกจะถูกเก็บใน Global Audit Log พร้อมเหตุผล",
       "lastCommit": "LAST COMMIT:"
     },
     "centralPrices": {
       "title": "Central Price Register",
-      "template": "ดาวน์โหลดเทมเพลต CSV",
+      "template": "ดาวน์โหลด CSV",
       "import": "Import Central Prices",
       "register": "ตารางทะเบียนราคากลางมาตรฐาน",
       "showing": "แสดงผล",
@@ -898,7 +894,8 @@
           "SUCCEEDED": "Succeeded",
           "FAILED": "Failed",
           "NOT_CONFIGURED": "Not configured"
-        }
+        },
+        "outcomeDrawn": "HTTP 200 OK · Payload Signature Verified"
       },
       "failed": {
         "title": "Failed-Sync State",
@@ -909,7 +906,10 @@
         "log": "ดู Log เชิงเทคนิค",
         "retry": "Force Retry Sync",
         "impact": "ผลกระทบ:",
-        "fallback": "Fallback:"
+        "fallback": "Fallback:",
+        "retriesDrawn": "พยายามเชื่อมต่อใหม่อัตโนมัติแล้ว 5 ครั้ง (Max Retries Reached)",
+        "impactDrawn": "ผลกระทบ: ระบบใช้ข้อมูลราคากลางฉบับแคชล่าสุด (Cached Baseline 25/09/2026) อัตโนมัติ เพื่อไม่ให้กระทบการคำนวณ BOQ ของโครงการ",
+        "fallbackDrawn": "In-Memory Cache Active"
       },
       "importForm": {
         "file": "ไฟล์ราคา",
@@ -932,6 +932,11 @@
         "fileTooLarge": "ไฟล์มีขนาดเกิน 5 MB",
         "importFailed": "นำเข้าไฟล์ไม่ได้ ไม่มีข้อมูลถูกบันทึก — ตรวจคอลัมน์เทียบกับเทมเพลต"
       }
+    },
+    "comingSoon": {
+      "title": "เร็ว ๆ นี้",
+      "body": "ยังไม่พร้อมใช้งาน",
+      "close": "ปิด"
     }
   },
   "auth": {

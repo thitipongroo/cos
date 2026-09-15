@@ -2,10 +2,10 @@
 
 **Date:** 2026-09-05
 **Amended:** 2026-09-07 — extended to the two screens the replaced mockup set added; 2026-09-08 —
-the FINANCE set, then a drawn confidence on a deterministic card
+the FINANCE set, then a drawn confidence on a deterministic card; 2026-09-15 — the web SYSTEM_ADMIN panel
 **Status:** Accepted
 **Deciders:** Product Owner
-**Tags:** mobile | data
+**Tags:** mobile | web | data
 
 ---
 
@@ -999,3 +999,56 @@ it. That is the same rule the register has always had, stated from the other end
 Counted, not recalled:
 `grep -c "^export const [A-Z_0-9]* = figure(" apps/mobile/src/lib/mockupFigures.ts`.
 One hundred and one, less `CRM_DRAWER_COUNTS`.
+
+## Amendment — 2026-09-15: the web SYSTEM_ADMIN panel, and a second register
+
+**Decided by:** Product Owner, 2026-09-15, revision R19 ("ข้อมูลที่ไม่มีแหล่งจริง: ให้วาดตาม Stitch และ comment ไว้ใน
+code ว่า coming soon"), with four answers taken the same day:
+
+| #   | Decision                                                                                                                   |
+| --- | -------------------------------------------------------------------------------------------------------------------------- |
+| D16 | Every SYSTEM_ADMIN screen, the shell included: a value with no source shows the drawing's value, not `—`                   |
+| D17 | Tables whose drawing has example rows draw those rows too — Cluster nodes, Dedicated DB Fleet instances, Migrations ledger |
+| D18 | A control with no process behind it is enabled and opens a "coming soon" dialog, instead of being disabled                 |
+| D19 | A drawn value that names a tenant or a host takes the open tenant's own code or host                                       |
+
+This reverses the web panel's own earlier rule. Revision R17 (decisions D5–D7) built the eleven Stitch screens with
+every unsourced figure reading `—` and every unbacked control disabled, and R18 kept the integrity, hash and Merkle
+elements of both audit logs off the screen altogether. All of that is now drawn.
+
+### The three obligations carry over, adapted to the web
+
+1. **One module.** `apps/web/src/lib/adminDrawnFigures.ts` holds every drawn value — one export per screen (`SHELL`,
+   `TENANT_LIST`, `DETAIL`, `TENANT_AUDIT`, `MODALS`, `CLUSTER`, `FLEET`, `MIGRATIONS`, `GLOBAL_AUDIT`, `SETTINGS`)
+   plus `DRAWN_COPY_KEYS`, the i18n keys of drawn SENTENCES (QM-3 keeps sentences in the locale files, so the
+   register lists their keys instead of their text; a unit test fails if a listed key is missing in `en` or `th`).
+   Every use site carries a `COMING SOON` comment naming the entry it reads. It is a separate register from
+   `apps/mobile/src/lib/mockupFigures.ts` on purpose: the two apps share no module, and the web one is not built from
+   the `figure()` helper.
+2. **No drawn value is presented as an AI output.** Nothing on these screens is one; the obligation holds unchanged.
+3. **The provenance note is amended.** `docs/screens/web/README.md` says the SYSTEM_ADMIN frames now mix real and
+   drawn values, and where the line runs.
+
+### Where the line runs
+
+- **A real value always wins.** Counts, tenant fields, provisioning runs, audit rows, prices, sync runs and saved
+  settings stay real. A drawn value never replaces one, and a real state that contradicts a drawn claim keeps the
+  claim off: a sync run with an error code shows the code, not "HTTP 200 OK"; with no failed run the failed-sync
+  details read `—`.
+- **Drawn rows follow the real rows** (D17), only under the "all" filter on the last page, and are never counted in a
+  real figure. Where a real row has an unsourced column, the drawing's example values repeat over the real rows in
+  drawn order (`drawnFor`).
+- **Tables whose rows are records get no drawn rows** — the Tenant List, both audit logs and the Central Price
+  Register. A drawn audit entry or price would read as a record the platform holds. Their unsourced columns are
+  drawn (the audit Hash column, the VALID chip).
+- **Nothing on screen says "coming soon" except the D18 dialog** (`apps/web/src/components/admin/ComingSoon.tsx`),
+  the same terms as the mobile rule of 2026-09-08.
+- **A citation error is not missing data.** The Global Audit Log drawing cites §16.4 for the mandatory justification;
+  the mandate is §6.7 (`docs/specifications/06-rbac-permission-matrix.md`), and §6.7 stays on screen.
+
+### What it costs
+
+The captures in `docs/screens/web/SYSTEM_ADMIN/` now show a ledger hash root, a Merkle proof, Vault leases, node CPU
+and eight cluster nodes that do not exist. The case against is the one this record opened with, and it applies with
+more force here: the audit log is the screen an auditor reads, and a drawn `VALID` beside a real justification is a
+claim about a real row. The product owner decided with that named.

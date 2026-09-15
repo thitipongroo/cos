@@ -16,11 +16,13 @@
  *     Reset to defaults puts the "nothing set" document in the form; nothing is saved until Save.
  *   A VALUE IS NEVER INVENTED — every field starts blank ("not set") until an operator saves one; the drawing's
  *     figures (72 h, 5 retries, 250 cap, 50 GB …) are not defaults. The drawn select options are choices, not values.
- *   `—` — ACTIVE: n/n FEEDS (nothing connects to a gateway), the shared-tier "Active Window" chip, CLUSTER region,
- *     "All Isolated & Healthy", "PgBouncer Transaction Mode", SECURITY AUDIT STATE and its W3C line.
- *   CHANGED — the footer says every save is audited, which is true, in place of "Security Protocol Tier-4 Isolation
- *     Enforced", which nothing here establishes. The drawing's justification banner cites DESIGN.md §16.4; the
- *     justification mandate is §6.7, and no citation is drawn on the banner.
+ *   COMING SOON — drawn as Stitch draws it, from lib/adminDrawnFigures.ts `SETTINGS` (R19, D16; reversing D10's `—`
+ *     and its reworded footer): ACTIVE: 2/2 FEEDS (nothing connects to a gateway), the shared-tier "Active Window" chip,
+ *     the CLUSTER region, "All Isolated & Healthy", "PgBouncer Transaction Mode", SECURITY AUDIT STATE with its W3C
+ *     line, and the footer "Security Protocol Tier-4 Isolation Enforced. Audit Trail Active." — nothing here establishes
+ *     any of it. Every save is still audited with its justification (ADR-108).
+ *   CORRECTED — the drawing's justification banner cites DESIGN.md §16.4; the justification mandate is §6.7, and no
+ *     citation is drawn on the banner.
  *   STORED ONLY — nothing reads these values to change behaviour (ADR-108). R18 (the drawing as listed 2026-09-15):
  *     its CONFIG chip is gone and the header is only the two buttons, so the page no longer shows the stored version
  *     or a stored-only line under the header (product-owner decision D15); ADR-108 and the footer's audit line say it.
@@ -50,6 +52,7 @@ import { ApiError } from '../../lib/api/client';
 import { formatDateTime, localeTag } from '../../lib/format';
 import { LoadingState } from '../ui/LoadingState';
 import { AdminIcon } from './AdminIcon';
+import { SETTINGS } from '../../lib/adminDrawnFigures';
 import { NO_DATA } from './AdminShell';
 
 const PANEL = 'overflow-hidden rounded-md border border-cos-v3-slate-700 bg-cos-v3-slate-800';
@@ -283,7 +286,8 @@ export function SystemSettings() {
                 </h2>
               </div>
               <span className="rounded border border-cos-v3-green-600/30 bg-cos-v3-green-600/10 px-2 py-0.5 font-mono text-[11px] font-semibold uppercase text-cos-v3-green-600">
-                {t('admin.settings.gateways.active')} {NO_DATA}
+                {/* COMING SOON — SETTINGS.activeFeeds */}
+                {t('admin.settings.gateways.active')} {SETTINGS.activeFeeds}
               </span>
             </div>
             <div className="space-y-4 p-5">
@@ -489,8 +493,9 @@ export function SystemSettings() {
                       className={`${BARE} w-full text-[11px] text-cos-v3-slate-400`}
                     />
                   </label>
+                  {/* COMING SOON — SETTINGS.sharedWindowChip */}
                   <span className="rounded border border-cos-v3-green-600/30 bg-cos-v3-green-600/10 px-2 py-0.5 font-mono text-[12px] font-semibold text-cos-v3-green-600">
-                    {NO_DATA}
+                    {SETTINGS.sharedWindowChip}
                   </span>
                 </div>
 
@@ -588,7 +593,8 @@ export function SystemSettings() {
               </h2>
             </div>
             <span className="font-mono text-[11px] text-cos-v3-slate-400">
-              {t('admin.settings.limits.cluster')} {NO_DATA}
+              {/* COMING SOON — SETTINGS.cluster */}
+              {t('admin.settings.limits.cluster')} {SETTINGS.cluster}
             </span>
           </div>
           <div className="p-5">
@@ -636,7 +642,8 @@ export function SystemSettings() {
                 </div>
                 <div className="mt-1 flex items-center gap-1 text-[11px] text-cos-v3-green-600">
                   <AdminIcon name="check" size={14} />
-                  <span>{NO_DATA}</span>
+                  {/* COMING SOON — SETTINGS.fleetHealth */}
+                  <span>{SETTINGS.fleetHealth}</span>
                 </div>
               </div>
               <div className="rounded border border-cos-v3-slate-700 bg-cos-v3-slate-900 p-3.5">
@@ -661,14 +668,18 @@ export function SystemSettings() {
                     {t('admin.settings.limits.perTenant')}
                   </span>
                 </label>
-                <div className="mt-1 text-[11px] text-cos-v3-slate-400">{NO_DATA}</div>
+                {/* COMING SOON — SETTINGS.poolMode */}
+                <div className="mt-1 text-[11px] text-cos-v3-slate-400">{SETTINGS.poolMode}</div>
               </div>
               <div className="rounded border border-cos-v3-slate-700 bg-cos-v3-slate-900 p-3.5">
                 <div className="text-[11px] font-bold uppercase text-cos-v3-slate-400">
                   {t('admin.settings.limits.audit')}
                 </div>
-                <div className="mt-1 text-[20px] font-bold text-cos-v3-green-600">{NO_DATA}</div>
-                <div className="mt-1 text-[11px] text-cos-v3-slate-400">{NO_DATA}</div>
+                {/* COMING SOON — SETTINGS.auditState / auditLayer */}
+                <div className="mt-1 text-[20px] font-bold text-cos-v3-green-600">
+                  {SETTINGS.auditState}
+                </div>
+                <div className="mt-1 text-[11px] text-cos-v3-slate-400">{SETTINGS.auditLayer}</div>
               </div>
             </div>
 
@@ -787,7 +798,8 @@ export function SystemSettings() {
         <div className="flex items-center justify-between border-t border-cos-v3-slate-700 pb-6 pt-2 text-[12px] text-cos-v3-slate-400">
           <div className="flex items-center gap-2">
             <AdminIcon name="lock" size={16} className="text-cos-v3-green-600" />
-            <span>{t('admin.settings.footer')}</span>
+            {/* COMING SOON — SETTINGS.footer */}
+            <span>{SETTINGS.footer}</span>
           </div>
           <div className="font-mono text-[11px]">
             {t('admin.settings.lastCommit')}{' '}

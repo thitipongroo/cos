@@ -13,12 +13,13 @@
  *     today; OPERATOR JUSTIFICATIONS as the share of tenant actions in range that carry one; HIGH-PRIVILEGE MUTATIONS
  *     over the last 7 × 24 h. "Page N of M" and "of N" only while no filter but the date range is set — the summary
  *     counts by range alone, so any other filter has no total.
- *   NOT DRAWN — LEDGER: W3C_VC_ACTIVE, STRICT COMPLIANCE, Verify Ledger Integrity, ROOT_CHAIN, the INTEGRITY SEAL / HASH
- *     column, the VALID chips and the hash-root / MERKLE PROOF callout: audit_logs carries no hash chain or credential.
- *     The page-number buttons: a cursor cannot jump to page 238157.
- *   `—` — AUDIT_DAEMON version, ENCLAVE, DATA INTEGRITY SEAL, the "Cryptographically Sealed" line, the KMS cipher.
- *   DISABLED — the event-tier select past "All": nothing assigns a tier to an audit row; "Gateway & e-GP Config": no
- *     recorded action yet (ADR-061's adapter is a stub).
+ *   COMING SOON — drawn as Stitch draws it, from lib/adminDrawnFigures.ts `GLOBAL_AUDIT` (R19, D16; reversing D4's
+ *     "not drawn"): the AUDIT_DAEMON version and ENCLAVE, the "Cryptographically Sealed" line, the DATA INTEGRITY SEAL
+ *     card, ROOT_CHAIN, the KMS cipher, a VALID chip beside each justification, the INTEGRITY SEAL / HASH column (six
+ *     drawn digests repeating over the real rows) and the hash-root / MERKLE PROOF callout. audit_logs carries no hash
+ *     chain or credential.
+ *   COMING SOON (D18) — Verify Ledger Integrity, every event tier past "All" and "Gateway & e-GP Config" open the
+ *     "coming soon" dialog. The page-number buttons stay the cursor's Prev / Next: a cursor cannot jump to page 238157.
  *   R18 (the drawing as listed 2026-09-15): its page title and both tags are gone; the heading is screen-reader only.
  *   CORRECTED — the drawing cites §16.4 for the mandatory justification; §16.4 is "Cross-functional Enterprise Flow".
  *     The mandate is §6.7 (06-rbac-permission-matrix.md, "enforced for every tenant action in §20.4"), so §6.7 is cited.
@@ -47,10 +48,12 @@ import {
   useGlobalAuditLogs,
 } from '../../lib/api/adminAudit';
 import { ApiError } from '../../lib/api/client';
+import { GLOBAL_AUDIT, drawnFor } from '../../lib/adminDrawnFigures';
 import { formatDate, formatTime, localeTag } from '../../lib/format';
 import { LoadingState } from '../ui/LoadingState';
 import { AdminIcon, type AdminIconName } from './AdminIcon';
 import { NO_DATA } from './AdminShell';
+import { useComingSoon } from './ComingSoon';
 
 const CARD =
   'relative flex flex-col justify-between overflow-hidden rounded-md bg-cos-op-container-low p-3 shadow-sm';
@@ -88,7 +91,8 @@ export function GlobalAuditLog() {
   const [open, setOpen] = useState<string | null>(null);
   const [exportError, setExportError] = useState<string | undefined>();
   const [exporting, setExporting] = useState(false);
-  const unavailable = t('admin.nav.unavailable');
+  const comingSoon = useComingSoon();
+  const [tier, setTier] = useState('all');
   const number = new Intl.NumberFormat(localeTag(locale));
 
   const range = { from: fromDay || undefined, to: toDay ? exclusiveTo(toDay) : undefined };
@@ -170,14 +174,15 @@ export function GlobalAuditLog() {
         </nav>
         <div className="flex items-center gap-3">
           <span className="flex items-center gap-1 text-cos-op-on-surface-variant">
-            <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-cos-op-outline" />
-            {t('admin.audit.daemon')} {NO_DATA}
+            {/* COMING SOON — GLOBAL_AUDIT.daemon / enclave */}
+            <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-cos-op-success" />
+            {t('admin.audit.daemon')} {GLOBAL_AUDIT.daemon}
           </span>
           <span aria-hidden="true" className="text-cos-op-outline">
             |
           </span>
           <span className="text-cos-op-outline">
-            {t('admin.audit.enclave')} {NO_DATA}
+            {t('admin.audit.enclave')} {GLOBAL_AUDIT.enclave}
           </span>
         </div>
       </div>
@@ -219,6 +224,15 @@ export function GlobalAuditLog() {
               </Menu>
             </Popover>
           </MenuTrigger>
+          {/* COMING SOON — no ledger to verify (D18) */}
+          <button
+            type="button"
+            onClick={() => comingSoon(t('admin.audit.verify'))}
+            className="flex h-9 items-center gap-2 rounded bg-cos-op-primary-container px-3 text-op-tiny font-semibold uppercase tracking-wider text-cos-op-on-primary-container shadow-md transition-all hover:bg-cos-v3-blue-600 active:scale-95"
+          >
+            <AdminIcon name="verified_user" size={16} className="text-white" />
+            <span className="text-white">{t('admin.audit.verify')}</span>
+          </button>
         </div>
       </div>
       {exportError ? (
@@ -247,8 +261,9 @@ export function GlobalAuditLog() {
               </span>
             ) : null}
           </div>
+          {/* COMING SOON — GLOBAL_AUDIT.sealedLine */}
           <CardFoot icon="check_circle" iconClass="text-cos-op-success">
-            {NO_DATA}
+            {GLOBAL_AUDIT.sealedLine}
           </CardFoot>
         </div>
         <div className={CARD}>
@@ -298,12 +313,19 @@ export function GlobalAuditLog() {
             icon="gavel"
             iconClass="text-cos-op-secondary"
           />
+          {/* COMING SOON — GLOBAL_AUDIT.seal */}
           <div className="mb-1 flex items-baseline gap-2">
-            <span className="text-op-h1 font-bold text-cos-op-on-surface">{NO_DATA}</span>
+            <span className="text-op-h1 font-bold text-cos-op-on-surface">
+              {GLOBAL_AUDIT.seal.value}
+            </span>
+            <span className="rounded bg-cos-op-container-highest px-1 text-op-tiny font-semibold uppercase text-cos-op-secondary">
+              {GLOBAL_AUDIT.seal.chip}
+            </span>
           </div>
-          <CardFoot icon="link" iconClass="text-cos-op-secondary">
-            {NO_DATA}
-          </CardFoot>
+          <div className="flex items-center gap-1 truncate text-op-tiny text-cos-op-outline">
+            <AdminIcon name="link" size={14} className="shrink-0 text-cos-op-secondary" />
+            <span className="truncate">{GLOBAL_AUDIT.seal.did}</span>
+          </div>
         </div>
       </section>
 
@@ -333,14 +355,20 @@ export function GlobalAuditLog() {
         </label>
         <label className="relative shrink-0">
           <span className="sr-only">{t('admin.audit.tier')}</span>
+          {/* COMING SOON — nothing assigns a tier to an audit row; a tier opens the dialog (D18) */}
           <select
-            defaultValue="all"
+            value={tier}
+            onChange={(e) => {
+              if (e.target.value === 'all') return;
+              comingSoon(e.target.selectedOptions[0]?.text ?? e.target.value);
+              setTier('all');
+            }}
             className={`${CONTROL} w-[210px] cursor-pointer appearance-none truncate pl-2 pr-7`}
           >
             <option value="all">{t('admin.audit.tiers.all')}</option>
-            {(['critical', 'high', 'standard', 'system'] as const).map((tier) => (
-              <option key={tier} value={tier} disabled title={unavailable}>
-                {t(`admin.audit.tiers.${tier}`)}
+            {(['critical', 'high', 'standard', 'system'] as const).map((key) => (
+              <option key={key} value={key}>
+                {t(`admin.audit.tiers.${key}`)}
               </option>
             ))}
           </select>
@@ -355,18 +383,19 @@ export function GlobalAuditLog() {
           <select
             value={category}
             onChange={(e) => {
-              setCategory(e.target.value as AuditActionFilterKey);
+              const key = e.target.value as AuditActionFilterKey;
+              // COMING SOON — a category with no recorded action opens the dialog (D18)
+              if (auditActionFor(key) === undefined && key !== 'all') {
+                comingSoon(e.target.selectedOptions[0]?.text ?? key);
+                return;
+              }
+              setCategory(key);
               restart();
             }}
             className={`${CONTROL} w-[210px] cursor-pointer appearance-none truncate pl-2 pr-7`}
           >
             {AUDIT_ACTION_FILTERS.map((f) => (
-              <option
-                key={f.key}
-                value={f.key}
-                disabled={f.action === null}
-                title={f.action === null ? unavailable : undefined}
-              >
+              <option key={f.key} value={f.key}>
                 {t(`admin.audit.categories.${f.key}`)}
               </option>
             ))}
@@ -423,11 +452,17 @@ export function GlobalAuditLog() {
             <span className="font-semibold text-cos-op-on-surface">{t('admin.audit.ledger')}</span>
             <span aria-hidden="true">•</span>
             <span>{t('admin.audit.sort')}</span>
+            <span aria-hidden="true">•</span>
+            {/* COMING SOON — GLOBAL_AUDIT.rootChain */}
+            <span className="font-mono text-cos-op-secondary">
+              {t('admin.audit.rootChain')} {GLOBAL_AUDIT.rootChain}
+            </span>
           </div>
           <div className="flex items-center gap-2">
             <AdminIcon name="lock" size={16} className="text-cos-op-success" />
             <span className="font-medium text-cos-op-on-surface-variant">
-              {t('admin.audit.encrypted')} {NO_DATA}
+              {/* COMING SOON — GLOBAL_AUDIT.encrypted */}
+              {t('admin.audit.encrypted')} {GLOBAL_AUDIT.encrypted}
             </span>
           </div>
         </div>
@@ -460,6 +495,9 @@ export function GlobalAuditLog() {
                   <th scope="col" className="min-w-[340px] px-3 py-2.5 font-semibold">
                     {t('admin.audit.col.justification')}
                   </th>
+                  <th scope="col" className="w-40 px-3 py-2.5 font-semibold">
+                    {t('admin.audit.col.hash')}
+                  </th>
                   <th scope="col" className="w-28 px-3 py-2.5 text-right font-semibold">
                     {t('admin.audit.col.actions')}
                   </th>
@@ -468,15 +506,16 @@ export function GlobalAuditLog() {
               <tbody className="text-op-tiny">
                 {rows.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="px-3 py-10 text-center text-cos-op-outline">
+                    <td colSpan={7} className="px-3 py-10 text-center text-cos-op-outline">
                       {t('admin.auditModal.empty')}
                     </td>
                   </tr>
                 ) : (
-                  rows.map((row) => (
+                  rows.map((row, index) => (
                     <LedgerRow
                       key={row.log_id}
                       row={row}
+                      hash={drawnFor(GLOBAL_AUDIT.hashes, index)!}
                       open={open === row.log_id}
                       onToggle={() => setOpen(open === row.log_id ? null : row.log_id)}
                     />
@@ -544,6 +583,28 @@ export function GlobalAuditLog() {
           </nav>
         </div>
       </div>
+
+      {/* COMING SOON — GLOBAL_AUDIT.hashRoot / merkle: no ledger hash root exists */}
+      <div className="mt-3 flex flex-col justify-between gap-2 rounded-md bg-cos-op-container-lowest p-3 shadow-sm sm:flex-row sm:items-center">
+        <div className="flex min-w-0 items-center gap-2">
+          <AdminIcon name="shield" size={20} className="shrink-0 text-cos-op-secondary" />
+          <div className="flex min-w-0 flex-col text-op-tiny">
+            <div className="flex flex-wrap items-center gap-1">
+              <span className="font-semibold uppercase text-cos-op-outline">
+                {t('admin.audit.hashRoot')}
+              </span>
+              <span className="truncate font-mono text-cos-op-on-surface">
+                {GLOBAL_AUDIT.hashRoot}
+              </span>
+            </div>
+            <span className="text-cos-op-on-surface-variant">{GLOBAL_AUDIT.hashRootNote}</span>
+          </div>
+        </div>
+        <span className="flex shrink-0 items-center gap-1 rounded bg-cos-op-container-highest px-2 py-1 text-op-tiny font-semibold text-cos-op-success">
+          <AdminIcon name="task_alt" size={14} />
+          {GLOBAL_AUDIT.merkle}
+        </span>
+      </div>
     </div>
   );
 }
@@ -586,10 +647,13 @@ function CardFoot({
 
 function LedgerRow({
   row,
+  hash,
   open,
   onToggle,
 }: {
   row: AuditLogRow;
+  /** COMING SOON — the drawn digest for this row (GLOBAL_AUDIT.hashes). */
+  hash: string;
   open: boolean;
   onToggle: () => void;
 }) {
@@ -633,12 +697,24 @@ function LedgerRow({
         </td>
         <td className="whitespace-normal px-3 py-2">
           {row.justification ? (
-            <span className="break-words text-cos-op-on-surface">
-              &ldquo;{row.justification}&rdquo;
+            <span className="flex items-start gap-2">
+              {/* COMING SOON — GLOBAL_AUDIT.validChip: nothing validates a justification */}
+              <span className="mt-0.5 shrink-0 rounded bg-cos-op-container-high px-1.5 font-mono text-[10px] font-semibold uppercase text-cos-op-success">
+                {GLOBAL_AUDIT.validChip}
+              </span>
+              <span className="break-words text-cos-op-on-surface">
+                &ldquo;{row.justification}&rdquo;
+              </span>
             </span>
           ) : (
             <span className="text-cos-op-outline">{NO_DATA}</span>
           )}
+        </td>
+        <td className="px-3 font-mono">
+          <div className="flex items-center gap-1 text-cos-op-secondary">
+            <AdminIcon name="verified" size={14} className="text-cos-op-success" />
+            <span>{hash}</span>
+          </div>
         </td>
         <td className="px-3 text-right">
           <button
@@ -653,7 +729,7 @@ function LedgerRow({
       </tr>
       {open ? (
         <tr className="bg-cos-op-container-lowest">
-          <td colSpan={6} className="px-3 py-3">
+          <td colSpan={7} className="px-3 py-3">
             <dl className="grid grid-cols-[max-content_1fr] gap-x-4 gap-y-1 whitespace-normal font-mono text-op-tiny">
               <dt className="text-cos-op-outline">{t('admin.audit.detail.resource')}</dt>
               <dd className="break-all text-cos-op-on-surface">

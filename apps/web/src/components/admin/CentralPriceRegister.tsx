@@ -13,11 +13,15 @@
  *     The sync panel is GET /sync-status: the newest run's time, kind, outcome, error code and record counts, and the
  *     adapter's name and whether it is configured. The failed-sync panel is the newest FAILED run; Force Retry Sync is
  *     POST /sync with a justification — today it records NOT_CONFIGURED (D9), and the panel says so.
- *   `—` — the drawn "HTTP 200 OK · Payload Signature Verified", the retry count, the impact line's cached baseline and
- *     "Fallback: In-Memory Cache Active": nothing in the platform does any of it.
+ *   COMING SOON — drawn as Stitch draws it (R19, D16; reversing D8's `—`), copy keys listed in
+ *     lib/adminDrawnFigures.ts DRAWN_COPY_KEYS: "HTTP 200 OK · Payload Signature Verified" under a SUCCEEDED outcome
+ *     that carries no error code; the retry sentence, the impact line's cached baseline and "Fallback: In-Memory Cache
+ *     Active" in the failed-sync panel while a failed run exists. Nothing in the platform signs payloads, retries, or
+ *     falls back to a cache. A real value wins (rule 1): an error code replaces the outcome line, and with no failed
+ *     run the panel's own "none" state stands, so the drawn failure details read `—`.
  *   R18 (the drawing as listed 2026-09-15): its page title is gone (the heading is screen-reader only) and the outcome
  *     reads "Succeeded" — product-owner decision D14: the outcome labels are English in both locales, as drawn.
- *   DISABLED — ดู Log เชิงเทคนิค: there is no log view.
+ *   COMING SOON (D18) — ดู Log เชิงเทคนิค opens the "coming soon" dialog: there is no log view.
  *   ADDED — Previous / Next under the table (the drawing shows five rows of 24,810 and no way to the rest), and the
  *     empty state of the failed-sync panel when no run has failed.
  */
@@ -49,6 +53,7 @@ import { formatDateTime, localeTag } from '../../lib/format';
 import { LoadingState } from '../ui/LoadingState';
 import { AdminIcon, type AdminIconName } from './AdminIcon';
 import { NO_DATA } from './AdminShell';
+import { useComingSoon } from './ComingSoon';
 
 const SECTION = 'overflow-hidden rounded-md border border-cos-v3-slate-700 bg-cos-v3-slate-800';
 const WELL = 'rounded-[6px] border border-cos-v3-slate-700 bg-cos-v3-slate-900 p-3';
@@ -326,7 +331,11 @@ export function CentralPriceRegister() {
                 <div className="text-[16px] font-bold">{NO_DATA}</div>
               )}
               <div className="mt-1 font-mono text-[12px] text-cos-v3-slate-400">
-                {lastRun?.error_code ?? NO_DATA}
+                {/* COMING SOON — sync.outcomeDrawn: nothing verifies a payload signature */}
+                {lastRun?.error_code ??
+                  (lastRun?.outcome === 'SUCCEEDED'
+                    ? t('admin.centralPrices.sync.outcomeDrawn')
+                    : NO_DATA)}
               </div>
             </div>
             <div className={WELL}>
@@ -373,6 +382,7 @@ function FailedSync({
   onRetry: () => void;
 }) {
   const { t } = useI18n();
+  const comingSoon = useComingSoon();
   return (
     <section
       aria-labelledby="cp-failed"
@@ -403,15 +413,18 @@ function FailedSync({
             <div className="text-[12px] text-cos-v3-slate-400">
               {t('admin.centralPrices.failed.at')}{' '}
               {failure ? formatDateTime(locale, failure.finished_at) : NO_DATA} ·{' '}
-              {t('admin.centralPrices.failed.retries')} {NO_DATA}
+              {/* COMING SOON — failed.retriesDrawn: nothing retries a failed sync */}
+              {failure
+                ? t('admin.centralPrices.failed.retriesDrawn')
+                : `${t('admin.centralPrices.failed.retries')} ${NO_DATA}`}
             </div>
           </div>
           <div className="flex shrink-0 items-center gap-2">
+            {/* COMING SOON — no technical log view (D18) */}
             <button
               type="button"
-              disabled
-              title={t('admin.nav.unavailable')}
-              className="flex h-[36px] cursor-not-allowed items-center gap-1.5 rounded border border-cos-v3-slate-700 bg-cos-v3-slate-900 px-3 text-[12px] font-medium text-cos-v3-slate-400 opacity-60"
+              onClick={() => comingSoon(t('admin.centralPrices.failed.log'))}
+              className="flex h-[36px] items-center gap-1.5 rounded border border-cos-v3-slate-700 bg-cos-v3-slate-900 px-3 text-[12px] font-medium text-cos-v3-slate-400 hover:bg-cos-v3-slate-700 hover:text-cos-white"
             >
               <AdminIcon name="terminal" size={16} />
               <span>{t('admin.centralPrices.failed.log')}</span>
@@ -429,12 +442,16 @@ function FailedSync({
         <div className="flex items-center justify-between rounded-[6px] border border-cos-v3-slate-700/80 bg-cos-v3-slate-900 p-3 text-[12px]">
           <div className="flex items-center gap-2">
             <AdminIcon name="warning" size={18} className="text-cos-v3-amber-500" />
+            {/* COMING SOON — failed.impactDrawn / fallbackDrawn: no cached baseline, no fallback */}
             <span className="text-cos-v3-slate-400">
-              {t('admin.centralPrices.failed.impact')} {NO_DATA}
+              {failure
+                ? t('admin.centralPrices.failed.impactDrawn')
+                : `${t('admin.centralPrices.failed.impact')} ${NO_DATA}`}
             </span>
           </div>
           <span className="font-mono text-cos-v3-slate-400">
-            {t('admin.centralPrices.failed.fallback')} {NO_DATA}
+            {t('admin.centralPrices.failed.fallback')}{' '}
+            {failure ? t('admin.centralPrices.failed.fallbackDrawn') : NO_DATA}
           </span>
         </div>
       </div>

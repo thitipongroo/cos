@@ -126,7 +126,8 @@ Captured 2026-09-15, full page at a 1440×900 viewport, signed in as the local d
 version of it and substituted global tokens for its colours.
 
 `03`–`13` were added 2026-09-15 (revision R17) by the same script. Modals are filled in and NOT submitted; pages are
-full-height. A figure the platform has no source for reads `—` (product-owner decisions D5–D7). The R17 dev data is
+full-height. A figure the platform has no source for read `—` in R17 (product-owner decisions D5–D7); since R19 it
+shows the drawing's value — see "Drawn without a data source" below. The R17 dev data is
 also written through the panel: `thai_rail_infra` (ENTERPRISE, no run — `03`, `04`), the drawing's five central
 prices imported from a CSV after one file with the wrong columns (a real FAILED run) and one sync (the e-GP adapter is
 a stub: NOT_CONFIGURED), and the drawing's values typed into System Settings and saved once. Nothing reads those
@@ -159,8 +160,9 @@ URI password masked, as drawn (product-owner decision D13).
 - **Two small tenants share the realm `construction-os`.** That was impossible until migration
   `20260914000001`: the second one failed on `UNIQUE (keycloak_realm)`. The name column's second line is
   each tenant's Keycloak realm.
-- **Every figure is computed from the list endpoints.** Seven tenants, six active, one inactive; two
-  dedicated hosts; one run at the gate. "+N this week" counts tenants created in the last 7 × 24 h.
+- **Every count is computed from the list endpoints.** Seven tenants, six active, one inactive; two
+  dedicated hosts; one run at the gate. "+N this week" counts tenants created in the last 7 × 24 h. The figures
+  with no source are the drawing's (below).
 - **The STATUS column reads the run** (decision 3): at the gate `Transit`, in progress `Pending`, otherwise the
   tenant's `is_active`. A row whose run is in progress offers only View and Audit Log; a tenant with any run is
   not offered Mark as Contracted again.
@@ -175,6 +177,8 @@ URI password masked, as drawn (product-owner decision D13).
   Tenant button; `/admin/tenants/new` shows the list with it open. `02` is the modal filled in for `siam_infra_eng`,
   not submitted, with a URL typed into the URI field so its valid state shows; the viewport is made tall enough that
   the modal's form does not scroll. While it is open the panel underneath is dimmed and no gate banner is drawn.
+- **The migration-gate banner is in `01` only** (product owner 2026-09-15): it belongs to the Tenant List page, so
+  no modal frame (`02`–`07`) and no other page (`08`–`13`) shows it.
 - **Not drawn, still announced** (revision R12, product-owner decision 2026-09-15): the Tenant List title and
   its "Tenant created:" line are screen-reader only. The buttons beside the title stay right-aligned; the new
   tenant's row stays highlighted.
@@ -190,12 +194,17 @@ URI password masked, as drawn (product-owner decision D13).
 
 ### Drawn without a data source
 
-Laid out as drawn and showing `—` or disabled, because nothing in the repository is a source for them yet
-(product-owner decision): the EMQX and PG Fleet chips, the Platform Compute card, Avg Gate Time, the four
-Cluster Pulse rows (whose `LIVE` badge is not drawn), the sidebar's version and Central Prices period, the Cluster
-Zone, Import Central Prices, the View Detail and Audit Log row actions, and six of the seven sidebar entries. Their
-sources are drafted in spec §20.4.6 for round 2. The disabled row actions keep the drawing's colour; they do not
-respond and show a not-allowed cursor.
+**These frames mix real and drawn values** (revision R19, product-owner decisions D16–D19, 2026-09-15; ADR-099
+amendment of that date). Every value the platform has no source for shows the drawing's own value, copied from
+`apps/web/src/lib/adminDrawnFigures.ts` — nothing on screen marks it. The line: counts, tenant fields, provisioning
+runs, audit rows, prices, sync runs and saved settings are real and always win; everything else on the panel is
+drawn. That includes the Cluster Pulse card and its `LIVE` badge, the sidebar's version and Central Prices period,
+the EMQX / PG Pool chips, Platform Compute, Avg Gate Time and Cluster Zone (`01`), every telemetry, Vault and
+compliance figure in `06` (the Vault path with the open tenant's code), the SECURITY / ACTIVE figures and Hash column
+in `05`, the hash chain, VALID chips and Merkle callout in `11`, the sync sub-lines in `12` and the status lines and
+footer in `13`. The rows after the real ones in `08` (all eight nodes), `09` (six instances) and `10` (five ledger
+jobs) are the drawing's; the audit logs and the price register carry no drawn row. A control with no process behind
+it opens a "coming soon" dialog. The sources are still drafted in spec §20.4.6.
 
 ### What is NOT in these frames, and why
 
