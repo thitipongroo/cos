@@ -1528,31 +1528,51 @@
       "empty": "Select a project and generate a report",
       "filter": {
         "all": "All",
-        "attention": "Needs attention",
-        "onTrack": "On track"
+        "onTrack": "On track",
+        "critical": "Critical"
       },
       "reanalyse": "Re-analyse",
-      "brief": "Strategic brief",
       "metricSaving": "Cumulative saving",
       "metricDelivery": "Delivery forecast",
       "metricSafety": "Safety index",
-      "exportPdf": "Export portfolio PDF",
+      "exportPdf": "Export Portfolio PDF",
       "summaries": "Project summaries",
       "sortedByRisk": "Sorted by risk",
       "band": {
-        "critical": "Critical",
-        "monitor": "Monitor",
-        "secure": "Secure"
+        "critical": "CRITICAL",
+        "monitor": "MONITOR",
+        "secure": "SECURE"
       },
-      "aiFlag": "AI flag:",
-      "budgetGap": "+{value}% budget gap",
+      "aiFlag": "AI Flag:",
+      "budgetGap": "+{value}% Budget Gap",
       "budgetHeadroom": "{value}% under budget",
-      "utilized": "Budget: {value}% utilised",
-      "recommendations": "Strategic recommendations",
+      "recommendations": "Strategic Recommendations",
       "noRecommendations": "The report offered no recommendations.",
-      "acknowledge": "Acknowledge & direct",
+      "acknowledge": "Acknowledge & Direct",
       "noProjects": "No projects to report on",
-      "fullReport": "Full report"
+      "fullReport": "Full report",
+      "briefTitle": "Portfolio status summary",
+      "window": "{days}d Summary",
+      "chipSources": "SOURCES: {value} SITES",
+      "budgetLabel": "Budget:",
+      "utilizedValue": "{value}% Utilized",
+      "ahead": "+{value}% Ahead",
+      "delayRisk": "-{value}% Delay Risk",
+      "rowConf": "Conf: {value}%",
+      "rowSummary": {
+        "secure": "Level 24 structure is on schedule, disbursements match the BOQ, and there are no critical incidents.",
+        "monitor": "Bridge beam work at P-14 is at risk of a 3-day weather delay. AI suggests adding a night shift to recover.",
+        "critical": "The rebar milestone claim is 8.4% over its sub-budget, and invoice #INV-9921 is in dispute and under review."
+      },
+      "fallback": {
+        "briefLead": "Across all {total} projects, on track:",
+        "briefCount": "{value, plural, one {# project} other {# projects}}",
+        "briefSchedule": ", at schedule risk:",
+        "briefBudget": "and over budget:",
+        "flag": "Recommends holding the next disbursement.",
+        "rec1": "Approve accelerating Metro Expressway within 48 hours to avoid the monsoon slowdown.",
+        "rec2": "Review the Oceanfront BOQ with the Procurement Manager before signing milestone #12."
+      }
     },
     "safety": {
       "intelligence": "Safety Intelligence",

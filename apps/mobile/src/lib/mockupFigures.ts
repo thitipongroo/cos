@@ -235,6 +235,66 @@ export const REPORT_PDF_EXPORT = figure(
     'and nothing renders a portfolio document at all',
 );
 
+// ADDED 2026-09-16 (revision R20, product-owner decisions D20–D26): the Report screen draws what the
+// drawing draws. COMING SOON, all of it. The words live in i18n (QM-3) under `exec.reports.*`; these
+// hold the shapes and the numbers.
+
+/** "7d Summary" at the brief's head — the window the drawing says the brief covers. */
+export const REPORT_BRIEF_WINDOW = figure(
+  7,
+  'a report window. `ExecutiveSummaryRequest` takes a project and nothing else, and the report ' +
+    'states no period it covers',
+);
+
+/**
+ * The drawing's brief paragraph — "14 projects, 11 on track, 2 at schedule risk, 1 over budget".
+ *
+ * A FALLBACK, NOT A SOURCE (D21), exactly like RISK_ALERT_FALLBACK: shown only while there is no
+ * report, and displaced entirely the moment `POST /ai/reports/executive-summary` answers.
+ */
+export const REPORT_BRIEF_FALLBACK = figure(
+  { total: 14, normal: 11, scheduleRisk: 2, overBudget: 1 },
+  'nothing to build — the executive summary already writes the brief. It has to be REACHABLE (see ' +
+    'RISK_ALERT_FALLBACK); these counts also describe a portfolio the report does not cover',
+);
+
+/**
+ * The brief's chips — CONF 98 % and SOURCES 14/14 SITES (D25). The drawing's third chip, MODEL
+ * LAYER-A/B, was removed by the product owner on 2026-09-17.
+ *
+ * READ ADR-098's AMENDMENT OF 2026-09-16 BEFORE TOUCHING THIS. SOURCES is a claim about WHAT
+ * PRODUCED a report — the one category ADR-098 kept off these screens — and the product owner
+ * directed it drawn on BOTH paths, beside a real report too. `confidence` is used on the drawn path
+ * only: a real report shows its own.
+ */
+export const REPORT_BRIEF_CHIPS = figure(
+  { confidence: 98, sources: '14/14' },
+  'a record of which sites a report read. `AiReport` carries none, and the gateway reports one ' +
+    'project per call',
+);
+
+/**
+ * Each project row's trend figures, by band (D22): SECURE "+1.2% Ahead", MONITOR "-2.8% Delay Risk"
+ * and "Conf: 94%". The row's paragraph is keyed by the same band in i18n
+ * (`exec.reports.rowSummary.*`). Utilisation and the budget gap beside them are REAL.
+ */
+export const REPORT_ROW_TRENDS = figure(
+  { aheadPct: 1.2, delayRiskPct: 2.8, confidence: 94 },
+  'a schedule variance per project and a per-project AI report. §32.12 progress is completion, not ' +
+    'a variance, and a report per row is one metered LLM call per project (§26)',
+);
+
+/**
+ * The drawing's AI flag and its two Strategic Recommendations — FINDINGS, shown on the drawn path
+ * only (D21). The values are i18n keys under `exec.reports.fallback`. The flag goes on the first
+ * CRITICAL row, where the drawing puts it.
+ */
+export const REPORT_FINDINGS_FALLBACK = figure(
+  { flag: 'flag', recommendations: ['rec1', 'rec2'] } as const,
+  'nothing to build — `risk_flags` and `recommendations` are real fields on the executive summary. ' +
+    'The gateway has to be REACHABLE (see RISK_ALERT_FALLBACK)',
+);
+
 // ── Alerts (02_alerts/02_ex_alerts) ──────────────────────────────────────────
 
 /**

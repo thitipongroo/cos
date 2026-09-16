@@ -11,8 +11,10 @@
 //                                    four <nav> labels changed and a byte-identical body
 //   03-Portfolio/01-ex-portfolio    search · four filter chips with real counts · the risk sort ·
 //                                    the summary strip · project cards with the health matrix
-//   04-Report/01-ex-report          the AI strategic brief · the three drawn metrics · project
-//                                    summaries · the model's own strategic recommendations
+//   04-Report/01-ex-report          the AI strategic brief with its CONF / SOURCES / MODEL chips · the
+//                                    three drawn metrics · project summaries with their paragraph, trend
+//                                    and full-report link · strategic recommendations (R20, 2026-09-16:
+//                                    the drawing's own findings when the gateway returns no report)
 //   05-Drawer/01-ex-navigation-drawer
 //                                   the role's drawer — an OVERLAY opened from the TopBar, not a
 //                                   fifth tab; its rows come from the §6.4 matrix via drawerLinks.ts

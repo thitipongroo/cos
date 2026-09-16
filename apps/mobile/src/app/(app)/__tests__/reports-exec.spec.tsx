@@ -11,6 +11,11 @@
 // from the verified token, the attribution of the generation to a real user, one generation per
 // mount, and the refusal to render a non-string summary.
 //
+// REBUILT AGAIN 2026-09-16 (revision R20, product-owner decisions D20–D26): the screen draws what the
+// drawing draws, and a report that does not arrive falls to the drawing's own findings rather than a
+// failure message. What is pinned below is the line between the two paths — the drawn content never
+// sits beside a real report, and the report's own row never carries a drawn finding.
+//
 // THE ONE REGRESSION WORTH NAMING. The old screen distinguished a 503 — the Phase 11 LLM stub, i.e.
 // "not yet" — from a real failure, and said so in different words. This screen reports one failure
 // message, the shared `insight.failed`, because it now reads its report through the same helpers as
@@ -57,6 +62,8 @@ const PROJECTS = [
     status: 'ACTIVE',
   },
   { project_id: 'proj-2', project_code: 'PRJ-2', project_name: 'Harbour Works', status: 'ACTIVE' },
+  { project_id: 'proj-3', project_code: 'PRJ-3', project_name: 'Canal Bridge', status: 'ACTIVE' },
+  { project_id: 'proj-4', project_code: 'PRJ-4', project_name: 'Depot Yard', status: 'ACTIVE' },
 ];
 
 /** A full `/analytics/executive` row — the screen reads every one of these fields. */
@@ -100,7 +107,14 @@ describe('ReportsScreen (EXECUTIVE)', () => {
     client.get.mockReset();
     client.post.mockReset();
     projectsApi.getMyProjects.mockReset();
-    client.get.mockResolvedValue([execRow('proj-1', 62, 0), execRow('proj-2', 118, 1)]);
+    // proj-1 SECURE (the report's subject) · proj-2 CRITICAL (over 100%) · proj-3 MONITOR (at risk)
+    // · proj-4 SECURE — one row of every band, and a SECURE row that is not the subject.
+    client.get.mockResolvedValue([
+      execRow('proj-1', 62, 0),
+      execRow('proj-2', 118, 1),
+      execRow('proj-3', 80, 1),
+      execRow('proj-4', 50, 0),
+    ]);
     projectsApi.getMyProjects.mockResolvedValue(PROJECTS);
     client.post.mockResolvedValue(report());
     useAuthStore.setState({
@@ -198,14 +212,128 @@ describe('ReportsScreen (EXECUTIVE)', () => {
     expect(getByTestId('exec-reports-prose')).not.toHaveTextContent(/object Object/);
   });
 
-  it('reports a failed generation instead of leaving the card blank', async () => {
+  it("draws the drawing's brief when the generation fails, and never names a project for it", async () => {
+    // D21: no report falls to the drawn path. The source line belongs to a real report (D26) — the
+    // drawn paragraph describes no project this screen asked about.
     client.post.mockRejectedValue(new Error('gateway down'));
+
+    const { getByTestId, queryByTestId } = await renderScreen();
+
+    await waitFor(() =>
+      expect(getByTestId('exec-reports-prose')).toHaveTextContent(/Across all 14 projects/),
+    );
+    expect(getByTestId('exec-reports-prose')).toHaveTextContent(/11 projects/);
+    // ICU plural (QM-3): the drawn "1 โครงการ" must not read "1 projects" in English.
+    expect(getByTestId('exec-reports-prose')).toHaveTextContent(/over budget: 1 project$/);
+    expect(queryByTestId('exec-reports-source')).toBeNull();
+    expect(getByTestId('exec-reports-confidence')).toHaveTextContent(/CONF: 98%/);
+  });
+
+  it("puts the drawing's flag on the first CRITICAL row and its two lines under recommendations", async () => {
+    client.post.mockRejectedValue(new Error('gateway down'));
+
+    const { getByTestId, getAllByTestId } = await renderScreen();
+
+    await waitFor(() => expect(getAllByTestId('exec-reports-flag')).toHaveLength(1));
+    expect(getByTestId('exec-reports-row-proj-2')).toHaveTextContent(
+      /holding the next disbursement/,
+    );
+    expect(getByTestId('exec-reports-recommendations')).toHaveTextContent(/Metro Expressway/);
+    expect(getByTestId('exec-reports-recommendations')).toHaveTextContent(/milestone #12/);
+    expect(getByTestId('exec-reports-acknowledge').props.accessibilityState.disabled).toBe(false);
+  });
+
+  it('never mixes the drawn findings with a real report', async () => {
+    const { getByTestId, getAllByTestId } = await renderScreen();
+
+    await waitFor(() =>
+      expect(getByTestId('exec-reports-prose')).toHaveTextContent(/two days ahead/),
+    );
+    expect(getByTestId('exec-reports-prose')).not.toHaveTextContent(/14 projects/);
+    expect(getByTestId('exec-reports-recommendations')).not.toHaveTextContent(/Metro Expressway/);
+    expect(getAllByTestId('exec-reports-flag')).toHaveLength(1);
+    expect(getByTestId('exec-reports-row-proj-2')).not.toHaveTextContent(/disbursement/);
+    expect(getByTestId('exec-reports-source')).toHaveTextContent(/Riverside Tower/);
+  });
+
+  it('draws SOURCES on both paths, CONF from the report when there is one, and no MODEL chip', async () => {
+    // D25. 0.87 so the real figure cannot be mistaken for the drawn 98.
+    client.post.mockResolvedValue(report({ confidence: 0.87 }));
 
     const { getByTestId } = await renderScreen();
 
     await waitFor(() =>
-      expect(getByTestId('exec-reports-prose')).toHaveTextContent(/not produced/i),
+      expect(getByTestId('exec-reports-confidence')).toHaveTextContent(/CONF: 87%/),
     );
+    expect(getByTestId('exec-reports-chips')).toHaveTextContent(/SOURCES: 14\/14 SITES/);
+    // Removed by the product owner on 2026-09-17.
+    expect(getByTestId('exec-reports-chips')).not.toHaveTextContent(/MODEL/);
+    expect(getByTestId('exec-reports-window')).toHaveTextContent('7d Summary');
+    // One title line — the "AI Strategic Brief" eyebrow was removed (product owner 2026-09-17).
+    expect(getByTestId('exec-reports-brief-title')).toHaveTextContent('Portfolio status summary');
+    expect(getByTestId('exec-reports-brief')).not.toHaveTextContent(/strategic brief/i);
+  });
+
+  it('shows the band word when the report carries no percentage', async () => {
+    client.post.mockResolvedValue(report({ confidence: null }));
+
+    const { getByTestId } = await renderScreen();
+
+    await waitFor(() => expect(client.post).toHaveBeenCalled());
+    await waitFor(() =>
+      expect(getByTestId('exec-reports-confidence')).not.toHaveTextContent(/CONF: 98%/),
+    );
+  });
+
+  it("keeps the report's own row free of drawn copy, and gives it the report's confidence", async () => {
+    const { getByTestId, queryByTestId } = await renderScreen();
+
+    await waitFor(() =>
+      expect(getByTestId('exec-reports-row-proj-1')).toHaveTextContent(/Conf: 98%/),
+    );
+    expect(queryByTestId('exec-reports-summary-proj-1')).toBeNull();
+    expect(getByTestId('exec-reports-row-proj-1')).toHaveTextContent(/38% under budget/);
+    expect(getByTestId('exec-reports-row-proj-1')).not.toHaveTextContent(/Ahead/);
+  });
+
+  it("draws each other row's paragraph and trend by its band, with the real utilisation", async () => {
+    // D22. SECURE: "+1.2% Ahead • Budget: 50% Utilized" (utilisation real). MONITOR: "-2.8% Delay
+    // Risk • Conf: 94%". CRITICAL: the real budget gap only.
+    const { getByTestId } = await renderScreen();
+
+    await waitFor(() => expect(getByTestId('exec-reports-row-proj-4')).toHaveTextContent(/Ahead/));
+    expect(getByTestId('exec-reports-row-proj-4')).toHaveTextContent(/\+1\.2% Ahead/);
+    expect(getByTestId('exec-reports-row-proj-4')).toHaveTextContent(/50% Utilized/);
+    expect(getByTestId('exec-reports-summary-proj-4')).toHaveTextContent(/Level 24/);
+    expect(getByTestId('exec-reports-row-proj-3')).toHaveTextContent(/-2\.8% Delay Risk/);
+    expect(getByTestId('exec-reports-row-proj-3')).toHaveTextContent(/Conf: 94%/);
+    expect(getByTestId('exec-reports-summary-proj-3')).toHaveTextContent(/P-14/);
+    expect(getByTestId('exec-reports-row-proj-2')).toHaveTextContent(/\+18% Budget Gap/);
+    expect(getByTestId('exec-reports-summary-proj-2')).toHaveTextContent(/INV-9921/);
+  });
+
+  it('keeps every card title on one line, cut with an ellipsis', async () => {
+    // Product owner 2026-09-17: a long project name must not push the card onto a second title line.
+    const { getByTestId } = await renderScreen();
+
+    await waitFor(() => expect(getByTestId('exec-reports-title-proj-2')).toBeTruthy());
+    const title = getByTestId('exec-reports-title-proj-2');
+    expect(title.props.numberOfLines).toBe(1);
+    expect(title.props.ellipsizeMode).toBe('tail');
+    expect(title.props.accessibilityLabel).toBe('Harbour Works');
+  });
+
+  it('marks a CRITICAL row that is not over budget with its headroom', async () => {
+    // CRITICAL comes from utilisation above 100 today, but the footer must not print a negative gap
+    // if the severity rule ever widens — the headroom wording is the branch that covers it.
+    client.get.mockResolvedValue([execRow('proj-1', 62, 0), execRow('proj-2', 100.4, 0)]);
+
+    const { getByTestId } = await renderScreen();
+
+    await waitFor(() =>
+      expect(getByTestId('exec-reports-row-proj-2')).toHaveTextContent(/CRITICAL/),
+    );
+    expect(getByTestId('exec-reports-row-proj-2')).toHaveTextContent(/0% under budget/);
   });
 
   it('prints EVERY recommendation the model gave, not the first', async () => {
@@ -241,28 +369,44 @@ describe('ReportsScreen (EXECUTIVE)', () => {
   it('sorts the summaries worst-first and bands them by the shared severity rule', async () => {
     const { getAllByTestId } = await renderScreen();
 
-    await waitFor(() => expect(getAllByTestId(/^exec-reports-row-/)).toHaveLength(2));
+    await waitFor(() => expect(getAllByTestId(/^exec-reports-row-/)).toHaveLength(4));
     const rows = getAllByTestId(/^exec-reports-row-/);
-    // proj-2 is over 100% utilisation, which `executiveSeverityOf` calls CRITICAL.
+    // proj-2 is over 100% utilisation, which `executiveSeverityOf` calls CRITICAL; proj-3 is at risk.
     expect(rows[0]).toHaveTextContent(/Harbour Works/);
-    expect(rows[0]).toHaveTextContent(/CRITICAL/i);
-    expect(rows[0]).toHaveTextContent(/18% budget gap/);
-    expect(rows[1]).toHaveTextContent(/Riverside Tower/);
-    expect(rows[1]).toHaveTextContent(/SECURE/i);
+    expect(rows[0]).toHaveTextContent(/CRITICAL/);
+    expect(rows[1]).toHaveTextContent(/Canal Bridge/);
+    expect(rows[1]).toHaveTextContent(/MONITOR/);
+    expect(rows[2]).toHaveTextContent(/SECURE/);
   });
 
-  it('filters to the band the tab asks for, and the two tabs cover every project', async () => {
-    // Every row is either "needs attention" or "on track" — a filter a project can hide behind is
-    // how something gets missed.
+  it('filters as drawn: Critical is CRITICAL only with its count, On track is SECURE with none', async () => {
+    // D24. MONITOR rows are in neither filter and are reached from All.
     const { getByTestId, getAllByTestId } = await renderScreen();
 
-    await waitFor(() => expect(getAllByTestId(/^exec-reports-row-/)).toHaveLength(2));
-    expect(getByTestId('exec-reports-tab-attention')).toHaveTextContent(/\(1\)/);
-    expect(getByTestId('exec-reports-tab-onTrack')).toHaveTextContent(/\(1\)/);
+    await waitFor(() => expect(getAllByTestId(/^exec-reports-row-/)).toHaveLength(4));
+    expect(getByTestId('exec-reports-tab-critical')).toHaveTextContent('Critical (1)');
+    expect(getByTestId('exec-reports-tab-onTrack')).toHaveTextContent('On track');
+    expect(getByTestId('exec-reports-tab-onTrack')).not.toHaveTextContent(/\(/);
+
+    await fireEvent.press(getByTestId('exec-reports-tab-critical'));
+    await waitFor(() => expect(getAllByTestId(/^exec-reports-row-/)).toHaveLength(1));
+    expect(getAllByTestId(/^exec-reports-row-/)[0]).toHaveTextContent(/Harbour Works/);
 
     await fireEvent.press(getByTestId('exec-reports-tab-onTrack'));
-    await waitFor(() => expect(getAllByTestId(/^exec-reports-row-/)).toHaveLength(1));
-    expect(getAllByTestId(/^exec-reports-row-/)[0]).toHaveTextContent(/Riverside Tower/);
+    await waitFor(() => expect(getAllByTestId(/^exec-reports-row-/)).toHaveLength(2));
+
+    await fireEvent.press(getByTestId('exec-reports-tab-all'));
+    await waitFor(() => expect(getAllByTestId(/^exec-reports-row-/)).toHaveLength(4));
+  });
+
+  it('says there is nothing to report when a filter leaves no rows', async () => {
+    client.get.mockResolvedValue([execRow('proj-1', 62, 0)]);
+
+    const { getByTestId } = await renderScreen();
+
+    await waitFor(() => expect(getByTestId('exec-reports-row-proj-1')).toBeTruthy());
+    await fireEvent.press(getByTestId('exec-reports-tab-critical'));
+    await waitFor(() => expect(getByTestId('exec-reports-empty')).toBeTruthy());
   });
 
   it('re-analyses on demand, which is the one control that does what it says', async () => {
@@ -278,7 +422,9 @@ describe('ReportsScreen (EXECUTIVE)', () => {
     // re-displayed and there is no page to open. Drawn because the drawing draws it (PO 2026-09-07).
     const { getAllByTestId, getByTestId } = await renderScreen();
 
-    await waitFor(() => expect(getAllByTestId(/^exec-reports-full-/)).toHaveLength(2));
+    await waitFor(() => expect(getAllByTestId(/^exec-reports-full-/)).toHaveLength(4));
+    // The words are back beside the chevron (D20).
+    expect(getByTestId('exec-reports-full-proj-1')).toHaveTextContent(/Full report/);
     await fireEvent.press(getByTestId('exec-reports-full-proj-1'));
 
     expect(client.post).toHaveBeenCalledTimes(1); // the report on mount, and nothing else

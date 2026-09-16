@@ -1,65 +1,66 @@
 // ExecReports — the EXECUTIVE half of /reports.
-// Implements mockup/mobile/08_executive/04_report/01_ex_report.
+// Implements mockup/mobile/08_executive/04_report/01_ex_report — the Stitch screen "Executive AI Reports - Mobile"
+// (project 5714703984410484001, screen 71ac4c0921794e28be039bf4daeae597; its HTML is byte-identical to the repo copy).
 //
 // A TAB AGAIN since 2026-09-07 (ADR-098 as amended): the replacement executive mockup set made
 // `04_report` the role's fourth tab. NO NEW ROUTE WAS ADDED FOR IT — the screen that drawing draws
 // is the AI executive summary `/reports` already rendered for this role, in a styled form, and two
 // routes for one screen is the mistake `dashboard` and `home` made.
 //
-// WHAT WAS HERE BEFORE was a project picker, a GENERATE button and a paragraph, in the STATIC LIGHT
-// palette. It is the last executive surface that had never been drawn.
+// REBUILT 2026-09-16 TO THE DRAWING (revision R20, product-owner decisions D20–D26). The 2026-09-07
+// build left several drawn things out; the product owner reversed that — "draw what Stitch draws" —
+// with exactly TWO exceptions, which stay off the screen:
+//   · the "Executive Reports" heading and its subtitle — on a TAB they repeat the label the bar shows
+//   · the `W47-LIVE` chip — a week number is computable, "LIVE" claims a data feed that does not exist
 //
 // WHY NOT `<PortfolioInsight />`, which wraps the very same endpoint. That component owns its report
 // internally and renders ONE card. This drawing spends the same report across THREE places — the
-// brief's prose, the CRITICAL row's AI flag, and the Strategic Recommendations list — so the screen
-// has to hold the report itself. That is a composition difference, not a styling one, which is the
-// case ADR-085 keeps separate; `<ExecRiskAlerts />` made the same call on 2026-09-05 for the same
-// reason. Every reading of the report goes through the SAME helpers the panel uses
+// brief's prose, the AI flag and the Strategic Recommendations list — so the screen has to hold the
+// report itself. Every reading of the report goes through the SAME helpers the panel uses
 // (`summaryText`, `confidenceBand`, `confidencePercent`, `recommendationList`), so the two surfaces
 // cannot disagree about what a report says.
 //
-// WHAT IS REAL.
-//   The brief's prose      `POST /ai/reports/executive-summary` — the model's own text, its own
-//                          confidence, through the shared helpers.
-//   Recommendations        `recommendations` on that report. The plan for this screen assumed they
-//                          would have to be drawn; they are a real field (api/ai.ts), so they are
-//                          the model's own advice and the section prints all of them rather than
-//                          the one line a dashboard panel shows.
-//   The AI flag            `risk_flags` on the same report, and it appears on ONE row — the project
-//                          the report is about. A flag copied onto every card would attribute a
-//                          finding to projects the model never looked at.
-//   Per-row confidence     the same report's confidence, on that same one row, for the same reason.
+// TWO PATHS, AND THEY NEVER MIX (D21).
+//   REAL — `POST /ai/reports/executive-summary` answered. The brief prose, its CONF, the AI flag and
+//          the recommendations are the model's own, and the flag and a per-row confidence appear on
+//          ONE row: the project the report is about. The "Source: project …" line names that
+//          project (D26), because the report covers one project and must not read as a portfolio
+//          statement.
+//   DRAWN  — no report (the gateway is unreachable, failed, or has not answered yet). The brief
+//          paragraph, the flag on the first CRITICAL row and the two recommendations are the
+//          drawing's own, kept in lib/mockupFigures.ts + i18n. The source line is not shown, as drawn.
+//   A report arriving displaces every drawn finding at once; nothing drawn is read on the real path.
+//
+// WHAT IS REAL on both paths.
 //   The three tabs         counts over `GET /analytics/executive` through `executiveSeverityOf`.
+//                          "วิกฤต (n)" is CRITICAL only (D24); "ตามแผน" is SECURE and carries no
+//                          count, as drawn; MONITOR rows are listed under the "ทั้งหมด" tab only.
 //   Row order              worst first, by the same severity rank the risk feed sorts on.
 //   Budget utilisation     `utilizationPct`, and the gap above 100 that the drawing calls a
 //                          "Budget Gap".
-//   Re-analyse             generates the report again. It is the drawing's "วิเคราะห์ใหม่" and it
-//                          is the one control on this screen that does exactly what it says.
+//   Re-analyse             generates the report again — the one control that does exactly what it says.
 //
-// THE REPORT IS PER PROJECT AND THIS SCREEN IS A PORTFOLIO. `ExecutiveSummaryRequest` requires a
-// `project_id`, so the brief reports on the FIRST of the executive's projects and NAMES it — the
-// resolution `more.tsx` reached on 2026-08-11 and `ExecTasks` reached for the critical path. The
-// drawing's own copy ("ภาพรวมโครงการทั้งหมด 14 โครงการ") presents one report as a portfolio
-// statement, and that is the one thing this screen must not do.
+// COMING SOON — drawn as Stitch draws it (lib/mockupFigures.ts, ADR-099):
+//   the brief's title line and "7d Summary" · the three strategic metrics · the CONF chip on
+//   the drawn path (98 %) · the SOURCES chip on BOTH paths (D25 — this reverses ADR-098's "WHICH
+//   SYSTEMS" carve-out for this screen; see its amendment) · each row's summary paragraph by
+//   band and its trend figures ("+1.2% Ahead", "-2.8% Delay Risk", "Conf: 94%") (D22) · each row's
+//   contract number and location.
+// COMING SOON — actions with no process, each opening the "coming soon" dialog:
+//   Export Portfolio PDF (nothing renders a portfolio document) · "ดูรายงานฉบับเต็ม" (no full-report
+//   page; `/ai/reports/history` returns METADATA only) · Acknowledge & Direct (there is no
+//   acknowledgement endpoint, and master §Phase 10 makes this role READ-ONLY on mobile — it never writes).
 //
-// WHAT IS DRAWN (lib/mockupFigures.ts, ADR-099): the three strategic metrics under the brief, and
-// the "Export Portfolio PDF" button, which says so on tap (the `more.tsx` convention).
-//
-// WHAT THE DRAWING ASKS FOR THAT IS NOT HERE, each with its reason.
-//   A prose summary per row   The drawing writes a paragraph under every project. That is one AI
-//                             report per project — the fan-out `GET /tasks/portfolio-summary` was
-//                             built to avoid, and worse here because each one is a metered LLM call
-//                             (§26). The row carries the figures instead, and the prose stays where
-//                             one report can honestly cover it.
-//   "ดูรายงานฉบับเต็ม ›"       There is no full-report screen to open. `/ai/reports/history` returns
-//                             METADATA only — report_id, confidence, created_at — so nothing can
-//                             re-display a past report's text, which is also why `<InsightPanel />`
-//                             regenerates rather than fetching. A link to nothing is worse than no
-//                             link on a screen whose whole subject is a document.
-//   The "W47-LIVE" chip       A week number is computable; "LIVE" is a claim about a data feed that
-//                             does not exist. The heading carries neither rather than half of one.
-//   "Acknowledge & Direct"    DRAWN, and it must never write: master §Phase 10 makes this role
-//                             READ-ONLY on mobile, and there is no acknowledgement endpoint.
+// DIFFERENCES FROM THE DRAWING, AND WHY.
+//   The drawing's MODEL: LAYER-A/B chip and its "AI Strategic Brief" eyebrow are not drawn — both
+//   removed by the product owner on 2026-09-17.
+//   The Export button is a SOLID primary fill, not the drawn cyan→blue gradient (D23): gradients are
+//   prohibited wherever the signed-in app shows project data (spec §32.7).
+//   The report's subject row, when a real report exists, carries the real figures and the report's
+//   own confidence instead of the drawn paragraph and trend — a drawn finding may not sit on the
+//   one row a real model output describes.
+//   A per-row AI report is not generated: that is one metered LLM call per project (§26), the fan-out
+//   `GET /tasks/portfolio-summary` was built to avoid. The per-row paragraph is drawn instead (D22).
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { View, Text, ScrollView, Pressable, StyleSheet, Alert } from 'react-native';
@@ -84,6 +85,11 @@ import { countSettled, loadProgress } from '../lib/loadingState';
 import {
   PROJECT_CONTRACT_CODES,
   PROJECT_LOCATIONS,
+  REPORT_BRIEF_CHIPS,
+  REPORT_BRIEF_FALLBACK,
+  REPORT_BRIEF_WINDOW,
+  REPORT_FINDINGS_FALLBACK,
+  REPORT_ROW_TRENDS,
   REPORT_STRATEGIC_METRICS,
 } from '../lib/mockupFigures';
 import { fontFamily, plateRadius, radius, spacing, touchTarget, typography } from '../theme/tokens';
@@ -98,16 +104,14 @@ const BAND_LABEL: Record<ConfidenceBand, string> = {
 };
 
 /**
- * The three tabs, and the two bands they partition the portfolio into.
+ * The three tabs, as drawn: "ทั้งหมด / วิกฤต (n) / ตามแผน" (D20, D24).
  *
- * THE DRAWING LABELS THE MIDDLE TAB "วิกฤต" (critical) and this calls it "needs attention", because
- * `executiveSeverityOf` returns four values and only ONE of them is CRITICAL. Labelling the tab
- * critical while it also collected HIGH and MEDIUM would overstate them; leaving HIGH and MEDIUM out
- * of both tabs would make a project reachable from "all" alone, which is worse — a filter a project
- * can hide behind is how something gets missed.
+ * "วิกฤต" holds CRITICAL rows only, so its name and its count mean the same thing. MONITOR rows are
+ * in neither filter and are listed under "ทั้งหมด" only — the product owner's choice on 2026-09-16,
+ * taken with that named; the 2026-09-07 "needs attention" tab that also collected them is gone.
  */
-type Tab = 'all' | 'attention' | 'onTrack';
-const TABS: readonly Tab[] = ['all', 'attention', 'onTrack'];
+type Tab = 'all' | 'critical' | 'onTrack';
+const TABS: readonly Tab[] = ['all', 'critical', 'onTrack'];
 
 /** The badge the drawing puts at the top-right of each row. */
 type RowBand = 'critical' | 'monitor' | 'secure';
@@ -125,6 +129,9 @@ function bandTone(band: RowBand, p: Palette): string {
   return p.success;
 }
 
+/** A drawn percentage, printed the way the drawing prints it — one decimal place. */
+const oneDecimal = (value: number): string => value.toFixed(1);
+
 export function ExecReports(): React.JSX.Element {
   const t = useT();
   const p = usePalette();
@@ -137,7 +144,6 @@ export function ExecReports(): React.JSX.Element {
   const [rows, setRows] = useState<ExecutiveDashboardRow[]>([]);
   const [report, setReport] = useState<AiReport | null>(null);
   const [reporting, setReporting] = useState(false);
-  const [reportFailed, setReportFailed] = useState(false);
   const [tab, setTab] = useState<Tab>('all');
   const [loading, setLoading] = useState(true);
   // Rule 40 — one counted step. The analytics call cannot start until the project list answers (it
@@ -180,12 +186,11 @@ export function ExecReports(): React.JSX.Element {
   const subject = mine[0];
 
   const run = useCallback(async () => {
-    // The tenant the gateway trusts comes from the token it verifies; this claim only fills the
-    // required body field, and reading it from the same token is what keeps the two consistent.
+    // The tenant the gateway trusts comes out of the token it verifies; this claim only fills the
+    // required body field, and reading it off the same token is what keeps the two consistent.
     const tenantId = String(decodeJwtPayload(token ?? '')['tenant_id'] ?? '');
     if (subject === undefined || tenantId === '') return;
     setReporting(true);
-    setReportFailed(false);
     try {
       setReport(
         await generateExecutiveSummary({
@@ -197,8 +202,8 @@ export function ExecReports(): React.JSX.Element {
         }),
       );
     } catch {
+      // A failed generation falls to the DRAWN path (D21) — the card is never left blank.
       setReport(null);
-      setReportFailed(true);
     } finally {
       setReporting(false);
     }
@@ -227,38 +232,59 @@ export function ExecReports(): React.JSX.Element {
     [mine],
   );
 
-  const counts = useMemo(() => {
-    const tally: Record<Tab, number> = { all: rows.length, attention: 0, onTrack: 0 };
-    for (const row of rows) {
-      if (rowBand(row) === 'secure') tally.onTrack += 1;
-      else tally.attention += 1;
-    }
-    return tally;
-  }, [rows]);
+  const criticalCount = useMemo(
+    () => rows.filter((row) => rowBand(row) === 'critical').length,
+    [rows],
+  );
 
-  const shown = useMemo(() => {
-    const matched = rows.filter((row) => {
-      if (tab === 'all') return true;
-      const band = rowBand(row);
-      return tab === 'onTrack' ? band === 'secure' : band !== 'secure';
-    });
-    // A COPY, then sort: `rows` is state and sorting it in place would mutate what React is holding.
-    return [...matched].sort(
-      (a, b) =>
-        EXECUTIVE_SEVERITY_RANK[executiveSeverityOf(b)] -
-        EXECUTIVE_SEVERITY_RANK[executiveSeverityOf(a)],
-    );
-  }, [rows, tab]);
+  const sorted = useMemo(
+    () =>
+      // A COPY, then sort: `rows` is state and sorting it in place would mutate what React is holding.
+      [...rows].sort(
+        (a, b) =>
+          EXECUTIVE_SEVERITY_RANK[executiveSeverityOf(b)] -
+          EXECUTIVE_SEVERITY_RANK[executiveSeverityOf(a)],
+      ),
+    [rows],
+  );
 
-  const band = report === null ? null : confidenceBand(report.confidence, report.low_confidence);
+  const shown = useMemo(
+    () =>
+      sorted.filter((row) => {
+        if (tab === 'all') return true;
+        const band = rowBand(row);
+        return tab === 'critical' ? band === 'critical' : band === 'secure';
+      }),
+    [sorted, tab],
+  );
+
+  /** The drawn path is on whenever there is no report and none is being generated (D21). */
+  const drawn = report === null && !reporting;
   const percent = report === null ? null : confidencePercent(report.confidence);
   const prose = report === null ? null : summaryText(report.content);
-  const recommendations = report === null ? [] : recommendationList(report.content);
+  const realRecommendations = report === null ? [] : recommendationList(report.content);
   const flags = report === null ? [] : recommendationRisks(report.content);
+
+  const recommendations: string[] = drawn
+    ? REPORT_FINDINGS_FALLBACK.value.recommendations.map((key) => t(`exec.reports.fallback.${key}`))
+    : realRecommendations;
+  /** On the drawn path the drawing's flag sits on the first CRITICAL row, where the drawing puts it. */
+  const drawnFlagRowId = drawn
+    ? sorted.find((row) => rowBand(row) === 'critical')?.projectId
+    : undefined;
+
+  const confChip =
+    report === null
+      ? t('insight.conf', { value: REPORT_BRIEF_CHIPS.value.confidence })
+      : percent === null
+        ? t(BAND_LABEL[confidenceBand(report.confidence, report.low_confidence)])
+        : t('insight.conf', { value: percent });
 
   const soon = (labelKey: string): void => {
     Alert.alert(t(labelKey), t('more.comingSoon'));
   };
+
+  const counts = REPORT_BRIEF_FALLBACK.value;
 
   return (
     <ScrollView
@@ -266,30 +292,25 @@ export function ExecReports(): React.JSX.Element {
       style={{ backgroundColor: p.bg }}
       contentContainerStyle={styles.page}
     >
-      {/* NO SCREEN HEADING (PO 2026-09-07). "Executive reports" and its subtitle were the
-          drawing's own ScreenHeading block, and on a TAB they repeat the label the bar already
-          shows - the reader arrived here by pressing the word. The drawing's W47-LIVE chip lived on
-          that row and goes with it: a week number is computable, "LIVE" is a claim about a data
-          feed this platform does not have, and half a chip is worse than none. COMING SOON. */}
+      {/* NO SCREEN HEADING and NO W47-LIVE CHIP — the two exceptions D20 keeps (see the header). */}
       {/* Control bar — the tabs and the one control that does what it says. */}
       <View style={styles.controls}>
         <View style={styles.tabs}>
           {TABS.map((key) => {
             const active = tab === key;
+            const label = t(`exec.reports.filter.${key}`);
             return (
               <Pressable
                 key={key}
                 testID={`exec-reports-tab-${key}`}
                 accessibilityRole="button"
                 accessibilityState={{ selected: active }}
-                accessibilityLabel={t(`exec.reports.filter.${key}`)}
+                accessibilityLabel={label}
                 onPress={() => setTab(key)}
                 style={[styles.tab, active && { backgroundColor: p.primary }]}
               >
                 <Text style={[styles.tabText, active && { color: p.onPrimary }]}>
-                  {key === 'all'
-                    ? t('exec.reports.filter.all')
-                    : `${t(`exec.reports.filter.${key}`)} (${counts[key]})`}
+                  {key === 'critical' ? `${label} (${criticalCount})` : label}
                 </Text>
               </Pressable>
             );
@@ -316,21 +337,18 @@ export function ExecReports(): React.JSX.Element {
             <View style={styles.plate}>
               <MaterialIcons name="psychology" size={16} color={p.accent} />
             </View>
-            {/* ONE LINE, and it no longer says "AI" (PO 2026-09-07). The card's second line - the
-                drawing's own portfolio-status caption - said what the eyebrow above it already
-                said, and the eyebrow's "AI" was doing no work: the confidence chip beside it, the
-                source line at the foot and the prose itself all say what produced this. */}
+            {/* ONE TITLE LINE. The drawing's "AI Strategic Brief" eyebrow above it was removed by the
+                product owner on 2026-09-17; the drawing's own title stays. COMING SOON. */}
             <View style={styles.briefTitles}>
-              <Text style={styles.eyebrow}>{t('exec.reports.brief')}</Text>
-            </View>
-          </View>
-          {band === null ? null : (
-            <View testID="exec-reports-confidence" style={styles.confChip}>
-              <Text style={styles.confText}>
-                {percent === null ? t(BAND_LABEL[band]) : t('insight.conf', { value: percent })}
+              <Text testID="exec-reports-brief-title" style={styles.briefTitle}>
+                {t('exec.reports.briefTitle')}
               </Text>
             </View>
-          )}
+          </View>
+          {/* COMING SOON — REPORT_BRIEF_WINDOW: nothing states the window a report covers. */}
+          <Text testID="exec-reports-window" style={styles.window}>
+            {t('exec.reports.window', { days: REPORT_BRIEF_WINDOW.value })}
+          </Text>
         </View>
 
         {reporting ? (
@@ -339,15 +357,29 @@ export function ExecReports(): React.JSX.Element {
             variant="ai"
             theme={isDark ? 'dark' : 'light'}
           />
+        ) : report === null ? (
+          // COMING SOON — REPORT_BRIEF_FALLBACK: the drawing's own paragraph, on the drawn path only.
+          <Text testID="exec-reports-prose" style={styles.body}>
+            {`${t('exec.reports.fallback.briefLead', { total: counts.total })} `}
+            <Text style={[styles.strong, { color: p.text }]}>
+              {t('exec.reports.fallback.briefCount', { value: counts.normal })}
+            </Text>
+            {`${t('exec.reports.fallback.briefSchedule')} `}
+            <Text style={[styles.strong, { color: p.warning }]}>
+              {t('exec.reports.fallback.briefCount', { value: counts.scheduleRisk })}
+            </Text>
+            {` ${t('exec.reports.fallback.briefBudget')} `}
+            <Text style={[styles.strong, { color: p.danger }]}>
+              {t('exec.reports.fallback.briefCount', { value: counts.overBudget })}
+            </Text>
+          </Text>
         ) : (
           <Text testID="exec-reports-prose" style={styles.body}>
-            {report === null
-              ? t(reportFailed ? 'insight.failed' : 'insight.idle')
-              : (prose ?? t('insight.noSummary'))}
+            {prose ?? t('insight.noSummary')}
           </Text>
         )}
 
-        {/* The three strategic metrics. Drawn — see the header and the register. */}
+        {/* The three strategic metrics. COMING SOON — REPORT_STRATEGIC_METRICS. */}
         <View style={styles.metrics}>
           <Metric
             styles={styles}
@@ -373,11 +405,26 @@ export function ExecReports(): React.JSX.Element {
           />
         </View>
 
-        {/* The report is about ONE project and says which — see the header. */}
-        <Text style={styles.source}>
-          {t('insight.source', { project: subject?.project_name ?? '—' })}
-        </Text>
+        {/* The chips (D25). CONF is the report's own on the real path; the drawn 98 % otherwise.
+            COMING SOON — REPORT_BRIEF_CHIPS: SOURCES is drawn on BOTH paths. The drawing's third
+            chip, MODEL: LAYER-A/B, was removed by the product owner on 2026-09-17. */}
+        <View testID="exec-reports-chips" style={styles.chips}>
+          <Chip styles={styles} icon="verified" color={p.accent} testID="exec-reports-confidence">
+            {confChip}
+          </Chip>
+          <Chip styles={styles} icon="storage" color={p.accent}>
+            {t('exec.reports.chipSources', { value: REPORT_BRIEF_CHIPS.value.sources })}
+          </Chip>
+        </View>
 
+        {/* The report is about ONE project and says which — on the real path only (D26). */}
+        {report === null ? null : (
+          <Text testID="exec-reports-source" style={styles.source}>
+            {t('insight.source', { project: subject?.project_name ?? '—' })}
+          </Text>
+        )}
+
+        {/* COMING SOON — REPORT_PDF_EXPORT. Solid fill, not the drawn gradient (D23). */}
         <Pressable
           testID="exec-reports-export"
           accessibilityRole="button"
@@ -411,11 +458,34 @@ export function ExecReports(): React.JSX.Element {
             </View>
           ) : (
             shown.map((row) => {
-              const band2 = rowBand(row);
-              const tone = bandTone(band2, p);
+              const rowTone = rowBand(row);
+              const tone = bandTone(rowTone, p);
               const position = positionById.get(row.projectId) ?? 0;
               const isSubject = subject !== undefined && row.projectId === subject.project_id;
+              /** The report's own row keeps real content only — a drawn finding may not sit on it. */
+              const realRow = isSubject && report !== null;
               const gap = Math.round(row.utilizationPct) - 100;
+              const flagText = realRow
+                ? flags[0]
+                : row.projectId === drawnFlagRowId
+                  ? t(`exec.reports.fallback.${REPORT_FINDINGS_FALLBACK.value.flag}`)
+                  : undefined;
+              const gapFigure = (
+                <Text style={[styles.rowFigure, { color: gap > 0 ? p.danger : p.success }]}>
+                  {gap > 0
+                    ? t('exec.reports.budgetGap', { value: gap })
+                    : t('exec.reports.budgetHeadroom', { value: Math.abs(gap) })}
+                </Text>
+              );
+              const utilised = (
+                <Text style={styles.rowFigureMuted}>
+                  {`${t('exec.reports.budgetLabel')} `}
+                  <Text style={styles.rowFigureStrong}>
+                    {t('exec.reports.utilizedValue', { value: Math.round(row.utilizationPct) })}
+                  </Text>
+                </Text>
+              );
+              const dot = <Text style={styles.rowDot}>•</Text>;
               return (
                 <View
                   key={row.projectId}
@@ -424,17 +494,24 @@ export function ExecReports(): React.JSX.Element {
                 >
                   <View style={styles.rowHead}>
                     <View style={styles.rowHeadText}>
-                      <Text style={styles.rowTitle} numberOfLines={2}>
+                      {/* ONE LINE, cut with "…" (product owner 2026-09-17). The full name stays the
+                          accessible label, so a screen reader still reads all of it. */}
+                      <Text
+                        testID={`exec-reports-title-${row.projectId}`}
+                        style={styles.rowTitle}
+                        numberOfLines={1}
+                        ellipsizeMode="tail"
+                        accessibilityLabel={nameById.get(row.projectId) ?? row.projectId}
+                      >
                         {nameById.get(row.projectId) ?? row.projectId}
                       </Text>
+                      {/* COMING SOON — PROJECT_CONTRACT_CODES / PROJECT_LOCATIONS. */}
                       <Text style={styles.rowMeta} numberOfLines={1}>
                         {`${t('exec.portfolio.contract', {
                           code: PROJECT_CONTRACT_CODES.value[
                             position % PROJECT_CONTRACT_CODES.value.length
                           ],
-                        })}  •  ${
-                          PROJECT_LOCATIONS.value[position % PROJECT_LOCATIONS.value.length]
-                        }`}
+                        })} • ${PROJECT_LOCATIONS.value[position % PROJECT_LOCATIONS.value.length]}`}
                       </Text>
                     </View>
                     {/* SQUARED, like the Home project card's tag and for the same reason: the
@@ -442,18 +519,35 @@ export function ExecReports(): React.JSX.Element {
                         4px, and the product owner chose the drawing (2026-09-07). Recorded in
                         theme/__tests__/badgeRadius.spec.ts's NOT_BADGES table, so the section 32.7
                         capsule ruling still binds every badge it was not overruled for. */}
-                    <View style={[styles.rowStatusTag, { borderColor: `${tone}66` }]}>
+                    <View
+                      style={[
+                        styles.rowStatusTag,
+                        { borderColor: `${tone}66`, backgroundColor: `${tone}1A` },
+                      ]}
+                    >
                       <Text style={[styles.rowPillText, { color: tone }]}>
-                        {t(`exec.reports.band.${band2}`)}
+                        {t(`exec.reports.band.${rowTone}`)}
                       </Text>
                     </View>
                   </View>
 
-                  {/* The AI flag, and ONLY on the project the report is about. */}
-                  {isSubject && flags.length > 0 ? (
+                  {/* COMING SOON — the drawing's paragraph for this band (D22), never on the
+                      report's own row. */}
+                  {realRow ? null : (
+                    <Text testID={`exec-reports-summary-${row.projectId}`} style={styles.body}>
+                      {t(`exec.reports.rowSummary.${rowTone}`)}
+                    </Text>
+                  )}
+
+                  {/* The AI flag: the report's own on its subject row, or the drawing's on the first
+                      CRITICAL row when there is no report (D21). */}
+                  {flagText === undefined ? null : (
                     <View
                       testID="exec-reports-flag"
-                      style={[styles.flag, { borderColor: `${p.danger}66` }]}
+                      style={[
+                        styles.flag,
+                        { borderColor: `${p.danger}66`, backgroundColor: `${p.danger}14` },
+                      ]}
                     >
                       <MaterialIcons
                         name="warning"
@@ -463,48 +557,67 @@ export function ExecReports(): React.JSX.Element {
                         importantForAccessibility="no"
                       />
                       <Text style={styles.flagText}>
-                        {`${t('exec.reports.aiFlag')} ${flags[0] ?? ''}`}
+                        <Text style={styles.strong}>{`${t('exec.reports.aiFlag')} `}</Text>
+                        {flagText}
                       </Text>
                     </View>
-                  ) : null}
+                  )}
 
                   <View style={styles.rowFoot}>
                     <View style={styles.rowFigures}>
-                      <Text style={[styles.rowFigure, { color: gap > 0 ? p.danger : p.success }]}>
-                        {gap > 0
-                          ? t('exec.reports.budgetGap', { value: gap })
-                          : t('exec.reports.budgetHeadroom', { value: Math.abs(gap) })}
-                      </Text>
-                      <Text style={styles.rowFigureMuted}>
-                        {t('exec.reports.utilized', { value: Math.round(row.utilizationPct) })}
-                      </Text>
-                      {/* The report's own confidence, on the one row it describes. */}
-                      {isSubject && percent !== null ? (
-                        <Text style={[styles.rowFigure, { color: p.accent }]}>
-                          {t('insight.conf', { value: percent })}
-                        </Text>
-                      ) : null}
-                      {/* COMING SOON (PO 2026-09-07). The drawing's full-report link opens a
-                          per-project report page, and there is nothing to open: the gateway produces
-                          a report for ONE project per call, and /ai/reports/history returns METADATA
-                          only - report_id, confidence, created_at - so no past report's TEXT can be
-                          re-displayed. That is the same limit that makes InsightPanel regenerate
-                          rather than fetch. Drawn, and it says so on tap.
-                          A CHEVRON ALONE, no words (PO 2026-09-07). The words wrapped this footer
-                          onto a second line on every card; the mark carries the same affordance in
-                          the space that was left. It keeps the LABEL for a screen reader, which is
-                          the half a bare glyph usually loses — `accessibilityLabel` still reads
-                          "Full report", so nothing was traded away except the pixels. */}
-                      <Pressable
-                        testID={`exec-reports-full-${row.projectId}`}
-                        accessibilityRole="button"
-                        accessibilityLabel={t('exec.reports.fullReport')}
-                        onPress={() => soon('exec.reports.fullReport')}
-                        style={styles.rowLink}
-                      >
-                        <MaterialIcons name="chevron-right" size={18} color={p.accent} />
-                      </Pressable>
+                      {realRow ? (
+                        <>
+                          {gapFigure}
+                          {dot}
+                          {utilised}
+                          {/* The report's own confidence, on the one row it describes. */}
+                          {percent === null ? null : (
+                            <Text style={[styles.rowFigure, { color: p.accent }]}>
+                              {t('exec.reports.rowConf', { value: percent })}
+                            </Text>
+                          )}
+                        </>
+                      ) : rowTone === 'secure' ? (
+                        <>
+                          {/* COMING SOON — REPORT_ROW_TRENDS.aheadPct; utilisation is real. */}
+                          <Text style={[styles.rowFigure, { color: p.success }]}>
+                            {t('exec.reports.ahead', {
+                              value: oneDecimal(REPORT_ROW_TRENDS.value.aheadPct),
+                            })}
+                          </Text>
+                          {dot}
+                          {utilised}
+                        </>
+                      ) : rowTone === 'monitor' ? (
+                        <>
+                          {/* COMING SOON — REPORT_ROW_TRENDS.delayRiskPct / confidence. */}
+                          <Text style={[styles.rowFigure, { color: p.warning }]}>
+                            {t('exec.reports.delayRisk', {
+                              value: oneDecimal(REPORT_ROW_TRENDS.value.delayRiskPct),
+                            })}
+                          </Text>
+                          {dot}
+                          <Text style={[styles.rowFigure, { color: p.accent }]}>
+                            {t('exec.reports.rowConf', {
+                              value: REPORT_ROW_TRENDS.value.confidence,
+                            })}
+                          </Text>
+                        </>
+                      ) : (
+                        gapFigure
+                      )}
                     </View>
+                    {/* COMING SOON — no full-report page exists; the words are back (D20). */}
+                    <Pressable
+                      testID={`exec-reports-full-${row.projectId}`}
+                      accessibilityRole="button"
+                      accessibilityLabel={t('exec.reports.fullReport')}
+                      onPress={() => soon('exec.reports.fullReport')}
+                      style={styles.rowLink}
+                    >
+                      <Text style={styles.rowLinkText}>{t('exec.reports.fullReport')}</Text>
+                      <MaterialIcons name="chevron-right" size={16} color={p.accent} />
+                    </Pressable>
                   </View>
                 </View>
               );
@@ -513,7 +626,7 @@ export function ExecReports(): React.JSX.Element {
         </View>
       </LoadingBoundary>
 
-      {/* ── Strategic recommendations — the model's own, not drawn ──────────────────────────── */}
+      {/* ── Strategic Recommendations — the model's own, or the drawing's on the drawn path ────── */}
       <View testID="exec-reports-recommendations" style={[styles.card, styles.recCard]}>
         <View style={styles.recHead}>
           <MaterialIcons name="campaign" size={18} color={p.accent} />
@@ -521,10 +634,14 @@ export function ExecReports(): React.JSX.Element {
             {t('exec.reports.recommendations')}
           </Text>
         </View>
-        {recommendations.length === 0 ? (
-          <Text style={styles.body}>
-            {report === null ? t('insight.idle') : t('exec.reports.noRecommendations')}
-          </Text>
+        {reporting ? (
+          <LoadingState
+            testID="exec-reports-recommendations-loading"
+            variant="micro"
+            theme={isDark ? 'dark' : 'light'}
+          />
+        ) : recommendations.length === 0 ? (
+          <Text style={styles.body}>{t('exec.reports.noRecommendations')}</Text>
         ) : (
           recommendations.map((line, index) => (
             <View key={`${index}-${line.slice(0, 24)}`} style={styles.recRow}>
@@ -533,26 +650,47 @@ export function ExecReports(): React.JSX.Element {
             </View>
           ))
         )}
-        {/* Drawn, and it must never write — master §Phase 10 makes this role read-only on mobile. */}
-        {/* DISABLED UNTIL THERE IS SOMETHING TO ACKNOWLEDGE (PO 2026-09-07). It is a
-            human-in-the-loop control over the recommendations above it; with none on screen it
-            would offer to acknowledge nothing. Same treatment the Tasks screen's detail control
-            takes when nothing is blocked. COMING SOON either way - master Phase 10 makes this role
-            read-only on mobile and there is no acknowledgement endpoint. */}
+        {/* COMING SOON — no acknowledgement endpoint, and master §Phase 10 makes this role read-only on
+            mobile: it never writes. Enabled whenever there are lines to acknowledge. */}
         <Pressable
           testID="exec-reports-acknowledge"
           accessibilityRole="button"
           accessibilityLabel={t('exec.reports.acknowledge')}
-          accessibilityState={{ disabled: recommendations.length === 0 }}
-          disabled={recommendations.length === 0}
+          accessibilityState={{ disabled: reporting || recommendations.length === 0 }}
+          disabled={reporting || recommendations.length === 0}
           onPress={() => soon('exec.reports.acknowledge')}
-          style={[styles.acknowledge, recommendations.length === 0 && styles.disabled]}
+          style={[
+            styles.acknowledge,
+            (reporting || recommendations.length === 0) && styles.disabled,
+          ]}
         >
           <MaterialIcons name="fact-check" size={16} color={p.accent} />
           <Text style={styles.acknowledgeText}>{t('exec.reports.acknowledge')}</Text>
         </Pressable>
       </View>
     </ScrollView>
+  );
+}
+
+/** One of the brief's three chips — CONF, SOURCES, MODEL. */
+function Chip({
+  styles,
+  icon,
+  color,
+  testID,
+  children,
+}: {
+  styles: ReturnType<typeof makeStyles>;
+  icon: React.ComponentProps<typeof MaterialIcons>['name'];
+  color: string;
+  testID?: string;
+  children: string;
+}): React.JSX.Element {
+  return (
+    <View testID={testID} style={styles.chip}>
+      <MaterialIcons name={icon} size={11} color={color} />
+      <Text style={styles.chipText}>{children}</Text>
+    </View>
   );
 }
 
@@ -645,14 +783,16 @@ const makeStyles = (p: Palette) =>
       padding: spacing.md,
       gap: spacing.xs,
     },
-    // The drawing's cyan-bordered brief. No gradient behind it: gradients are prohibited wherever the
-    // signed-in app shows project data (.claude/rules/design-tokens.md), and the two named exceptions
-    // are pre-auth screens and <LoadingState />'s `ai` variant.
+    // The brief's edge is the NEUTRAL card border: the drawing's rendered screen.png samples a dark
+    // blue hairline on every side (its HTML's 3px cyan left edge is overridden by `border`). No
+    // gradient behind it: gradients are prohibited wherever the signed-in app shows project data
+    // (.claude/rules/design-tokens.md), and the two named exceptions are pre-auth screens and
+    // <LoadingState />'s `ai` variant.
     brief: {
       backgroundColor: p.surface,
       borderRadius: radius.xl,
       borderWidth: 1,
-      borderColor: p.accent,
+      borderColor: p.border,
       padding: spacing.md,
       gap: spacing.sm,
     },
@@ -671,15 +811,28 @@ const makeStyles = (p: Palette) =>
       backgroundColor: p.surfaceBright,
     },
     briefTitles: { flex: 1 },
-    confChip: {
+    briefTitle: {
+      color: p.text,
+      fontFamily: fontFamily.semibold,
+      fontSize: typography.caption.fontSize,
+    },
+    // The drawing's "7d Summary" — mono, accent, at the head's trailing edge.
+    window: { color: p.accent, fontFamily: fontFamily.regular, fontSize: 11 },
+
+    // The drawing's three metadata chips — squared (`rounded` = 4px in its Tailwind config), mono.
+    chips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs / 2 },
+    chip: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
       paddingHorizontal: spacing.xs,
       paddingVertical: 2,
-      borderRadius: radius.xl,
+      borderRadius: radius.md,
       borderWidth: 1,
-      borderColor: p.accent,
+      borderColor: `${p.accent}66`,
       backgroundColor: p.bg,
     },
-    confText: {
+    chipText: {
       color: p.accent,
       fontFamily: fontFamily.medium,
       fontSize: 10,
@@ -761,21 +914,39 @@ const makeStyles = (p: Palette) =>
       letterSpacing: 0.8,
       textTransform: 'uppercase',
     },
+    // Figures on the left, the full-report link on the right — the drawing's footer.
     rowFoot: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: spacing.xs,
       paddingTop: spacing.xs,
       borderTopWidth: 1,
       borderTopColor: p.border,
     },
-    rowFigures: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, flexWrap: 'wrap' },
-    // `marginLeft: 'auto'` puts it at the trailing edge of the figures row; the 44pt box is the
-    // WCAG AAA icon-button target (§32.7), which a bare 18px glyph would otherwise miss.
-    rowLink: {
-      marginLeft: 'auto',
-      minWidth: touchTarget.iconButton,
-      minHeight: touchTarget.iconButton,
-      alignItems: 'flex-end',
-      justifyContent: 'center',
+    rowFigures: {
+      flex: 1,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.xs,
+      flexWrap: 'wrap',
     },
+    rowDot: { color: p.muted, fontSize: typography.label.fontSize },
+    // The words and the chevron, with the 44pt WCAG AAA target height (§32.7). The words may wrap
+    // onto two lines, as they do in the drawing at this width.
+    rowLink: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      maxWidth: '40%',
+      minHeight: touchTarget.iconButton,
+    },
+    rowLinkText: {
+      flexShrink: 1,
+      color: p.accent,
+      fontFamily: fontFamily.medium,
+      fontSize: typography.label.fontSize,
+    },
+    rowFigureStrong: { color: p.text, fontFamily: fontFamily.semibold },
     rowFigure: { fontFamily: fontFamily.medium, fontSize: typography.label.fontSize },
     rowFigureMuted: {
       color: p.muted,
@@ -797,6 +968,7 @@ const makeStyles = (p: Palette) =>
       fontFamily: fontFamily.regular,
       fontSize: typography.label.fontSize,
     },
+    strong: { fontFamily: fontFamily.semibold },
 
     recCard: { borderColor: p.accent, gap: spacing.sm },
     recHead: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
@@ -831,13 +1003,6 @@ const makeStyles = (p: Palette) =>
       fontSize: typography.label.fontSize,
     },
 
-    eyebrow: {
-      color: p.accent,
-      fontFamily: fontFamily.semibold,
-      fontSize: 10,
-      letterSpacing: 0.8,
-      textTransform: 'uppercase',
-    },
     body: {
       color: p.text,
       fontFamily: fontFamily.regular,

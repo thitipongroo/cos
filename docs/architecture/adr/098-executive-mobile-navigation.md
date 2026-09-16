@@ -244,3 +244,17 @@ about WHICH SYSTEMS produced a report. `SOURCES: BIM & ERP DATA` and the risk ca
 `BIM + Site Logs` chip name integrations that do not exist, and a false provenance line changes how
 much of the screen a reader believes rather than being wrong about one quantity. Everything else the
 drawings ask for is now on the screens.
+
+## Amendment — 2026-09-16: the "WHICH SYSTEMS" category is drawn on the Report screen
+
+**Decided by:** Product Owner, 2026-09-16, revision R20, decision D25.
+
+The note above keeps one category off these screens: a claim about WHICH SYSTEMS produced a report. On the Report
+screen that no longer holds. Its brief draws the drawing's `SOURCES: 14/14 SITES` chip on both paths — beside the
+model's own confidence when a report exists — because the product owner chose the drawing with the conflict named.
+The value lives in `REPORT_BRIEF_CHIPS` (ADR-099, amendment of this date). The drawing's `MODEL: LAYER-A/B` chip was
+drawn for one day and removed by the product owner on 2026-09-17.
+
+The carve-out still stands everywhere else: `<AiCardFooter />`'s SOURCE names a project or record set this
+repository has (spec §32.7 "AI Card Footer"), and the risk cards' category chip still takes subject labels rather than
+the drawing's "BIM + Site Logs" (`RISK_ALERT_CATEGORIES`).

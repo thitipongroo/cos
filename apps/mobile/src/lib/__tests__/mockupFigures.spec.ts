@@ -19,6 +19,11 @@ import {
   PROJECT_LIST_FILTER,
   PROJECT_SAFETY_SCORES,
   PROJECT_SYNC_STATE,
+  REPORT_BRIEF_CHIPS,
+  REPORT_BRIEF_FALLBACK,
+  REPORT_BRIEF_WINDOW,
+  REPORT_FINDINGS_FALLBACK,
+  REPORT_ROW_TRENDS,
   SAFE_MAN_HOURS,
   UNBUILT_MORE_TILES,
 } from '../mockupFigures';
@@ -88,5 +93,47 @@ describe('mockupFigures — the ADR-099 register', () => {
     expect(COMPLIANCE.value.percent).toBeLessThanOrEqual(100);
     expect(COMPLIANCE.value.grade).not.toBe('');
     expect(COMPLIANCE.value.deltaLabel).not.toBe('');
+  });
+});
+
+// The Report screen's R20 entries (2026-09-16, product-owner decisions D20–D26, ADR-099 amendment).
+describe("mockupFigures — the Report screen's drawn content", () => {
+  const REPORT = [
+    ['REPORT_BRIEF_WINDOW', REPORT_BRIEF_WINDOW],
+    ['REPORT_BRIEF_FALLBACK', REPORT_BRIEF_FALLBACK],
+    ['REPORT_BRIEF_CHIPS', REPORT_BRIEF_CHIPS],
+    ['REPORT_ROW_TRENDS', REPORT_ROW_TRENDS],
+    ['REPORT_FINDINGS_FALLBACK', REPORT_FINDINGS_FALLBACK],
+  ] as const;
+
+  it('says, for every entry, what would have to exist before it can be deleted', () => {
+    for (const [name, figure] of REPORT) {
+      expect({ name, hasReason: figure.needs.length > 20 }).toEqual({ name, hasReason: true });
+    }
+  });
+
+  it("keeps the drawn brief's counts inside the portfolio it names", () => {
+    // The paragraph reads "14 projects: 11 on track, 2 at schedule risk, 1 over budget" — parts that
+    // added up to more than the whole would be a sentence that contradicts itself.
+    const { total, normal, scheduleRisk, overBudget } = REPORT_BRIEF_FALLBACK.value;
+    expect(normal + scheduleRisk + overBudget).toBeLessThanOrEqual(total);
+  });
+
+  it('keeps every drawn percentage inside the range it is printed in', () => {
+    for (const value of [
+      REPORT_BRIEF_CHIPS.value.confidence,
+      REPORT_ROW_TRENDS.value.aheadPct,
+      REPORT_ROW_TRENDS.value.delayRiskPct,
+      REPORT_ROW_TRENDS.value.confidence,
+    ]) {
+      expect(value).toBeGreaterThanOrEqual(0);
+      expect(value).toBeLessThanOrEqual(100);
+    }
+    expect(REPORT_BRIEF_WINDOW.value).toBeGreaterThan(0);
+  });
+
+  it('draws one flag and two recommendations, as the drawing does', () => {
+    expect(REPORT_FINDINGS_FALLBACK.value.flag).toBe('flag');
+    expect([...REPORT_FINDINGS_FALLBACK.value.recommendations]).toEqual(['rec1', 'rec2']);
   });
 });

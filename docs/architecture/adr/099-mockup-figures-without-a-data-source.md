@@ -1052,3 +1052,48 @@ The captures in `docs/screens/web/SYSTEM_ADMIN/` now show a ledger hash root, a 
 and eight cluster nodes that do not exist. The case against is the one this record opened with, and it applies with
 more force here: the audit log is the screen an auditor reads, and a drawn `VALID` beside a real justification is a
 claim about a real row. The product owner decided with that named.
+
+## Amendment — 2026-09-16: the EXECUTIVE Report screen draws the rest of its drawing
+
+**Decided by:** Product Owner, 2026-09-16, revision R20 ("Implement UI จาก Stitch (Executive AI Reports - Mobile)"),
+decisions D20–D26, asked one by one.
+
+The Report screen (`mockup/mobile/08_executive/04_report/01_ex_report`, Stitch screen
+`71ac4c0921794e28be039bf4daeae597`, byte-identical HTML) was built on 2026-09-07 with several drawn elements left
+out. The product owner put them back — everything the drawing draws — except the "Executive Reports" heading with
+its subtitle and the `W47-LIVE` chip, which stay off.
+
+### Five entries, taking the register from one hundred to one hundred and five
+
+| Entry                      | What it draws                                                                              |
+| -------------------------- | ------------------------------------------------------------------------------------------ |
+| `REPORT_BRIEF_WINDOW`      | "7d Summary" at the brief's head                                                           |
+| `REPORT_BRIEF_FALLBACK`    | the brief paragraph's counts — 14 projects, 11 on track, 2 at schedule risk, 1 over budget |
+| `REPORT_BRIEF_CHIPS`       | CONF 98 % (drawn path only) and SOURCES 14/14 SITES                                        |
+| `REPORT_ROW_TRENDS`        | each row's trend — "+1.2% Ahead", "-2.8% Delay Risk", "Conf: 94%" — by band                |
+| `REPORT_FINDINGS_FALLBACK` | the AI flag and the two Strategic Recommendations, as i18n keys                            |
+
+The words live in `apps/mobile/src/i18n/{en,th}.json` under `exec.reports.*` (QM-3); the register holds the
+shapes and the numbers. Counted, not recalled:
+`grep -c "^export const [A-Z_0-9]* = figure(" apps/mobile/src/lib/mockupFigures.ts` → 105.
+
+### A second FALLBACK, and the line it keeps
+
+The brief paragraph, the flag and the recommendations are FINDINGS, drawn only while there is no report — the
+`RISK_ALERT_FALLBACK` pattern of 2026-09-07. The moment `POST /ai/reports/executive-summary` answers, all three come
+from the model and none of the drawn text is read. The report's own row never carries a drawn paragraph or a drawn
+trend, and the "Source: project …" line appears only beside a real report.
+
+### What this crosses, stated plainly
+
+- **A drawn confidence now sits on the same screen as a real one.** The rows' "Conf: 94%" is drawn on every row that
+  is not the report's subject, including while the brief shows the model's own CONF. The rule at the top of the
+  register — "a fabricated confidence may never stand BESIDE a real one" — is kept only in the narrow sense that the
+  two never share a card. The product owner decided it with the conflict named (D22).
+- **SOURCES is drawn beside a real report.** That is the category ADR-098's 2026-09-07 note kept off these screens;
+  its own amendment of this date records the reversal (D25).
+
+The Export Portfolio PDF button stays a solid fill — the drawing's gradient is not drawn (D23, spec §32.7).
+
+**Two drawn elements were removed the next day** (product owner, 2026-09-17): the `MODEL: LAYER-A/B` chip and the
+brief's "AI Strategic Brief" eyebrow. `REPORT_BRIEF_CHIPS` lost its `model` value with the chip.

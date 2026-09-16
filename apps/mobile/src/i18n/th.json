@@ -1528,31 +1528,51 @@
       "empty": "เลือกโครงการแล้วกดสร้างรายงาน",
       "filter": {
         "all": "ทั้งหมด",
-        "attention": "ต้องดูแล",
-        "onTrack": "ตามแผน"
+        "onTrack": "ตามแผน",
+        "critical": "วิกฤต"
       },
       "reanalyse": "วิเคราะห์ใหม่",
-      "brief": "สรุปเชิงกลยุทธ์",
       "metricSaving": "ประหยัดต้นทุนสะสม",
       "metricDelivery": "คาดการณ์ส่งมอบ",
       "metricSafety": "ดัชนีความปลอดภัย",
-      "exportPdf": "ส่งออกรายงาน PDF",
-      "summaries": "สรุปรายโครงการ",
+      "exportPdf": "Export Portfolio PDF",
+      "summaries": "Project summaries",
       "sortedByRisk": "เรียงตามระดับความเสี่ยง",
       "band": {
-        "critical": "วิกฤต",
-        "monitor": "เฝ้าระวัง",
-        "secure": "ปลอดภัย"
+        "critical": "CRITICAL",
+        "monitor": "MONITOR",
+        "secure": "SECURE"
       },
-      "aiFlag": "AI แจ้งเตือน:",
-      "budgetGap": "เกินงบ {value}%",
+      "aiFlag": "AI Flag:",
+      "budgetGap": "+{value}% Budget Gap",
       "budgetHeadroom": "ต่ำกว่างบ {value}%",
-      "utilized": "ใช้งบไป {value}%",
-      "recommendations": "ข้อเสนอแนะเชิงกลยุทธ์",
+      "recommendations": "Strategic Recommendations",
       "noRecommendations": "รายงานฉบับนี้ไม่มีข้อเสนอแนะ",
-      "acknowledge": "รับทราบและสั่งการ",
+      "acknowledge": "Acknowledge & Direct",
       "noProjects": "ไม่มีโครงการให้รายงาน",
-      "fullReport": "ดูรายงานฉบับเต็ม"
+      "fullReport": "ดูรายงานฉบับเต็ม",
+      "briefTitle": "สรุปสถานะภาพรวม",
+      "window": "{days}d Summary",
+      "chipSources": "SOURCES: {value} SITES",
+      "budgetLabel": "Budget:",
+      "utilizedValue": "{value}% Utilized",
+      "ahead": "+{value}% Ahead",
+      "delayRisk": "-{value}% Delay Risk",
+      "rowConf": "Conf: {value}%",
+      "rowSummary": {
+        "secure": "ความคืบหน้าโครงสร้างชั้น 24 เป็นไปตามกำหนดเวลา การเบิกจ่ายสอดคล้องกับ BOQ ไม่มีอุบัติเหตุระดับวิกฤต",
+        "monitor": "พบความเสี่ยงงานคานสะพาน P-14 ล่าช้า 3 วันเนื่องจากสภาพอากาศ AI แนะนำปรับกำลังพลกะกลางคืนเพื่อชดเชย",
+        "critical": "การเบิกงวดงานเหล็กเสริมเกินงบประมาณย่อย 8.4% มีข้อพิพาทใบวางบิล #INV-9921 กำลังอยู่ระหว่างตรวจสอบ"
+      },
+      "fallback": {
+        "briefLead": "ภาพรวมโครงการทั้งหมด {total} โครงการ อยู่ในเกณฑ์ปกติ",
+        "briefCount": "{value, plural, other {# โครงการ}}",
+        "briefSchedule": ", มีความเสี่ยงด้านเวลา",
+        "briefBudget": "และงบประมาณบานปลาย",
+        "flag": "แนะนำชะลอการอนุมัติเบิกจ่ายงวดถัดไป (Recommends hold on disbursement)",
+        "rec1": "อนุมัติการเร่งงาน Metro Expressway ภายใน 48 ชม. เพื่อป้องกันการชะลอตัวช่วงฤดูมรสุม",
+        "rec2": "ตรวจสอบ BOQ โครงการ Oceanfront ร่วมกับ Procurement Manager ก่อนลงนามงวดงาน #12"
+      }
     },
     "safety": {
       "intelligence": "ข้อมูลเชิงลึกด้านความปลอดภัย",

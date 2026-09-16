@@ -2490,54 +2490,34 @@ amendment names `PROJECT_CONTRACT_CODES` as the entry to remove first.
 
 ### Report — [`04-Report/01-ex-report.png`](08-executive/04-Report/01-ex-report.png)
 
-`04_report/01_ex_report` is a new drawing of a screen that already existed: the AI executive summary
-`/reports` has rendered for this role since Phase 10, as a project picker, a GENERATE button and a
-paragraph in the static light palette. **No new route was added for it** — two routes for one screen
-is the mistake `dashboard` and `home` made.
+`04_report/01_ex_report` is the Stitch screen "Executive AI Reports - Mobile" (byte-identical HTML). It was first
+built on 2026-09-07 with several drawn elements left out; **on 2026-09-16 (revision R20) the product owner had it
+rebuilt to draw what the drawing draws**, with two exceptions that stay off: the "Executive Reports" heading with
+its subtitle, and the `W47-LIVE` chip. The next day two more drawn elements were removed on instruction — the
+`MODEL: LAYER-A/B` chip and the brief's "AI Strategic Brief" eyebrow — and each card title was held to one line,
+cut with an ellipsis ("Chaeng Watthana Access Road Upgr…" in this frame). **No new route was added** — `/reports`
+has rendered the AI executive summary for this role since Phase 10, and two routes for one screen is the mistake
+`dashboard` and `home` made.
 
-**Two of the things the drawing appears to invent turned out to be real**, and that is why they are
-not in the register:
+**This frame shows the DRAWN path.** The capture machine runs no AI gateway, so
+`POST /ai/reports/executive-summary` answers nothing and the brief paragraph ("Across all 14 projects…"), the AI flag
+on the first CRITICAL row and the two Strategic Recommendations are the drawing's own
+(`REPORT_BRIEF_FALLBACK`, `REPORT_FINDINGS_FALLBACK`, ADR-099 amendment 2026-09-16). A real report displaces all
+three at once, puts its flag and its own confidence on the ONE row it is about, and adds the "Source: project …"
+line; the two paths never mix.
 
-- `Strategic recommendations` is `recommendations` on the `EXECUTIVE_SUMMARY` report — the model's
-  own advice, and this screen prints all of it rather than the one line a dashboard panel shows
-- the CRITICAL row's `AI Flag` is `risk_flags` on the same report, and it appears on ONE row: the
-  project the report is about. A flag copied onto every card would attribute a finding to projects
-  the model never looked at
+Real in this frame: the tab counts — "Critical (2)" counts CRITICAL rows only, "On track" carries no count, as drawn
+— the worst-first order, each row's band, the budget gap ("+1% Budget Gap", "+20% Budget Gap") and the project
+names. The figures come from `/analytics/executive`, which needs the ClickHouse mirror
+(`node prisma/seed-analytics-clickhouse.mjs`); without it the list reads "No projects to report on".
 
-Also real: the three tabs and their counts, the worst-first ordering, each row's budget gap and
-utilisation, and `Re-analyse`, which is the one control here that does exactly what it says.
-
-Drawn: the three strategic metrics (`฿ 14.2 M` cumulative saving, `96.4%` delivery forecast, `98%`
-safety index) and `Export portfolio PDF`, which says so on tap — `lib/dataExport.ts` offers JSON and
-CSV for the PDPA subject-access export and nothing renders a portfolio document.
-
-**Four changes on 2026-09-07, all product-owner instructions.** The screen heading and its subtitle
-are gone — on a TAB they repeat the label the bar already shows, and the reader arrived here by
-pressing the word. The brief card no longer says "AI" in its eyebrow and has lost its second title
-line, which said what the eyebrow said in other words; the confidence chip, the source line and the
-prose all say what produced this without the word. Each project summary gained the drawing's **Full
-report** link — since later the same day a **chevron alone**, because the words wrapped the row onto a
-second line and the mark carries the same affordance in the space that was left; its
-`accessibilityLabel` still reads "Full report", so a screen reader loses nothing. The status tags are
-**squared**, recorded in `NOT_BADGES` like the Home card's.
-
-**`Acknowledge & direct` is disabled until there is a recommendation to acknowledge.** It is a
-human-in-the-loop control over the list above it; with none on screen it would offer to acknowledge
-nothing. In this frame the AI gateway produced no report, so it is dimmed.
-
-Still left out, each with its reason: a prose summary per row (one metered LLM call per project — the
-fan-out `GET /tasks/portfolio-summary` exists to avoid) and the `W47-LIVE` chip (a week number is
-computable, "LIVE" is a claim about a feed that does not exist, and half a chip is worse than none).
-The **Full report** link and `Acknowledge & direct` are now drawn and say so on tap: there is no
-full-report page to open — `/ai/reports/history` returns metadata only, which is also why the panels
-regenerate rather than fetch — and no acknowledgement endpoint, nor may there be one while §Phase 10
-makes this role read-only.
-
-**One nuance was lost and is recorded rather than hidden.** The screen this replaced told a `503` —
-the Phase 11 LLM stub, i.e. "not yet" — apart from a real failure, in different words. This one
-reports the shared `insight.failed`, because it now reads its report through the same helpers as the
-other five AI surfaces and none of them makes that distinction. Six surfaces that agree about what a
-failed report looks like, at the cost of that distinction on one screen.
+Drawn (`lib/mockupFigures.ts`): "7d Summary", the three strategic metrics, the CONF 98 % chip (a real report shows
+its own) and the SOURCES chip on both paths (ADR-098 amendment 2026-09-16), each row's contract number, location,
+band paragraph and trend ("-2.8% Delay Risk • Conf: 94%"). Export Portfolio PDF, **Full report** and
+`Acknowledge & Direct` open the "coming soon" dialog — there is no report renderer, no full-report page
+(`/ai/reports/history` returns metadata only) and no acknowledgement endpoint, nor may there be one while §Phase 10
+makes this role read-only. The Export button is a solid fill, not the drawn gradient (spec §32.7), and the brief's
+edge is the neutral card border the drawing's rendered picture shows.
 
 ### Navigation drawer — [`05-Drawer/01-ex-navigation-drawer.png`](08-executive/05-Drawer/01-ex-navigation-drawer.png)
 
