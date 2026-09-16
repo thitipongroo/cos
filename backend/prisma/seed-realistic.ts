@@ -164,7 +164,7 @@ const USERS: SeedUser[] = [
   },
   // ADDED 2026-09-10, and it was the LAST role with no demo user: eleven of the twelve had one and
   // VIEWER had none, which went unnoticed while the role's Home rendered a placeholder and none of
-  // its screens had ever been captured. `mockup/mobile/role_viewer/` gave it five, and a role that
+  // its screens had ever been captured. `mockup/mobile/13_viewer/` gave it five, and a role that
   // cannot be signed in as cannot be photographed.
   //
   // The name is the one `05_profile/01_account_settings` draws. It is seed data either way, and

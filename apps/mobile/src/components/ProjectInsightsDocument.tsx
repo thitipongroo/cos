@@ -1,6 +1,6 @@
 // Project Insights — the VIEWER's analytics page.
 //
-// DRAWING: mockup/mobile/role_viewer/04_insights/01_analytics (Stitch screen "Project Analytics -
+// DRAWING: mockup/mobile/13_viewer/04_insights/01_analytics (Stitch screen "Project Analytics -
 // Viewer (Mobile Dark Mode)").
 //
 // REDRAWN 2026-09-11, and it changed more than any other screen in this set. The header became the

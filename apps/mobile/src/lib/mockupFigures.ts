@@ -1079,7 +1079,7 @@ export const HELP_CHAT_THREAD = figure(
   'support_messages rows — body, sender_type, created_at, and the guard verdict on each AI turn',
 );
 
-// ── VIEWER (mockup/mobile/role_viewer/) ──────────────────────────────────────
+// ── VIEWER (mockup/mobile/13_viewer/) ──────────────────────────────────────
 //
 // ADDED 2026-09-10 for the five Stitch screens the product owner asked for — Home, Projects, Map,
 // Insights and Account Settings. Same standing rule as the FINANCE and Get Help rounds: the drawing
@@ -1296,7 +1296,7 @@ export const VIEWER_PERMISSION_TILES = figure(
     'role claim, and no endpoint returns the effective matrix for the signed-in user to render',
 );
 
-// ── VIEWER Procurement (mockup/mobile/role_viewer/06_procurement/01_procurement) ──────────────────
+// ── VIEWER Procurement (mockup/mobile/13_viewer/06_procurement/01_procurement) ──────────────────
 //
 // ADDED 2026-09-11. Every figure on this screen is drawn, and the reason is the same one measured
 // for `VIEWER_OPEN_ISSUES`: the data exists and this role cannot fetch it. Measured that day with a
@@ -1424,7 +1424,7 @@ export const VIEWER_PROCUREMENT_CONTEXT = figure(
     'have, and the LOCKED chip beside it, which is a scope lock this product does not model',
 );
 
-// ── VIEWER Budget (mockup/mobile/role_viewer/07_budget/01_budget) ─────────────────────────────────
+// ── VIEWER Budget (mockup/mobile/13_viewer/07_budget/01_budget) ─────────────────────────────────
 //
 // ADDED 2026-09-11, and MISSING AUTHORITY for the same reason as the procurement screen beside it.
 // Measured that day with a real VIEWER token:
@@ -1598,7 +1598,7 @@ export const VIEWER_BUDGET_CONTEXT = figure(
 
 // ── SUPPORT CENTRE, 2026-09-11 ──────────────────────────────────────────────────────────────────
 //
-// `mockup/mobile/support_center/01_dashboard` was REDRAWN by Stitch and the product owner named it
+// `mockup/mobile/02_shared/02_support_center/01_dashboard` was REDRAWN by Stitch and the product owner named it
 // ("ศูนย์ช่วยเหลือและสนับสนุน - Construction OS (Support Center)"). The three entries below are the
 // sections the redraw adds, and all three are the same category: MISSING A CORPUS, not missing a
 // query. Measured 2026-09-11 — there is no `help_article`, `faq` or `article` model in

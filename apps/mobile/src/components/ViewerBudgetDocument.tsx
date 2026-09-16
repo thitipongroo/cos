@@ -1,6 +1,6 @@
 // Budget — what the project was given, what it has absorbed, and who certified each release.
 //
-// DRAWING: mockup/mobile/role_viewer/07_budget/01_budget (Stitch screen
+// DRAWING: mockup/mobile/13_viewer/07_budget/01_budget (Stitch screen
 // "งบประมาณและต้นทุน - Viewer (Budget Mobile)"), created 2026-09-11 and downloaded the same day; the
 // repo copy is sha256-identical to what Stitch serves. At 4,206px it is the tallest screen in this
 // role's set.

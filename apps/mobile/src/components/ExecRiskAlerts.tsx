@@ -1,5 +1,5 @@
 // The EXECUTIVE Tasks screen's "AI Risk Alerts" feed.
-// Implements the risk-alert section of mockup/mobile/08_executive/02_tasks/02_ex_tasks.
+// Implements the risk-alert section of mockup/mobile/08_executive/02_alerts/02_ex_alerts.
 //
 // WHY THIS IS NOT `<InsightPanel />`. That component draws ONE card containing one paragraph, which
 // is what every other AI surface in the app is. This drawing is a FEED: one card per finding, each
@@ -198,7 +198,7 @@ export function ExecRiskAlerts({
               WHICH GLYPH: the drawing's HTML names `temp_preferences_custom` on this heading, but its
               rendered screen.png shows a SPARKLE. The two disagree and the picture is what the
               drawing actually is, so this follows the picture (sampled from
-              mockup/mobile/08_executive/02_tasks/02_ex_tasks/screen.png, not read off the markup).
+              mockup/mobile/08_executive/02_alerts/02_ex_alerts/screen.png, not read off the markup).
               WHICH FONT: `@expo/vector-icons`' MaterialIcons carries an `auto-awesome` of its own,
               but the two sets draw it differently — Symbols leaves the large star OUTLINED where the
               older set fills it — and the screen.png is the outlined one. */}

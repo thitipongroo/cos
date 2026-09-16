@@ -1,4 +1,4 @@
-// The VIEWER insights page (mockup/mobile/role_viewer/04_insights/01_analytics).
+// The VIEWER insights page (mockup/mobile/13_viewer/04_insights/01_analytics).
 //
 // Every figure on this screen is drawn, so the assertions worth having are about the two things a
 // drawn screen can still get wrong: the severity bar must agree with the counts printed above it —

@@ -2,7 +2,7 @@
 //
 // DRAWING: mockup/mobile/11_proc_manager/03_orders/01_pom_order, whose <title> is "Vendor Directory"
 // rather than an order list. It supersedes role_proc_manager/03_vendors/03_vendor_directory as the
-// style source for this screen.
+// style source for this screen; that folder was deleted in 3b031030 (2026-09-09) with no rename.
 //
 // REBUILT 2026-09-09 TO MATCH THAT DRAWING, after the product owner rejected the previous version for
 // not looking like it. Plan: .claude/impl-pending.md PART 1.

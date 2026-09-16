@@ -1,5 +1,5 @@
 // Project Insights — the VIEWER's analytics page
-// (mockup/mobile/role_viewer/04_insights/01_analytics).
+// (mockup/mobile/13_viewer/04_insights/01_analytics).
 //
 // A PUSHED CHILD, NOT A TAB, for the same reason as `/map`: the drawing puts Insights on the bottom
 // bar, the five drawings of this set give four different bars, and VIEWER is one of the three roles

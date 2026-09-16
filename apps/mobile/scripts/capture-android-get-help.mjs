@@ -2,7 +2,7 @@
 // capture-android-*.mjs (deliberately NOT Detox; see capture-android-login.mjs for why).
 //
 // Produces, under docs/screens/android/01-authen/05-get-help/:
-//   01-home-support      the Support Centre — redrawn 2026-09-11 (mockup/mobile/support_center/
+//   01-home-support      the Support Centre — redrawn 2026-09-11 (mockup/mobile/02_shared/02_support_center/
 //                        01_dashboard): Quick Help categories, Top FAQs, a featured article and a
 //                        pinned support footer, on top of what was already there
 //   02-hotline-details   the IT Support Hotline detail screen

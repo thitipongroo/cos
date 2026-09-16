@@ -753,18 +753,18 @@ Source: RBAC role definition (master Phase 2 — read-only across modules, per p
   `project_membership`). No create/edit/approve actions are rendered.
 
 **The role's page set was enumerated on 2026-09-10**, when the product owner requested the five
-Stitch screens under `mockup/mobile/role_viewer/`. Until that day this section was three lines and
+Stitch screens under `mockup/mobile/13_viewer/`. Until that day this section was three lines and
 the role's Home rendered a 22-line placeholder.
 
 | Route       | Page             | Purpose                                                               | Source          |
 | ----------- | ---------------- | --------------------------------------------------------------------- | --------------- |
-| `/home`     | Portfolio        | Project and open-issue counts, portfolio budget, tracked projects, activity | `role_viewer/01_home` |
-| `/projects` | Project list     | Every assigned project, searchable by code or name                    | `role_viewer/02_projects` |
-| `/map`      | Project map      | Where the sites are, with a sheet listing the visible ones            | `role_viewer/03_map` |
-| `/insights` | Project insights | Progress curve, safety performance, risk forecast, issue severity     | `role_viewer/04_insights` |
-| `/procurement` | Procurement | POs, deliveries and the pending count, with a delivery predictor and monitored lines | `role_viewer/06_procurement` |
-| `/budget` | Budget & cost | Total / committed / actual, absorption by category, BOQ divisions, the verified log | `role_viewer/07_budget` |
-| `/account-settings` | Account settings | The shared screen, plus a System Permissions block for this role alone | `role_viewer/05_profile` |
+| `/home`     | Portfolio        | Project and open-issue counts, portfolio budget, tracked projects, activity | `13_viewer/01_home` |
+| `/projects` | Project list     | Every assigned project, searchable by code or name                    | `13_viewer/02_projects` |
+| `/map`      | Project map      | Where the sites are, with a sheet listing the visible ones            | `13_viewer/03_map` |
+| `/insights` | Project insights | Progress curve, safety performance, risk forecast, issue severity     | `13_viewer/04_insights` |
+| `/procurement` | Procurement | POs, deliveries and the pending count, with a delivery predictor and monitored lines | `13_viewer/06_procurement` |
+| `/budget` | Budget & cost | Total / committed / actual, absorption by category, BOQ divisions, the verified log | `13_viewer/07_budget` |
+| `/account-settings` | Account settings | The shared screen, plus a System Permissions block for this role alone | `13_viewer/05_profile` |
 
 **Extended to seven pages on 2026-09-11**, when the product owner named six Stitch screens: two new
 ones — Procurement and Budget — and four of the five above REDRAWN. `/procurement` and `/budget` are

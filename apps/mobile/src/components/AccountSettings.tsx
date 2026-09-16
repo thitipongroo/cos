@@ -44,7 +44,7 @@
 //
 // ── ONE SCREEN, AND ONE ROLE-CONDITIONAL BLOCK (PO decision 2026-09-10) ────────────────────────
 //
-// `mockup/mobile/role_viewer/05_profile/01_account_settings` groups the same rows differently again
+// `mockup/mobile/13_viewer/05_profile/01_account_settings` groups the same rows differently again
 // — Account Information · System Permissions · App Settings · Security · Security & Legal — one day
 // after the CRM drawing set the grouping above. Escalated rather than followed: re-grouping a screen
 // that serves all twelve roles to suit the twelfth would change it for the other eleven, and the

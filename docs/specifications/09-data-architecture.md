@@ -392,6 +392,19 @@ Row-Level Security migrations have additional requirements:
 - The application role (`app_user`) must never be granted `BYPASSRLS`
 - Rollback scripts for RLS migrations must `DISABLE ROW LEVEL SECURITY` and `DROP POLICY` for every policy created
 
+### 9.7.4 Stale References Inside Applied Migrations
+
+An applied migration is never edited — not even a comment (QM-9; `.sqlfluffignore` lists
+`backend/prisma/migrations/` and `backend/prisma/rollbacks/` as immutable, and Prisma records a checksum per
+migration and reports one "modified after it was applied"). When a path a migration's comment cites stops
+existing, the correction is recorded here instead of in the file.
+
+- **`20260810000001_add_category_and_verification_to_vendors`, line 4** cites
+  `mockup/mobile/06_project_manager/03_vendors/01_vendor_directory`. That folder was deleted in commit `bcda2bf5`
+  (2026-08-10) with no rename record. The vendor directory drawing today is
+  `mockup/mobile/11_proc_manager/03_orders/01_pom_order` (title "Vendor Directory", the same VERIFIED / UNDER REVIEW /
+  TOP RATED badges); git does not link the two. Recorded 2026-09-16 (product-owner decision).
+
 ---
 
 ## 9.8 Data Governance (MDM, Lineage, Catalog)

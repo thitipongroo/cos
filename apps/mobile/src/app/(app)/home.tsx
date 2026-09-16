@@ -46,7 +46,7 @@ export default function HomeScreen() {
     case CosRole.CRM_SALES_MANAGER:
       return <CrmHome />;
     // Added 2026-09-10, and the same gap as the two rows above: this role fell through to
-    // <MinimalHome /> while `mockup/mobile/role_viewer/01_home/01_dashboard` had a full read-only
+    // <MinimalHome /> while `mockup/mobile/13_viewer/01_home/01_dashboard` had a full read-only
     // portfolio dashboard. The five VIEWER drawings were requested from Stitch by the product owner
     // that day. See components/home/ViewerHome.tsx for what the screen counts and what it draws.
     case CosRole.VIEWER:

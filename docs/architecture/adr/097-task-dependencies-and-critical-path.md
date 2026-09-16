@@ -9,7 +9,7 @@
 
 ## Context
 
-The EXECUTIVE mockup `mockup/mobile/08_executive/02_tasks/02_ex_tasks` draws a **Critical Path**
+The EXECUTIVE mockup `mockup/mobile/08_executive/02_alerts/02_ex_alerts` draws a **Critical Path**
 section. Nothing in this platform could produce one, for two separate reasons.
 
 **There is no task-to-task dependency edge.** `10-construction-ontology.md:117` and

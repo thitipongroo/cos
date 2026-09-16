@@ -6,7 +6,7 @@
 // troubleshooting, and the FIELD ASSISTANT panel — nothing else, because nothing else is useful to
 // someone standing outside the door.
 //
-// It briefly held more. When Stitch redrew `mockup/mobile/support_center/01_dashboard` on
+// It briefly held more. When Stitch redrew `mockup/mobile/02_shared/02_support_center/01_dashboard` on
 // 2026-09-11, that drawing's four new sections — eight help categories, Top FAQs, a featured
 // article and a pinned footer — went into the document BOTH routes shared, so this screen got them
 // too. The first Android capture is what ended it: 5,556px tall, and half of it answering "how do I
@@ -18,7 +18,7 @@
 // in components/SupportPrimitives.tsx rather than being copied into both.
 //
 //   THE SUCCESSOR QUESTION, for anyone reading the history: `01_authen/07_get_help/01_support_center`
-//   was WITHDRAWN 2026-08-15 and `support_center/01_dashboard` was deliberately NOT treated as its
+//   was WITHDRAWN 2026-08-15 and `02_shared/02_support_center/01_dashboard` was deliberately NOT treated as its
 //   successor — a different commit, no rename record, different content (product-owner decision
 //   2026-08-16). That ruling was never overturned. It was made MOOT: the product owner chose the
 //   redrawn file by name for the OTHER route.

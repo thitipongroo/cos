@@ -350,7 +350,7 @@ it is the part that reads as a defect to anyone who has not been told otherwise.
 >
 > Two other things on that screen deliberately differ from its mockup
 > (`mockup/mobile/01_authen/07_get_help/01_support_center`, **withdrawn 2026-08-15** — not repointed
-> at `mockup/mobile/support_center/01_dashboard`, which came from a different commit with no rename
+> at `mockup/mobile/02_shared/02_support_center/01_dashboard`, which came from a different commit with no rename
 > record and differs in content, so it is not asserted as the successor): there is **no bottom
 > nav** (the drawing has one, but this is a pre-auth route — and `Field | Tasks | Support | Profile` is
 > no role's tab set, while §32.7 fixes each role at four), and the assistant panel is labelled **FIELD
@@ -2848,7 +2848,7 @@ drawer rather than moving onto the Orders tab.
 
 ## Viewer — six screens — [`13-viewer/`](13-viewer/)
 
-`mockup/mobile/role_viewer/` — the read-only stakeholder. First captured **2026-09-10**, when this
+`mockup/mobile/13_viewer/` — the read-only stakeholder. First captured **2026-09-10**, when this
 was the role's **first appearance in this folder**: twelve role folders existed and none was
 VIEWER's. **Re-captured whole on 2026-09-11** — see "the second round" below.
 
@@ -2961,7 +2961,7 @@ frame had ever been captured. It is now two screens doing two jobs, and both are
 | [`01-authen/05-get-help/01-home-support`](01-authen/05-get-help/01-home-support.png)           | pre-auth  | someone who **cannot get in** — system status, the emergency numbers, field troubleshooting, FIELD ASSISTANT                    |
 | [`02-shared/02-support-centre/01-support-hub`](02-shared/02-support-centre/01-support-hub.png) | post-auth | someone **already working** — system status, search, eight Quick Help categories, Top FAQs, a featured article, a pinned footer |
 
-**A SCREENSHOT IS WHAT SPLIT THEM.** Stitch redrew `mockup/mobile/support_center/01_dashboard` and
+**A SCREENSHOT IS WHAT SPLIT THEM.** Stitch redrew `mockup/mobile/02_shared/02_support_center/01_dashboard` and
 the four sections it adds were first built into the shared document, so both routes got them. Every
 test passed. The first capture of the result came out **5,556px tall**, half of it answering "how do
 I use this product" on a surface reached only by someone who cannot yet use it. Nothing in the suite

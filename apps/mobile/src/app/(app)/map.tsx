@@ -1,4 +1,4 @@
-// Project Map — the VIEWER's site map (mockup/mobile/role_viewer/03_map/01_map_viewer).
+// Project Map — the VIEWER's site map (mockup/mobile/13_viewer/03_map/01_map_viewer).
 //
 // A PUSHED CHILD, NOT A TAB. The drawing puts Map on the bottom bar, but the five drawings of this
 // set give four different bars and VIEWER is one of the three roles §32.7's table enumerates; the

@@ -2,7 +2,7 @@
 //
 // WHY THIS FILE EXISTS. The Support Centre stopped being one screen rendered twice on 2026-09-11
 // (product-owner decision): `mockup/mobile/01_authen/05_get_help/01_home_support` is the PRE-AUTH
-// screen and the redrawn `mockup/mobile/support_center/01_dashboard` is the POST-AUTH one, and they
+// screen and the redrawn `mockup/mobile/02_shared/02_support_center/01_dashboard` is the POST-AUTH one, and they
 // do different jobs — one helps a person who cannot get IN, the other helps a person already
 // WORKING. `SupportCenterDocument` and `SupportHubDocument` are those two screens.
 //
@@ -120,14 +120,14 @@ export function SupportStatusCard({
  *
  * The product owner has ruled search disabled four times: 2026-08-09, re-affirmed 2026-08-17, again
  * 2026-08-18 when ADR-093 gave it no endpoint, and again 2026-09-11 when the redrawn
- * `support_center/01_dashboard` asked for an active box. Measured that last day: no `help_article`,
+ * `02_shared/02_support_center/01_dashboard` asked for an active box. Measured that last day: no `help_article`,
  * `faq` or `article` model, no `backend/src/modules/support/`, no controller prefix for any of them.
  *
  * It carried a `COMING SOON` chip until 2026-09-10; neither drawing has one, and a standing note
  * about what is unbuilt is what the product owner ruled out. It says so on the press instead.
  *
  * THE PLACEHOLDER IS THE CALLER'S, already translated. The two drawings word it differently —
- * `01_home_support` writes "Search help articles..." and `support_center/01_dashboard` writes
+ * `01_home_support` writes "Search help articles..." and `02_shared/02_support_center/01_dashboard` writes
  * "Search guides, tutorials, or system status..." — and once the screens split on 2026-09-11 each
  * owns its own wording. A single string here would have quietly put the post-auth drawing's words
  * on the pre-auth screen, which is what happened for one build.

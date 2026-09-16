@@ -1,6 +1,6 @@
 // Procurement — what the VIEWER is allowed to watch, and nothing it can touch.
 //
-// DRAWING: mockup/mobile/role_viewer/06_procurement/01_procurement (Stitch screen
+// DRAWING: mockup/mobile/13_viewer/06_procurement/01_procurement (Stitch screen
 // "การจัดซื้อและพัสดุ - Viewer (Procurement Mobile)"), created 2026-09-11 and downloaded the same
 // day; the repo copy is sha256-identical to what Stitch serves.
 //

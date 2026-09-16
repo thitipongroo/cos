@@ -386,7 +386,7 @@ describe('drawerLinksFor — derived from §6.4 / §6.8', () => {
   });
 
   it('gives the Viewer its map and insights screens, which are drawer rows and not tabs', () => {
-    // `mockup/mobile/role_viewer/03_map` and `/04_insights` draw both on the bottom bar. That set's
+    // `mockup/mobile/13_viewer/03_map` and `/04_insights` draw both on the bottom bar. That set's
     // five drawings give FOUR different bars, VIEWER is one of the three roles §32.7's table
     // enumerates, and the product owner kept the enumerated bar on 2026-09-10 — so the two screens
     // are reached from here. Without a row each they would be unreachable, which is the exact

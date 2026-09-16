@@ -44,7 +44,7 @@ export function delayFactors(content: Record<string, unknown>): string | null {
  * The risk factors as a LIST rather than one bulleted block.
  *
  * `delayFactors` above joins them for `<InsightPanel />`, which renders a single paragraph. The
- * executive Tasks screen draws mockup 08_executive/02_tasks/02_ex_tasks, whose risk alerts are one
+ * executive Tasks screen draws mockup 08_executive/02_alerts/02_ex_alerts, whose risk alerts are one
  * CARD per finding — so it needs the items, not the paragraph. Both readers exist because the two
  * screens genuinely present the same report two ways; neither is the other's fallback.
  *

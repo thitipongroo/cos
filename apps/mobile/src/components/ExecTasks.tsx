@@ -1,5 +1,5 @@
 // ExecTasks — the EXECUTIVE half of /tasks.
-// Implements mockup/mobile/08_executive/02_tasks/02_ex_tasks.
+// Implements mockup/mobile/08_executive/02_alerts/02_ex_alerts.
 //
 // Two screens share the `tasks` route and branch on role, the way `reports.tsx` already did: the
 // field roles get the Site Worker's day list, the executive gets this portfolio roll-up. They are

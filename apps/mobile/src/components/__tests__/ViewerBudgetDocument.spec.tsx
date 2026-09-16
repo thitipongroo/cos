@@ -1,4 +1,4 @@
-// The VIEWER budget screen (mockup/mobile/role_viewer/07_budget/01_budget).
+// The VIEWER budget screen (mockup/mobile/13_viewer/07_budget/01_budget).
 //
 // The tallest screen in this role's set and, until ADR-103's routes are wired in, entirely drawn.
 // So the assertions are about the things a later edit breaks invisibly: BOTH money formats going

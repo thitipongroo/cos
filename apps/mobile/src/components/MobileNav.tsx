@@ -262,7 +262,7 @@ export function MobileNav() {
       <Tabs.Screen name="privacy-policy" options={{ href: null }} />
       {/* Post-auth Support Centre — the TopBar "?" (PO 2026-08-17). It renders `SupportHubDocument`,
           its OWN screen: the Support Centre split in two on 2026-09-11 and this side is the redrawn
-          `mockup/mobile/support_center/01_dashboard`, while `(auth)/support` keeps the help that
+          `mockup/mobile/02_shared/02_support_center/01_dashboard`, while `(auth)/support` keeps the help that
           matters to someone who cannot sign in. It is NOT a tab for any role:
           the withdrawn mockup drew a Field | Tasks | Support | Profile bar, which is no role's set,
           and §32.7 fixes each role at exactly four tabs. */}
@@ -271,7 +271,7 @@ export function MobileNav() {
           exactly four — so both are mounted href: null and reached from the Support
           Centre. */}
       <Tabs.Screen name="support-hotline" options={{ href: null }} />
-      {/* The VIEWER map and insights screens (mockup/mobile/role_viewer/03_map and
+      {/* The VIEWER map and insights screens (mockup/mobile/13_viewer/03_map and
           /04_insights). Their drawings put both on the bottom bar; the set draws four
           different bars and the product owner kept the enumerated one (2026-09-10), so both
           are drawer rows and must be declared here or they land on every role's tab bar. */}

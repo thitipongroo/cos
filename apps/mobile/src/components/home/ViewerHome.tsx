@@ -1,6 +1,6 @@
 // ── VIEWER — the read-only portfolio: what is running, what is wrong, and what just happened ─────
 //
-// DRAWING: mockup/mobile/role_viewer/01_home/01_dashboard (Stitch screen "Viewer Home Dashboard -
+// DRAWING: mockup/mobile/13_viewer/01_home/01_dashboard (Stitch screen "Viewer Home Dashboard -
 // Mobile (Fixed Dark Mode)").
 //
 // REDRAWN 2026-09-11, and the redraw is why the repo copy is re-verified rather than trusted. The

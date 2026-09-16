@@ -9,7 +9,7 @@
 
 ## Context
 
-`mockup/mobile/role_viewer/` is a five-screen set the product owner requested from Stitch on
+`mockup/mobile/13_viewer/` is a five-screen set the product owner requested from Stitch on
 2026-09-10 — Home, Projects, Map, Insights and Account Settings. Two of its screens draw cards this
 role has no permission to see:
 
@@ -108,4 +108,4 @@ able to see.
   rule the alternative would have been recorded under
 - `docs/architecture/adr/099-mockup-figures-without-a-data-source.md` — where every figure these
   three cards print is registered
-- `mockup/mobile/role_viewer/01_home/01_dashboard`, `mockup/mobile/role_viewer/04_insights/01_analytics`
+- `mockup/mobile/13_viewer/01_home/01_dashboard`, `mockup/mobile/13_viewer/04_insights/01_analytics`

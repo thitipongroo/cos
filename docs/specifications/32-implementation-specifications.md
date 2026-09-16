@@ -1108,7 +1108,7 @@ reason given above: this table rules on **which screens render dark**, not on wh
 is additionally one of the two **pinned** surfaces named at the top of this note, and a withdrawn drawing does not
 unpin it. The Reference cell is deliberately NOT repointed at a surviving per-role drawer drawing
 (`03_site_engineer/05_profile/01_se_navigation_drawer`, `06_project_manager/05_navigation_drawer/01_pm_profile`,
-`07_safety_officer/05_profile/01_sa_drawer`, `role_executive/05_profile/01_executive_navigation_drawer`): since
+`07_safety_officer/05_profile/01_sa_drawer`, `08_executive/05_profile/01_ex_navigation_drawer`): since
 2026-08-14 **no role takes a drawing verbatim** — every drawer is DERIVED from the §6.4 module matrix with the four
 drawn rows leading — so citing one role's drawing would claim a menu this product does not build.
 `apps/mobile/src/lib/drawerLinks.ts` names those four rows and is now the record of what the withdrawn drawings
@@ -1144,7 +1144,7 @@ from **123 drawings to 9**, and deleted `01_authen/07_get_help/01_support_center
 | ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `05_privacy_policy/00_policy_data`        | **Renamed** to `05_privacy_policy/01_privacy_policy` (git records `R075`). Every reference to it is repointed, not withdrawn.                                                                                                                                                                                                                                                                                                                                                                           |
 | `05_privacy_policy/01_data_collection/**` | **Withdrawn — about 114 drawings**, the whole Transparency Portal set. It is deliberately NOT repointed at the surviving `02_data_collection`: that is a single-screen folder, not the container, and claiming it would be a lie.                                                                                                                                                                                                                                                                       |
-| `01_authen/07_get_help/01_support_center` | **Withdrawn.** `mockup/mobile/support_center/01_dashboard` existed but was NOT asserted as the successor — a different commit, no rename record, different content (product-owner decision 2026-08-16). **That question closed on 2026-09-11**, from the other end: Stitch redrew `support_center/01_dashboard` and the product owner named the redraw. It is authoritative because it was chosen, not because a rename was inferred, so the 2026-08-16 ruling was never overturned — it was made moot. |
+| `01_authen/07_get_help/01_support_center` | **Withdrawn.** `mockup/mobile/02_shared/02_support_center/01_dashboard` existed but was NOT asserted as the successor — a different commit, no rename record, different content (product-owner decision 2026-08-16). **That question closed on 2026-09-11**, from the other end: Stitch redrew `02_shared/02_support_center/01_dashboard` and the product owner named the redraw. It is authoritative because it was chosen, not because a rename was inferred, so the 2026-08-16 ruling was never overturned — it was made moot. |
 
 **The Support Centre has drawings again as of 2026-08-17 — three of them, and two are new screens.**
 Commit `76c8225c` added `01_authen/07_get_help/{01_home_support,02_hotline_details,03_help_chat}` and
@@ -2134,7 +2134,7 @@ The Support Centre has **two** routes as of 2026-08-17 (product-owner decision),
 |          | Pre-auth                                                            | Post-auth                                                                                        |
 | -------- | ------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
 | Route    | `app/(auth)/support.tsx`                                            | `app/(app)/support.tsx`                                                                          |
-| Drawing  | `mockup/mobile/01_authen/05_get_help/01_home_support`               | `mockup/mobile/support_center/01_dashboard`                                                      |
+| Drawing  | `mockup/mobile/01_authen/05_get_help/01_home_support`               | `mockup/mobile/02_shared/02_support_center/01_dashboard`                                                      |
 | Document | `components/SupportCenterDocument.tsx`                              | `components/SupportHubDocument.tsx`                                                              |
 | Job      | someone who **cannot get in**                                       | someone **already working**                                                                      |
 | Entry    | OTP step's `GET SUPPORT` footer item                                | `<TopBar />` Help `?` — the **only** post-auth entry                                             |
@@ -2148,7 +2148,7 @@ probe), the search row, and the `useBackendHealth` hook behind both. Nothing els
 point of the file, not an accident of it.
 
 > **THE SPLIT WAS TAKEN ON 2026-09-11 AND A SCREENSHOT IS WHAT FORCED IT.** Stitch redrew
-> `support_center/01_dashboard` and the product owner first answered that both routes should share
+> `02_shared/02_support_center/01_dashboard` and the product owner first answered that both routes should share
 > the four sections it adds. They were built that way, and the first Android capture of the result
 > came out **5,556px tall** — half of it answering "how do I use this product" on a surface reached
 > only by someone who cannot yet use it. The product owner split the two screens the same day.
@@ -2213,7 +2213,7 @@ equivalent survives where it is useful, as the pre-auth `FIELD ASSISTANT` panel.
 **What it does not add.** Identity, project and diagnostics are all the app's own state — signing in
 adds no backend _to this pair of screens_. **Search stays disabled on BOTH routes** (PO 2026-08-09,
 re-affirmed 2026-08-17, again 2026-08-18, and a **fourth time on 2026-09-11** when the redrawn
-`support_center/01_dashboard` asked for an active search box): there is still no `help_article`/`faq`
+`02_shared/02_support_center/01_dashboard` asked for an active search box): there is still no `help_article`/`faq`
 table and no search endpoint, and ADR-093 gives it none — a signed-in user can see a dead control as
 clearly as a signed-out one. It was not registered as a drawn figure either, and ADR-099's
 2026-09-11 amendment records why: a drawn figure is a VALUE with no source, a search box is a
@@ -2454,7 +2454,7 @@ sheet's grab handle and its collapse chevron sit on a panel that cannot be dragg
 
 **VIEWER's bar survived its own mockup set on 2026-09-10, and unlike EXECUTIVE's that was because
 the drawings could not be read.** The product owner requested five Stitch screens under
-`mockup/mobile/role_viewer/`. Their four `<nav>` blocks give **four different bars**:
+`mockup/mobile/13_viewer/`. Their four `<nav>` blocks give **four different bars**:
 
 | Drawing       | Tabs                                       |
 | ------------- | ------------------------------------------ |

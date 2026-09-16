@@ -1,6 +1,6 @@
 // Project Map — where the portfolio's sites are, as the VIEWER's drawing shows them.
 //
-// DRAWING: mockup/mobile/role_viewer/03_map/01_map_viewer (Stitch screen "Project Map - Viewer
+// DRAWING: mockup/mobile/13_viewer/03_map/01_map_viewer (Stitch screen "Project Map - Viewer
 // (Fixed View)").
 //
 // REDRAWN 2026-09-11 — one of the four this role's set gained that day. The header became the app's

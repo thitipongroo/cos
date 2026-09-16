@@ -155,7 +155,7 @@ describe('SupportScreen (post-auth)', () => {
 
   // ── THE 2026-09-11 REDRAW ────────────────────────────────────────────────────────────────────
   //
-  // `mockup/mobile/support_center/01_dashboard` was redrawn and adds three sections, all of them
+  // `mockup/mobile/02_shared/02_support_center/01_dashboard` was redrawn and adds three sections, all of them
   // drawn rather than read: there is no help_article, faq or article model in the schema, no
   // `backend/src/modules/support/`, and no controller prefix for any of them (measured 2026-09-11).
 

@@ -114,5 +114,5 @@ opened all 24 read routes in one edit, which is a different decision from the on
   of the same disagreement, decided the day before
 - `docs/architecture/adr/099-mockup-figures-without-a-data-source.md` — where `VIEWER_OPEN_ISSUES`
   was registered and is now removed
-- `mockup/mobile/role_viewer/06_procurement/01_procurement`,
-  `mockup/mobile/role_viewer/07_budget/01_budget`
+- `mockup/mobile/13_viewer/06_procurement/01_procurement`,
+  `mockup/mobile/13_viewer/07_budget/01_budget`

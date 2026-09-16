@@ -742,7 +742,7 @@ apps/mobile/src/lib/mockupFigures.ts` — and attributable by the section header
 | 2026-09-09 | The CRM manager's home dashboard         | 3       |
 | 2026-09-10 | The CRM manager's four remaining screens | 8       |
 | 2026-09-10 | Get Help (`01_authen/05_get_help`)       | 5       |
-| 2026-09-10 | VIEWER (`role_viewer/`)                  | 14      |
+| 2026-09-10 | VIEWER (`13_viewer/`)                    | 14      |
 
 The first three are recorded in their screens' header comments and in the register itself, which is
 where a reader looks; what they skipped was this file, so the running total here has been wrong for
@@ -751,7 +751,7 @@ two days. Recorded rather than quietly corrected: a count that drifts silently i
 
 ### The VIEWER round
 
-`mockup/mobile/role_viewer/` is five Stitch screens the product owner asked for on 2026-09-10 —
+`mockup/mobile/13_viewer/` is five Stitch screens the product owner asked for on 2026-09-10 —
 Home, Projects, Map, Insights and Account Settings. Fourteen entries, and they are unusually
 top-heavy: the **Insights screen is drawn in full**, which no screen in this register has been
 before. No endpoint on that device returns a planned-versus-actual series, a safe-hours ledger, a
@@ -876,7 +876,7 @@ Eighty-six, plus thirteen, less `VIEWER_OPEN_ISSUES`.
 
 The Support Centre's drawing was redrawn and the product owner named it —
 `ศูนย์ช่วยเหลือและสนับสนุน - Construction OS (Support Center)`, Stitch screen
-`1eb1b5532aa745a8ba61345cbb138c9a`, stored at `mockup/mobile/support_center/01_dashboard`. Three
+`1eb1b5532aa745a8ba61345cbb138c9a`, stored at `mockup/mobile/02_shared/02_support_center/01_dashboard`. Three
 entries follow from it, and all three are the same category: **missing a corpus**, not missing a
 query. Measured 2026-09-11 — no `help_article`, `faq` or `article` model in `schema.prisma`, no
 `backend/src/modules/support/`, and no controller prefix for support, chat, ticket, help or faq. The

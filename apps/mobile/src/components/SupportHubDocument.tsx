@@ -1,6 +1,6 @@
 // Support Hub — the POST-AUTH Support screen, and the redrawn Stitch drawing it is built from.
 //
-// DRAWING: mockup/mobile/support_center/01_dashboard (Stitch screen "ศูนย์ช่วยเหลือและสนับสนุน -
+// DRAWING: mockup/mobile/02_shared/02_support_center/01_dashboard (Stitch screen "ศูนย์ช่วยเหลือและสนับสนุน -
 // Construction OS (Support Center)"), redrawn and named by the product owner on 2026-09-11. The
 // repo copy is sha256-identical to what Stitch serves.
 //

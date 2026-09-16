@@ -1,4 +1,4 @@
-// The VIEWER project map (mockup/mobile/role_viewer/03_map/01_map_viewer).
+// The VIEWER project map (mockup/mobile/13_viewer/03_map/01_map_viewer).
 //
 // The screen is drawn whole and reads nothing, so what is worth pinning is the part a later edit
 // could quietly get wrong: that every one of the four map controls is present AND says so on a

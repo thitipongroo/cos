@@ -1,5 +1,5 @@
 // Behaviour of the VIEWER's project list, rebuilt to
-// `mockup/mobile/role_viewer/02_projects/01_list_items` on 2026-09-10.
+// `mockup/mobile/13_viewer/02_projects/01_list_items` on 2026-09-10.
 //
 // The list still comes from the local cache through `useCollection` with no limit, so it renders
 // every project the device holds — that part is unchanged and the first three cases below are the

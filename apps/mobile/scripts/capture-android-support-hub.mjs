@@ -6,7 +6,7 @@
 //                    search, eight Quick Help categories, Top FAQs, a featured article, device
 //                    diagnostics, the role's own module list, and the pinned support footer
 //
-// Drawing: mockup/mobile/support_center/01_dashboard (Stitch, "ศูนย์ช่วยเหลือและสนับสนุน -
+// Drawing: mockup/mobile/02_shared/02_support_center/01_dashboard (Stitch, "ศูนย์ช่วยเหลือและสนับสนุน -
 // Construction OS (Support Center)"), redrawn and named by the product owner 2026-09-11.
 //
 // ── WHY A NEW SCRIPT, AND WHY THIS FOLDER ───────────────────────────────────────────────────────

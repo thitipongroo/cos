@@ -16,7 +16,7 @@
 // ── THIS ROUTE IS A FRAME, AND NOTHING ELSE, SINCE 2026-09-11 ───────────────────────────────────
 //
 // It renders `components/SupportHubDocument.tsx` and adds nothing to it. The screen IS the drawing
-// (`mockup/mobile/support_center/01_dashboard`).
+// (`mockup/mobile/02_shared/02_support_center/01_dashboard`).
 //
 // IT USED TO ADD THREE CARDS and the product owner removed all three on 2026-09-11:
 //

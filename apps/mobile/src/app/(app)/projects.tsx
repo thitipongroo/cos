@@ -1,6 +1,6 @@
 // Projects — the VIEWER's read-only project list.
 //
-// DRAWING: mockup/mobile/role_viewer/02_projects/01_list_items (Stitch screen "Project List -
+// DRAWING: mockup/mobile/13_viewer/02_projects/01_list_items (Stitch screen "Project List -
 // Viewer (Mobile Dark Mode)").
 //
 // REDRAWN 2026-09-11. The screen was first built against the 2026-09-10 export; the product owner

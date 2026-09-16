@@ -28,7 +28,7 @@
 // roles and none for this one, so there was nobody to sign in as. The role's Home also rendered a
 // 22-line placeholder until 2026-09-10, so nothing had gone looking.
 //
-// `mockup/mobile/role_viewer/` (five Stitch screens, requested by the product owner on 2026-09-10)
+// `mockup/mobile/13_viewer/` (five Stitch screens, requested by the product owner on 2026-09-10)
 // closed both: the screens exist, and `viewer` / `+66811000013` / Somsak Watcharawit is seeded with
 // a `projects.project_members` row — which is not a convenience for screenshots. Every screen this
 // role owns is a view OF its projects, so a VIEWER belonging to nothing photographs five empty

@@ -14,7 +14,7 @@
 // (`03_site_engineer/05_profile/01_se_navigation_drawer`,
 // `06_project_manager/05_navigation_drawer/01_pm_profile`,
 // `07_safety_officer/05_profile/01_sa_drawer`,
-// `role_executive/05_profile/01_executive_navigation_drawer`) and are deliberately NOT put in their
+// `08_executive/05_profile/01_ex_navigation_drawer`) and are deliberately NOT put in their
 // place: no role takes a drawing verbatim any more, so citing one would misstate the model below.
 //
 // This REPLACES the 2026-08-10 arrangement, where exactly two roles (TENANT_ADMIN, PROJECT_MANAGER)
@@ -239,7 +239,7 @@ const ISSUES: DrawerLink = {
   icon: 'report-problem',
 };
 // The VIEWER's map and analytics screens, added 2026-09-10 with
-// `mockup/mobile/role_viewer/03_map` and `/04_insights`. Both drawings draw them as TABS; the five
+// `mockup/mobile/13_viewer/03_map` and `/04_insights`. Both drawings draw them as TABS; the five
 // drawings of that set give four different bars, VIEWER is one of the three roles §32.7's table
 // enumerates, and the product owner kept the enumerated bar — so they are rows here instead, which
 // is the same answer §32.7 records for every screen this app draws but does not put on a bar.

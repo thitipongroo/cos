@@ -250,7 +250,7 @@ describe('HomeScreen role dispatch', () => {
   });
 
   // VIEWER FELL THROUGH TO <MinimalHome /> UNTIL 2026-09-10, and this case asserted that it did.
-  // `mockup/mobile/role_viewer/01_home/01_dashboard` gave the role a full read-only portfolio
+  // `mockup/mobile/13_viewer/01_home/01_dashboard` gave the role a full read-only portfolio
   // dashboard, so the switch gained a case and this test now asserts the opposite.
   it('gives VIEWER its own read-only portfolio dashboard', async () => {
     const { getByTestId, queryByTestId } = await renderHome(CosRole.VIEWER);

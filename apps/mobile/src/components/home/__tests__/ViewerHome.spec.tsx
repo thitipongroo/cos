@@ -1,4 +1,4 @@
-// The VIEWER Home dashboard (mockup/mobile/role_viewer/01_home/01_dashboard).
+// The VIEWER Home dashboard (mockup/mobile/13_viewer/01_home/01_dashboard).
 //
 // What is worth pinning here is the LINE BETWEEN REAL AND DRAWN, because it is invisible on screen:
 // the project count and the project cards come from the offline cache, and the two tiles beside

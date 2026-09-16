@@ -1,4 +1,4 @@
-// The VIEWER procurement screen (mockup/mobile/role_viewer/06_procurement/01_procurement).
+// The VIEWER procurement screen (mockup/mobile/13_viewer/06_procurement/01_procurement).
 //
 // Every figure on this screen is drawn today, so the assertions worth having are not "does 48
 // appear" — they are the three things a later edit could get wrong while still rendering perfectly:
