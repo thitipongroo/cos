@@ -17,6 +17,7 @@
 import { render, fireEvent, waitFor } from '@testing-library/react-native';
 import { I18nProvider } from '../../../i18n';
 import { useProjectStore } from '../../../store/projectStore';
+import { Alert } from 'react-native';
 import PaymentsScreen from '../payments';
 import { paletteFor } from '../../../theme/palette';
 import { useThemeStore } from '../../../store/themeStore';
@@ -116,9 +117,8 @@ describe('PaymentsScreen', () => {
     expect(call?.[1]).toEqual({ status: 'PENDING' });
   });
 
-  it('asks the SERVER for the pending rows, and counts what it got back', async () => {
-    // The endpoint pages at 20 and a tenant holds more, so a count over the page this screen
-    // received would be a count of the page.
+  it('asks the SERVER for the pending rows, and prints no count line under the heading', async () => {
+    // The Stitch screen dropped "N items awaiting your approval" (2026-09-17); so does this one.
     const { getByTestId } = await renderScreen();
 
     await waitFor(() => expect(getByTestId('payment-item-p1')).toBeTruthy());
@@ -127,7 +127,7 @@ describe('PaymentsScreen', () => {
     // The word is capitalised by `textTransform`, so the tree still carries the message file's
     // ordinary "Pending" — which is the string a screen reader announces.
     expect(getByTestId('payments-screen')).toHaveTextContent(/Pending/);
-    expect(getByTestId('payments-screen')).toHaveTextContent(/2 items awaiting/);
+    expect(getByTestId('payments-screen')).not.toHaveTextContent(/awaiting/);
   });
 
   it('places each payment by its project CODE, resolved once for the page', async () => {
@@ -156,7 +156,7 @@ describe('PaymentsScreen', () => {
     const { getByTestId } = await renderScreen();
 
     await waitFor(() => expect(getByTestId('payment-item-p1')).toHaveTextContent(/Modernist/));
-    expect(getByTestId('payment-item-p1')).toHaveTextContent(/INV-2026-0891/);
+    expect(getByTestId('payment-item-p1')).toHaveTextContent(/Project SKY-01/);
     // ONE request for the page, never one per row drawn.
     expect(
       client.get.mock.calls.filter((c) => String(c[0]).startsWith('/procurement/vendor-invoices')),
@@ -272,7 +272,71 @@ describe('PaymentsScreen', () => {
     const { getByTestId } = await renderScreen();
 
     await waitFor(() => expect(getByTestId('payments-analysis')).toHaveTextContent(/week 3/));
-    expect(getByTestId('payments-analysis')).toHaveTextContent(/Skybridge Central/);
+    // The drawing's source since 2026-09-17 (D31), in place of the project's name.
+    expect(getByTestId('payments-analysis')).toHaveTextContent(
+      /Integrated ERP & Market Benchmarks/,
+    );
+  });
+
+  it('puts the analysis module after the second card, as drawn', async () => {
+    client.get.mockImplementation((path: string) =>
+      path.startsWith('/finance/payments')
+        ? Promise.resolve([payment('p1'), payment('p2'), payment('p3')])
+        : route(path),
+    );
+    const { getAllByTestId } = await renderScreen();
+
+    await waitFor(() =>
+      expect(getAllByTestId(/^payment-item-p\d$|^payments-analysis$/)).toHaveLength(4),
+    );
+    const order = getAllByTestId(/^payment-item-p\d$|^payments-analysis$/).map(
+      (n) => n.props.testID,
+    );
+    expect(order).toEqual([
+      'payment-item-p1',
+      'payment-item-p2',
+      'payments-analysis',
+      'payment-item-p3',
+    ]);
+  });
+
+  it('draws the work-package chip in drawn order, and opens a dialog from the analysis footer, its one way in', async () => {
+    const alert = jest.spyOn(Alert, 'alert').mockImplementation(() => undefined);
+    const { getByTestId, queryByTestId } = await renderScreen();
+
+    await waitFor(() =>
+      expect(getByTestId('payment-item-p1-package')).toHaveTextContent('Foundations & Structure'),
+    );
+    expect(getByTestId('payment-item-p2-package')).toHaveTextContent('Cooling Phase II');
+    // The drawing's expand_more is gone (R22, D38); the footer chevron is the card's one way in.
+    expect(queryByTestId('payments-analysis-expand')).toBeNull();
+    await fireEvent.press(getByTestId('payments-analysis-foot'));
+    expect(alert).toHaveBeenCalled();
+    alert.mockRestore();
+  });
+
+  it("reads each payment's urgency off the local calendar", async () => {
+    const day = (offset: number) => {
+      const d = new Date();
+      d.setDate(d.getDate() + offset);
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    };
+    client.get.mockImplementation((path: string) =>
+      path.startsWith('/finance/payments')
+        ? Promise.resolve([
+            payment('p1', { payment_date: day(0) }),
+            payment('p2', { payment_date: day(1) }),
+            payment('p3', { payment_date: day(-3) }),
+            payment('p4', { payment_date: day(9) }),
+          ])
+        : route(path),
+    );
+    const { getByTestId } = await renderScreen();
+
+    await waitFor(() => expect(getByTestId('payment-item-p1-due')).toHaveTextContent(/Due today/));
+    expect(getByTestId('payment-item-p2-due')).toHaveTextContent(/Due tomorrow/);
+    expect(getByTestId('payment-item-p3-due')).toHaveTextContent(/Overdue/);
+    expect(getByTestId('payment-item-p4-due')).toHaveTextContent(/Due /);
   });
 
   it('draws the confidence its own drawing carries', async () => {

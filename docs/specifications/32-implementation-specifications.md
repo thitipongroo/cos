@@ -1840,7 +1840,7 @@ The foot of every AI card, and **the project's standard for one** (product-owner
 | Confidence | `verified` glyph + `CONF: {n}%`, success ink. **Omitted entirely when the card has no model behind it**                                                                               |
 | Separator  | A drawn 1px rule, not a `\|` character — a pipe between two labels reads as a table column                                                                                            |
 | Source     | `storage` glyph + `SOURCE: {name}`, muted, `flex: 1`, one line, tail ellipsis                                                                                                         |
-| Chevron    | Trailing, accent, hidden from the accessibility tree — the row's own label already says the source. **Dropped when the card's body already offers a button or a chevron** — see below |
+| Chevron    | Trailing, accent, hidden from the accessibility tree — the row's own label already says the source. **Always drawn; the whole row presses, and it is the card's one way in** — see below |
 
 **THE CONFIDENCE LIVES HERE, NOT IN THE HEADER.** It used to sit as a chip opposite the card's title,
 which is where `09_finance` and `10_proc_officer` both draw it, and that put the two halves of one
@@ -1862,35 +1862,38 @@ longer a chip for a number to lead.
 figures are deterministic has no confidence to report; the FINANCE cash-flow forecast is the case on
 record (ADR-099, third amendment), and printing one would claim a model that never ran.
 
-**THE TRAILING CHEVRON IS DROPPED WHEN THE BODY ALREADY HAS ONE** (product-owner decision
-2026-09-09). The caller passes `bodyHasAction` and the foot ends at the source.
+**THE CHEVRON IS THE CARD'S ONE WAY IN** (product-owner decision 2026-09-17, R22, D38). Every AI
+card is entered into its content through exactly one control: this footer's trailing
+`chevron-right`. So:
 
-The rule is about how many ways out of one card a reader is offered. A card whose body carries a
-filled action — "Send the final BOQ", "Adjust the site schedule", "See the opening" — has already
-said what to do next; a second arrow in the foot points somewhere vaguer and the two compete. On
-most of those cards the foot has no `onPress` at all, so its chevron was an affordance for nothing.
+- the chevron is **always drawn**, and `onPress` is **required** — where no screen exists behind the
+  card yet, it opens the coming-soon dialog, never nothing;
+- the card's **body carries no button, link, pill or chevron that leads into its content**.
 
-**It is a property of the card, not of the component**, which is why the caller states it rather than
-the component inferring it. `onPress === undefined` is the wrong test: a card can have a body button
-and a pressable foot, and it can have neither.
+**This reverses the 2026-09-09 rule**, under which a card whose body carried a button dropped this
+chevron (`bodyHasAction`). The principle — one card, one way onward — is kept; the way onward moved
+here, and the flag was withdrawn. The body controls that went with it: the budget forecast's "Open
+the full forecast and contract review", the payments analysis `expand_more`, the leads insight
+action, the opportunities "View analysis", the vendor insight's "Dismiss" and "Negotiate", the CRM
+intelligence action, the logistics advisor's "Adjust schedule", the project-insights "VIEW
+EVIDENCE" pill, and the executive panel's "Mitigation" and "Dismiss". Before the change, 15 of the
+16 footers drew a chevron that opened nothing; the required `onPress` is what keeps that from
+recurring.
 
-**The flag is for a body action a reader can actually take** — not for a glyph that looks like one.
-The FINANCE forecast card drew a bare `chevron-right` in its header, inside a plain `View` with no
-`onPress`, while its foot was the card's one working affordance; flagging it would have deleted the
-control and kept the decoration. **The decoration was deleted instead** (2026-09-09), so that card
-has no body action and keeps its footer chevron by the ordinary path. A card that needs an exception
-to this rule usually has a different bug.
+**One exception, and it is not a way in** (D39): `<InsightPanel />`'s Generate button stays. It is a
+command — it asks the AI gateway to write the report (PO decision 2026-08-11) — and it carries no
+chevron of its own. The panel's `followUp` button and `footer` slot were removed.
 
-Applied at four cards on the day the rule was made: the CRM intelligence card, the vendor insight,
-the logistics advisor, and `<InsightPanel />`. Budget, invoices, payments and RFQs carry no body
-action and keep the chevron — which is why this is a flag rather than a deletion.
+A decorative glyph is still not an affordance: a bare chevron that opens nothing is deleted, not
+kept (the FINANCE forecast case, 2026-09-09).
 
 **The source names something this repository has** — a project, a set of records — never a system it
 does not. Both mockup sets foot their AI cards with integrations that do not exist ("Integrated ERP
 & Market Benchmarks", "e-GP Benchmark", "ERP DB & Central OCR Ledger"). A provenance line is the one
 piece of drawn text that changes how much of the card a reader believes; that carve-out is
 ADR-098's second amendment, and it now lives in the component so the next AI card inherits it rather
-than re-deciding it.
+than re-deciding it. **Exception:** the four FINANCE cards print their drawings' source lines
+(product-owner decision 2026-09-17, D33; ADR-098 amendment of that date).
 
 #### Photo Annotation (`<PhotoAnnotation />`)
 

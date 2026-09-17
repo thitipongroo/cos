@@ -371,6 +371,36 @@ export const APPROVALS_TREND = figure(
  * defensible ways — 4 weeks, 52/12 weeks, trailing vs projected — and master §Never forbids
  * inventing business logic that is not specified. Drawn until a formula is.
  */
+/**
+ * The source line under each FINANCE AI card, as each drawing writes it (revision R21, D31,
+ * 2026-09-17): Home "ERP & Milestone data", Payments "Integrated ERP & Market Benchmarks", Budget
+ * "ERP & Schedule", Invoices "ERP DB & Central OCR Ledger". COMING SOON.
+ *
+ * THESE REPLACED REAL PROJECT NAMES. Until 2026-09-17 the three cash-flow cards named the project
+ * their forecast came from; the product owner chose the drawing. They are claims about WHICH SYSTEMS
+ * fed a card — see ADR-098's amendment of 2026-09-16 and ADR-099's of 2026-09-17.
+ */
+export const FINANCE_AI_SOURCES = figure(
+  {
+    home: 'ERP & Milestone data',
+    payments: 'Integrated ERP & Market Benchmarks',
+    budget: 'ERP & Schedule',
+    invoices: 'ERP DB & Central OCR Ledger',
+  },
+  'an ERP integration, a market-benchmark feed and an OCR ledger — this platform has none of them; ' +
+    'the forecasts are a direct-method sum of scheduled cash flows',
+);
+
+/**
+ * The work-package chip on each payment card — "Foundations & Structure", "Cooling Phase II",
+ * "Grid Connector Phase" — repeated in drawn order (revision R21, D31, 2026-09-17). COMING SOON.
+ */
+export const PAYMENT_WORK_PACKAGES = figure(
+  ['Foundations & Structure', 'Cooling Phase II', 'Grid Connector Phase'] as const,
+  'a work package on a payment. `finance.payments` carries an invoice and a project; nothing links ' +
+    'a payment to a scope of work',
+);
+
 export const FINANCE_BURN_RATE = figure(
   { text: '฿ 1.2 M', percent: 65 },
   'a specified formula for monthly burn. The 13-week forecast has the weekly outflows; what it ' +
@@ -473,10 +503,14 @@ export const BUDGET_CATEGORY_GLYPHS = figure(
 // `po_number`, `status` and `total_amount` on `procurement.purchase_orders`, reached through
 // `poIndex()` — the first draft of this screen was going to draw all three.
 //
-// AND NO CONFIDENCE. The drawing puts "CONFIDENCE: 96%" on the banner and calls it CORE_AI. There
-// is no model here at all — not a deterministic calculation dressed as one, as on the cash-flow
-// cards, but nothing whatsoever — so a confidence would be the exact case spec §22.3 forbids. The
-// banner is drawn without it, as the three cash-flow modules are.
+// THE CONFIDENCE IS DRAWN (PO 2026-09-08, reaffirmed R21 2026-09-17): "CONFIDENCE: 96%" sits in
+// the banner's <AiCardFooter />. There is no model here at all, so it is a confidence on a process
+// that never ran — the register's most uncomfortable entry, COMING SOON like the rest.
+//
+// R21 (2026-09-17, Stitch "รายการใบแจ้งหนี้ - ฝ่ายการเงิน"): the banner sentence's WORDS moved to
+// i18n (`finance.invoices.matchLead/matchMid/matchTail`) and its FIGURES stayed here; the same split
+// for the discrepancy sentence (`finance.invoices.discrepancy`). The drawn "PO"/"GRN" words are back
+// in front of the references (D31).
 
 /**
  * The 3-Way Matching advisory banner, and the per-card match percentages beneath it.
@@ -487,13 +521,13 @@ export const BUDGET_CATEGORY_GLYPHS = figure(
  */
 export const THREE_WAY_MATCH = figure(
   {
-    /**
-     * The banner's own sentence, with the drawing's own figures inside it.
-     *
-     * The words PO and GRN were dropped from in front of the references on 2026-09-08 (PO): the
-     * numbers already carry them, and "PO #PO-2026-882" says it twice.
-     */
-    summary: '#PO-2026-882 and #GRN-401 agree to 98% — 3 invoices are ready to approve.',
+    /** The banner sentence's references: "PO #PO-2026-882" and "GRN #GRN-401". */
+    po: 'PO-2026-882',
+    grn: 'GRN-401',
+    /** "สอดคล้อง 98%" — how far the drawn PO and GRN agree. */
+    agreement: 98,
+    /** "พร้อมอนุมัติ 3 รายการ" — how many invoices the drawn match clears. */
+    ready: 3,
     /** "CONFIDENCE: 96%" in the banner's header. */
     confidence: 96,
     percentages: [99, 92, 87, 96, 94] as const,
@@ -521,7 +555,9 @@ export const DELIVERY_GRN = figure(
  * by how much needs the comparison that produces the score.
  */
 export const INVOICE_DISCREPANCY = figure(
-  'The invoiced quantity exceeds what was delivered. Hold payment pending review.',
+  // "ปริมาณเหล็กข้ออ้อย DB25 ในใบแจ้งหนี้เกินใบส่งมอบจริง 4.5 ตัน (+฿ 40,200)" — the figures; the
+  // words are `finance.invoices.discrepancy`.
+  { material: 'DB25', tonnes: '4.5', amount: '40,200' },
   'the same three-way matching process — a discrepancy is its output, not a separate feature',
 );
 
@@ -948,7 +984,7 @@ export const CRM_INTELLIGENCE = figure(
   {
     confidence: 92,
     body: 'The "Skyline Tower A" opportunity is likely to close this week. Send the final BOQ.',
-    action: 'Send the final BOQ',
+    // The drawing's "Send the final BOQ" button was removed 2026-09-17 (R22, D38), and its label here.
   },
   'a sales model reading lead velocity and email sentiment — neither the endpoint nor the email integration exists',
 );

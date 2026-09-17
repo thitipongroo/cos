@@ -39,6 +39,10 @@
 // everything the drawing shows that has no endpoint — extend the deadline, compare specifications —
 // opens the "coming soon" dialog rather than a button that fails (the `more.tsx` convention).
 
+// R22 (PO decision 2026-09-17, D38): the analysis banner's footer chevron now opens the coming-soon
+// dialog. Every AI card has ONE way into its content — the footer chevron of <AiCardFooter /> (spec
+// §32.7 "AI Card Footer"); with no screen behind it yet, that chevron opens the coming-soon dialog.
+
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { View, Text, Pressable, ScrollView, TextInput, StyleSheet } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -245,6 +249,8 @@ function OfficerRfqs(): React.JSX.Element {
               source={t('procurement.rfqs.source')}
               confLabel={t('insight.confShort')}
               sourceLabel={t('insight.sourceShort')}
+              // The card's one way in (R22, D38) — no screen exists yet, so the coming-soon dialog.
+              onPress={() => soon('procurement.rfqs.analysis')}
               palette={p}
             />
           </View>

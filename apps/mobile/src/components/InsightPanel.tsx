@@ -21,6 +21,12 @@
 // on load would spend the tenant's allowance every time someone taps a tab. The button is the
 // difference between a report someone asked for and a bill nobody authorised.
 //
+// ONE WAY IN, AND THE GENERATE BUTTON IS NOT IT (PO decision 2026-09-17, R22, D38/D39). Every AI
+// card is entered through its footer chevron alone; here that opens the coming-soon dialog, since no
+// report screen exists. Generate stays as the standard's one exception — it is a command, not a way
+// into content — and lost its trailing chevron so the card shows one. The `followUp` button (no
+// caller passed one) and the `footer` slot (ExecHome's Mitigation / Dismiss) went with the rule.
+//
 // THE CONFIDENCE IS SHOWN AS A BAND WITH THE NUMBER BESIDE IT, not as a bare percentage — see
 // lib/aiConfidence.ts for the guidance and for why the band edges are the platform's own.
 //
@@ -68,6 +74,7 @@ import { AiCardFooter } from './AiCardFooter';
 import { insightAdvice } from '../lib/insightAdvice';
 import { useAuthStore } from '../store/authStore';
 import { useT } from '../i18n';
+import { useComingSoon } from './useComingSoon';
 import { fontFamily, radius, spacing, touchTarget, typography } from '../theme/tokens';
 import { usePalette, type Palette, useIsDark } from '../theme/usePalette';
 
@@ -129,11 +136,6 @@ export interface InsightPanelProps {
    */
   variant?: 'plain' | 'washed' | 'executive';
   /**
-   * The drawing's follow-up button ("Review Adjustments ›" on the Finance panel). Optional: the
-   * panels whose mockup has no such button do not grow one.
-   */
-  followUp?: { labelKey: string; onPress: () => void };
-  /**
    * How to read this report's prose, when `summaryText`'s first-string default is wrong for it.
    *
    * DELAY_RISK is the case that forced this prop and is still the only user (PO decision
@@ -159,15 +161,6 @@ export interface InsightPanelProps {
    */
   showAdvice?: boolean;
   /**
-   * Extra controls rendered INSIDE the card, after everything else.
-   *
-   * The executive drawing puts its "Mitigation" and "Dismiss" buttons inside the AI card rather than
-   * under it, which is where `ExecHome` had them. A slot rather than two more props: they belong to
-   * the host screen — they are that screen's actions, not the panel's — and the panel has no
-   * business knowing what they do.
-   */
-  footer?: React.ReactNode;
-  /**
    * Generate on mount instead of on a button press, and draw no button.
    *
    * THIS SPENDS AI QUOTA ON EVERY SCREEN OPEN. The button existed precisely to stop that:
@@ -192,11 +185,9 @@ export function InsightPanel({
   testID,
   projectLabel,
   variant = 'plain',
-  followUp,
   bodyFrom,
   levelFrom,
   showAdvice = true,
-  footer,
   autoRun = false,
 }: InsightPanelProps): React.JSX.Element {
   const t = useT();
@@ -206,6 +197,7 @@ export function InsightPanel({
   const washed = variant === 'washed';
   const executive = variant === 'executive';
   const token = useAuthStore((s) => s.accessToken);
+  const soon = useComingSoon();
 
   const [report, setReport] = useState<AiReport | null>(null);
   const [loading, setLoading] = useState(false);
@@ -376,26 +368,10 @@ export function InsightPanel({
             (loading || projectId === '') && styles.actionDisabled,
           ]}
         >
+          {/* No chevron: the footer's is the card's one (D39). */}
           <Text style={styles.actionText}>{t('insight.action')}</Text>
-          <MaterialIcons name="chevron-right" size={18} color={p.primary} />
         </Pressable>
       )}
-
-      {followUp !== undefined ? (
-        <Pressable
-          testID="insight-follow-up"
-          accessibilityRole="button"
-          accessibilityLabel={t(followUp.labelKey)}
-          onPress={followUp.onPress}
-          style={styles.followUp}
-        >
-          <Text style={styles.followUpText}>{t(followUp.labelKey)}</Text>
-          <MaterialIcons name="chevron-right" size={18} color={p.text} />
-        </Pressable>
-      ) : null}
-
-      {/* The host's own controls, inside the card — see `footer`. */}
-      {footer}
 
       {/* The mockup's "Source:" line. It names the project the figures came from, which is the whole
           reason the host screen asks for one — and on the `executive` variant it also IS the
@@ -415,9 +391,8 @@ export function InsightPanel({
         source={projectLabel ?? projectId}
         confLabel={t('insight.confShort')}
         sourceLabel={t('insight.sourceShort')}
-        // The body already offers `insight-run` and, where one exists, a follow-up button, so
-        // the foot ends at the source (PO 2026-09-09).
-        bodyHasAction
+        // The card's one way in (R22, D38) — no report screen exists, so the coming-soon dialog.
+        onPress={() => soon(titleKey)}
         palette={p}
       />
     </View>
@@ -548,24 +523,6 @@ const makeStyles = (p: Palette) =>
       fontFamily: fontFamily.semibold,
       fontSize: 10,
       letterSpacing: 0.8,
-      textTransform: 'uppercase',
-    },
-    followUp: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'center',
-      gap: spacing.xs / 2,
-      minHeight: touchTarget.secondaryButton,
-      borderRadius: radius.md,
-      borderWidth: 1,
-      borderColor: p.border,
-      backgroundColor: p.bg,
-    },
-    followUpText: {
-      color: p.text,
-      fontFamily: fontFamily.semibold,
-      fontSize: typography.label.fontSize,
-      letterSpacing: 0.5,
       textTransform: 'uppercase',
     },
     actionDisabled: { opacity: 0.6 },

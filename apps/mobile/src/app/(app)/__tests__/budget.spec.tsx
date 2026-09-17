@@ -206,13 +206,14 @@ describe('BudgetScreen', () => {
     );
   });
 
-  it('marks a category over its allocation, with the overrun in place of the drawn code', async () => {
+  it('marks a category over its allocation with the drawn words and the real overrun', async () => {
     client.get.mockImplementation(route([cost('c1', 'l-2', '31500000.0000')]));
     const { getByTestId } = await renderScreen();
 
     // 31.5 of 30.0 is 105%, which is 5% over.
     await waitFor(() => expect(getByTestId('budget-line-l-2')).toHaveTextContent(/105%/));
-    expect(getByTestId('budget-line-l-2')).toHaveTextContent(/Over allocation by 5%/);
+    // D35 (2026-09-17): the drawing's "Proj. Variance" label, carrying the REAL 5 %.
+    expect(getByTestId('budget-line-l-2')).toHaveTextContent(/Proj\. Variance \+5%/);
     expect(getByTestId('budget-line-l-2')).not.toHaveTextContent(/Code:/);
   });
 
@@ -242,18 +243,17 @@ describe('BudgetScreen', () => {
     const { getByTestId } = await renderScreen();
 
     await waitFor(() => expect(getByTestId('budget-forecast')).toHaveTextContent(/week 3/));
-    expect(getByTestId('budget-forecast')).toHaveTextContent(/Skybridge Central/);
   });
 
-  it('draws the confidence its own drawing carries, and keeps the source honest beside it', async () => {
+  it('draws the confidence and the source its own drawing carries', async () => {
     // THE ADR-099 GUARD. The card reads a DETERMINISTIC forecast, so the percentage claims a model
     // that never ran; drawn on the product owner's instruction of 2026-09-08 and registered.
-    // The source line is NOT taken from the drawing — "ERP & Schedule" names integrations this
-    // platform does not have, which is the carve-out ADR-098's second amendment keeps.
+    // The source is the drawing's "ERP & Schedule" since 2026-09-17 (R21, D31) — it used to name the
+    // project, and that carve-out was reversed.
     const { getByTestId } = await renderScreen();
 
     await waitFor(() => expect(getByTestId('budget-forecast')).toHaveTextContent(/94%/));
-    expect(getByTestId('budget-forecast')).not.toHaveTextContent(/ERP/);
+    expect(getByTestId('budget-forecast')).toHaveTextContent(/ERP & Schedule/);
   });
 
   it('clears the figures when the budget cannot be read, rather than leaving the last project up', async () => {
@@ -285,7 +285,7 @@ describe('BudgetScreen', () => {
     for (const id of [
       'budget-amend',
       'budget-expand-all',
-      'budget-deep-report',
+      'budget-forecast-foot',
       'budget-line-details-l-1',
     ]) {
       await fireEvent.press(getByTestId(id));

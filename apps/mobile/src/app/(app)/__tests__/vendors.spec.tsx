@@ -236,17 +236,18 @@ describe('VendorsScreen', () => {
     expect(alert).toHaveBeenCalledTimes(2);
   });
 
-  // The insight card's two actions, and the reason the card has a foot at all: the SOURCE must name
-  // something this repository has (ADR-098 amendment 2).
-  it('draws the insight card with its source and both actions', async () => {
-    const { getByTestId } = await renderScreen();
+  // The SOURCE must name something this repository has (ADR-098 amendment 2). Since 2026-09-17
+  // (R22, D38) the card carries no body buttons: its footer is its one way in.
+  it('draws the insight card with its source, entered through its footer alone', async () => {
+    const { getByTestId, queryByTestId } = await renderScreen();
 
     await waitFor(() => expect(getByTestId('vendor-insight')).toBeTruthy());
     expect(getByTestId('vendor-insight-foot')).toHaveTextContent(/SOURCE/);
+    expect(queryByTestId('vendor-insight-dismiss')).toBeNull();
+    expect(queryByTestId('vendor-insight-act')).toBeNull();
 
-    await fireEvent.press(getByTestId('vendor-insight-dismiss'));
-    await fireEvent.press(getByTestId('vendor-insight-act'));
-    expect(alert).toHaveBeenCalledTimes(2);
+    await fireEvent.press(getByTestId('vendor-insight-foot'));
+    expect(alert).toHaveBeenCalledTimes(1);
   });
 
   // §6.8 gives the role the right; the app has no editor to exercise it with, and says so.

@@ -280,6 +280,41 @@ export async function poIndex(): Promise<Map<string, PurchaseOrderRow>> {
   }
 }
 
+/** The most pages `projectPoIndex` walks — 50 × 100 orders, far past any one project's book. */
+const PROJECT_PO_PAGES = 50;
+
+/**
+ * `po_id` → the purchase order, for ONE project's orders (PO decision 2026-09-17, D37).
+ *
+ * `GET /procurement/purchase-orders?project_id=` scopes on the server; the invoice list cannot
+ * (it filters by `po_id` or `status` only), so the invoice screen keeps the invoices whose `po_id`
+ * is in this map. Every page is walked, because an order missing from the map would drop its
+ * invoices from the project's list without a trace — stopping when the server's `total` is
+ * reached, or when a page comes back short.
+ *
+ * Empty on failure, like `poIndex`: the screen then shows the project as having no invoices,
+ * rather than showing the whole tenant's under that project's name.
+ */
+export async function projectPoIndex(projectId: string): Promise<Map<string, PurchaseOrderRow>> {
+  const out = new Map<string, PurchaseOrderRow>();
+  try {
+    for (let n = 1; n <= PROJECT_PO_PAGES; n += 1) {
+      const res = page(
+        await get<Paged<PurchaseOrderRow> | PurchaseOrderRow[]>('/procurement/purchase-orders', {
+          project_id: projectId,
+          page: String(n),
+          limit: String(INVOICE_PAGE),
+        }),
+      );
+      for (const row of res.items) out.set(row.po_id, row);
+      if (res.items.length < INVOICE_PAGE || out.size >= res.total) break;
+    }
+    return out;
+  } catch {
+    return new Map();
+  }
+}
+
 /**
  * Approve a vendor invoice — `RECEIVED`/`VERIFIED` → `APPROVED`.
  *

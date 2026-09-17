@@ -45,6 +45,10 @@
 // NO HEADER OR BOTTOM NAV OF ITS OWN — the shell draws both, and this screen is reached from the
 // navigation drawer rather than from a tab (PO decision 2026-09-10).
 
+// R22 (PO decision 2026-09-17, D38): the risk forecast card's `VIEW EVIDENCE` pill is gone. Every
+// AI card has ONE way into its content — the footer chevron of <AiCardFooter /> (spec §32.7 "AI
+// Card Footer"); with no screen behind it yet, that chevron opens the coming-soon dialog.
+
 import { useMemo } from 'react';
 import { View, Text, Pressable, ScrollView, StyleSheet } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -269,11 +273,6 @@ export function ProjectInsightsDocument(): React.JSX.Element {
             <MaterialIcons name="memory" size={20} color={p.accent} />
             <Text style={styles.aiTitle}>{t('insights.viewer.riskForecast')}</Text>
           </View>
-          <CardAction
-            testID="insights-view-evidence"
-            label={t('insights.viewer.viewEvidence')}
-            onPress={() => soon('insights.viewer.viewEvidence')}
-          />
         </View>
         <Text style={styles.aiBody}>{VIEWER_RISK_FORECAST.value.body}</Text>
         <AiCardFooter
@@ -282,6 +281,8 @@ export function ProjectInsightsDocument(): React.JSX.Element {
           source={t('insight.sourcePortfolio')}
           confLabel={t('insight.confShort')}
           sourceLabel={t('insight.sourceShort')}
+          // The card's one way in (R22, D38) — no screen exists yet, so the coming-soon dialog.
+          onPress={() => soon('insights.viewer.riskForecast')}
           palette={p}
         />
       </View>

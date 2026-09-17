@@ -15,7 +15,10 @@ import {
   ACTIVE_REGION,
   COMPLIANCE,
   COMPLIANCE_TREND,
+  FINANCE_AI_SOURCES,
   HOME_KPI_CONFIDENCE,
+  INVOICE_DISCREPANCY,
+  PAYMENT_WORK_PACKAGES,
   PROJECT_LIST_FILTER,
   PROJECT_SAFETY_SCORES,
   PROJECT_SYNC_STATE,
@@ -25,6 +28,7 @@ import {
   REPORT_FINDINGS_FALLBACK,
   REPORT_ROW_TRENDS,
   SAFE_MAN_HOURS,
+  THREE_WAY_MATCH,
   UNBUILT_MORE_TILES,
 } from '../mockupFigures';
 
@@ -135,5 +139,40 @@ describe("mockupFigures — the Report screen's drawn content", () => {
   it('draws one flag and two recommendations, as the drawing does', () => {
     expect(REPORT_FINDINGS_FALLBACK.value.flag).toBe('flag');
     expect([...REPORT_FINDINGS_FALLBACK.value.recommendations]).toEqual(['rec1', 'rec2']);
+  });
+});
+
+// The FINANCE screens' R21 entries (2026-09-17, product-owner decisions D27-D37, ADR-099 amendment).
+describe("mockupFigures — the FINANCE screens' drawn content", () => {
+  it('names a drawn source for each of the four AI cards, and says what is missing', () => {
+    expect(FINANCE_AI_SOURCES.value).toEqual({
+      home: 'ERP & Milestone data',
+      payments: 'Integrated ERP & Market Benchmarks',
+      budget: 'ERP & Schedule',
+      invoices: 'ERP DB & Central OCR Ledger',
+    });
+    expect(FINANCE_AI_SOURCES.needs.length).toBeGreaterThan(20);
+  });
+
+  it('keeps the three work packages the payment cards cycle through, in drawn order', () => {
+    expect([...PAYMENT_WORK_PACKAGES.value]).toEqual([
+      'Foundations & Structure',
+      'Cooling Phase II',
+      'Grid Connector Phase',
+    ]);
+    expect(PAYMENT_WORK_PACKAGES.needs.length).toBeGreaterThan(20);
+  });
+
+  it('holds the matching banner and discrepancy figures, and no sentence', () => {
+    // The words moved to i18n on 2026-09-17; a sentence left here would be a second, untranslated copy.
+    expect(THREE_WAY_MATCH.value).not.toHaveProperty('summary');
+    expect(THREE_WAY_MATCH.value.agreement).toBeLessThanOrEqual(100);
+    expect(THREE_WAY_MATCH.value.confidence).toBeLessThanOrEqual(100);
+    expect(THREE_WAY_MATCH.value.ready).toBeGreaterThan(0);
+    expect(INVOICE_DISCREPANCY.value).toEqual({
+      material: 'DB25',
+      tonnes: '4.5',
+      amount: '40,200',
+    });
   });
 });

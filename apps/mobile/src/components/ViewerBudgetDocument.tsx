@@ -41,6 +41,11 @@
 // Insights where the same shapes respond. Each now raises `useComingSoon()`, and the spec counts
 // the handlers against the register so a card cannot be added without one or lose the one it has.
 
+// R22 (PO decision 2026-09-17, D38): the audit-forecast card's footer chevron now opens the coming-
+// soon dialog. Every AI card has ONE way into its content — the footer chevron of <AiCardFooter />
+// (spec §32.7 "AI Card Footer"); with no screen behind it yet, that chevron opens the coming-soon
+// dialog.
+
 import { useMemo } from 'react';
 import { View, Text, Image, Pressable, ScrollView, StyleSheet } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -302,6 +307,8 @@ export function ViewerBudgetDocument(): React.JSX.Element {
           source={t('insight.sourcePortfolio')}
           confLabel={t('insight.confShort')}
           sourceLabel={t('insight.sourceShort')}
+          // The card's one way in (R22, D38) — no screen exists yet, so the coming-soon dialog.
+          onPress={() => soon('finance.viewer.auditForecast')}
           palette={p}
         />
       </View>

@@ -79,6 +79,11 @@ function route(path: string) {
     return Promise.resolve({ items: [invoice('p1'), invoice('p2')] });
   }
   if (path.startsWith('/finance/cashflow-forecast')) return Promise.resolve(forecast(2));
+  if (path.startsWith('/projects/mine')) {
+    return Promise.resolve({
+      items: [{ project_id: 'proj-1', project_code: 'SKY', project_name: 'Skybridge Central' }],
+    });
+  }
   return Promise.resolve({ items: [] });
 }
 
@@ -155,15 +160,15 @@ describe('FinanceHome', () => {
     expect(queryByTestId('project-context-bar')).toBeNull();
   });
 
-  it('reads the forecast for ONE project, because it is advice about somewhere', async () => {
-    // Not a portfolio position scoped too narrowly — advice. "Delay the secondary material orders"
-    // means nothing addressed to five sites at once (PO 2026-09-08). A sum across projects was
-    // built and removed the same day.
+  it("reads the forecast for ONE project, and prints the drawing's source under it", async () => {
+    // Still one project — advice about somewhere (PO 2026-09-08). Since 2026-09-17 (R21, D31) the
+    // foot carries the drawing's "ERP & Milestone data" instead of the project's name.
     const { getByTestId } = await renderHome();
 
     await waitFor(() =>
-      expect(getByTestId('finance-forecast')).toHaveTextContent(/Skybridge Central/),
+      expect(getByTestId('finance-forecast')).toHaveTextContent(/ERP & Milestone data/),
     );
+    expect(getByTestId('finance-forecast')).toHaveTextContent(/Cash Flow/);
     const asked = client.get.mock.calls
       .map((c) => String(c[0]))
       .filter((path) => path.includes('cashflow-forecast'));
@@ -210,6 +215,68 @@ describe('FinanceHome', () => {
     await waitFor(() => expect(getByTestId('finance-queue-p1')).toBeTruthy());
     expect(getByTestId('finance-queue-p1')).toHaveTextContent(/Siam Concrete/);
     expect(getByTestId('finance-queue-p1')).toHaveTextContent(/INV-p1/);
+  });
+
+  it('lists two rows as drawn, names each project, and gives the actions to every row', async () => {
+    client.get.mockImplementation((path: string) =>
+      path.startsWith('/finance/payments')
+        ? Promise.resolve([
+            payment('p1', '850000.0000', '2026-09-08'),
+            payment('p2', '120500.0000', '2026-09-09'),
+            payment('p3', '99000.0000', '2026-09-10'),
+          ])
+        : route(path),
+    );
+    const { getByTestId, queryByTestId } = await renderHome();
+
+    await waitFor(() => expect(getByTestId('finance-queue-p1')).toHaveTextContent(/Skybridge/));
+    expect(queryByTestId('finance-queue-p3')).toBeNull();
+    expect(queryByTestId('finance-queue-p1-approve')).toBeTruthy();
+    expect(queryByTestId('finance-queue-p2-approve')).toBeTruthy();
+    expect(queryByTestId('finance-queue-p2-review')).toBeTruthy();
+  });
+
+  it('prints how soon each payment is due, on the local calendar', async () => {
+    const day = (offset: number) => {
+      const d = new Date();
+      d.setDate(d.getDate() + offset);
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    };
+    client.get.mockImplementation((path: string) =>
+      path.startsWith('/finance/payments')
+        ? Promise.resolve([payment('p1', '1.0000', day(0)), payment('p2', '1.0000', day(1))])
+        : route(path),
+    );
+    const { getByTestId } = await renderHome();
+
+    await waitFor(() =>
+      expect(getByTestId('finance-queue-p1-due')).toHaveTextContent(/Due today/i),
+    );
+    expect(getByTestId('finance-queue-p2-due')).toHaveTextContent(/Tomorrow/i);
+  });
+
+  it('prints a later due date as a date, and an overdue one as overdue', async () => {
+    client.get.mockImplementation((path: string) =>
+      path.startsWith('/finance/payments')
+        ? Promise.resolve([
+            payment('p1', '1.0000', '2000-01-01'),
+            payment('p2', '1.0000', '2999-03-04'),
+          ])
+        : route(path),
+    );
+    const { getByTestId } = await renderHome();
+
+    await waitFor(() => expect(getByTestId('finance-queue-p1-due')).toHaveTextContent(/Overdue/i));
+    expect(getByTestId('finance-queue-p2-due')).toHaveTextContent(/Due Mar 4/);
+  });
+
+  it('keeps a queue row whose project the list cannot name, with an em dash', async () => {
+    client.get.mockImplementation((path: string) =>
+      path.startsWith('/projects/mine') ? Promise.reject(new Error('offline')) : route(path),
+    );
+    const { getByTestId } = await renderHome();
+
+    await waitFor(() => expect(getByTestId('finance-queue-p1')).toHaveTextContent(/INV-p1 • —/));
   });
 
   it('keeps a payment the index cannot name, with an em dash for the name', async () => {

@@ -123,10 +123,11 @@ describe('ViewerBudgetDocument', () => {
     //
     // So the count is now EXACT rather than zero, and it is derived from the register so it cannot
     // drift: the three summary cards, the photo's EXPAND, one per BOQ division and one per log
-    // entry. The FINANCE screen behind the same route offers "request an amendment"; a control that
+    // entry — and, since R22 (D38), the AI card's footer, its one way in. The FINANCE screen behind
+    // the same route offers "request an amendment"; a control that
     // did anything but raise the coming-soon dialog would break the test below, and an extra
     // control of any kind breaks this one.
-    const expected = 4 + VIEWER_BOQ_CATEGORIES.value.length + VIEWER_BUDGET_LOG.value.length;
+    const expected = 4 + VIEWER_BOQ_CATEGORIES.value.length + VIEWER_BUDGET_LOG.value.length + 1;
     const hosts = hostNodes(root);
     // Guard against a walker that silently finds nothing and passes.
     expect(hosts.filter((n) => n.props.testID === 'budget-total')).toHaveLength(1);

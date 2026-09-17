@@ -1097,3 +1097,49 @@ The Export Portfolio PDF button stays a solid fill — the drawing's gradient is
 
 **Two drawn elements were removed the next day** (product owner, 2026-09-17): the `MODEL: LAYER-A/B` chip and the
 brief's "AI Strategic Brief" eyebrow. `REPORT_BRIEF_CHIPS` lost its `model` value with the chip.
+
+## Amendment — 2026-09-17: the four FINANCE screens draw what their Stitch drawings draw
+
+**Decided by:** Product Owner, 2026-09-17, revision R21 ("Implement UI จาก Stitch (Finance Home Dashboard - Mobile,
+Payment Approvals - Refined Modern Industrial (Mobile), Budget Dashboard - Refined & Spec Compliant, รายการใบแจ้งหนี้ -
+ฝ่ายการเงิน (Finance Invoices Mobile))"), decisions D27–D37, asked with AskUserQuestion.
+
+The FINANCE Home, Payments, Budget and Invoices screens were rebuilt to their Stitch screens (project
+`5714703984410484001`). The 2026-09-08 build had left several drawn elements out; D31 reverses those exclusions —
+**everything the drawings draw is drawn**, a value with no source goes into this register marked COMING SOON, an
+action with no process opens the coming-soon dialog, and a real value still wins over a drawn one.
+
+### Two entries, taking the register from one hundred and five to one hundred and seven
+
+| Entry                   | What it draws                                                                                                                              |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| `FINANCE_AI_SOURCES`    | each AI card's source line — "ERP & Milestone data", "Integrated ERP & Market Benchmarks", "ERP & Schedule", "ERP DB & Central OCR Ledger" |
+| `PAYMENT_WORK_PACKAGES` | the payment card's work-package chip — "Foundations & Structure", "Cooling Phase II", "Grid Connector Phase"                               |
+
+Counted, not recalled: `grep -c "^export const [A-Z_0-9]* = figure(" apps/mobile/src/lib/mockupFigures.ts` → 107.
+
+Two existing entries changed shape, and neither changed what it stands for:
+
+- `THREE_WAY_MATCH` lost its English `summary` sentence and gained the sentence's figures — `po`, `grn`, `agreement`
+  (98) and `ready` (3). The words are `finance.invoices.matchLead` / `matchMid` / `matchTail` in both locales (QM-3),
+  so the Thai drawing's sentence is no longer an English one. The "PO" and "GRN" words in front of the references,
+  taken off on 2026-09-08, are back (D31).
+- `INVOICE_DISCREPANCY` became the discrepancy's figures — `DB25`, `4.5` tonnes, `฿ 40,200`; the sentence is
+  `finance.invoices.discrepancy`.
+
+### What this crosses, stated plainly
+
+- **Four source lines name systems this platform does not have** — an ERP, a market-benchmark feed, an OCR ledger. The
+  footer carve-out of ADR-098's second amendment (the SOURCE names a project or a record set this repository has) no
+  longer holds on these four cards. The product owner kept the standard `<AiCardFooter />` and chose the drawing's text
+  (D33); ADR-098's amendment of this date records it.
+- **The Invoices list is narrowed on the app, not the server** (D30, D37). `GET /procurement/vendor-invoices` has no
+  project filter, so the screen fetches the active project's purchase orders
+  (`GET /procurement/purchase-orders?project_id=`, every page) and keeps the invoices on them. Its chip counts stay the
+  tenant's. Nothing here is drawn; it is recorded because a reader comparing a chip count with the rows below it will
+  see two different scopes.
+
+Chosen with the drawings, not added to this register because they are real: the Budget category looks (over 100 % of
+the line → warning, 50–100 % → primary, under 50 % → muted, D34) and its "Proj. Variance +X%" label with the real X
+(D35); the payment and invoice due states read off the local calendar; the partly-delivered state read off the PO.
+No gradient is drawn (D32, spec §32.7).

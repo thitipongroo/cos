@@ -708,8 +708,6 @@
     "insightSource": "ทำเนียบคู่ค้าและคะแนนความน่าเชื่อถือ",
     "onTime": "ตรงเวลา {rate}",
     "qcPass": "ผ่าน QC {rate}",
-    "dismiss": "ไม่สนใจ",
-    "negotiate": "ดูโอกาสต่อรอง",
     "activeJobs": "งานที่ดำเนินอยู่",
     "onTimeRate": "อัตราตรงเวลา",
     "rfq": "RFQ",
@@ -835,7 +833,7 @@
       },
       "burnRate": "อัตราใช้เงิน",
       "perMonth": "ต่อเดือน",
-      "forecastTitle": "พยากรณ์กระแสเงินสด",
+      "forecastTitle": "กระแสเงินสด",
       "forecastNone": "ยังไม่มีพยากรณ์ — เลือกโครงการเพื่อดูสถานะ 13 สัปดาห์",
       "forecastClear": "สถานะเป็นบวกตลอดช่วง 13 สัปดาห์",
       "forecastShortfall": "คาดว่าจะขาดสภาพคล่อง {amount} ในสัปดาห์ที่ {week}",
@@ -847,7 +845,13 @@
       "queueUnknown": "อ่านคิวอนุมัติไม่ได้",
       "perMonthShort": "เดือน",
       "confidence": "ความมั่นใจ: {percent}%",
-      "viewModel": "ดูโมเดล"
+      "viewModel": "ดูโมเดล",
+      "due": {
+        "overdue": "เกินกำหนด",
+        "today": "ครบกำหนดวันนี้",
+        "tomorrow": "พรุ่งนี้"
+      },
+      "dueOn": "ครบกำหนด {date}"
     },
     "procurement": {
       "title": "จัดซื้อ",
@@ -1665,8 +1669,6 @@
     },
     "home": {
       "intelligence": "ข้อมูลเชิงลึกสำหรับผู้บริหาร",
-      "mitigation": "แผนลดผลกระทบ",
-      "dismiss": "ปิดการแจ้งเตือน",
       "activeProjects": "กำลังดำเนินการ",
       "thisMonth": "{value} เดือนนี้",
       "riskAlerts": "ความเสี่ยง",
@@ -1695,7 +1697,6 @@
       "invoiceRef": "อ้างอิงใบแจ้งหนี้",
       "date": "วันที่",
       "pending": "รออนุมัติ",
-      "awaiting": "{count} รายการรอการอนุมัติของคุณ",
       "mfaActive": "เปิด MFA",
       "analysis": "บทวิเคราะห์",
       "detailTitle": "รายละเอียดการจ่าย",
@@ -1711,7 +1712,9 @@
       "raise": "ตั้งเรื่องจ่ายใหม่",
       "overdue": "เกินกำหนด",
       "dueToday": "ครบกำหนดวันนี้",
-      "dueOn": "ครบกำหนด {date}"
+      "dueOn": "ครบกำหนด {date}",
+      "projectLabel": "โครงการ {code}",
+      "dueTomorrow": "ครบกำหนดพรุ่งนี้"
     },
     "budget": {
       "title": "งบประมาณ",
@@ -1730,13 +1733,11 @@
       "selectPrompt": "เลือกโครงการเพื่อดูงบประมาณ",
       "noBudget": "โครงการนี้ยังไม่ได้ตั้งงบประมาณ",
       "forecast": "การพยากรณ์กระแสเงินสด",
-      "deepReport": "ดูรายงานพยากรณ์เชิงลึก และตรวจสอบสัญญา",
       "breakdown": "แยกตามหมวดงาน",
       "expandAll": "ขยายทั้งหมด",
       "viewDetails": "ดูรายละเอียด",
       "code": "รหัส: {code}",
       "ofAllocated": "จาก {allocated} ({percent})",
-      "overBy": "เกินงบที่จัดสรร {percent}",
       "noLines": "งบประมาณนี้ยังไม่มีหมวดงาน",
       "partial": "ยอดใช้จ่ายรายหมวดคำนวณจากรายการล่าสุด {shown} จากทั้งหมด {total} รายการ",
       "otherCurrency": "มี {count} รายการที่บันทึกเป็นสกุลเงินอื่น จึงไม่ถูกนำมารวม",
@@ -1745,11 +1746,10 @@
       "openBudget": "ดูรายการงบประมาณ",
       "checkPayments": "ตรวจสอบใบสั่งจ่าย",
       "analyseCashflow": "วิเคราะห์สภาพคล่อง",
-      "conf": "ความมั่นใจ: {percent}%"
+      "conf": "ความมั่นใจ: {percent}%",
+      "projVariance": "Proj. Variance +{percent}"
     },
     "invoices": {
-      "title": "ใบแจ้งหนี้คู่ค้า",
-      "subtitle": "ตรวจสอบเอกสารและอนุมัติ (AP)",
       "empty": "ไม่มีใบแจ้งหนี้",
       "all": "ทั้งหมด",
       "number": "เลขที่ใบแจ้งหนี้",
@@ -1772,21 +1772,32 @@
       "urgent": "{count, plural, other {# รายการด่วน}}",
       "sortDue": "เรียงตามกำหนดจ่าย",
       "sortIssued": "เรียงตามวันที่ออก",
-      "matching": "การจับคู่ 3 ทาง",
-      "source": "ใบแจ้งหนี้ผู้ขายและใบสั่งซื้อ",
-      "matchScore": "ตรงกัน {percent}%",
+      "matching": "3-Way Matching",
+      "matchScore": "{percent}%",
       "dueOn": "ครบกำหนด {date}",
       "overdue": "เลยกำหนด {date}",
-      "overPo": "เกินใบสั่งซื้อ {percent}",
-      "underPo": "ไม่เกินใบสั่งซื้อ",
+      "overPo": "Over PO {percent}",
       "approve": "อนุมัติ",
       "dispute": "เปิดข้อพิพาท",
       "chat": "ดูประวัติแชท",
       "scan": "สแกนใบแจ้งหนี้ฉบับใหม่",
-      "scanShort": "สแกน",
       "approveFailed": "อนุมัติไม่สำเร็จ ใบแจ้งหนี้อนุมัติขณะออฟไลน์ไม่ได้",
       "disputeFailed": "เปิดข้อพิพาทไม่สำเร็จ ใบแจ้งหนี้เปิดข้อพิพาทขณะออฟไลน์ไม่ได้",
-      "truncated": "แสดง {shown} จาก {total} รายการ กรุณากรองให้แคบลงเพื่อดูส่วนที่เหลือ"
+      "truncated": "แสดง {shown} จาก {total} รายการ กรุณากรองให้แคบลงเพื่อดูส่วนที่เหลือ",
+      "matchLead": "ระบบ OCR ตรวจเทียบ PO",
+      "matchMid": "กับใบส่งของ",
+      "matchTail": "สอดคล้อง {percent}% พร้อมอนุมัติ {count, plural, other {# รายการ}}",
+      "disputeShort": "Dispute",
+      "openDispute": "เปิดข้อพิพาท",
+      "partial": "ส่งมอบบางส่วน",
+      "discrepancy": "ปริมาณเหล็กข้ออ้อย {material} ในใบแจ้งหนี้เกินใบส่งมอบจริง {tonnes} ตัน (+฿ {amount}) แนะนำระงับจ่ายทันที",
+      "tag": {
+        "RECEIVED": "PENDING",
+        "VERIFIED": "VERIFIED",
+        "APPROVED": "APPROVED",
+        "PAID": "PAID",
+        "DISPUTED": "DISPUTED"
+      }
     },
     "viewer": {
       "readOnlyRole": "ผู้ชม (อ่านอย่างเดียว)",
@@ -3269,7 +3280,6 @@
       "filterAll": "ทั้งหมด",
       "insight": "ข้อมูลเชิงลึก",
       "insightBody": "มีผู้มุ่งหวัง {count} รายที่น่าติดต่อก่อน",
-      "insightAction": "รายการแนะนำ",
       "aiScore": "คะแนน AI",
       "confidence": "ความเชื่อมั่น {percent}%",
       "moreFilters": "ตัวกรองเพิ่มเติม",
@@ -3579,7 +3589,6 @@
       },
       "detailedMetrics": "ดูตัวชี้วัดละเอียด",
       "logs": "บันทึก",
-      "viewEvidence": "ดูหลักฐาน",
       "viewAll": "ดูทั้งหมด",
       "total": "{count, plural, other {รวม # รายการ}}",
       "range": {

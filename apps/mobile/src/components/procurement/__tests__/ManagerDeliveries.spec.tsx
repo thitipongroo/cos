@@ -199,11 +199,13 @@ describe('ManagerDeliveries', () => {
     expect(client.post).not.toHaveBeenCalled();
   });
 
-  it('draws the advisor’s action, the yard row and the fleet radar without an endpoint', async () => {
-    const { getByTestId } = await renderScreen();
+  it('enters the advisor through its footer, and draws the yard row and radar without an endpoint', async () => {
+    // The advisor's "Adjust schedule" button went on 2026-09-17 (R22, D38).
+    const { getByTestId, queryByTestId } = await renderScreen();
 
-    await waitFor(() => expect(getByTestId('advisor-adjust')).toBeTruthy());
-    await fireEvent.press(getByTestId('advisor-adjust'));
+    await waitFor(() => expect(getByTestId('logistics-advisor-foot')).toBeTruthy());
+    expect(queryByTestId('advisor-adjust')).toBeNull();
+    await fireEvent.press(getByTestId('logistics-advisor-foot'));
     await fireEvent.press(getByTestId('warehouse-plan'));
     await fireEvent.press(getByTestId('delivery-radar'));
 

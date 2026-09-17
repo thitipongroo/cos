@@ -1,51 +1,54 @@
 // Invoices screen — FINANCE: the AP queue of vendor invoices.
-// Implements mockup/mobile/09_finance/04_invoices/01_fn_invoice.
+// Implements the Stitch screen "รายการใบแจ้งหนี้ - ฝ่ายการเงิน (Finance Invoices Mobile)"; before
+// 2026-09-17 it implemented mockup/mobile/09_finance/04_invoices/01_fn_invoice.
 //
-// REBUILT 2026-09-08 for that drawing. What was here was a wrapped row of plain status chips over a
-// list of invoice numbers, in the STATIC LIGHT palette. The drawing gives the screen a hero header,
-// a scrolling filter row with counts, a matching banner, and cards carrying the figures an AP clerk
-// decides on.
+// REDRAWN 2026-09-17 (R21) to the Stitch screen. What changed against the 2026-09-08 build:
+//   · the hero header ("Vendor invoices" + a scan icon) is gone — the drawing opens with the
+//     project strip, and its only scan control is the full-width button at the END of the list
+//   · <ProjectContextBar /> leads the screen (D28, D30), and the list is that project's (below)
+//   · five chips as drawn (D36): All with a count bubble; รอตรวจ, ตรวจแล้ว, มีข้อพิพาท with a dot
+//     and a bracketed count; จ่ายแล้ว with neither. APPROVED has no chip — its count still goes
+//     into All, because every invoice is in exactly one status
+//   · the banner, the cards and the action bar take the drawing's shapes, and everything the
+//     drawing draws is drawn (D31, reversing the 2026-09-08 exclusions): the "ส่งมอบบางส่วน" state,
+//     the "PO"/"GRN" words in the banner sentence, and the banner's drawn source line (D33)
+//   · the disputed card carries the drawing's two buttons — chat history and "เปิดข้อพิพาท" — and no
+//     telemetry strip, as drawn
 //
-// WHAT IS REAL, and more of it than the plan expected.
-//   The list           `GET /procurement/vendor-invoices?status=`. FILTERED BY THE SERVER.
+// THE PROJECT FILTER IS THE APP'S, NOT THE SERVER'S (D30, D37). `GET /procurement/vendor-invoices`
+// filters by `po_id` or `status` and has no project filter, so the screen fetches the ACTIVE
+// PROJECT's purchase orders (`GET /procurement/purchase-orders?project_id=`, every page, through
+// `projectPoIndex`) and keeps the invoices whose `po_id` is one of them. The chip counts stay the
+// TENANT's (D30) — a per-project count would need that missing server filter. With no project
+// chosen the bar renders nothing and the list is the tenant's, as before.
+// The 2026-09-08 header said "the drawing does not have a project bar"; the Stitch drawing does.
+//
+// WHAT IS REAL.
+//   The list           `GET /procurement/vendor-invoices?status=`. FILTERED BY THE SERVER, then
+//                      narrowed to the project on the app.
 //   The chip counts    the server's own `COUNT(*)`, one `limit=1` request per status reading
 //                      `total`. Counting the rows this screen received would count the page — the
-//                      endpoint caps at 100 — and a filter chip that lies about how many are
-//                      disputed is worse than a chip with no number on it.
+//                      endpoint caps at 100.
 //   Vendor             `vendor_name`, LEFT-joined into that endpoint on 2026-09-08.
-//   PO reference       `po_number`, through `poIndex()`. One request for the page, not one per row.
-//   "Partly delivered" the PO's own `status` — `PARTIALLY_DELIVERED` is a value of the CHECK
-//                      constraint on `procurement.purchase_orders`, read from the migration.
+//   PO reference       `po_number`, through the PO index. One walk for the project, not one per row.
+//   "ส่งมอบบางส่วน"      the PO's own `status` = `PARTIALLY_DELIVERED`, a value of the CHECK constraint
+//                      on `procurement.purchase_orders`.
 //   "Over PO +5.2%"    the invoice amount against the PO's `total_amount`, in decimal.js. Shown
-//                      only when it IS over: "within PO" is the normal case and does not need a
-//                      figure beside it.
-//   Approve / Dispute  `POST /procurement/vendor-invoices/:id/approve` and `.../dispute`. The
-//                      server allows approve only from RECEIVED or VERIFIED and dispute from
-//                      anything but PAID or DISPUTED (422 otherwise), so each button is offered
-//                      only where it can work rather than failing under the reader's finger.
-//   The detail + note  `GET /procurement/vendor-invoices/:id` and `POST .../note`, KEPT from the
-//                      screen this replaced. The drawing has neither, and ADR-085 is explicit that
-//                      a mockup is authoritative for style and not for composition: a drawing does
-//                      not remove reviewed working capability. Restyled, not removed.
+//                      only when it IS over.
+//   Approve / Dispute  `POST /procurement/vendor-invoices/:id/approve` and `.../dispute`, offered
+//                      only where the server's guards (422 otherwise) would accept them.
+//   The detail + note  `GET /procurement/vendor-invoices/:id` and `POST .../note`, KEPT. The drawing
+//                      has neither; ADR-085 keeps composition outside a mockup's authority.
 //
-// THE PROJECT BAR IS NOT HERE, and that is a deliberate departure from this plan's own line 4.1.
-// The endpoint is tenant-wide and filters by `po_id` or `status` — there is no project filter — so
-// an "ACTIVE PROJECT" bar would sit above a list that is not that project's. The drawing does not
-// have one either. An AP queue is a tenant-level desk; that is what both the API and the mockup say.
+// WHAT IS DRAWN (lib/mockupFigures.ts, ADR-099) — COMING SOON. Three-way matching does not exist in
+// `backend/src`: the banner's figures and its confidence (`THREE_WAY_MATCH`), the per-card match
+// percentages, the GRN references (`DELIVERY_GRN`), the discrepancy figures (`INVOICE_DISCREPANCY`)
+// and the source line (`FINANCE_AI_SOURCES`). The drawing puts the confidence in a header chip; it
+// sits in the standard <AiCardFooter /> instead (D33).
 //
-// WHAT IS DRAWN (lib/mockupFigures.ts, ADR-099): the 3-way matching banner and its per-card match
-// percentages, the GRN references, and the discrepancy sentence on a disputed card. THREE-WAY
-// MATCHING DOES NOT EXIST IN `backend/src` — nothing reconciles a PO against a delivery against an
-// invoice, and no endpoint returns a score. COMING SOON.
-//
-// AND NO CONFIDENCE ON THAT BANNER. The drawing prints "CONFIDENCE: 96%" and labels it CORE_AI.
-// Not a deterministic figure dressed as a model, as on the cash-flow cards — nothing ran at all, so
-// the percentage would be the case spec §22.3 forbids outright. Dropped, with its "Source: ERP DB &
-// Central OCR Ledger" line, exactly as the three cash-flow modules dropped theirs.
-//
-// DRAWN ACTIONS, each saying so on tap: the OCR scan control (the AI gateway's route list has
-// `/ai/transcribe` and no OCR) and "chat history" (no thread exists on an invoice — the note field
-// below is the nearest real thing, and it is kept).
+// DRAWN ACTIONS, each opening the coming-soon dialog: the OCR scan button (the AI gateway has
+// `/ai/transcribe` and no OCR), "ดูประวัติแชท" (an invoice carries a note, not a thread) and
+// "เปิดข้อพิพาท" on a card that is ALREADY disputed (the server refuses a second dispute).
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
@@ -67,14 +70,23 @@ import {
   disputeVendorInvoice,
   listVendorInvoices,
   poIndex,
+  projectPoIndex,
   type PurchaseOrderRow,
   type VendorInvoice,
 } from '../../api/procurement';
 import { LoadingBoundary } from '../../components/LoadingBoundary';
 import { AiCardFooter } from '../../components/AiCardFooter';
+import { ProjectContextBar } from '../../components/ProjectContextBar';
 import { spacedMoney } from '../../lib/compactMoney';
-import { DELIVERY_GRN, INVOICE_DISCREPANCY, THREE_WAY_MATCH } from '../../lib/mockupFigures';
+import { toIsoDate } from '../../lib/isoDate';
+import {
+  DELIVERY_GRN,
+  FINANCE_AI_SOURCES,
+  INVOICE_DISCREPANCY,
+  THREE_WAY_MATCH,
+} from '../../lib/mockupFigures';
 import { useAuthStore } from '../../store/authStore';
+import { useProjectStore } from '../../store/projectStore';
 import { canRenderWriteControls } from '../../lib/readOnlyRole';
 import { useT, useI18n } from '../../i18n';
 import { useComingSoon } from '../../components/useComingSoon';
@@ -82,9 +94,15 @@ import type { TranslateFn } from '../../i18n';
 import { fontFamily, radius, spacing, touchTarget, typography } from '../../theme/tokens';
 import { usePalette, useIsDark, type Palette } from '../../theme/usePalette';
 
-/** The status values `procurement.invoices` allows, in the order the drawing's chips run. */
+/** The status values `procurement.invoices` allows — every one is counted into All. */
 const STATUSES = ['RECEIVED', 'VERIFIED', 'DISPUTED', 'APPROVED', 'PAID'] as const;
 type InvoiceStatus = (typeof STATUSES)[number];
+
+/** The drawing's chips after All, in its order (D36). APPROVED has none. */
+const CHIP_STATUSES = ['RECEIVED', 'VERIFIED', 'DISPUTED', 'PAID'] as const;
+
+/** The one chip the drawing gives neither a dot nor a count. */
+const BARE_CHIP: InvoiceStatus = 'PAID';
 
 /** The invoice detail, which carries a note the list rows do not. */
 interface InvoiceDetail extends VendorInvoice {
@@ -97,12 +115,15 @@ export default function InvoicesScreen(): React.JSX.Element {
   const p = usePalette();
   const isDark = useIsDark();
   const styles = useMemo(() => makeStyles(p), [p]);
+  const projectId = useProjectStore((s) => s.active?.projectId ?? '');
 
   const [filter, setFilter] = useState<InvoiceStatus | ''>('');
   const [rows, setRows] = useState<VendorInvoice[]>([]);
   const [total, setTotal] = useState(0);
   const [counts, setCounts] = useState<Record<string, number> | null>(null);
-  const [pos, setPos] = useState<Map<string, PurchaseOrderRow>>(new Map());
+  // Null until the index for the CURRENT project has landed — a list filtered through the previous
+  // project's orders would be the wrong project's list.
+  const [pos, setPos] = useState<Map<string, PurchaseOrderRow> | null>(null);
   const [byDueDate, setByDueDate] = useState(true);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
@@ -129,13 +150,10 @@ export default function InvoicesScreen(): React.JSX.Element {
   }, [load]);
 
   /**
-   * The chip counts and the PO index — both independent of which chip is on, so both are read once.
-   *
-   * The counts are five `limit=1` requests read for their `total`, which is the server's `COUNT(*)`
-   * over the whole status. They are tiny and they are exact; counting the fetched rows would count
-   * a page of at most 100.
+   * The chip counts — five `limit=1` requests read for their `total`, the server's `COUNT(*)` over
+   * the whole status. Tenant-wide (D30): the endpoint has no project filter to count with.
    */
-  const loadContext = useCallback(async (): Promise<void> => {
+  const loadCounts = useCallback(async (): Promise<void> => {
     const settled = await Promise.all(
       STATUSES.map((status) =>
         listVendorInvoices({ status, limit: 1 })
@@ -147,12 +165,23 @@ export default function InvoicesScreen(): React.JSX.Element {
     const next: Record<string, number> = {};
     for (const [status, count] of settled) if (count >= 0) next[status] = count;
     setCounts(next);
-    setPos(await poIndex());
   }, []);
 
   useEffect(() => {
-    void loadContext();
-  }, [loadContext]);
+    void loadCounts();
+  }, [loadCounts]);
+
+  /** The PO index: the active project's orders (D37), or the tenant's first page with none. */
+  useEffect(() => {
+    let live = true;
+    setPos(null);
+    void (projectId === '' ? poIndex() : projectPoIndex(projectId)).then((next) => {
+      if (live) setPos(next);
+    });
+    return () => {
+      live = false;
+    };
+  }, [projectId]);
 
   const soon = useComingSoon();
 
@@ -170,14 +199,14 @@ export default function InvoicesScreen(): React.JSX.Element {
       try {
         if (action === 'approve') await approveVendorInvoice(invoice.invoice_id);
         else await disputeVendorInvoice(invoice.invoice_id);
-        await Promise.all([load(), loadContext()]);
+        await Promise.all([load(), loadCounts()]);
       } catch {
         Alert.alert(t(`finance.invoices.${action}`), t(`finance.invoices.${action}Failed`));
       } finally {
         setBusy(false);
       }
     },
-    [busy, load, loadContext, t],
+    [busy, load, loadCounts, t],
   );
 
   const openDetail = useCallback(async (invoice: VendorInvoice): Promise<void> => {
@@ -205,23 +234,31 @@ export default function InvoicesScreen(): React.JSX.Element {
       });
   }, [detail, noteText]);
 
-  /** Sorted for reading, not re-fetched: both keys are on the rows already in hand. */
-  const sorted = useMemo(() => {
+  /**
+   * The rows this screen shows: the project's, sorted for reading.
+   *
+   * With a project chosen and its index not yet in, NOTHING — see `pos`. Both sort keys are on the
+   * rows in hand, so sorting is a re-read, not a re-fetch.
+   */
+  const visible = useMemo(() => {
+    const mine =
+      projectId === '' ? rows : pos === null ? [] : rows.filter((row) => pos.has(row.po_id));
     const key = byDueDate ? 'due_date' : 'invoice_date';
-    return [...rows].sort((a, b) => a[key].localeCompare(b[key]));
-  }, [rows, byDueDate]);
+    return [...mine].sort((a, b) => a[key].localeCompare(b[key]));
+  }, [rows, pos, projectId, byDueDate]);
 
   /** How many of the visible rows are due today or already past it, and not yet paid. */
   const urgent = useMemo(() => {
-    const today = new Date().toISOString().slice(0, 10);
-    return rows.filter((row) => row.status !== 'PAID' && row.due_date.slice(0, 10) <= today).length;
-  }, [rows]);
+    const today = toIsoDate(new Date());
+    return visible.filter((row) => row.status !== 'PAID' && row.due_date.slice(0, 10) <= today)
+      .length;
+  }, [visible]);
 
   const renderItem = useCallback(
     ({ item, index }: { item: VendorInvoice; index: number }) => (
       <InvoiceCard
         invoice={item}
-        po={pos.get(item.po_id) ?? null}
+        po={pos?.get(item.po_id) ?? null}
         index={index}
         busy={busy}
         styles={styles}
@@ -232,6 +269,7 @@ export default function InvoicesScreen(): React.JSX.Element {
         onApprove={() => void act(item, 'approve')}
         onDispute={() => void act(item, 'dispute')}
         onChat={() => soon('finance.invoices.chat')}
+        onOpenDispute={() => soon('finance.invoices.openDispute')}
       />
     ),
     [pos, busy, styles, p, t, locale, openDetail, act, soon],
@@ -241,7 +279,7 @@ export default function InvoicesScreen(): React.JSX.Element {
     return (
       <InvoiceDetailView
         detail={detail}
-        po={pos.get(detail.po_id) ?? null}
+        po={pos?.get(detail.po_id) ?? null}
         noteText={noteText}
         noteSaved={noteSaved}
         styles={styles}
@@ -255,29 +293,11 @@ export default function InvoicesScreen(): React.JSX.Element {
     );
   }
 
+  const waiting = loading || (projectId !== '' && pos === null);
+
   return (
     <View testID="invoices-screen" style={styles.page}>
-      {/* The drawing's hero header, with the scan control at its trailing edge. */}
-      <View style={styles.hero}>
-        <View style={styles.heroText}>
-          <Text style={styles.heroTitle} accessibilityRole="header" numberOfLines={1}>
-            {t('finance.invoices.title')}
-          </Text>
-          <Text style={styles.heroSub} numberOfLines={2}>
-            {t('finance.invoices.subtitle')}
-          </Text>
-        </View>
-        {/* Drawn — the AI gateway has `/ai/transcribe` and no OCR route. */}
-        <Pressable
-          testID="invoice-scan-icon"
-          accessibilityRole="button"
-          accessibilityLabel={t('finance.invoices.scanShort')}
-          onPress={() => soon('finance.invoices.scan')}
-          style={styles.scanIcon}
-        >
-          <MaterialIcons name="document-scanner" size={22} color={p.accent} />
-        </Pressable>
-      </View>
+      <ProjectContextBar />
 
       {/* One scrolling row, as the drawing has it — the chips must not wrap and must not scroll
           the page with them. */}
@@ -291,18 +311,20 @@ export default function InvoicesScreen(): React.JSX.Element {
             testID="filter-ALL"
             label={t('finance.invoices.all')}
             count={counts === null ? null : sumCounts(counts)}
+            bubble
             tone={null}
             on={filter === ''}
             onPress={() => setFilter('')}
             styles={styles}
           />
-          {STATUSES.map((status) => (
+          {CHIP_STATUSES.map((status) => (
             <FilterChip
               key={status}
               testID={`filter-${status}`}
               label={t(`finance.invoices.status.${status}`)}
-              count={counts?.[status] ?? null}
-              tone={statusTone(status, p)}
+              count={status === BARE_CHIP ? null : (counts?.[status] ?? null)}
+              bubble={false}
+              tone={status === BARE_CHIP ? null : statusTone(status, p)}
               on={filter === status}
               onPress={() => setFilter(status)}
               styles={styles}
@@ -312,14 +334,14 @@ export default function InvoicesScreen(): React.JSX.Element {
       </View>
 
       <LoadingBoundary
-        loading={loading && rows.length === 0}
+        loading={waiting && visible.length === 0}
         variant="list"
         theme={isDark ? 'dark' : 'light'}
         style={styles.fill}
       >
         <FlatList
           testID="invoices-list"
-          data={sorted}
+          data={visible}
           keyExtractor={(row, i) => row.invoice_id || String(i)}
           contentContainerStyle={styles.list}
           refreshControl={<RefreshControl refreshing={loading} onRefresh={() => void load()} />}
@@ -330,21 +352,27 @@ export default function InvoicesScreen(): React.JSX.Element {
           }
           ListHeaderComponent={
             <View style={styles.listHead}>
-              <MatchingBanner styles={styles} palette={p} t={t} />
+              <MatchingBanner
+                styles={styles}
+                palette={p}
+                t={t}
+                onOpen={() => soon('finance.invoices.matching')}
+              />
 
               <View style={styles.sectionRow}>
                 <View style={styles.sectionLabel}>
-                  <Text style={styles.eyebrow}>{t('finance.invoices.pending')}</Text>
+                  <Text style={styles.sectionTitle} numberOfLines={1}>
+                    {t('finance.invoices.pending')}
+                  </Text>
                   {urgent === 0 ? null : (
                     <View style={styles.urgentChip}>
-                      <Text style={styles.urgentText}>
+                      <Text style={styles.urgentText} numberOfLines={1}>
                         {t('finance.invoices.urgent', { count: urgent })}
                       </Text>
                     </View>
                   )}
                 </View>
-                {/* REAL: both keys are columns on the rows in hand, so this is a re-read of what
-                    was fetched rather than a claim about the whole list. */}
+                {/* REAL: both keys are columns on the rows in hand. */}
                 <Pressable
                   testID="invoices-sort"
                   accessibilityRole="button"
@@ -354,7 +382,7 @@ export default function InvoicesScreen(): React.JSX.Element {
                   onPress={() => setByDueDate((on) => !on)}
                   style={styles.sortButton}
                 >
-                  <MaterialIcons name="tune" size={15} color={p.accent} />
+                  <MaterialIcons name="tune" size={16} color={p.accent} />
                   <Text style={styles.sortText} numberOfLines={1}>
                     {t(byDueDate ? 'finance.invoices.sortDue' : 'finance.invoices.sortIssued')}
                   </Text>
@@ -369,23 +397,24 @@ export default function InvoicesScreen(): React.JSX.Element {
               ) : null}
             </View>
           }
+          ListFooterComponent={
+            // Drawn — the drawing's full-width OCR button, at the end of the list.
+            <Pressable
+              testID="invoice-scan"
+              accessibilityRole="button"
+              accessibilityLabel={t('finance.invoices.scan')}
+              onPress={() => soon('finance.invoices.scan')}
+              style={styles.scanButton}
+            >
+              <MaterialIcons name="center-focus-weak" size={22} color={p.onPrimary} />
+              <Text style={styles.scanButtonText} numberOfLines={1}>
+                {t('finance.invoices.scan')}
+              </Text>
+            </Pressable>
+          }
           renderItem={renderItem}
         />
       </LoadingBoundary>
-
-      {/* Drawn — the drawing's full-width OCR button, the second of its two scan controls. */}
-      <Pressable
-        testID="invoice-scan"
-        accessibilityRole="button"
-        accessibilityLabel={t('finance.invoices.scan')}
-        onPress={() => soon('finance.invoices.scan')}
-        style={styles.scanButton}
-      >
-        <MaterialIcons name="center-focus-weak" size={20} color={p.onPrimary} />
-        <Text style={styles.scanButtonText} numberOfLines={1}>
-          {t('finance.invoices.scan')}
-        </Text>
-      </Pressable>
     </View>
   );
 }
@@ -395,6 +424,7 @@ function FilterChip({
   testID,
   label,
   count,
+  bubble,
   tone,
   on,
   onPress,
@@ -403,6 +433,8 @@ function FilterChip({
   testID: string;
   label: string;
   count: number | null;
+  /** All's count sits in a bubble; the others are bracketed, as drawn. */
+  bubble: boolean;
   tone: string | null;
   on: boolean;
   onPress: () => void;
@@ -421,9 +453,12 @@ function FilterChip({
       <Text style={[styles.chipText, on && styles.chipTextOn]} numberOfLines={1}>
         {label}
       </Text>
-      {/* Bracketed, as the drawing brackets them — "(5)", not a bare 5 against the label.
-          No number at all where the count could not be read: never a zero it did not get. */}
-      {count === null ? null : (
+      {/* No number at all where the count could not be read: never a zero it did not get. */}
+      {count === null ? null : bubble ? (
+        <View style={styles.countBubble}>
+          <Text style={[styles.chipCount, on && styles.chipTextOn]}>{String(count)}</Text>
+        </View>
+      ) : (
         <Text style={[styles.chipCount, on && styles.chipTextOn]}>{`(${count})`}</Text>
       )}
     </Pressable>
@@ -433,50 +468,42 @@ function FilterChip({
 /**
  * The drawing's 3-Way Matching advisory banner.
  *
- * ENTIRELY DRAWN, and without the confidence the drawing puts on it. Nothing in `backend/src`
- * reconciles a purchase order against a delivery against an invoice; see `THREE_WAY_MATCH`.
+ * ENTIRELY DRAWN. Nothing in `backend/src` reconciles a purchase order against a delivery against
+ * an invoice; see `THREE_WAY_MATCH`. The sentence's words are i18n, its figures the register's.
  */
 function MatchingBanner({
   styles,
   palette,
   t,
+  onOpen,
 }: {
   styles: ReturnType<typeof makeStyles>;
   palette: Palette;
   t: TranslateFn;
+  /** The footer chevron — the card's one way in (R22, D38). */
+  onOpen: () => void;
 }): React.JSX.Element {
+  const match = THREE_WAY_MATCH.value;
   return (
-    <View testID="invoices-matching" style={[styles.card, styles.banner]}>
-      <View style={styles.bannerHead}>
-        <View style={styles.bannerTitleRow}>
-          <MaterialIcons name="bolt" size={16} color={palette.accent} />
-          <Text style={styles.bannerTitle}>{t('finance.invoices.matching')}</Text>
-        </View>
+    <View testID="invoices-matching" style={styles.banner}>
+      <View style={styles.bannerTitleRow}>
+        <MaterialIcons name="psychology" size={20} color={palette.accent} />
+        <Text style={styles.bannerTitle}>{t('finance.invoices.matching')}</Text>
       </View>
-      <Text style={styles.body}>{THREE_WAY_MATCH.value.summary}</Text>
+      <Text style={styles.bannerBody}>
+        {t('finance.invoices.matchLead')} <Text style={styles.bannerPo}>{`#${match.po}`}</Text>{' '}
+        {t('finance.invoices.matchMid')} <Text style={styles.bannerGrn}>{`GRN #${match.grn}`}</Text>{' '}
+        {t('finance.invoices.matchTail', { percent: match.agreement, count: match.ready })}
+      </Text>
 
-      {/* The drawing's footer, added 2026-09-08 (PO): a rule, the source on the left, the chevron
-          on the right. THE CHEVRON MOVED HERE from beside the confidence, because the drawing has
-          exactly one and this is where it puts it.
-
-          THE SOURCE NAMES THE RECORDS, NOT THE DRAWING'S SYSTEMS. `01-fn-invoice` reads
-          "ERP DB & Central OCR Ledger"; neither exists in this repository, and a line claiming an
-          OCR ledger produced these figures is the one kind of drawn text that changes how much of
-          the screen a reader believes. Same carve-out as ADR-098's second amendment, applied a
-          fourth time. What is named instead is true: the list above is the procurement invoice and
-          purchase-order records, fetched at `listVendorInvoices` and `poIndex`. */}
-      {/* THE PROJECT'S STANDARD AI-CARD FOOT (spec §32.7, PO decision 2026-09-08). The confidence
-          came down from a chip in the header opposite the title. IT IS THE REGISTER'S MOST
-          UNCOMFORTABLE ENTRY and stays so: three-way matching does not exist in `backend/src` at
-          all, so this is a confidence on a process that never ran. */}
+      {/* THE PROJECT'S STANDARD AI-CARD FOOT (spec §32.7) with the drawing's source (D33). */}
       <AiCardFooter
         testID="invoices-matching-foot"
-        percent={THREE_WAY_MATCH.value.confidence}
-        // The VALUE carries no label of its own: `<AiCardFooter />` writes the "SOURCE:" —
-        // both did for one capture and the frame read "SOURCE: Source: vendor invoices".
-        source={t('finance.invoices.source')}
+        percent={match.confidence}
+        source={FINANCE_AI_SOURCES.value.invoices}
         confLabel={t('insight.confShort')}
         sourceLabel={t('insight.sourceShort')}
+        onPress={onOpen}
         palette={palette}
       />
     </View>
@@ -497,6 +524,7 @@ function InvoiceCard({
   onApprove,
   onDispute,
   onChat,
+  onOpenDispute,
 }: {
   invoice: VendorInvoice;
   po: PurchaseOrderRow | null;
@@ -510,18 +538,22 @@ function InvoiceCard({
   onApprove: () => void;
   onDispute: () => void;
   onChat: () => void;
+  onOpenDispute: () => void;
 }): React.JSX.Element {
   const tone = statusTone(invoice.status, palette);
   const over = overPo(invoice, po);
   const due = dueTone(invoice, palette);
-  // The server's own rules, read from `procurement.service.ts` — a button that would earn a 422 is
-  // not offered.
-  // TWO CONDITIONS, AND THEY ANSWER DIFFERENT QUESTIONS. The status decides whether the invoice
-  // CAN be approved; `canWrite` decides whether this reader may be offered the action at all
-  // (§20.7.9 — a VIEWER is shown no approve control). Both were needed and only the first existed.
+  const disputed = invoice.status === 'DISPUTED';
+  // TWO CONDITIONS, AND THEY ANSWER DIFFERENT QUESTIONS. The status decides whether the server
+  // would accept the action (`procurement.service.ts` answers 422 otherwise); `canWrite` decides
+  // whether this reader may be offered it at all (§20.7.9 — a VIEWER is shown no write control).
   const canWrite = useAuthStore((s) => canRenderWriteControls(s.role));
   const canApprove = canWrite && (invoice.status === 'RECEIVED' || invoice.status === 'VERIFIED');
-  const canDispute = canWrite && invoice.status !== 'PAID' && invoice.status !== 'DISPUTED';
+  const canDispute = canWrite && invoice.status !== 'PAID' && !disputed;
+  const hasActions = disputed || canDispute || canApprove;
+  const pending = invoice.status === 'RECEIVED';
+  const partial = po?.status === 'PARTIALLY_DELIVERED';
+  const percentages = THREE_WAY_MATCH.value.percentages;
 
   return (
     <View
@@ -542,9 +574,9 @@ function InvoiceCard({
             <Text style={styles.cardNumber} numberOfLines={1}>
               {invoice.invoice_number}
             </Text>
-            <View style={[styles.tag, { borderColor: tone }]}>
+            <View style={[styles.tag, { backgroundColor: `${tone}26` }]}>
               <Text style={[styles.tagText, { color: tone }]} numberOfLines={1}>
-                {t(`finance.invoices.status.${invoice.status}`)}
+                {t(`finance.invoices.tag.${invoice.status}`)}
               </Text>
             </View>
           </View>
@@ -553,7 +585,10 @@ function InvoiceCard({
           </Text>
         </View>
         <View style={styles.cardFigures}>
-          <Text style={[styles.cardAmount, over === null ? null : { color: palette.danger }]}>
+          <Text
+            style={[styles.cardAmount, over === null ? null : { color: palette.danger }]}
+            numberOfLines={1}
+          >
             {spacedMoney(invoice.amount, invoice.currency_code)}
           </Text>
           {over === null ? (
@@ -562,92 +597,130 @@ function InvoiceCard({
             </Text>
           ) : (
             // REAL: the invoice amount against the PO's `total_amount`.
-            <Text style={[styles.cardDue, { color: palette.danger }]} numberOfLines={1}>
-              {t('finance.invoices.overPo', { percent: over })}
-            </Text>
+            <View style={styles.overRow}>
+              <MaterialIcons name="trending-up" size={12} color={palette.danger} />
+              <Text style={[styles.cardDue, styles.overText]} numberOfLines={1}>
+                {t('finance.invoices.overPo', { percent: over })}
+              </Text>
+            </View>
           )}
         </View>
       </Pressable>
 
-      {/* The drawing's three-column telemetry strip. Column one is real, columns two and three are
-          the missing matching process. */}
-      <View style={styles.telemetry}>
-        <Text style={styles.telemetryText} numberOfLines={1}>
-          {po === null ? '—' : `#${po.po_number}`}
-        </Text>
-        {/* DRAWN — `deliveries` has a free-text note and no GRN number. See the register. */}
-        <Text style={styles.telemetryText} numberOfLines={1}>
-          {`#${DELIVERY_GRN.value[index % DELIVERY_GRN.value.length]}`}
-        </Text>
-        <View style={styles.telemetryRight}>
-          <MaterialIcons name="verified" size={13} color={palette.muted} />
-          {/* DRAWN — there is no matching score. See the register. */}
-          <Text style={styles.telemetryText} numberOfLines={1}>
-            {t('finance.invoices.matchScore', {
-              percent:
-                THREE_WAY_MATCH.value.percentages[index % THREE_WAY_MATCH.value.percentages.length],
-            })}
+      {/* The drawing puts no telemetry on a disputed card; the discrepancy box takes its place. */}
+      {disputed ? (
+        // DRAWN — naming which line differs needs the comparison that produces the score.
+        <View testID={`invoice-discrepancy-${invoice.invoice_id}`} style={styles.discrepancy}>
+          <MaterialIcons name="error" size={18} color={palette.danger} />
+          <Text style={styles.discrepancyText}>
+            {t('finance.invoices.discrepancy', { ...INVOICE_DISCREPANCY.value })}
           </Text>
         </View>
-      </View>
+      ) : (
+        <View testID={`invoice-telemetry-${invoice.invoice_id}`} style={styles.telemetry}>
+          <Text style={styles.telemetryCell} numberOfLines={1}>
+            {po === null ? '—' : `#${po.po_number}`}
+          </Text>
+          {partial ? (
+            // REAL: the PO's own status.
+            <Text style={[styles.telemetryCell, { color: palette.warning }]} numberOfLines={1}>
+              {t('finance.invoices.partial')}
+            </Text>
+          ) : (
+            // DRAWN — `deliveries` has a free-text note and no GRN number. See the register.
+            <Text style={styles.telemetryCell} numberOfLines={1}>
+              {`#${DELIVERY_GRN.value[index % DELIVERY_GRN.value.length]}`}
+            </Text>
+          )}
+          <View style={styles.telemetryScore}>
+            <MaterialIcons
+              name={pending ? 'pending' : 'verified'}
+              size={14}
+              color={pending ? palette.warning : palette.success}
+            />
+            {/* DRAWN — there is no matching score. See the register. */}
+            <Text
+              style={[styles.scoreText, { color: pending ? palette.text : palette.success }]}
+              numberOfLines={1}
+            >
+              {t('finance.invoices.matchScore', {
+                percent: percentages[index % percentages.length],
+              })}
+            </Text>
+          </View>
+        </View>
+      )}
 
-      {/* DRAWN — naming which line differs needs the comparison that produces the score. */}
-      {invoice.status === 'DISPUTED' ? (
-        <View testID={`invoice-discrepancy-${invoice.invoice_id}`} style={styles.discrepancy}>
-          <MaterialIcons name="error-outline" size={16} color={palette.danger} />
-          <Text style={styles.discrepancyText}>{INVOICE_DISCREPANCY.value}</Text>
+      {hasActions ? (
+        <View style={styles.actions}>
+          {disputed ? (
+            // Drawn — an invoice carries a note, not a thread. The note lives in the detail.
+            <Pressable
+              testID={`invoice-chat-${invoice.invoice_id}`}
+              accessibilityRole="button"
+              accessibilityLabel={t('finance.invoices.chat')}
+              onPress={onChat}
+              style={[styles.action, styles.actionChat]}
+            >
+              <MaterialIcons name="forum" size={18} color={palette.accent} />
+              <Text style={[styles.actionText, { color: palette.accent }]} numberOfLines={1}>
+                {t('finance.invoices.chat')}
+              </Text>
+            </Pressable>
+          ) : null}
+          {disputed && canWrite ? (
+            // Drawn — the invoice is already disputed and the server refuses a second dispute.
+            <Pressable
+              testID={`invoice-open-dispute-${invoice.invoice_id}`}
+              accessibilityRole="button"
+              accessibilityLabel={t('finance.invoices.openDispute')}
+              onPress={onOpenDispute}
+              style={[styles.action, { backgroundColor: palette.danger }]}
+            >
+              <MaterialIcons name="gavel" size={18} color={palette.onPrimary} />
+              <Text style={[styles.actionText, { color: palette.onPrimary }]} numberOfLines={1}>
+                {t('finance.invoices.openDispute')}
+              </Text>
+            </Pressable>
+          ) : null}
+          {canDispute ? (
+            <Pressable
+              testID={`invoice-dispute-${invoice.invoice_id}`}
+              accessibilityRole="button"
+              accessibilityLabel={t('finance.invoices.disputeShort')}
+              accessibilityState={{ disabled: busy }}
+              disabled={busy}
+              onPress={onDispute}
+              style={[
+                styles.action,
+                { backgroundColor: `${palette.danger}26` },
+                busy && styles.disabled,
+              ]}
+            >
+              <MaterialIcons name="flag" size={18} color={palette.danger} />
+              <Text style={[styles.actionText, { color: palette.danger }]} numberOfLines={1}>
+                {t('finance.invoices.disputeShort')}
+              </Text>
+            </Pressable>
+          ) : null}
+          {canApprove ? (
+            <Pressable
+              testID={`invoice-approve-${invoice.invoice_id}`}
+              accessibilityRole="button"
+              accessibilityLabel={t('finance.invoices.approve')}
+              accessibilityState={{ disabled: busy }}
+              disabled={busy}
+              onPress={onApprove}
+              style={[styles.action, { backgroundColor: palette.primary }, busy && styles.disabled]}
+            >
+              <MaterialIcons name="check-circle" size={18} color={palette.onPrimary} />
+              <Text style={[styles.actionText, { color: palette.onPrimary }]} numberOfLines={1}>
+                {t('finance.invoices.approve')}
+              </Text>
+            </Pressable>
+          ) : null}
         </View>
       ) : null}
-
-      <View style={styles.actions}>
-        {invoice.status === 'DISPUTED' ? (
-          // Drawn — an invoice carries a note, not a thread. The note lives in the detail.
-          <Pressable
-            testID={`invoice-chat-${invoice.invoice_id}`}
-            accessibilityRole="button"
-            accessibilityLabel={t('finance.invoices.chat')}
-            onPress={onChat}
-            style={styles.action}
-          >
-            <MaterialIcons name="forum" size={16} color={palette.accent} />
-            <Text style={[styles.actionText, { color: palette.accent }]} numberOfLines={1}>
-              {t('finance.invoices.chat')}
-            </Text>
-          </Pressable>
-        ) : null}
-        {canDispute ? (
-          <Pressable
-            testID={`invoice-dispute-${invoice.invoice_id}`}
-            accessibilityRole="button"
-            accessibilityLabel={t('finance.invoices.dispute')}
-            accessibilityState={{ disabled: busy }}
-            disabled={busy}
-            onPress={onDispute}
-            style={[styles.action, busy && styles.disabled]}
-          >
-            <MaterialIcons name="flag" size={16} color={palette.danger} />
-            <Text style={[styles.actionText, { color: palette.danger }]} numberOfLines={1}>
-              {t('finance.invoices.dispute')}
-            </Text>
-          </Pressable>
-        ) : null}
-        {canApprove ? (
-          <Pressable
-            testID={`invoice-approve-${invoice.invoice_id}`}
-            accessibilityRole="button"
-            accessibilityLabel={t('finance.invoices.approve')}
-            accessibilityState={{ disabled: busy }}
-            disabled={busy}
-            onPress={onApprove}
-            style={[styles.action, styles.actionPrimary, busy && styles.disabled]}
-          >
-            <MaterialIcons name="check-circle" size={16} color={palette.onPrimary} />
-            <Text style={[styles.actionText, { color: palette.onPrimary }]} numberOfLines={1}>
-              {t('finance.invoices.approve')}
-            </Text>
-          </Pressable>
-        ) : null}
-      </View>
     </View>
   );
 }
@@ -710,7 +783,7 @@ function InvoiceDetailView({
         </Text>
       </Pressable>
 
-      <View style={styles.card}>
+      <View style={styles.detailCard}>
         <Text style={styles.cardVendor} numberOfLines={1}>
           {detail.vendor_name ?? '—'}
         </Text>
@@ -725,7 +798,7 @@ function InvoiceDetailView({
       </View>
 
       {canWrite ? (
-        <View style={styles.card}>
+        <View style={styles.detailCard}>
           <Text style={styles.eyebrow}>{t('finance.invoices.note')}</Text>
           <TextInput
             testID="invoice-note-input"
@@ -787,25 +860,31 @@ function overPo(invoice: VendorInvoice, po: PurchaseOrderRow | null): string | n
 /**
  * How urgent the due date reads, and in which colour.
  *
- * Compared as DATE STRINGS, both `YYYY-MM-DD`. `due_date` is a Postgres DATE and arrives without a
- * time, so parsing it into a `Date` would put it at midnight UTC and shift a Bangkok reader's
- * "today" by seven hours — an invoice due today would read as due tomorrow all working day.
+ * Compared as DATE STRINGS, both `YYYY-MM-DD`, with today read off the LOCAL calendar
+ * (`toIsoDate`). `due_date` is a Postgres DATE; `toISOString()` would be UTC, and a Bangkok
+ * reader's "today" would lag seven hours behind the wall clock.
  */
 function dueTone(invoice: VendorInvoice, p: Palette): { key: string; colour: string } {
-  const today = new Date().toISOString().slice(0, 10);
+  const today = toIsoDate(new Date());
   const due = invoice.due_date.slice(0, 10);
-  if (invoice.status === 'PAID') return { key: 'finance.invoices.dueOn', colour: p.muted };
-  if (due < today) return { key: 'finance.invoices.overdue', colour: p.danger };
+  if (invoice.status !== 'PAID' && due < today) {
+    return { key: 'finance.invoices.overdue', colour: p.danger };
+  }
   return { key: 'finance.invoices.dueOn', colour: p.muted };
 }
 
-/** The date, in the reader's locale. Buddhist era follows automatically for `th` (QM-3). */
+/**
+ * The date as the drawing writes it — day/month/year in figures ("15/04/2026").
+ *
+ * `en-GB` rather than `en-US` because the drawing puts the day first. Buddhist era follows for
+ * `th` (QM-3), so a Thai reader sees 15/04/2569.
+ */
 function formatDay(date: string, locale: string): string {
   const value = new Date(`${date.slice(0, 10)}T00:00:00`);
   if (Number.isNaN(value.getTime())) return date;
-  return new Intl.DateTimeFormat(locale === 'th' ? 'th-TH-u-ca-buddhist' : 'en-US', {
-    day: 'numeric',
-    month: 'short',
+  return new Intl.DateTimeFormat(locale === 'th' ? 'th-TH-u-ca-buddhist' : 'en-GB', {
+    day: '2-digit',
+    month: '2-digit',
     year: 'numeric',
   }).format(value);
 }
@@ -817,124 +896,80 @@ function sumCounts(counts: Record<string, number>): number {
 
 const makeStyles = (p: Palette) =>
   StyleSheet.create({
-    page: { flex: 1, backgroundColor: p.bg, padding: spacing.md },
+    page: { flex: 1, backgroundColor: p.bg, padding: spacing.md, gap: spacing.sm },
     fill: { flex: 1 },
-    list: { gap: spacing.sm, paddingBottom: spacing.xl * 3 },
-    listHead: { gap: spacing.sm, marginBottom: spacing.sm },
+    // No pinned bar under the list since the scan button became its footer (R21).
+    list: { gap: spacing.sm, paddingBottom: spacing.md },
+    listHead: { gap: spacing.sm },
 
-    hero: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm },
-    heroText: { flex: 1, gap: 2 },
-    heroTitle: { color: p.text, fontFamily: fontFamily.bold, fontSize: typography.title.fontSize },
-    heroSub: {
-      color: p.muted,
-      fontFamily: fontFamily.regular,
-      fontSize: typography.label.fontSize,
-    },
-    scanIcon: {
-      width: touchTarget.iconButton,
-      height: touchTarget.iconButton,
-      borderRadius: radius.md,
-      borderWidth: 1,
-      borderColor: p.border,
-      backgroundColor: p.surface,
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-
-    chipRow: { marginVertical: spacing.sm },
+    chipRow: { marginVertical: 2 },
     chipContent: { gap: spacing.xs, paddingRight: spacing.md },
     chip: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: spacing.xs / 2,
-      paddingHorizontal: spacing.sm,
-      minHeight: touchTarget.iconButton - 8,
+      gap: 6,
+      paddingHorizontal: 14,
+      minHeight: touchTarget.iconButton - 12,
       borderRadius: radius.xl,
-      borderWidth: 1,
-      borderColor: p.border,
-      backgroundColor: p.surface,
+      backgroundColor: p.surfaceSoft,
     },
-    chipOn: { backgroundColor: p.primary, borderColor: p.primary },
-    // 999 is the documented capsule marker (§32.7) — a status dot is a circle, not a step on the
-    // radius scale, and a literal 3 would have been a new hardcoded radius the ratchet counts.
-    chipDot: { width: 6, height: 6, borderRadius: 999 },
+    chipOn: { backgroundColor: p.primary },
+    // 999 is the documented capsule marker (§32.7) — a status dot is a circle.
+    chipDot: { width: 8, height: 8, borderRadius: 999 },
     chipText: {
-      color: p.text,
-      fontFamily: fontFamily.medium,
+      color: p.muted,
+      fontFamily: fontFamily.semibold,
       fontSize: typography.label.fontSize,
     },
-    chipCount: { color: p.muted, fontFamily: fontFamily.regular, fontSize: 10 },
+    chipCount: { color: p.muted, fontFamily: fontFamily.medium, fontSize: 11 },
     chipTextOn: { color: p.onPrimary },
-
-    card: {
-      backgroundColor: p.surface,
-      borderRadius: radius.lg,
-      borderWidth: 1,
-      borderColor: p.border,
-      borderLeftWidth: 4,
-      borderLeftColor: p.border,
-      padding: spacing.md,
-      gap: spacing.xs,
-    },
-    banner: { borderLeftColor: p.accent, borderColor: p.accent },
-    bannerHead: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      gap: spacing.xs,
-    },
-    bannerTitleRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, flexShrink: 1 },
-    bannerFoot: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: spacing.xs,
-      borderTopWidth: 1,
-      borderTopColor: `${p.accent}33`,
-      paddingTop: spacing.xs,
-      marginTop: spacing.xs / 2,
-    },
-    // The chevron holds its width; the source is what gives way on a narrow handset.
-    bannerSource: {
-      flex: 1,
-      color: p.muted,
-      fontFamily: fontFamily.regular,
-      fontSize: 10,
-      textTransform: 'uppercase',
-    },
-    confChip: {
-      paddingHorizontal: spacing.xs,
-      paddingVertical: 2,
+    countBubble: {
+      paddingHorizontal: 6,
       borderRadius: radius.xl,
-      borderWidth: 1,
-      borderColor: `${p.accent}66`,
+      backgroundColor: `${p.bg}66`,
     },
-    confText: {
-      color: p.accent,
-      fontFamily: fontFamily.semibold,
-      fontSize: 10,
-      textTransform: 'uppercase',
+
+    banner: {
+      backgroundColor: p.surfaceSoft,
+      borderRadius: radius.xl,
+      borderLeftWidth: 6,
+      borderLeftColor: p.accent,
+      padding: spacing.sm,
+      gap: spacing.xs,
     },
+    bannerTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
     bannerTitle: {
       color: p.accent,
-      fontFamily: fontFamily.semibold,
-      fontSize: 10,
+      fontFamily: fontFamily.bold,
+      fontSize: typography.label.fontSize,
       letterSpacing: 0.8,
       textTransform: 'uppercase',
     },
-    body: {
+    bannerBody: {
       color: p.text,
       fontFamily: fontFamily.regular,
-      fontSize: typography.caption.fontSize,
-      lineHeight: typography.caption.fontSize * 1.5,
+      fontSize: 12,
+      lineHeight: 12 * 1.625,
     },
+    bannerPo: { color: p.primary, fontFamily: fontFamily.medium },
+    bannerGrn: { color: p.accent, fontFamily: fontFamily.medium },
 
     sectionRow: {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
       gap: spacing.sm,
+      paddingTop: 4,
     },
     sectionLabel: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, flexShrink: 1 },
+    sectionTitle: {
+      flexShrink: 1,
+      color: p.muted,
+      fontFamily: fontFamily.bold,
+      fontSize: typography.label.fontSize,
+      letterSpacing: 0.8,
+      textTransform: 'uppercase',
+    },
     eyebrow: {
       color: p.muted,
       fontFamily: fontFamily.medium,
@@ -944,102 +979,123 @@ const makeStyles = (p: Palette) =>
     },
     urgentChip: {
       paddingHorizontal: spacing.xs,
-      paddingVertical: 1,
+      paddingVertical: 2,
       borderRadius: radius.xl,
-      backgroundColor: p.surfaceBright,
+      backgroundColor: p.surfaceSoft,
     },
-    urgentText: { color: p.text, fontFamily: fontFamily.medium, fontSize: 10 },
+    urgentText: { color: p.muted, fontFamily: fontFamily.medium, fontSize: 11 },
     sortButton: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: spacing.xs / 2,
+      gap: 2,
       minHeight: touchTarget.iconButton,
-      paddingLeft: spacing.sm,
-      flexShrink: 1,
+      paddingLeft: spacing.xs,
+      flexShrink: 0,
     },
-    sortText: {
-      color: p.accent,
-      fontFamily: fontFamily.medium,
-      fontSize: typography.label.fontSize,
-    },
+    sortText: { color: p.accent, fontFamily: fontFamily.medium, fontSize: 11 },
     truncated: { color: p.muted, fontFamily: fontFamily.regular, fontSize: 10 },
 
-    cardHead: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm },
-    cardText: { flex: 1, gap: 2 },
+    card: {
+      backgroundColor: p.surface,
+      borderRadius: radius.xl,
+      borderLeftWidth: 6,
+      borderLeftColor: p.border,
+      overflow: 'hidden',
+    },
+    cardHead: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      justifyContent: 'space-between',
+      gap: spacing.xs,
+      paddingHorizontal: spacing.md,
+      paddingTop: spacing.sm,
+    },
+    cardText: { flex: 1, gap: 4 },
     cardTitleRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
     cardNumber: {
       flexShrink: 1,
       color: p.text,
-      fontFamily: fontFamily.semibold,
-      fontSize: typography.caption.fontSize,
-    },
-    tag: {
-      paddingHorizontal: spacing.xs,
-      paddingVertical: 1,
-      borderRadius: radius.xl,
-      borderWidth: 1,
-    },
-    tagText: { fontFamily: fontFamily.semibold, fontSize: 9, textTransform: 'uppercase' },
-    cardVendor: {
-      color: p.muted,
-      fontFamily: fontFamily.medium,
+      fontFamily: fontFamily.bold,
       fontSize: typography.label.fontSize,
     },
-    cardFigures: { alignItems: 'flex-end', gap: 2, flexShrink: 1 },
-    cardAmount: { color: p.text, fontFamily: fontFamily.bold, fontSize: typography.body.fontSize },
-    cardDue: { fontFamily: fontFamily.medium, fontSize: 10 },
+    tag: { paddingHorizontal: spacing.xs, paddingVertical: 2, borderRadius: radius.xl },
+    tagText: { fontFamily: fontFamily.bold, fontSize: 11, textTransform: 'uppercase' },
+    cardVendor: { color: p.text, fontFamily: fontFamily.semibold, fontSize: 14 },
+    cardFigures: { alignItems: 'flex-end', flexShrink: 0 },
+    cardAmount: { color: p.text, fontFamily: fontFamily.bold, fontSize: 20, lineHeight: 28 },
+    cardDue: { fontFamily: fontFamily.medium, fontSize: 11 },
+    overRow: { flexDirection: 'row', alignItems: 'center', gap: 2 },
+    overText: { color: p.danger, fontFamily: fontFamily.semibold },
 
     telemetry: {
       flexDirection: 'row',
       alignItems: 'center',
-      justifyContent: 'space-between',
       gap: spacing.xs,
-      backgroundColor: p.surfaceBright,
-      borderRadius: radius.md,
-      paddingHorizontal: spacing.xs,
-      paddingVertical: spacing.xs / 2,
+      backgroundColor: p.surfaceSunk,
+      borderRadius: radius.lg,
+      padding: spacing.xs,
+      marginHorizontal: spacing.md,
+      marginTop: spacing.sm,
     },
-    telemetryRight: { flexDirection: 'row', alignItems: 'center', gap: 2, flexShrink: 1 },
-    telemetryText: {
-      flexShrink: 1,
-      color: p.muted,
-      fontFamily: fontFamily.medium,
-      fontSize: 10,
+    telemetryCell: {
+      flex: 1,
+      color: p.text,
+      fontFamily: fontFamily.semibold,
+      fontSize: 12,
     },
+    telemetryScore: {
+      flex: 1,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'flex-end',
+      gap: 4,
+    },
+    scoreText: { fontFamily: fontFamily.bold, fontSize: typography.label.fontSize },
 
     discrepancy: {
       flexDirection: 'row',
       alignItems: 'flex-start',
       gap: spacing.xs,
-      borderRadius: radius.md,
-      borderWidth: 1,
-      borderColor: `${p.danger}55`,
-      padding: spacing.xs,
+      borderRadius: radius.lg,
+      backgroundColor: `${p.danger}1F`,
+      padding: 10,
+      marginHorizontal: spacing.md,
+      marginTop: 10,
     },
     discrepancyText: {
-      flexShrink: 1,
+      flex: 1,
       color: p.text,
       fontFamily: fontFamily.regular,
-      fontSize: typography.label.fontSize,
+      fontSize: 12,
+      lineHeight: 12 * 1.35,
     },
 
-    actions: { flexDirection: 'row', gap: spacing.xs, marginTop: spacing.xs / 2 },
+    actions: {
+      flexDirection: 'row',
+      gap: spacing.xs,
+      marginTop: spacing.sm,
+      paddingHorizontal: spacing.md,
+      paddingVertical: 10,
+      backgroundColor: `${p.surfaceBright}33`,
+    },
     action: {
       flex: 1,
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
-      gap: spacing.xs / 2,
-      minHeight: touchTarget.primaryButton,
-      borderRadius: radius.md,
-      borderWidth: 1,
-      borderColor: p.border,
+      gap: 6,
+      minHeight: touchTarget.iconButton,
+      borderRadius: radius.lg,
       paddingHorizontal: spacing.xs,
     },
-    actionPrimary: { backgroundColor: p.primary, borderColor: p.primary },
+    actionChat: {
+      backgroundColor: p.surfaceBright,
+      borderWidth: 1,
+      borderColor: `${p.accent}66`,
+    },
     actionText: {
       flexShrink: 1,
-      fontFamily: fontFamily.semibold,
+      fontFamily: fontFamily.bold,
       fontSize: typography.label.fontSize,
     },
     disabled: { opacity: 0.5 },
@@ -1057,21 +1113,29 @@ const makeStyles = (p: Palette) =>
       alignItems: 'center',
       justifyContent: 'center',
       gap: spacing.xs,
-      minHeight: touchTarget.primaryButton,
-      borderRadius: radius.lg,
+      minHeight: 52,
+      borderRadius: radius.xl,
       backgroundColor: p.primary,
       paddingHorizontal: spacing.md,
-      marginTop: spacing.xs,
+      marginTop: spacing.sm,
     },
     scanButtonText: {
       color: p.onPrimary,
-      fontFamily: fontFamily.semibold,
+      fontFamily: fontFamily.bold,
       fontSize: typography.label.fontSize,
-      letterSpacing: 0.6,
+      letterSpacing: 0.8,
       textTransform: 'uppercase',
     },
 
     detailPage: { padding: spacing.md, gap: spacing.sm, backgroundColor: p.bg, flexGrow: 1 },
+    detailCard: {
+      backgroundColor: p.surface,
+      borderRadius: radius.lg,
+      borderWidth: 1,
+      borderColor: p.border,
+      padding: spacing.md,
+      gap: spacing.xs,
+    },
     backRow: {
       flexDirection: 'row',
       alignItems: 'center',

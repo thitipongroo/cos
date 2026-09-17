@@ -21,6 +21,7 @@
 // would act on it as a suggested course.
 
 import { render, fireEvent, waitFor } from '@testing-library/react-native';
+import { Alert } from 'react-native';
 import { I18nProvider } from '../../i18n';
 import { useAuthStore } from '../../store/authStore';
 import { InsightPanel, summaryText } from '../InsightPanel';
@@ -478,19 +479,19 @@ describe('InsightPanel', () => {
     expect(getByTestId('panel')).not.toHaveTextContent(/ERP/i);
   });
 
-  // Optional: the panels whose mockup has no follow-up button do not grow one.
-  it('offers the follow-up only where its host asked for one', async () => {
-    const onPress = jest.fn();
+  // PO decision 2026-09-17 (R22, D38/D39): one way in — the footer chevron. Generate stays, as a
+  // command, and carries no chevron of its own; the follow-up button is gone.
+  it('shows one chevron, in the footer, and pressing it opens the coming-soon dialog', async () => {
+    const alert = jest.spyOn(Alert, 'alert').mockImplementation(() => undefined);
+    const { getByTestId, queryByTestId, toJSON } = await renderPanel().utils;
 
-    const bare = await renderPanel().utils;
-    expect(bare.queryByTestId('insight-follow-up')).toBeNull();
+    expect(getByTestId('insight-run')).toBeTruthy();
+    expect(queryByTestId('insight-follow-up')).toBeNull();
+    expect(JSON.stringify(toJSON()).split('"chevron-right"').length - 1).toBe(1);
 
-    const { utils } = renderPanel({ followUp: { labelKey: 'insight.action', onPress } });
-    const { getByTestId } = await utils;
-
-    await fireEvent.press(getByTestId('insight-follow-up'));
-
-    expect(onPress).toHaveBeenCalledTimes(1);
+    await fireEvent.press(getByTestId('insight-foot'));
+    expect(alert).toHaveBeenCalledTimes(1);
+    alert.mockRestore();
   });
 });
 

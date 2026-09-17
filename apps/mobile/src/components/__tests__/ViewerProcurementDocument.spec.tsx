@@ -120,8 +120,8 @@ describe('ViewerProcurementDocument', () => {
     // asserted below. The manager's dashboard behind the same route has an approve button wired to
     // a real mutation; this screen must never grow one.
     // Derived from the register rather than typed as a number: the four KPI tiles, the four
-    // monitored lines, TRACK LIVE and the filter row.
-    const expected = 4 + VIEWER_PROCUREMENT_LINES.value.length + 2;
+    // monitored lines, TRACK LIVE, the filter row — and, since R22 (D38), the AI card's footer.
+    const expected = 4 + VIEWER_PROCUREMENT_LINES.value.length + 2 + 1;
     const hosts = hostNodes(root);
     // Guard against a walker that silently finds nothing and passes.
     expect(hosts.filter((n) => n.props.testID === 'procurement-kpi-pos')).toHaveLength(1);

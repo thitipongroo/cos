@@ -27,27 +27,43 @@
 // figure. Costs recorded in another currency are EXCLUDED from every category — adding baht to
 // dollars is not a sum — and counted in the same caption.
 //
-// NO CONFIDENCE ON THE FORECAST MODULE. The drawing puts "Conf: 94%" and "Source: ERP & Schedule"
-// on it. The forecast is a deterministic sum of scheduled inflows and outflows, so a confidence
-// would claim a model that never ran; the footer names the project instead, which is the carve-out
-// ADR-098's second amendment and ADR-099 already record for every AI-shaped card in this app.
+// THE FORECAST MODULE'S CONFIDENCE AND SOURCE ARE DRAWN (FORECAST_CONFIDENCE, FINANCE_AI_SOURCES —
+// see below). The forecast is a deterministic sum of scheduled inflows and outflows, so the
+// percentage claims a model that never ran; ADR-099 records it.
 //
 // WHAT IS DRAWN (lib/mockupFigures.ts, ADR-099): "Code: 02-100" under a category name.
 // `budget_lines.boq_category_id` is a UUID and no coding standard exists to derive a short code
 // from — see `BUDGET_CATEGORY_CODE`.
 //
-// ONE GLYPH FOR EVERY CATEGORY, where the drawing gives each its own (`foundation`,
-// `electrical_services`, `format_paint`). Picking a glyph per category needs a category TAXONOMY,
-// and this schema has a name and a UUID; a name-to-icon guess would be a classification standard
-// invented on a budget screen. What does vary is the TONE, exactly as the drawing varies it: a
-// category over its allocation is drawn in warning, which is the distinction the drawing's three
-// cards are actually making.
+// A GLYPH PER CATEGORY, cycled by position (`BUDGET_CATEGORY_GLYPHS`, PO 2026-09-08): the drawing
+// gives each card its own (`foundation`, `electrical_services`, `format_paint`) and this schema has a
+// name and a UUID, so the glyphs are drawn rather than read off the name.
+//
+// REBUILT AGAIN 2026-09-17 TO THE STITCH SCREEN "Budget Dashboard - Refined & Spec Compliant"
+// (81381393b417…, byte-identical to the repo drawing; revision R21, product-owner decisions D27–D35):
+//   · each KPI card's chevron sits on a round plate and the ACTUAL badge is a filled chip
+//   · the forecast module: `psychology`, a 5 % accent wash and a 6px accent edge, and the drawing's
+//     source "ERP & Schedule" (COMING SOON, `FINANCE_AI_SOURCES`) in the project's standard foot
+//     (<AiCardFooter />, D33) in place of the project name it used to carry
+//   · each category card in one of THREE looks (D34): over its allocation → warning, with the
+//     drawing's `warning` mark beside the name and its "Proj. Variance +X%" line carrying the REAL
+//     over-allocation (D35); 50–100 % used → primary; under 50 % → muted. Glyph plate, bar and the
+//     VIEW DETAILS button take the look.
+// The category card has NO header chevron, though the drawing puts one beside the amount: the card's
+// VIEW DETAILS button is already its one way onward, and a bare chevron that leads nowhere is the
+// decoration deleted from the forecast card on 2026-09-09 (spec §32.7 "AI Card Footer").
+// The project bar stays the project's standard <ProjectContextBar /> (D28), not the drawing's compact
+// strip. The FAB and the gradient-free forecast module follow the standing rules (D32).
 //
 // DRAWN ACTIONS, each saying so on tap: the amendment FAB (`POST /finance/budget/:projectId` is a
 // FINANCE/TENANT_ADMIN create-or-update, not a request-and-approve amendment flow), "Expand all"
 // (nothing on the card is collapsed), "View details" (no per-line screen exists), the forecast
-// module's deep-report button, and the three KPI footer links. COMING SOON, in this comment and in
+// module's footer chevron, and the three KPI footer links. COMING SOON, in this comment and in
 // a dialog — never as a label on screen.
+//
+// R22 (PO 2026-09-17, D38): the forecast module's "Open the full forecast and contract review" button
+// is gone. An AI card has ONE way into its content — the footer chevron (spec §32.7 "AI Card
+// Footer").
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { View, Text, Pressable, ScrollView, RefreshControl, StyleSheet } from 'react-native';
@@ -75,8 +91,10 @@ import { compactMoneyLabel, spacedMoney } from '../../lib/compactMoney';
 import {
   BUDGET_CATEGORY_CODE,
   BUDGET_CATEGORY_GLYPHS,
+  FINANCE_AI_SOURCES,
   FORECAST_CONFIDENCE,
 } from '../../lib/mockupFigures';
+import { categoryLook } from '../../lib/budgetLook';
 import { CosRole } from '@cos/types';
 import { useAuthStore } from '../../store/authStore';
 import { ViewerBudgetDocument } from '../../components/ViewerBudgetDocument';
@@ -206,7 +224,9 @@ function FinanceBudgetScreen(): React.JSX.Element {
                 <KpiCard
                   testID="budget-kpi-total"
                   glyph="account-balance-wallet"
+                  // The drawing's edge for this card is the muted ink at 60 %.
                   tone={p.muted}
+                  edge={`${p.muted}99`}
                   label={t('finance.budget.totalBudget')}
                   value={money(total)}
                   caption={t('finance.budget.totalBudgetSub')}
@@ -245,11 +265,10 @@ function FinanceBudgetScreen(): React.JSX.Element {
 
               <ForecastModule
                 periods={periods}
-                projectName={active?.projectName ?? null}
                 styles={styles}
                 palette={p}
                 t={t}
-                onDeepReport={() => soon('finance.budget.deepReport')}
+                onOpen={() => soon('finance.budget.forecast')}
               />
 
               <View style={styles.breakdownHead}>
@@ -339,11 +358,14 @@ function KpiCard({
   onLink,
   badge,
   ratio: fill,
+  edge,
   styles,
 }: {
   testID: string;
   glyph: React.ComponentProps<typeof MaterialIcons>['name'];
   tone: string;
+  /** The left edge's colour when it differs from `tone`. */
+  edge?: string;
   label: string;
   value: string;
   caption: string;
@@ -354,7 +376,7 @@ function KpiCard({
   styles: ReturnType<typeof makeStyles>;
 }): React.JSX.Element {
   return (
-    <View testID={testID} style={[styles.card, { borderLeftColor: tone }]}>
+    <View testID={testID} style={[styles.card, styles.kpiCard, { borderLeftColor: edge ?? tone }]}>
       <View style={styles.kpiHead}>
         <View style={styles.kpiLabel}>
           <MaterialIcons name={glyph} size={16} color={tone} />
@@ -362,13 +384,20 @@ function KpiCard({
         </View>
         <View style={styles.kpiTrail}>
           {badge == null ? null : (
-            <View style={[styles.badge, { borderColor: `${tone}66` }]}>
+            <View style={styles.badge}>
               <MaterialIcons name="arrow-upward" size={12} color={tone} />
               <Text style={[styles.badgeText, { color: tone }]}>{badge}</Text>
             </View>
           )}
-          {/* The drawing puts one on every KPI card — the mark that the tile opens something. */}
-          <MaterialIcons name="chevron-right" size={16} color={tone} />
+          {/* The drawing puts one on every KPI card — the mark that the tile opens something —
+              on a round 28pt plate. */}
+          <View
+            style={styles.chevronPlate}
+            accessibilityElementsHidden
+            importantForAccessibility="no"
+          >
+            <MaterialIcons name="chevron-right" size={18} color={tone} />
+          </View>
         </View>
       </View>
       <Text style={styles.kpiValue}>{value}</Text>
@@ -404,18 +433,17 @@ function KpiCard({
  */
 function ForecastModule({
   periods,
-  projectName,
   styles,
   palette,
   t,
-  onDeepReport,
+  onOpen,
 }: {
   periods: CashflowPeriod[] | null;
-  projectName: string | null;
   styles: ReturnType<typeof makeStyles>;
   palette: Palette;
   t: TranslateFn;
-  onDeepReport: () => void;
+  /** The footer chevron — the card's one way in (D38). */
+  onOpen: () => void;
 }): React.JSX.Element {
   const week = periods === null ? null : firstShortfallWeek(periods);
   const risk = periods === null ? null : gradeCashflowRisk(periods);
@@ -423,7 +451,7 @@ function ForecastModule({
   return (
     <View testID="budget-forecast" style={[styles.card, styles.forecast]}>
       <View style={styles.forecastHead}>
-        <MaterialIcons name="bolt" size={16} color={palette.accent} />
+        <MaterialIcons name="psychology" size={20} color={palette.accent} />
         <Text style={styles.forecastTitle}>{t('finance.budget.forecast')}</Text>
       </View>
       <Text style={styles.body}>
@@ -446,33 +474,22 @@ function ForecastModule({
           THE CONFIDENCE IS DRAWN and is the entry ADR-099 is least comfortable with: this card
           reads a DETERMINISTIC forecast, so a percentage claims a model that never ran. Drawn on
           the product owner's instruction of 2026-09-08 and registered.
-          THE SOURCE TEXT NAMES THE PROJECT, not the drawing's "ERP & Schedule" — naming systems
-          this platform does not integrate with is a claim about provenance, and it is the carve-out
-          ADR-098's second amendment and ADR-099 both keep. */}
+          THE SOURCE IS THE DRAWING'S "ERP & Schedule" since 2026-09-17 (D31) — COMING SOON,
+          FINANCE_AI_SOURCES. It used to name the project. */}
       {/* THE PROJECT'S STANDARD AI-CARD FOOT (spec §32.7, PO decision 2026-09-08). This card had
           the shape first — CONF and SOURCE on one line — and now shares the component every AI card
           uses, so the next change to the pattern reaches all of them at once. */}
       <AiCardFooter
         testID="budget-forecast-foot"
         percent={FORECAST_CONFIDENCE.value.budget}
-        source={projectName ?? '—'}
+        source={FINANCE_AI_SOURCES.value.budget}
         confLabel={t('insight.confShort')}
         sourceLabel={t('insight.sourceShort')}
+        // The card's ONE way in (R22, D38). The drawing's "open the full forecast and contract
+        // review" button went: there is no deep report, and a card offers one entry, not two.
+        onPress={onOpen}
         palette={palette}
       />
-      {/* Drawn — there is no deep forecast report and no contract review screen. */}
-      <Pressable
-        testID="budget-deep-report"
-        accessibilityRole="button"
-        accessibilityLabel={t('finance.budget.deepReport')}
-        onPress={onDeepReport}
-        style={styles.forecastButton}
-      >
-        <Text style={styles.forecastButtonText} numberOfLines={1}>
-          {t('finance.budget.deepReport')}
-        </Text>
-        <MaterialIcons name="arrow-forward" size={16} color={palette.accent} />
-      </Pressable>
     </View>
   );
 }
@@ -499,27 +516,56 @@ function CategoryCard({
 }): React.JSX.Element {
   const allocated = new Decimal(line.allocated_amount);
   const share = spent === null ? null : ratio(spent, allocated);
-  // Over its allocation is the distinction the drawing's three cards make, and the only one this
-  // schema supports making. `over` is null when there is no spend to compare, not false.
+  // `over` is null when there is no spend to compare, not false.
   const over = share === null ? null : share > 1;
-  const tone = over === true ? palette.warning : palette.muted;
+  const look = categoryLook(share);
+  // The glyph, the words and the button take the accent where the drawing says `primary`: primary
+  // itself is under 4.5:1 as text on this surface (§20.8). The BAR keeps primary.
+  const ink =
+    look === 'warning' ? palette.warning : look === 'primary' ? palette.accent : palette.muted;
+  const bar =
+    look === 'warning' ? palette.warning : look === 'primary' ? palette.primary : palette.muted;
   return (
-    <View testID={`budget-line-${line.line_id}`} style={[styles.card, { borderLeftColor: tone }]}>
+    <View
+      testID={`budget-line-${line.line_id}`}
+      style={[
+        styles.card,
+        look === 'warning'
+          ? { borderLeftColor: palette.warning, borderColor: `${palette.warning}66` }
+          : { borderLeftColor: palette.border },
+      ]}
+    >
       <View style={styles.lineHead}>
         {/* DRAWN — one glyph per card, cycled by position, exactly as the code above it is.
             The drawing gives each category its own (`foundation`, `electrical_services`,
             `format_paint`) and this schema has a NAME and a UUID: reading a glyph off a name would
             be inventing a classification standard on a budget screen. See the register. */}
-        <View style={[styles.plate, { borderColor: `${tone}55` }]}>
-          <MaterialIcons name={icon} size={20} color={tone} />
+        <View
+          testID={`budget-line-plate-${line.line_id}`}
+          style={[styles.plate, { borderColor: `${ink}4D` }]}
+        >
+          <MaterialIcons name={icon} size={20} color={ink} />
         </View>
         <View style={styles.lineText}>
-          <Text style={styles.lineName} numberOfLines={1}>
-            {line.line_name}
-          </Text>
+          <View style={styles.lineNameRow}>
+            <Text style={styles.lineName} numberOfLines={1}>
+              {line.line_name}
+            </Text>
+            {/* The drawing's variance mark beside the name of an over-allocated category. */}
+            {over === true ? (
+              <MaterialIcons
+                name="warning"
+                size={16}
+                color={palette.warning}
+                accessibilityElementsHidden
+                importantForAccessibility="no"
+              />
+            ) : null}
+          </View>
           {over === true ? (
+            // The drawing's words, the REAL over-allocation (D35).
             <Text style={[styles.lineCode, { color: palette.warning }]} numberOfLines={1}>
-              {t('finance.budget.overBy', {
+              {t('finance.budget.projVariance', {
                 percent: percentText(spent!.minus(allocated), allocated) ?? '—',
               })}
             </Text>
@@ -545,16 +591,22 @@ function CategoryCard({
       {/* Clamped at the bar, not at the figure: a category at 105% draws a full bar and still reads
           105% beside it. A bar wider than its track is a rendering bug, a percentage over 100 is
           the news. */}
-      <ProgressBar ratio={share ?? 0} tone={tone} styles={styles} />
+      <ProgressBar ratio={share ?? 0} tone={bar} styles={styles} />
       <Pressable
         testID={`budget-line-details-${line.line_id}`}
         accessibilityRole="button"
         accessibilityLabel={t('finance.budget.viewDetails')}
         onPress={onDetails}
-        style={styles.detailsButton}
+        style={[styles.detailsButton, { borderColor: `${ink}4D` }]}
       >
-        <Text style={[styles.detailsText, { color: tone }]}>{t('finance.budget.viewDetails')}</Text>
-        <MaterialIcons name="arrow-forward" size={15} color={tone} />
+        <Text style={[styles.detailsText, { color: look === 'muted' ? palette.text : ink }]}>
+          {t('finance.budget.viewDetails')}
+        </Text>
+        <MaterialIcons
+          name="arrow-forward"
+          size={18}
+          color={look === 'muted' ? palette.text : ink}
+        />
       </Pressable>
     </View>
   );
@@ -671,6 +723,17 @@ const makeStyles = (p: Palette) =>
     kpiHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
     kpiLabel: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs / 2, flexShrink: 1 },
     kpiTrail: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
+    // The drawing's `w-1.5` KPI edge.
+    kpiCard: { borderLeftWidth: 6 },
+    // A circle: half the width, off the radius scale (§32.7).
+    chevronPlate: {
+      width: 28,
+      height: 28,
+      borderRadius: 999,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: p.surfaceBright,
+    },
     eyebrow: {
       color: p.muted,
       fontFamily: fontFamily.medium,
@@ -687,7 +750,7 @@ const makeStyles = (p: Palette) =>
       // §32.7: every status pill, badge and chip takes xl. The drawing's 0.25rem is overridden by
       // that platform ruling, not by a preference — badgeRadius.spec.ts holds it.
       borderRadius: radius.xl,
-      borderWidth: 1,
+      backgroundColor: p.surfaceBright,
     },
     badgeText: { fontFamily: fontFamily.semibold, fontSize: 10 },
     kpiValue: { color: p.text, fontFamily: fontFamily.bold, fontSize: typography.hero.fontSize },
@@ -715,13 +778,19 @@ const makeStyles = (p: Palette) =>
     },
     fillBar: { height: 6, borderRadius: radius.sm },
 
-    forecast: { borderLeftColor: p.accent, borderColor: p.accent },
+    // The drawing's module: a 40 % accent edge, a 6px accent left edge and a 5 % accent wash.
+    forecast: {
+      borderLeftWidth: 6,
+      borderLeftColor: p.accent,
+      borderColor: `${p.accent}66`,
+      backgroundColor: `${p.accent}0D`,
+    },
     forecastHead: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
     forecastTitle: {
       color: p.accent,
-      fontFamily: fontFamily.semibold,
-      fontSize: 10,
-      letterSpacing: 0.8,
+      fontFamily: fontFamily.bold,
+      fontSize: typography.label.fontSize,
+      letterSpacing: 1.2,
       textTransform: 'uppercase',
     },
     body: {
@@ -754,24 +823,6 @@ const makeStyles = (p: Palette) =>
       // ordinary words — Thai has no case, and an uppercase source string reads as shouting in
       // every language that does.
       textTransform: 'uppercase',
-    },
-    forecastButton: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'center',
-      gap: spacing.xs,
-      minHeight: touchTarget.primaryButton,
-      borderRadius: radius.md,
-      borderWidth: 1,
-      borderColor: `${p.accent}66`,
-      marginTop: spacing.xs,
-      paddingHorizontal: spacing.sm,
-    },
-    forecastButtonText: {
-      flexShrink: 1,
-      color: p.accent,
-      fontFamily: fontFamily.semibold,
-      fontSize: typography.label.fontSize,
     },
 
     breakdownHead: {
@@ -813,11 +864,12 @@ const makeStyles = (p: Palette) =>
       height: PLATE,
       borderRadius: plateRadius(PLATE),
       borderWidth: 1,
-      backgroundColor: p.surfaceBright,
+      backgroundColor: p.surfaceSoft,
       alignItems: 'center',
       justifyContent: 'center',
     },
     lineText: { flex: 1, gap: 2 },
+    lineNameRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs / 2 },
     lineName: {
       color: p.text,
       fontFamily: fontFamily.semibold,
@@ -837,9 +889,10 @@ const makeStyles = (p: Palette) =>
       justifyContent: 'center',
       gap: spacing.xs / 2,
       minHeight: touchTarget.iconButton,
-      borderRadius: radius.md,
+      borderRadius: radius.lg,
       borderWidth: 1,
       borderColor: p.border,
+      backgroundColor: p.surfaceSoft,
       marginTop: spacing.xs / 2,
     },
     detailsText: {

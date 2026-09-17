@@ -65,6 +65,11 @@
 //      ADR-098 precedent; the product owner kept the enumerated bar
 //      (Home | Projects | Procurement | Budget). /map and /insights are drawer rows instead.
 
+// R22 (PO decision 2026-09-17, D38): the system-insight card's footer chevron now opens the coming-
+// soon dialog. Every AI card has ONE way into its content — the footer chevron of <AiCardFooter />
+// (spec §32.7 "AI Card Footer"); with no screen behind it yet, that chevron opens the coming-soon
+// dialog.
+
 import { useEffect, useMemo, useState } from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
@@ -252,6 +257,8 @@ export default function ViewerHome(): React.JSX.Element {
           source={t('insight.sourcePortfolio')}
           confLabel={t('insight.confShort')}
           sourceLabel={t('insight.sourceShort')}
+          // The card's one way in (R22, D38) — no screen exists yet, so the coming-soon dialog.
+          onPress={() => soon('home.viewer.systemInsight')}
           palette={p}
         />
       </View>

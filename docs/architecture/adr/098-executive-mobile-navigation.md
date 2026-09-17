@@ -258,3 +258,15 @@ drawn for one day and removed by the product owner on 2026-09-17.
 The carve-out still stands everywhere else: `<AiCardFooter />`'s SOURCE names a project or record set this
 repository has (spec §32.7 "AI Card Footer"), and the risk cards' category chip still takes subject labels rather than
 the drawing's "BIM + Site Logs" (`RISK_ALERT_CATEGORIES`).
+
+## Amendment — 2026-09-17: the "WHICH SYSTEMS" category is drawn on four FINANCE cards
+
+**Decided by:** Product Owner, 2026-09-17, revision R21, decisions D31 and D33.
+
+The carve-out the amendment above keeps "everywhere else" no longer covers the FINANCE role. The Home cash-flow card,
+the Payments analysis module, the Budget forecast module and the Invoices 3-way-matching banner each keep the standard
+`<AiCardFooter />` and print the drawing's source text — "ERP & Milestone data", "Integrated ERP & Market Benchmarks",
+"ERP & Schedule", "ERP DB & Central OCR Ledger". None of those systems exists in this repository. The values live in
+`FINANCE_AI_SOURCES` (ADR-099, amendment of this date), marked COMING SOON.
+
+The carve-out still stands on every other role's AI card.

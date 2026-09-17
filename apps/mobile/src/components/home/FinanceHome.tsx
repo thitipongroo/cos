@@ -54,6 +54,25 @@
 //
 // Switching project stays where it belongs, on the screens that ARE about one project: Payments and
 // Budget both keep `<ProjectContextBar />`, and `<SelectProjectSheet />` still asks once on launch.
+//
+// REBUILT AGAIN 2026-09-17 TO THE STITCH SCREEN "Finance Home Dashboard - Mobile" (e4e1f1daf810…,
+// byte-identical to the repo drawing; revision R21, product-owner decisions D27–D33). Everything the
+// drawing draws is drawn, reversing the 2026-09-08 exclusions (D31):
+//   · the pending card: amber left edge, the `pending_actions` glyph without a plate, the trend in
+//     the danger colour, the trailing arrow and the faded wallet watermark
+//   · the forecast card: cyan tint and left edge, the `auto_awesome` watermark, the title "Cash Flow"
+//     beside `insights`, and its source "ERP & Milestone data" — COMING SOON, `FINANCE_AI_SOURCES`,
+//     in place of the project name the card used to carry. The confidence stays in the project's
+//     standard foot (<AiCardFooter />, spec §32.7), not the drawing's header chip (D33).
+//   · the priority queue: the heading in title case, a glyph plate and a due word per row ("Due
+//     today" / "Tomorrow" / "Overdue" — real, `lib/paymentDue.ts`), the vendor's project name, and
+//     the Review / Approve pair. Two rows, as drawn. The drawing gives the pair to the first row
+//     only; since R22 (PO 2026-09-17) EVERY row carries it.
+// Real values still win: the pending total, the cash position and its risk word, the forecast
+// sentence, every queue row. The app's TopBar and the FINANCE tab bar stay (D28).
+// DIFFERENCE: the burn-rate bar keeps `primary`; the drawing's `#b4c5ff` has no token in the mobile
+// palette (spec §32.7), and adding one is a palette decision, not a screen's.
+// A due date after tomorrow is printed as a date on a neutral plate — the drawing shows no such row.
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { View, Text, Pressable, StyleSheet, Alert } from 'react-native';
@@ -69,23 +88,38 @@ import {
   type CashflowPeriod,
 } from '@cos/financial';
 import { getCashflowForecast, listPayments, type PaymentRow } from '../../api/finance';
+import { getMyProjects } from '../../api/projects';
 import { invoiceIndex, type VendorInvoice } from '../../api/procurement';
 import { useProjectStore } from '../../store/projectStore';
 import { compactMoneyLabel, spacedMoney } from '../../lib/compactMoney';
 import { AiCardFooter } from '../AiCardFooter';
 import { countSettled } from '../../lib/loadingState';
-import { APPROVALS_TREND, FINANCE_BURN_RATE, FORECAST_CONFIDENCE } from '../../lib/mockupFigures';
-import { useT } from '../../i18n';
+import {
+  APPROVALS_TREND,
+  FINANCE_AI_SOURCES,
+  FINANCE_BURN_RATE,
+  FORECAST_CONFIDENCE,
+} from '../../lib/mockupFigures';
+import { paymentDueState, type DueState } from '../../lib/paymentDue';
+import { useI18n, useT } from '../../i18n';
 import type { TranslateFn } from '../../i18n';
-import { fontFamily, radius, spacing, touchTarget, typography } from '../../theme/tokens';
+import {
+  fontFamily,
+  plateRadius,
+  radius,
+  spacing,
+  touchTarget,
+  typography,
+} from '../../theme/tokens';
 import { usePalette, type Palette } from '../../theme/usePalette';
 import { Screen, KpiRegion } from './HomeKit';
 
 /** How many of the pending payments the priority queue lists. The drawing shows two. */
-const PRIORITY_ROWS = 3;
+const PRIORITY_ROWS = 2;
 
 export default function FinanceHome(): React.JSX.Element {
   const t = useT();
+  const { locale } = useI18n();
   const p = usePalette();
   const styles = useMemo(() => makeStyles(p), [p]);
   const router = useRouter();
@@ -101,8 +135,10 @@ export default function FinanceHome(): React.JSX.Element {
   // Three since 2026-09-08: the queue, the forecast, and the vendor-invoice index the queue needs
   // to name anybody. A payment carries `invoice_id` and finance may not join `procurement.*` to
   // resolve it (master PHASE 7 line 3216), so the name comes from procurement's own endpoint.
-  const LOAD_STEPS = 3;
+  // Four since 2026-09-17: the project list names the project on each queue row, as drawn.
+  const LOAD_STEPS = 4;
   const [invoices, setInvoices] = useState<Map<string, VendorInvoice>>(new Map());
+  const [projectNames, setProjectNames] = useState<Map<string, string>>(new Map());
 
   const projectId = active?.projectId ?? '';
 
@@ -129,6 +165,17 @@ export default function FinanceHome(): React.JSX.Element {
       if (!cancelled) setInvoices(index);
     });
 
+    // A queue row without its project name keeps an em dash — the list is a label, not the data.
+    const projects = step(getMyProjects())
+      .then((rows) => {
+        if (!cancelled) {
+          setProjectNames(new Map(rows.map((row) => [row.project_id, row.project_name])));
+        }
+      })
+      .catch(() => {
+        /* offline — the rows print an em dash for the project */
+      });
+
     const forecast = step(
       projectId === '' ? Promise.resolve<CashflowPeriod[]>([]) : getCashflowForecast(projectId),
     )
@@ -139,7 +186,7 @@ export default function FinanceHome(): React.JSX.Element {
         /* offline — the forecast card says it has nothing rather than showing a stale position */
       });
 
-    void Promise.allSettled([payments, names, forecast]).then(() => {
+    void Promise.allSettled([payments, names, projects, forecast]).then(() => {
       if (!cancelled) setLoading(false);
     });
     return () => {
@@ -211,13 +258,21 @@ export default function FinanceHome(): React.JSX.Element {
           onPress={() => router.push('/payments')}
           style={[styles.card, styles.hero]}
         >
+          {/* The drawing's faded wallet — decoration, so a screen reader skips it. */}
+          <View style={styles.heroWatermark} pointerEvents="none">
+            <MaterialIcons
+              name="account-balance-wallet"
+              size={120}
+              color={p.text}
+              accessibilityElementsHidden
+              importantForAccessibility="no"
+            />
+          </View>
           <View style={styles.heroHead}>
             <Text style={styles.eyebrow}>{t('home.finance.pendingApprovals')}</Text>
             <View style={styles.headTrail}>
-              <View style={styles.heroPlate}>
-                <MaterialIcons name="pending-actions" size={20} color={p.accent} />
-              </View>
-              <MaterialIcons name="chevron-right" size={18} color={p.muted} />
+              <MaterialIcons name="pending-actions" size={22} color={p.warning} />
+              <MaterialIcons name="chevron-right" size={16} color={p.muted} />
             </View>
           </View>
           <Text style={styles.heroValue} numberOfLines={1} adjustsFontSizeToFit>
@@ -227,11 +282,16 @@ export default function FinanceHome(): React.JSX.Element {
               The "Review queue" affordance that stood beside it went on 2026-09-08 (PO): the card
               is the control and the plated chevron above already says so, so a second label for the
               same tap was one mark too many. The words survive as this card's accessibility label. */}
-          <View style={styles.deltaRow}>
-            <MaterialIcons name="trending-up" size={14} color={p.success} />
-            <Text style={styles.delta}>
-              {t('home.finance.vsLastWeek', { value: APPROVALS_TREND.value })}
-            </Text>
+          <View style={styles.heroFoot}>
+            <View style={styles.deltaRow}>
+              <MaterialIcons name="trending-up" size={16} color={p.danger} />
+              <Text style={styles.delta}>
+                {t('home.finance.vsLastWeek', { value: APPROVALS_TREND.value })}
+              </Text>
+            </View>
+            {/* The drawing's trailing arrow; its "Review Queue" words are `hidden md:inline`, so on a
+                phone it is the arrow alone. The words stay as this card's accessibility label. */}
+            <MaterialIcons name="arrow-forward" size={14} color={p.muted} />
           </View>
         </Pressable>
 
@@ -283,6 +343,16 @@ export default function FinanceHome(): React.JSX.Element {
 
         {/* ── The forecast. Real, deterministic, and NOT labelled as a model — see the header. ── */}
         <View testID="finance-forecast" style={[styles.card, styles.forecast]}>
+          {/* The drawing's `auto_awesome` watermark, top-right. Decoration only. */}
+          <View style={styles.forecastWatermark} pointerEvents="none">
+            <MaterialIcons
+              name="auto-awesome"
+              size={56}
+              color={p.accent}
+              accessibilityElementsHidden
+              importantForAccessibility="no"
+            />
+          </View>
           {/* NO CHEVRON HERE (removed 2026-09-09). A bare `chevron-right` sat at the trailing edge
               of this row inside a plain `View` — it was not a control, it opened nothing, and it
               read as one. The card's one working affordance is the foot below, which IS pressable.
@@ -310,8 +380,8 @@ export default function FinanceHome(): React.JSX.Element {
 
               IT IS DRAWN, and it is the entry ADR-099 is least comfortable with: this card reads a
               DETERMINISTIC forecast, so the number claims a model that never ran (fourth
-              amendment). The SOURCE names the project rather than the drawing's "ERP & Milestone
-              data" — the carve-out now lives in the component.
+              amendment). The SOURCE is the drawing's "ERP & Milestone data" since 2026-09-17
+              (D31, `FINANCE_AI_SOURCES`) — COMING SOON; it used to name the project.
 
               THE "VIEW MODEL" CONTROL WENT WITH THE CHANGE. It was a chevron beside the source
               opening a "coming soon" for a model that does not exist; the footer's own chevron is
@@ -320,7 +390,7 @@ export default function FinanceHome(): React.JSX.Element {
           <AiCardFooter
             testID="finance-forecast-foot"
             percent={FORECAST_CONFIDENCE.value.home}
-            source={active?.projectName ?? '—'}
+            source={FINANCE_AI_SOURCES.value.home}
             confLabel={t('insight.confShort')}
             sourceLabel={t('insight.sourceShort')}
             onPress={() => soon('home.finance.viewModel')}
@@ -357,6 +427,9 @@ export default function FinanceHome(): React.JSX.Element {
               key={row.payment_id}
               row={row}
               invoice={invoices.get(row.invoice_id) ?? null}
+              projectName={projectNames.get(row.project_id) ?? null}
+              due={paymentDueState(row.payment_date, new Date())}
+              locale={locale}
               styles={styles}
               palette={p}
               t={t}
@@ -381,6 +454,9 @@ export default function FinanceHome(): React.JSX.Element {
 function PaymentQueueRow({
   row,
   invoice,
+  projectName,
+  due,
+  locale,
   styles,
   palette,
   t,
@@ -389,12 +465,17 @@ function PaymentQueueRow({
 }: {
   row: PaymentRow;
   invoice: VendorInvoice | null;
+  projectName: string | null;
+  due: DueState;
+  locale: string;
   styles: ReturnType<typeof makeStyles>;
   palette: Palette;
   t: TranslateFn;
   onOpen: () => void;
   onApprove: () => void;
 }): React.JSX.Element {
+  const look = DUE_LOOK[due];
+  const tone = look.tone === 'muted' ? palette.muted : palette[look.tone];
   return (
     <View testID={`finance-queue-${row.payment_id}`} style={[styles.card, styles.queueRow]}>
       <Pressable
@@ -403,15 +484,38 @@ function PaymentQueueRow({
         onPress={onOpen}
         style={styles.queueMain}
       >
+        {/* The drawing's glyph plate, tinted by how soon the payment is due. */}
+        <View
+          testID={`finance-queue-${row.payment_id}-plate`}
+          style={[styles.queuePlate, { borderColor: `${tone}4D`, backgroundColor: `${tone}1A` }]}
+        >
+          <MaterialIcons
+            name={look.icon}
+            size={20}
+            color={tone}
+            accessibilityElementsHidden
+            importantForAccessibility="no"
+          />
+        </View>
         <View style={styles.queueText}>
           <Text style={styles.queueVendor} numberOfLines={1}>
             {invoice?.vendor_name ?? '—'}
           </Text>
           <Text style={styles.queueMeta} numberOfLines={1}>
-            {`${invoice?.invoice_number ?? '—'} • ${row.payment_date}`}
+            {`${invoice?.invoice_number ?? '—'} • ${projectName ?? '—'}`}
           </Text>
         </View>
-        <Text style={styles.queueAmount}>{spacedMoney(row.amount, row.currency_code)}</Text>
+        <View style={styles.queueFigures}>
+          <Text style={styles.queueAmount}>{spacedMoney(row.amount, row.currency_code)}</Text>
+          <Text
+            testID={`finance-queue-${row.payment_id}-due`}
+            style={[styles.queueDue, { color: tone }]}
+          >
+            {due === 'later'
+              ? t('home.finance.dueOn', { date: formatDay(row.payment_date, locale) })
+              : t(`home.finance.due.${due}`)}
+          </Text>
+        </View>
         <MaterialIcons
           name="chevron-right"
           size={18}
@@ -450,6 +554,26 @@ function PaymentQueueRow({
   );
 }
 
+/** The drawing's two row looks — `warning` on red for today, `bolt` on amber for tomorrow. */
+const DUE_LOOK: Record<
+  DueState,
+  { icon: React.ComponentProps<typeof MaterialIcons>['name']; tone: 'danger' | 'warning' | 'muted' }
+> = {
+  overdue: { icon: 'warning', tone: 'danger' },
+  today: { icon: 'warning', tone: 'danger' },
+  tomorrow: { icon: 'bolt', tone: 'warning' },
+  later: { icon: 'event', tone: 'muted' },
+};
+
+/** The date, in the reader's locale. Buddhist era follows automatically for `th` (QM-3). */
+function formatDay(paymentDate: string, locale: string): string {
+  const value = new Date(`${paymentDate.slice(0, 10)}T00:00:00`);
+  return new Intl.DateTimeFormat(locale === 'th' ? 'th-TH-u-ca-buddhist' : 'en-US', {
+    day: 'numeric',
+    month: 'short',
+  }).format(value);
+}
+
 const makeStyles = (p: Palette) =>
   StyleSheet.create({
     card: {
@@ -461,7 +585,17 @@ const makeStyles = (p: Palette) =>
       marginBottom: spacing.sm,
     },
 
-    hero: { gap: spacing.xs },
+    // The drawing's `border-l-4 border-mobile-warning`, 160 tall, with a watermark it clips.
+    hero: {
+      gap: spacing.xs,
+      minHeight: 160,
+      justifyContent: 'space-between',
+      overflow: 'hidden',
+      borderLeftWidth: 4,
+      borderLeftColor: p.warning,
+    },
+    heroWatermark: { position: 'absolute', right: -20, bottom: -20, opacity: 0.05 },
+    forecastWatermark: { position: 'absolute', top: spacing.sm, right: spacing.sm, opacity: 0.1 },
     heroHead: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' },
     headTrail: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
     heroFoot: {
@@ -539,7 +673,7 @@ const makeStyles = (p: Palette) =>
     },
     heroValue: { color: p.text, fontFamily: fontFamily.bold, fontSize: typography.hero.fontSize },
     deltaRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs / 2 },
-    delta: { color: p.success, fontFamily: fontFamily.medium, fontSize: typography.label.fontSize },
+    delta: { color: p.danger, fontFamily: fontFamily.medium, fontSize: typography.label.fontSize },
     heroAction: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -559,7 +693,7 @@ const makeStyles = (p: Palette) =>
     },
 
     tileRow: { flexDirection: 'row', gap: spacing.sm },
-    tile: { flex: 1, gap: 2 },
+    tile: { flex: 1, gap: 2, minHeight: 160, justifyContent: 'space-between' },
     tileValue: { color: p.text, fontFamily: fontFamily.bold, fontSize: typography.title.fontSize },
     tileNote: {
       color: p.muted,
@@ -567,13 +701,19 @@ const makeStyles = (p: Palette) =>
       fontSize: typography.label.fontSize,
     },
 
-    forecast: { borderColor: p.accent, gap: spacing.xs },
+    // The drawing's `ai-cyan-tint`: a 5 % cyan wash and a 4px cyan left edge, the rest at 30 %.
+    forecast: {
+      borderColor: `${p.accent}4D`,
+      borderLeftWidth: 4,
+      borderLeftColor: p.accent,
+      backgroundColor: `${p.accent}0D`,
+      gap: spacing.xs,
+      overflow: 'hidden',
+    },
     forecastTitle: {
-      color: p.accent,
+      color: p.text,
       fontFamily: fontFamily.semibold,
-      fontSize: 10,
-      letterSpacing: 0.8,
-      textTransform: 'uppercase',
+      fontSize: typography.title.fontSize,
     },
 
     sectionHead: {
@@ -582,12 +722,11 @@ const makeStyles = (p: Palette) =>
       justifyContent: 'space-between',
       marginBottom: spacing.xs,
     },
+    // The drawing's `font-h2-web` heading — title case, not an eyebrow.
     sectionLabel: {
       color: p.text,
       fontFamily: fontFamily.semibold,
-      fontSize: typography.label.fontSize,
-      textTransform: 'uppercase',
-      letterSpacing: 0.8,
+      fontSize: typography.title.fontSize,
     },
     viewAll: {
       flexDirection: 'row',
@@ -601,8 +740,24 @@ const makeStyles = (p: Palette) =>
       fontSize: typography.label.fontSize,
     },
 
-    queueRow: { gap: spacing.xs },
-    queueMain: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
+    queueRow: { gap: spacing.sm },
+    queueMain: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+    // A 40pt square plate: `plateRadius` scales the corner with the plate (§32.7).
+    queuePlate: {
+      width: 40,
+      height: 40,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderRadius: plateRadius(40),
+      borderWidth: 1,
+    },
+    queueFigures: { alignItems: 'flex-end', gap: 2 },
+    queueDue: {
+      fontFamily: fontFamily.bold,
+      fontSize: 10,
+      letterSpacing: 0.5,
+      textTransform: 'uppercase',
+    },
     queueText: { flex: 1, gap: 2 },
     queueVendor: {
       color: p.text,
@@ -619,9 +774,17 @@ const makeStyles = (p: Palette) =>
       fontFamily: fontFamily.semibold,
       fontSize: typography.label.fontSize,
     },
-    queueActions: { flexDirection: 'row', gap: spacing.xs },
+    // The drawing's pair sits at the trailing edge under a hairline.
+    queueActions: {
+      flexDirection: 'row',
+      justifyContent: 'flex-end',
+      gap: spacing.xs,
+      paddingTop: spacing.xs,
+      borderTopWidth: 1,
+      borderTopColor: p.border,
+    },
     queueButton: {
-      flex: 1,
+      paddingHorizontal: spacing.md,
       minHeight: touchTarget.secondaryButton,
       alignItems: 'center',
       justifyContent: 'center',
@@ -629,13 +792,13 @@ const makeStyles = (p: Palette) =>
       borderWidth: 1,
       borderColor: p.border,
     },
-    queueButtonPrimary: { borderColor: `${p.accent}66`, backgroundColor: `${p.accent}1A` },
+    queueButtonPrimary: { borderColor: p.primary, backgroundColor: p.primary },
     queueButtonText: {
       color: p.text,
       fontFamily: fontFamily.medium,
       fontSize: typography.label.fontSize,
     },
-    queueButtonTextPrimary: { color: p.accent },
+    queueButtonTextPrimary: { color: p.onPrimary, fontFamily: fontFamily.semibold },
 
     eyebrow: {
       color: p.muted,

@@ -45,6 +45,10 @@
 //
 // TOP RATED is not a stored badge — see lib/vendorBadge.ts for why it is derived from the score.
 
+// R22 (PO decision 2026-09-17, D38): the insight card's "Dismiss" and "Negotiate" buttons are gone.
+// Every AI card has ONE way into its content — the footer chevron of <AiCardFooter /> (spec §32.7
+// "AI Card Footer"); with no screen behind it yet, that chevron opens the coming-soon dialog.
+
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { View, Text, ScrollView, Pressable, StyleSheet, Alert } from 'react-native';
 import { LoadingState } from '../../components/LoadingState';
@@ -280,36 +284,14 @@ export default function VendorsScreen(): React.JSX.Element {
 
         <Text style={styles.insightBody}>{t('vendors.insightBody')}</Text>
 
-        <View style={styles.insightActions}>
-          <Pressable
-            testID="vendor-insight-dismiss"
-            accessibilityRole="button"
-            accessibilityLabel={t('vendors.dismiss')}
-            onPress={() => comingSoon('vendors.dismiss')}
-            style={styles.dismiss}
-          >
-            <Text style={styles.dismissText}>{t('vendors.dismiss')}</Text>
-          </Pressable>
-          <Pressable
-            testID="vendor-insight-act"
-            accessibilityRole="button"
-            accessibilityLabel={t('vendors.negotiate')}
-            onPress={() => comingSoon('vendors.negotiate')}
-            style={styles.insightAction}
-          >
-            <MaterialIcons name="handshake" size={18} color={p.bg} />
-            <Text style={styles.insightActionText}>{t('vendors.negotiate')}</Text>
-          </Pressable>
-        </View>
-
         <AiCardFooter
           testID="vendor-insight-foot"
           percent={VENDOR_INSIGHT_CONFIDENCE.value}
           source={t('vendors.insightSource')}
           confLabel={t('insight.confShort')}
           sourceLabel={t('insight.sourceShort')}
-          // The body already offers an action, so the foot ends at the source (PO 2026-09-09).
-          bodyHasAction
+          // The card's one way in (R22, D38) — no screen exists yet, so the coming-soon dialog.
+          onPress={() => comingSoon('vendors.insight')}
           palette={p}
         />
       </View>
@@ -542,36 +524,6 @@ const makeStyles = (p: Palette) =>
       fontFamily: fontFamily.regular,
       fontSize: typography.caption.fontSize,
       lineHeight: typography.caption.lineHeight,
-    },
-    insightActions: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'flex-end',
-      gap: spacing.xs,
-    },
-    dismiss: {
-      minHeight: touchTarget.secondaryButton,
-      paddingHorizontal: spacing.sm,
-      justifyContent: 'center',
-    },
-    dismissText: {
-      color: p.muted,
-      fontFamily: fontFamily.medium,
-      fontSize: typography.label.fontSize,
-    },
-    insightAction: {
-      minHeight: touchTarget.secondaryButton,
-      paddingHorizontal: spacing.md,
-      borderRadius: radius.md,
-      backgroundColor: p.accent,
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: spacing.xs / 2,
-    },
-    insightActionText: {
-      color: p.bg,
-      fontFamily: fontFamily.semibold,
-      fontSize: typography.label.fontSize,
     },
 
     // ── The vendor card ────────────────────────────────────────────────────────────────────────

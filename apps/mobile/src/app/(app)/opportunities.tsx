@@ -47,6 +47,10 @@
 // THE SPARKLINE IS NOT DRAWN AS A CHART. `design-tokens.md` says "Complex charts → simplify or
 // desktop-only" for mobile. The trend is the figure beside it, which is the part a reader acts on.
 
+// R22 (PO decision 2026-09-17, D38): the forecast card's "View analysis" button is gone. Every AI
+// card has ONE way into its content — the footer chevron of <AiCardFooter /> (spec §32.7 "AI Card
+// Footer"); with no screen behind it yet, that chevron opens the coming-soon dialog.
+
 import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import {
   View,
@@ -470,25 +474,14 @@ export default function OpportunitiesScreen(): React.JSX.Element {
                   <MaterialIcons name="bolt" size={16} color={p.warning} />
                   <Text style={s.advice}>{t('crm.opportunities.advice')}</Text>
                 </View>
-                <Pressable
-                  testID="opportunities-analysis"
-                  accessibilityRole="button"
-                  accessibilityLabel={t('crm.opportunities.viewAnalysis')}
-                  onPress={() => soon('crm.opportunities.viewAnalysis')}
-                  style={s.forecastAction}
-                >
-                  <MaterialIcons name="insights" size={16} color={p.bg} />
-                  <Text style={s.forecastActionText} numberOfLines={1}>
-                    {t('crm.opportunities.viewAnalysis')}
-                  </Text>
-                </Pressable>
                 <AiCardFooter
                   testID="opportunities-forecast-foot"
                   percent={OPPORTUNITY_FORECAST.value.confidence}
                   source={t('crm.opportunities.title')}
                   confLabel={t('insight.confShort')}
                   sourceLabel={t('insight.sourceShort')}
-                  bodyHasAction
+                  // The card's one way in (R22, D38) — no screen exists yet, so the coming-soon dialog.
+                  onPress={() => soon('crm.opportunities.viewAnalysis')}
                   palette={p}
                 />
               </View>
@@ -702,22 +695,6 @@ function makeStyles(p: Palette) {
       fontFamily: fontFamily.regular,
       fontSize: 11,
       lineHeight: 11 * 1.5,
-    },
-    forecastAction: {
-      minHeight: touchTarget.secondaryButton,
-      paddingHorizontal: spacing.sm,
-      borderRadius: radius.md,
-      backgroundColor: p.accent,
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'center',
-      gap: spacing.xs / 2,
-    },
-    forecastActionText: {
-      flexShrink: 1,
-      color: p.bg,
-      fontFamily: fontFamily.semibold,
-      fontSize: typography.label.fontSize,
     },
 
     // ── A deal card ───────────────────────────────────────────────────────────────────────────

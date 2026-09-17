@@ -13,10 +13,15 @@
 //     invoice is within it
 //   · the detail and its note SURVIVED the redraw — the drawing has neither, and ADR-085 keeps
 //     composition outside a mockup's authority
+//
+// REDRAWN 2026-09-17 (R21) to the Stitch screen: the five drawn chips, the project filter done on
+// the app through the project's own purchase orders (D30, D37), and everything the drawing draws
+// (D31) — the delivery state, the "PO"/"GRN" words, the drawn source line (D33).
 
 import { render, fireEvent, waitFor } from '@testing-library/react-native';
 import { Alert } from 'react-native';
 import { I18nProvider } from '../../../i18n';
+import { useProjectStore } from '../../../store/projectStore';
 import InvoicesScreen from '../invoices';
 
 jest.mock('../../../api/client', () => ({ get: jest.fn(), post: jest.fn() }));
@@ -47,7 +52,7 @@ function po(id: string, over: Record<string, unknown> = {}) {
     po_number: `PO-2026-${id}`,
     vendor_id: 'v-1',
     project_id: 'proj-1',
-    status: 'PARTIALLY_DELIVERED',
+    status: 'APPROVED',
     total_amount: '450000.0000',
     currency_code: 'THB',
     updated_at: '2026-04-01T00:00:00Z',
@@ -107,6 +112,7 @@ describe('InvoicesScreen', () => {
     client.get.mockImplementation(route());
     client.post.mockResolvedValue({});
     alert = jest.spyOn(Alert, 'alert').mockImplementation(() => undefined);
+    useProjectStore.setState({ active: null } as never);
   });
 
   afterEach(() => alert.mockRestore());
@@ -117,8 +123,8 @@ describe('InvoicesScreen', () => {
 
     await waitFor(() => expect(getByTestId('filter-DISPUTED')).toHaveTextContent(/\(2\)/));
     expect(getByTestId('filter-VERIFIED')).toHaveTextContent(/\(6\)/);
-    // All is the five statuses summed, because every invoice is in exactly one.
-    expect(getByTestId('filter-ALL')).toHaveTextContent(/\(14\)/);
+    // All is the five statuses summed — APPROVED included, though it has no chip (D36).
+    expect(getByTestId('filter-ALL')).toHaveTextContent(/14/);
   });
 
   it('shows no number at all on a chip whose count could not be read', async () => {
@@ -159,18 +165,47 @@ describe('InvoicesScreen', () => {
     ).toHaveLength(1);
   });
 
-  it('does not label the card with the order delivery state', async () => {
-    // "Invoiced", "Partly delivered" and the rest came off the PO and were real. They came off the
-    // card on the product owner's instruction of 2026-09-08: the card is a decision to approve or
-    // dispute, and the order's own progress is not part of it. The `poStatus` messages went with
-    // them — nothing else read those keys.
-    const { getByTestId, queryByTestId } = await renderScreen();
+  it('reads a partly delivered order off the PO, where the drawing puts it', async () => {
+    // Taken off the card on 2026-09-08 and put back on 2026-09-17 (D31): the Stitch drawing prints
+    // "ส่งมอบบางส่วน" in the GRN column, and the PO's own `status` says it for real.
+    client.get.mockImplementation(
+      route(
+        [invoice('904', { status: 'RECEIVED' }), invoice('941')],
+        [po('904', { status: 'PARTIALLY_DELIVERED' }), po('941')],
+      ),
+    );
+    const { getByTestId } = await renderScreen();
 
-    await waitFor(() => expect(getByTestId('invoice-item-941')).toBeTruthy());
-    expect(queryByTestId('invoice-po-status-941')).toBeNull();
-    expect(getByTestId('invoice-item-941')).not.toHaveTextContent(/Partly delivered/i);
+    await waitFor(() =>
+      expect(getByTestId('invoice-telemetry-904')).toHaveTextContent(/Partly delivered/),
+    );
+    expect(getByTestId('invoice-telemetry-904')).not.toHaveTextContent(/GRN/);
+    expect(getByTestId('invoice-telemetry-941')).not.toHaveTextContent(/Partly delivered/);
     // The PO reference itself stays — that is what the clerk matches against.
-    expect(getByTestId('invoice-item-941')).toHaveTextContent(/#PO-2026-941/);
+    expect(getByTestId('invoice-telemetry-941')).toHaveTextContent(/#PO-2026-941/);
+  });
+
+  it("tags each card with the drawing's English status word", async () => {
+    client.get.mockImplementation(
+      route(
+        [invoice('r', { status: 'RECEIVED' }), invoice('v'), invoice('d', { status: 'DISPUTED' })],
+        [po('r'), po('v'), po('d')],
+      ),
+    );
+    const { getByTestId } = await renderScreen();
+
+    await waitFor(() => expect(getByTestId('invoice-item-r')).toHaveTextContent(/PENDING/));
+    expect(getByTestId('invoice-item-v')).toHaveTextContent(/VERIFIED/);
+    expect(getByTestId('invoice-item-d')).toHaveTextContent(/DISPUTED/);
+  });
+
+  it('prints the due date day first, as drawn', async () => {
+    client.get.mockImplementation(route([invoice('941', { due_date: '2099-04-15' })]));
+    const { getByTestId } = await renderScreen();
+
+    await waitFor(() =>
+      expect(getByTestId('invoice-item-941')).toHaveTextContent(/Due 15\/04\/2099/),
+    );
   });
 
   it('measures Over PO against the order total, and stays silent when within it', async () => {
@@ -188,7 +223,8 @@ describe('InvoicesScreen', () => {
 
   it('offers Approve only where the server would accept it', async () => {
     // RECEIVED and VERIFIED approve; APPROVED and PAID do not — `procurement.service.ts` answers
-    // 422 on the rest, and a button that cannot work should not be under the reader's finger.
+    // 422 on the rest, and a button that cannot work should not be under the reader's finger. A PAID
+    // card is left with no action at all, and draws no empty bar.
     client.get.mockImplementation(
       route(
         [
@@ -263,34 +299,35 @@ describe('InvoicesScreen', () => {
 
     await waitFor(() => expect(getByTestId('invoices-matching')).toHaveTextContent(/98%/));
     expect(getByTestId('invoices-matching')).toHaveTextContent(/96%/);
-    // The references carry their own prefixes — "PO #PO-2026-882" said it twice (PO 2026-09-08).
-    expect(getByTestId('invoices-matching')).toHaveTextContent(/#PO-2026-882/);
-    expect(getByTestId('invoices-matching')).not.toHaveTextContent(/PO #PO/);
+    expect(getByTestId('invoices-matching')).toHaveTextContent(/3 invoices are ready/);
+    // The drawing's words are back in front of the references (D31).
+    expect(getByTestId('invoices-matching')).toHaveTextContent(/PO #PO-2026-882/);
+    expect(getByTestId('invoices-matching')).toHaveTextContent(/GRN #GRN-401/);
     // The per-card score and the GRN are drawn too, and stay put whatever the API returns.
-    expect(getByTestId('invoice-item-941')).toHaveTextContent(/99% match/);
-    expect(getByTestId('invoice-item-941')).toHaveTextContent(/#GRN-1049/);
+    expect(getByTestId('invoice-telemetry-941')).toHaveTextContent(/99%/);
+    expect(getByTestId('invoice-telemetry-941')).toHaveTextContent(/#GRN-1049/);
   });
 
-  it('foots the banner with a source that names records this repository has', async () => {
-    // `01-fn-invoice` foots the card "แหล่งข้อมูล: ERP DB & Central OCR Ledger". NEITHER EXISTS
-    // HERE, and a provenance line is the one piece of drawn text that changes how much of the
-    // screen a reader believes — so the drawn figures above it keep the drawing's shape while the
-    // source names what actually served them. ADR-098's second amendment, applied a fourth time.
+  it("foots the banner with the drawing's own source line", async () => {
+    // Until 2026-09-17 the foot named the records this repository has. The product owner reversed
+    // that for R21 (D33): the foot carries the drawing's text, and the register marks it drawn.
     const { getByTestId } = await renderScreen();
 
     await waitFor(() =>
-      expect(getByTestId('invoices-matching')).toHaveTextContent(
-        /vendor invoices and purchase orders/i,
-      ),
+      expect(getByTestId('invoices-matching')).toHaveTextContent(/ERP DB & Central OCR Ledger/),
     );
-    expect(getByTestId('invoices-matching')).not.toHaveTextContent(/OCR|ERP/i);
   });
 
-  it('brackets every chip count, including All', async () => {
-    const { getByTestId } = await renderScreen();
+  it('draws the five chips as drawn: a bubble on All, brackets on three, nothing on Paid', async () => {
+    const { getByTestId, queryByTestId } = await renderScreen();
 
-    await waitFor(() => expect(getByTestId('filter-ALL')).toHaveTextContent(/\(14\)/));
+    await waitFor(() => expect(getByTestId('filter-ALL')).toHaveTextContent(/14/));
+    expect(getByTestId('filter-ALL')).not.toHaveTextContent(/\(/);
     expect(getByTestId('filter-DISPUTED')).toHaveTextContent(/\(2\)/);
+    expect(getByTestId('filter-RECEIVED')).toHaveTextContent(/\(5\)/);
+    // PAID counted 0 and still shows no number — the drawing gives it none (D36).
+    expect(getByTestId('filter-PAID')).not.toHaveTextContent(/\d/);
+    expect(queryByTestId('filter-APPROVED')).toBeNull();
   });
 
   it('shows the discrepancy box only on a disputed invoice', async () => {
@@ -300,7 +337,11 @@ describe('InvoicesScreen', () => {
     const { getByTestId, queryByTestId } = await renderScreen();
 
     await waitFor(() => expect(getByTestId('invoice-discrepancy-812')).toBeTruthy());
+    expect(getByTestId('invoice-discrepancy-812')).toHaveTextContent(/DB25.*4\.5 t.*40,200/);
     expect(queryByTestId('invoice-discrepancy-941')).toBeNull();
+    // The box takes the telemetry strip's place on a disputed card, as drawn.
+    expect(queryByTestId('invoice-telemetry-812')).toBeNull();
+    expect(getByTestId('invoice-telemetry-941')).toBeTruthy();
   });
 
   it('keeps the detail and its note that the drawing has no room for', async () => {
@@ -367,14 +408,15 @@ describe('InvoicesScreen', () => {
     await waitFor(() => expect(getByTestId('invoices-empty')).toBeTruthy());
   });
 
-  it('draws the two scan controls, and neither of them writes', async () => {
-    const { getByTestId } = await renderScreen();
+  it('draws the one scan control at the end of the list, and it writes nothing', async () => {
+    // The hero header and its scan icon went with the 2026-09-17 redraw; the drawing has one.
+    const { getByTestId, queryByTestId } = await renderScreen();
 
     await waitFor(() => expect(getByTestId('invoice-scan')).toBeTruthy());
+    expect(queryByTestId('invoice-scan-icon')).toBeNull();
     await fireEvent.press(getByTestId('invoice-scan'));
-    await fireEvent.press(getByTestId('invoice-scan-icon'));
 
-    expect(alert).toHaveBeenCalledTimes(2);
+    expect(alert).toHaveBeenCalledTimes(1);
     expect(alert.mock.calls[0]?.[1]).toMatch(/does not exist yet/i);
     expect(client.post).not.toHaveBeenCalled();
   });
@@ -388,6 +430,95 @@ describe('InvoicesScreen', () => {
 
     expect(alert).toHaveBeenCalled();
     expect(client.post).not.toHaveBeenCalled();
+  });
+
+  it('draws the open-dispute button on a disputed invoice, and it writes nothing', async () => {
+    // The invoice is already DISPUTED and the server refuses a second dispute, so this is drawn.
+    client.get.mockImplementation(route([invoice('812', { status: 'DISPUTED' })], [po('812')]));
+    const { getByTestId, queryByTestId } = await renderScreen();
+
+    await waitFor(() => expect(getByTestId('invoice-open-dispute-812')).toBeTruthy());
+    expect(queryByTestId('invoice-dispute-812')).toBeNull();
+    await fireEvent.press(getByTestId('invoice-open-dispute-812'));
+
+    expect(alert).toHaveBeenCalled();
+    expect(client.post).not.toHaveBeenCalled();
+  });
+
+  describe('with a project chosen', () => {
+    beforeEach(() => {
+      useProjectStore.setState({
+        active: { projectId: 'proj-1', projectCode: 'SKY', projectName: 'Skybridge Central' },
+      } as never);
+    });
+
+    it("lists only the invoices on that project's purchase orders", async () => {
+      client.get.mockImplementation((path: string, params?: Record<string, string>) => {
+        if (path.startsWith('/procurement/purchase-orders')) {
+          // The server scopes by project: only `po-mine` comes back for proj-1.
+          return Promise.resolve({ items: [po('mine')], total: 1 });
+        }
+        return route([invoice('mine'), invoice('other')], [])(path, params);
+      });
+      const { getByTestId, queryByTestId } = await renderScreen();
+
+      await waitFor(() => expect(getByTestId('invoice-item-mine')).toBeTruthy());
+      expect(queryByTestId('invoice-item-other')).toBeNull();
+      expect(getByTestId('invoices-screen')).toHaveTextContent(/Skybridge Central/);
+      const asked = client.get.mock.calls.find((c) =>
+        String(c[0]).startsWith('/procurement/purchase-orders'),
+      );
+      expect(asked?.[1]).toEqual({ project_id: 'proj-1', page: '1', limit: '100' });
+    });
+
+    it("walks every page of the project's orders", async () => {
+      const first = Array.from({ length: 100 }, (_, i) => po(`p${i}`));
+      client.get.mockImplementation((path: string, params?: Record<string, string>) => {
+        if (path.startsWith('/procurement/purchase-orders')) {
+          return Promise.resolve(
+            params?.page === '1'
+              ? { items: first, total: 101 }
+              : { items: [po('last')], total: 101 },
+          );
+        }
+        return route([invoice('last')], [])(path, params);
+      });
+      const { getByTestId } = await renderScreen();
+
+      await waitFor(() => expect(getByTestId('invoice-item-last')).toBeTruthy());
+      const pages = client.get.mock.calls
+        .filter((c) => String(c[0]).startsWith('/procurement/purchase-orders'))
+        .map((c) => (c[1] as Record<string, string>).page);
+      expect(pages).toEqual(['1', '2']);
+    });
+
+    it('stops at a bare array, which carries no total', async () => {
+      client.get.mockImplementation((path: string, params?: Record<string, string>) =>
+        path.startsWith('/procurement/purchase-orders')
+          ? Promise.resolve([po('941')])
+          : route()(path, params),
+      );
+      const { getByTestId } = await renderScreen();
+
+      await waitFor(() => expect(getByTestId('invoice-item-941')).toBeTruthy());
+      expect(
+        client.get.mock.calls.filter((c) =>
+          String(c[0]).startsWith('/procurement/purchase-orders'),
+        ),
+      ).toHaveLength(1);
+    });
+
+    it("shows no invoices, rather than the tenant's, when the orders cannot be read", async () => {
+      client.get.mockImplementation((path: string, params?: Record<string, string>) =>
+        path.startsWith('/procurement/purchase-orders')
+          ? Promise.reject(new Error('offline'))
+          : route()(path, params),
+      );
+      const { getByTestId, queryByTestId } = await renderScreen();
+
+      await waitFor(() => expect(getByTestId('invoices-empty')).toBeTruthy());
+      expect(queryByTestId('invoice-item-941')).toBeNull();
+    });
   });
 
   it('counts what is due now, and says nothing when nothing is', async () => {

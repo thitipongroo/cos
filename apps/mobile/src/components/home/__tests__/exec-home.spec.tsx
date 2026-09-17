@@ -30,7 +30,9 @@ jest.mock('../../../api/projects', () => ({
 // returning null would have hidden them, and did, until the buttons moved into the card on
 // 2026-09-05.
 jest.mock('../../PortfolioInsight', () => ({
-  PortfolioInsight: ({ footer }: { footer?: React.ReactNode }) => footer ?? null,
+  // The panel is covered by its own spec; since R22 it takes no host controls, so it renders here
+  // as nothing at all.
+  PortfolioInsight: () => null,
 }));
 
 /* eslint-disable @typescript-eslint/no-require-imports */
@@ -283,16 +285,14 @@ describe('ExecHome', () => {
     expect(mockPush).not.toHaveBeenCalled();
   });
 
-  it('offers Mitigation and Dismiss without letting either write', async () => {
-    // Master §Phase 10 makes this role read-only on mobile. Both are drawn (PO 2026-09-04) and both
-    // must stay inert — a press that reached an endpoint would breach that constraint silently.
-    const { getByTestId } = await renderScreen();
-    await waitFor(() => expect(getByTestId('exec-home-mitigation')).toBeTruthy());
-
-    await fireEvent.press(getByTestId('exec-home-mitigation'));
-    await fireEvent.press(getByTestId('exec-home-dismiss'));
-    expect(alert).toHaveBeenCalledTimes(2);
-    expect(mockPush).not.toHaveBeenCalled();
+  it('draws neither Mitigation nor Dismiss', async () => {
+    // Drawn from 2026-09-04 and removed 2026-09-17 (R22, D38): the AI panel's one way in is its
+    // footer chevron, which `InsightPanel.spec.tsx` presses.
+    const { getByTestId, queryByTestId } = await renderScreen();
+    await waitFor(() => expect(getByTestId('home-screen')).toBeTruthy());
+    expect(queryByTestId('exec-home-mitigation')).toBeNull();
+    expect(queryByTestId('exec-home-dismiss')).toBeNull();
+    expect(alert).not.toHaveBeenCalled();
   });
 
   it('writes no state after the screen is unmounted mid-flight', async () => {

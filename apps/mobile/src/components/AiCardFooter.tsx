@@ -20,40 +20,29 @@
 // never a system it does not. Both drawings foot their cards with integrations that do not exist
 // ("Integrated ERP & Market Benchmarks", "e-GP Benchmark", "ERP DB & Central OCR Ledger"), and a
 // provenance line is the one piece of drawn text that changes how much of the card a reader
-// believes. That is the carve-out ADR-098's second amendment opened and ADR-099 has applied five
-// times; this component is where it now lives, so the next AI card inherits it rather than
-// re-deciding it.
+// believes. That is the carve-out ADR-098's second amendment opened. ONE EXCEPTION: the four FINANCE
+// cards print their drawings' source lines by product-owner decision (2026-09-17, D33; ADR-098
+// amendment of that date).
 //
 // `percent` MAY BE NULL, and then the CONF half is not drawn at all — no "CONF: —", no zero. A card
-// whose figures are deterministic has no confidence to report (the FINANCE cash-flow forecast is the
-// case on record), and printing one would claim a model that never ran.
+// whose figures are deterministic has no confidence to report, and printing one would claim a model
+// that never ran.
 //
-// ── THE TRAILING CHEVRON IS DROPPED WHEN THE BODY ALREADY HAS ONE (PO decision 2026-09-09) ──────
+// ── THE CHEVRON IS THE CARD'S ONE WAY IN (PO decision 2026-09-17, R22, D38) ───────────────────────
 //
-// `bodyHasAction` says the card's body already carries a button or a chevron of its own. Pass it and
-// the foot ends at the source; leave it off and the chevron is drawn as before.
+// Every AI card is entered through exactly one control: this footer's trailing `chevron-right`. So
+// the chevron is ALWAYS drawn and `onPress` is REQUIRED — a card whose content has no screen yet
+// passes the coming-soon dialog, never nothing. The card's body carries no button, link or chevron
+// that leads into its content.
 //
-// The rule is about how many ways out of one card a reader is offered. A card with a filled action
-// in its body — "Send the final BOQ", "Adjust the site schedule", "See the opening" — has already
-// said what to do next; a second arrow in the foot points at a different, vaguer place and the two
-// compete. Worse, on most of these cards the foot has no `onPress` at all, so the chevron was an
-// affordance for nothing.
+// THIS REVERSES THE 2026-09-09 RULE. Then, a card whose body carried a button dropped this chevron
+// (`bodyHasAction`) — one way onward, but the body's. The product owner kept the principle and moved
+// the way onward here: the body buttons went ("Negotiate", "Adjust schedule", "View analysis", the
+// budget's deep-report button, …) and the flag went with them. Before, 15 of 16 footers drew a
+// chevron that opened nothing; a required `onPress` is what stops that recurring.
 //
-// It is a property of the CARD, not of this component, which is why the caller states it rather than
-// this file guessing. `onPress === undefined` would be the wrong test: a card can have a body button
-// AND a pressable foot, and it can have neither.
-//
-// Applied at the FOUR cards whose bodies carry an action: the CRM intelligence card, the vendor
-// insight, the logistics advisor and `<InsightPanel />`. The four that carry none — budget,
-// invoices, payments, RFQs — keep the chevron, and are the reason this is a flag rather than a
-// deletion.
-//
-// A DECORATIVE CHEVRON WOULD NOT HAVE COUNTED, and the case that proved it was fixed instead. The
-// FINANCE forecast card drew a bare `chevron-right` in its header inside a plain `View` — no
-// `onPress`, opening nothing — while its FOOT was the card's one working affordance. Flagging it
-// would have deleted the control and left the decoration. The decoration was deleted on the same
-// day (2026-09-09) rather than written into this rule as an exception, so the card now simply has
-// no body action and keeps its footer chevron by the ordinary path.
+// ONE EXCEPTION, AND IT IS NOT A WAY IN: `<InsightPanel />`'s Generate button (D39). It is a command —
+// it asks the AI gateway to write the report — so it stays, without a chevron of its own.
 
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -67,7 +56,6 @@ export function AiCardFooter({
   confLabel,
   sourceLabel,
   onPress,
-  bodyHasAction = false,
   palette,
 }: {
   testID?: string;
@@ -79,12 +67,8 @@ export function AiCardFooter({
   confLabel: string;
   /** Pre-translated "SOURCE". */
   sourceLabel: string;
-  onPress?: () => void;
-  /**
-   * The card's body already offers a button or a chevron, so the foot draws none. See the note at
-   * the head of this file — one card, one way onward.
-   */
-  bodyHasAction?: boolean;
+  /** The card's one way in (D38). Where no screen exists yet, the coming-soon dialog. */
+  onPress: () => void;
   palette: Palette;
 }): React.JSX.Element {
   const styles = makeStyles(palette);
@@ -107,19 +91,16 @@ export function AiCardFooter({
       <Text style={styles.source} numberOfLines={1} ellipsizeMode="tail">
         {`${sourceLabel}: ${source}`}
       </Text>
-      {bodyHasAction ? null : (
-        <MaterialIcons
-          name="chevron-right"
-          size={18}
-          color={palette.accent}
-          accessibilityElementsHidden
-          importantForAccessibility="no"
-        />
-      )}
+      <MaterialIcons
+        name="chevron-right"
+        size={18}
+        color={palette.accent}
+        accessibilityElementsHidden
+        importantForAccessibility="no"
+      />
     </View>
   );
 
-  if (onPress === undefined) return <View testID={testID}>{row}</View>;
   return (
     <Pressable
       testID={testID}

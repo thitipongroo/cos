@@ -34,6 +34,11 @@
 // The card's AVATAR is the company's own initials, computed here rather than drawn: the drawing
 // shows a logo, and no customer record carries an image.
 
+// R22 (PO decision 2026-09-17, D38): the relationship card's footer chevron now opens the coming-
+// soon dialog. Every AI card has ONE way into its content — the footer chevron of <AiCardFooter />
+// (spec §32.7 "AI Card Footer"); with no screen behind it yet, that chevron opens the coming-soon
+// dialog.
+
 import { useMemo, useState } from 'react';
 import { View, Text, FlatList, Pressable, RefreshControl, StyleSheet } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -176,6 +181,8 @@ export default function CustomersScreen(): React.JSX.Element {
                     source={t('crm.customers.title')}
                     confLabel={t('insight.confShort')}
                     sourceLabel={t('insight.sourceShort')}
+                    // The card's one way in (R22, D38) — no screen exists yet, so the coming-soon dialog.
+                    onPress={() => soon('crm.customers.relationship')}
                     palette={p}
                   />
                 </View>

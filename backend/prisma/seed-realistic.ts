@@ -612,6 +612,7 @@ async function run(): Promise<void> {
       for (const p of PROJECTS) await seedProject(tx, p);
       await seedOnHoldProject(tx);
       await seedPendingApprovals(tx);
+      await seedFinanceDrawnStates(tx);
       await seedCrm(tx);
       await seedNotifications(tx);
       await seedAiReports(tx);
@@ -1898,6 +1899,77 @@ async function seedPendingApprovals(tx: Tx): Promise<void> {
               ${`DN-${a.code}-${a.key.toUpperCase()}-TODAY`}, (((now() AT TIME ZONE 'Asia/Bangkok')::date + ${a.at}::time) AT TIME ZONE 'Asia/Bangkok'),
               ${U('se1')}::uuid, ${a.note})
       ON CONFLICT (delivery_id) DO UPDATE SET delivered_at = EXCLUDED.delivered_at`;
+  }
+}
+
+/**
+ * The FINANCE screens' drawn states, on rows seedProject() already wrote.
+ *
+ * Added 2026-09-17 (PO decision D29, revision R21) for the reason the pending payments and the
+ * pending approvals above exist: the four FINANCE Stitch drawings show a payment due today, one due
+ * tomorrow and one overdue, and invoices that are VERIFIED, DISPUTED and still awaiting a check —
+ * and seedProject() leaves every payment weeks overdue and every invoice APPROVED, so none of those
+ * states could be photographed. The product owner chose dev data over drawn example rows.
+ *
+ * WHAT MOVES, and only this:
+ *   · payments — `skv45/formwork` falls due TODAY and `skv45/block` TOMORROW; `r9ct/formwork` keeps
+ *     its seeded (overdue) date; the other seven pending payments move to the days after, so the
+ *     queue holds one of each state rather than eight overdue rows. This IS a second date rule,
+ *     which the payment comment in seedProject() warns against — D29 is the reason.
+ *   · invoices, on every project — `rebar` VERIFIED; `rebar2` DISPUTED and billed 5.2 % over its
+ *     order (its INVOICE cost transaction follows, so Actual Spent agrees with the invoice);
+ *     `cement` RECEIVED, and its order PARTIALLY_DELIVERED — the drawing's "ส่งมอบบางส่วน".
+ *
+ * VERIFIED HAS NO WRITER IN `backend/src`. The CHECK constraint allows it and approval accepts it,
+ * but nothing sets it; this seed is the only place the state comes from. The payments recorded
+ * against these three invoices are left as seeded.
+ *
+ * DATES ARE BANGKOK DATES, for the reason the deliveries-today block gives: the screens read the
+ * device's calendar, and UTC is a different day for seven hours in every twenty-four.
+ */
+async function seedFinanceDrawnStates(tx: Tx): Promise<void> {
+  const bangkokToday = `(now() AT TIME ZONE 'Asia/Bangkok')::date`;
+  const dueShifts: Array<{ project: string; po: string; days: number }> = [
+    { project: 'skv45', po: 'formwork', days: 0 },
+    { project: 'skv45', po: 'block', days: 1 },
+    { project: 'r9ct', po: 'block', days: 3 },
+    { project: 'bnw2', po: 'formwork', days: 4 },
+    { project: 'bnw2', po: 'block', days: 5 },
+    { project: 'cwrd', po: 'formwork', days: 6 },
+    { project: 'cwrd', po: 'block', days: 7 },
+    { project: 'lpgh', po: 'formwork', days: 8 },
+    { project: 'lpgh', po: 'block', days: 9 },
+  ];
+  for (const d of dueShifts) {
+    await tx.$executeRawUnsafe(
+      `UPDATE finance.payments SET payment_date = ${bangkokToday} + ${d.days}
+        WHERE payment_id = '${uid(`pay/${d.project}/${d.po}`)}' AND status = 'PENDING'`,
+    );
+  }
+
+  for (const p of PROJECTS) {
+    await tx.$executeRawUnsafe(
+      `UPDATE procurement.invoices SET status = 'VERIFIED'
+        WHERE invoice_id = '${uid(`inv/${p.key}/rebar`)}'`,
+    );
+    for (const table of ['procurement.invoices', 'finance.cost_transactions']) {
+      const idColumn = table === 'procurement.invoices' ? 'invoice_id' : 'transaction_id';
+      const id = uid(
+        table === 'procurement.invoices' ? `inv/${p.key}/rebar2` : `ct-inv/${p.key}/rebar2`,
+      );
+      await tx.$executeRawUnsafe(
+        `UPDATE ${table} SET amount = ROUND(amount * 1.052, 2)${table === 'procurement.invoices' ? `, status = 'DISPUTED'` : ''}
+          WHERE ${idColumn} = '${id}'`,
+      );
+    }
+    await tx.$executeRawUnsafe(
+      `UPDATE procurement.invoices SET status = 'RECEIVED'
+        WHERE invoice_id = '${uid(`inv/${p.key}/cement`)}'`,
+    );
+    await tx.$executeRawUnsafe(
+      `UPDATE procurement.purchase_orders SET status = 'PARTIALLY_DELIVERED'
+        WHERE po_id = '${uid(`po/${p.key}/cement`)}'`,
+    );
   }
 }
 

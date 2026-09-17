@@ -38,6 +38,11 @@
 // there is no chat, no photo pipeline on a delivery, no GPS and no driver record. All of them open
 // the coming-soon dialog rather than failing or sitting dead (PO convention 2026-09-04).
 
+// R22 (PO decision 2026-09-17, D38): the logistics advisor's "Adjust schedule" button is gone (its
+// ETA chip stays). Every AI card has ONE way into its content — the footer chevron of <AiCardFooter
+// /> (spec §32.7 "AI Card Footer"); with no screen behind it yet, that chevron opens the coming-
+// soon dialog.
+
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { View, Text, Pressable, ScrollView, FlatList, StyleSheet } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -301,18 +306,6 @@ export default function ManagerDeliveries(): React.JSX.Element {
                   })}
                 </Text>
               </View>
-              <Pressable
-                testID="advisor-adjust"
-                accessibilityRole="button"
-                accessibilityLabel={t('procurement.managerDeliveries.adjustSchedule')}
-                onPress={() => soon('procurement.managerDeliveries.adjustSchedule')}
-                style={styles.advisorAction}
-              >
-                <Text style={styles.advisorActionText} numberOfLines={1}>
-                  {t('procurement.managerDeliveries.adjustSchedule')}
-                </Text>
-                <MaterialIcons name="arrow-forward" size={16} color={p.bg} />
-              </Pressable>
             </View>
 
             <AiCardFooter
@@ -324,9 +317,8 @@ export default function ManagerDeliveries(): React.JSX.Element {
               source={t('procurement.managerDeliveries.advisorSource')}
               confLabel={t('insight.confShort')}
               sourceLabel={t('insight.sourceShort')}
-              // The body already carries the filled "adjust the schedule" button, so the foot
-              // ends at the source (PO 2026-09-09).
-              bodyHasAction
+              // The card's one way in (R22, D38) — no screen exists yet, so the coming-soon dialog.
+              onPress={() => soon('procurement.managerDeliveries.adjustSchedule')}
               palette={p}
             />
           </View>
@@ -819,20 +811,6 @@ function makeStyles(p: Palette) {
       color: p.muted,
       fontFamily: fontFamily.medium,
       fontSize: 11,
-    },
-    advisorAction: {
-      minHeight: touchTarget.secondaryButton,
-      paddingHorizontal: spacing.sm,
-      borderRadius: radius.md,
-      backgroundColor: p.accent,
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 4,
-    },
-    advisorActionText: {
-      color: p.bg,
-      fontFamily: fontFamily.semibold,
-      fontSize: typography.label.fontSize,
     },
 
     // ── The yard row ─────────────────────────────────────────────────────────────────────────

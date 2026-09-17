@@ -127,14 +127,14 @@ describe('HomeScreen role dispatch', () => {
     );
   });
 
-  it('draws the two AI-panel actions and says neither works yet', async () => {
-    // Master §Phase 10 makes this role read-only on mobile and neither button has an endpoint, so
-    // they are drawn with the `more.tsx` "soon" treatment rather than omitted (PO 2026-09-04).
-    // Asserting they EXIST is what stops a later tidy-up from silently deleting the drawing.
-    const { getByTestId } = await renderHome(CosRole.EXECUTIVE);
+  it('draws no buttons inside the AI panel', async () => {
+    // Drawn from 2026-09-04 and removed 2026-09-17 (R22, D38): an AI card's one way in is its
+    // footer chevron, so the drawing's Mitigation / Dismiss pair is not drawn.
+    const { getByTestId, queryByTestId } = await renderHome(CosRole.EXECUTIVE);
 
-    await waitFor(() => expect(getByTestId('exec-home-mitigation')).toBeTruthy());
-    expect(getByTestId('exec-home-dismiss')).toBeTruthy();
+    await waitFor(() => expect(getByTestId('portfolio-insight')).toBeTruthy());
+    expect(queryByTestId('exec-home-mitigation')).toBeNull();
+    expect(queryByTestId('exec-home-dismiss')).toBeNull();
   });
 
   // REWRITTEN 2026-09-08 with the screen (mockup 09_finance/01_home/01_fn_dashboard). It asserted

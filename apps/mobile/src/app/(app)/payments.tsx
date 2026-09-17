@@ -61,6 +61,22 @@
 //
 // The `add` FAB and "Dispute" are drawn and say so on tap: raising a payout has no mobile flow, and
 // disputing a PAYMENT has no endpoint (disputing an INVOICE does — that is the Invoices screen).
+//
+// REBUILT AGAIN 2026-09-17 TO THE STITCH SCREEN "Payment Approvals - Refined Modern Industrial
+// (Mobile)" (2b2b626327c5…; revision R21, product-owner decisions D27–D33). It differs from the repo
+// drawing only by dropping the "N items awaiting your approval" line, and that line is gone here too.
+// Everything else the drawing draws is drawn, reversing the 2026-09-08 exclusions (D31):
+//   · each card: "PROJECT <code>" (real, `getMyProjects`), the vendor, the amount, a due chip and a
+//     left edge by urgency (`lib/paymentDue.ts`, real: today amber, tomorrow and later neutral on a
+//     green edge, overdue red in a bordered capsule), the work-package chip — COMING SOON,
+//     `PAYMENT_WORK_PACKAGES`, in place of the invoice number it used to carry — and the round arrow
+//   · the analysis module as the THIRD item of the list, as drawn, and the drawing's source "Integrated ERP & Market Benchmarks" (COMING SOON,
+//     `FINANCE_AI_SOURCES`) in the project's standard foot (<AiCardFooter />, D33)
+// R22 (PO 2026-09-17, D38): the drawing's `expand_more` beside ANALYSIS is gone. An AI card has ONE
+// way into its content — the footer chevron (spec §32.7 "AI Card Footer") — and here it opens the
+// "coming soon" dialog. The detail's "Payment detail" title is set in capitals.
+// DIFFERENCES: "Due 2h" is not computable — `payment_date` is a DATE — so today reads "Due today".
+// A due date after tomorrow is not drawn; it takes the "tomorrow" look with its date.
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { View, Text, Pressable, FlatList, RefreshControl, StyleSheet, Alert } from 'react-native';
@@ -80,7 +96,13 @@ import { LoadingBoundary } from '../../components/LoadingBoundary';
 import { AiCardFooter } from '../../components/AiCardFooter';
 import { useProjectStore } from '../../store/projectStore';
 import { spacedMoney } from '../../lib/compactMoney';
-import { FORECAST_CONFIDENCE, PAYMENT_DETAIL_EXTRAS } from '../../lib/mockupFigures';
+import {
+  FINANCE_AI_SOURCES,
+  FORECAST_CONFIDENCE,
+  PAYMENT_DETAIL_EXTRAS,
+  PAYMENT_WORK_PACKAGES,
+} from '../../lib/mockupFigures';
+import { paymentDueState, type DueState } from '../../lib/paymentDue';
 import { useAuthStore } from '../../store/authStore';
 import { canRenderWriteControls } from '../../lib/readOnlyRole';
 import { useT, useI18n } from '../../i18n';
@@ -197,20 +219,37 @@ export default function PaymentsScreen(): React.JSX.Element {
 
   const soon = useComingSoon();
 
+  /** The list as drawn: two payment cards, then the analysis module, then the rest. */
+  const items = useMemo<ListItem[]>(() => {
+    const cards: ListItem[] = payments.map((row, index) => ({ kind: 'payment', row, index }));
+    const at = Math.min(ANALYSIS_POSITION, cards.length);
+    return [...cards.slice(0, at), { kind: 'analysis' }, ...cards.slice(at)];
+  }, [payments]);
+
   const renderItem = useCallback(
-    ({ item }: { item: PaymentRow }) => (
-      <PaymentCard
-        row={item}
-        invoice={invoices.get(item.invoice_id) ?? null}
-        projectCode={projects.get(item.project_id) ?? null}
-        styles={styles}
-        palette={p}
-        t={t}
-        locale={locale}
-        onOpen={setSelected}
-      />
-    ),
-    [invoices, projects, styles, p, t, locale],
+    ({ item }: { item: ListItem }) =>
+      item.kind === 'analysis' ? (
+        <AnalysisModule
+          periods={periods}
+          styles={styles}
+          palette={p}
+          t={t}
+          onOpen={() => soon('finance.payments.analysis')}
+        />
+      ) : (
+        <PaymentCard
+          row={item.row}
+          index={item.index}
+          invoice={invoices.get(item.row.invoice_id) ?? null}
+          projectCode={projects.get(item.row.project_id) ?? null}
+          styles={styles}
+          palette={p}
+          t={t}
+          locale={locale}
+          onOpen={setSelected}
+        />
+      ),
+    [invoices, projects, periods, styles, p, t, locale, soon],
   );
 
   if (selected !== null) {
@@ -237,16 +276,14 @@ export default function PaymentsScreen(): React.JSX.Element {
           MFA chip that says what pressing Approve will do. The count is the LIST's length and the
           list is the server's PENDING filter, so it counts the tenant rather than a page. */}
       <View style={styles.header}>
+        {/* The count line under PENDING was removed in the Stitch screen (2026-09-17) and here. */}
         <View style={styles.headerText}>
           <Text style={styles.headerTitle} accessibilityRole="header">
             {t('finance.payments.pending')}
           </Text>
-          <Text style={styles.headerCount}>
-            {t('finance.payments.awaiting', { count: payments.length })}
-          </Text>
         </View>
         <View style={styles.mfaChip}>
-          <MaterialIcons name="security" size={14} color={p.accent} />
+          <MaterialIcons name="security" size={16} color={p.accent} />
           <Text style={styles.mfaText}>{t('finance.payments.mfaActive')}</Text>
           <MaterialIcons name="chevron-right" size={14} color={p.accent} />
         </View>
@@ -260,23 +297,16 @@ export default function PaymentsScreen(): React.JSX.Element {
       >
         <FlatList
           testID="payments-list"
-          data={payments}
-          keyExtractor={(row, i) => row.payment_id || String(i)}
+          data={payments.length === 0 ? [] : items}
+          keyExtractor={(item, i) =>
+            item.kind === 'analysis' ? 'analysis' : item.row.payment_id || String(i)
+          }
           contentContainerStyle={styles.list}
           refreshControl={<RefreshControl refreshing={loading} onRefresh={() => void load()} />}
           ListEmptyComponent={
             <Text testID="payments-empty" style={styles.empty}>
               {t('finance.payments.empty')}
             </Text>
-          }
-          ListHeaderComponent={
-            <AnalysisModule
-              periods={periods}
-              styles={styles}
-              palette={p}
-              t={t}
-              projectName={active?.projectName ?? null}
-            />
           }
           renderItem={renderItem}
         />
@@ -296,9 +326,48 @@ export default function PaymentsScreen(): React.JSX.Element {
   );
 }
 
+/** A row of the list: a payment card, or the analysis module the drawing puts among them. */
+type ListItem = { kind: 'payment'; row: PaymentRow; index: number } | { kind: 'analysis' };
+
+/** The drawing puts the analysis module after its second card. */
+const ANALYSIS_POSITION = 2;
+
+/** The drawing's four urgencies: the left edge, the chip's ink and fill, and whether it is a capsule. */
+function dueLook(
+  due: DueState,
+  p: Palette,
+): { edge: string; ink: string; fill: string; key: string; capsule: boolean } {
+  if (due === 'overdue') {
+    return {
+      edge: p.danger,
+      ink: p.danger,
+      fill: `${p.danger}26`,
+      key: 'finance.payments.overdue',
+      capsule: true,
+    };
+  }
+  if (due === 'today') {
+    return {
+      edge: p.warning,
+      ink: p.warning,
+      fill: `${p.warning}1A`,
+      key: 'finance.payments.dueToday',
+      capsule: false,
+    };
+  }
+  return {
+    edge: p.success,
+    ink: p.muted,
+    fill: p.surfaceSoft,
+    key: due === 'tomorrow' ? 'finance.payments.dueTomorrow' : 'finance.payments.dueOn',
+    capsule: false,
+  };
+}
+
 /** One payout awaiting approval — the drawing's card. */
 function PaymentCard({
   row,
+  index,
   invoice,
   projectCode,
   styles,
@@ -308,6 +377,8 @@ function PaymentCard({
   onOpen,
 }: {
   row: PaymentRow;
+  /** Its place in the queue — the drawn work-package chip repeats in drawn order. */
+  index: number;
   invoice: VendorInvoice | null;
   projectCode: string | null;
   styles: ReturnType<typeof makeStyles>;
@@ -316,14 +387,15 @@ function PaymentCard({
   locale: string;
   onOpen: (row: PaymentRow) => void;
 }): React.JSX.Element {
-  const due = dueTone(row.payment_date, palette);
+  const due = dueLook(paymentDueState(row.payment_date, new Date()), palette);
+  const overdue = due.capsule;
   return (
     <Pressable
       testID={`payment-item-${row.payment_id}`}
       accessibilityRole="button"
       accessibilityLabel={invoice?.vendor_name ?? row.payment_id}
       onPress={() => onOpen(row)}
-      style={[styles.card, { borderLeftColor: due.colour }]}
+      style={[styles.card, { borderLeftColor: due.edge }]}
     >
       {/* Top row, two columns, as the drawing has it: the project and who is being paid on the
           left, the amount and how urgent it is on the right. */}
@@ -334,7 +406,7 @@ function PaymentCard({
               An em dash where the project is not in that list — a payment on a project this role is
               not a member of still belongs in the tenant's queue. */}
           <Text style={styles.cardProject} numberOfLines={1}>
-            {projectCode ?? '—'}
+            {t('finance.payments.projectLabel', { code: projectCode ?? '—' })}
           </Text>
           <Text style={styles.cardVendor} numberOfLines={1}>
             {invoice?.vendor_name ?? '—'}
@@ -345,27 +417,46 @@ function PaymentCard({
             {spacedMoney(row.amount, row.currency_code)}
           </Text>
           {/* A filled chip, not a bare line — the drawing tints it by urgency. */}
-          <View style={[styles.dueChip, { backgroundColor: `${due.colour}1F` }]}>
-            <Text style={[styles.dueChipText, { color: due.colour }]} numberOfLines={1}>
+          <View
+            testID={`payment-item-${row.payment_id}-due`}
+            style={[
+              styles.dueChip,
+              { backgroundColor: due.fill },
+              overdue && { borderWidth: 1, borderColor: `${palette.danger}4D` },
+            ]}
+          >
+            <Text style={[styles.dueChipText, { color: due.ink }]} numberOfLines={1}>
               {t(due.key, { date: formatDay(row.payment_date, locale) })}
             </Text>
           </View>
         </View>
       </View>
 
-      {/* The drawing's footer: a rule, then what this payment is linked to on the left and the
-          open affordance on the right. The drawing's chip reads "Foundations & Structure" — a scope
-          name no column carries — so it holds the INVOICE it is paying against, which is what the
-          `link` glyph means here and is real. */}
+      {/* The drawing's footer: a rule, the work-package chip on the left and the open affordance
+          on the right. COMING SOON — PAYMENT_WORK_PACKAGES: no column carries a work package, so the
+          drawing's names repeat in drawn order (D31, 2026-09-17). The invoice number the chip used to
+          carry is in the detail. */}
       <View style={styles.cardFoot}>
         <View style={styles.linkChip}>
           <MaterialIcons name="link" size={13} color={palette.muted} />
-          <Text style={styles.linkChipText} numberOfLines={1}>
-            {invoice?.invoice_number ?? '—'}
+          <Text
+            testID={`payment-item-${row.payment_id}-package`}
+            style={styles.linkChipText}
+            numberOfLines={1}
+          >
+            {PAYMENT_WORK_PACKAGES.value[index % PAYMENT_WORK_PACKAGES.value.length]}
           </Text>
         </View>
-        <View style={styles.openPlate} accessibilityElementsHidden importantForAccessibility="no">
-          <MaterialIcons name="arrow-forward" size={16} color={palette.accent} />
+        <View
+          style={[styles.openPlate, overdue && { backgroundColor: `${palette.danger}26` }]}
+          accessibilityElementsHidden
+          importantForAccessibility="no"
+        >
+          <MaterialIcons
+            name="arrow-forward"
+            size={16}
+            color={overdue ? palette.danger : palette.accent}
+          />
         </View>
       </View>
     </Pressable>
@@ -385,13 +476,14 @@ function AnalysisModule({
   styles,
   palette,
   t,
-  projectName,
+  onOpen,
 }: {
   periods: CashflowPeriod[] | null;
   styles: ReturnType<typeof makeStyles>;
   palette: Palette;
   t: TranslateFn;
-  projectName: string | null;
+  /** The footer chevron — the card's one way in (D38). */
+  onOpen: () => void;
 }): React.JSX.Element {
   const week = periods === null ? null : firstShortfallWeek(periods);
   const risk = periods === null ? null : gradeCashflowRisk(periods);
@@ -400,11 +492,11 @@ function AnalysisModule({
     <View testID="payments-analysis" style={[styles.card, styles.analysis]}>
       <View style={styles.analysisHead}>
         <View style={styles.analysisTitleRow}>
-          <MaterialIcons name="bolt" size={16} color={palette.accent} />
+          <MaterialIcons name="bolt" size={18} color={palette.accent} />
           <Text style={styles.analysisTitle}>{t('finance.payments.analysis')}</Text>
         </View>
       </View>
-      <Text style={styles.body}>
+      <Text style={styles.analysisBody}>
         {periods === null || periods.length === 0
           ? t('home.finance.forecastNone')
           : week === null
@@ -423,15 +515,15 @@ function AnalysisModule({
           and the source on one line, in that order. The confidence came DOWN from a chip in the
           header opposite the title — the two halves of one claim were at opposite ends of the card.
           It is still DRAWN: this module reads a deterministic forecast, so the number claims a model
-          that never ran (ADR-099's fourth amendment). The SOURCE names the PROJECT rather than the
-          drawing's "Integrated ERP & Market Benchmarks"; that carve-out now lives in the
-          component. */}
+          that never ran (ADR-099's fourth amendment). The SOURCE is the drawing's "Integrated ERP
+          & Market Benchmarks" since 2026-09-17 (D31) — COMING SOON, FINANCE_AI_SOURCES. */}
       <AiCardFooter
         testID="payments-analysis-foot"
         percent={FORECAST_CONFIDENCE.value.payments}
-        source={projectName ?? '—'}
+        source={FINANCE_AI_SOURCES.value.payments}
         confLabel={t('insight.confShort')}
         sourceLabel={t('insight.sourceShort')}
+        onPress={onOpen}
         palette={palette}
       />
     </View>
@@ -557,22 +649,6 @@ function PaymentDetail({
   );
 }
 
-/**
- * How urgent the payment date reads, and in which colour.
- *
- * Compared as DATE STRINGS against today's, both `YYYY-MM-DD`. `payment_date` is a Postgres DATE and
- * arrives without a time, so parsing it into a `Date` would put it at midnight UTC and shift a
- * Bangkok reader's "today" by seven hours — a payment due today would read as due tomorrow for the
- * whole working day.
- */
-function dueTone(paymentDate: string, p: Palette): { key: string; colour: string } {
-  const today = new Date().toISOString().slice(0, 10);
-  const due = paymentDate.slice(0, 10);
-  if (due < today) return { key: 'finance.payments.overdue', colour: p.danger };
-  if (due === today) return { key: 'finance.payments.dueToday', colour: p.warning };
-  return { key: 'finance.payments.dueOn', colour: p.muted };
-}
-
 /** The date, in the reader's locale. Buddhist era follows automatically for `th` (QM-3). */
 function formatDay(paymentDate: string, locale: string): string {
   const value = new Date(`${paymentDate.slice(0, 10)}T00:00:00`);
@@ -621,22 +697,23 @@ const makeStyles = (p: Palette) =>
       textTransform: 'uppercase',
     },
     // …and the count under it is `font-label-mobile` in the muted ink.
-    headerCount: {
-      color: p.muted,
-      fontFamily: fontFamily.regular,
-      fontSize: typography.label.fontSize,
-    },
+    // The drawing's MFA button: a raised plate with a 30 % accent edge.
     mfaChip: {
       flexDirection: 'row',
       alignItems: 'center',
       gap: spacing.xs / 2,
-      paddingHorizontal: spacing.xs,
-      paddingVertical: 2,
+      paddingHorizontal: spacing.sm,
+      paddingVertical: spacing.xs,
       borderRadius: radius.xl,
       borderWidth: 1,
-      borderColor: `${p.accent}66`,
+      borderColor: `${p.accent}4D`,
+      backgroundColor: p.surfaceSoft,
     },
-    mfaText: { color: p.accent, fontFamily: fontFamily.medium, fontSize: 10 },
+    mfaText: {
+      color: p.accent,
+      fontFamily: fontFamily.semibold,
+      fontSize: typography.label.fontSize,
+    },
 
     card: {
       backgroundColor: p.surface,
@@ -650,10 +727,13 @@ const makeStyles = (p: Palette) =>
     },
     cardHead: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
     cardText: { flex: 1, gap: 2 },
+    // The drawing's "PROJECT P-204" — a muted uppercase label, not an accent.
     cardProject: {
-      color: p.accent,
+      color: p.muted,
       fontFamily: fontFamily.medium,
       fontSize: typography.label.fontSize,
+      letterSpacing: 0.8,
+      textTransform: 'uppercase',
     },
     cardVendor: {
       color: p.text,
@@ -717,7 +797,18 @@ const makeStyles = (p: Palette) =>
     },
     cardDue: { fontFamily: fontFamily.medium, fontSize: typography.label.fontSize },
 
-    analysis: { borderLeftColor: p.accent, borderColor: p.accent },
+    // The drawing's module: a 10 % accent wash, a 4px accent left edge, the rest at 20 %.
+    analysis: {
+      borderLeftColor: p.accent,
+      borderColor: `${p.accent}33`,
+      backgroundColor: `${p.accent}1A`,
+    },
+    analysisBody: {
+      color: p.text,
+      fontFamily: fontFamily.medium,
+      fontSize: typography.caption.fontSize,
+      lineHeight: typography.caption.lineHeight,
+    },
     analysisHead: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -756,8 +847,8 @@ const makeStyles = (p: Palette) =>
     },
     analysisTitle: {
       color: p.accent,
-      fontFamily: fontFamily.semibold,
-      fontSize: 10,
+      fontFamily: fontFamily.bold,
+      fontSize: typography.label.fontSize,
       letterSpacing: 0.8,
       textTransform: 'uppercase',
     },
@@ -782,6 +873,8 @@ const makeStyles = (p: Palette) =>
       color: p.text,
       fontFamily: fontFamily.bold,
       fontSize: typography.title.fontSize,
+      // R22: the title reads in capitals (PO 2026-09-17). A style, not the copy — Thai has no case.
+      textTransform: 'uppercase',
     },
     verifiedChip: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs / 2 },
     verifiedText: { color: p.success, fontFamily: fontFamily.medium, fontSize: 10 },

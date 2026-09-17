@@ -45,6 +45,11 @@
 // up. The foot's SOURCE names a record set this repository has — the viewer's assigned projects —
 // never a system it does not (ADR-098 amendment 2).
 
+// R22 (PO decision 2026-09-17, D38): the delivery-predictor card's footer chevron now opens the
+// coming-soon dialog. Every AI card has ONE way into its content — the footer chevron of
+// <AiCardFooter /> (spec §32.7 "AI Card Footer"); with no screen behind it yet, that chevron opens
+// the coming-soon dialog.
+
 import { useMemo } from 'react';
 import { View, Text, Pressable, ScrollView, StyleSheet } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -256,6 +261,8 @@ export function ViewerProcurementDocument(): React.JSX.Element {
           source={t('insight.sourcePortfolio')}
           confLabel={t('insight.confShort')}
           sourceLabel={t('insight.sourceShort')}
+          // The card's one way in (R22, D38) — no screen exists yet, so the coming-soon dialog.
+          onPress={() => soon('procurement.viewer.deliveryPredictor')}
           palette={p}
         />
       </View>

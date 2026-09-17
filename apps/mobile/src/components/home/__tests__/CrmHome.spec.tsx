@@ -228,11 +228,13 @@ describe('CrmHome', () => {
   it('posts nothing from any drawn control', async () => {
     // None of these has an endpoint: no CRM AI report exists, the action rows have no last-activity
     // field behind them, and §20.7.10 still defers the kanban.
-    const { getByTestId } = await renderScreen();
+    // The intelligence card's own button went on 2026-09-17 (R22, D38); its footer is its way in.
+    const { getByTestId, queryByTestId } = await renderScreen();
 
-    await waitFor(() => expect(getByTestId('crm-intelligence-act')).toBeTruthy());
+    await waitFor(() => expect(getByTestId('crm-intelligence-foot')).toBeTruthy());
+    expect(queryByTestId('crm-intelligence-act')).toBeNull();
     for (const id of [
-      'crm-intelligence-act',
+      'crm-intelligence-foot',
       'crm-action-HIGH_PRIORITY',
       'crm-action-FOLLOW_UP',
       'crm-kanban',

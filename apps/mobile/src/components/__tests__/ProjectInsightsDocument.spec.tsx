@@ -106,17 +106,21 @@ describe('ProjectInsightsDocument', () => {
     expect(getByTestId('insights-range-7d').props.onStartShouldSetResponder).toBeDefined();
   });
 
-  it('carries a named action on each of the four cards', async () => {
-    const { getByTestId } = await renderInsights();
+  it('carries a named action on the three data cards, and a footer on the AI card', async () => {
+    const { getByTestId, queryByTestId } = await renderInsights();
 
     await waitFor(() => expect(getByTestId('insights-screen')).toBeTruthy());
     // The redraw replaced four bare chevrons with labelled pills. A pill that lost its label reads
     // as decoration, which is the state §32.7 had the FINANCE forecast deleted for.
-    for (const id of ['detailed-metrics', 'logs', 'view-evidence', 'view-all']) {
+    for (const id of ['detailed-metrics', 'logs', 'view-all']) {
       const action = getByTestId(`insights-${id}`);
       expect(action.props.accessibilityRole).toBe('button');
       expect(String(action.props.accessibilityLabel ?? '').length).toBeGreaterThan(0);
     }
+    // The risk forecast is an AI card: its VIEW EVIDENCE pill went on 2026-09-17 (R22, D38) and its
+    // footer chevron is its one way in.
+    expect(queryByTestId('insights-view-evidence')).toBeNull();
+    expect(getByTestId('insights-risk-foot').props.accessibilityRole).toBe('button');
   });
 
   it('totals the severity chip from the rows rather than printing the drawing’s number', async () => {

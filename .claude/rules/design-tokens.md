@@ -501,22 +501,20 @@ Core components (React Native — implement in apps/mobile/):
                         A NULL CONFIDENCE DRAWS NO CONF HALF — never "CONF: —", never a zero: a card
                         whose figures are deterministic has no confidence to report (ADR-099 third
                         amendment).
-                        THE TRAILING CHEVRON IS DROPPED WHEN THE BODY ALREADY OFFERS A BUTTON OR A
-                        CHEVRON (PO 2026-09-09): pass `bodyHasAction` and the foot ends at the
-                        source. One card, one way onward — a filled action in the body has already
-                        said what to do next, and on most such cards the foot has no `onPress` at
-                        all, so its chevron pointed nowhere. The caller states it because it is a
-                        property of the CARD; `onPress === undefined` is the wrong test. A
-                        DECORATIVE glyph is not a body action: the FINANCE forecast drew a bare
-                        chevron in its header with no onPress while its FOOT was the card's one
-                        affordance — the decoration was DELETED (2026-09-09) rather than carved out
-                        of this rule, and the card keeps its footer chevron by the ordinary path.
-                        Four cards take the flag (CRM intelligence, vendor insight, logistics
-                        advisor, <InsightPanel />); budget, invoices, payments and RFQs carry no
-                        body action and keep theirs.
+                        THE CHEVRON IS THE CARD'S ONE WAY IN (PO 2026-09-17, R22, D38): always
+                        drawn, `onPress` REQUIRED (the coming-soon dialog where no screen exists),
+                        and the card's BODY carries no button, link, pill or chevron into its
+                        content. This REVERSES the 2026-09-09 `bodyHasAction` rule, which dropped
+                        the chevron when the body had a button; the flag and the body buttons went
+                        (budget deep report, payments expand, leads/opportunities/vendors/CRM/
+                        logistics/insights actions, executive Mitigation/Dismiss). ONE EXCEPTION,
+                        not a way in (D39): <InsightPanel />'s Generate button — a command — stays,
+                        with no chevron of its own. A decorative glyph that opens nothing is still
+                        deleted, not kept.
                         THE SOURCE NAMES SOMETHING THIS REPO HAS — a project, a record
                         set — never a system it does not; that carve-out (ADR-098 amendment 2) now
-                        lives in the component so the next AI card inherits it.
+                        lives in the component so the next AI card inherits it. EXCEPTION: the four
+                        FINANCE cards print their drawings' source lines (PO 2026-09-17, D33).
                         <InsightPanel /> keeps the BAND WORD as its header chip (PAIR guidance,
                         lib/aiConfidence.ts); the executive variant's "number leads" exception ended
                         with this decision. Full contract: spec §32.7 "AI Card Footer".

@@ -29,10 +29,9 @@
 //   `progress_percent` on the row (§32.12, null when not computable), so the line carries a real
 //   figure at no extra request. Same substitution `tasks.tsx` makes for the Site Worker badge.
 //
-//   THE TWO BUTTONS UNDER THE AI PANEL ARE DRAWN AND SAY THEY DO NOT WORK. "Mitigation" and
-//   "Dismiss" have no endpoint, and master §Phase 10 makes this role READ-ONLY on mobile, so
-//   neither may write. Product-owner decision 2026-09-04: draw them and state it, the `more.tsx`
-//   convention, rather than omit them.
+//   THE AI PANEL CARRIES NO BUTTONS (PO decision 2026-09-17, R22, D38). The drawing's "Mitigation"
+//   and "Dismiss" were drawn from 2026-09-04 and said they did not work; they went when every AI
+//   card was given ONE way in — its footer chevron (spec §32.7 "AI Card Footer").
 //
 // decimal.js, never `+` (master:991). These are the largest figures in the product — a portfolio's
 // budget in hundreds of millions of baht — and the note the previous version carried still stands:
@@ -172,8 +171,8 @@ export default function ExecHome() {
   return (
     <Screen testID="home-screen" scroll>
       {/* The drawing's "AI Executive Intelligence" panel — the real endpoint, in the drawing's own
-          card: `variant="executive"` gives it the cyan border and the 3px edge, and the two buttons
-          go INSIDE it through the footer slot, where the drawing puts them. */}
+          card: `variant="executive"` gives it the cyan border and the 3px edge. The drawing's two
+          buttons are not drawn (R22, D38) — the footer chevron is the card's one way in. */}
       <PortfolioInsight
         projectId={mine[0]?.project_id ?? ''}
         projectLabel={mine[0]?.project_name}
@@ -181,30 +180,6 @@ export default function ExecHome() {
         icon="bolt"
         variant="executive"
         autoRun
-        footer={
-          // Drawn, and they say they do not work — see the header.
-          <View style={styles.actionRow}>
-            {(['mitigation', 'dismiss'] as const).map((action) => (
-              <Pressable
-                key={action}
-                testID={`exec-home-${action}`}
-                accessibilityRole="button"
-                accessibilityLabel={t(`exec.home.${action}`)}
-                onPress={() => Alert.alert(t(`exec.home.${action}`), t('more.comingSoon'))}
-                style={[styles.actionButton, action === 'mitigation' ? styles.actionPrimary : null]}
-              >
-                <Text
-                  style={[
-                    styles.actionText,
-                    action === 'mitigation' ? styles.actionTextPrimary : null,
-                  ]}
-                >
-                  {t(`exec.home.${action}`)}
-                </Text>
-              </Pressable>
-            ))}
-          </View>
-        }
       />
 
       <KpiRegion loading={loading} settled={settled} steps={LOAD_STEPS}>
@@ -466,28 +441,6 @@ const makeStyles = (p: Palette) =>
       padding: spacing.md,
       marginBottom: spacing.sm,
     },
-
-    actionRow: { flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.sm },
-    actionButton: {
-      flex: 1,
-      minHeight: 52,
-      borderRadius: radius.md,
-      borderWidth: 1,
-      borderColor: p.border,
-      alignItems: 'center',
-      justifyContent: 'center',
-      gap: 2,
-    },
-    actionPrimary: { borderColor: `${p.accent}66`, backgroundColor: `${p.accent}1A` },
-    actionText: {
-      fontSize: typography.label.fontSize,
-      fontFamily: fontFamily.semibold,
-      color: p.text,
-      textTransform: 'uppercase',
-      letterSpacing: 0.8,
-    },
-    // The drawing's Mitigation button is cyan on a cyan tint; Dismiss stays the ordinary ink.
-    actionTextPrimary: { color: p.accent },
 
     tileRow: { flexDirection: 'row', gap: spacing.sm },
     // The card is now a ROW — its content, then the chevron centred against the full height.

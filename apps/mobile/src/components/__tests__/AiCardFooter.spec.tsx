@@ -1,12 +1,11 @@
 // The project's standard AI-card foot (spec §32.7).
 //
-// Written on 2026-09-09, when `bodyHasAction` was added. The component had been covered only through
-// the nine screens that mount it, which meant the rules it exists to enforce — a null confidence
-// draws no CONF half, the chevron goes when the body already has one — were asserted nowhere in one
-// place, and each screen's spec could only see its own case.
+// Written on 2026-09-09, when `bodyHasAction` was added; rewritten 2026-09-17 (R22, D38) when it was
+// withdrawn. The rules asserted here: a null confidence draws no CONF half, and the chevron — the
+// card's ONE way in — is always drawn and always presses.
 
 import React from 'react';
-import { render } from '@testing-library/react-native';
+import { render, fireEvent } from '@testing-library/react-native';
 import { AiCardFooter } from '../AiCardFooter';
 import { paletteFor } from '../../theme/palette';
 
@@ -22,6 +21,7 @@ async function renderFoot(over: Partial<React.ComponentProps<typeof AiCardFooter
       source="THE SUKHUMVIT 45 RESIDENCES"
       confLabel="CONF"
       sourceLabel="SOURCE"
+      onPress={jest.fn()}
       palette={p}
       {...over}
     />,
@@ -50,37 +50,19 @@ describe('AiCardFooter', () => {
     expect(getByTestId('foot')).toHaveTextContent(/SOURCE/);
   });
 
-  it('draws the trailing chevron by default', async () => {
-    const { toJSON } = await renderFoot();
-
-    expect(chevrons(toJSON())).toBe(1);
+  it('always draws exactly one chevron, with or without a confidence', async () => {
+    // PO decision 2026-09-17 (D38): the footer chevron is every AI card's one way in.
+    expect(chevrons((await renderFoot()).toJSON())).toBe(1);
+    expect(chevrons((await renderFoot({ percent: null })).toJSON())).toBe(1);
   });
 
-  it('drops the chevron when the body already offers one', async () => {
-    // PO decision 2026-09-09 — one card, one way onward. A body with a filled action has already
-    // said what to do next, and a second arrow in the foot competes with it.
-    const { toJSON } = await renderFoot({ bodyHasAction: true });
+  it('is always a button, and pressing it runs the one way in', async () => {
+    // `onPress` is required: before R22, 15 of 16 footers drew a chevron that opened nothing.
+    const onPress = jest.fn();
+    const { getByRole } = await renderFoot({ onPress });
 
-    expect(chevrons(toJSON())).toBe(0);
-  });
-
-  it('keeps the rest of the row when the chevron goes', async () => {
-    // The flag removes ONE glyph. Losing the source with it would be the expensive version of this
-    // bug, because the source is the half that decides how much of the card a reader believes.
-    const { getByTestId } = await renderFoot({ bodyHasAction: true });
-
-    expect(getByTestId('foot')).toHaveTextContent(/CONF: 94%/);
-    expect(getByTestId('foot')).toHaveTextContent(/SOURCE: THE SUKHUMVIT 45 RESIDENCES/);
-  });
-
-  it('is a plain view without onPress, and a button with it', async () => {
-    // `bodyHasAction` and `onPress` are independent: a card can have a body button AND a pressable
-    // foot, which is why the component does not infer one from the other.
-    const { queryByRole } = await renderFoot();
-    expect(queryByRole('button')).toBeNull();
-
-    const pressable = await renderFoot({ onPress: jest.fn(), bodyHasAction: true });
-    expect(pressable.queryByRole('button')).not.toBeNull();
-    expect(chevrons(pressable.toJSON())).toBe(0);
+    await fireEvent.press(getByRole('button'));
+    expect(onPress).toHaveBeenCalledTimes(1);
+    expect(getByRole('button')).toHaveTextContent(/SOURCE: THE SUKHUMVIT 45 RESIDENCES/);
   });
 });

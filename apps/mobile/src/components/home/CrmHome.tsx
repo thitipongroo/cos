@@ -51,6 +51,10 @@
 //   2. The kanban behind "ดู Kanban". Deferred by the same §20.7.10 sentence as the dashboard, and
 //      the amendment does not lift it. The button draws and says so.
 
+// R22 (PO decision 2026-09-17, D38): the CRM intelligence card's action button is gone. Every AI
+// card has ONE way into its content — the footer chevron of <AiCardFooter /> (spec §32.7 "AI Card
+// Footer"); with no screen behind it yet, that chevron opens the coming-soon dialog.
+
 import { useEffect, useState } from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
@@ -274,23 +278,6 @@ export default function CrmHome(): React.JSX.Element {
 
           <Text style={styles.insightBody}>{CRM_INTELLIGENCE.value.body}</Text>
 
-          <Pressable
-            testID="crm-intelligence-act"
-            accessibilityRole="button"
-            accessibilityLabel={CRM_INTELLIGENCE.value.action}
-            onPress={() => soon('home.crm.intelligence')}
-            style={styles.insightAction}
-          >
-            {/* GLYPH AND LABEL AS ONE GROUP, centred (PO 2026-09-09). The drawing puts a second
-                arrow at the button's trailing edge; it was removed because the button already says
-                where it goes, and with it gone the `send` glyph had to stop floating at the far
-                left — it reads as part of the label, not as a separate control. */}
-            <MaterialIcons name="send" size={16} color={p.bg} />
-            <Text style={styles.insightActionText} numberOfLines={1}>
-              {CRM_INTELLIGENCE.value.action}
-            </Text>
-          </Pressable>
-
           {/* The source names records THIS REPO HAS — leads, opportunities, customers — not the
               drawing's "Historical Lead Velocity & Email Sentiment", which is an integration this
               platform does not have (ADR-098 amendment 2). */}
@@ -300,8 +287,8 @@ export default function CrmHome(): React.JSX.Element {
             source={t('home.crm.intelSource')}
             confLabel={t('insight.confShort')}
             sourceLabel={t('insight.sourceShort')}
-            // The body already offers an action, so the foot ends at the source (PO 2026-09-09).
-            bodyHasAction
+            // The card's one way in (R22, D38) — no screen exists yet, so the coming-soon dialog.
+            onPress={() => soon('home.crm.intelligence')}
             palette={p}
           />
         </View>
@@ -544,28 +531,6 @@ function makeStyles(p: Palette) {
       fontFamily: fontFamily.regular,
       fontSize: typography.caption.fontSize,
       lineHeight: typography.caption.lineHeight,
-    },
-    insightAction: {
-      minHeight: touchTarget.primaryButton,
-      paddingHorizontal: spacing.md,
-      borderRadius: radius.md,
-      backgroundColor: p.accent,
-      flexDirection: 'row',
-      alignItems: 'center',
-      // The GROUP is centred, which is what keeps the glyph beside the label. Centring the label
-      // instead — `flex: 1` on the text — is what pushed the glyph to the far edge while the words
-      // sat in the middle, and that is the shape this replaced.
-      justifyContent: 'center',
-      gap: spacing.xs,
-    },
-    insightActionText: {
-      // NO `flex: 1`. The label is sized by its own text so the glyph stays against it; the row's
-      // `justifyContent: 'center'` above is what centres the pair. `flexShrink` lets a long
-      // translation give way rather than pushing the glyph out of the button.
-      flexShrink: 1,
-      color: p.bg,
-      fontFamily: fontFamily.semibold,
-      fontSize: typography.label.fontSize,
     },
 
     // ── Sections ──────────────────────────────────────────────────────────────────────────

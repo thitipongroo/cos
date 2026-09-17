@@ -33,6 +33,10 @@
 // WHAT IS DRAWN: the AI score on each card and the insight card above them (LEAD_AI_SCORE,
 // LEAD_INSIGHT). Nothing scores a lead; `crm.leads` has no numeric column at all.
 
+// R22 (PO decision 2026-09-17, D38): the insight card's recommended-action button is gone. Every AI
+// card has ONE way into its content — the footer chevron of <AiCardFooter /> (spec §32.7 "AI Card
+// Footer"); with no screen behind it yet, that chevron opens the coming-soon dialog.
+
 import { memo, useMemo, useState } from 'react';
 import {
   View,
@@ -57,14 +61,7 @@ import { AiCardFooter } from '../../components/AiCardFooter';
 import { useComingSoon } from '../../components/useComingSoon';
 import { LEAD_AI_SCORE, LEAD_INSIGHT } from '../../lib/mockupFigures';
 import { listLeads, createLead, type Lead } from '../../api/crm';
-import {
-  fontFamily,
-  plateRadius,
-  radius,
-  spacing,
-  touchTarget,
-  typography,
-} from '../../theme/tokens';
+import { fontFamily, plateRadius, radius, spacing, typography } from '../../theme/tokens';
 
 /** The drawing's four chips, with the real state each one filters on. */
 const FILTERS: readonly { id: Lead['status'] | 'ALL'; labelKey: string }[] = [
@@ -246,16 +243,6 @@ export default function LeadsScreen(): React.JSX.Element {
             <MaterialIcons name="auto-awesome" size={16} color={p.accent} />
           </View>
           <Text style={s.insightTitle}>{t('crm.leads.insight')}</Text>
-          <Pressable
-            testID="leads-insight-act"
-            accessibilityRole="button"
-            accessibilityLabel={t('crm.leads.insightAction')}
-            onPress={() => soon('crm.leads.insight')}
-            style={s.insightAction}
-          >
-            <Text style={s.insightActionText}>{t('crm.leads.insightAction')}</Text>
-            <MaterialIcons name="chevron-right" size={14} color={p.bg} />
-          </Pressable>
         </View>
         <Text style={s.insightBody}>
           {t('crm.leads.insightBody', { count: String(LEAD_INSIGHT.value.highPotential) })}
@@ -266,8 +253,8 @@ export default function LeadsScreen(): React.JSX.Element {
           source={t('crm.leads.title')}
           confLabel={t('insight.confShort')}
           sourceLabel={t('insight.sourceShort')}
-          // The body already offers the "recommended" action (PO 2026-09-09).
-          bodyHasAction
+          // The card's one way in (R22, D38) — no screen exists yet, so the coming-soon dialog.
+          onPress={() => soon('crm.leads.insight')}
           palette={p}
         />
       </View>
@@ -379,16 +366,6 @@ function makeStyles(p: Palette) {
       letterSpacing: 0.5,
       textTransform: 'uppercase',
     },
-    insightAction: {
-      minHeight: touchTarget.secondaryButton,
-      paddingHorizontal: spacing.sm,
-      borderRadius: radius.xl,
-      backgroundColor: p.accent,
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 2,
-    },
-    insightActionText: { color: p.bg, fontFamily: fontFamily.semibold, fontSize: 11 },
     insightBody: {
       color: p.text,
       fontFamily: fontFamily.regular,

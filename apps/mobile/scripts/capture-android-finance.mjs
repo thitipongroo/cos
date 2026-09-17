@@ -2,10 +2,10 @@
 //
 // Writes the role's screens into docs/screens/android/09-finance/:
 //   01-Home/01-fn-dashboard        the pending-approval total summed in decimal.js · the cash-flow
-//                                   tile and its risk word · the drawn burn rate · the 13-week
-//                                   forecast card · the priority approval queue
-//   02-Payments/01-fn-payment      the PENDING count and MFA chip · the vendor cards · the analysis
-//                                   module · the drawn FAB
+//                                   tile and its risk word · the drawn burn rate · the "Cash Flow"
+//                                   forecast card · the two-row Priority Queue
+//   02-Payments/01-fn-payment      the MFA chip · the vendor cards with project, work package and
+//                                   due chip · the analysis module as the third item · the drawn FAB
 //   02-Payments/02-fn-payment-detail
 //                                   the full-screen detail behind a card, with the biometric note
 //                                   and the Approve / Dispute pair. NOT PRESSED — Approve is a real
@@ -14,9 +14,13 @@
 //   03-Budget/01-fn-budget         Total / Actual / Remaining from the budget endpoint · the
 //                                   forecast module · the category breakdown with its per-line
 //                                   spend summed from cost transactions
-//   04-Invoices/01-fn-invoice      the filter chips with the server's own counts · the drawn
-//                                   3-way-matching banner · the invoice cards with their PO
-//                                   reference, delivery state and Approve / Dispute pair
+//   04-Invoices/01-fn-invoice      the Active Project bar · the five drawn chips with the server's
+//                                   own counts · the drawn 3-way-matching banner · the invoice
+//                                   cards (VERIFIED / DISPUTED / PENDING) · the scan button
+//
+// REDRAWN 2026-09-17 (R21) to the four Stitch screens — see docs/screens/android/README.md,
+// "Finance". The frames are taken FULL PAGE: Payments was cut at one screen and Invoices lost the
+// end of its list before this round.
 //   05-Drawer/01-fn-navigation-drawer
 //                                   the role's drawer — an OVERLAY opened from the TopBar, not a
 //                                   fifth tab; its rows come from the §6.4 matrix via drawerLinks.ts
@@ -573,28 +577,18 @@ async function main() {
     console.log('· Invoices tab');
     await tap(byId('invoices-tab'), 'Invoices tab');
     await find(byId('invoices-screen'), 'invoices-screen', 20);
-    // Seven requests settle: the visible list, five `limit=1` counts (one per status, read for the
-    // server's own total) and the purchase-order index that gives each card its PO number, its
-    // delivery state and its amount-over-PO. The chips photograph without numbers if this is short.
-    await delay(5000);
-    // The scan bar is pinned to the foot of this screen rather than scrolled with the list, so it
-    // is the same problem a FAB is and takes the same treatment.
-    const scan = await boundsOf(byId('invoice-scan'), 'invoice scan bar');
-    // THE SCAN BAR IS NOT A FLOATING BUTTON, so it is not passed as one. It is a sibling BELOW the
-    // list, and the ~30px between it and the nav is the container's own padding — static page
-    // background in every shot. `--fab` assumes the opposite: that real content scrolls behind the
-    // control and can be recovered from a later shot. Repairing under a docked footer inserts rows
-    // that were never behind it, and the 30px of padding underneath is never repaired at all, so
-    // the feather cross-faded plain background over a card title and printed a grey band through
-    // "INV-R9CT-CONC...".
+    // Seven requests settle, plus the PO walk: the visible list, five `limit=1` counts (one per
+    // status, read for the server's own total) and the ACTIVE PROJECT's purchase orders, which both
+    // narrow the list to the project and give each card its PO number, delivery state and
+    // amount-over-PO. A short wait photographs an empty list rather than a wrong one.
+    await delay(6000);
+    // THE SCAN BUTTON IS THE LIST'S FOOTER SINCE 2026-09-17 (R21), not a bar pinned under it, so
+    // the band is the ordinary page band and nothing is erased. The list is one project's now — six
+    // cards on the seeded tenant rather than thirty — so it is walked to its end.
     //
-    // Ending the band at the bar's own top edge is what the bar actually is: pinned chrome, kept
-    // once from the last shot together with the nav below it. No repair, no invented rows.
-    //
-    // FOUR viewports, not eight, and a shorter step. Thirty cards whose STATUS repeats do not need
-    // photographing to the end (PO decision 2026-09-08), and the 500/700 pair keeps the stitcher's
-    // search below the ~900px card pitch so it cannot slide a whole card — see `stitchFull`.
-    await stitchFull('04-Invoices/01-fn-invoice', { top: TOP, bottom: scan[1] }, null, 4, {
+    // The 500/700 pair still keeps the stitcher's search below the card pitch, so it cannot slide a
+    // whole card — see `stitchFull`.
+    await stitchFull('04-Invoices/01-fn-invoice', undefined, null, 8, {
       swipe: 500,
       maxScroll: 700,
     });
