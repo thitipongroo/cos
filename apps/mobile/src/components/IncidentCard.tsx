@@ -2,32 +2,31 @@
 //
 // TWO VARIANTS, ONE COMPONENT. `mockup/mobile/07_safety_officer/01_home/01_sa_home_dashboard` and
 // `.../02_incidents/01_sa_incident_dashboard` draw the same card at two densities: the Home feed is
-// title + location + footer, the Incidents feed adds a severity eyebrow, a photo plate and the
-// acknowledge action. They are one component because they are one card — two files would drift, and
-// the duplication ratchet (`.jscpd.json`) counts it either way.
+// title + location + footer, the Incidents feed adds a severity eyebrow, a photograph and the
+// acknowledge action. They are one card, so they are one component.
 //
-// WHAT THE DRAWINGS SHOW THAT THE DATA DOES NOT HAVE, and how each is handled (PO decision
-// 2026-08-13 — draw the zone, say plainly it is not ready; never invent a value):
+// REDRAWN 2026-09-17 (R23) to the Stitch screens "Safety Officer Dashboard - Refined with Active
+// Project Bar" and "รายการเหตุการณ์ความปลอดภัย - Refined Modern Industrial (Mobile)". The 2026-08-13
+// build drew each unbacked zone as a "not available yet" note; the product owner reversed that for
+// this set (D40), so everything the drawings draw is drawn and what has no source is registered.
 //
-//   - THE LOCATION LINE ("Reported in North Wing - Sector 4"). `site_ops.incidents` has `latitude`
-//     and `longitude` and no place name at all — no zone, no level, no sector. The line is drawn
-//     with its pin glyph and says no location is recorded.
-//   - THE PHOTO THUMBNAIL. Incidents carry no attachment: there is no `file_id` on the row and
-//     `POST /safety/incidents` accepts none. The plate is drawn in the mockup's OWN empty form —
-//     card 3 of the incidents drawing is exactly this, an `image` glyph on `surface-container-
-//     highest` — so this is the drawing's vocabulary, not an invention.
-//   - THE REPORTER AVATAR is NOT drawn, and that is the one omission here. `reported_by` is a UUID;
-//     there is no name and no photo on the row, and <Avatar /> falls back to initials, which needs a
-//     name. A grey circle standing for a person nobody can identify states less than nothing. Card 3
-//     of the same drawing has no avatar either, so the card is still within its own vocabulary.
-//   - THE "AI: 94%" style chips are not on this card in either drawing, and nothing is added.
+// WHAT IS REAL: the severity accent and eyebrow, the incident type, the status, the age to the
+// minute, the §19.3 acknowledgement deadline (an OPEN incident unacknowledged for 30 minutes
+// escalates to the PM), and THE SYNC CHIP — a row still in `local_incidents` awaiting `/sync/push`
+// is `pending`, a row the server has returned is `synced`. The screen passes which it is.
 //
-// WHAT IS REAL AND IS DRAWN BECAUSE IT IS: the severity accent and eyebrow, the incident type, the
-// status, the age to the minute, and the §19.3 acknowledgement deadline — an OPEN incident
-// unacknowledged for 30 minutes escalates to the PM, which is the only clock this record really has.
+// WHAT IS DRAWN (lib/mockupFigures.ts, ADR-099) — COMING SOON:
+//   · the LOCATION line (`INCIDENT_LOCATIONS`). The row carries latitude and longitude and no zone,
+//     level or sector.
+//   · the PHOTOGRAPH and the REPORTER portrait (`INCIDENT_MEDIA`, D44 — the drawings' own images,
+//     bundled under `assets/safety/`). An incident takes no attachment and `reported_by` is a UUID.
+//   · the TAG chip and the OBSERVATION line (`INCIDENT_DETAIL`). `incident_type` is free text and
+//     the row has no description column.
+// Each is cycled BY POSITION, the way every other drawn list in this app is, so two cards never
+// read as the same incident.
 
 import { useMemo } from 'react';
-import { View, Text, Pressable, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, Image, Pressable, TouchableOpacity, StyleSheet } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import type { IncidentRow } from '../api/safety';
 import {
@@ -38,18 +37,34 @@ import {
   severityTone,
   type Tone,
 } from '../lib/safetyOfficer';
+import { INCIDENT_DETAIL, INCIDENT_LOCATIONS } from '../lib/mockupFigures';
 import { useT } from '../i18n';
 import { fontFamily, plateRadius, radius, spacing, touchTarget, typography } from '../theme/tokens';
 import { usePalette, type Palette } from '../theme/usePalette';
+import cablePhoto from '../../assets/safety/incident-cable.jpg';
+import helmetPhoto from '../../assets/safety/incident-helmet.jpg';
+import inspectorFemale from '../../assets/safety/inspector-female.jpg';
+import inspectorMale from '../../assets/safety/inspector-male.jpg';
 
-/** The photo plate's side, from the drawing's `w-32`. Named so its radius cannot drift from it. */
-const PHOTO_PLATE = 96;
+/** The photograph's width in the feed card, from the drawing's right-hand column. */
+const PHOTO_WIDTH = 116;
+
+/** The reporter portrait's side — the drawing's `w-6` on Home, `w-8` in the feed. */
+const AVATAR = 28;
+
+/** The drawings' own photographs, bundled under `assets/safety/` — `INCIDENT_MEDIA` names them. */
+const PHOTOS = [cablePhoto, helmetPhoto];
+const REPORTERS = [inspectorFemale, inspectorMale];
 
 export interface IncidentCardProps {
   incident: IncidentRow;
   /** Passed in rather than read from the clock, so the age a test asserts is the age it set. */
   now: Date;
   variant: 'compact' | 'feed';
+  /** Position in the list — what the drawn location, photograph and portrait are cycled by. */
+  index?: number;
+  /** REAL: `pending` while the row is still in the local queue, `synced` once the server has it. */
+  sync?: 'synced' | 'pending';
   onPress?: () => void;
   /** Feed only. Absent → no acknowledge control (e.g. the Home summary). */
   onAcknowledge?: (incident: IncidentRow) => void;
@@ -67,6 +82,8 @@ export function IncidentCard({
   incident,
   now,
   variant,
+  index = 0,
+  sync = 'synced',
   onPress,
   onAcknowledge,
   testID,
@@ -80,6 +97,13 @@ export function IncidentCard({
   const age = incidentAge(incident.created_at, now);
   const overdue = acknowledgementOverdue(incident, now);
   const isFeed = variant === 'feed';
+  const resolved = incident.status === 'RESOLVED' || incident.status === 'CLOSED';
+  // DRAWN, cycled by position — see the header.
+  const place = INCIDENT_LOCATIONS.value[index % INCIDENT_LOCATIONS.value.length];
+  const photo = PHOTOS[index % PHOTOS.length];
+  const reporter = REPORTERS[index % REPORTERS.length];
+  const ageText =
+    age === null ? t('safety.age.unknown') : t(incidentAgeKey(age), { value: String(age.value) });
 
   return (
     <Pressable
@@ -87,40 +111,96 @@ export function IncidentCard({
       accessibilityRole={onPress ? 'button' : undefined}
       accessibilityLabel={incident.incident_type}
       onPress={onPress}
-      style={[styles.card, { borderLeftColor: accent }]}
+      style={[styles.card, { borderLeftColor: accent }, resolved && styles.faded]}
     >
       <View style={styles.body}>
-        {/* The feed's "CRITICAL SEVERITY" eyebrow. The Home card omits it — its accent strip and
-            status pill already carry the same verdict in a card half the height. */}
+        <View style={styles.headRow}>
+          {/* The feed's "CRITICAL SEVERITY" eyebrow. The Home card omits it — its accent strip and
+              status pill already carry the same verdict in a card half the height. */}
+          {isFeed ? (
+            <Text style={[styles.eyebrow, { color: accent }]} numberOfLines={1}>
+              {t('safety.incidents.severityEyebrow', { severity: incident.severity })}
+            </Text>
+          ) : (
+            <Text style={styles.title} numberOfLines={1}>
+              {incident.incident_type}
+            </Text>
+          )}
+          {isFeed ? (
+            // REAL: a row still awaiting `/sync/push` says so.
+            <View testID={`${testID ?? 'incident'}-sync`} style={styles.syncChip}>
+              <MaterialIcons
+                name={sync === 'pending' ? 'sync' : 'cloud-done'}
+                size={13}
+                color={sync === 'pending' ? p.warning : p.success}
+              />
+              <Text
+                style={[styles.syncText, { color: sync === 'pending' ? p.warning : p.success }]}
+              >
+                {t(
+                  sync === 'pending'
+                    ? 'safety.incidents.syncPending'
+                    : 'safety.incidents.syncSynced',
+                )}
+              </Text>
+            </View>
+          ) : (
+            <View style={[styles.statusPill, { backgroundColor: statusColour }]}>
+              <Text style={styles.statusPillText} numberOfLines={1}>
+                {incident.status}
+              </Text>
+            </View>
+          )}
+        </View>
+
         {isFeed ? (
-          <Text style={[styles.eyebrow, { color: accent }]}>
-            {t('safety.incidents.severityEyebrow', { severity: incident.severity })}
+          <Text style={styles.feedTitle} numberOfLines={2}>
+            {incident.incident_type}
           </Text>
         ) : null}
 
-        <Text style={styles.title} numberOfLines={2}>
-          {incident.incident_type}
-        </Text>
-
-        {/* The drawing's location line. There is no place name on the row — see the header. */}
+        {/* DRAWN — the row has coordinates and no place name. */}
         <View style={styles.metaRow}>
           <MaterialIcons name="location-on" size={16} color={p.muted} />
           <Text style={styles.meta} numberOfLines={1}>
-            {t('safety.incidents.locationUnavailable')}
+            {place}
           </Text>
         </View>
 
-        <View style={styles.footRow}>
-          <View style={styles.metaRow}>
-            <MaterialIcons name="schedule" size={14} color={p.muted} />
-            <Text style={styles.meta}>
-              {age === null
-                ? t('safety.age.unknown')
-                : t(incidentAgeKey(age), { value: String(age.value) })}
+        {/* DRAWN — the drawing tags its second card and writes an observation under its third. */}
+        {isFeed && index % 3 === 1 ? (
+          <View style={styles.tagChip}>
+            <Text style={styles.tagText} numberOfLines={1}>
+              {INCIDENT_DETAIL.value.tag}
             </Text>
           </View>
-          <View style={[styles.pill, { borderColor: statusColour }]}>
-            <Text style={[styles.pillText, { color: statusColour }]}>{incident.status}</Text>
+        ) : null}
+        {isFeed && index % 3 === 2 ? (
+          <Text style={styles.observation} numberOfLines={2}>
+            {INCIDENT_DETAIL.value.observation}
+          </Text>
+        ) : null}
+
+        <View style={styles.footRow}>
+          <View style={styles.metaRow}>
+            <MaterialIcons
+              name={resolved ? 'check-circle' : 'schedule'}
+              size={14}
+              color={resolved ? p.success : p.muted}
+            />
+            <Text style={[styles.meta, resolved && { color: p.success }]} numberOfLines={1}>
+              {isFeed ? t('safety.incidents.reported', { age: ageText }) : ageText}
+            </Text>
+          </View>
+          <View style={styles.footRight}>
+            {/* DRAWN — `reported_by` is a UUID with no name or portrait behind it. */}
+            <Image
+              testID={`${testID ?? 'incident'}-reporter`}
+              source={reporter}
+              style={styles.avatar}
+              accessibilityIgnoresInvertColors
+            />
+            {isFeed ? null : <MaterialIcons name="chevron-right" size={20} color={p.muted} />}
           </View>
         </View>
 
@@ -151,15 +231,14 @@ export function IncidentCard({
         ) : null}
       </View>
 
-      {/* The feed's photo plate, in the mockup's own empty form (its third card draws exactly this). */}
+      {/* DRAWN — the drawings fill the feed card's right half with a photograph of the scene. */}
       {isFeed ? (
-        <View
+        <Image
           testID={`${testID ?? 'incident'}-photo`}
-          accessibilityLabel={t('safety.incidents.photoUnavailable')}
+          source={photo}
           style={styles.photo}
-        >
-          <MaterialIcons name="image" size={28} color={p.muted} />
-        </View>
+          accessibilityIgnoresInvertColors
+        />
       ) : null}
     </Pressable>
   );
@@ -176,20 +255,37 @@ const makeStyles = (p: Palette) =>
       borderColor: p.border,
       // The drawings' `w-1.5` severity strip — the thing that makes a feed readable before any word
       // of it is.
-      borderLeftWidth: 4,
+      borderLeftWidth: 6,
       padding: spacing.sm,
+      overflow: 'hidden',
     },
+    // The drawing dims a resolved card rather than removing it.
+    faded: { opacity: 0.75 },
     body: { flex: 1, gap: spacing.xs / 2 },
+    headRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: spacing.xs,
+    },
     eyebrow: {
+      flexShrink: 1,
       fontSize: 10,
       fontFamily: fontFamily.bold,
       letterSpacing: 1.2,
       textTransform: 'uppercase',
     },
     title: {
+      flexShrink: 1,
       color: p.text,
       fontSize: typography.caption.fontSize,
       fontFamily: fontFamily.semibold,
+    },
+    feedTitle: {
+      color: p.text,
+      fontSize: typography.title.fontSize,
+      lineHeight: typography.title.fontSize * 1.2,
+      fontFamily: fontFamily.bold,
     },
     metaRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs / 2 },
     meta: {
@@ -198,6 +294,20 @@ const makeStyles = (p: Palette) =>
       fontSize: typography.label.fontSize,
       fontFamily: fontFamily.regular,
     },
+    observation: {
+      color: p.muted,
+      fontSize: typography.label.fontSize,
+      fontFamily: fontFamily.regular,
+      fontStyle: 'italic',
+    },
+    tagChip: {
+      alignSelf: 'flex-start',
+      backgroundColor: p.surfaceBright,
+      borderRadius: radius.xl,
+      paddingHorizontal: spacing.xs,
+      paddingVertical: 2,
+    },
+    tagText: { color: p.muted, fontSize: 10, fontFamily: fontFamily.medium },
     footRow: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -205,15 +315,30 @@ const makeStyles = (p: Palette) =>
       gap: spacing.xs,
       marginTop: spacing.xs / 2,
     },
-    // Outlined rather than filled: the card already carries the severity as a solid strip, and two
-    // solid blocks of colour on one small card fight each other.
-    pill: {
-      borderWidth: 1,
+    footRight: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs / 2 },
+    avatar: {
+      width: AVATAR,
+      height: AVATAR,
+      // A portrait is a circle, which is half the width — off the radius scale by design (§32.7).
+      borderRadius: 999,
+      borderWidth: 2,
+      borderColor: p.surface,
+    },
+    // The drawings fill the status pill on the dashboard card, where it is the only mark of state.
+    statusPill: {
       borderRadius: radius.xl,
       paddingHorizontal: spacing.xs,
-      paddingVertical: 1,
+      paddingVertical: 2,
     },
-    pillText: { fontSize: 10, fontFamily: fontFamily.bold, letterSpacing: 0.5 },
+    statusPillText: {
+      color: p.onPrimary,
+      fontSize: 10,
+      fontFamily: fontFamily.bold,
+      letterSpacing: 0.5,
+      textTransform: 'uppercase',
+    },
+    syncChip: { flexDirection: 'row', alignItems: 'center', gap: 2 },
+    syncText: { fontSize: 10, fontFamily: fontFamily.semibold, letterSpacing: 0.5 },
     action: {
       alignSelf: 'flex-start',
       flexDirection: 'row',
@@ -221,26 +346,17 @@ const makeStyles = (p: Palette) =>
       gap: spacing.xs / 2,
       minHeight: touchTarget.secondaryButton,
       paddingHorizontal: spacing.sm,
-      marginTop: spacing.xs,
+      borderWidth: 1,
       borderRadius: radius.md,
-      borderWidth: 1,
+      marginTop: spacing.xs / 2,
     },
-    actionText: {
-      fontSize: typography.label.fontSize,
-      fontFamily: fontFamily.semibold,
-      textTransform: 'uppercase',
-    },
+    actionText: { fontSize: typography.label.fontSize, fontFamily: fontFamily.semibold },
     photo: {
-      width: PHOTO_PLATE,
+      width: PHOTO_WIDTH,
       alignSelf: 'stretch',
-      minHeight: PHOTO_PLATE,
-      // §32.7's square-plate rule — a quarter of the side, as a rule rather than a literal, which is
-      // what `radiusRatchet.spec.ts` counts.
-      borderRadius: plateRadius(PHOTO_PLATE),
-      backgroundColor: p.elevated,
-      borderWidth: 1,
-      borderColor: p.border,
-      alignItems: 'center',
-      justifyContent: 'center',
+      borderRadius: plateRadius(PHOTO_WIDTH),
+      // The drawing runs the photograph to the card's own edge; the margin cancels the card padding.
+      marginVertical: -spacing.sm,
+      marginRight: -spacing.sm,
     },
   });

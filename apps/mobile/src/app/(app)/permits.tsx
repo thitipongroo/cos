@@ -19,26 +19,25 @@
 // WHAT THE DRAWING GAVE THIS SCREEN, AND THE FOUR PLACES IT COULD NOT BE FOLLOWED (ADR-085 makes the
 // mockup authoritative for STYLE; each departure below is a data fact, not a preference):
 //
-//   TYPE TABS — the drawing has three (Work Permits · Safety Permits · Drawing Approvals). There are
-//     FOUR permit types in the CHECK constraint and in CreatePermitDto, and the request form can file
-//     all four, so a three-tab bar would make every ENTRY_PERMIT unreachable. Five tabs are drawn:
-//     ALL plus the four. See PERMIT_TYPE_FILTERS in lib/safetyOfficer.ts.
-//   THE PENDING PILL is KEPT beside them although the drawing has no such control. It is a real query
-//     (`status` is an enum the endpoint filters on), it predates the drawing, and it answers the
-//     question this role actually opens the screen with — what needs a decision from me. ADR-085: a
-//     drawing does not remove reviewed working capability.
+//   TYPE TABS AND THE PENDING PILL ARE GONE (R23, D43). The drawing has neither, and the product
+//     owner chose the drawing. The list is still the ACTIVE PROJECT's — the request carries
+//     `project_id` — which is now said by nothing on the screen; the bar that said it went with
+//     them, because the drawing has no project bar either. `PERMIT_TYPE_FILTERS` stays in
+//     lib/safetyOfficer.ts, unused by this screen, for the register of what the enum holds.
 //   EXPIRY reads in DAYS, not the drawing's "04h 22m". `valid_until` is a Postgres DATE — the column
-//     has no time part, so an hours-and-minutes countdown could only be manufactured.
-//   "SYNCED 2M AGO" IS GONE. §17.4 lists no permit as offline-cached, so this screen has nothing to
-//     say about a per-row sync age; the TopBar's <SyncPill /> already carries the app's sync state,
-//     and a row claiming it synced two minutes ago would simply be false.
+//     has no time part, so an hours-and-minutes countdown could only be manufactured. A real value
+//     wins over a drawn one (D40).
+//   THE APPROVE / REJECT CONTROLS STAY. ADR-085: a drawing does not remove reviewed working
+//     capability, and this is the one duty master §9 gives this role alone.
 //
-// DRAWN AND MARKED NOT-AVAILABLE (product-owner ruling 2026-08-13, the same treatment the role's
-// other three screens already use): the "Safety Analysis" predictive banner and the per-card "AI
-// Check" line — there is no safety AI surface in this platform (`/ai/reports/*` covers site,
-// procurement, executive and delay-risk; SafetyVisionModel is Phase 23 and untrained, §22.6) and
-// §22.3 forbids a placeholder reading as AI-derived — and the AUTO-REJECT countdown, which is a
-// scheduled job this product does not have rather than a column it is missing.
+// REDRAWN 2026-09-17 (R23) to the Stitch screen "Permit Management - Restore Settings Nav"
+// (0507ba0427b1…, byte-identical to the repo drawing). Everything the drawings draw is drawn (D40),
+// so what used to be a "not available yet" note is now the drawn thing, registered in
+// lib/mockupFigures.ts: the SAFETY ANALYSIS card with its confidence and sources
+// (`PERMIT_RISK_ANALYSIS`), and each card's "Synced 2m ago", "AI Check: …", AUTO-REJECT countdown
+// and ENDED age (`PERMIT_CARD_DRAWN`). There is no safety AI surface in this platform
+// (`/ai/reports/*` covers site, procurement, executive and delay-risk; SafetyVisionModel is Phase 23
+// and untrained, §22.6), §17.4 caches no permit offline, and no scheduled job rejects a permit.
 //
 // THE ONE RULE THE SERVER ENFORCES AND THIS SCREEN STATES UP FRONT: `PATCH /safety/permits/:id/
 // approve` with `tier: 'SAFETY_OFFICER'` is REFUSED on a `SAFETY_PERMIT` — COS-SAFE-004, "Safety
@@ -53,15 +52,7 @@
 // NO IN-CONTENT PAGE TITLE — §32.7, held by `theme/__tests__/pageTitle.spec.ts`.
 
 import { useCallback, useMemo, useState } from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Alert,
-} from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Alert } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import { approvePermit, listPermits, rejectPermit, type PermitRow } from '../../api/safety';
@@ -71,13 +62,12 @@ import {
   canSafetyOfficerReject,
   permitExpiry,
   permitStatusTone,
-  PERMIT_TYPE_FILTERS,
-  type PermitTypeFilter,
   type Tone,
 } from '../../lib/safetyOfficer';
 import { LoadingBoundary } from '../../components/LoadingBoundary';
-import { ProjectContextBar } from '../../components/ProjectContextBar';
-import { UnavailableNote } from '../../components/UnavailableNote';
+import { AiCardFooter } from '../../components/AiCardFooter';
+import { useComingSoon } from '../../components/useComingSoon';
+import { PERMIT_CARD_DRAWN, PERMIT_RISK_ANALYSIS } from '../../lib/mockupFigures';
 import { useProjectStore } from '../../store/projectStore';
 import { useI18n } from '../../i18n';
 import { fontFamily, radius, spacing, touchTarget, typography } from '../../theme/tokens';
@@ -95,8 +85,7 @@ export default function PermitsScreen(): React.JSX.Element {
 
   const [permits, setPermits] = useState<PermitRow[]>([]);
   const [loading, setLoading] = useState(true);
-  const [typeFilter, setTypeFilter] = useState<PermitTypeFilter['id']>('all');
-  const [pendingOnly, setPendingOnly] = useState(false);
+  const soon = useComingSoon();
 
   const load = useCallback(() => {
     let cancelled = false;
@@ -125,7 +114,9 @@ export default function PermitsScreen(): React.JSX.Element {
     return p.muted;
   };
 
-  const visible = applyPermitFilters(permits, { type: typeFilter, pendingOnly });
+  // D43 removed the type tabs and the pending pill with the drawing, so the list is every permit
+  // on the active project, in the order `applyPermitFilters` has always put them.
+  const visible = applyPermitFilters(permits, { type: 'all', pendingOnly: false });
 
   /** One shared handler — approve and reject differ only in which call they make. */
   const decide = (permit: PermitRow, approve: boolean): void => {
@@ -147,7 +138,9 @@ export default function PermitsScreen(): React.JSX.Element {
     if (expiry.state === 'today') return t('safety.permits.expiryToday');
     return t(
       expiry.state === 'remaining' ? 'safety.permits.expiryIn' : 'safety.permits.expiryOverdue',
-      { days: String(expiry.days) },
+      // A NUMBER, not a string: both keys are ICU plurals (QM-3), and a plural rule cannot count a
+      // string — "Expired 1 days ago" is what that looked like on the R23 capture.
+      { days: expiry.days },
     );
   };
 
@@ -161,71 +154,30 @@ export default function PermitsScreen(): React.JSX.Element {
   return (
     <View testID="permits-screen" style={styles.root}>
       <ScrollView contentContainerStyle={styles.page}>
-        <ProjectContextBar />
-
-        {/* The drawing's "Safety Analysis" predictive banner — drawn, with no safety AI behind it. */}
-        <UnavailableNote
-          testID="permits-ai-unavailable"
-          reason={t('safety.permits.aiUnavailable')}
-        />
-
-        {/* TYPE TABS — five, because the enum has four types (see the header). */}
-        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-          <View style={styles.filterRow}>
-            {PERMIT_TYPE_FILTERS.map((filter) => {
-              const on = typeFilter === filter.id;
-              return (
-                <Pressable
-                  key={filter.id}
-                  testID={`permit-type-tab-${filter.id}`}
-                  accessibilityRole="radio"
-                  accessibilityState={{ selected: on }}
-                  onPress={() => setTypeFilter(filter.id)}
-                  style={[
-                    styles.filterButton,
-                    {
-                      backgroundColor: on ? p.primary : p.surface,
-                      borderColor: on ? p.primary : p.border,
-                    },
-                  ]}
-                >
-                  <Text style={[styles.filterLabel, { color: on ? p.onPrimary : p.muted }]}>
-                    {t(filter.labelKey)}
-                  </Text>
-                </Pressable>
-              );
-            })}
+        {/* SAFETY ANALYSIS — DRAWN in full: nothing in this platform reads a permit. */}
+        <View testID="permits-analysis" style={[styles.aiCard, { borderLeftColor: p.accent }]}>
+          <View style={styles.aiHead}>
+            <MaterialIcons name="psychology" size={18} color={p.accent} />
+            <Text style={[styles.aiTitle, { color: p.accent }]}>
+              {t('safety.permits.analysisTitle')}
+            </Text>
           </View>
-        </ScrollView>
-
-        {/* The status pill the drawing has no equivalent for, kept because it is what this role
-            opens the screen to ask. Both values are real queries. */}
-        <View style={styles.filterRow}>
-          {[false, true].map((only) => (
-            <Pressable
-              key={only ? 'pending' : 'all'}
-              testID={`permit-filter-${only ? 'pending' : 'all'}`}
-              accessibilityRole="radio"
-              accessibilityState={{ selected: pendingOnly === only }}
-              onPress={() => setPendingOnly(only)}
-              style={[
-                styles.filterButton,
-                {
-                  backgroundColor: pendingOnly === only ? p.primary : p.surface,
-                  borderColor: pendingOnly === only ? p.primary : p.border,
-                },
-              ]}
-            >
-              <Text
-                style={[
-                  styles.filterLabel,
-                  { color: pendingOnly === only ? p.onPrimary : p.muted },
-                ]}
-              >
-                {t(only ? 'safety.permits.filterPending' : 'safety.permits.filterAll')}
-              </Text>
-            </Pressable>
-          ))}
+          <Text style={styles.analysisBody}>
+            {t('safety.permits.analysisBody', {
+              count: PERMIT_RISK_ANALYSIS.value.pending,
+              time: PERMIT_RISK_ANALYSIS.value.before,
+            })}
+          </Text>
+          <AiCardFooter
+            testID="permits-analysis-foot"
+            percent={PERMIT_RISK_ANALYSIS.value.confidence}
+            source={t('safety.permits.analysisSource')}
+            confLabel={t('insight.confShort')}
+            sourceLabel={t('insight.sourceShort')}
+            // The card's one way in (R22, D38) — there is no analysis screen behind it.
+            onPress={() => soon('safety.permits.analysisTitle')}
+            palette={p}
+          />
         </View>
 
         <LoadingBoundary loading={loading} variant="list" theme={isDark ? 'dark' : 'light'}>
@@ -265,9 +217,20 @@ export default function PermitsScreen(): React.JSX.Element {
                           </Text>
                         </View>
                         <View style={styles.metaRight}>
-                          <Text style={styles.metaLabel}>{t('safety.permits.expiry')}</Text>
+                          {/* The drawing labels this column AUTO-REJECT on a pending permit and
+                              ENDED on an expired one. The countdown itself is DRAWN — no job
+                              rejects a permit on a deadline — and the expiry beside it is REAL. */}
+                          <Text style={styles.metaLabel}>
+                            {permit.status === 'PENDING'
+                              ? t('safety.permits.autoReject')
+                              : permit.status === 'EXPIRED'
+                                ? t('safety.permits.ended')
+                                : t('safety.permits.expiry')}
+                          </Text>
                           <Text style={[styles.metaValue, { color: expiryTone(permit) }]}>
-                            {expiryLabel(permit)}
+                            {permit.status === 'PENDING'
+                              ? PERMIT_CARD_DRAWN.value.autoReject
+                              : expiryLabel(permit)}
                           </Text>
                         </View>
                       </View>
@@ -297,14 +260,31 @@ export default function PermitsScreen(): React.JSX.Element {
                         </Text>
                       ) : null}
 
-                      {/* Drawn on the drawing's pending card as "AI Check: Safety conflict detected",
-                          and drawn here as what it is. Only on PENDING, where the drawing puts it. */}
+                      {/* DRAWN — the drawing's own sync line under every card. §17.4 caches no
+                          permit offline, so there is no per-row sync age to read. */}
+                      <View style={styles.drawnRow}>
+                        <MaterialIcons name="sync" size={14} color={p.muted} />
+                        <Text style={styles.muted} numberOfLines={1}>
+                          {t('safety.permits.syncedAgo', {
+                            age: PERMIT_CARD_DRAWN.value.syncedAgo,
+                          })}
+                        </Text>
+                      </View>
+
+                      {/* DRAWN — the drawing's AI check, on its pending card. Nothing checks a
+                          permit against anything. */}
                       {permit.status === 'PENDING' ? (
-                        <UnavailableNote
+                        <View
                           testID={`permit-ai-check-${permit.permit_id}`}
-                          variant="inline"
-                          reason={t('safety.permits.aiCheckUnavailable')}
-                        />
+                          style={styles.drawnRow}
+                        >
+                          <MaterialIcons name="verified-user" size={14} color={p.accent} />
+                          <Text style={[styles.muted, { color: p.accent }]} numberOfLines={2}>
+                            {t('safety.permits.aiCheck', {
+                              text: PERMIT_CARD_DRAWN.value.aiCheck,
+                            })}
+                          </Text>
+                        </View>
                       ) : null}
 
                       {/* master §9: a SAFETY_PERMIT is finalised by the PM, so this role is not
@@ -371,7 +351,13 @@ export default function PermitsScreen(): React.JSX.Element {
 const makeStyles = (p: Palette) =>
   StyleSheet.create({
     ...screenChrome(p),
-    filterRow: { flexDirection: 'row', gap: spacing.xs, paddingVertical: spacing.xs / 2 },
+    analysisBody: {
+      color: p.text,
+      fontSize: typography.label.fontSize,
+      lineHeight: typography.label.fontSize * 1.5,
+      fontFamily: fontFamily.regular,
+    },
+    drawnRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs / 2 },
     // A BUTTON, not a badge — `badgeRadius.spec.ts` reads style NAMES, and a segmented control
     // called `pill` would be held to the status-pill radius.
     filterButton: {

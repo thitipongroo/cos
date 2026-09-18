@@ -4,8 +4,10 @@
 //   01-Home/01-sa-home-dashboard        open-incidents tile · the two unavailable KPI tiles ·
 //                                        the daily-checklist card · recent incidents · report FAB
 //   02-Incidents/01-sa-incident-dashboard  the four filter pills · the incident feed · AI-risk card
-//   03-Checklists/01-sa-safety-checklist   the inspection list (the checklist itself is behind a row)
-//   04-Permits/01-sa-permits               the permit register + the approve/reject controls
+//   03-Checklists/01-sa-safety-checklist   the checklist ITSELF — since R23 the tab opens the form
+//   03-Checklists/02-sa-checklist-history  the submitted inspections, behind the form's history row
+//   04-Permits/01-sa-permits               the permit register + the approve/reject controls (no
+//                                          project bar and no chip rows since R23, D43)
 //   04-Permits/02-sa-permit-request        the request form behind the register's FAB
 //   04-Permits/03-sa-permit-submitted      its confirmation — reached by ACTUALLY submitting, see below
 //
@@ -21,12 +23,14 @@
 // because all three drawings open with the Active Project bar and that bar renders NOTHING with no
 // project. The script answers it once, and every screen after that is scoped to that site.
 //
-// SEVERAL PANELS PHOTOGRAPH AS "NOT AVAILABLE YET", AND THAT IS THE HONEST STATE, not a broken
-// capture. The mockups draw a compliance percentage, safe-hours-since-last-LTI, an AI-predicted risk
-// and an AI hazard alert; none of them has a source in this platform, and the product owner's ruling
-// (2026-08-13) is to draw the zone and say so rather than print an invented figure. What IS real in
-// these frames — the open-incident count, the incident feed, the checklist template, the permit
-// register — comes from the live backend against seeded data.
+// EVERY DRAWN ZONE IS NOW DRAWN (R23, product-owner decisions D40–D47, 2026-09-17), reversing the
+// 2026-08-13 "not available yet" ruling for this role: the compliance percentage, the safe hours,
+// the checklist progress chip, five AI cards with their confidences and their drawings' source
+// lines, the incident photographs and reporter portraits, and the permit cards' sync, AI-check and
+// auto-reject lines. All of it is registered in `lib/mockupFigures.ts` and marked COMING SOON.
+// What IS real in these frames — the open-incident count, the incident feed with its severities and
+// ages, the checklist template and its items, the permit register with its statuses, contractors and
+// validity — comes from the live backend against seeded data (`seedSafetyDrawnStates`, D42).
 //
 // Prerequisites: docker compose up + backend on :3000 + seeded demo data, emulator booted with the
 // debug APK, and Metro started with EXPO_PUBLIC_CAPTURE=1 (mutes the dev LogBox toast, freezes
@@ -246,24 +250,24 @@ async function main() {
   if (wanted('checklists')) {
     // The tab is LABELLED "Checklists" and the ROUTE is `inspections` — hence `inspection-tab`,
     // which MobileNav gives this route for the Detox suite and which survives the relabel.
-    console.log('· Checklists tab');
+    // SINCE R23 (D41) THE TAB OPENS THE FORM: `inspection-checklist`, not the list.
+    console.log('· Checklists tab (the form itself)');
     await tap(byId('inspection-tab'), 'Checklists tab');
-    await find(byId('inspection-list'), 'inspection-list', 20);
+    await find(byId('inspection-checklist'), 'inspection-checklist', 20);
     await delay(2000);
     await stitchFull('03-Checklists/01-sa-safety-checklist');
   }
 
-  // THE CHECKLIST ITSELF — which is what `03_checklists/01_sa_safety_checklist` actually draws. The
-  // frame above is the list one step in front of it; this is the screen with the hazard-alert panel,
-  // the PASS/FAIL rows, the attachment block and the signature pad.
+  // THE SUBMITTED INSPECTIONS, behind the form's "Past inspections" row (R23, D46). It is the list
+  // every other role still opens on, and the Detox scenario still walks.
   if (wanted('checklist-detail')) {
-    console.log('· Checklists → fill');
+    console.log('· Checklists → past inspections');
     await tap(byId('inspection-tab'), 'Checklists tab');
-    await find(byId('inspection-list'), 'inspection-list', 20);
-    await tap(byId('new-inspection-button'), 'FILL CHECKLIST');
     await find(byId('inspection-checklist'), 'inspection-checklist', 20);
+    await tap(byId('checklist-history'), 'Past inspections');
+    await find(byId('inspection-list'), 'inspection-list', 20);
     await delay(1500);
-    await stitchFull('03-Checklists/02-sa-checklist-fill');
+    await stitchFull('03-Checklists/02-sa-checklist-history');
   }
 
   if (wanted('permits')) {

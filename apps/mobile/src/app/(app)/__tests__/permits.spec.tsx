@@ -9,8 +9,10 @@
 // screen's, which toggles a composer. That is why its icon is fixed and the other's is a prop.
 
 import { render, fireEvent, waitFor } from '@testing-library/react-native';
+import { Alert } from 'react-native';
 import { I18nProvider } from '../../../i18n';
 import PermitsScreen from '../permits';
+import { PERMIT_RISK_ANALYSIS } from '../../../lib/mockupFigures';
 
 const mockPush = jest.fn();
 jest.mock('expo-router', () => {
@@ -62,7 +64,10 @@ function renderScreen() {
 }
 
 describe('PermitsScreen', () => {
+  let alert: jest.SpyInstance;
+
   beforeEach(() => {
+    alert = jest.spyOn(Alert, 'alert').mockImplementation(() => undefined);
     mockPush.mockReset();
     api.listPermits.mockReset();
     api.approvePermit.mockReset();
@@ -71,6 +76,8 @@ describe('PermitsScreen', () => {
     api.rejectPermit.mockResolvedValue(undefined);
     api.listPermits.mockResolvedValue([permit('pm-1')]);
   });
+
+  afterEach(() => alert.mockRestore());
 
   it('renders a card per permit', async () => {
     api.listPermits.mockResolvedValue([permit('pm-1'), permit('pm-2')]);
@@ -129,29 +136,32 @@ describe('PermitsScreen', () => {
     expect(api.approvePermit).not.toHaveBeenCalled();
   });
 
-  it('narrows the queue to one permit type', async () => {
+  // THE TYPE TABS AND THE PENDING PILL WENT ON 2026-09-17 (R23, D43): the Stitch screen has
+  // neither, and the product owner chose the drawing. Every permit on the active project is listed.
+  it('lists every permit on the project, with no filter row to narrow it', async () => {
     api.listPermits.mockResolvedValue([
       permit('pm-1'),
-      permit('pm-2', { permit_type: 'ENTRY_PERMIT' }),
+      permit('pm-2', { permit_type: 'ENTRY_PERMIT', status: 'ACTIVE' }),
     ]);
 
-    const { getAllByTestId, getByTestId } = await renderScreen();
+    const { getAllByTestId, queryByTestId } = await renderScreen();
 
     await waitFor(() => expect(getAllByTestId('permit-item')).toHaveLength(2));
-    await fireEvent.press(getByTestId('permit-type-tab-ENTRY_PERMIT'));
-
-    await waitFor(() => expect(getAllByTestId('permit-item')).toHaveLength(1));
+    expect(queryByTestId('permit-type-tab-ENTRY_PERMIT')).toBeNull();
+    expect(queryByTestId('permit-filter-pending')).toBeNull();
   });
 
-  it('narrows the queue to what needs a decision', async () => {
-    api.listPermits.mockResolvedValue([permit('pm-1'), permit('pm-2', { status: 'ACTIVE' })]);
+  // The Safety Analysis card is DRAWN in full (D40) — confidence, source line and all — and is
+  // entered through its footer alone (R22, D38).
+  it('draws the safety analysis card and opens the dialog from its footer', async () => {
+    const { getByTestId } = await renderScreen();
 
-    const { getAllByTestId, getByTestId } = await renderScreen();
-
-    await waitFor(() => expect(getAllByTestId('permit-item')).toHaveLength(2));
-    await fireEvent.press(getByTestId('permit-filter-pending'));
-
-    await waitFor(() => expect(getAllByTestId('permit-item')).toHaveLength(1));
+    await waitFor(() => expect(getByTestId('permits-analysis')).toBeTruthy());
+    expect(getByTestId('permits-analysis-foot')).toHaveTextContent(
+      new RegExp(String(PERMIT_RISK_ANALYSIS.value.confidence)),
+    );
+    await fireEvent.press(getByTestId('permits-analysis-foot'));
+    expect(alert).toHaveBeenCalled();
   });
 
   // Unlike the incident screen's, this FAB navigates — the request form is a route.

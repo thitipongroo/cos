@@ -1157,16 +1157,15 @@
       "openIncidents": "Open incidents",
       "activeCases": "Active cases",
       "compliance": "Compliance",
-      "complianceUnavailable": "No compliance score is calculated yet.",
       "safeHours": "Safe hours",
-      "safeHoursUnavailable": "Hours since the last lost-time injury are not recorded.",
       "checklistTitle": "Daily safety checklist",
-      "checklistProgressUnavailable": "Per-item progress is not stored — an inspection records one result for the whole checklist.",
       "checklistEmpty": "No checklist template for this project yet",
       "recentIncidents": "Recent incidents",
       "viewAll": "View all",
       "noIncidents": "No incidents recorded for this project",
-      "reportNew": "Report new incident"
+      "reportNew": "Report new incident",
+      "sinceLastLti": "Since last LTI",
+      "tasksChip": "{done}/{total} tasks"
     },
     "incidents": {
       "title": "Incidents",
@@ -1179,15 +1178,17 @@
       "filterCritical": "Critical",
       "filterNearMiss": "Near miss",
       "filterPpe": "PPE violation",
-      "filterUnavailable": "Incident type is free text, so there is no near-miss or PPE category to filter on.",
       "severityEyebrow": "{severity} severity",
-      "locationUnavailable": "No location recorded",
-      "photoUnavailable": "No photo — an incident carries no attachment",
       "acknowledge": "Acknowledge",
       "acknowledgeOffline": "Acknowledging needs a connection. It is not queued for later.",
       "overdue": "Unacknowledged over 30 min — escalates to the project manager",
       "aiRiskTitle": "AI predicted risk",
-      "aiRiskBody": "No model scores safety incidents yet."
+      "aiRiskBody": "Incomplete fire watch log detected for an active welding station. Immediate inspection required.",
+      "reported": "Reported {age}",
+      "riskEyebrow": "Risk",
+      "syncSynced": "Synced",
+      "syncPending": "Pending",
+      "syncSyncing": "Syncing"
     },
     "permits": {
       "empty": "No permits for this project yet",
@@ -1209,16 +1210,39 @@
       "noContractor": "Not recorded",
       "expiry": "Expiry",
       "expiryToday": "Expires today",
-      "expiryIn": "In {days} days",
-      "expiryOverdue": "Expired {days} days ago",
+      "expiryIn": "{days, plural, one {In # day} other {In # days}}",
+      "expiryOverdue": "{days, plural, one {Expired # day ago} other {Expired # days ago}}",
       "reason": "Reason",
-      "aiUnavailable": "Safety analysis is drawn here in the design. No AI reads permits yet, so there is nothing to show.",
-      "aiCheckUnavailable": "No automatic conflict check runs on a permit yet.",
       "type": {
         "WORK_PERMIT": "Work permit",
         "SAFETY_PERMIT": "Safety permit",
         "DRAWING_APPROVAL": "Drawing approval",
         "ENTRY_PERMIT": "Entry permit"
+      },
+      "analysisTitle": "Safety analysis",
+      "analysisBody": "Thermal overlap risk in Sector B. {count, plural, one {# permit needs} other {# permits need}} a second review before {time}.",
+      "analysisSource": "Site telemetry, BIM schedule",
+      "syncedAgo": "Synced {age} ago",
+      "autoReject": "Auto-reject",
+      "aiCheck": "AI check: {text}",
+      "ended": "Ended",
+      "endedAgo": "{age} ago",
+      "projectSector": "Project / sector",
+      "complianceTitle": "Compliance",
+      "complianceBody": "Against \"Work permit\" in {sector} you need a fall-protection certificate and Annex B for hot work.",
+      "complianceSource": "Compliance DB, Site protocol v2.4",
+      "complianceChipAnnex": "Required: Annex B",
+      "complianceChipPpe": "PPE level 4",
+      "contractorSearch": "Search registered contractors",
+      "photos": "Photos",
+      "insightTitle": "Insight",
+      "insightBody": "The documents are complete. It is on its way to the controlling engineer.",
+      "insightSource": "Compliance DB, Site protocol v2.4",
+      "typeShort": {
+        "WORK_PERMIT": "Work",
+        "SAFETY_PERMIT": "Safety",
+        "DRAWING_APPROVAL": "Drawing",
+        "ENTRY_PERMIT": "Site entry"
       }
     },
     "permitRequest": {
@@ -1234,8 +1258,7 @@
       "descriptionPlaceholder": "Scope of work and safety measures",
       "photosLabel": "Photos",
       "submit": "Submit for approval",
-      "failed": "The request could not be submitted. Check the connection and try again.",
-      "aiUnavailable": "A compliance check is drawn here in the design. Nothing in this platform checks a permit against site protocol yet."
+      "failed": "The request could not be submitted. Check the connection and try again."
     },
     "permitSubmitted": {
       "title": "Request submitted",
@@ -1243,8 +1266,7 @@
       "type": "Type",
       "status": "Status",
       "backHome": "Back to home",
-      "viewStatus": "View request status",
-      "aiUnavailable": "A progress note is drawn here in the design. The permit is waiting for a person to review it — nothing tracks it automatically."
+      "viewStatus": "View request status"
     },
     "checklist": {
       "untitled": "Untitled checklist",
@@ -1252,11 +1274,8 @@
       "completeInspection": "Complete inspection",
       "flaggedTitle": "Flagged",
       "hazardAlertTitle": "AI hazard alert",
-      "hazardAlertBody": "No weather or hazard forecast reaches this app yet.",
-      "groupUnavailable": "Checklist items carry no group, so PPE and structure sections cannot be separated.",
-      "itemExtrasUnavailable": "A note per item is not stored. The photo above is attached to the whole inspection.",
+      "hazardAlertBody": "Predicted high-wind conditions ({wind} mph) for the afternoon. Prioritise {item} and loose material containment.",
       "voiceTitle": "Voice log",
-      "voiceUnavailable": "A voice log has nowhere to attach on an inspection yet.",
       "required": "Required",
       "verification": "Daily safety verification — {done}/{total}",
       "confirm": "Confirm safety",
@@ -1270,7 +1289,19 @@
       "clearPad": "Clear pad",
       "aiScanTitle": "AI Safety Scan",
       "aiScanBody": "Automated PPE detection. Verify your safety equipment using computer vision.",
-      "aiScanStart": "Start scan"
+      "aiScanStart": "Start scan",
+      "groupPpe": "PPE & personnel",
+      "groupStructure": "Structure & equipment",
+      "photo": "Photo",
+      "note": "Note",
+      "flagged": "Flagged: {text}",
+      "flaggedText": "Excavator near high-line zone.",
+      "issueAttached": "Issue attached",
+      "hazardSource": "Weather telemetry",
+      "signPrompt": "Tap to sign and complete inspection",
+      "history": "Past inspections",
+      "historyCount": "{count, plural, one {# inspection submitted} other {# inspections submitted}}",
+      "siteDate": "{site} • {date}"
     }
   },
   "voiceNote": {

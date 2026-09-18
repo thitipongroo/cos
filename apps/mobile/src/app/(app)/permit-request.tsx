@@ -28,9 +28,14 @@
 //   Photos           → captured against a DRAFT id and re-keyed to the real permit_id after the POST
 //                      (see `reassignPhotoEntity`), because a permit's id does not exist until the
 //                      server makes one.
-//   AI ความสอดคล้อง   → NOTHING. There is no compliance-checking AI in this platform: `/ai/reports/*`
-//                      covers site, procurement, executive and delay-risk only, and §22.3 forbids a
-//                      surface reading as AI-derived while a placeholder serves it. Drawn, and marked.
+//   AI ความสอดคล้อง   → DRAWN IN FULL since 2026-09-17 (R23, D40): the card, its 96 % confidence, its
+//                      two requirement chips and its source line are `PERMIT_COMPLIANCE_CHECK`.
+//                      There is no compliance-checking AI in this platform — `/ai/reports/*` covers
+//                      site, procurement, executive and delay-risk only — and no compliance database
+//                      or site-protocol document behind the sources it names.
+//   Project / Sector  → the field the drawing draws, filled with the ACTIVE PROJECT's own name. The
+//                      "Sector 4" half is drawn (`PERMIT_COMPLIANCE_CHECK.sector`): a permit has no
+//                      sector column, and neither does a project.
 //
 // ONLINE ONLY. §17.4 lists no permit as offline-writable, so this uses `createPermit()` (a plain
 // POST) and never enqueues. A failure keeps the form — and its draft photos — exactly as they were.
@@ -45,7 +50,9 @@ import { reassignPhotoEntity } from '../../db/photoRepo';
 import { DateField } from '../../components/DateField';
 import { PhotoCapture } from '../../components/PhotoCapture';
 import { ProjectContextBar } from '../../components/ProjectContextBar';
-import { UnavailableNote } from '../../components/UnavailableNote';
+import { AiCardFooter } from '../../components/AiCardFooter';
+import { useComingSoon } from '../../components/useComingSoon';
+import { PERMIT_COMPLIANCE_CHECK } from '../../lib/mockupFigures';
 import { useProjectStore } from '../../store/projectStore';
 import { useI18n } from '../../i18n';
 import { fontFamily, radius, spacing, touchTarget, typography } from '../../theme/tokens';
@@ -67,6 +74,8 @@ export default function PermitRequestScreen(): React.JSX.Element {
   const styles = useMemo(() => makeStyles(p), [p]);
 
   const projectId = useProjectStore((s) => s.active?.projectId ?? '');
+  // The drawing's PROJECT / SECTOR field names the active project; the sector half is drawn.
+  const projectName = useProjectStore((s) => s.active?.projectName ?? '');
 
   // Stable for the life of the screen: the id the photos hang on until the permit is real. A ref, not
   // state — regenerating it on a re-render would strand every photo captured before it changed.
@@ -79,6 +88,7 @@ export default function PermitRequestScreen(): React.JSX.Element {
   const [validUntil, setValidUntil] = useState('');
   const [description, setDescription] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const soon = useComingSoon();
   const [error, setError] = useState<string | null>(null);
 
   const canSubmit = projectId !== '' && permitNumber.trim() !== '' && !submitting;
@@ -146,7 +156,7 @@ export default function PermitRequestScreen(): React.JSX.Element {
               >
                 <MaterialIcons name={icon} size={22} color={on ? p.accent : p.muted} />
                 <Text style={[styles.typeLabel, { color: on ? p.text : p.muted }]}>
-                  {t(`safety.permits.type.${type}`)}
+                  {t(`safety.permits.typeShort.${type}`)}
                 </Text>
               </TouchableOpacity>
             );
@@ -160,11 +170,51 @@ export default function PermitRequestScreen(): React.JSX.Element {
         </Text>
       ) : null}
 
-      {/* AI ความสอดคล้อง — drawn, and there is no compliance AI to fill it. */}
-      <UnavailableNote
-        testID="permit-request-ai-unavailable"
-        reason={t('safety.permitRequest.aiUnavailable')}
-      />
+      {/* PROJECT / SECTOR — the drawing's field. The project is REAL (the active one, which the bar
+          above names and the picker changes); the sector half is drawn — no such column exists. */}
+      <View style={styles.field}>
+        <Text style={styles.fieldLabel}>{t('safety.permits.projectSector')}</Text>
+        <View testID="permit-project-sector" style={styles.readOnlyField}>
+          <Text style={styles.readOnlyText} numberOfLines={1}>
+            {projectName === '' ? PERMIT_COMPLIANCE_CHECK.value.sector : projectName}
+          </Text>
+          <MaterialIcons name="expand-more" size={20} color={p.muted} />
+        </View>
+      </View>
+
+      {/* ความสอดคล้อง — DRAWN in full: nothing checks a permit against a protocol here. */}
+      <View testID="permit-compliance" style={[styles.aiCard, { borderLeftColor: p.accent }]}>
+        <View style={styles.aiHead}>
+          <MaterialIcons name="auto-awesome" size={18} color={p.accent} />
+          <Text style={[styles.aiTitle, { color: p.accent }]}>
+            {t('safety.permits.complianceTitle')}
+          </Text>
+        </View>
+        <Text style={styles.complianceBody}>
+          {t('safety.permits.complianceBody', {
+            sector: PERMIT_COMPLIANCE_CHECK.value.sector,
+          })}
+        </Text>
+        <View style={styles.chipRow}>
+          {(['complianceChipAnnex', 'complianceChipPpe'] as const).map((key) => (
+            <View key={key} style={styles.requirementChip}>
+              <Text style={styles.requirementText} numberOfLines={1}>
+                {t(`safety.permits.${key}`)}
+              </Text>
+            </View>
+          ))}
+        </View>
+        <AiCardFooter
+          testID="permit-compliance-foot"
+          percent={PERMIT_COMPLIANCE_CHECK.value.confidence}
+          source={t('safety.permits.complianceSource')}
+          confLabel={t('insight.confShort')}
+          sourceLabel={t('insight.sourceShort')}
+          // The card's one way in (R22, D38) — no compliance screen exists.
+          onPress={() => soon('safety.permits.complianceTitle')}
+          palette={p}
+        />
+      </View>
 
       <View style={styles.field}>
         <Text style={styles.fieldLabel}>{t('safety.permitRequest.numberLabel')}</Text>
@@ -180,14 +230,20 @@ export default function PermitRequestScreen(): React.JSX.Element {
 
       <View style={styles.field}>
         <Text style={styles.fieldLabel}>{t('safety.permitRequest.contractorLabel')}</Text>
-        <TextInput
-          testID="permit-contractor-input"
-          style={styles.input}
-          placeholder={t('safety.permitRequest.contractorPlaceholder')}
-          placeholderTextColor={p.muted}
-          value={contractor}
-          onChangeText={setContractor}
-        />
+        {/* The drawing draws a search field. It is free TEXT — a permit has no vendor link, and
+            site_ops reaching into procurement.vendors is what master §4 forbids — so the glyph is
+            the drawing's and the behaviour is the column's. */}
+        <View style={styles.searchRow}>
+          <MaterialIcons name="search" size={18} color={p.muted} />
+          <TextInput
+            testID="permit-contractor-input"
+            style={[styles.input, styles.searchInput]}
+            placeholder={t('safety.permits.contractorSearch')}
+            placeholderTextColor={p.muted}
+            value={contractor}
+            onChangeText={setContractor}
+          />
+        </View>
       </View>
 
       <View style={styles.dateRow}>
@@ -288,6 +344,50 @@ const makeStyles = (p: Palette) =>
     },
     textarea: { minHeight: 88, paddingTop: spacing.sm, textAlignVertical: 'top' },
     dateRow: { flexDirection: 'row', gap: spacing.sm },
+    readOnlyField: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: spacing.xs,
+      minHeight: touchTarget.formInput,
+      paddingHorizontal: spacing.sm,
+      borderRadius: radius.lg,
+      borderWidth: 1,
+      borderColor: p.border,
+      backgroundColor: p.surface,
+    },
+    readOnlyText: {
+      flexShrink: 1,
+      color: p.text,
+      fontSize: typography.caption.fontSize,
+      fontFamily: fontFamily.medium,
+    },
+    complianceBody: {
+      color: p.text,
+      fontSize: typography.label.fontSize,
+      lineHeight: typography.label.fontSize * 1.5,
+      fontFamily: fontFamily.regular,
+    },
+    chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },
+    requirementChip: {
+      paddingHorizontal: spacing.xs,
+      paddingVertical: 2,
+      borderRadius: radius.xl,
+      borderWidth: 1,
+      borderColor: `${p.accent}66`,
+    },
+    requirementText: { color: p.accent, fontSize: 10, fontFamily: fontFamily.semibold },
+    searchRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.xs,
+      paddingLeft: spacing.sm,
+      borderRadius: radius.lg,
+      borderWidth: 1,
+      borderColor: p.border,
+      backgroundColor: p.surface,
+    },
+    searchInput: { flex: 1, borderWidth: 0, backgroundColor: 'transparent', paddingLeft: 0 },
     submit: {
       flexDirection: 'row',
       alignItems: 'center',

@@ -13,6 +13,7 @@
 import { render, fireEvent } from '@testing-library/react-native';
 import { I18nProvider } from '../../../i18n';
 import PermitSubmittedScreen from '../permit-submitted';
+import { PERMIT_SUBMITTED_INSIGHT } from '../../../lib/mockupFigures';
 
 const mockReplace = jest.fn();
 const mockPush = jest.fn();
@@ -88,9 +89,23 @@ describe('PermitSubmittedScreen', () => {
 
   // The AI panel is an honest shell — there is no model behind it, and it says so rather than
   // printing a fabricated assessment of a permit request.
-  it('says the assessment is unavailable rather than inventing one', async () => {
+  // The INSIGHT card is DRAWN in full since 2026-09-17 (R23, D40), and entered through its footer
+  // alone (R22, D38). Nothing reads a permit in this platform.
+  it('draws the insight card with the register’s confidence', async () => {
     const { getByTestId } = await renderScreen();
 
-    expect(getByTestId('permit-submitted-ai-unavailable')).toBeTruthy();
+    expect(getByTestId('permit-submitted-insight')).toBeTruthy();
+    expect(getByTestId('permit-submitted-insight-foot')).toHaveTextContent(
+      new RegExp(String(PERMIT_SUBMITTED_INSIGHT.value.confidence)),
+    );
+  });
+
+  // The drawing heads the screen with a back arrow. This route is terminal, so it goes to the
+  // REGISTER — going back to the form that already succeeded would raise a second permit.
+  it('sends the back arrow to the permit register, never to the form', async () => {
+    const { getByTestId } = await renderScreen();
+
+    await fireEvent.press(getByTestId('permit-submitted-back'));
+    expect(mockReplace).toHaveBeenCalledWith('/permits');
   });
 });

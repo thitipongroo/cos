@@ -8,29 +8,25 @@
 // "pending sync" tile — master §Phase 10 enumerates no Home for it (spec `20 §20.7.7` says so in
 // those words), so nothing had ever been built.
 //
-// THE DRAWING'S THREE KPI TILES, AND WHAT EACH ONE CAN ACTUALLY SAY:
+// REDRAWN 2026-09-17 (R23) to the Stitch screen "Safety Officer Dashboard - Refined with Active
+// Project Bar" (a8b8069062ff…, byte-identical to the repo drawing). The 2026-08-13 build drew every
+// unbacked zone as a "not available yet" note; the product owner reversed that for this set (D40) —
+// everything the drawings draw is drawn, what has no source is registered, and a real value wins.
 //
-//   OPEN INCIDENTS — real. `GET /safety/compliance` returns `open_incidents`, a COUNT(*) over
+// THE DRAWING'S THREE KPI TILES:
+//
+//   OPEN INCIDENTS — REAL. `GET /safety/compliance` returns `open_incidents`, a COUNT(*) over
 //     `site_ops.incidents` where status = 'OPEN', scoped to the tenant and optionally the project.
-//     The drawing's "04" is printed here as the query answers it.
-//   COMPLIANCE 94% — THERE IS NO COMPLIANCE SCORE IN THIS PLATFORM. The endpoint named "compliance"
-//     returns four counts and no percentage; `docs/specifications/` contains no compliance-score
-//     formula, and grepping the whole tree for one finds nothing. The tile is drawn with the
-//     drawing's label and says so.
-//   SAFE HOURS · SINCE LAST LTI — the same, harder. Nothing in this product records working hours
-//     against a lost-time injury; "LTI" appears nowhere in `context/` or `docs/specifications/`.
-//     Drawn, and honest.
+//     The drawing's "04" is printed here as the query answers it, on the drawing's danger tint.
+//   COMPLIANCE 94% — DRAWN (`SAFETY_COMPLIANCE_SCORE`). The endpoint named "compliance" returns
+//     four counts and no percentage, and no formula for one exists in `docs/specifications/`.
+//   SAFE HOURS · SINCE LAST LTI — DRAWN (`SAFE_WORK_HOURS`). Nothing records working hours against
+//     a lost-time injury; "LTI" appears in no specification and in no column.
 //
-// Both unavailable tiles follow the product owner's 2026-08-13 ruling for every unbacked zone on
-// these screens: draw it with the mockup's own copy and state plainly that it is not ready — the
-// same treatment the Site Worker's AI Safety Scan and the manager's COMING SOON tiles already get.
-// A substitute figure was offered and NOT chosen: `high_critical_incidents` and `expired_permits`
-// are real and would fit these two slots, but they are not what the tiles say they are.
-//
-// THE DAILY SAFETY CHECKLIST CARD is half real and drawn that way. The template rows come from
-// `GET /safety/checklists` and are the project's actual items. The drawing's "6/8 TASKS" chip does
-// not: `site_ops.inspections` records ONE result per checklist (PASSED/FAILED), not a per-item
-// state, so nothing can count six of eight. The chip's place carries the explanation instead.
+// THE DAILY SAFETY CHECKLIST CARD is half real. The template rows come from `GET /safety/checklists`
+// and are the project's actual items; the "6/8 TASKS" chip and the struck-through done row are
+// DRAWN (`CHECKLIST_PROGRESS`) — `site_ops.inspections` records ONE result per checklist, not a
+// per-item state, so nothing here can count six of eight.
 //
 // THE FAB is the drawing's "+ REPORT NEW". It opens the Incidents tab, which is where an incident is
 // created — the drawing's tooltip pill is not reproduced as a permanently-visible label, because a
@@ -53,7 +49,7 @@ import { IncidentCard } from './IncidentCard';
 import { LoadingBoundary } from './LoadingBoundary';
 import { loadProgress } from '../lib/loadingState';
 import { ProjectContextBar } from './ProjectContextBar';
-import { UnavailableNote } from './UnavailableNote';
+import { CHECKLIST_PROGRESS, SAFETY_COMPLIANCE_SCORE, SAFE_WORK_HOURS } from '../lib/mockupFigures';
 import { useProjectStore } from '../store/projectStore';
 import { useT } from '../i18n';
 import { fontFamily, radius, spacing, touchTarget, typography } from '../theme/tokens';
@@ -221,23 +217,38 @@ export default function SafetyOfficerHome(): React.JSX.Element {
           </Pressable>
 
           <View style={styles.tileRow}>
-            {/* COMPLIANCE — drawn, and there is no score to draw. */}
+            {/* COMPLIANCE — DRAWN, bar and all: no score exists. See the register. */}
             <View testID="kpi-compliance" style={styles.tile}>
-              <Text style={styles.tileLabel}>{t('safety.home.compliance')}</Text>
-              <UnavailableNote
-                testID="kpi-compliance-unavailable"
-                variant="inline"
-                reason={t('safety.home.complianceUnavailable')}
-              />
+              <View style={styles.tileHead}>
+                <Text style={styles.tileLabel}>{t('safety.home.compliance')}</Text>
+                <MaterialIcons name="open-in-new" size={14} color={p.muted} />
+              </View>
+              <View>
+                <Text style={[styles.tileFigure, { color: p.success }]}>
+                  {`${SAFETY_COMPLIANCE_SCORE.value}%`}
+                </Text>
+                <View style={styles.bar}>
+                  <View
+                    style={[
+                      styles.barFill,
+                      { width: `${SAFETY_COMPLIANCE_SCORE.value}%`, backgroundColor: p.success },
+                    ]}
+                  />
+                </View>
+              </View>
             </View>
-            {/* SAFE HOURS · SINCE LAST LTI — the same. */}
+            {/* SAFE HOURS · SINCE LAST LTI — DRAWN, for the same reason. */}
             <View testID="kpi-safe-hours" style={styles.tile}>
-              <Text style={styles.tileLabel}>{t('safety.home.safeHours')}</Text>
-              <UnavailableNote
-                testID="kpi-safe-hours-unavailable"
-                variant="inline"
-                reason={t('safety.home.safeHoursUnavailable')}
-              />
+              <View style={styles.tileHead}>
+                <Text style={styles.tileLabel}>{t('safety.home.safeHours')}</Text>
+                <MaterialIcons name="open-in-new" size={14} color={p.muted} />
+              </View>
+              <View>
+                <Text style={[styles.tileFigure, { color: p.primary }]}>
+                  {SAFE_WORK_HOURS.value}
+                </Text>
+                <Text style={styles.tileFoot}>{t('safety.home.sinceLastLti')}</Text>
+              </View>
             </View>
           </View>
         </LoadingBoundary>
@@ -253,27 +264,45 @@ export default function SafetyOfficerHome(): React.JSX.Element {
           <View style={styles.cardHead}>
             <MaterialIcons name="assignment-turned-in" size={20} color={p.accent} />
             <Text style={[styles.cardTitle, styles.grow]}>{t('safety.home.checklistTitle')}</Text>
-            <MaterialIcons name="chevron-right" size={20} color={p.muted} />
+            {/* DRAWN — an inspection stores one result for the whole checklist, so nothing counts
+                six of eight. See `CHECKLIST_PROGRESS`. */}
+            <View testID="home-checklist-progress" style={styles.tasksChip}>
+              <Text style={styles.tasksChipText}>
+                {t('safety.home.tasksChip', {
+                  done: String(CHECKLIST_PROGRESS.value.done),
+                  total: String(CHECKLIST_PROGRESS.value.total),
+                })}
+              </Text>
+              <MaterialIcons name="chevron-right" size={14} color={p.accent} />
+            </View>
           </View>
-          <UnavailableNote
-            testID="home-checklist-progress-unavailable"
-            reason={t('safety.home.checklistProgressUnavailable')}
-          />
           {checklistItems.length === 0 ? (
             <Text testID="home-checklist-empty" style={styles.muted}>
               {t('safety.home.checklistEmpty')}
             </Text>
           ) : (
-            checklistItems.map((item, index) => (
-              <View key={item.item_id ?? item.id ?? String(index)} style={styles.checklistRow}>
-                {/* Unticked, every one of them: nothing stores whether an item was done, so a tick
-                    here would assert something no record supports. */}
-                <MaterialIcons name="check-box-outline-blank" size={20} color={p.muted} />
-                <Text style={styles.checklistText} numberOfLines={2}>
-                  {labelOf(item, index)}
-                </Text>
-              </View>
-            ))
+            checklistItems.map((item, index) => {
+              // DRAWN — the drawing ticks its first row and strikes it through. Nothing stores a
+              // per-item state, so which row is ticked is the drawing's, not a record's.
+              const done = index === 0;
+              return (
+                <View key={item.item_id ?? item.id ?? String(index)} style={styles.checklistRow}>
+                  {done ? (
+                    <View style={[styles.tick, { backgroundColor: p.success }]}>
+                      <MaterialIcons name="check" size={14} color={p.onPrimary} />
+                    </View>
+                  ) : (
+                    <MaterialIcons name="check-box-outline-blank" size={20} color={p.muted} />
+                  )}
+                  <Text
+                    style={[styles.checklistText, done && styles.checklistTextDone]}
+                    numberOfLines={2}
+                  >
+                    {labelOf(item, index)}
+                  </Text>
+                </View>
+              );
+            })
           )}
         </Pressable>
 
@@ -304,12 +333,13 @@ export default function SafetyOfficerHome(): React.JSX.Element {
               {t('safety.home.noIncidents')}
             </Text>
           ) : (
-            recent.map((incident) => (
+            recent.map((incident, index) => (
               <View key={incident.incident_id} style={styles.cardGap}>
                 <IncidentCard
                   testID={`home-incident-${incident.incident_id}`}
                   incident={incident}
                   now={now}
+                  index={index}
                   variant="compact"
                   onPress={() => router.push('/incidents')}
                 />
@@ -334,24 +364,22 @@ const makeStyles = (p: Palette) =>
     ...screenChrome(p),
     page: { padding: spacing.md, gap: spacing.md, paddingBottom: spacing.xl * 3 },
     kpiRegion: { gap: spacing.sm },
-    // The drawing's full-width alert tile — danger tint + 4px leading strip.
+    // The drawing's full-width alert tile — danger TINT + a 6px leading strip (R23).
     alertTile: {
       justifyContent: 'space-between',
       gap: spacing.sm,
-      minHeight: 108,
+      minHeight: 128,
       padding: spacing.md,
       borderRadius: radius.xl,
-      borderWidth: 1,
-      borderColor: p.border,
-      borderLeftWidth: 4,
-      backgroundColor: p.surface,
+      borderLeftWidth: 6,
+      backgroundColor: `${p.danger}1A`,
     },
     tileRow: { flexDirection: 'row', gap: spacing.sm },
     tile: {
       flex: 1,
       justifyContent: 'space-between',
       gap: spacing.xs,
-      minHeight: 108,
+      minHeight: 128,
       padding: spacing.md,
       borderRadius: radius.xl,
       borderWidth: 1,
@@ -381,6 +409,45 @@ const makeStyles = (p: Palette) =>
       fontSize: typography.label.fontSize,
       fontFamily: fontFamily.regular,
     },
+    // The drawn tiles' own figure — hero-sized like the count above them, in the drawing's colours.
+    tileFigure: {
+      fontSize: typography.hero.fontSize,
+      lineHeight: typography.hero.lineHeight,
+      fontFamily: fontFamily.bold,
+    },
+    tileFoot: {
+      color: p.muted,
+      fontSize: 10,
+      fontFamily: fontFamily.medium,
+      letterSpacing: 0.8,
+      textTransform: 'uppercase',
+    },
+    bar: {
+      height: 4,
+      borderRadius: radius.xl,
+      backgroundColor: p.surfaceSoft,
+      marginTop: spacing.xs,
+      overflow: 'hidden',
+    },
+    barFill: { height: '100%', borderRadius: radius.xl },
+    tasksChip: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 2,
+      paddingHorizontal: spacing.xs,
+      paddingVertical: 2,
+      borderRadius: radius.sm,
+      backgroundColor: `${p.accent}33`,
+    },
+    tasksChipText: { color: p.accent, fontSize: 10, fontFamily: fontFamily.semibold },
+    tick: {
+      width: 20,
+      height: 20,
+      borderRadius: radius.sm,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    checklistTextDone: { color: p.muted, textDecorationLine: 'line-through' },
     card: {
       gap: spacing.sm,
       padding: spacing.md,
@@ -409,14 +476,22 @@ const makeStyles = (p: Palette) =>
       justifyContent: 'space-between',
       minHeight: touchTarget.iconButton,
     },
+    // Title case at title size, as the drawing heads its list — not an uppercase eyebrow.
     sectionTitle: {
-      color: p.muted,
-      fontSize: typography.label.fontSize,
-      fontFamily: fontFamily.semibold,
-      letterSpacing: 1,
-      textTransform: 'uppercase',
+      color: p.text,
+      fontSize: typography.title.fontSize,
+      fontFamily: fontFamily.bold,
     },
-    viewAll: { flexDirection: 'row', alignItems: 'center', gap: 2 },
+    // The drawing's tinted "View All" pill.
+    viewAll: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 2,
+      paddingHorizontal: spacing.sm,
+      paddingVertical: 4,
+      borderRadius: radius.xl,
+      backgroundColor: `${p.accent}1A`,
+    },
     viewAllText: {
       color: p.accent,
       fontSize: 11,

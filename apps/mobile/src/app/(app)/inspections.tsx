@@ -12,21 +12,34 @@
 // `checklist-item` / `checklist-pass-button`, are contracts with `e2e/offline-inspection.spec.ts`
 // and must not be renamed.
 //
-// WHAT THE DRAWING SHOWS THAT THE DATA DOES NOT HAVE. Each is DRAWN and says plainly that it is not
-// ready (product-owner ruling 2026-08-13), never filled with an invented value:
+// REDRAWN 2026-09-17 (R23) to the Stitch screen "Daily Safety Checklist - Refined with Active
+// Project Bar" (fed2fd95c539…, byte-identical to the repo drawing), with the 2026-08-13 "not
+// available yet" notes reversed (D40) and two structural decisions:
 //
-//   - "AI HAZARD ALERT · 94% CONFIDENCE · Predicted high-wind conditions (24mph) · SOURCE: WEATHER
-//     TELEMETRY". There is no weather source in this platform at all — no ingestion, no provider, no
-//     column — and §22.3 forbids describing a surface as AI-derived while a placeholder serves it.
-//   - THE GROUP HEADINGS "PPE & PERSONNEL" / "STRUCTURE & EQUIPMENT". A checklist item is
-//     `{ item_id, description, is_required }` (§11 `site_ops.safety_checklists.items`) — there is no
-//     group field, so the items cannot be sorted into the drawing's two sections.
-//   - THE PER-ITEM "PHOTO" AND "NOTE" BUTTONS. Nothing stores either against an ITEM: photos attach
-//     to an entity (`file_metadata.entity_type` / `entity_id`) and an inspection has one `notes`
-//     column, not one per row. The zone is drawn ONCE under the list, where the photo control is
-//     REAL — <PhotoCapture /> attaches to the inspection — and the note half says what it cannot do.
-//   - THE MIC FAB. A voice log has nowhere to attach on an inspection; the transcription service
-//     exists but no column receives its output here.
+//   D41 — FOR THE SAFETY OFFICER THE TAB IS THE FORM. The drawing heads the Checklists tab with the
+//     checklist itself, so this screen opens the active project's first template straight away for
+//     that role. Every other role still lands on the list (the drawer route, and the Detox scenario
+//     `e2e/offline-inspection.spec.ts`, are untouched — `inspection-list`, `inspection-item`,
+//     `inspection-checklist`, `checklist-item`, `checklist-pass-button` all keep their ids).
+//   D46 — THE SUBMITTED INSPECTIONS ARE A ROW UNDER THE FORM ("Past inspections"), which opens the
+//     same list. Nothing is lost; it stops being the first thing a safety officer has to walk past.
+//
+// WHAT IS DRAWN (lib/mockupFigures.ts, ADR-099) — COMING SOON:
+//   - the AI HAZARD ALERT, confidence and source line (`CHECKLIST_HAZARD_ALERT`). There is no
+//     weather source in this platform at all — no ingestion, no provider, no column — and no safety
+//     AI surface (§22.6).
+//   - the GROUP HEADINGS "PPE & PERSONNEL" / "STRUCTURE & EQUIPMENT" and which item falls under
+//     which (`CHECKLIST_GROUPS`). §11 gives an item an id, a description and is_required and no
+//     group, so the split is BY POSITION — first half toggles, the rest checkboxes.
+//   - the per-item PHOTO and NOTE buttons. Nothing stores either against an ITEM: photos attach to
+//     an entity and an inspection has one `notes` column. They open the coming-soon dialog; the
+//     REAL photo control (<PhotoCapture />, attached to the inspection) stays under the list.
+//   - the FLAGGED row's sentence and photograph (`CHECKLIST_FLAGGED`, D44).
+//   - the MIC control. A voice log has nowhere to attach on an inspection.
+//
+// D47 — AN ITEM IS ANSWERED BY THE DRAWING'S TOGGLE OR CHECKBOX, and its resting state is NOT
+// passed. There is no third "unanswered" state any more, so the form can be submitted at any time
+// and §11's rule decides the result: FAILED if any item is not passed, else PASSED.
 //
 // WHAT IS REAL AND IS BUILT: the template and its items, PASS/FAIL per item, the derived overall
 // result (FAILED if any item fails — §11 inspection result), `issue_severity` on a failure (§11,
@@ -39,8 +52,8 @@
 // draws one. The drawing's SECOND line — the site and the date — is not a title but a status line,
 // and it is kept: it says which inspection is being filled.
 
-import { useCallback, useMemo, useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Alert } from 'react-native';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { View, Text, Image, Switch, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import { get, mutate } from '../../api/client';
@@ -51,14 +64,22 @@ import { SignaturePad } from '../../components/SignaturePad';
 import type { AnnotationStroke } from '../../components/PhotoAnnotation';
 import { LoadingBoundary } from '../../components/LoadingBoundary';
 import { ProjectContextBar } from '../../components/ProjectContextBar';
-import { UnavailableNote } from '../../components/UnavailableNote';
+import { AiCardFooter } from '../../components/AiCardFooter';
+import { useComingSoon } from '../../components/useComingSoon';
+import {
+  CHECKLIST_FLAGGED,
+  CHECKLIST_GROUPS,
+  CHECKLIST_HAZARD_ALERT,
+} from '../../lib/mockupFigures';
 import { useAuthStore } from '../../store/authStore';
+import { CosRole } from '@cos/types';
 import { useProjectStore } from '../../store/projectStore';
 import { useI18n } from '../../i18n';
 import { fontFamily, radius, spacing, touchTarget, typography } from '../../theme/tokens';
 import { usePalette, useIsDark, type Palette } from '../../theme/usePalette';
 import { screenChrome } from '../../theme/screenStyles';
 import { SeverityPicker, SEVERITIES } from '../../components/SeverityPicker';
+import flaggedPhoto from '../../../assets/safety/flagged-excavator.jpg';
 
 interface InspectionRow {
   inspection_id: string;
@@ -114,6 +135,8 @@ export default function InspectionsScreen(): React.JSX.Element {
   const checklists = useCollection<SafetyChecklist>('local_safety_checklists');
   const projectId = useProjectStore((s) => s.active?.projectId ?? '');
   const displayName = useAuthStore((state) => state.displayName);
+  const role = useAuthStore((state) => state.role);
+  const soon = useComingSoon();
   const { t, formatDate } = useI18n();
   const p = usePalette();
   const isDark = useIsDark();
@@ -127,6 +150,9 @@ export default function InspectionsScreen(): React.JSX.Element {
   const [signature, setSignature] = useState<AnnotationStroke[]>([]);
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(true);
+  // D46: the safety officer reaches the submitted inspections through a row under the form. Every
+  // other role opens on the list, which is what this flag starts as for them.
+  const [browsingHistory, setBrowsingHistory] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
@@ -197,6 +223,22 @@ export default function InspectionsScreen(): React.JSX.Element {
     [remoteTemplates, checklists, projectId],
   );
 
+  /**
+   * D41: the Checklists tab IS the form for the SAFETY_OFFICER.
+   *
+   * Runs once the templates have landed and only while nothing else is open — a reader who has gone
+   * to the history, or opened a submitted inspection from it, is not pulled back to a blank form.
+   */
+  const openForRole = useCallback(() => {
+    if (role !== CosRole.SAFETY_OFFICER || browsingHistory || active !== null) return;
+    const first = available[0];
+    if (first !== undefined) setActive(first);
+  }, [role, browsingHistory, active, available]);
+
+  useEffect(() => {
+    openForRole();
+  }, [openForRole]);
+
   const openBlank = (): void => {
     setActive(available[0] ?? null);
     setResults({});
@@ -223,9 +265,10 @@ export default function InspectionsScreen(): React.JSX.Element {
   const submit = async (): Promise<void> => {
     if (!active) return;
     const items = parseItems(active.itemsJson);
-    // §11 inspection result: FAILED if any item failed, else PASSED. A template with no items
-    // submits as PASSED.
-    const failed = items.some((item, index) => results[keyOf(item, index)] === 'FAIL');
+    // §11 inspection result: FAILED if any item is NOT PASSED, else PASSED. A template with no
+    // items submits as PASSED. Since R23 (D47) an item nobody touched counts as not passed — the
+    // drawing's toggle and checkbox rest in that position and there is no third state.
+    const failed = items.some((item, index) => results[keyOf(item, index)] !== 'PASS');
     await mutate(
       'POST',
       '/site/inspections',
@@ -249,8 +292,13 @@ export default function InspectionsScreen(): React.JSX.Element {
   // ── the checklist phase ────────────────────────────────────────────────────
   if (active) {
     const items = parseItems(active.itemsJson);
-    const allRated = items.every((item, index) => results[keyOf(item, index)] !== undefined);
-    const failedItems = items.filter((item, index) => results[keyOf(item, index)] === 'FAIL');
+    // D47: an item nobody has answered is NOT passed. There is no third state to wait for, so the
+    // form submits whenever the reader is ready and §11 decides the result from the answers.
+    const passed = (item: ChecklistItem, index: number): boolean =>
+      results[keyOf(item, index)] === 'PASS';
+    const failedItems = items.filter((item, index) => !passed(item, index));
+    // DRAWN — items carry no group, so the drawing's two sections are a split by position.
+    const ppeCount = Math.ceil(items.length / 2);
 
     return (
       <ScrollView
@@ -266,27 +314,34 @@ export default function InspectionsScreen(): React.JSX.Element {
           {`${active.name || t('safety.checklist.untitled')} · ${formatDate(new Date())}`}
         </Text>
 
-        {/* AI HAZARD ALERT — drawn; nothing feeds it. */}
-        <View style={[styles.aiCard, { borderLeftColor: p.accent }]}>
+        {/* AI HAZARD ALERT — DRAWN in full: no weather reaches this app and no model reads it. */}
+        <View testID="checklist-hazard" style={[styles.aiCard, { borderLeftColor: p.accent }]}>
           <View style={styles.aiHead}>
             <MaterialIcons name="thermostat" size={18} color={p.accent} />
             <Text style={[styles.aiTitle, { color: p.accent }]}>
               {t('safety.checklist.hazardAlertTitle')}
             </Text>
           </View>
-          <UnavailableNote
-            testID="checklist-hazard-unavailable"
-            variant="inline"
-            reason={t('safety.checklist.hazardAlertBody')}
+          <Text style={styles.hazardBody}>
+            {t('safety.checklist.hazardAlertBody', {
+              wind: String(CHECKLIST_HAZARD_ALERT.value.windMph),
+              item:
+                items[0]?.description ??
+                items[0]?.label ??
+                t('site.inspections.itemFallback', { index: 1 }),
+            })}
+          </Text>
+          <AiCardFooter
+            testID="checklist-hazard-foot"
+            percent={CHECKLIST_HAZARD_ALERT.value.confidence}
+            source={t('safety.checklist.hazardSource')}
+            confLabel={t('insight.confShort')}
+            sourceLabel={t('insight.sourceShort')}
+            // The card's one way in (R22, D38) — there is no forecast screen behind it.
+            onPress={() => soon('safety.checklist.hazardAlertTitle')}
+            palette={p}
           />
         </View>
-
-        {/* The drawing's two group headings. Items carry no group, so the zone explains itself and
-            the list below is flat. */}
-        <UnavailableNote
-          testID="checklist-groups-unavailable"
-          reason={t('safety.checklist.groupUnavailable')}
-        />
 
         {items.length === 0 ? (
           <Text style={styles.muted}>{t('site.inspections.noItems')}</Text>
@@ -294,71 +349,122 @@ export default function InspectionsScreen(): React.JSX.Element {
           items.map((item, index) => {
             const key = keyOf(item, index);
             const result = results[key];
+            const inPpe = index < ppeCount;
+            const label =
+              item.description ??
+              item.label ??
+              t('site.inspections.itemFallback', { index: index + 1 });
             return (
-              <View key={key} testID="checklist-item" style={styles.itemCard}>
-                <Text style={styles.itemTitle}>
-                  {item.description ??
-                    item.label ??
-                    t('site.inspections.itemFallback', { index: index + 1 })}
-                </Text>
-                {/* The drawing's green/red switch, as two explicit targets. A switch has one
-                    ambiguous resting state — "not yet answered" and "fail" look identical — and this
-                    screen refuses to submit until every item is ANSWERED, so the two must differ. */}
-                <View style={styles.resultRow}>
-                  <TouchableOpacity
-                    testID="checklist-pass-button"
-                    accessibilityRole="radio"
-                    accessibilityState={{ selected: result === 'PASS' }}
-                    onPress={() => setResults((r) => ({ ...r, [key]: 'PASS' }))}
-                    style={[
-                      styles.resultButton,
-                      {
-                        borderColor: p.success,
-                        backgroundColor: result === 'PASS' ? p.success : 'transparent',
-                      },
-                    ]}
+              <View key={key}>
+                {/* DRAWN — the drawing's two section headings; see `CHECKLIST_GROUPS`. */}
+                {index === 0 || index === ppeCount ? (
+                  <Text
+                    testID={`checklist-group-${inPpe ? CHECKLIST_GROUPS.value.first : CHECKLIST_GROUPS.value.second}`}
+                    style={styles.sectionLabel}
                   >
-                    <MaterialIcons
-                      name="check"
-                      size={18}
-                      color={result === 'PASS' ? p.onPrimary : p.success}
-                    />
-                    <Text
-                      style={[
-                        styles.resultText,
-                        { color: result === 'PASS' ? p.onPrimary : p.success },
-                      ]}
-                    >
-                      {t('site.inspections.pass')}
-                    </Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    testID="checklist-fail-button"
-                    accessibilityRole="radio"
-                    accessibilityState={{ selected: result === 'FAIL' }}
-                    onPress={() => setResults((r) => ({ ...r, [key]: 'FAIL' }))}
-                    style={[
-                      styles.resultButton,
-                      {
-                        borderColor: p.danger,
-                        backgroundColor: result === 'FAIL' ? p.danger : 'transparent',
-                      },
-                    ]}
-                  >
-                    <MaterialIcons
-                      name="close"
-                      size={18}
-                      color={result === 'FAIL' ? p.onPrimary : p.danger}
-                    />
-                    <Text
-                      style={[
-                        styles.resultText,
-                        { color: result === 'FAIL' ? p.onPrimary : p.danger },
-                      ]}
-                    >
-                      {t('site.inspections.fail')}
-                    </Text>
-                  </TouchableOpacity>
+                    {t(inPpe ? 'safety.checklist.groupPpe' : 'safety.checklist.groupStructure')}
+                  </Text>
+                ) : null}
+                <View
+                  testID="checklist-item"
+                  style={[
+                    styles.itemCard,
+                    result !== 'PASS' && { borderLeftWidth: 6, borderLeftColor: p.danger },
+                  ]}
+                >
+                  <View style={styles.itemHead}>
+                    <Text style={[styles.itemTitle, styles.grow]}>{label}</Text>
+                    {/* D47 — the drawing's switch in the first group, its checkbox in the second.
+                        Off is "not passed"; there is no unanswered state. */}
+                    {inPpe ? (
+                      <Switch
+                        testID="checklist-pass-button"
+                        accessibilityLabel={label}
+                        value={result === 'PASS'}
+                        onValueChange={(on) =>
+                          setResults((r) => ({ ...r, [key]: on ? 'PASS' : 'FAIL' }))
+                        }
+                        trackColor={{ false: p.danger, true: p.success }}
+                        thumbColor={p.onPrimary}
+                      />
+                    ) : (
+                      <TouchableOpacity
+                        testID="checklist-pass-button"
+                        accessibilityRole="checkbox"
+                        accessibilityLabel={label}
+                        accessibilityState={{ checked: result === 'PASS' }}
+                        onPress={() =>
+                          setResults((r) => ({
+                            ...r,
+                            [key]: result === 'PASS' ? 'FAIL' : 'PASS',
+                          }))
+                        }
+                        style={[
+                          styles.checkbox,
+                          {
+                            borderColor: result === 'PASS' ? p.success : p.border,
+                            backgroundColor: result === 'PASS' ? p.success : 'transparent',
+                          },
+                        ]}
+                      >
+                        {result === 'PASS' ? (
+                          <MaterialIcons name="check" size={18} color={p.onPrimary} />
+                        ) : null}
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                  {/* DRAWN — the drawing's per-item PHOTO and NOTE buttons, on the toggle group.
+                    Neither has anywhere to write: photos attach to the inspection (below) and an
+                    inspection has one note column, not one per item. */}
+                  {inPpe ? (
+                    <View style={styles.itemExtras}>
+                      {(['photo', 'note'] as const).map((extra) => (
+                        <TouchableOpacity
+                          key={extra}
+                          testID={`checklist-item-${extra}`}
+                          accessibilityRole="button"
+                          accessibilityLabel={t(`safety.checklist.${extra}`)}
+                          onPress={() => soon(`safety.checklist.${extra}`)}
+                          style={styles.extraButton}
+                        >
+                          <MaterialIcons
+                            name={extra === 'photo' ? 'add-a-photo' : 'edit-note'}
+                            size={16}
+                            color={p.muted}
+                          />
+                          <Text style={[styles.resultText, { color: p.muted }]}>
+                            {t(`safety.checklist.${extra}`)}
+                          </Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                  ) : null}
+
+                  {/* DRAWN — the drawing flags its second row with a sentence and a photograph. */}
+                  {index === CHECKLIST_FLAGGED.value.itemIndex && result !== 'PASS' ? (
+                    <View testID="checklist-item-flagged" style={styles.itemFlag}>
+                      <View style={styles.aiHead}>
+                        <MaterialIcons name="report-problem" size={16} color={p.danger} />
+                        <Text style={[styles.resultText, { color: p.danger }]} numberOfLines={2}>
+                          {t('safety.checklist.flagged', {
+                            text: t('safety.checklist.flaggedText'),
+                          })}
+                        </Text>
+                      </View>
+                      <View>
+                        <Image
+                          source={flaggedPhoto}
+                          style={styles.flagPhoto}
+                          accessibilityIgnoresInvertColors
+                        />
+                        <View style={[styles.attachedChip, { backgroundColor: p.danger }]}>
+                          <Text style={styles.attachedText}>
+                            {t('safety.checklist.issueAttached')}
+                          </Text>
+                        </View>
+                      </View>
+                    </View>
+                  ) : null}
                 </View>
               </View>
             );
@@ -392,15 +498,13 @@ export default function InspectionsScreen(): React.JSX.Element {
           </View>
         ) : null}
 
-        {/* PHOTO + NOTE — the drawing puts them on every item; they exist once, on the inspection. */}
+        {/* THE REAL PHOTO CONTROL: <PhotoCapture /> attaches to the inspection. The drawing's
+            per-item buttons are above, and neither of those has anywhere to write. */}
         <Text style={styles.sectionLabel}>{t('safety.checklist.attachments')}</Text>
         <PhotoCapture entityType="inspection" entityId={active.checklistId} />
-        <UnavailableNote
-          testID="checklist-note-unavailable"
-          reason={t('safety.checklist.itemExtrasUnavailable')}
-        />
 
         <Text style={styles.sectionLabel}>{t('safety.checklist.authorization')}</Text>
+        <Text style={styles.muted}>{t('safety.checklist.signPrompt')}</Text>
         <SignaturePad
           testID="safety-signature"
           strokes={signature}
@@ -413,8 +517,7 @@ export default function InspectionsScreen(): React.JSX.Element {
           accessibilityRole="button"
           accessibilityLabel={t('safety.checklist.completeInspection')}
           onPress={() => void submit()}
-          disabled={!allRated}
-          style={[styles.primaryButton, !allRated && styles.disabled]}
+          style={styles.primaryButton}
         >
           <MaterialIcons name="verified-user" size={20} color={p.onPrimary} />
           <Text style={styles.primaryButtonText}>{t('safety.checklist.completeInspection')}</Text>
@@ -426,14 +529,33 @@ export default function InspectionsScreen(): React.JSX.Element {
           </Text>
         ) : null}
 
-        {/* The drawing's mic FAB — drawn, and it has nowhere to put a recording. */}
+        {/* D46 — the submitted inspections, one row under the form rather than in front of it. */}
+        <TouchableOpacity
+          testID="checklist-history"
+          accessibilityRole="button"
+          accessibilityLabel={t('safety.checklist.history')}
+          onPress={() => {
+            setBrowsingHistory(true);
+            setActive(null);
+          }}
+          style={styles.historyRow}
+        >
+          <MaterialIcons name="history" size={18} color={p.accent} />
+          <Text style={[styles.resultText, styles.grow, { color: p.accent }]}>
+            {t('safety.checklist.history')}
+          </Text>
+          <Text style={styles.muted}>
+            {t('safety.checklist.historyCount', { count: inspections.length })}
+          </Text>
+          <MaterialIcons name="chevron-right" size={18} color={p.accent} />
+        </TouchableOpacity>
+
+        {/* The drawing's mic control — drawn, and it has nowhere to put a recording. */}
         <TouchableOpacity
           testID="checklist-voice"
           accessibilityRole="button"
           accessibilityLabel={t('safety.checklist.voiceTitle')}
-          onPress={() =>
-            Alert.alert(t('safety.checklist.voiceTitle'), t('safety.checklist.voiceUnavailable'))
-          }
+          onPress={() => soon('safety.checklist.voiceTitle')}
           style={[styles.voiceButton, { borderColor: p.border }]}
         >
           <MaterialIcons name="mic" size={20} color={p.muted} />
@@ -442,16 +564,18 @@ export default function InspectionsScreen(): React.JSX.Element {
           </Text>
         </TouchableOpacity>
 
-        <TouchableOpacity
-          testID="checklist-back"
-          accessibilityRole="button"
-          accessibilityLabel={t('common.back')}
-          onPress={() => setActive(null)}
-          style={styles.backRow}
-        >
-          <MaterialIcons name="arrow-back" size={18} color={p.accent} />
-          <Text style={[styles.resultText, { color: p.accent }]}>{t('common.back')}</Text>
-        </TouchableOpacity>
+        {role === CosRole.SAFETY_OFFICER ? null : (
+          <TouchableOpacity
+            testID="checklist-back"
+            accessibilityRole="button"
+            accessibilityLabel={t('common.back')}
+            onPress={() => setActive(null)}
+            style={styles.backRow}
+          >
+            <MaterialIcons name="arrow-back" size={18} color={p.accent} />
+            <Text style={[styles.resultText, { color: p.accent }]}>{t('common.back')}</Text>
+          </TouchableOpacity>
+        )}
       </ScrollView>
     );
   }
@@ -460,6 +584,22 @@ export default function InspectionsScreen(): React.JSX.Element {
   return (
     <ScrollView testID="inspection-list" style={styles.root} contentContainerStyle={styles.page}>
       <ProjectContextBar />
+
+      {role === CosRole.SAFETY_OFFICER ? (
+        <TouchableOpacity
+          testID="checklist-back-to-form"
+          accessibilityRole="button"
+          accessibilityLabel={t('common.back')}
+          onPress={() => {
+            setBrowsingHistory(false);
+            openBlank();
+          }}
+          style={styles.backRow}
+        >
+          <MaterialIcons name="arrow-back" size={18} color={p.accent} />
+          <Text style={[styles.resultText, { color: p.accent }]}>{t('common.back')}</Text>
+        </TouchableOpacity>
+      ) : null}
 
       <TouchableOpacity
         testID="new-inspection-button"
@@ -525,6 +665,58 @@ const makeStyles = (p: Palette) =>
       fontSize: typography.label.fontSize,
       fontFamily: fontFamily.medium,
     },
+    hazardBody: {
+      color: p.text,
+      fontSize: typography.label.fontSize,
+      lineHeight: typography.label.fontSize * 1.5,
+      fontFamily: fontFamily.regular,
+    },
+    itemHead: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+    grow: { flex: 1 },
+    // The drawing's checkbox in the STRUCTURE group — a square target, not a capsule.
+    checkbox: {
+      width: 28,
+      height: 28,
+      borderRadius: radius.sm,
+      borderWidth: 2,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    itemExtras: { flexDirection: 'row', gap: spacing.xs, marginTop: spacing.xs },
+    extraButton: {
+      flex: 1,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: spacing.xs / 2,
+      minHeight: touchTarget.secondaryButton,
+      borderRadius: radius.md,
+      borderWidth: 1,
+      borderColor: p.border,
+      backgroundColor: p.surfaceSoft,
+    },
+    itemFlag: {
+      gap: spacing.xs,
+      marginTop: spacing.sm,
+      padding: spacing.sm,
+      borderRadius: radius.md,
+      backgroundColor: `${p.danger}1A`,
+    },
+    flagPhoto: { width: '100%', height: 140, borderRadius: radius.md },
+    attachedChip: {
+      position: 'absolute',
+      right: spacing.xs,
+      bottom: spacing.xs,
+      paddingHorizontal: spacing.xs,
+      paddingVertical: 2,
+      borderRadius: radius.xl,
+    },
+    attachedText: {
+      color: p.onPrimary,
+      fontSize: 10,
+      fontFamily: fontFamily.bold,
+      textTransform: 'uppercase',
+    },
     itemCard: {
       gap: spacing.sm,
       padding: spacing.md,
@@ -537,17 +729,6 @@ const makeStyles = (p: Palette) =>
       color: p.text,
       fontSize: typography.caption.fontSize,
       fontFamily: fontFamily.semibold,
-    },
-    resultRow: { flexDirection: 'row', gap: spacing.xs },
-    resultButton: {
-      flex: 1,
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'center',
-      gap: spacing.xs / 2,
-      minHeight: touchTarget.secondaryButton,
-      borderRadius: radius.md,
-      borderWidth: 1,
     },
     resultText: {
       fontSize: typography.label.fontSize,
@@ -606,6 +787,17 @@ const makeStyles = (p: Palette) =>
       paddingHorizontal: spacing.md,
       borderRadius: radius.md,
       borderWidth: 1,
+    },
+    historyRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.xs,
+      minHeight: touchTarget.listItem,
+      paddingHorizontal: spacing.sm,
+      borderRadius: radius.md,
+      borderWidth: 1,
+      borderColor: p.border,
+      backgroundColor: p.surface,
     },
     backRow: {
       flexDirection: 'row',

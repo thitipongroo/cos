@@ -514,7 +514,8 @@ Core components (React Native — implement in apps/mobile/):
                         THE SOURCE NAMES SOMETHING THIS REPO HAS — a project, a record
                         set — never a system it does not; that carve-out (ADR-098 amendment 2) now
                         lives in the component so the next AI card inherits it. EXCEPTION: the four
-                        FINANCE cards print their drawings' source lines (PO 2026-09-17, D33).
+                        FINANCE cards and the five SAFETY_OFFICER cards print their drawings' source
+                        lines (PO 2026-09-17, D33 and D40).
                         <InsightPanel /> keeps the BAND WORD as its header chip (PAIR guidance,
                         lib/aiConfidence.ts); the executive variant's "number leads" exception ended
                         with this decision. Full contract: spec §32.7 "AI Card Footer".

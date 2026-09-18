@@ -16,19 +16,23 @@
 //     replay hours later would act on a state the officer did not see, and the server rejects the
 //     second attempt anyway.
 //
+// REDRAWN 2026-09-17 (R23) to the Stitch screen "รายการเหตุการณ์ความปลอดภัย - Refined Modern
+// Industrial (Mobile)" (d5ff181bc731…, byte-identical to the repo drawing). The 2026-08-13 build
+// drew every unbacked zone as a "not available yet" note; the product owner reversed that for this
+// set (D40) — everything the drawings draw is drawn and what has no source is registered.
+//
 // THE DRAWING'S FOUR FILTER PILLS, AND WHY TWO OF THEM DO NOT FILTER. `All Active` and `Critical`
 // are real queries — `status` and `severity` are enums the endpoint filters on. `Near Miss` and
 // `PPE Violation` are incident TYPES, and `incident_type` is a free-text column with no enum
 // anywhere in `docs/specifications/`; matching those two English strings would return nothing for a
-// Thai-language tenant while looking like a working control. They are drawn and marked, per the
-// product owner's 2026-08-13 ruling for every unbacked zone on these screens. See
-// `lib/safetyOfficer.ts` → INCIDENT_FILTERS.
+// Thai-language tenant. They are drawn like the other two and open the coming-soon dialog, which is
+// this project's answer for an action with no process behind it.
 //
-// THE "AI PREDICTED RISK" CARD is drawn for the same reason and filled the same way. There is no
-// safety AI surface in this platform: `/ai/reports/*` covers site, procurement, executive and
-// delay-risk, and SafetyVisionModel is Phase 23 and untrained (§22.6 — 10,000+ labelled photos).
-// §22.3 is explicit that a surface must not be described as AI-derived while a placeholder serves
-// it, so the card says what it is instead of printing the drawing's 94 %.
+// THE "AI PREDICTED RISK" CARD is DRAWN in full — its confidence, its source line and its sentence
+// (`INCIDENT_RISK_ALERT`). There is no safety AI surface in this platform: `/ai/reports/*` covers
+// site, procurement, executive and delay-risk, and SafetyVisionModel is Phase 23 and untrained
+// (§22.6). It follows the project's AI-card standard: one way in, the footer chevron (spec §32.7,
+// R22 D38), which opens the coming-soon dialog.
 //
 // NO IN-CONTENT PAGE TITLE — §32.7, held by `theme/__tests__/pageTitle.spec.ts`: a tab screen is
 // named by its tab.
@@ -67,7 +71,9 @@ import {
 import { IncidentCard } from '../../components/IncidentCard';
 import { LoadingBoundary } from '../../components/LoadingBoundary';
 import { ProjectContextBar } from '../../components/ProjectContextBar';
-import { UnavailableNote } from '../../components/UnavailableNote';
+import { AiCardFooter } from '../../components/AiCardFooter';
+import { useComingSoon } from '../../components/useComingSoon';
+import { INCIDENT_RISK_ALERT } from '../../lib/mockupFigures';
 import { useProjectStore } from '../../store/projectStore';
 import { useT } from '../../i18n';
 import { fontFamily, radius, spacing, touchTarget, typography } from '../../theme/tokens';
@@ -120,6 +126,7 @@ export default function IncidentsScreen(): React.JSX.Element {
   // overlay: §32.7 caps navigation at three levels and prohibits modal-on-modal, and this screen is
   // already reached under one.
   const [composing, setComposing] = useState(false);
+  const soon = useComingSoon();
   const [incidentType, setIncidentType] = useState('');
   const [severity, setSeverity] = useState<IncidentSeverity>('MEDIUM');
 
@@ -155,6 +162,11 @@ export default function IncidentsScreen(): React.JSX.Element {
   // real row down it takes over. Rows still awaiting push are `sync_status = 'PENDING'` — see
   // `IncidentCard`, which is what marks them as not-yet-sent.
   const remoteIds = new Set(remote.map((r) => r.incident_id));
+  // REAL: a row the server has not sent back is still in the local queue, which is what the
+  // drawing's PENDING chip says. Everything else has been pushed.
+  const pendingIds = new Set(
+    local.filter((row) => !remoteIds.has(row.incidentId)).map((row) => row.incidentId || row.id),
+  );
   const source: IncidentRow[] = [
     ...remote,
     ...local.filter((row) => !remoteIds.has(row.incidentId)).map(fromLocal),
@@ -219,7 +231,7 @@ export default function IncidentsScreen(): React.JSX.Element {
       <ScrollView contentContainerStyle={styles.page}>
         <ProjectContextBar />
 
-        {/* The drawing's pill row. Two filter; two say why they cannot. */}
+        {/* The drawing's pill row. Two filter; two open the coming-soon dialog (D40). */}
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
@@ -233,18 +245,13 @@ export default function IncidentsScreen(): React.JSX.Element {
                 testID={`incident-filter-${filter.id}`}
                 accessibilityRole="radio"
                 accessibilityState={{ selected: active, disabled: !filter.available }}
-                onPress={() =>
-                  filter.available
-                    ? setFilterId(filter.id)
-                    : Alert.alert(t(filter.labelKey), t('safety.incidents.filterUnavailable'))
-                }
+                onPress={() => (filter.available ? setFilterId(filter.id) : soon(filter.labelKey))}
                 style={[
                   styles.filterButton,
                   {
                     backgroundColor: active ? p.primary : p.surface,
                     borderColor: active ? p.primary : p.border,
                   },
-                  !filter.available && styles.filterButtonOff,
                 ]}
               >
                 <Text style={[styles.filterLabel, { color: active ? p.onPrimary : p.muted }]}>
@@ -300,12 +307,14 @@ export default function IncidentsScreen(): React.JSX.Element {
             {visible.length === 0 ? (
               <Text style={styles.muted}>{t('safety.incidents.empty')}</Text>
             ) : (
-              visible.map((incident) => (
+              visible.map((incident, index) => (
                 <IncidentCard
                   key={incident.incident_id}
                   testID="incident-item"
                   incident={incident}
                   now={now}
+                  index={index}
+                  sync={pendingIds.has(incident.incident_id) ? 'pending' : 'synced'}
                   variant="feed"
                   onAcknowledge={onAcknowledge}
                 />
@@ -314,18 +323,32 @@ export default function IncidentsScreen(): React.JSX.Element {
           </View>
         </LoadingBoundary>
 
-        {/* AI PREDICTED RISK — the drawing's cyan-accented card, with no score to put in it. */}
+        {/* AI PREDICTED RISK — DRAWN in full, confidence included. Nothing in this platform scores
+            a safety incident; see `INCIDENT_RISK_ALERT`. */}
         <View testID="incident-ai-risk" style={[styles.aiCard, { borderLeftColor: p.accent }]}>
           <View style={styles.aiHead}>
             <MaterialIcons name="auto-awesome" size={18} color={p.accent} />
             <Text style={[styles.aiTitle, { color: p.accent }]}>
-              {t('safety.incidents.aiRiskTitle')}
+              {t('safety.incidents.riskEyebrow')}
             </Text>
           </View>
-          <UnavailableNote
-            testID="incident-ai-risk-unavailable"
-            variant="inline"
-            reason={t('safety.incidents.aiRiskBody')}
+          <Text style={styles.aiCardTitle}>{t('safety.incidents.aiRiskTitle')}</Text>
+          <View style={styles.aiMetaRow}>
+            <MaterialIcons name="location-on" size={14} color={p.muted} />
+            <Text style={styles.muted} numberOfLines={1}>
+              {INCIDENT_RISK_ALERT.value.location}
+            </Text>
+          </View>
+          <Text style={styles.aiBody}>{t('safety.incidents.aiRiskBody')}</Text>
+          <AiCardFooter
+            testID="incident-ai-risk-foot"
+            percent={INCIDENT_RISK_ALERT.value.confidence}
+            source={INCIDENT_RISK_ALERT.value.source}
+            confLabel={t('insight.confShort')}
+            sourceLabel={t('insight.sourceShort')}
+            // The card's one way in (R22, D38) — nothing reads a safety incident yet.
+            onPress={() => soon('safety.incidents.aiRiskTitle')}
+            palette={p}
           />
         </View>
       </ScrollView>
@@ -343,6 +366,18 @@ export default function IncidentsScreen(): React.JSX.Element {
 const makeStyles = (p: Palette) =>
   StyleSheet.create({
     ...screenChrome(p),
+    aiCardTitle: {
+      color: p.text,
+      fontSize: typography.title.fontSize,
+      fontFamily: fontFamily.bold,
+    },
+    aiMetaRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs / 2 },
+    aiBody: {
+      color: p.text,
+      fontSize: typography.label.fontSize,
+      lineHeight: typography.label.fontSize * 1.5,
+      fontFamily: fontFamily.regular,
+    },
     filterRow: { gap: spacing.xs, paddingVertical: spacing.xs / 2 },
     // A BUTTON, not a badge — named so `theme/__tests__/badgeRadius.spec.ts` does not read it as a
     // status pill and hold it to `radius.xl`. It takes the button radius the drawing gives it, like

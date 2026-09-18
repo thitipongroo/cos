@@ -1143,3 +1143,50 @@ Chosen with the drawings, not added to this register because they are real: the 
 the line → warning, 50–100 % → primary, under 50 % → muted, D34) and its "Proj. Variance +X%" label with the real X
 (D35); the payment and invoice due states read off the local calendar; the partly-delivered state read off the PO.
 No gradient is drawn (D32, spec §32.7).
+
+## Amendment — 2026-09-17 (second): the six SAFETY_OFFICER screens draw what their drawings draw
+
+**Decided by:** Product Owner, 2026-09-17, revision R23 ("Implement UI จาก Stitch (Safety Officer Dashboard - Refined
+with Active Project Bar, รายการเหตุการณ์ความปลอดภัย - Refined Modern Industrial (Mobile), Daily Safety Checklist -
+Refined with Active Project Bar, Permit Management - Restore Settings Nav, New Permit Request - Refined & Compliant,
+Permit Request Submitted - Success State)"), decisions D40–D47.
+
+The SAFETY_OFFICER set was built on 2026-08-13 under the opposite ruling: every zone with no source behind it was drawn
+with the mockup's own label and a line saying plainly that it was not ready. **D40 reverses that for these six
+screens** — everything the drawings draw is drawn, a value with no source is registered here, an action with no process
+opens the coming-soon dialog, and a real value still wins. Fifteen entries, taking the register from one hundred and
+seven to one hundred and twenty-two:
+
+| Entry                      | What it draws                                                                |
+| -------------------------- | ---------------------------------------------------------------------------- |
+| `SAFETY_COMPLIANCE_SCORE`  | the dashboard's "94%" compliance tile and its bar                            |
+| `SAFE_WORK_HOURS`          | "12,480 SINCE LAST LTI"                                                      |
+| `CHECKLIST_PROGRESS`       | the "6/8 TASKS" chip and the struck-through done row                         |
+| `CHECKLIST_GROUPS`         | the two group headings, and the split by position that puts items under them |
+| `CHECKLIST_FLAGGED`        | the flagged row's photograph and which row carries it                        |
+| `CHECKLIST_HAZARD_ALERT`   | the hazard alert's 24 mph, its 94 % and its "Weather Telemetry" source       |
+| `INCIDENT_LOCATIONS`       | a place name on every incident card                                          |
+| `INCIDENT_MEDIA`           | the incident photographs and the reporter portraits                          |
+| `INCIDENT_DETAIL`          | the "Falling Object" tag and the observation line                            |
+| `INCIDENT_RISK_ALERT`      | the incidents screen's AI risk card                                          |
+| `PERMIT_RISK_ANALYSIS`     | the register's Safety Analysis card                                          |
+| `PERMIT_CARD_DRAWN`        | "Synced 2m ago", the AUTO-REJECT countdown, the AI check line, the ENDED age |
+| `PERMIT_COMPLIANCE_CHECK`  | the request form's compliance card, its chips and its "Sector 4"             |
+| `PERMIT_FORM_PHOTOS`       | the two example photographs on the form's strip                              |
+| `PERMIT_SUBMITTED_INSIGHT` | the confirmation's INSIGHT card and its illustration                         |
+
+Counted, not recalled: `grep -c "^export const [A-Z_0-9]* = figure(" apps/mobile/src/lib/mockupFigures.ts` → 122.
+
+### Photographs are now bundled, and that is new (D44)
+
+The drawings show scene photographs and reporter portraits. They are downloaded from the drawings' own HTML into
+`apps/mobile/assets/safety/` and referenced by name from the register — the same treatment the CRM article image and the
+VIEWER budget photo already had, applied to a role's screens for the first time. An incident takes no attachment and
+`reported_by` is a UUID with no portrait behind it, so every one of them is drawn.
+
+### What is still refused
+
+A real value beats a drawn one wherever both exist: the open-incident count, every incident's severity, status, type and
+age, the acknowledgement clock, the checklist template and its items, the derived PASS/FAIL result, the signature, the
+permit register with its type, number, validity, status, contractor and revocation reason — and the permit EXPIRY, which
+reads in days because `valid_until` is a DATE and the drawing's "04h 22m" could only be manufactured.

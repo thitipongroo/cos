@@ -8,31 +8,36 @@
 // particular the status pill prints what came back rather than a hardcoded PENDING, because a
 // default is a server-side decision and this screen is not the place to restate it.
 //
-// TWO DEVIATIONS FROM THE DRAWING, both recorded here per ADR-085:
+// REDRAWN 2026-09-17 (R23) to the Stitch screen "Permit Request Submitted - Success State"
+// (1e91678f6603…, byte-identical to the repo drawing), with the 2026-08-13 "not available yet" note
+// reversed (D40) and the drawing's photograph bundled (D44):
 //
-//   NO BACK CONTROL. The drawing heads the screen with an arrow_back. This route is TERMINAL — it is
-//   reached with `router.replace` and is absent from BREADCRUMB_MAP, which is what denies it the
-//   TopBar's Back — because "back" from here is the form that already succeeded, and re-submitting it
-//   would raise a second permit. The drawing's own two buttons are the way out, and they are built.
+//   THE BACK CONTROL GOES TO THE REGISTER, NOT TO THE FORM. The drawing heads the screen with an
+//   arrow_back, and this route is TERMINAL — it is reached with `router.replace` — so the arrow is
+//   drawn and sends the reader to `/permits`. Going back to the form that already succeeded would
+//   let the same request be raised twice.
 //
-//   NO ILLUSTRATION. The drawing closes with a decorative site photograph. There is no stock-image
-//   pipeline in this app and none of the twelve roles' screens carries one; adding a bundled JPEG for
-//   ornament would be the first.
+//   THE INSIGHT CARD IS DRAWN IN FULL (`PERMIT_SUBMITTED_INSIGHT`): the sentence, the 98 %
+//   confidence and the source line. No AI reads a permit in this platform, and nothing routes one to
+//   a controlling engineer — §15.5's chain is Safety Officer → PM, worked by people. It follows the
+//   project's AI-card standard: one way in, the footer chevron (R22, D38).
 //
-// THE AI TRACKING NOTE ("98% — เอกสารครบถ้วนแล้ว… กำลังส่งให้วิศวกรควบคุม") is drawn and marked. No
-// AI reads a permit in this platform, and nothing routes one to a controlling engineer: §15.5's chain
-// is Safety Officer → PM, worked by people, and §22.3 forbids a placeholder that reads as AI.
+//   THE ILLUSTRATION is the drawing's own photograph, bundled under `assets/safety/` like the CRM
+//   and Tenant Admin screens' images already are.
 
 import { useMemo } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
+import { View, Text, Image, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import { permitStatusTone } from '../../lib/safetyOfficer';
-import { UnavailableNote } from '../../components/UnavailableNote';
+import { AiCardFooter } from '../../components/AiCardFooter';
+import { useComingSoon } from '../../components/useComingSoon';
+import { PERMIT_SUBMITTED_INSIGHT } from '../../lib/mockupFigures';
 import { useI18n } from '../../i18n';
 import { fontFamily, radius, spacing, touchTarget, typography } from '../../theme/tokens';
 import { usePalette, type Palette } from '../../theme/usePalette';
 import { screenChrome } from '../../theme/screenStyles';
+import submittedPhoto from '../../../assets/safety/permit-submitted.jpg';
 
 /** A route param arrives as `string | string[]`; take the first value either way. */
 function one(value: string | string[] | undefined): string {
@@ -44,6 +49,7 @@ export default function PermitSubmittedScreen(): React.JSX.Element {
   const { t } = useI18n();
   const p = usePalette();
   const styles = useMemo(() => makeStyles(p), [p]);
+  const soon = useComingSoon();
   const params = useLocalSearchParams<{
     permitNumber?: string;
     permitType?: string;
@@ -70,6 +76,17 @@ export default function PermitSubmittedScreen(): React.JSX.Element {
       style={styles.root}
       contentContainerStyle={styles.page}
     >
+      {/* The drawing's arrow — to the REGISTER, never back to the form (see the header). */}
+      <TouchableOpacity
+        testID="permit-submitted-back"
+        accessibilityRole="button"
+        accessibilityLabel={t('common.back')}
+        onPress={() => router.replace('/permits')}
+        style={styles.backRow}
+      >
+        <MaterialIcons name="arrow-back" size={22} color={p.accent} />
+      </TouchableOpacity>
+
       <View style={styles.hero}>
         <MaterialIcons name="check-circle" size={72} color={p.success} />
         <Text testID="permit-submitted-title" style={styles.title}>
@@ -108,9 +125,36 @@ export default function PermitSubmittedScreen(): React.JSX.Element {
         </View>
       </View>
 
-      <UnavailableNote
-        testID="permit-submitted-ai-unavailable"
-        reason={t('safety.permitSubmitted.aiUnavailable')}
+      {/* INSIGHT — DRAWN in full: nothing reads a permit, and nothing routes one onward. */}
+      <View
+        testID="permit-submitted-insight"
+        style={[styles.aiCard, { borderLeftColor: p.accent }]}
+      >
+        <View style={styles.aiHead}>
+          <MaterialIcons name="auto-awesome" size={18} color={p.accent} />
+          <Text style={[styles.aiTitle, { color: p.accent }]}>
+            {t('safety.permits.insightTitle')}
+          </Text>
+        </View>
+        <Text style={styles.insightBody}>{t('safety.permits.insightBody')}</Text>
+        <AiCardFooter
+          testID="permit-submitted-insight-foot"
+          percent={PERMIT_SUBMITTED_INSIGHT.value.confidence}
+          source={t('safety.permits.insightSource')}
+          confLabel={t('insight.confShort')}
+          sourceLabel={t('insight.sourceShort')}
+          // The card's one way in (R22, D38) — nothing tracks a permit automatically.
+          onPress={() => soon('safety.permits.insightTitle')}
+          palette={p}
+        />
+      </View>
+
+      {/* The drawing's closing photograph (D44). */}
+      <Image
+        testID="permit-submitted-illustration"
+        source={submittedPhoto}
+        style={styles.illustration}
+        accessibilityIgnoresInvertColors
       />
 
       <TouchableOpacity
@@ -141,6 +185,20 @@ const makeStyles = (p: Palette) =>
   StyleSheet.create({
     ...screenChrome(p),
     page: { padding: spacing.md, gap: spacing.sm, paddingBottom: spacing.xl * 2 },
+    backRow: {
+      alignSelf: 'flex-start',
+      width: touchTarget.iconButton,
+      height: touchTarget.iconButton,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    insightBody: {
+      color: p.text,
+      fontSize: typography.label.fontSize,
+      lineHeight: typography.label.fontSize * 1.5,
+      fontFamily: fontFamily.regular,
+    },
+    illustration: { width: '100%', height: 128, borderRadius: radius.lg, opacity: 0.8 },
     hero: { alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.xl },
     // Hero-sized, and it IS this screen's name — but the screen is not a tab, so §32.7's
     // "a tab screen is named by its tab" rule (pageTitle.spec.ts) does not reach it.

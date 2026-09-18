@@ -1760,3 +1760,143 @@ export const SUPPORT_FEATURED_ARTICLE = figure(
   'an editorial article with a reading time and an author. Nothing in this product authors, ' +
     'stores or serves one — there is no article table and no CMS behind it',
 );
+
+// ── SAFETY_OFFICER, R23 (2026-09-17 Stitch set; product-owner decisions D40–D47) ─────────────
+//
+// THESE SIX SCREENS DREW THEIR UNBACKED ZONES AS "NOT AVAILABLE YET" from 2026-08-13 until today.
+// The product owner reversed that for this set (D40): everything the drawings draw is drawn, a
+// value with no source is registered here, an action with no process opens the coming-soon dialog,
+// and a real value still wins. The words live in `i18n/{en,th}.json` under `safety.*` (QM-3).
+//
+// WHAT TURNED OUT TO BE REAL and is therefore NOT here: the open-incident count, every incident's
+// severity, status, type and age, the acknowledgement clock, the checklist template and its items,
+// the derived PASS/FAIL result, the signature, the permit register with its type, number, validity,
+// status, contractor and revocation reason, and everything the permit form writes.
+
+/** The dashboard's COMPLIANCE tile — "94%" over a bar. */
+export const SAFETY_COMPLIANCE_SCORE = figure(
+  94,
+  'a compliance score. `GET /safety/compliance` returns four COUNTS and no percentage, and no ' +
+    'formula for one exists anywhere in docs/specifications/',
+);
+
+/** The dashboard's SAFE HOURS tile — "12,480 SINCE LAST LTI". */
+export const SAFE_WORK_HOURS = figure(
+  '12,480',
+  'hours worked since a lost-time injury. Nothing in this product records working hours against ' +
+    'an injury; "LTI" appears in no specification and in no column',
+);
+
+/** The dashboard checklist card's "6/8 TASKS" chip, and the done row it strikes through. */
+export const CHECKLIST_PROGRESS = figure(
+  { done: 6, total: 8 },
+  'a per-item state. `site_ops.inspections` records ONE result for a whole checklist, so nothing ' +
+    'can count six of eight',
+);
+
+/**
+ * The checklist's two drawn group headings, and how items fall into them.
+ *
+ * A checklist item is `{ item_id, description, is_required }` (§11) — there is NO group field — so
+ * the split is BY POSITION: the first half answer with the drawing's toggles under PPE & PERSONNEL,
+ * the rest with its checkboxes under STRUCTURE & EQUIPMENT (product-owner decision 2026-09-17).
+ */
+export const CHECKLIST_GROUPS = figure(
+  { first: 'ppe', second: 'structure' } as const,
+  'a group on a checklist item. §11 gives an item an id, a description and is_required, and the ' +
+    'drawing sorts its rows into two named sections',
+);
+
+/** The flagged row on the checklist: the words, and the photograph beneath them. */
+export const CHECKLIST_FLAGGED = figure(
+  { itemIndex: 1, image: 'flagged-excavator.jpg' },
+  'a per-item flag with a photograph. An inspection stores one result per item and attaches its ' +
+    'photos to the inspection, not to a row',
+);
+
+/** The checklist's AI hazard alert — the wind figure, the confidence and the source line. */
+export const CHECKLIST_HAZARD_ALERT = figure(
+  { windMph: 24, confidence: 94, source: 'Weather Telemetry' },
+  'a weather feed and a hazard model. There is no weather ingestion, provider or column in this ' +
+    'platform, and no safety AI surface (§22.6 SafetyVisionModel is Phase 23, untrained)',
+);
+
+/** An incident card's location line, cycled by position — the drawings name a place on every card. */
+export const INCIDENT_LOCATIONS = figure(
+  [
+    'Zone C, Level 4 (Main Deck)',
+    'Basement 2, Segment G',
+    'Exterior Scaffolding, Level 12',
+    'North Wing - Sector 4',
+    'Main Loading Dock',
+  ] as const,
+  'a place name on an incident. `site_ops.incidents` carries latitude and longitude and no zone, ' +
+    'level or sector',
+);
+
+/** The photographs and reporter portraits the incident cards carry. */
+export const INCIDENT_MEDIA = figure(
+  {
+    photos: ['incident-cable.jpg', 'incident-helmet.jpg'] as const,
+    reporters: ['inspector-female.jpg', 'inspector-male.jpg'] as const,
+  },
+  'an attachment and a reporter portrait. `POST /safety/incidents` accepts no file, the row has ' +
+    'no file_id, and `reported_by` is a UUID with no name or photo behind it',
+);
+
+/** The tag chip and the observation line the drawings put on an incident card. */
+export const INCIDENT_DETAIL = figure(
+  { tag: 'Falling Object', observation: 'Unsecured harness clip observed.' },
+  'a category tag and an observation note. `incident_type` is free text and the row has no ' +
+    'description column at all',
+);
+
+/** The incidents screen's AI risk card. */
+export const INCIDENT_RISK_ALERT = figure(
+  { confidence: 94, source: 'Fire Watch Log', location: 'Fabrication Shop 4' },
+  'a safety AI. /ai/reports/* serves site, procurement, executive and delay-risk only, and §22.3 ' +
+    'forbids a placeholder that reads as AI-derived',
+);
+
+/** The permit register's Safety Analysis card. */
+export const PERMIT_RISK_ANALYSIS = figure(
+  { confidence: 94, sources: 'Site Telemetry, BIM Sche…', pending: 4, before: '14:00' },
+  'the same missing safety AI, plus a BIM schedule this platform does not ingest (§32.9 marks ' +
+    'BIM a Type A stub)',
+);
+
+/** The lines a permit card carries that no column answers. */
+export const PERMIT_CARD_DRAWN = figure(
+  {
+    syncedAgo: '2m',
+    autoReject: '12h 15m',
+    aiCheck: 'Safety conflict detected in zone 4',
+    endedAgo: '24h',
+  },
+  'a per-row sync age (§17.4 caches no permit offline), an auto-reject deadline (a scheduled job ' +
+    'this product does not have) and an AI check on a permit',
+);
+
+/** The permit form's compliance card — the drawing's "ความสอดคล้อง". */
+export const PERMIT_COMPLIANCE_CHECK = figure(
+  {
+    confidence: 96,
+    sources: 'Compliance DB, Site Protocol v2.4',
+    sector: 'Sector 4 - งานโครงสร้างเหล็ก',
+  },
+  'a compliance database and a site protocol document, checked by a model. None of the three ' +
+    'exists here, and a permit has no sector column',
+);
+
+/** The two photographs the permit form's strip shows before anything is captured. */
+export const PERMIT_FORM_PHOTOS = figure(
+  ['permit-steel-joint.jpg', 'permit-signage.jpg'] as const,
+  'example attachments. A new permit has no photographs until someone takes one',
+);
+
+/** The confirmation screen's INSIGHT card and its illustration. */
+export const PERMIT_SUBMITTED_INSIGHT = figure(
+  { confidence: 98, sources: 'Compliance DB, Site Protocol v2.4', image: 'permit-submitted.jpg' },
+  "an AI that reads a permit and routes it to a controlling engineer. §15.5's chain is Safety " +
+    'Officer → PM, worked by people',
+);

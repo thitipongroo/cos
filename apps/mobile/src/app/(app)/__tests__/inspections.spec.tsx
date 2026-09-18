@@ -15,6 +15,7 @@ import { render, fireEvent, waitFor, within } from '@testing-library/react-nativ
 import { I18nProvider } from '../../../i18n';
 import { useProjectStore } from '../../../store/projectStore';
 import InspectionsScreen from '../inspections';
+import { CHECKLIST_GROUPS, CHECKLIST_HAZARD_ALERT } from '../../../lib/mockupFigures';
 
 // `useFocusEffect` reaches for a navigation object that exists only under a NavigationContainer;
 // running the callback as a plain effect is what it does here — load on arrival.
@@ -67,15 +68,30 @@ function flatten(style: unknown): Record<string, unknown> {
   return Object.assign({}, ...(Array.isArray(style) ? style : [style])) as Record<string, unknown>;
 }
 
-/** Open the checklist and fail its one item — the severity picker only exists once something has. */
+/**
+ * Answer an item the drawing's way.
+ *
+ * The first half of a template answers with a SWITCH and the rest with a CHECKBOX (R23, D47), so
+ * "pass" is a value change on the one and a press on the other. Both carry `checklist-pass-button`,
+ * which is the id the Detox scenario has always used.
+ */
+async function answer(node: unknown, pass: boolean) {
+  const el = node as { props: { accessibilityRole?: string } };
+  if (el.props.accessibilityRole === 'checkbox') await fireEvent.press(node as never);
+  else await fireEvent(node as never, 'valueChange', pass);
+}
+
+/**
+ * Open the checklist. Its items are UNANSWERED, which since R23 (D47) means NOT PASSED — the
+ * drawing's toggle rests in that position — so the severity picker is there from the first frame.
+ */
 async function openAndFail(
   getByTestId: (id: string) => unknown,
   getAllByTestId: (id: string) => unknown[],
 ) {
   await waitFor(() => expect(getByTestId('new-inspection-button')).toBeTruthy());
   await fireEvent.press(getByTestId('new-inspection-button') as never);
-  await waitFor(() => expect(getAllByTestId('checklist-fail-button').length).toBeGreaterThan(0));
-  await fireEvent.press(getAllByTestId('checklist-fail-button')[0] as never);
+  await waitFor(() => expect(getAllByTestId('checklist-pass-button').length).toBeGreaterThan(0));
   await waitFor(() => expect(getByTestId('severity-picker')).toBeTruthy());
 }
 
@@ -182,7 +198,7 @@ describe('InspectionsScreen', () => {
     await waitFor(() => expect(getByTestId('new-inspection-button')).toBeTruthy());
     await fireEvent.press(getByTestId('new-inspection-button'));
 
-    await fireEvent.press(getAllByTestId('checklist-pass-button')[0]!);
+    await answer(getAllByTestId('checklist-pass-button')[0]!, true);
     await fireEvent.press(getByTestId('submit-inspection-button'));
 
     await waitFor(() => expect(client.mutate).toHaveBeenCalledTimes(1));
@@ -211,8 +227,8 @@ describe('InspectionsScreen', () => {
     await waitFor(() => expect(getByTestId('new-inspection-button')).toBeTruthy());
     await fireEvent.press(getByTestId('new-inspection-button'));
 
-    await fireEvent.press(getAllByTestId('checklist-pass-button')[0]!);
-    await fireEvent.press(getAllByTestId('checklist-fail-button')[1]!);
+    // The first item passes; the second is left as it rests, which is NOT PASSED (D47).
+    await answer(getAllByTestId('checklist-pass-button')[0]!, true);
     await fireEvent.press(getByTestId('submit-inspection-button'));
 
     await waitFor(() => expect(client.mutate).toHaveBeenCalledTimes(1));
@@ -233,10 +249,10 @@ describe('InspectionsScreen', () => {
     });
   });
 
-  // NOT SUBMITTABLE UNTIL EVERY ITEM IS ANSWERED. An unanswered item and a failed one must never
-  // reach the record as the same thing — which is also why the control is two explicit targets
-  // rather than a switch, whose resting state is ambiguous between "no" and "not yet".
-  it('will not submit while an item is unanswered', async () => {
+  // AN UNTOUCHED ITEM IS NOT PASSED (product-owner decision 2026-09-17, D47). The drawing answers
+  // with a toggle and a checkbox, whose resting state is "no", so the form submits at any time and
+  // §11 decides the result from the answers as they stand.
+  it('submits an untouched item as not passed', async () => {
     respond(
       [],
       [
@@ -254,23 +270,11 @@ describe('InspectionsScreen', () => {
     await waitFor(() => expect(getByTestId('new-inspection-button')).toBeTruthy());
     await fireEvent.press(getByTestId('new-inspection-button'));
 
-    await fireEvent.press(getAllByTestId('checklist-pass-button')[0]!);
-
-    expect(getByTestId('submit-inspection-button').props.accessibilityState.disabled).toBe(true);
-
+    await answer(getAllByTestId('checklist-pass-button')[0]!, true);
     await fireEvent.press(getByTestId('submit-inspection-button'));
 
-    expect(client.mutate).not.toHaveBeenCalled();
-  });
-
-  it('submits once every item has an answer', async () => {
-    const { getByTestId, getAllByTestId } = await renderScreen();
-    await waitFor(() => expect(getByTestId('new-inspection-button')).toBeTruthy());
-    await fireEvent.press(getByTestId('new-inspection-button'));
-
-    await fireEvent.press(getAllByTestId('checklist-pass-button')[0]!);
-
-    expect(getByTestId('submit-inspection-button').props.accessibilityState.disabled).toBe(false);
+    await waitFor(() => expect(client.mutate).toHaveBeenCalledTimes(1));
+    expect(client.mutate.mock.calls[0][2]).toMatchObject({ status: 'FAILED' });
   });
 
   // A template with no items submits as PASSED — there was nothing to fail — and the control is open
@@ -295,7 +299,7 @@ describe('InspectionsScreen', () => {
     await waitFor(() => expect(getByTestId('new-inspection-button')).toBeTruthy());
     await fireEvent.press(getByTestId('new-inspection-button'));
 
-    await fireEvent.press(getAllByTestId('checklist-pass-button')[0]!);
+    await answer(getAllByTestId('checklist-pass-button')[0]!, true);
     await fireEvent.press(getByTestId('submit-inspection-button'));
 
     await waitFor(() => expect(client.mutate).toHaveBeenCalledTimes(1));
@@ -311,7 +315,7 @@ describe('InspectionsScreen', () => {
     await waitFor(() => expect(getByTestId('new-inspection-button')).toBeTruthy());
     await fireEvent.press(getByTestId('new-inspection-button'));
 
-    await fireEvent.press(getAllByTestId('checklist-pass-button')[0]!);
+    await answer(getAllByTestId('checklist-pass-button')[0]!, true);
     await fireEvent.press(getByTestId('submit-inspection-button'));
 
     await waitFor(() => expect(getByTestId('inspection-saved')).toBeTruthy());
@@ -326,7 +330,7 @@ describe('InspectionsScreen', () => {
     await waitFor(() => expect(getByTestId('new-inspection-button')).toBeTruthy());
     await fireEvent.press(getByTestId('new-inspection-button'));
 
-    await fireEvent.press(getAllByTestId('checklist-pass-button')[0]!);
+    await answer(getAllByTestId('checklist-pass-button')[0]!, true);
 
     expect(queryByTestId('checklist-flagged')).toBeNull();
   });
@@ -346,48 +350,57 @@ describe('InspectionsScreen', () => {
     const { getByTestId, getAllByTestId, queryByTestId } = await renderScreen();
     await openAndFail(getByTestId, getAllByTestId);
 
-    await fireEvent.press(getAllByTestId('checklist-pass-button')[0]!);
+    await answer(getAllByTestId('checklist-pass-button')[0]!, true);
 
     expect(queryByTestId('checklist-flagged')).toBeNull();
   });
 
-  // ── THE PASS / FAIL CONTROL ──────────────────────────────────────────────────────────────────
+  // ── THE ANSWER CONTROL (R23, D47) ────────────────────────────────────────────────────────────
 
-  // A radio, and it says which way it is set: two targets whose only difference was a fill colour
-  // would be unreadable to a screen reader.
-  it('says which answer an item carries', async () => {
+  // The drawing's switch in the first group, its checkbox in the second — and each says which way
+  // it is set, because a control whose only difference is a fill colour is unreadable to a screen
+  // reader.
+  it('answers the first group with a switch that starts off', async () => {
     const { getByTestId, getAllByTestId } = await renderScreen();
     await waitFor(() => expect(getByTestId('new-inspection-button')).toBeTruthy());
     await fireEvent.press(getByTestId('new-inspection-button'));
 
-    expect(getAllByTestId('checklist-pass-button')[0]!.props.accessibilityRole).toBe('radio');
-    expect(getAllByTestId('checklist-pass-button')[0]!.props.accessibilityState.selected).toBe(
-      false,
-    );
+    const toggle = getAllByTestId('checklist-pass-button')[0]!;
+    expect(toggle.props.value).toBe(false);
 
-    await fireEvent.press(getAllByTestId('checklist-pass-button')[0]!);
+    await answer(toggle, true);
 
-    expect(getAllByTestId('checklist-pass-button')[0]!.props.accessibilityState.selected).toBe(
-      true,
-    );
-    expect(getAllByTestId('checklist-fail-button')[0]!.props.accessibilityState.selected).toBe(
-      false,
-    );
+    expect(getAllByTestId('checklist-pass-button')[0]!.props.value).toBe(true);
   });
 
-  it('moves the answer when the other target is pressed', async () => {
+  it('answers the second group with a checkbox, and takes the answer back', async () => {
+    respond(
+      [],
+      [
+        {
+          ...TEMPLATE,
+          items: [
+            { item_id: 'ties', description: 'Ties secure' },
+            { item_id: 'base', description: 'Base plates level' },
+          ],
+        },
+      ],
+    );
+
     const { getByTestId, getAllByTestId } = await renderScreen();
     await waitFor(() => expect(getByTestId('new-inspection-button')).toBeTruthy());
     await fireEvent.press(getByTestId('new-inspection-button'));
 
-    await fireEvent.press(getAllByTestId('checklist-pass-button')[0]!);
-    await fireEvent.press(getAllByTestId('checklist-fail-button')[0]!);
+    const box = getAllByTestId('checklist-pass-button')[1]!;
+    expect(box.props.accessibilityRole).toBe('checkbox');
+    expect(box.props.accessibilityState.checked).toBe(false);
 
-    expect(getAllByTestId('checklist-pass-button')[0]!.props.accessibilityState.selected).toBe(
+    await answer(box, true);
+    expect(getAllByTestId('checklist-pass-button')[1]!.props.accessibilityState.checked).toBe(true);
+
+    await answer(getAllByTestId('checklist-pass-button')[1]!, false);
+    expect(getAllByTestId('checklist-pass-button')[1]!.props.accessibilityState.checked).toBe(
       false,
-    );
-    expect(getAllByTestId('checklist-fail-button')[0]!.props.accessibilityState.selected).toBe(
-      true,
     );
   });
 
@@ -549,20 +562,54 @@ describe('InspectionsScreen', () => {
 
   // ── THE ZONES THE DRAWING HAS AND THE DATA DOES NOT ──────────────────────────────────────────
   //
-  // Three of them, each drawn with the mockup's own copy and stating plainly that it is not ready.
-  // The pressure on this screen is to fill them with something plausible; a safety record is the
-  // last place for that.
+  // Each was a "not available yet" note from 2026-08-13 until 2026-09-17, when the product owner
+  // reversed that for this set (R23, D40). They are drawn from the register now, and what is
+  // guarded is that they come from there rather than from anything the endpoint returned.
 
-  it.each([
-    'checklist-hazard-unavailable',
-    'checklist-groups-unavailable',
-    'checklist-note-unavailable',
-  ])('draws %s and says it is not ready', async (testID) => {
+  it('draws the hazard alert with the register’s confidence, entered through its footer', async () => {
+    const alert = jest.spyOn(Alert, 'alert').mockImplementation(() => undefined);
     const { getByTestId } = await renderScreen();
     await waitFor(() => expect(getByTestId('new-inspection-button')).toBeTruthy());
     await fireEvent.press(getByTestId('new-inspection-button'));
 
-    expect(getByTestId(testID)).toBeTruthy();
+    expect(getByTestId('checklist-hazard')).toBeTruthy();
+    expect(getByTestId('checklist-hazard-foot')).toHaveTextContent(
+      new RegExp(String(CHECKLIST_HAZARD_ALERT.value.confidence)),
+    );
+
+    await fireEvent.press(getByTestId('checklist-hazard-foot'));
+    expect(alert).toHaveBeenCalled();
+    alert.mockRestore();
+  });
+
+  it('heads the drawn groups and offers their drawn per-item controls', async () => {
+    const alert = jest.spyOn(Alert, 'alert').mockImplementation(() => undefined);
+    respond(
+      [],
+      [
+        {
+          ...TEMPLATE,
+          items: [
+            { item_id: 'ties', description: 'Ties secure' },
+            { item_id: 'base', description: 'Base plates level' },
+          ],
+        },
+      ],
+    );
+
+    const { getByTestId, getAllByTestId } = await renderScreen();
+    await waitFor(() => expect(getByTestId('new-inspection-button')).toBeTruthy());
+    await fireEvent.press(getByTestId('new-inspection-button'));
+
+    expect(getByTestId(`checklist-group-${CHECKLIST_GROUPS.value.first}`)).toBeTruthy();
+    expect(getByTestId(`checklist-group-${CHECKLIST_GROUPS.value.second}`)).toBeTruthy();
+
+    // Neither has anywhere to write — photos attach to the inspection, and an inspection has one
+    // note column — so both say so on tap.
+    await fireEvent.press(getAllByTestId('checklist-item-photo')[0]!);
+    await fireEvent.press(getAllByTestId('checklist-item-note')[0]!);
+    expect(alert).toHaveBeenCalledTimes(2);
+    alert.mockRestore();
   });
 
   // The drawing's mic FAB is drawn and has nowhere to put a recording — it says so rather than

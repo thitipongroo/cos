@@ -1892,8 +1892,9 @@ does not. Both mockup sets foot their AI cards with integrations that do not exi
 & Market Benchmarks", "e-GP Benchmark", "ERP DB & Central OCR Ledger"). A provenance line is the one
 piece of drawn text that changes how much of the card a reader believes; that carve-out is
 ADR-098's second amendment, and it now lives in the component so the next AI card inherits it rather
-than re-deciding it. **Exception:** the four FINANCE cards print their drawings' source lines
-(product-owner decision 2026-09-17, D33; ADR-098 amendment of that date).
+than re-deciding it. **Exception:** the four FINANCE cards and the five SAFETY_OFFICER cards print
+their drawings' source lines (product-owner decisions 2026-09-17, D33 and D40; ADR-098's two
+amendments of that date).
 
 #### Photo Annotation (`<PhotoAnnotation />`)
 

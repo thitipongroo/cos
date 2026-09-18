@@ -30,6 +30,11 @@ import { render, fireEvent, waitFor, within } from '@testing-library/react-nativ
 import { I18nProvider } from '../../i18n';
 import { useProjectStore } from '../../store/projectStore';
 import SafetyOfficerHome from '../SafetyOfficerHome';
+import {
+  CHECKLIST_PROGRESS,
+  SAFETY_COMPLIANCE_SCORE,
+  SAFE_WORK_HOURS,
+} from '../../lib/mockupFigures';
 
 const mockPush = jest.fn();
 jest.mock('expo-router', () => {
@@ -152,32 +157,36 @@ describe('SafetyOfficerHome', () => {
     expect(mockPush).toHaveBeenCalledWith('/incidents');
   });
 
-  // ── THE TWO TILES THAT CANNOT ───────────────────────────────────────────────────────────────
+  // ── THE TWO DRAWN TILES ─────────────────────────────────────────────────────────────────────
   //
-  // Drawn with the mockup's own label and stating plainly that they are not ready (PO 2026-08-13).
-  // The failure mode being guarded is a later change quietly filling them with a number that fits.
+  // Both were "not available yet" notes from 2026-08-13 until 2026-09-17, when the product owner
+  // reversed that for this set (R23, D40): the drawing's own figures are drawn and registered.
+  // What is guarded here is that they come from the REGISTER rather than from the endpoint, which
+  // returns two counts that would fit these slots and mean something else entirely.
 
-  it.each([
-    ['kpi-compliance', 'kpi-compliance-unavailable'],
-    ['kpi-safe-hours', 'kpi-safe-hours-unavailable'],
-  ])('draws %s and says it is not ready', async (tile, note) => {
+  it('draws the register’s compliance score and safe hours', async () => {
     const { getByTestId } = await renderHome();
 
-    await waitFor(() => expect(getByTestId(tile)).toBeTruthy());
-    expect(getByTestId(note)).toBeTruthy();
+    await waitFor(() => expect(getByTestId('kpi-compliance')).toBeTruthy());
+    expect(getByTestId('kpi-compliance')).toHaveTextContent(
+      new RegExp(`${SAFETY_COMPLIANCE_SCORE.value}%`),
+    );
+    expect(getByTestId('kpi-safe-hours')).toHaveTextContent(
+      new RegExp(SAFE_WORK_HOURS.value.replace(',', ',?')),
+    );
   });
 
-  // The two real figures the endpoint DOES return are the ones that were offered for these slots
-  // and refused. Neither may appear on a tile that says something else.
-  it('never fills the empty tiles with the figures it happens to have', async () => {
+  // The two real figures the endpoint DOES return were offered for these slots and refused. Neither
+  // may appear on a tile that says something else.
+  it('never fills the drawn tiles with the figures it happens to have', async () => {
     safety.getCompliance.mockResolvedValue(
-      compliance({ high_critical_incidents: 94, expired_permits: 12 }),
+      compliance({ high_critical_incidents: 77, expired_permits: 12 }),
     );
 
     const { getByTestId } = await renderHome();
     await waitFor(() => expect(getByTestId('kpi-compliance')).toBeTruthy());
 
-    expect(within(getByTestId('kpi-compliance')).queryByText('94')).toBeNull();
+    expect(within(getByTestId('kpi-compliance')).queryByText('77')).toBeNull();
     expect(within(getByTestId('kpi-safe-hours')).queryByText('12')).toBeNull();
   });
 
@@ -199,9 +208,10 @@ describe('SafetyOfficerHome', () => {
     await waitFor(() => expect(getByText('Scaffold tags checked')).toBeTruthy());
   });
 
-  // Every box unticked, because nothing stores whether an item was done. A ticked box on a SAFETY
-  // checklist is a record that a check happened.
-  it('leaves every box unticked, because nothing records that a check happened', async () => {
+  // The drawing ticks its first row and strikes it through, and the product owner chose the drawing
+  // (R23, D40). Nothing stores a per-item state, so WHICH row is ticked is the drawing's — and every
+  // row after the first still draws the empty box.
+  it('ticks the first row as drawn and leaves the rest empty', async () => {
     client.get.mockResolvedValue({
       items: [
         {
@@ -215,16 +225,19 @@ describe('SafetyOfficerHome', () => {
     const { getByTestId, getAllByText, queryByText } = await renderHome();
     await waitFor(() => expect(getByTestId('home-checklist-card')).toBeTruthy());
 
-    expect(getAllByText('check-box-outline-blank').length).toBe(2);
+    expect(getAllByText('check-box-outline-blank').length).toBe(1);
     expect(queryByText('check-box')).toBeNull();
   });
 
-  // The drawing's "6/8 TASKS" chip cannot exist: inspections record ONE result per checklist, not a
-  // per-item state, so nothing can count six of eight. The chip's place carries the explanation.
-  it('explains the progress chip rather than inventing a fraction', async () => {
+  // The drawing's "6/8 TASKS" chip has nothing behind it: inspections record ONE result per
+  // checklist, not a per-item state. Drawn from the register since R23 (D40), never computed.
+  it('draws the progress chip from the register, not from the rows', async () => {
     const { getByTestId } = await renderHome();
 
-    await waitFor(() => expect(getByTestId('home-checklist-progress-unavailable')).toBeTruthy());
+    await waitFor(() => expect(getByTestId('home-checklist-progress')).toBeTruthy());
+    expect(getByTestId('home-checklist-progress')).toHaveTextContent(
+      new RegExp(`${CHECKLIST_PROGRESS.value.done}/${CHECKLIST_PROGRESS.value.total}`),
+    );
   });
 
   // A malformed template is a server-side data problem, and this is the screen a safety officer

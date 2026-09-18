@@ -270,3 +270,15 @@ the Payments analysis module, the Budget forecast module and the Invoices 3-way-
 `FINANCE_AI_SOURCES` (ADR-099, amendment of this date), marked COMING SOON.
 
 The carve-out still stands on every other role's AI card.
+
+## Amendment — 2026-09-17 (second): the "WHICH SYSTEMS" category is drawn on five SAFETY cards
+
+**Decided by:** Product Owner, 2026-09-17, revision R23, decision D40.
+
+The SAFETY_OFFICER set joins the FINANCE one. Its five AI cards — the incidents screen's risk card, the checklist's
+hazard alert, the permit register's Safety Analysis, the request form's compliance card and the confirmation's INSIGHT —
+print their drawings' source lines: "Fire Watch Log", "Weather Telemetry", "Site Telemetry, BIM Schedule" and
+"Compliance DB, Site Protocol v2.4". None of those systems exists in this repository. The values live in
+`lib/mockupFigures.ts` (ADR-099, second amendment of this date), marked COMING SOON.
+
+The carve-out still stands on every other role's AI card.

@@ -613,6 +613,7 @@ async function run(): Promise<void> {
       await seedOnHoldProject(tx);
       await seedPendingApprovals(tx);
       await seedFinanceDrawnStates(tx);
+      await seedSafetyDrawnStates(tx);
       await seedCrm(tx);
       await seedNotifications(tx);
       await seedAiReports(tx);
@@ -1970,6 +1971,135 @@ async function seedFinanceDrawnStates(tx: Tx): Promise<void> {
       `UPDATE procurement.purchase_orders SET status = 'PARTIALLY_DELIVERED'
         WHERE po_id = '${uid(`po/${p.key}/cement`)}'`,
     );
+  }
+}
+
+/**
+ * The SAFETY_OFFICER screens' drawn states, on the projects seedProject() already wrote.
+ *
+ * Added 2026-09-17 (PO decision D42, revision R23), for the reason the pending payments and the
+ * pending approvals were: the six Stitch drawings show a feed of incidents at three severities and
+ * three statuses, and a permit register holding an ACTIVE, a PENDING, a REVOKED and an EXPIRED
+ * permit. seedProject() writes ONE incident (MEDIUM / IN_PROGRESS) and ONE permit (ACTIVE) per
+ * project, so most of those states could not be photographed at all.
+ *
+ * EVERY ROW HERE IS AN ORDINARY ROW of `site_ops.incidents` / `site_ops.permits` — same columns,
+ * same CHECK constraints, same RLS. What the drawings show that the SCHEMA does not have (a place
+ * name on an incident, a photograph, an auto-reject countdown) is NOT seeded: it is drawn from
+ * `lib/mockupFigures.ts` and marked COMING SOON there.
+ *
+ * DATES ARE BANGKOK DATES, like the deliveries-today block: these screens read the device's
+ * calendar, and UTC is a different day for seven hours in every twenty-four.
+ */
+async function seedSafetyDrawnStates(tx: Tx): Promise<void> {
+  const bangkokToday = `(now() AT TIME ZONE 'Asia/Bangkok')::date`;
+
+  // Three incidents per project, one per drawn card: CRITICAL/OPEN, LOW/RESOLVED and the
+  // MEDIUM/IN_PROGRESS seedProject() already writes. `reported_by` is the project's site engineer,
+  // as on the seeded one; an OPEN incident carries no acknowledgement, which is what makes the
+  // §19.3 escalation clock on the card mean something.
+  const incidents: Array<{
+    key: string;
+    type: string;
+    severity: string;
+    status: string;
+    minutesAgo: number;
+    acknowledged: boolean;
+  }> = [
+    {
+      key: 'critical',
+      type: 'นั่งร้านไม่มั่นคง (Scaffold Instability)',
+      severity: 'CRITICAL',
+      status: 'OPEN',
+      minutesAgo: 22,
+      acknowledged: false,
+    },
+    {
+      key: 'resolved',
+      type: 'ตรวจชุดเก็บสารเคมีหก (Spill Kit Inspection)',
+      severity: 'LOW',
+      status: 'RESOLVED',
+      minutesAgo: 60 * 26,
+      acknowledged: true,
+    },
+  ];
+
+  for (const p of PROJECTS) {
+    const pid = uid(`project/${p.key}`);
+    for (const inc of incidents) {
+      await tx.$executeRawUnsafe(
+        `INSERT INTO site_ops.incidents (incident_id, tenant_id, project_id, incident_type, severity,
+           reported_by, status, acknowledged_by, acknowledged_at, latitude, longitude)
+         VALUES ('${uid(`inc-drawn/${p.key}/${inc.key}`)}', '${TENANT_ID}', '${pid}', $$${inc.type}$$,
+                 '${inc.severity}', '${U(p.se)}', '${inc.status}',
+                 ${inc.acknowledged ? `'${U('safety')}'` : 'NULL'},
+                 ${inc.acknowledged ? `now() - make_interval(mins => ${inc.minutesAgo - 5})` : 'NULL'},
+                 ${p.lat}, ${p.lng})
+         ON CONFLICT (incident_id) DO UPDATE SET status = EXCLUDED.status,
+           severity = EXCLUDED.severity, acknowledged_at = EXCLUDED.acknowledged_at`,
+      );
+      // `created_at` defaults to now(); the cards read an AGE off it, so it is set explicitly.
+      await tx.$executeRawUnsafe(
+        `UPDATE site_ops.incidents SET created_at = now() - make_interval(mins => ${inc.minutesAgo})
+          WHERE incident_id = '${uid(`inc-drawn/${p.key}/${inc.key}`)}'`,
+      );
+    }
+
+    // Three more permits per project — PENDING (what this role is here to decide), REVOKED with its
+    // reason, and EXPIRED — beside the ACTIVE one seedProject() writes.
+    const permits: Array<{
+      key: string;
+      type: string;
+      status: string;
+      from: number;
+      until: number;
+      contractor: string;
+      reason: string | null;
+    }> = [
+      {
+        key: 'pending',
+        type: 'SAFETY_PERMIT',
+        status: 'PENDING',
+        from: 0,
+        until: 14,
+        contractor: 'VoltMaster Solutions',
+        reason: null,
+      },
+      {
+        key: 'revoked',
+        type: 'WORK_PERMIT',
+        status: 'REVOKED',
+        from: -20,
+        until: 10,
+        contractor: 'HydroStop Inc.',
+        reason: 'ฝ่าฝืนข้อกำหนดความปลอดภัย',
+      },
+      {
+        key: 'expired',
+        type: 'DRAWING_APPROVAL',
+        status: 'EXPIRED',
+        from: -40,
+        until: -1,
+        contractor: 'BaseBuild Group',
+        reason: null,
+      },
+    ];
+    for (const permit of permits) {
+      await tx.$executeRawUnsafe(
+        `INSERT INTO site_ops.permits (permit_id, tenant_id, project_id, permit_type, permit_number,
+           issued_by, valid_from, valid_until, status, created_by, contractor_name, description,
+           revoke_reason)
+         VALUES ('${uid(`permit-drawn/${p.key}/${permit.key}`)}', '${TENANT_ID}', '${pid}',
+                 '${permit.type}', '${permit.key.toUpperCase().slice(0, 2)}-${p.code}-002',
+                 '${U('safety')}', ${bangkokToday} + ${permit.from}, ${bangkokToday} + ${permit.until},
+                 '${permit.status}', '${U('safety')}', $$${permit.contractor}$$,
+                 $$งานตามใบอนุญาตในพื้นที่ ${p.code}$$,
+                 ${permit.reason === null ? 'NULL' : `$$${permit.reason}$$`})
+         ON CONFLICT (permit_id) DO UPDATE SET status = EXCLUDED.status,
+           valid_from = EXCLUDED.valid_from, valid_until = EXCLUDED.valid_until,
+           contractor_name = EXCLUDED.contractor_name, revoke_reason = EXCLUDED.revoke_reason`,
+      );
+    }
   }
 }
 
