@@ -2,6 +2,8 @@
 
 const mockTenantService = {
   createTenant: jest.fn(),
+  createTrialTenant: jest.fn(),
+  convertTenant: jest.fn(),
   deactivateTenant: jest.fn(),
   assignDedicatedDb: jest.fn(),
   markAsEnterpriseContracted: jest.fn(),
@@ -35,6 +37,64 @@ describe('TenantController', () => {
       const rows = [{ tenant_id: 't1', workflow_state: 'AWAITING_APPROVAL' }];
       mockTenantService.listProvisioning.mockResolvedValue(rows);
       expect(await controller.listProvisioning()).toBe(rows);
+    });
+  });
+
+  describe('createTrial', () => {
+    it('passes the body without the justification, the actor and the justification', async () => {
+      const body = { tenantCode: 'somchai_build', tenantName: 'Somchai', planType: 'STARTER' };
+      const row = { tenant_id: TENANT_ID, subscription_status: 'TRIAL' };
+      mockTenantService.createTrialTenant.mockResolvedValue(row);
+
+      const result = await controller.createTrial(
+        { ...body, justification: JUSTIFICATION } as never,
+        { userId: 'admin-user' } as never,
+      );
+      expect(mockTenantService.createTrialTenant).toHaveBeenCalledWith(
+        body,
+        'admin-user',
+        JUSTIFICATION,
+      );
+      expect(result).toBe(row);
+    });
+
+    it('falls back to "system" when userId missing from request', async () => {
+      await controller.createTrial({ justification: JUSTIFICATION } as never, {} as never);
+      expect(mockTenantService.createTrialTenant).toHaveBeenCalledWith({}, 'system', JUSTIFICATION);
+    });
+  });
+
+  describe('convert', () => {
+    it('passes the tenant, the plan, the actor and the justification', async () => {
+      const row = { tenant_id: TENANT_ID, subscription_status: 'ACTIVE' };
+      mockTenantService.convertTenant.mockResolvedValue(row);
+
+      const result = await controller.convert(
+        TENANT_ID,
+        { planType: 'PROFESSIONAL', justification: JUSTIFICATION } as never,
+        { userId: 'admin-user' } as never,
+      );
+      expect(mockTenantService.convertTenant).toHaveBeenCalledWith(
+        TENANT_ID,
+        'PROFESSIONAL',
+        'admin-user',
+        JUSTIFICATION,
+      );
+      expect(result).toBe(row);
+    });
+
+    it('falls back to "system" when userId missing from request', async () => {
+      await controller.convert(
+        TENANT_ID,
+        { planType: 'LITE', justification: JUSTIFICATION } as never,
+        {} as never,
+      );
+      expect(mockTenantService.convertTenant).toHaveBeenCalledWith(
+        TENANT_ID,
+        'LITE',
+        'system',
+        JUSTIFICATION,
+      );
     });
   });
 

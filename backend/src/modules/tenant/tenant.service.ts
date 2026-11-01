@@ -27,6 +27,15 @@ import { createLogger } from '@cos/logger';
 import { Connection, Client, WorkflowNotFoundError } from '@temporalio/client';
 import type { Prisma } from '@prisma/client';
 import { CreateTenantDto } from './dto/create-tenant.dto';
+import type { CreateTrialTenantDto } from './dto/create-trial-tenant.dto';
+import { countActiveProjects } from '../project/public/active-projects';
+import {
+  PLAN_ERROR,
+  PLAN_PROJECT_LIMIT,
+  TRIAL_DAYS,
+  type SubscriptionStatus,
+  type TrialPlan,
+} from './public/plan-limits';
 import { FeatureFlagService } from '../../shared/feature-flags/feature-flag.service';
 import {
   decryptDedicatedDbUrl,
@@ -85,6 +94,24 @@ export interface TenantSummaryRow {
 }
 
 /**
+ * A tenant row with its commercial state (§7.10, ADR-109) — what creating a tenant and converting a trial return.
+ * The summary is unchanged so every other reader keeps its shape.
+ */
+export interface TenantSubscriptionRow extends TenantSummaryRow {
+  subscription_status: SubscriptionStatus;
+  trial_started_at: Date | null;
+  trial_ends_at: Date | null;
+  trial_source: string | null;
+  converted_at: Date | null;
+}
+
+/** Where a trial came from — the optional fields of CreateTrialTenantDto. */
+interface TrialOrigin {
+  source: string | null;
+  requestRef: string | null;
+}
+
+/**
  * A tenant row as the SYSTEM_ADMIN list returns it: the summary plus the dedicated DB's HOSTNAME.
  *
  * §20.4.1 asks the list to show "URL hostname (dedicated, truncated)". The URL itself carries the
@@ -107,9 +134,11 @@ export interface TenantProvisioningRow {
   workflow_state: string | null;
 }
 
-/** The six audited SYSTEM_ADMIN actions (§6.7). The value is what `audit_logs.action` records. */
+/** The audited SYSTEM_ADMIN actions (§6.7). The value is what `audit_logs.action` records. */
 export type TenantAdminAction =
   | 'tenant.create'
+  | 'tenant.create_trial'
+  | 'tenant.convert'
   | 'tenant.deactivate'
   | 'tenant.assign_dedicated_db'
   | 'tenant.mark_contracted'
@@ -211,7 +240,33 @@ export class TenantService implements OnModuleDestroy {
     dto: Omit<CreateTenantDto, 'justification'>,
     createdBy: string,
     justification: string,
-  ): Promise<TenantSummaryRow> {
+  ): Promise<TenantSubscriptionRow> {
+    return this.insertTenant(dto, createdBy, justification, null);
+  }
+
+  /**
+   * Open a free trial (§7.10): a tenant on a trial plan whose status is TRIAL for TRIAL_DAYS from now.
+   * Everything else — realm, WHT defaults, identity.tenant.created.v1, the audit row — is a normal create.
+   * ENTERPRISE cannot be trialled; the DTO refuses it and so does this signature.
+   */
+  async createTrialTenant(
+    dto: Omit<CreateTrialTenantDto, 'justification'>,
+    createdBy: string,
+    justification: string,
+  ): Promise<TenantSubscriptionRow> {
+    const { trialSource, trialRequestRef, ...tenant } = dto;
+    return this.insertTenant(tenant, createdBy, justification, {
+      source: trialSource ?? null,
+      requestRef: trialRequestRef ?? null,
+    });
+  }
+
+  private async insertTenant(
+    dto: Omit<CreateTenantDto, 'justification'>,
+    createdBy: string,
+    justification: string,
+    trial: TrialOrigin | null,
+  ): Promise<TenantSubscriptionRow> {
     const existing = await this.prisma.$queryRaw<Array<{ tenant_id: string }>>`
       SELECT tenant_id FROM platform.tenants
       WHERE tenant_code = ${dto.tenantCode}
@@ -241,12 +296,22 @@ export class TenantService implements OnModuleDestroy {
     // the first commit. Unit tests mock Prisma and the provisioning integration spec stubs this
     // service, so nothing ran the SQL until the SYSTEM_ADMIN panel did on 2026-09-14.
     // test/provisioning/02-admin-audit.integration.spec.ts now creates a tenant for real.
+    //
+    // A trial's dates come from the database clock, so trial_ends_at is exactly TRIAL_DAYS after
+    // trial_started_at and the daily job compares against the same clock (§7.10).
+    const isTrial = trial !== null;
     const tenant = await this.prisma.$transaction(async (tx) => {
-      const [created] = await tx.$queryRaw<TenantSummaryRow[]>`
-        INSERT INTO platform.tenants (tenant_code, tenant_name, keycloak_realm, plan_type, dedicated_db_url, data_region, timezone)
-        VALUES (${dto.tenantCode}, ${dto.tenantName}, ${keycloakRealm}, ${dto.planType}::platform."PlanType", ${dto.dedicatedDbUrl ? this.encryptDbUrl(dto.dedicatedDbUrl) : null},${dto.dataRegion ?? 'ap-southeast-1'}, ${dto.timezone ?? defaultTimezoneForRegion(dto.dataRegion ?? 'ap-southeast-1')})
+      const [created] = await tx.$queryRaw<TenantSubscriptionRow[]>`
+        INSERT INTO platform.tenants (tenant_code, tenant_name, keycloak_realm, plan_type, dedicated_db_url, data_region, timezone,
+                                      subscription_status, trial_started_at, trial_ends_at, trial_source, trial_request_ref)
+        VALUES (${dto.tenantCode}, ${dto.tenantName}, ${keycloakRealm}, ${dto.planType}::platform."PlanType", ${dto.dedicatedDbUrl ? this.encryptDbUrl(dto.dedicatedDbUrl) : null},${dto.dataRegion ?? 'ap-southeast-1'}, ${dto.timezone ?? defaultTimezoneForRegion(dto.dataRegion ?? 'ap-southeast-1')},
+                ${isTrial ? 'TRIAL' : 'ACTIVE'},
+                CASE WHEN ${isTrial}::boolean THEN now() END,
+                CASE WHEN ${isTrial}::boolean THEN now() + make_interval(days => ${TRIAL_DAYS}::int) END,
+                ${trial?.source ?? null}, ${trial?.requestRef ?? null})
         RETURNING tenant_id, tenant_code, tenant_name, keycloak_realm, plan_type, is_active,
-                  data_region, timezone, created_at, updated_at
+                  data_region, timezone, created_at, updated_at,
+                  subscription_status, trial_started_at, trial_ends_at, trial_source, converted_at
       `;
 
       // ESC-20: `$queryRaw` returns RAW DB column names — Prisma's `@map` (tenantId → tenant_id)
@@ -303,12 +368,19 @@ export class TenantService implements OnModuleDestroy {
       await this.writeAdminAudit(tx, {
         tenantId: row.tenant_id,
         actorId: createdBy,
-        action: 'tenant.create',
+        action: isTrial ? 'tenant.create_trial' : 'tenant.create',
         justification,
-        extra: { tenant_code: row.tenant_code, plan_type: row.plan_type },
+        extra: isTrial
+          ? {
+              tenant_code: row.tenant_code,
+              plan_type: row.plan_type,
+              trial_source: trial.source,
+              trial_request_ref: trial.requestRef,
+            }
+          : { tenant_code: row.tenant_code, plan_type: row.plan_type },
       });
 
-      logger.info({ tenantCode: dto.tenantCode, createdBy }, 'Tenant record created');
+      logger.info({ tenantCode: dto.tenantCode, createdBy, isTrial }, 'Tenant record created');
 
       return created!;
     });
@@ -329,6 +401,88 @@ export class TenantService implements OnModuleDestroy {
     // create transaction above, so a rollback emits nothing and a commit emits exactly once.
 
     return tenant;
+  }
+
+  /**
+   * A trial customer paid (§7.10): TRIAL / EXPIRED / PENDING_DELETION → ACTIVE on the plan they bought.
+   *
+   * The tenant row is locked first, so the status read, the project count and the update see one state and two
+   * operators converting at once cannot both succeed. The plan-change rule of §26.1 applies: a plan whose limit is
+   * below the tenant's active projects is refused (COS-PLAN-002) — projects are never closed for the customer.
+   * A tenant that is already ACTIVE is refused (COS-PLAN-004); a paying tenant changes plan by another path.
+   *
+   * platform.tenant.converted.v1 joins this transaction when the trial events land (ADR-109, round 4).
+   */
+  async convertTenant(
+    tenantId: string,
+    planType: TrialPlan,
+    actorId: string,
+    justification: string,
+  ): Promise<TenantSubscriptionRow> {
+    assertSafeTenantId(tenantId);
+    return this.prisma.$transaction(async (tx) => {
+      const [current] = await tx.$queryRaw<
+        Array<{ subscription_status: SubscriptionStatus; plan_type: string }>
+      >`
+        SELECT subscription_status, plan_type
+          FROM platform.tenants
+         WHERE tenant_id = ${tenantId}::uuid
+           FOR UPDATE
+      `;
+      if (!current) throw new NotFoundException(`Tenant ${tenantId} not found`);
+      if (current.subscription_status === 'ACTIVE') {
+        throw new ConflictException({
+          error: {
+            code: PLAN_ERROR.NOT_CONVERTIBLE,
+            message: 'The tenant is not in a trial state that can be converted.',
+            messageKey: 'admin.tenant.error.notConvertible',
+            details: { subscription_status: current.subscription_status },
+          },
+        });
+      }
+
+      // The project tables are tenant-scoped under RLS; the count runs as the target tenant.
+      await tx.$executeRawUnsafe(`SET LOCAL app.current_tenant_id = '${tenantId}'`);
+      const activeProjects = await countActiveProjects(tx, tenantId);
+      const limit = PLAN_PROJECT_LIMIT[planType];
+      if (limit !== null && activeProjects > limit) {
+        throw new ConflictException({
+          error: {
+            code: PLAN_ERROR.PLAN_BELOW_USAGE,
+            message: 'The tenant has more active projects than the target plan allows.',
+            messageKey: 'admin.tenant.error.planBelowUsage',
+            details: { target_plan: planType, limit, active_projects: activeProjects },
+          },
+        });
+      }
+
+      const [converted] = await tx.$queryRaw<TenantSubscriptionRow[]>`
+        UPDATE platform.tenants
+           SET plan_type = ${planType}::platform."PlanType",
+               subscription_status = 'ACTIVE',
+               converted_at = now(),
+               updated_at = now()
+         WHERE tenant_id = ${tenantId}::uuid
+        RETURNING tenant_id, tenant_code, tenant_name, keycloak_realm, plan_type, is_active,
+                  data_region, timezone, created_at, updated_at,
+                  subscription_status, trial_started_at, trial_ends_at, trial_source, converted_at
+      `;
+
+      await this.writeAdminAudit(tx, {
+        tenantId,
+        actorId,
+        action: 'tenant.convert',
+        justification,
+        extra: {
+          from_status: current.subscription_status,
+          from_plan: current.plan_type,
+          plan_type: planType,
+        },
+      });
+
+      logger.info({ tenantId, actorId, planType }, 'Trial tenant converted');
+      return converted!;
+    });
   }
 
   async deactivateTenant(tenantId: string, actorId: string, justification: string): Promise<void> {

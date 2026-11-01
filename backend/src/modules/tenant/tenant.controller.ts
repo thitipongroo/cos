@@ -12,6 +12,8 @@ import {
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { TenantService } from './tenant.service';
 import { CreateTenantDto } from './dto/create-tenant.dto';
+import { CreateTrialTenantDto } from './dto/create-trial-tenant.dto';
+import { ConvertTenantDto } from './dto/convert-tenant.dto';
 import { AssignDedicatedDbDto } from './dto/assign-dedicated-db.dto';
 import { MarkContractedDto } from './dto/mark-contracted.dto';
 import { AdminJustificationDto } from './public/admin-justification.dto';
@@ -54,6 +56,34 @@ export class TenantController {
   @ApiOperation({ summary: 'Provision a new tenant (SYSTEM_ADMIN only)' })
   async create(@Body() dto: CreateTenantDto, @Req() req: TenantRequest) {
     return this.tenantService.createTenant(dto, req.userId ?? 'system', dto.justification);
+  }
+
+  // §7.10 — opened by sales for a construction-os.io trial request; ENTERPRISE is refused by the DTO.
+  @Post('trial')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(CosRole.SYSTEM_ADMIN)
+  @ApiOperation({ summary: 'Open a 30-day free-trial tenant (SYSTEM_ADMIN only)' })
+  async createTrial(@Body() dto: CreateTrialTenantDto, @Req() req: TenantRequest) {
+    const { justification, ...trial } = dto;
+    return this.tenantService.createTrialTenant(trial, req.userId ?? 'system', justification);
+  }
+
+  // §7.10 — 404 unknown tenant · 409 COS-PLAN-004 already ACTIVE · 409 COS-PLAN-002 plan below usage.
+  @Patch(':tenantId/convert')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(CosRole.SYSTEM_ADMIN)
+  @ApiOperation({ summary: 'Convert a trial tenant to a paid plan (SYSTEM_ADMIN only)' })
+  async convert(
+    @Param('tenantId', ParseUUIDPipe) tenantId: string,
+    @Body() dto: ConvertTenantDto,
+    @Req() req: TenantRequest,
+  ) {
+    return this.tenantService.convertTenant(
+      tenantId,
+      dto.planType,
+      req.userId ?? 'system',
+      dto.justification,
+    );
   }
 
   @Patch(':tenantId/dedicated-db')

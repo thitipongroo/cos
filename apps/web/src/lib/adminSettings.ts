@@ -69,7 +69,12 @@ export function emptySettings(): PlatformSettings {
     maintenance: { safety_non_suspension: null, shared_tiers_window: null, enterprise_mode: null },
     broadcast: { lead_time_hours: null, channels: [] },
     limits: { shared_tenant_cap: null, default_max_pool_conns: null },
-    tiers: { STARTER: emptyTier(), PROFESSIONAL: emptyTier(), ENTERPRISE: emptyTier() },
+    tiers: {
+      LITE: emptyTier(),
+      STARTER: emptyTier(),
+      PROFESSIONAL: emptyTier(),
+      ENTERPRISE: emptyTier(),
+    },
   };
 }
 
@@ -78,7 +83,7 @@ export function settingsChanged(a: PlatformSettings, b: PlatformSettings): boole
   return JSON.stringify(a) !== JSON.stringify(b);
 }
 
-export const TIER_ORDER: readonly PlanTier[] = ['STARTER', 'PROFESSIONAL', 'ENTERPRISE'];
+export const TIER_ORDER: readonly PlanTier[] = ['LITE', 'STARTER', 'PROFESSIONAL', 'ENTERPRISE'];
 
 const B = SETTINGS_BOUNDS;
 

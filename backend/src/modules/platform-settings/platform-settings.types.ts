@@ -20,7 +20,7 @@ export {
   type PlatformSettingsResponse,
   type TierLimits,
 } from '@cos/types';
-import type { PlatformSettings, TierLimits } from '@cos/types';
+import { PLAN_TIERS as TIERS, type PlatformSettings, type TierLimits } from '@cos/types';
 
 /** `audit_logs.action` for a saved change. */
 export const PLATFORM_SETTINGS_AUDIT_ACTION = 'platform.settings.update';
@@ -51,6 +51,21 @@ export function defaultPlatformSettings(): PlatformSettings {
     },
     broadcast: { lead_time_hours: null, channels: [] },
     limits: { shared_tenant_cap: null, default_max_pool_conns: null },
-    tiers: { STARTER: emptyTier(), PROFESSIONAL: emptyTier(), ENTERPRISE: emptyTier() },
+    tiers: {
+      LITE: emptyTier(),
+      STARTER: emptyTier(),
+      PROFESSIONAL: emptyTier(),
+      ENTERPRISE: emptyTier(),
+    },
   };
+}
+
+/**
+ * A stored document with a row for every tier. A document saved before a tier existed (LITE, ADR-109) has no row
+ * for it; the missing row reads as "nothing set", exactly as a fresh document would, and the next save writes it.
+ */
+export function withEveryTier(settings: PlatformSettings): PlatformSettings {
+  const tiers = { ...settings.tiers };
+  for (const tier of TIERS) tiers[tier] ??= emptyTier();
+  return { ...settings, tiers };
 }

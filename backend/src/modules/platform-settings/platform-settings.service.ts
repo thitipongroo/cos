@@ -17,6 +17,7 @@ import {
   defaultPlatformSettings,
   PLATFORM_SETTINGS_AUDIT_ACTION,
   PLATFORM_SETTINGS_RESOURCE_TYPE,
+  withEveryTier,
   type PlatformSettings,
   type PlatformSettingsActor,
   type PlatformSettingsResponse,
@@ -157,7 +158,8 @@ export class PlatformSettingsService implements OnModuleDestroy {
             LEFT JOIN platform.users u ON u.user_id = s.updated_by
            WHERE s.settings_key = ${SETTINGS_KEY}
         `;
-    return rows[0] ?? null;
+    const row = rows[0];
+    return row ? { ...row, value: withEveryTier(row.value) } : null;
   }
 
   /** Active tenants on the shared database and on a dedicated one. The URL itself is never selected. */

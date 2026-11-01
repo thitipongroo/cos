@@ -9,7 +9,7 @@
  * 2026-09-14).
  */
 
-export type PlanType = 'STARTER' | 'PROFESSIONAL' | 'ENTERPRISE';
+export type PlanType = 'LITE' | 'STARTER' | 'PROFESSIONAL' | 'ENTERPRISE';
 
 /** One row of GET /admin/tenants — snake_case, as the endpoint returns it. */
 export interface TenantListRow {

@@ -130,13 +130,13 @@ Token Tracking Schema (PostgreSQL — schema: ai):
 Tenant SaaS-subscription billing (spec §26.1) — the tenant-billing model; distinct from Finance
 Service AR **client** billing (project→customer). `ai_usage_logs` above is the AI-usage half;
 the subscription-fee half:
-  - SMB (Shared SaaS): per-active-project base fee + per-active-user seat fee (above an included
-    minimum) — the two charges apply independently + simultaneously
-  - Mid-market: annual subscription + per-active-user
+  - Flat monthly price per plan, unlimited users, priced by active-project capacity (spec §26.1, revised
+    2026-11-01, ADR-109): LITE 1 project · STARTER 3 · PROFESSIONAL 10 (SMB = LITE + STARTER,
+    Mid-market = PROFESSIONAL); annual billing 15% off; no seat fee on any plan
   - Enterprise: annual contract + platform fee + usage-based AI
   - AI tokens metered per-tenant from `ai_usage_logs` (SMB 500K/mo · Mid 5M/mo · Enterprise custom;
     overage per 1K tokens); OCR per-page, voice per-minute; usage visible in the Tenant-Admin dashboard
-  - Rate values set at commercial launch, configurable per market (spec §26.1)
+  - Free 30-day trial lifecycle: spec §26.1.2 and §7.10
 
 Prompt Template Management:
   Storage: ai/prompts/ directory, Jinja2 .j2 files, version-controlled

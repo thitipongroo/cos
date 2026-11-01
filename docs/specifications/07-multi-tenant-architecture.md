@@ -1,8 +1,8 @@
 ---
 title: 'Multi-tenant Architecture'
-version: '1.5.0'
+version: '1.6.0'
 status: Active
-last_updated: '2026-06-05'
+last_updated: '2026-11-01'
 authors:
   - thitipongroo
 related_docs:
@@ -10,6 +10,7 @@ related_docs:
   - 06-rbac-permission-matrix.md
   - 08-enterprise-deployment.md
   - 11-database-schema.md
+  - 26-pricing-model.md
 ---
 
 # 7. Multi-tenant Architecture
@@ -27,6 +28,7 @@ related_docs:
 - [7.7 PostgreSQL Schema Convention](#77-postgresql-schema-convention)
 - [7.8 Enterprise Provisioning Workflow (Phase 25)](#78-enterprise-provisioning-workflow-phase-25)
 - [7.9 Connection Pool Management](#79-connection-pool-management)
+- [7.10 Trial Tenant Lifecycle](#710-trial-tenant-lifecycle)
 
 ---
 
@@ -364,7 +366,8 @@ Access controls :
 
 Steps :
 
-1. Tenant registration request received (via platform admin API)
+1. Tenant registration request received (via platform admin API). A free-trial tenant is created the same
+   way, through `POST /api/v1/admin/tenants/trial`, and then follows §7.10
 2. Tenant record created in `tenants` table with unique `tenant_id` (UUID)
 3. Keycloak assignment: shared realm for SMB/mid-market; dedicated realm created for enterprise.
 
@@ -540,6 +543,76 @@ This threshold determines when database sharding evaluation must begin.
 
 ---
 
+## 7.10 Trial Tenant Lifecycle
+
+> Decision record — product owner, 2026-11-01. ADR-109. Commercial terms in
+> [26-pricing-model §26.1.2](26-pricing-model.md#2612-free-trial).
+
+### Subscription status
+
+`platform.tenants.subscription_status` records where a tenant is in its commercial life. It is independent of
+`is_active`, which stays the SYSTEM_ADMIN deactivation switch (§7.6, `identity.tenant.deactivated.v1`).
+
+| Status             | Meaning                                       | Writes allowed |
+| ------------------ | --------------------------------------------- | -------------- |
+| `ACTIVE`           | Paying customer. Every pre-existing tenant    | Yes            |
+| `TRIAL`            | Day 0–29 of a free trial                      | Yes            |
+| `EXPIRED`          | Day 30–59: trial ended, not converted         | No (read-only) |
+| `PENDING_DELETION` | Day 60 onward: awaiting manual deletion       | No (read-only) |
+
+Columns added with it: `trial_started_at`, `trial_ends_at` (= start + 30 days), `trial_source` and
+`trial_request_ref` (the construction-os.io request the trial came from), `converted_at`.
+
+### Transitions
+
+| From                                | To                 | When                                 | Actor                                               | Event (on `platform.events`)        |
+| ----------------------------------- | ------------------ | ------------------------------------ | --------------------------------------------------- | ----------------------------------- |
+| —                                   | `TRIAL`            | Trial opened                         | SYSTEM_ADMIN, `POST /api/v1/admin/tenants/trial`          | `platform.tenant.trial_started.v1`  |
+| `TRIAL`                             | `EXPIRED`          | `trial_ends_at` passed               | Daily `trial-lifecycle` job                         | `platform.tenant.trial_expired.v1`  |
+| `EXPIRED`                           | `PENDING_DELETION` | 30 days after `trial_ends_at`        | Daily `trial-lifecycle` job                         | `platform.tenant.deletion_due.v1`   |
+| `TRIAL`, `EXPIRED`, `PENDING_DELETION` | `ACTIVE`        | Customer pays                        | SYSTEM_ADMIN, `PATCH /api/v1/admin/tenants/{id}/convert`  | `platform.tenant.converted.v1`      |
+
+No other transition exists. Converting applies the plan-change rule of §26.1: a plan whose active-project limit
+is below the tenant's current count is refused with `COS-PLAN-002`. Each transition writes its event through the
+outbox in the same transaction as the status change.
+
+### Read-only enforcement
+
+While a tenant is `EXPIRED` or `PENDING_DELETION`, the tenant middleware refuses every request that is not
+`GET`, `HEAD` or `OPTIONS` with `403 COS-PLAN-003`, except:
+
+- authentication and session endpoints (sign-in, token refresh, sign-out)
+- data-subject rights — data export and consent changes (PDPA §19, §30, §31) must never be blocked
+
+### Notifications
+
+Sent to every active `TENANT_ADMIN` and `EXECUTIVE` user of the tenant, by email and by LINE where the user has
+linked LINE, in the user's locale (QM-3). Each notice is sent at most once per tenant.
+
+| Day | Notice                                                         |
+| --- | -------------------------------------------------------------- |
+| 0   | Welcome — trial started, ends on `trial_ends_at`               |
+| 7   | Week one — features to try                                     |
+| 21  | 9 days left                                                    |
+| 28  | 2 days left — what happens at expiry                           |
+| 30  | Trial ended — account is now read-only for 30 days             |
+| 53  | 7 days before deletion                                         |
+
+At day 60 the job also notifies every SYSTEM_ADMIN that the tenant is due for deletion.
+
+### Deletion
+
+Trial data is deleted **manually** by a SYSTEM_ADMIN following `docs/runbooks/trial-tenant-deletion.md` once a
+tenant reaches `PENDING_DELETION`. Automated tenant purge does not exist yet; backups expire on their normal
+schedule.
+
+### Feature flag
+
+The daily job and the read-only enforcement are gated by the `trial-lifecycle` feature flag (QM-15). With the
+flag off, no status changes and no requests are refused; trials can still be opened and converted.
+
+---
+
 ## References
 
 | ID               | Title                                                              | Source                                                                          |
@@ -554,4 +627,4 @@ This threshold determines when database sharding evaluation must begin.
 
 > 📎 See also: [05-security-compliance](05-security-compliance.md)
 > · [06-rbac-permission-matrix](06-rbac-permission-matrix.md) · [08-enterprise-deployment](08-enterprise-deployment.md)
-> · [11-database-schema](11-database-schema.md)
+> · [11-database-schema](11-database-schema.md) · [26-pricing-model](26-pricing-model.md)

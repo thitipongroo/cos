@@ -127,6 +127,17 @@ constraint — a CHECK cannot see a graph — so both are enforced in `TasksServ
 
 ---
 
+## COS-PLAN — Plan limits and the free-trial lifecycle (§26.1, §7.10; ADR-109)
+
+| Code         | HTTP | Message                                                                              | Trigger                                                                                                                                                                                |
+| ------------ | ---- | ------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| COS-PLAN-001 | 409  | Your plan's active-project limit is reached. Complete a project or upgrade the plan. | `POST /projects` when the tenant already has as many `DRAFT`/`ACTIVE`/`ON_HOLD` projects as its plan allows. `details`: `plan`, `limit`, `active_projects`                             |
+| COS-PLAN-002 | 409  | The tenant has more active projects than the target plan allows.                     | `PATCH /admin/tenants/{id}/convert` to a plan whose limit is below the current active-project count. `details`: `target_plan`, `limit`, `active_projects`                                    |
+| COS-PLAN-003 | 403  | Your free trial has ended. The account is read-only until a plan is chosen.          | Any non-`GET`/`HEAD`/`OPTIONS` request while the tenant is `EXPIRED` or `PENDING_DELETION`, except authentication and data-subject-rights endpoints. messageKey `trial.error.readOnly` |
+| COS-PLAN-004 | 409  | The tenant is not in a trial state that can be converted.                            | `PATCH /admin/tenants/{id}/convert` on a tenant whose status is already `ACTIVE`                                                                                                             |
+
+---
+
 ## COS-PSET — Platform settings (§6.7; ADR-108)
 
 The settings are one versioned document. A save names the version it read. Validation failures stay on

@@ -53,6 +53,7 @@
       "clusterZone": "โซนคลัสเตอร์"
     },
     "plan": {
+      "LITE": "Lite",
       "STARTER": "Starter",
       "PROFESSIONAL": "Professional",
       "ENTERPRISE": "Enterprise"

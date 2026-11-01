@@ -53,6 +53,7 @@
       "clusterZone": "Cluster Zone"
     },
     "plan": {
+      "LITE": "Lite",
       "STARTER": "Starter",
       "PROFESSIONAL": "Professional",
       "ENTERPRISE": "Enterprise"

@@ -1,8 +1,8 @@
 ---
 title: 'Pricing Model'
-version: '1.2.0'
+version: '1.3.0'
 status: Active
-last_updated: '2026-05-27'
+last_updated: '2026-11-01'
 authors:
   - thitipongroo
 related_docs:
@@ -17,30 +17,40 @@ related_docs:
 ## Table of Contents
 
 - [26.1 SaaS Pricing](#261-saas-pricing)
+  - [26.1.1 External Collaborator Pricing (Vendor Portal)](#2611-external-collaborator-pricing-vendor-portal)
+  - [26.1.2 Free Trial](#2612-free-trial)
 - [26.2 Revenue](#262-revenue)
 
 ---
 
 ## 26.1 SaaS Pricing
 
-SMB :
+> Decision record — product owner, 2026-11-01. Replaces the earlier per-project + per-seat SMB model and
+> the per-user Mid-market model, which were never offered: the published price list
+> (construction-os.io/#pricing) has sold flat plan prices with unlimited users since launch. ADR-109.
 
-- Per active project (base fee per project in active status)
-- Plus per active user/month (seat fee for each user above a minimum included count)
+**Plans are priced by concurrent project capacity, with unlimited users on every plan.** There is no seat
+fee on any plan; users of the tenant and external collaborators (26.1.1) are never counted or billed.
 
-Both charges apply simultaneously — project count and user count are billed independently.
-Specific rate values are set at commercial launch and are configurable per market.
+| `platform."PlanType"` | Tier       | Active projects | Monthly price (THB, excl. VAT) | Users     | Database                 |
+| --------------------- | ---------- | --------------- | ------------------------------ | --------- | ------------------------ |
+| `LITE`                | SMB        | 1               | 4,900                          | Unlimited | Shared DB + RLS (§7.1)   |
+| `STARTER`             | SMB        | 3               | 15,000                         | Unlimited | Shared DB + RLS (§7.1)   |
+| `PROFESSIONAL`        | Mid-market | 10              | 45,000                         | Unlimited | Shared DB + RLS (§7.1)   |
+| `ENTERPRISE`          | Enterprise | Unlimited       | Annual contract, quoted        | Unlimited | Dedicated DB (§7.1, §7.8) |
 
-Mid-market :
-
-- Annual subscription
-- Per active user
-
-Enterprise :
-
-- Annual contract
-- Platform fee
-- Usage-based AI pricing
+- **Tier names.** "SMB" in other specifications means `LITE` + `STARTER`; "Mid-market" means
+  `PROFESSIONAL`; "Enterprise" means `ENTERPRISE`. Nothing outside this section needs renaming
+- **Active project** = a project whose status is `DRAFT`, `ACTIVE` or `ON_HOLD`. `COMPLETED` (treated as
+  archived by `construction.project.archived.v1`) and `CANCELLED` projects do not count
+- **Enforcement.** Creating a project that would exceed the plan's limit is refused with `COS-PLAN-001`
+  (409). A plan change to a tier whose limit is below the tenant's current active-project count is refused
+  with `COS-PLAN-002` (409) — the tenant completes or cancels projects first; no project is ever closed
+  automatically
+- **Annual billing.** `LITE`, `STARTER` and `PROFESSIONAL` may be paid annually at 15% off the monthly
+  price. `ENTERPRISE` is an annual contract with a platform fee and usage-based AI pricing
+- **Prices** exclude 7% VAT. They are the published list prices; commercial terms are in the Terms of
+  Service (construction-os.io/terms)
 
 AI Usage Pricing Unit :
 
@@ -49,11 +59,12 @@ LLM API calls (input + output tokens combined) :
 
 | Tier                          | AI Pricing Model                                                          | Included Quota    |
 | ----------------------------- | ------------------------------------------------------------------------- | ----------------- |
-| Shared SaaS — SMB             | Included in plan up to monthly token quota; overage charged per 1K tokens | 500K tokens/month |
-| Shared SaaS — Mid-market      | Included in plan up to monthly token quota; overage charged per 1K tokens | 5M tokens/month   |
+| Shared SaaS — SMB (`LITE`, `STARTER`)   | Included in plan up to monthly token quota; overage charged per 1K tokens | 500K tokens/month |
+| Shared SaaS — Mid-market (`PROFESSIONAL`) | Included in plan up to monthly token quota; overage charged per 1K tokens | 5M tokens/month   |
 | Dedicated Tenant / Enterprise | Negotiated per contract; usage reported monthly                           | Custom            |
 
-- Token counting follows the LLM provider's tokenization (OpenAI GPT-4o and gpt-4o-mini by default; additional providers accessible via `LLMProvider` interface — see 22-ai-architecture section 22.5)
+- Token counting follows the LLM provider's tokenization (OpenAI GPT-4o and gpt-4o-mini by default; additional
+  providers accessible via `LLMProvider` interface — see 22-ai-architecture section 22.5)
 - OCR and voice transcription are metered separately per page and per minute respectively
 - Token usage is visible to Tenant Admin in the platform usage dashboard
 - See 14-api-architecture section 14.2 for AI API rate limiting defaults
@@ -65,8 +76,9 @@ LLM API calls (input + output tokens combined) :
 > subcontractors) invited into a tenant's projects via the Vendor Portal (ADR-030) are priced.
 
 **Decision: external collaborators are FREE and UNLIMITED on every plan.** The inviting tenant's
-subscription absorbs them; external users are **never** counted toward the tenant's per-active-user
-seat billing (26.1). This applies to all tiers (SMB / Mid-market / Enterprise).
+subscription absorbs them; external users are **never** counted or billed. Since 2026-11-01 no plan has
+seat billing at all (26.1), so this holds by construction. This applies to all tiers (SMB / Mid-market /
+Enterprise).
 
 **Rationale (competitive norm, verified 2026-07-13):** free unlimited external collaborators is the
 market-winning model in construction SaaS, and it does not erode margin because pricing is decoupled
@@ -102,8 +114,22 @@ transaction fees at onboarding (the SAP Ariba "supplier tax" pattern) is avoided
 DocuSign and BILL all position against it, and it would add friction to the network wedge above.
 
 Cross-references: ADR-030 (Vendor Portal tiers + `platform.vendor_identities` /
-`platform.vendor_trading_relationships`), 26.1 (per-active-user seat billing excludes external users),
+`platform.vendor_trading_relationships`), 26.1 (no seat billing on any plan),
 QM-7 rate limits, 28-ecosystem-expansion 28.2 (future vendor-side monetization).
+
+### 26.1.2 Free Trial
+
+> Decision record — product owner, 2026-11-01. ADR-109; lifecycle and enforcement in
+> [07-multi-tenant-architecture §7.10](07-multi-tenant-architecture.md#710-trial-tenant-lifecycle).
+
+- `LITE`, `STARTER` and `PROFESSIONAL` can be tried free for **30 days** with no credit card. Nothing is
+  ever charged automatically
+- A trial is opened by a SYSTEM_ADMIN from a request made on construction-os.io/trial (sales-assisted).
+  Self-service signup is a later phase
+- At day 30 the tenant becomes **read-only for 30 days**: users can view and export data but not create,
+  edit or approve. At day 60 the tenant is marked for deletion and deleted by a SYSTEM_ADMIN per
+  `docs/runbooks/trial-tenant-deletion.md`
+- Converting to a paid plan at any point keeps all trial data; the plan-change rule in 26.1 applies
 
 ---
 
@@ -118,4 +144,6 @@ Streams :
 - API usage
 - Enterprise support
 
-> 📎 See also: [13-product-architecture](13-product-architecture.md) · [14-api-architecture](14-api-architecture.md) · [25-go-to-market](25-go-to-market.md) · [28-ecosystem-expansion](28-ecosystem-expansion.md)
+> 📎 See also: [13-product-architecture](13-product-architecture.md)
+> · [14-api-architecture](14-api-architecture.md) · [25-go-to-market](25-go-to-market.md)
+> · [28-ecosystem-expansion](28-ecosystem-expansion.md)

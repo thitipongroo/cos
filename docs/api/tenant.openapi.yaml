@@ -174,7 +174,7 @@ components:
           example: ACME Construction Co.
         planType:
           type: string
-          enum: [STARTER, PROFESSIONAL, ENTERPRISE]
+          enum: [LITE, STARTER, PROFESSIONAL, ENTERPRISE]
         dedicatedDbUrl:
           type: string
           maxLength: 500
@@ -199,39 +199,6 @@ components:
             Optional. IANA timezone for notification quiet hours + digest schedules (§19.3/§19.6).
             Defaults from data_region when omitted.
           example: Asia/Bangkok
-
-    TenantResponse:
-      type: object
-      properties:
-        tenantId:
-          type: string
-          format: uuid
-        tenantCode:
-          type: string
-          example: acme_corp
-        tenantName:
-          type: string
-          example: ACME Construction Co.
-        keycloakRealm:
-          type: string
-          example: cos-acme_corp
-        planType:
-          type: string
-          enum: [STARTER, PROFESSIONAL, ENTERPRISE]
-        isActive:
-          type: boolean
-        dataRegion:
-          type: string
-          enum: [ap-southeast-7, ap-southeast-1, eu-west-1]
-          description: Data-residency region for the tenant (§5.6).
-          example: ap-southeast-1
-        timezone:
-          type: string
-          description: IANA timezone for notification quiet hours + digest schedules (§19.3/§19.6).
-          example: Asia/Bangkok
-        createdAt:
-          type: string
-          format: date-time
 
     TenantListRow:
       type: object
@@ -267,7 +234,7 @@ components:
           example: cos-acme_corp
         plan_type:
           type: string
-          enum: [STARTER, PROFESSIONAL, ENTERPRISE]
+          enum: [LITE, STARTER, PROFESSIONAL, ENTERPRISE]
         is_active:
           type: boolean
         data_region:
@@ -288,6 +255,137 @@ components:
             Hostname of the tenant's dedicated database (§20.4.1), parsed server-side from the
             encrypted connection URL. `null` = the tenant is on the shared database.
           example: db-ent-042.cos.internal
+
+    CreateTrialTenantRequest:
+      type: object
+      description: |
+        `CreateTenantRequest` without the ENTERPRISE-only `dedicatedDbUrl`, on a trial plan (§7.10, ADR-109).
+      required: [justification, tenantCode, tenantName, planType]
+      properties:
+        justification:
+          type: string
+          minLength: 10
+          maxLength: 500
+          description: Required (§6.7). Stored in `platform.audit_logs.metadata`.
+          example: Trial requested on construction-os.io (request 7c0e4d3a).
+        tenantCode:
+          type: string
+          pattern: '^[a-z0-9_]{2,50}$'
+          example: somchai_build
+        tenantName:
+          type: string
+          minLength: 2
+          maxLength: 255
+          example: Somchai Build Co., Ltd.
+        planType:
+          type: string
+          enum: [LITE, STARTER, PROFESSIONAL]
+          description: ENTERPRISE cannot be trialled — it is contracted and provisioned (§34).
+        dataRegion:
+          type: string
+          enum: [ap-southeast-7, ap-southeast-1, eu-west-1]
+          default: ap-southeast-1
+        timezone:
+          type: string
+          description: IANA zone. Defaults from `dataRegion`.
+          example: Asia/Bangkok
+        trialSource:
+          type: string
+          pattern: '^[a-z0-9-]{1,40}$'
+          description: The construction-os.io CTA the request came from (its `source`).
+          example: pricing
+        trialRequestRef:
+          type: string
+          pattern: '^[A-Za-z0-9_-]+$'
+          maxLength: 80
+          description: The construction-os.io trial request id — the website's own key, stored as text.
+          example: 7c0e4d3a-2a51-4c38-9d1e-5f0a6f2b9e11
+
+    ConvertTenantRequest:
+      type: object
+      required: [justification, planType]
+      properties:
+        justification:
+          type: string
+          minLength: 10
+          maxLength: 500
+          example: Customer paid invoice INV-2026-1101 for the Starter plan.
+        planType:
+          type: string
+          enum: [LITE, STARTER, PROFESSIONAL]
+          description: The plan the customer paid for. ENTERPRISE is contracted through §34, not converted.
+
+    TenantSubscriptionRow:
+      type: object
+      description: |
+        A tenant with its commercial state (§7.10), in the snake_case the endpoints return. Returned by
+        `POST /admin/tenants`, `POST /admin/tenants/trial` and `PATCH /admin/tenants/{tenantId}/convert`.
+        `dedicated_db_url` is never returned.
+      required:
+        [
+          tenant_id,
+          tenant_code,
+          tenant_name,
+          keycloak_realm,
+          plan_type,
+          is_active,
+          data_region,
+          timezone,
+          created_at,
+          updated_at,
+          subscription_status,
+          trial_started_at,
+          trial_ends_at,
+          trial_source,
+          converted_at,
+        ]
+      properties:
+        tenant_id:
+          type: string
+          format: uuid
+        tenant_code:
+          type: string
+        tenant_name:
+          type: string
+        keycloak_realm:
+          type: string
+          example: construction-os
+        plan_type:
+          type: string
+          enum: [LITE, STARTER, PROFESSIONAL, ENTERPRISE]
+        is_active:
+          type: boolean
+          description: The SYSTEM_ADMIN deactivation switch — independent of `subscription_status`.
+        data_region:
+          type: string
+        timezone:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        subscription_status:
+          type: string
+          enum: [ACTIVE, TRIAL, EXPIRED, PENDING_DELETION]
+          description: |
+            `EXPIRED` and `PENDING_DELETION` tenants are read-only (`403 COS-PLAN-003`, §7.10).
+        trial_started_at:
+          type: [string, 'null']
+          format: date-time
+          description: Set for a tenant that is or was a trial; `null` for a tenant created as a paying customer.
+        trial_ends_at:
+          type: [string, 'null']
+          format: date-time
+          description: '`trial_started_at` + 30 days.'
+        trial_source:
+          type: [string, 'null']
+          example: pricing
+        converted_at:
+          type: [string, 'null']
+          format: date-time
+          description: When the trial became `ACTIVE`; `null` until then.
 
     TenantProvisioningRow:
       type: object
@@ -900,13 +998,118 @@ paths:
               $ref: '#/components/schemas/CreateTenantRequest'
       responses:
         '201':
-          description: Tenant provisioned — Kafka event emitted
+          description: Tenant provisioned — Kafka event emitted. `subscription_status` is `ACTIVE`.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/TenantResponse'
+                $ref: '#/components/schemas/TenantSubscriptionRow'
         '409':
           description: Tenant code already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthenticated
+        '403':
+          description: Insufficient role — SYSTEM_ADMIN required
+
+  /admin/tenants/trial:
+    post:
+      operationId: postAdminTenantsTrial
+      summary: Open a 30-day free-trial tenant (SYSTEM_ADMIN only — §7.10)
+      description: |
+        Creates a tenant exactly as `POST /admin/tenants` does — shared realm, shared database, WHT defaults,
+        `identity.tenant.created.v1` — with `subscription_status = TRIAL`, `trial_started_at = now()` and
+        `trial_ends_at = now() + 30 days` from the database clock.
+
+        Audited as `tenant.create_trial` with the justification, `trial_source` and `trial_request_ref`, in the
+        same transaction (§6.7). `platform.tenant.trial_started.v1` is added with the trial events (ADR-109).
+      tags: [tenants]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTrialTenantRequest'
+      responses:
+        '201':
+          description: Trial tenant created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TenantSubscriptionRow'
+        '400':
+          description: Invalid body — including `planType` ENTERPRISE, or a missing justification
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: Tenant code already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthenticated
+        '403':
+          description: Insufficient role — SYSTEM_ADMIN required
+
+  /admin/tenants/{tenantId}/convert:
+    patch:
+      operationId: patchAdminTenantsByTenantidConvert
+      summary: Convert a trial tenant to a paid plan (SYSTEM_ADMIN only — §7.10)
+      description: |
+        `TRIAL`, `EXPIRED` or `PENDING_DELETION` → `ACTIVE` on `planType`, with `converted_at = now()`. The tenant
+        row is locked for the check and the update. A plan whose active-project limit (§26.1: LITE 1, STARTER 3,
+        PROFESSIONAL 10) is below the tenant's `DRAFT`/`ACTIVE`/`ON_HOLD` projects is refused — no project is
+        closed for the customer.
+
+        Audited as `tenant.convert` with the justification, the previous status and plan, in the same transaction
+        (§6.7). `platform.tenant.converted.v1` is added with the trial events (ADR-109).
+      tags: [tenants]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: tenantId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConvertTenantRequest'
+      responses:
+        '200':
+          description: Tenant converted — `subscription_status` is `ACTIVE`
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TenantSubscriptionRow'
+        '400':
+          description: Invalid body — including `planType` ENTERPRISE, or a missing justification
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Tenant not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: |
+            `COS-PLAN-004` — the tenant is already `ACTIVE`.
+            `COS-PLAN-002` — the target plan's limit is below the active-project count; `details`:
+            `target_plan`, `limit`, `active_projects`.
           content:
             application/json:
               schema:

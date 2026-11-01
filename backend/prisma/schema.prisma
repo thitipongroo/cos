@@ -28,6 +28,7 @@ datasource db {
 // with tenant_id + RLS enforced by TenantPrismaService (SET LOCAL app.current_tenant_id).
 
 enum PlanType {
+  LITE
   STARTER
   PROFESSIONAL
   ENTERPRISE
@@ -55,31 +56,57 @@ enum CosRoleEnum {
 
 // @pdpa(category: "organizational") — tenant data is not personal data
 model Tenant {
-  tenantId       String   @id @default(dbgenerated("gen_random_uuid()")) @map("tenant_id") @db.Uuid
-  tenantCode     String   @unique @map("tenant_code") @db.VarChar(50)
-  tenantName     String   @map("tenant_name") @db.VarChar(255)
+  tenantId           String    @id @default(dbgenerated("gen_random_uuid()")) @map("tenant_id") @db.Uuid
+  tenantCode         String    @unique @map("tenant_code") @db.VarChar(50)
+  tenantName         String    @map("tenant_name") @db.VarChar(255)
   // NOT @unique since 20260914000001: STARTER/PROFESSIONAL tenants share the realm `construction-os` (§7.6).
   // Uniqueness holds for every other realm, as the partial index `tenants_keycloak_realm_dedicated_key`
   // (WHERE keycloak_realm <> 'construction-os') — which this schema does not model.
-  keycloakRealm  String   @map("keycloak_realm") @db.VarChar(100)
-  planType       PlanType @map("plan_type")
-  isActive       Boolean  @default(true) @map("is_active")
+  keycloakRealm      String    @map("keycloak_realm") @db.VarChar(100)
+  planType           PlanType  @map("plan_type")
+  isActive           Boolean   @default(true) @map("is_active")
   // NULL = shared DB (STARTER/PROFESSIONAL); non-NULL = dedicated DB URL (ENTERPRISE per spec §7.1)
-  dedicatedDbUrl String?  @map("dedicated_db_url") @db.VarChar(500)
+  dedicatedDbUrl     String?   @map("dedicated_db_url") @db.VarChar(500)
   // Data-residency region (§5.6): Thai -> ap-southeast-7, EU -> eu-west-1, default -> ap-southeast-1.
   // Assigned at provisioning, immutable after first data write; consumers resolve it via tenant_id.
-  dataRegion     String   @default("ap-southeast-1") @map("data_region") @db.VarChar(20)
+  dataRegion         String    @default("ap-southeast-1") @map("data_region") @db.VarChar(20)
   // IANA timezone (Phase 20 §19.3/§19.6): notification quiet hours + digest schedules evaluate in this
   // zone. Defaulted from data_region at provisioning; a tenant may override it independently (PO 2026-07-23).
-  timezone       String   @default("Asia/Bangkok") @map("timezone") @db.VarChar(40)
-  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz()
-  updatedAt      DateTime @updatedAt @map("updated_at") @db.Timestamptz()
+  timezone           String    @default("Asia/Bangkok") @map("timezone") @db.VarChar(40)
+  // Commercial state (§7.10, ADR-109): ACTIVE | TRIAL | EXPIRED | PENDING_DELETION (CHECK constraint
+  // tenants_subscription_status_valid). Separate from is_active, which stays the SYSTEM_ADMIN deactivation switch.
+  subscriptionStatus String    @default("ACTIVE") @map("subscription_status")
+  // Both set for a tenant that is or was a trial, both NULL otherwise (CHECK tenants_trial_dates_consistent).
+  trialStartedAt     DateTime? @map("trial_started_at") @db.Timestamptz()
+  trialEndsAt        DateTime? @map("trial_ends_at") @db.Timestamptz()
+  // construction-os.io CTA source, and the website's trial request id — a key in another system.
+  trialSource        String?   @map("trial_source")
+  trialRequestRef    String?   @map("trial_request_ref")
+  convertedAt        DateTime? @map("converted_at") @db.Timestamptz()
+  createdAt          DateTime  @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt          DateTime  @updatedAt @map("updated_at") @db.Timestamptz()
 
-  users       User[]
-  memberships TenantMembership[]
-  auditLogs   AuditLog[]
+  users        User[]
+  memberships  TenantMembership[]
+  auditLogs    AuditLog[]
+  trialNotices TenantTrialNotice[]
 
+  // The partial index tenants_trial_lifecycle_idx (WHERE subscription_status <> 'ACTIVE') is not modelled.
   @@map("tenants")
+  @@schema("platform")
+}
+
+// @pdpa(category: "organizational") — which trial notices a tenant has been sent (§7.10); no personal data
+model TenantTrialNotice {
+  tenantId String   @map("tenant_id") @db.Uuid
+  // DAY_0 | DAY_7 | DAY_21 | DAY_28 | DAY_30 | DAY_53 | DAY_60_ADMIN (CHECK tenant_trial_notices_notice_valid)
+  notice   String   @map("notice")
+  sentAt   DateTime @default(now()) @map("sent_at") @db.Timestamptz()
+
+  tenant Tenant @relation(fields: [tenantId], references: [tenantId], onDelete: Cascade)
+
+  @@id([tenantId, notice])
+  @@map("tenant_trial_notices")
   @@schema("platform")
 }
 

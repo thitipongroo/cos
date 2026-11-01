@@ -70,7 +70,7 @@ import { useDecideProvisioning, useTenantProvisioning, useTenants } from '../../
 import { TENANT_LIST } from '../../lib/adminDrawnFigures';
 import { formatDate } from '../../lib/format';
 
-const PLAN_FILTERS: PlanFilter[] = ['ALL', 'ENTERPRISE', 'PROFESSIONAL', 'STARTER'];
+const PLAN_FILTERS: PlanFilter[] = ['ALL', 'ENTERPRISE', 'PROFESSIONAL', 'STARTER', 'LITE'];
 
 // As drawn: ENTERPRISE `bg-secondary-container/20 text-secondary border border-secondary/40 font-bold`, PROFESSIONAL
 // `bg-surface-variant text-on-surface font-semibold`, STARTER `bg-surface-container-high text-outline font-medium`.
@@ -79,6 +79,8 @@ const PLAN_BADGE: Record<PlanType, string> = {
     'border border-cos-op-secondary/40 bg-cos-op-secondary-container/20 text-cos-op-secondary font-bold',
   PROFESSIONAL: 'bg-cos-op-container-highest text-cos-op-on-surface font-semibold',
   STARTER: 'bg-cos-op-container-high text-cos-op-outline font-medium',
+  // Not drawn (added with ADR-109): shares STARTER's badge, the smallest drawn tier.
+  LITE: 'bg-cos-op-container-high text-cos-op-outline font-medium',
 };
 
 const TONE: Record<ProvisioningTone, { text: string; icon: AdminIconName | null }> = {
