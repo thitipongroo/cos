@@ -87,10 +87,14 @@ Alternatives rejected: per-seat billing (not what is sold); a `TRIAL` plan type 
   added
 - Project creation takes a per-tenant advisory lock while the limit flag is on, serialising concurrent creates
   within one tenant
-- Writes by vendor-portal users (`VendorAuthGuard`, a separate authentication path) are not covered by the
-  read-only rule
+- Vendor-portal writes (`VendorAuthGuard`, a separate authentication path) cost one primary-key lookup of the
+  tenant's status, so the read-only rule covers them too (product owner, 2026-11-01)
+- An unreadable plan refuses project creation with `COS-PLAN-005` instead of creating without a limit (product
+  owner, 2026-11-01)
 - Removing `LITE` from the enum on rollback needs the type recreated (see the rollback script)
-- Deletion stays a manual step until a tenant purge exists
+- Deletion stays a manual step (`docs/runbooks/trial-tenant-deletion.md`); its PostgreSQL part is one audited
+  script, `scripts/maintenance/trial-tenant-purge.sql`, not an application feature
+- Trial notices are Thai then English in one message: `platform.users` has no locale to choose by
 
 ### Neutral
 

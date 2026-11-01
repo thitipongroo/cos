@@ -11,7 +11,8 @@
 // Interceptors run after every guard, so this sees the same request TenantContextInterceptor does. It costs no
 // query: subscription_status comes back from the tenant lookup validate() already runs on every request.
 //
-// Unauthenticated routes have no req.user and pass untouched. Behind the s1.tenant.trial-lifecycle flag (QM-15):
+// Unauthenticated routes have no req.user and pass untouched. The vendor portal authenticates on its own path
+// (VendorAuthGuard) and applies the same rule there with isReadOnlyWrite / trialReadOnlyError. Behind the s1.tenant.trial-lifecycle flag (QM-15):
 // OFF, nothing is refused.
 
 import {
@@ -38,6 +39,31 @@ export const READ_ONLY_STATUSES: ReadonlySet<string> = new Set(['EXPIRED', 'PEND
 
 const SAFE_METHODS: ReadonlySet<string> = new Set(['GET', 'HEAD', 'OPTIONS']);
 
+/** Anything but GET / HEAD / OPTIONS — a request with no method counts as a write. */
+export function isWriteMethod(method: string | undefined): boolean {
+  return !SAFE_METHODS.has((method ?? '').toUpperCase());
+}
+
+/** Whether a request with this method, on a tenant in this status, is a write the read-only rule refuses. */
+export function isReadOnlyWrite(
+  method: string | undefined,
+  status: string | null | undefined,
+): boolean {
+  return !!status && READ_ONLY_STATUSES.has(status) && isWriteMethod(method);
+}
+
+/** The 403 COS-PLAN-003 every read-only refusal raises — the interceptor and the vendor portal alike. */
+export function trialReadOnlyError(status: string): ForbiddenException {
+  return new ForbiddenException({
+    error: {
+      code: TRIAL_READ_ONLY_CODE,
+      message: 'Your free trial has ended. The account is read-only until a plan is chosen.',
+      messageKey: 'trial.error.readOnly',
+      details: { subscription_status: status },
+    },
+  });
+}
+
 export const ALLOW_WHILE_READ_ONLY_KEY = 'cos:allow-while-read-only';
 
 /**
@@ -59,13 +85,7 @@ export class TrialReadOnlyInterceptor implements NestInterceptor {
 
     const req = context.switchToHttp().getRequest<{ method?: string; user?: AuthenticatedUser }>();
     const status = req.user?.subscriptionStatus;
-    if (
-      !status ||
-      !READ_ONLY_STATUSES.has(status) ||
-      SAFE_METHODS.has((req.method ?? '').toUpperCase())
-    ) {
-      return next.handle();
-    }
+    if (!isReadOnlyWrite(req.method, status)) return next.handle();
 
     const allowed = this.reflector.getAllAndOverride<boolean | undefined>(
       ALLOW_WHILE_READ_ONLY_KEY,
@@ -78,13 +98,6 @@ export class TrialReadOnlyInterceptor implements NestInterceptor {
       return next.handle();
     }
 
-    throw new ForbiddenException({
-      error: {
-        code: TRIAL_READ_ONLY_CODE,
-        message: 'Your free trial has ended. The account is read-only until a plan is chosen.',
-        messageKey: 'trial.error.readOnly',
-        details: { subscription_status: status },
-      },
-    });
+    throw trialReadOnlyError(status!);
   }
 }

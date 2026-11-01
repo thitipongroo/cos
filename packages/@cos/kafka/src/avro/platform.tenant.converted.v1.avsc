@@ -1,0 +1,117 @@
+{
+  "type": "record",
+  "name": "TenantConvertedEvent",
+  "namespace": "com.constructionos.events.platform",
+  "doc": "platform.tenant.converted.v1 — §7.10 / ADR-109. A trial tenant became a paying customer: TRIAL / EXPIRED / PENDING_DELETION -> ACTIVE. Platform-scope: rides the shared platform.events topic.",
+  "fields": [
+    {
+      "name": "event_id",
+      "type": "string"
+    },
+    {
+      "name": "event_type",
+      "type": "string"
+    },
+    {
+      "name": "event_version",
+      "type": "string"
+    },
+    {
+      "name": "tenant_id",
+      "type": "string",
+      "doc": "Always the 'platform' sentinel; the tenant is payload.tenant_id"
+    },
+    {
+      "name": "actor_id",
+      "type": "string",
+      "doc": "SYSTEM_ADMIN user_id who converted the tenant"
+    },
+    {
+      "name": "occurred_at",
+      "type": "string"
+    },
+    {
+      "name": "correlation_id",
+      "type": "string"
+    },
+    {
+      "name": "trace_id",
+      "type": [
+        "null",
+        "string"
+      ],
+      "default": null
+    },
+    {
+      "name": "span_id",
+      "type": [
+        "null",
+        "string"
+      ],
+      "default": null
+    },
+    {
+      "name": "payload",
+      "type": {
+        "type": "record",
+        "name": "TenantConvertedPayload",
+        "fields": [
+          {
+            "name": "tenant_id",
+            "type": "string"
+          },
+          {
+            "name": "tenant_code",
+            "type": "string"
+          },
+          {
+            "name": "from_status",
+            "type": {
+              "type": "enum",
+              "name": "TrialFromStatus",
+              "symbols": [
+                "TRIAL",
+                "EXPIRED",
+                "PENDING_DELETION"
+              ]
+            },
+            "doc": "Status before conversion"
+          },
+          {
+            "name": "from_plan",
+            "type": {
+              "type": "enum",
+              "name": "PlanType",
+              "symbols": [
+                "STARTER",
+                "PROFESSIONAL",
+                "ENTERPRISE",
+                "LITE"
+              ]
+            },
+            "doc": "Plan trialled"
+          },
+          {
+            "name": "plan_type",
+            "type": {
+              "type": "enum",
+              "name": "PlanType",
+              "symbols": [
+                "STARTER",
+                "PROFESSIONAL",
+                "ENTERPRISE",
+                "LITE"
+              ]
+            },
+            "doc": "Plan paid for"
+          },
+          {
+            "name": "converted_at",
+            "type": "string",
+            "doc": "ISO 8601"
+          }
+        ]
+      }
+    }
+  ]
+}

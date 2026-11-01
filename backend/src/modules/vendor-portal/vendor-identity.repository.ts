@@ -4,6 +4,7 @@
 
 import { Injectable, OnModuleDestroy } from '@nestjs/common';
 import { createPrismaClient } from '../../shared/prisma/create-prisma-client';
+import { readSubscriptionStatus } from '../tenant/public/plan-limits';
 
 export interface VendorIdentityRow {
   vendor_identity_id: string;
@@ -81,6 +82,11 @@ export class VendorIdentityRepository implements OnModuleDestroy {
    * otherwise. Revoking per-tenant (status) and disabling network-wide (is_active) are different
    * actions, and both must land.
    */
+  /** subscription_status of the tenant a vendor is acting in (§7.10) — read through the tenant module's helper. */
+  async tenantSubscriptionStatus(tenantId: string): Promise<string | null> {
+    return readSubscriptionStatus(this.prisma, tenantId);
+  }
+
   async findActiveRelationship(
     vendorIdentityId: string,
     tenantId: string,

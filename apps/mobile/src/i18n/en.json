@@ -1422,7 +1422,8 @@
       "issuesLabel": "Issues"
     },
     "error": {
-      "planLimitReached": "Your plan's active-project limit is reached. Complete a project or upgrade the plan to create another."
+      "planLimitReached": "Your plan's active-project limit is reached. Complete a project or upgrade the plan to create another.",
+      "planUnreadable": "Your plan could not be checked, so the project was not created. Try again; if it keeps happening, contact support."
     }
   },
   "pm": {

@@ -163,10 +163,18 @@ describe('ProjectRepository', () => {
       expect(txMock.$queryRaw).toHaveBeenCalledTimes(2);
     });
 
-    it('fails open when the tenant row is not visible', async () => {
+    it('refuses with 503 COS-PLAN-005 when the tenant row is not visible, before the INSERT', async () => {
       const { repo, txMock } = limitRepo(null, 0);
       txMock.$queryRaw.mockReset().mockResolvedValueOnce([]).mockResolvedValue([baseRow]);
-      await expect(repo.create(dto, USER_ID, undefined, true)).resolves.toEqual(baseRow);
+      const err = await repo.create(dto, USER_ID, undefined, true).catch((e: unknown) => e);
+      expect((err as { getStatus(): number }).getStatus()).toBe(503);
+      expect((err as { getResponse(): unknown }).getResponse()).toEqual({
+        error: expect.objectContaining({
+          code: 'COS-PLAN-005',
+          messageKey: 'project.error.planUnreadable',
+        }),
+      });
+      expect(txMock.$queryRaw).toHaveBeenCalledTimes(1);
     });
 
     it('does nothing extra when enforcement is off', async () => {

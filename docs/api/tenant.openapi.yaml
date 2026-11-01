@@ -1024,7 +1024,7 @@ paths:
         `trial_ends_at = now() + 30 days` from the database clock.
 
         Audited as `tenant.create_trial` with the justification, `trial_source` and `trial_request_ref`, in the
-        same transaction (§6.7). `platform.tenant.trial_started.v1` is added with the trial events (ADR-109).
+        same transaction (§6.7). Writes `platform.tenant.trial_started.v1` to the outbox in the same transaction.
       tags: [tenants]
       security:
         - bearerAuth: []
@@ -1069,7 +1069,7 @@ paths:
         closed for the customer.
 
         Audited as `tenant.convert` with the justification, the previous status and plan, in the same transaction
-        (§6.7). `platform.tenant.converted.v1` is added with the trial events (ADR-109).
+        (§6.7). Writes `platform.tenant.converted.v1` to the outbox in the same transaction.
       tags: [tenants]
       security:
         - bearerAuth: []

@@ -4,7 +4,13 @@
 // Callbacks are `async` so TypeScript unwraps PrismaPromise<T> → T, giving
 // TenantPrismaService.run<T>() clean type inference under Node16 resolution.
 
-import { ConflictException, Injectable, Scope, Inject } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  Scope,
+  Inject,
+  ServiceUnavailableException,
+} from '@nestjs/common';
 import { REQUEST } from '@nestjs/core';
 import type { Request } from 'express';
 import type { Prisma } from '@prisma/client';
@@ -156,10 +162,17 @@ export class ProjectRepository {
   ): Promise<void> {
     const plan = await lockTenantPlan(tx, this.tenantId);
     if (!plan) {
-      // RLS shows app_user its own tenant row, so this means the context is wrong, not that the limit is met.
-      // Fail open — refusing every project creation on a context fault is worse than one unlimited create.
-      logger.warn({ tenantId: this.tenantId }, 'project.plan_limit.plan_unreadable');
-      return;
+      // RLS shows app_user its own tenant row, so this means the request context is wrong. Refused, not let
+      // through: an unreadable plan must not become an unlimited one (product owner, 2026-11-01).
+      logger.error({ tenantId: this.tenantId }, 'project.plan_limit.plan_unreadable');
+      throw new ServiceUnavailableException({
+        error: {
+          code: PLAN_ERROR.PLAN_UNREADABLE,
+          message:
+            "The tenant's plan could not be read. Try again; if it persists, contact support.",
+          messageKey: 'project.error.planUnreadable',
+        },
+      });
     }
     const limit = PLAN_PROJECT_LIMIT[plan];
     if (limit === null) return;

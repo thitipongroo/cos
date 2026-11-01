@@ -1,0 +1,89 @@
+{
+  "type": "record",
+  "name": "TenantDeletionDueEvent",
+  "namespace": "com.constructionos.events.platform",
+  "doc": "platform.tenant.deletion_due.v1 — §7.10 / ADR-109. 30 days after trial_ends_at: EXPIRED -> PENDING_DELETION. Deletion itself is manual (docs/runbooks/trial-tenant-deletion.md). Platform-scope: rides the shared platform.events topic.",
+  "fields": [
+    {
+      "name": "event_id",
+      "type": "string"
+    },
+    {
+      "name": "event_type",
+      "type": "string"
+    },
+    {
+      "name": "event_version",
+      "type": "string"
+    },
+    {
+      "name": "tenant_id",
+      "type": "string",
+      "doc": "Always the 'platform' sentinel; the tenant is payload.tenant_id"
+    },
+    {
+      "name": "actor_id",
+      "type": "string",
+      "doc": "'system'"
+    },
+    {
+      "name": "occurred_at",
+      "type": "string"
+    },
+    {
+      "name": "correlation_id",
+      "type": "string"
+    },
+    {
+      "name": "trace_id",
+      "type": [
+        "null",
+        "string"
+      ],
+      "default": null
+    },
+    {
+      "name": "span_id",
+      "type": [
+        "null",
+        "string"
+      ],
+      "default": null
+    },
+    {
+      "name": "payload",
+      "type": {
+        "type": "record",
+        "name": "TenantDeletionDuePayload",
+        "fields": [
+          {
+            "name": "tenant_id",
+            "type": "string"
+          },
+          {
+            "name": "tenant_code",
+            "type": "string"
+          },
+          {
+            "name": "plan_type",
+            "type": {
+              "type": "enum",
+              "name": "PlanType",
+              "symbols": [
+                "STARTER",
+                "PROFESSIONAL",
+                "ENTERPRISE",
+                "LITE"
+              ]
+            }
+          },
+          {
+            "name": "trial_ends_at",
+            "type": "string",
+            "doc": "ISO 8601"
+          }
+        ]
+      }
+    }
+  ]
+}

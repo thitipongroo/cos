@@ -94,6 +94,12 @@ export const EVENT_AVSC_MAP: Record<string, string> = {
   // ADR-061 ราคากลาง: a SYSTEM_ADMIN import or adapter sync changed the shared central price catalog.
   // Platform-scope (tenant_id 'platform'), so it rides platform.events like the two above.
   'platform.central_price_catalog.updated.v1': 'platform.central_price_catalog.updated.v1.avsc',
+  // §7.10 / ADR-109 free-trial lifecycle — platform-scope (tenant_id 'platform', tenant in the payload), for analytics
+  // and CRM, so they ride platform.events.
+  'platform.tenant.trial_started.v1': 'platform.tenant.trial_started.v1.avsc',
+  'platform.tenant.trial_expired.v1': 'platform.tenant.trial_expired.v1.avsc',
+  'platform.tenant.deletion_due.v1': 'platform.tenant.deletion_due.v1.avsc',
+  'platform.tenant.converted.v1': 'platform.tenant.converted.v1.avsc',
   // AI
   'ai.risk_prediction.generated.v1': 'ai.risk_prediction.generated.v1.avsc',
   // Digital Twin (Phase 24)

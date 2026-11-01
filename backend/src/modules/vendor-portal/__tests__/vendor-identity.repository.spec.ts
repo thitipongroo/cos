@@ -31,6 +31,15 @@ describe('VendorIdentityRepository', () => {
     q = (repo as unknown as { prisma: { $queryRaw: jest.Mock } }).prisma.$queryRaw;
   });
 
+  it('tenantSubscriptionStatus reads platform.tenants through the tenant module helper', async () => {
+    q.mockResolvedValueOnce([{ subscription_status: 'EXPIRED' }]).mockResolvedValueOnce([]);
+    expect(await repo.tenantSubscriptionStatus('ten-1')).toBe('EXPIRED');
+    expect(await repo.tenantSubscriptionStatus('ten-1')).toBeNull();
+    expect((q.mock.calls[0]![0] as TemplateStringsArray).join('?')).toContain(
+      'FROM platform.tenants',
+    );
+  });
+
   it('findIdentityByEmail returns the row', async () => {
     q.mockResolvedValue([identity]);
     expect(await repo.findIdentityByEmail('a@b.co')).toEqual(identity);

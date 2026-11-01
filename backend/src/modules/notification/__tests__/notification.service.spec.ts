@@ -1051,6 +1051,50 @@ describe('platform-level events', () => {
   });
 });
 
+describe('notifyTenantRoles (§7.10 trial notices)', () => {
+  it('notifies the tenant users holding the roles, under that tenant, and says how many', async () => {
+    mockRepo.findUsersByRole.mockResolvedValue([
+      { user_id: 'u1', email: 'a@b.co' },
+      { user_id: 'u2', email: 'c@d.co' },
+    ]);
+    mockRepo.findDisabledChannels.mockResolvedValue(new Set<string>());
+    mockRepo.findTemplatesByChannel.mockResolvedValue(
+      templatesFor({ subject_template: 'Trial', body_template: 'Ends {{trial_ends_on_en}}' }),
+    );
+    mockRepo.createNotification.mockResolvedValue(notifRow);
+
+    await expect(
+      svc.notifyTenantRoles(
+        'tenant-aaa',
+        ['TENANT_ADMIN', 'EXECUTIVE'],
+        'tenant.trial.notice.day_0',
+        {
+          trial_ends_on_en: '1 December 2026',
+        },
+      ),
+    ).resolves.toBe(2);
+
+    expect(mockRepo.findUsersByRole).toHaveBeenCalledWith('tenant-aaa', [
+      'TENANT_ADMIN',
+      'EXECUTIVE',
+    ]);
+    const rows = mockRepo.createNotification.mock.calls.map(
+      (c) => c[0] as { tenant_id: string; recipient_id: string; body: string },
+    );
+    expect(new Set(rows.map((r) => r.recipient_id))).toEqual(new Set(['u1', 'u2']));
+    expect(rows.every((r) => r.tenant_id === 'tenant-aaa')).toBe(true);
+    expect(rows[0]!.body).toBe('Ends 1 December 2026');
+  });
+
+  it('returns 0 and writes nothing when the tenant has no such users yet', async () => {
+    mockRepo.findUsersByRole.mockResolvedValue([]);
+    await expect(
+      svc.notifyTenantRoles('tenant-aaa', ['TENANT_ADMIN'], 'tenant.trial.notice.day_0', {}),
+    ).resolves.toBe(0);
+    expect(mockRepo.createNotification).not.toHaveBeenCalled();
+  });
+});
+
 describe('notifySystemAdmins', () => {
   const admins = [
     { user_id: 'admin-1', email: 'a1@ops.example', tenant_id: 'tenant-aaa' },

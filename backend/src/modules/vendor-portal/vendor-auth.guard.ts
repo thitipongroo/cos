@@ -20,6 +20,11 @@
 //   - Tier 2 (Bearer session + x-vendor-tenant-id header): verify the session token, then confirm an
 //     ACTIVE trading relationship for that vendor in that tenant; publish tenant + vendor.
 //
+// READ-ONLY TRIALS (§7.10, ADR-109). Vendors never pass KeycloakJwtStrategy, so TrialReadOnlyInterceptor cannot see
+// their tenant's status. This guard applies the same rule on both tiers: a write into an EXPIRED or
+// PENDING_DELETION tenant is refused with 403 COS-PLAN-003 while s1.tenant.trial-lifecycle is on. Reads cost
+// nothing; a write costs one primary-key lookup.
+//
 // Tier selection is driven by the presence of the `:token` ROUTE PARAM, not by matching the raw URL.
 // The route table decides which tier applies, so a caller can no longer choose its authentication
 // tier by shaping the URL — the concern behind the previous anchored-regex fix (CodeQL
@@ -30,6 +35,7 @@ import {
   ExecutionContext,
   ForbiddenException,
   Injectable,
+  Optional,
   UnauthorizedException,
 } from '@nestjs/common';
 import { ClsService } from 'nestjs-cls';
@@ -40,11 +46,19 @@ import {
   CLS_VENDOR_INVITATION_ID,
 } from '../../shared/context/cls-context';
 import { assertSafeTenantId } from '../../shared/prisma/assert-safe-tenant-id';
+import { FeatureFlagService } from '../../shared/feature-flags/feature-flag.service';
+import {
+  isReadOnlyWrite,
+  isWriteMethod,
+  TRIAL_LIFECYCLE_FLAG,
+  trialReadOnlyError,
+} from '../../shared/interceptors/trial-read-only.interceptor';
 import { MagicLinkService } from './magic-link.service';
 import { VendorIdentityRepository } from './vendor-identity.repository';
 
 /** The vendor context published onto the request (mirrored into CLS, which is the reliable copy). */
 export interface VendorRequest {
+  method?: string;
   params?: Record<string, string>;
   headers?: Record<string, string | string[] | undefined>;
   tenantId?: string;
@@ -59,6 +73,8 @@ export class VendorAuthGuard implements CanActivate {
     private readonly cls: ClsService,
     private readonly magicLink: MagicLinkService,
     private readonly identities: VendorIdentityRepository,
+    // @Optional: absent means the flag is off, as the registry default is.
+    @Optional() private readonly flags?: FeatureFlagService,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -71,6 +87,7 @@ export class VendorAuthGuard implements CanActivate {
       // tenant_id reaches SET LOCAL via CLS; validate it here so a malformed token fails as 401 at the
       // edge rather than deeper in TenantPrismaService (QM-4 — same guard, applied earlier).
       assertSafeTenantId(claims.tenantId);
+      await this.assertWritable(req, claims.tenantId);
       this.publish(req, { tenantId: claims.tenantId, invitationId: claims.invitationId });
       return true;
     }
@@ -95,12 +112,21 @@ export class VendorAuthGuard implements CanActivate {
       throw new ForbiddenException('No active trading relationship with this tenant');
     }
 
+    await this.assertWritable(req, tenantId);
     this.publish(req, {
       tenantId,
       vendorIdentityId,
       vendorId: relationship.vendor_id,
     });
     return true;
+  }
+
+  /** Refuses a vendor write into a tenant whose free trial has ended (§7.10). Reads never query. */
+  private async assertWritable(req: VendorRequest, tenantId: string): Promise<void> {
+    if (!isWriteMethod(req.method)) return;
+    if (!this.flags?.isEnabled(TRIAL_LIFECYCLE_FLAG, { tenantId })) return;
+    const status = await this.identities.tenantSubscriptionStatus(tenantId);
+    if (isReadOnlyWrite(req.method, status)) throw trialReadOnlyError(status!);
   }
 
   /**

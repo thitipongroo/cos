@@ -37,15 +37,16 @@ in QM-17, not repeated here.
 
 ## Infrastructure recovery
 
-| Runbook                                                      | Covers                                                    | State |
-| ------------------------------------------------------------ | --------------------------------------------------------- | ----- |
-| [db-failover.md](db-failover.md)                             | DB Failover Runbook (PostgreSQL RDS Multi-AZ)             | STUB  |
-| [kafka-partition-rebalance.md](kafka-partition-rebalance.md) | Kafka Consumer Lag and Partition Rebalance Runbook        | —     |
-| [temporal-worker-restart.md](temporal-worker-restart.md)     | Temporal Worker Restart and Stuck Workflow Recovery       | —     |
-| [finance-ledger-drift.md](finance-ledger-drift.md)           | Finance Ledger Drift — cost ledger vs procurement (OQ-31) | —     |
-| [keycloak-realm-backup.md](keycloak-realm-backup.md)         | Keycloak Realm Daily Backup Runbook                       | —     |
-| [keycloak-realm-recovery.md](keycloak-realm-recovery.md)     | Keycloak Realm Recovery Runbook                           | STUB  |
-| [dedicated-db-provisioning.md](dedicated-db-provisioning.md) | Dedicated DB Provisioning Runbook (ENTERPRISE tenants)    | —     |
+| Runbook                                                      | Covers                                                    | State                                                    |
+| ------------------------------------------------------------ | --------------------------------------------------------- | -------------------------------------------------------- |
+| [db-failover.md](db-failover.md)                             | DB Failover Runbook (PostgreSQL RDS Multi-AZ)             | STUB                                                     |
+| [kafka-partition-rebalance.md](kafka-partition-rebalance.md) | Kafka Consumer Lag and Partition Rebalance Runbook        | —                                                        |
+| [temporal-worker-restart.md](temporal-worker-restart.md)     | Temporal Worker Restart and Stuck Workflow Recovery       | —                                                        |
+| [finance-ledger-drift.md](finance-ledger-drift.md)           | Finance Ledger Drift — cost ledger vs procurement (OQ-31) | —                                                        |
+| [keycloak-realm-backup.md](keycloak-realm-backup.md)         | Keycloak Realm Daily Backup Runbook                       | —                                                        |
+| [keycloak-realm-recovery.md](keycloak-realm-recovery.md)     | Keycloak Realm Recovery Runbook                           | STUB                                                     |
+| [dedicated-db-provisioning.md](dedicated-db-provisioning.md) | Dedicated DB Provisioning Runbook (ENTERPRISE tenants)    | —                                                        |
+| [trial-tenant-deletion.md](trial-tenant-deletion.md)         | Deleting an unconverted free-trial tenant (§7.10)         | **staging run pending** — PostgreSQL step tested locally |
 
 ## Disaster recovery — [`disaster-recovery/`](disaster-recovery/)
 

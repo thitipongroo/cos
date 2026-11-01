@@ -914,6 +914,14 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/CosError'
+        '503':
+          description: |
+            `COS-PLAN-005` — the tenant's plan could not be read, so the limit could not be checked and the project
+            was not created. Only while `s1.project.plan-project-limit` is on.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CosError'
         '422':
           description: Business rule violation
           content:

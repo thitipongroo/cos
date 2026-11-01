@@ -38,6 +38,7 @@ export const PLAN_ERROR = {
   PLAN_BELOW_USAGE: 'COS-PLAN-002',
   READ_ONLY: TRIAL_READ_ONLY_CODE,
   NOT_CONVERTIBLE: 'COS-PLAN-004',
+  PLAN_UNREADABLE: 'COS-PLAN-005',
 } as const;
 
 /**
@@ -46,7 +47,7 @@ export const PLAN_ERROR = {
  *
  * An advisory lock rather than SELECT … FOR UPDATE: the caller is the app_user connection, which may read its own
  * tenant row (rls_tenants_read) but holds no UPDATE right on platform.tenants. The lock is released at commit or
- * rollback. Returns null when the row is not visible — the caller decides what that means.
+ * rollback. Returns null when the row is not visible; the project module refuses then (COS-PLAN-005).
  */
 export async function lockTenantPlan(
   tx: Pick<Prisma.TransactionClient, '$queryRaw' | '$executeRaw'>,
@@ -57,4 +58,19 @@ export async function lockTenantPlan(
     SELECT plan_type FROM platform.tenants WHERE tenant_id = ${tenantId}::uuid
   `;
   return row?.plan_type ?? null;
+}
+
+/**
+ * The tenant's subscription_status, for an authentication path that does not go through KeycloakJwtStrategy (the
+ * vendor portal) and must still apply the read-only rule of §7.10. Takes the caller's privileged client; null when
+ * no such tenant exists.
+ */
+export async function readSubscriptionStatus(
+  client: Pick<Prisma.TransactionClient, '$queryRaw'>,
+  tenantId: string,
+): Promise<SubscriptionStatus | null> {
+  const [row] = await client.$queryRaw<Array<{ subscription_status: SubscriptionStatus }>>`
+    SELECT subscription_status FROM platform.tenants WHERE tenant_id = ${tenantId}::uuid
+  `;
+  return row?.subscription_status ?? null;
 }

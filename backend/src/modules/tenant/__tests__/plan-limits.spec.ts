@@ -1,5 +1,7 @@
 // The plan table is the published price list's promise (§26.1), so it is pinned.
 
+import { readFileSync } from 'fs';
+import { join } from 'path';
 import { PlanType } from '@prisma/client';
 import {
   lockTenantPlan,
@@ -53,7 +55,30 @@ describe('lockTenantPlan', () => {
     await expect(lockTenantPlan(tx as never, TENANT)).resolves.toBeNull();
   });
 
-  it('uses the read-only code the interceptor raises', () => {
-    expect(PLAN_ERROR.READ_ONLY).toBe('COS-PLAN-003');
+  it('uses the read-only code the interceptor raises, and pins the rest', () => {
+    expect(PLAN_ERROR).toEqual({
+      PROJECT_LIMIT_REACHED: 'COS-PLAN-001',
+      PLAN_BELOW_USAGE: 'COS-PLAN-002',
+      READ_ONLY: 'COS-PLAN-003',
+      NOT_CONVERTIBLE: 'COS-PLAN-004',
+      PLAN_UNREADABLE: 'COS-PLAN-005',
+    });
+  });
+});
+
+describe('scripts/readiness/check-plan-project-limit.sh', () => {
+  it('measures against the same limits as PLAN_PROJECT_LIMIT', () => {
+    const script = readFileSync(
+      join(__dirname, '../../../../../scripts/readiness/check-plan-project-limit.sh'),
+      'utf8',
+    );
+    const values = /VALUES ([^\n]+)/.exec(script)![1]!;
+    const pairs = Object.fromEntries(
+      [...values.matchAll(/\('(\w+)', (\d+)\)/g)].map((m) => [m[1], Number(m[2])]),
+    );
+    const limited = Object.fromEntries(
+      Object.entries(PLAN_PROJECT_LIMIT).filter(([, limit]) => limit !== null),
+    );
+    expect(pairs).toEqual(limited);
   });
 });

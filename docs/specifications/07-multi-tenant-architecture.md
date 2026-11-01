@@ -568,8 +568,8 @@ Columns added with it: `trial_started_at`, `trial_ends_at` (= start + 30 days), 
 | From                                | To                 | When                                 | Actor                                               | Event (on `platform.events`)        |
 | ----------------------------------- | ------------------ | ------------------------------------ | --------------------------------------------------- | ----------------------------------- |
 | —                                   | `TRIAL`            | Trial opened                         | SYSTEM_ADMIN, `POST /api/v1/admin/tenants/trial`          | `platform.tenant.trial_started.v1`  |
-| `TRIAL`                             | `EXPIRED`          | `trial_ends_at` passed               | Daily `trial-lifecycle` job                         | `platform.tenant.trial_expired.v1`  |
-| `EXPIRED`                           | `PENDING_DELETION` | 30 days after `trial_ends_at`        | Daily `trial-lifecycle` job                         | `platform.tenant.deletion_due.v1`   |
+| `TRIAL`                             | `EXPIRED`          | `trial_ends_at` passed               | Daily `trial-lifecycle` job (`actor_id` `system`)   | `platform.tenant.trial_expired.v1`  |
+| `EXPIRED`                           | `PENDING_DELETION` | 30 days after `trial_ends_at`        | Daily `trial-lifecycle` job (`actor_id` `system`)   | `platform.tenant.deletion_due.v1`   |
 | `TRIAL`, `EXPIRED`, `PENDING_DELETION` | `ACTIVE`        | Customer pays                        | SYSTEM_ADMIN, `PATCH /api/v1/admin/tenants/{id}/convert`  | `platform.tenant.converted.v1`      |
 
 No other transition exists. Converting applies the plan-change rule of §26.1: a plan whose active-project limit
@@ -586,12 +586,17 @@ every request that is not
 - data-subject rights — data export and consent changes (PDPA §19, §30, §31) must never be blocked
 
 Exempt endpoints carry `@AllowWhileReadOnly()`; no other endpoint may. Vendor-portal requests authenticate on a
-separate path and are not covered.
+separate path (`VendorAuthGuard`), which applies the same rule to vendor writes (product owner, 2026-11-01).
 
 ### Notifications
 
 Sent to every active `TENANT_ADMIN` and `EXECUTIVE` user of the tenant, by email and by LINE where the user has
-linked LINE, in the user's locale (QM-3). Each notice is sent at most once per tenant.
+linked LINE. `platform.users` holds no locale, so each notice is written in Thai and then English in one message
+(QM-3). Each notice is sent at most once per tenant (`platform.tenant_trial_notices`). Only the notice of the
+trial's current stage is sent — a tenant first seen late does not receive the earlier ones at once — and a notice
+that reached nobody (no `TENANT_ADMIN` / `EXECUTIVE` yet) is retried the next day.
+
+The daily `trial-lifecycle` job (`TrialLifecycleService`) runs at 02:00 UTC (09:00 Bangkok) on one replica.
 
 | Day | Notice                                                         |
 | --- | -------------------------------------------------------------- |
@@ -602,12 +607,14 @@ linked LINE, in the user's locale (QM-3). Each notice is sent at most once per t
 | 30  | Trial ended — account is now read-only for 30 days             |
 | 53  | 7 days before deletion                                         |
 
-At day 60 the job also notifies every SYSTEM_ADMIN that the tenant is due for deletion.
+At day 60 the job also notifies every SYSTEM_ADMIN, in-app and by email, that the tenant is due for deletion.
 
 ### Deletion
 
 Trial data is deleted **manually** by a SYSTEM_ADMIN following `docs/runbooks/trial-tenant-deletion.md` once a
-tenant reaches `PENDING_DELETION`. Automated tenant purge does not exist yet; backups expire on their normal
+tenant reaches `PENDING_DELETION`. The PostgreSQL step is `scripts/maintenance/trial-tenant-purge.sql`, audited as
+`tenant.trial_purge`; what is kept (tenant row, audit trail, anonymised users, consent records) is listed in
+`docs/policies/data-retention-policy.md` § Free-trial tenants. Automated tenant purge does not exist yet; backups expire on their normal
 schedule.
 
 ### Feature flag

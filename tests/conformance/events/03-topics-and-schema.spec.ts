@@ -105,6 +105,8 @@ const ENUM_SYMBOL_ORDER: Record<string, readonly string[]> = {
   SafetyComplianceFailureType: ['PERMIT_EXPIRED', 'CHECKLIST_ITEM_FAILED'],
   SeverityLevel: ['LOW', 'MEDIUM', 'HIGH'],
   StateSource: ['IOT', 'MANUAL', 'AI_INFERRED'],
+  // platform.tenant.converted.v1 — §7.10 (2026-11-01).
+  TrialFromStatus: ['TRIAL', 'EXPIRED', 'PENDING_DELETION'],
   ViolationSeverity: ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'],
 };
 

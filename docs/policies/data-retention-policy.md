@@ -135,6 +135,21 @@ is why each row above names its statute rather than pointing at this document ge
 | TimescaleDB telemetry | TimescaleDB   | 90 days                                     | Compression + retention policy | Operational       |
 | MLOps feature store   | Feast / Redis | Feature-specific; max 30 days for real-time | Feast TTL                      | AI operations     |
 
+### Free-trial tenants (§7.10, ADR-109)
+
+A trial that ends without a plan being bought is read-only for 30 days and then deleted — the commitment published
+on construction-os.io. The periods above assume a customer under contract; for a trial that never converted the
+customer's instruction is deletion, and the 7-year accounting periods do not arise (a trial issues no invoice).
+
+| Entity                                   | Store                                                                                        | Retention Period                         | Disposal Method                                                                                                 | Legal Basis                         |
+| ---------------------------------------- | -------------------------------------------------------------------------------------------- | ---------------------------------------- | --------------------------------------------------------------------------------------------------------------- | ----------------------------------- |
+| All tenant data of an unconverted trial  | PostgreSQL (every table with `tenant_id`), MinIO, OpenSearch, Neo4j, Kafka per-tenant topics | Trial end + 30 days (`PENDING_DELETION`) | **Manual**: `docs/runbooks/trial-tenant-deletion.md` (PostgreSQL: `scripts/maintenance/trial-tenant-purge.sql`) | Contract (trial terms); PDPA §37(3) |
+| User accounts of that tenant             | `platform.users`, Keycloak                                                                   | Same                                     | Anonymise the row (§ Anonymization standard); delete the Keycloak user                                          | PDPA §33                            |
+| Audit trail of that tenant               | `platform.audit_logs`                                                                        | 7 years                                  | Kept — references the anonymised users                                                                          | SOC 2; PDPA audit trail             |
+| Consent and data-subject request records | `platform.consents`, `platform.subject_requests`, `platform.export_requests`                 | 7 years                                  | Kept — the record that rights were handled                                                                      | PDPA accountability                 |
+| Trial notices sent                       | `platform.tenant_trial_notices`                                                              | Same as tenant data                      | Deleted by the purge                                                                                            | Operational                         |
+| Trial lifecycle events                   | Kafka `platform.events`                                                                      | Topic retention (7 days default)         | Auto-delete                                                                                                     | Operational                         |
+
 ---
 
 ## Legal hold

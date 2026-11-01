@@ -51,6 +51,11 @@ import {
 
 const logger = createLogger('tenant-service');
 
+/** §7.10 trial events — platform-scope, so their envelope tenant is the 'platform' sentinel (tenant in the payload). */
+export const TRIAL_STARTED_EVENT = 'platform.tenant.trial_started.v1';
+export const CONVERTED_EVENT = 'platform.tenant.converted.v1';
+export const PLATFORM_EVENT_TENANT = 'platform';
+
 /**
  * Default IANA timezone for a data-residency region (Phase 20 §19.3/§19.6). Used to seed
  * `tenants.timezone` at provisioning; a tenant may override it afterwards (PO 2026-07-23).
@@ -365,6 +370,27 @@ export class TenantService implements OnModuleDestroy {
         ON CONFLICT ON CONSTRAINT wht_rules_unique DO NOTHING
       `;
 
+      // §7.10: the trial's own event, beside identity.tenant.created.v1 and in the same transaction.
+      if (isTrial) {
+        await OutboxPublisher.write(
+          tx,
+          buildOutboxEvent({
+            eventType: TRIAL_STARTED_EVENT,
+            tenantId: PLATFORM_EVENT_TENANT,
+            actorId: createdBy,
+            correlationId: randomUUID(),
+            payload: {
+              tenant_id: created!.tenant_id,
+              tenant_code: created!.tenant_code,
+              plan_type: created!.plan_type,
+              trial_started_at: created!.trial_started_at!.toISOString(),
+              trial_ends_at: created!.trial_ends_at!.toISOString(),
+              trial_source: created!.trial_source,
+            },
+          }),
+        );
+      }
+
       await this.writeAdminAudit(tx, {
         tenantId: row.tenant_id,
         actorId: createdBy,
@@ -411,7 +437,7 @@ export class TenantService implements OnModuleDestroy {
    * below the tenant's active projects is refused (COS-PLAN-002) — projects are never closed for the customer.
    * A tenant that is already ACTIVE is refused (COS-PLAN-004); a paying tenant changes plan by another path.
    *
-   * platform.tenant.converted.v1 joins this transaction when the trial events land (ADR-109, round 4).
+   * platform.tenant.converted.v1 is written to the outbox in the same transaction (§7.10).
    */
   async convertTenant(
     tenantId: string,
@@ -467,6 +493,24 @@ export class TenantService implements OnModuleDestroy {
                   data_region, timezone, created_at, updated_at,
                   subscription_status, trial_started_at, trial_ends_at, trial_source, converted_at
       `;
+
+      await OutboxPublisher.write(
+        tx,
+        buildOutboxEvent({
+          eventType: CONVERTED_EVENT,
+          tenantId: PLATFORM_EVENT_TENANT,
+          actorId,
+          correlationId: randomUUID(),
+          payload: {
+            tenant_id: converted!.tenant_id,
+            tenant_code: converted!.tenant_code,
+            from_status: current.subscription_status,
+            from_plan: current.plan_type,
+            plan_type: planType,
+            converted_at: converted!.converted_at!.toISOString(),
+          },
+        }),
+      );
 
       await this.writeAdminAudit(tx, {
         tenantId,

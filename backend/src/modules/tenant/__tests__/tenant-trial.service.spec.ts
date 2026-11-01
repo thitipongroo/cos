@@ -25,6 +25,8 @@ jest.mock('@temporalio/client', () => ({
 import { ConflictException, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import type { PrismaClient } from '@prisma/client';
 import { OutboxPublisher } from '@cos/kafka';
+import { readFileSync } from 'fs';
+import { join } from 'path';
 import { TenantService } from '../tenant.service';
 import { PLAN_ERROR, TRIAL_DAYS } from '../public/plan-limits';
 
@@ -50,6 +52,35 @@ const trialRow = {
   trial_source: 'pricing',
   converted_at: null,
 };
+
+/**
+ * The payload must match the committed .avsc field for field — a payload the schema rejects is an event that never
+ * leaves the outbox. Structural, not an Avro encode: avsc is only a transitive dependency here.
+ */
+type AvroField = { name: string; type: unknown };
+function expectMatchesSchema(eventType: string, envelope: unknown): void {
+  const schema = JSON.parse(
+    readFileSync(
+      join(__dirname, `../../../../../packages/@cos/kafka/src/avro/${eventType}.avsc`),
+      'utf8',
+    ),
+  ) as { fields: AvroField[] };
+  const payloadType = schema.fields.find((f) => f.name === 'payload')!.type as {
+    fields: AvroField[];
+  };
+  const payload = (envelope as { payload: Record<string, unknown> }).payload;
+  expect(Object.keys(payload).sort()).toEqual(payloadType.fields.map((f) => f.name).sort());
+  for (const { name, type } of payloadType.fields) {
+    const value = payload[name];
+    if (Array.isArray(type)) {
+      expect(value === null || typeof value === 'string').toBe(true); // ["null","string"]
+    } else if (typeof type === 'object' && (type as { type: string }).type === 'enum') {
+      expect((type as { symbols: string[] }).symbols).toContain(value);
+    } else {
+      expect(typeof value).toBe(type === 'int' ? 'number' : type);
+    }
+  }
+}
 
 /** The audit INSERT's metadata, parsed. */
 function auditMetadata(prisma: Mocked): Record<string, unknown> {
@@ -129,6 +160,27 @@ describe('TenantService — free trial', () => {
         prisma,
         expect.objectContaining({ event_type: 'identity.tenant.created.v1' }),
       );
+      // §7.10: the trial's own event, platform-scope, from the inserted row.
+      expect(OutboxPublisher.write).toHaveBeenCalledWith(
+        prisma,
+        expect.objectContaining({
+          event_type: 'platform.tenant.trial_started.v1',
+          tenant_id: 'platform',
+          actor_id: ADMIN_UUID,
+          payload: {
+            tenant_id: TENANT_UUID,
+            tenant_code: 'somchai_build',
+            plan_type: 'STARTER',
+            trial_started_at: '2026-11-01T00:00:00.000Z',
+            trial_ends_at: '2026-12-01T00:00:00.000Z',
+            trial_source: 'pricing',
+          },
+        }),
+      );
+      expectMatchesSchema(
+        'platform.tenant.trial_started.v1',
+        (OutboxPublisher.write as jest.Mock).mock.calls[1]![1],
+      );
     });
 
     it('stores null for the optional origin fields when they are not given', async () => {
@@ -168,6 +220,11 @@ describe('TenantService — free trial', () => {
       const values = (prisma.$queryRaw as jest.Mock).mock.calls[1]!.slice(1);
       expect(values).toEqual(expect.arrayContaining(['ACTIVE', false]));
       expect(values).not.toContain('TRIAL');
+      expect(
+        (OutboxPublisher.write as jest.Mock).mock.calls.map(
+          (c) => (c[1] as { event_type: string }).event_type,
+        ),
+      ).toEqual(['identity.tenant.created.v1']);
       expect(auditMetadata(prisma)).toEqual({
         action: 'tenant.create',
         justification: JUSTIFICATION,
@@ -184,7 +241,12 @@ describe('TenantService — free trial', () => {
         .mockResolvedValueOnce([{ subscription_status: status, plan_type: 'STARTER' }])
         .mockResolvedValueOnce([{ active: activeProjects }])
         .mockResolvedValueOnce([
-          { ...trialRow, plan_type: 'PROFESSIONAL', subscription_status: 'ACTIVE' },
+          {
+            ...trialRow,
+            plan_type: 'PROFESSIONAL',
+            subscription_status: 'ACTIVE',
+            converted_at: new Date('2026-11-15T00:00:00Z'),
+          },
         ]);
     }
 
@@ -207,6 +269,27 @@ describe('TenantService — free trial', () => {
         expect(sqlOf(update!)).toContain("subscription_status = 'ACTIVE'");
         expect(sqlOf(update!)).toContain('converted_at = now()');
         expect(update!.slice(1)).toEqual(['PROFESSIONAL', TENANT_UUID]);
+
+        expect(OutboxPublisher.write).toHaveBeenCalledWith(
+          prisma,
+          expect.objectContaining({
+            event_type: 'platform.tenant.converted.v1',
+            tenant_id: 'platform',
+            actor_id: ADMIN_UUID,
+            payload: {
+              tenant_id: TENANT_UUID,
+              tenant_code: 'somchai_build',
+              from_status: status,
+              from_plan: 'STARTER',
+              plan_type: 'PROFESSIONAL',
+              converted_at: '2026-11-15T00:00:00.000Z',
+            },
+          }),
+        );
+        expectMatchesSchema(
+          'platform.tenant.converted.v1',
+          (OutboxPublisher.write as jest.Mock).mock.calls[0]![1],
+        );
 
         expect(auditMetadata(prisma)).toEqual({
           action: 'tenant.convert',
@@ -248,6 +331,7 @@ describe('TenantService — free trial', () => {
         }),
       });
       expect(prisma.$queryRaw).toHaveBeenCalledTimes(2); // no UPDATE
+      expect(OutboxPublisher.write).not.toHaveBeenCalled();
       expect(prisma.$executeRaw).not.toHaveBeenCalled(); // no audit row
     });
 
