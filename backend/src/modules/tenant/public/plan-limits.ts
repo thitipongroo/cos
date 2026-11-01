@@ -17,6 +17,9 @@ export const PLAN_PROJECT_LIMIT: Readonly<Record<PlanType, number | null>> = {
 /** Length of a free trial (§26.1.2). trial_ends_at = trial_started_at + this. */
 export const TRIAL_DAYS = 30;
 
+/** How long an ended trial stays read-only before it is due for deletion (§26.1.2). */
+export const READ_ONLY_DAYS = 30;
+
 /**
  * Plans a trial can run on and a trial can convert to. ENTERPRISE is neither: it has its own realm, database and
  * contract, and reaches ACTIVE through the provisioning workflow (§34), not through a trial.

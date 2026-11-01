@@ -35,7 +35,7 @@ import { ScheduledJobLockService } from '../../shared/scheduling/scheduled-job-l
 import { TRIAL_LIFECYCLE_FLAG } from '../../shared/interceptors/trial-read-only.interceptor';
 import { NotificationService } from '../notification/notification.service';
 import { TRIAL_NOTICE_EVENT_TYPES, type TrialNotice } from '../notification/public/event-types';
-import { TRIAL_DAYS, type SubscriptionStatus } from './public/plan-limits';
+import { READ_ONLY_DAYS, TRIAL_DAYS, type SubscriptionStatus } from './public/plan-limits';
 import { PLATFORM_EVENT_TENANT } from './tenant.service';
 
 const logger = createLogger('trial-lifecycle');
@@ -46,8 +46,8 @@ export const TRIAL_LIFECYCLE_JOB = 'trial-lifecycle';
 /** Fifty minutes against a daily schedule: never overtaken mid-run, and a killed replica costs one day at most. */
 export const TRIAL_LIFECYCLE_LEASE_SECONDS = 3000;
 
-/** How long an ended trial stays read-only before it is due for deletion (§26.1.2). */
-export const READ_ONLY_DAYS = 30;
+/** Re-exported: the read-only month is part of the plan terms, declared beside TRIAL_DAYS. */
+export { READ_ONLY_DAYS };
 
 export const TRIAL_EXPIRED_EVENT = 'platform.tenant.trial_expired.v1';
 export const DELETION_DUE_EVENT = 'platform.tenant.deletion_due.v1';

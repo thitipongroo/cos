@@ -31,11 +31,12 @@ import {
   type TenantListRow,
 } from '../../lib/adminTenants';
 import { DETAIL, forTenant } from '../../lib/adminDrawnFigures';
+import { canConvert } from '../../lib/adminTrial';
 import { formatDate } from '../../lib/format';
 import { AdminIcon, type AdminIconName } from './AdminIcon';
 import { useComingSoon } from './ComingSoon';
 
-export type TenantDetailAction = 'audit' | 'assign' | 'mark' | 'deactivate';
+export type TenantDetailAction = 'audit' | 'assign' | 'mark' | 'deactivate' | 'convert';
 
 /** The drawing's ink for each engine figure (replication lag emerald, chunks cyan, IOPS slate). */
 const ENGINE_INK = {
@@ -73,6 +74,8 @@ export function TenantDetailModal({
     show: boolean;
   }> = [
     { key: 'audit', icon: 'history', tone: 'text-cos-v3-cyan-400', show: true },
+    // §7.10 — a trial (running, read-only or due for deletion) the customer has paid for.
+    { key: 'convert', icon: 'payments', tone: 'text-cos-v3-emerald-400', show: canConvert(tenant) },
     {
       key: 'assign',
       icon: 'database',

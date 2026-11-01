@@ -218,6 +218,9 @@ components:
           created_at,
           updated_at,
           dedicated_db_host,
+          subscription_status,
+          trial_ends_at,
+          converted_at,
         ]
       properties:
         tenant_id:
@@ -255,6 +258,40 @@ components:
             Hostname of the tenant's dedicated database (§20.4.1), parsed server-side from the
             encrypted connection URL. `null` = the tenant is on the shared database.
           example: db-ent-042.cos.internal
+        subscription_status:
+          type: string
+          enum: [ACTIVE, TRIAL, EXPIRED, PENDING_DELETION]
+          description: §7.10 commercial state.
+        trial_ends_at:
+          type: [string, 'null']
+          format: date-time
+        converted_at:
+          type: [string, 'null']
+          format: date-time
+
+    MyTenant:
+      type: object
+      required:
+        [tenant_name, tenant_code, plan_type, subscription_status, trial_ends_at, read_only_until]
+      properties:
+        tenant_name:
+          type: string
+        tenant_code:
+          type: string
+        plan_type:
+          type: string
+          enum: [LITE, STARTER, PROFESSIONAL, ENTERPRISE]
+        subscription_status:
+          type: string
+          enum: [ACTIVE, TRIAL, EXPIRED, PENDING_DELETION]
+        trial_ends_at:
+          type: [string, 'null']
+          format: date-time
+          description: '`null` for a tenant that was never a trial.'
+        read_only_until:
+          type: [string, 'null']
+          format: date-time
+          description: '`trial_ends_at` + 30 days — when an ended trial becomes due for deletion.'
 
     CreateTrialTenantRequest:
       type: object
@@ -741,13 +778,18 @@ paths:
         - bearerAuth: []
       summary: The signed-in user's own tenant
       description: |
-        Name, code and plan for the tenant in the caller's JWT. Any authenticated role — it answers
-        "where am I", which every screen needs and no role should have to be granted.
+        Name, code and plan for the tenant in the caller's JWT, and its free-trial state (§7.10) — the web and
+        mobile shells show a trial banner from it. Any authenticated role — it answers "where am I", which every
+        screen needs and no role should have to be granted.
       operationId: getMyTenant
       tags: [tenant]
       responses:
         '200':
-          description: tenant_name, tenant_code, plan_type
+          description: The caller's tenant
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MyTenant'
         '401':
           description: Unauthenticated
 

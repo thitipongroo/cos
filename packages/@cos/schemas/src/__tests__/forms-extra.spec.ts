@@ -11,7 +11,9 @@ import {
   rfqCreateSchema,
   siteReportCreateSchema,
   taskUpdateSchema,
+  tenantConvertSchema,
   tenantCreateSchema,
+  tenantTrialCreateSchema,
   adminJustificationSchema,
   tenantSettingsSchema,
   userCreateSchema,
@@ -630,5 +632,61 @@ describe('subjectRequestEraseSchema', () => {
         legal_hold_reason: 'Labour Court case 123/2569',
       }).success,
     ).toBe(true);
+  });
+});
+
+describe('tenantTrialCreateSchema (§7.10)', () => {
+  const base = {
+    tenantCode: 'somchai_build',
+    tenantName: 'Somchai Build',
+    planType: 'STARTER',
+    justification: 'Trial requested on construction-os.io (request 7c0e4d3a).',
+  };
+  const firstMessage = (patch: Record<string, unknown>) => {
+    const r = tenantTrialCreateSchema.safeParse({ ...base, ...patch });
+    return r.success ? null : r.error.issues[0]?.message;
+  };
+
+  it('accepts a minimal body, and blank optional fields', () => {
+    expect(tenantTrialCreateSchema.safeParse(base).success).toBe(true);
+    expect(firstMessage({ trialSource: '', trialRequestRef: '' })).toBeNull();
+    expect(
+      firstMessage({
+        trialSource: 'boq-checker',
+        trialRequestRef: '7c0e4d3a-2a51-4c38-9d1e-5f0a6f2b9e11',
+      }),
+    ).toBeNull();
+  });
+
+  it.each(['LITE', 'STARTER', 'PROFESSIONAL'])('accepts the trial plan %s', (planType) => {
+    expect(firstMessage({ planType })).toBeNull();
+  });
+
+  it('refuses ENTERPRISE', () => {
+    expect(firstMessage({ planType: 'ENTERPRISE' })).toBe('validation.invalidOption');
+  });
+
+  it.each([
+    [{ trialSource: 'Pricing Page' }, 'validation.notATrialSource'],
+    [{ trialRequestRef: "1'; DROP" }, 'validation.notARequestRef'],
+    [{ trialRequestRef: 'a'.repeat(81) }, 'validation.tooLong'],
+    [{ tenantCode: 'Bad Code' }, 'validation.notATenantCode'],
+  ])('refuses %j with %s', (patch, message) => {
+    expect(firstMessage(patch)).toBe(message);
+  });
+});
+
+describe('tenantConvertSchema (§7.10)', () => {
+  const justification = 'Customer paid invoice INV-2026-1101.';
+
+  it.each(['LITE', 'STARTER', 'PROFESSIONAL'])('accepts %s', (planType) => {
+    expect(tenantConvertSchema.safeParse({ planType, justification }).success).toBe(true);
+  });
+
+  it('refuses ENTERPRISE and a missing justification', () => {
+    expect(tenantConvertSchema.safeParse({ planType: 'ENTERPRISE', justification }).success).toBe(
+      false,
+    );
+    expect(tenantConvertSchema.safeParse({ planType: 'STARTER' }).success).toBe(false);
   });
 });

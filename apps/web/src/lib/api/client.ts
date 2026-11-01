@@ -19,9 +19,36 @@ export class ApiError extends Error {
   constructor(
     public readonly status: number,
     message: string,
+    /**
+     * The API's own error code (`{ error: { code } }`, docs/api/error-codes.md) when the body carried one — so a
+     * screen can tell two 409s apart (COS-PLAN-002 vs COS-PLAN-004) or a read-only trial's 403 (COS-PLAN-003)
+     * from a missing role. Undefined when the body was not the API's error envelope.
+     */
+    public readonly code?: string,
+    public readonly details?: Record<string, unknown>,
   ) {
     super(message);
     this.name = 'ApiError';
+  }
+}
+
+/** The `{ error: { code, details } }` envelope of HttpExceptionFilter, or nothing when the body is not one. */
+async function readErrorEnvelope(
+  res: Response,
+): Promise<{ code?: string; details?: Record<string, unknown> }> {
+  try {
+    const body = (await res.json()) as { error?: { code?: unknown; details?: unknown } } | null;
+    const error = body?.error;
+    return {
+      code: typeof error?.code === 'string' ? error.code : undefined,
+      details:
+        error?.details && typeof error.details === 'object'
+          ? (error.details as Record<string, unknown>)
+          : undefined,
+    };
+  } catch {
+    // Not JSON (a proxy's HTML page, an empty body): the status alone has to do.
+    return {};
   }
 }
 
@@ -43,7 +70,8 @@ export async function apiFetch<T>(
   }
   const res = await fetch(`${API_BASE}${path}`, { ...init, headers });
   if (!res.ok) {
-    throw new ApiError(res.status, `Request failed: ${res.status}`);
+    const { code, details } = await readErrorEnvelope(res);
+    throw new ApiError(res.status, `Request failed: ${res.status}`, code, details);
   }
   if (res.status === 204) {
     return undefined as T;

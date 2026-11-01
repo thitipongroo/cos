@@ -646,6 +646,11 @@ describe('TenantService', () => {
       const result = await service.listTenants();
 
       expect(result.map((r) => r.dedicated_db_host)).toEqual(['db-ent-042.cos.internal', null]);
+      // §7.10: the list carries the commercial state the trial badge and Convert action read.
+      const sql = (
+        (prismaMock.$queryRaw as jest.Mock).mock.calls[0]![0] as TemplateStringsArray
+      ).join('?');
+      expect(sql).toContain('subscription_status, trial_ends_at, converted_at');
       // §20.4.1 asks for the hostname; the URL carries the password and must not leave the server.
       for (const r of result) expect(r).not.toHaveProperty('dedicated_db_url');
       expect(JSON.stringify(result)).not.toContain('s3cret');
@@ -917,15 +922,26 @@ describe('TenantService', () => {
   });
 
   describe('getMyTenant', () => {
-    it('returns the caller own tenant identity (name, code, plan)', async () => {
+    it('returns the caller own tenant identity and its trial state (§7.10)', async () => {
       const row = {
         tenant_name: 'ACME Construction',
         tenant_code: 'acme_corp',
         plan_type: 'STARTER',
+        subscription_status: 'TRIAL',
+        trial_ends_at: new Date('2026-12-01T00:00:00Z'),
+        read_only_until: new Date('2026-12-31T00:00:00Z'),
       };
       (prismaMock.$queryRaw as jest.Mock).mockResolvedValue([row]);
       const result = await service.getMyTenant('tenant-1');
       expect(result).toEqual(row);
+      const [strings, ...values] = (prismaMock.$queryRaw as jest.Mock).mock.calls[0] as [
+        TemplateStringsArray,
+        ...unknown[],
+      ];
+      const sql = strings.join('?');
+      expect(sql).toContain('subscription_status');
+      expect(sql).toContain('trial_ends_at + make_interval(days => ?::int) AS read_only_until');
+      expect(values).toEqual([30, 'tenant-1']);
     });
 
     it('throws NotFoundException (COS-TENANT-404) when the tenant is missing or inactive', async () => {

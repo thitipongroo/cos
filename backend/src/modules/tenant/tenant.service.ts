@@ -32,6 +32,7 @@ import { countActiveProjects } from '../project/public/active-projects';
 import {
   PLAN_ERROR,
   PLAN_PROJECT_LIMIT,
+  READ_ONLY_DAYS,
   TRIAL_DAYS,
   type SubscriptionStatus,
   type TrialPlan,
@@ -125,6 +126,20 @@ interface TrialOrigin {
  */
 export interface TenantListRow extends TenantSummaryRow {
   dedicated_db_host: string | null;
+  /** §7.10 commercial state — the list shows trials and lets a SYSTEM_ADMIN convert one. */
+  subscription_status: SubscriptionStatus;
+  trial_ends_at: Date | null;
+  converted_at: Date | null;
+}
+
+/** `GET /tenant` — the caller's own tenant, with its commercial state (§7.10). */
+export interface MyTenantRow {
+  tenant_name: string;
+  tenant_code: string;
+  plan_type: string;
+  subscription_status: SubscriptionStatus;
+  trial_ends_at: Date | null;
+  read_only_until: Date | null;
 }
 
 /** One ENTERPRISE tenant's provisioning run, as §34.3's `workflowState` query reports it. */
@@ -735,13 +750,16 @@ export class TenantService implements OnModuleDestroy {
    * screen. Self-service (any authenticated role in the tenant); the tenant_id comes from the JWT, so
    * a caller can only ever read their own tenant. This is NOT the SYSTEM_ADMIN cross-tenant listing.
    */
-  async getMyTenant(
-    tenantId: string,
-  ): Promise<{ tenant_name: string; tenant_code: string; plan_type: string }> {
-    const [t] = await this.prisma.$queryRaw<
-      Array<{ tenant_name: string; tenant_code: string; plan_type: string }>
-    >`
-      SELECT tenant_name, tenant_code, plan_type::text AS plan_type
+  /**
+   * The caller's own tenant. Since ADR-109 it also carries the commercial state, so the web and mobile shells can
+   * say a trial is running out or has ended (read-only) before a write is refused with COS-PLAN-003.
+   * `read_only_until` is trial_ends_at + 30 days — when a read-only trial becomes due for deletion (§7.10).
+   */
+  async getMyTenant(tenantId: string): Promise<MyTenantRow> {
+    const [t] = await this.prisma.$queryRaw<MyTenantRow[]>`
+      SELECT tenant_name, tenant_code, plan_type::text AS plan_type, subscription_status,
+             trial_ends_at,
+             trial_ends_at + make_interval(days => ${READ_ONLY_DAYS}::int) AS read_only_until
       FROM platform.tenants
       WHERE tenant_id = ${tenantId}::uuid AND is_active = true
       LIMIT 1
@@ -775,10 +793,11 @@ export class TenantService implements OnModuleDestroy {
    */
   async listTenants(): Promise<TenantListRow[]> {
     const rows = await this.prisma.$queryRaw<
-      Array<TenantSummaryRow & { dedicated_db_url: string | null }>
+      Array<Omit<TenantListRow, 'dedicated_db_host'> & { dedicated_db_url: string | null }>
     >`
       SELECT tenant_id, tenant_code, tenant_name, keycloak_realm, plan_type, is_active,
-             data_region, timezone, created_at, updated_at, dedicated_db_url
+             data_region, timezone, created_at, updated_at, dedicated_db_url,
+             subscription_status, trial_ends_at, converted_at
         FROM platform.tenants
        ORDER BY created_at DESC
     `;

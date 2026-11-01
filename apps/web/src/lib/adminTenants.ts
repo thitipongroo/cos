@@ -9,6 +9,8 @@
  * 2026-09-14).
  */
 
+import type { SubscriptionStatus } from '@cos/ui-logic';
+
 export type PlanType = 'LITE' | 'STARTER' | 'PROFESSIONAL' | 'ENTERPRISE';
 
 /** One row of GET /admin/tenants — snake_case, as the endpoint returns it. */
@@ -24,6 +26,10 @@ export interface TenantListRow {
   created_at: string;
   /** Hostname of the dedicated DB, or null on the shared database. Never the URL. */
   dedicated_db_host: string | null;
+  /** §7.10 commercial state (ADR-109). */
+  subscription_status: SubscriptionStatus;
+  trial_ends_at: string | null;
+  converted_at: string | null;
 }
 
 /** One row of GET /admin/tenants/provisioning. `null` state = the run exists but did not answer. */

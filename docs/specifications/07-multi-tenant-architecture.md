@@ -609,6 +609,18 @@ The daily `trial-lifecycle` job (`TrialLifecycleService`) runs at 02:00 UTC (09:
 
 At day 60 the job also notifies every SYSTEM_ADMIN, in-app and by email, that the tenant is due for deletion.
 
+### Client surfaces
+
+- **Trial banner** — the web shell (`TrialBanner`, under the top bar) and the mobile shell (`<TrialBanner />`,
+  under the breadcrumb) read `GET /api/v1/tenant` (`subscription_status`, `trial_ends_at`, `read_only_until`)
+  and show the days left while `TRIAL`, the read-only notice while `EXPIRED`, and the deletion notice while
+  `PENDING_DELETION`; nothing for `ACTIVE`. The decision is `trialBanner` in `@cos/ui-logic`, shared by both
+- **SYSTEM_ADMIN** — the Tenant List has *Start free trial* (`POST /admin/tenants/trial`) and, for a tenant that is
+  not `ACTIVE`, *Convert to paid plan* (`PATCH /admin/tenants/{id}/convert`), also in Tenant Detail. The plan cell
+  shows the trial state and its date. `COS-PLAN-002` names the plan limit and the active-project count. The Global
+  Audit Log filters `tenant.create_trial`, `tenant.convert` and `tenant.trial_purge`
+- `LITE` is offered in Create Tenant and in the System Settings tier table
+
 ### Deletion
 
 Trial data is deleted **manually** by a SYSTEM_ADMIN following `docs/runbooks/trial-tenant-deletion.md` once a

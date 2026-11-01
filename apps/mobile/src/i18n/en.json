@@ -3638,6 +3638,16 @@
   "trial": {
     "error": {
       "readOnly": "Your free trial has ended. The account is read-only until a plan is chosen — you can still view and export your data."
+    },
+    "banner": {
+      "running": "Free trial: {days, plural, one {# day} other {# days}} left — it ends on {date}. Nothing is charged automatically.",
+      "endsToday": "Your free trial ends today ({date}). After that the account is read-only for 30 days.",
+      "readOnly": "Your free trial has ended. The account is read-only until {date}: you can view and export your data, but not change it.",
+      "readOnlyNoDate": "Your free trial has ended. The account is read-only: you can view and export your data, but not change it.",
+      "deletionPending": "Your free trial's read-only period is over and the data is due for deletion. Contact our team now to keep it.",
+      "seePlans": "See plans and prices",
+      "contact": "Contact our team",
+      "mailSubject": "Choose a plan after the free trial"
     }
   }
 }

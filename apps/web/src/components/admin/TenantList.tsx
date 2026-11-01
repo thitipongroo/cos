@@ -40,7 +40,9 @@ import { Suspense, useEffect, useMemo, useState } from 'react';
 import { AdminIcon, type AdminIconName } from './AdminIcon';
 import { NO_DATA } from './AdminShell';
 import { AssignDedicatedDbModal } from './AssignDedicatedDbModal';
+import { ConvertTenantModal } from './ConvertTenantModal';
 import { CreateTenantModal } from './CreateTenantModal';
+import { CreateTrialModal } from './CreateTrialModal';
 import { DeactivateTenantModal } from './DeactivateTenantModal';
 import { TenantAuditLogModal } from './TenantAuditLogModal';
 import { GateDecisionDialog } from './GateDecisionDialog';
@@ -68,6 +70,12 @@ import {
 import { ApiError } from '../../lib/api/client';
 import { useDecideProvisioning, useTenantProvisioning, useTenants } from '../../lib/api/queries';
 import { TENANT_LIST } from '../../lib/adminDrawnFigures';
+import {
+  canConvert,
+  subscriptionDate,
+  subscriptionView,
+  type SubscriptionTone,
+} from '../../lib/adminTrial';
 import { formatDate } from '../../lib/format';
 
 const PLAN_FILTERS: PlanFilter[] = ['ALL', 'ENTERPRISE', 'PROFESSIONAL', 'STARTER', 'LITE'];
@@ -81,6 +89,13 @@ const PLAN_BADGE: Record<PlanType, string> = {
   STARTER: 'bg-cos-op-container-high text-cos-op-outline font-medium',
   // Not drawn (added with ADR-109): shares STARTER's badge, the smallest drawn tier.
   LITE: 'bg-cos-op-container-high text-cos-op-outline font-medium',
+};
+
+// §7.10 trial states under the plan badge — not drawn; the drawing's own success / warning / error inks.
+const SUBSCRIPTION_TONE: Record<SubscriptionTone, string> = {
+  trial: 'text-cos-op-secondary',
+  readOnly: 'text-cos-op-gate',
+  deletion: 'text-cos-op-error',
 };
 
 const TONE: Record<ProvisioningTone, { text: string; icon: AdminIconName | null }> = {
@@ -127,11 +142,13 @@ function TenantList({ createOpen }: { createOpen: boolean }) {
   const [page, setPage] = useState(1);
   // R17: the row actions open their Stitch modals; each modal owns its request, justification and errors.
   const [rowAction, setRowAction] = useState<{
-    kind: 'detail' | 'assign' | 'mark' | 'deactivate' | 'audit';
+    kind: 'detail' | 'assign' | 'mark' | 'deactivate' | 'audit' | 'convert';
     row: TenantListRow;
   } | null>(null);
   const [approving, setApproving] = useState<TenantListRow | null>(null);
   const [creating, setCreating] = useState(createOpen);
+  // §7.10: opening a free trial is its own dialog (no dedicated DB, no ENTERPRISE, the trial's origin).
+  const [creatingTrial, setCreatingTrial] = useState(false);
 
   const closeCreate = () => {
     setCreating(false);
@@ -198,6 +215,15 @@ function TenantList({ createOpen }: { createOpen: boolean }) {
             <AdminIcon name="upload_file" size={18} />
             {t('admin.list.importCentralPrices')}
           </Link>
+          {/* §7.10 — not drawn: trials are opened by sales from a construction-os.io request (ADR-109). */}
+          <button
+            type="button"
+            onClick={() => setCreatingTrial(true)}
+            className="flex h-9 items-center gap-2 rounded-md bg-cos-op-container-high px-3 text-op-label text-cos-op-on-surface shadow-sm transition-all hover:brightness-110"
+          >
+            <AdminIcon name="timer" size={18} />
+            {t('admin.trial.open')}
+          </button>
           <button
             type="button"
             onClick={() => setCreating(true)}
@@ -394,6 +420,7 @@ function TenantList({ createOpen }: { createOpen: boolean }) {
                       onAssign={() => setRowAction({ kind: 'assign', row })}
                       onMarkContracted={() => setRowAction({ kind: 'mark', row })}
                       onDeactivate={() => setRowAction({ kind: 'deactivate', row })}
+                      onConvert={() => setRowAction({ kind: 'convert', row })}
                       onAudit={() => setRowAction({ kind: 'audit', row })}
                     />
                   ))
@@ -471,6 +498,24 @@ function TenantList({ createOpen }: { createOpen: boolean }) {
         />
       ) : null}
 
+      {creatingTrial ? (
+        <CreateTrialModal
+          onClose={() => setCreatingTrial(false)}
+          onCreated={(code) => {
+            setCreatingTrial(false);
+            router.replace(`/admin?created=${encodeURIComponent(code)}`);
+          }}
+        />
+      ) : null}
+
+      {rowAction?.kind === 'convert' ? (
+        <ConvertTenantModal
+          tenant={rowAction.row}
+          onClose={() => setRowAction(null)}
+          onDone={() => setRowAction(null)}
+        />
+      ) : null}
+
       {rowAction?.kind === 'detail' ? (
         <TenantDetailModal
           tenant={rowAction.row}
@@ -543,6 +588,7 @@ function TenantRow({
   onAssign,
   onMarkContracted,
   onDeactivate,
+  onConvert,
   onAudit,
 }: {
   row: TenantListRow;
@@ -556,8 +602,10 @@ function TenantRow({
   onAssign: () => void;
   onMarkContracted: () => void;
   onDeactivate: () => void;
+  onConvert: () => void;
   onAudit: () => void;
 }) {
+  const subscription = subscriptionView(row.subscription_status);
   const view = provisioningLoading ? null : provisioningView(state, row.is_active);
   const atGate = state === GATE_STATE;
   const enterprise = row.plan_type === 'ENTERPRISE';
@@ -607,6 +655,13 @@ function TenantRow({
         >
           {row.plan_type}
         </span>
+        {subscription ? (
+          // §7.10: a trial's state under its plan, with the date that matters for it.
+          <div className={`mt-1 text-op-tiny font-medium ${SUBSCRIPTION_TONE[subscription.tone]}`}>
+            {t(subscription.labelKey)}
+            {subscriptionDate(row) ? ` · ${formatDate(locale, subscriptionDate(row))}` : null}
+          </div>
+        ) : null}
       </td>
       <td className="px-3 py-3">
         <span
@@ -684,6 +739,14 @@ function TenantRow({
               label={t('admin.markContracted')}
               onClick={onMarkContracted}
               tone="warning"
+            />
+          ) : null}
+          {canConvert(row) ? (
+            <IconButton
+              icon="payments"
+              label={t('admin.convert.title')}
+              onClick={onConvert}
+              tone="cyan"
             />
           ) : null}
           <IconButton icon="history" label={t('admin.row.auditLog')} onClick={onAudit} />

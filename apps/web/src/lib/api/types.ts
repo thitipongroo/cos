@@ -444,6 +444,32 @@ export interface AdminJustificationInput {
   justification: string;
 }
 
+/** GET /tenant — the caller's own tenant and its free-trial state (§7.10). */
+export interface MyTenant {
+  tenant_name: string;
+  tenant_code: string;
+  plan_type: PlanType;
+  subscription_status: string;
+  trial_ends_at: string | null;
+  read_only_until: string | null;
+}
+
+/** POST /admin/tenants/trial body — matches CreateTrialTenantDto (§7.10). No dedicated DB: a trial is never ENTERPRISE. */
+export interface CreateTrialTenantInput {
+  tenantCode: string;
+  tenantName: string;
+  planType: 'LITE' | 'STARTER' | 'PROFESSIONAL';
+  trialSource?: string;
+  trialRequestRef?: string;
+  justification: string;
+}
+
+/** PATCH /admin/tenants/{id}/convert body — matches ConvertTenantDto (§7.10). */
+export interface ConvertTenantInput {
+  planType: 'LITE' | 'STARTER' | 'PROFESSIONAL';
+  justification: string;
+}
+
 /** Create-tenant body (camelCase — matches CreateTenantDto). `justification` is mandatory (§6.7). */
 export interface CreateTenantInput {
   tenantCode: string;

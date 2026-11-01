@@ -272,6 +272,43 @@ export const tenantCreateSchema = z.object({
   justification: adminJustification,
 });
 
+/** Plans a free trial runs on and converts to (§7.10) — CreateTrialTenantDto / ConvertTenantDto. Never ENTERPRISE. */
+const trialPlanType = z.enum(['LITE', 'STARTER', 'PROFESSIONAL'], {
+  error: 'validation.invalidOption',
+});
+
+/**
+ * §7.10 free trial → POST /admin/tenants/trial (`CreateTrialTenantInput`). The create-tenant fields without the
+ * ENTERPRISE-only dedicated DB, plus where the request came from — the same rules CreateTrialTenantDto enforces.
+ */
+export const tenantTrialCreateSchema = z.object({
+  tenantCode: tenantCreateSchema.shape.tenantCode,
+  tenantName: tenantCreateSchema.shape.tenantName,
+  planType: trialPlanType,
+  // The construction-os.io CTA `source`, e.g. "pricing". Blank = not given.
+  trialSource: z.optional(
+    z.string().check(
+      z.trim(),
+      z.refine((v) => v === '' || /^[a-z0-9-]{1,40}$/.test(v), 'validation.notATrialSource'),
+    ),
+  ),
+  // The website's trial request id — its own key, kept as text.
+  trialRequestRef: z.optional(
+    z.string().check(
+      z.trim(),
+      z.maxLength(80, 'validation.tooLong'),
+      z.refine((v) => v === '' || /^[A-Za-z0-9_-]+$/.test(v), 'validation.notARequestRef'),
+    ),
+  ),
+  justification: adminJustification,
+});
+
+/** §7.10 → PATCH /admin/tenants/{id}/convert (`ConvertTenantInput`): the plan paid for, and the reason. */
+export const tenantConvertSchema = z.object({
+  planType: trialPlanType,
+  justification: adminJustification,
+});
+
 /**
  * §20.7.9 CRM lead → POST /crm/leads (`CreateLeadInput`).
  *

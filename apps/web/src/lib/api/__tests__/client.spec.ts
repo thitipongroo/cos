@@ -38,6 +38,52 @@ describe('ApiError', () => {
   });
 });
 
+describe('apiFetch — error envelope', () => {
+  it('carries the API error code and details on the ApiError (COS-PLAN-002)', async () => {
+    mockFetch({
+      ok: false,
+      status: 409,
+      jsonBody: {
+        error: {
+          code: 'COS-PLAN-002',
+          details: { target_plan: 'LITE', limit: 1, active_projects: 2 },
+        },
+      },
+    });
+    const err = (await apiFetch('/admin/tenants/x/convert', 'tok').catch(
+      (e: unknown) => e,
+    )) as ApiError;
+    expect(err).toBeInstanceOf(ApiError);
+    expect(err.status).toBe(409);
+    expect(err.code).toBe('COS-PLAN-002');
+    expect(err.details).toEqual({ target_plan: 'LITE', limit: 1, active_projects: 2 });
+  });
+
+  it.each([
+    ['no body', undefined],
+    ['no error object', { message: 'x' }],
+    ['a non-string code and non-object details', { error: { code: 7, details: 'x' } }],
+  ])('leaves code and details undefined for %s', async (_n, jsonBody) => {
+    mockFetch({ ok: false, status: 500, jsonBody });
+    const err = (await apiFetch('/x', 'tok').catch((e: unknown) => e)) as ApiError;
+    expect(err.code).toBeUndefined();
+    expect(err.details).toBeUndefined();
+  });
+
+  it('survives a body that is not JSON', async () => {
+    global.fetch = jest.fn(async () => ({
+      ok: false,
+      status: 502,
+      json: async () => {
+        throw new SyntaxError('Unexpected token <');
+      },
+    })) as unknown as typeof fetch;
+    const err = (await apiFetch('/x', 'tok').catch((e: unknown) => e)) as ApiError;
+    expect(err.status).toBe(502);
+    expect(err.code).toBeUndefined();
+  });
+});
+
 describe('apiFetch', () => {
   it('returns the parsed JSON body', async () => {
     mockFetch({ jsonBody: { project_id: 'p1' } });

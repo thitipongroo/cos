@@ -25,6 +25,9 @@ describe('auditQuery', () => {
 describe('auditTone', () => {
   it.each([
     ['tenant.deactivate', 'danger'],
+    ['tenant.trial_purge', 'danger'],
+    ['tenant.create_trial', 'privileged'],
+    ['tenant.convert', 'privileged'],
     ['tenant.provisioning.approve', 'gate'],
     ['tenant.create', 'privileged'],
     ['platform.settings.update', 'config'],
@@ -53,10 +56,13 @@ describe('auditActionFor', () => {
     ['tier', 'tenant.mark_contracted'],
     ['gateway', undefined],
     ['gate', 'tenant.provisioning.'],
+    ['trial', 'tenant.create_trial'],
+    ['convert', 'tenant.convert'],
+    ['purge', 'tenant.trial_purge'],
   ] as const)('%s → %s', (key, action) => {
     expect(auditActionFor(key)).toBe(action);
   });
-  it('lists the six drawn categories in order', () => {
+  it('lists the six drawn categories in order, then the three §7.10 trial ones', () => {
     expect(AUDIT_ACTION_FILTERS.map((f) => f.key)).toEqual([
       'all',
       'deactivate',
@@ -64,6 +70,9 @@ describe('auditActionFor', () => {
       'tier',
       'gateway',
       'gate',
+      'trial',
+      'convert',
+      'purge',
     ]);
   });
 });

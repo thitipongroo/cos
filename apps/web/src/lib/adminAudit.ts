@@ -20,7 +20,8 @@ export type AuditTone = 'danger' | 'gate' | 'privileged' | 'config' | 'read' | '
  * and the audit reads themselves. Anything else is `other` rather than a guess.
  */
 export function auditTone(action: string): AuditTone {
-  if (action === 'tenant.deactivate') return 'danger';
+  // A trial purge deletes the tenant's data (§7.10 Deletion) — as destructive as a deactivation, more so.
+  if (action === 'tenant.deactivate' || action === 'tenant.trial_purge') return 'danger';
   if (action.startsWith('tenant.provisioning.')) return 'gate';
   if (action.startsWith('tenant.')) return 'privileged';
   if (action.startsWith('platform.settings.') || action.startsWith('central_prices.'))
@@ -53,6 +54,10 @@ export const AUDIT_ACTION_FILTERS = [
   { key: 'tier', action: 'tenant.mark_contracted' },
   { key: 'gateway', action: null },
   { key: 'gate', action: 'tenant.provisioning.' },
+  // §7.10 free-trial actions (ADR-109). Not drawn: they post-date the drawing's category list.
+  { key: 'trial', action: 'tenant.create_trial' },
+  { key: 'convert', action: 'tenant.convert' },
+  { key: 'purge', action: 'tenant.trial_purge' },
 ] as const satisfies ReadonlyArray<{ key: string; action: string | null | undefined }>;
 
 export type AuditActionFilterKey = (typeof AUDIT_ACTION_FILTERS)[number]['key'];

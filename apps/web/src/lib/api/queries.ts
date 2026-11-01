@@ -68,6 +68,9 @@ import type {
   EraseSubjectRequestInput,
   SubjectMatchResult,
   ErasureResult,
+  ConvertTenantInput,
+  CreateTrialTenantInput,
+  MyTenant,
 } from './types';
 
 function filterQuery(filter: ProcurementListFilter): string {
@@ -750,6 +753,21 @@ export function useDeactivateUser() {
   });
 }
 
+/**
+ * The caller's own tenant, with its free-trial state (§7.10) — what the shell's trial banner reads. Refreshed
+ * every 10 minutes and on focus: the daily job changes the status, and a tab left open overnight should notice.
+ */
+export function useMyTenant(enabled = true) {
+  const api = useApi();
+  return useQuery({
+    queryKey: ['tenant', 'me'],
+    queryFn: () => api<MyTenant>('/tenant'),
+    enabled,
+    staleTime: 10 * 60 * 1000,
+    refetchInterval: 10 * 60 * 1000,
+  });
+}
+
 export function useTenantSettings() {
   const api = useApi();
   return useQuery({
@@ -816,6 +834,31 @@ export function useCreateTenant() {
   return useMutation({
     mutationFn: (input: CreateTenantInput) =>
       api<TenantRow>('/admin/tenants', { method: 'POST', body: JSON.stringify(input) }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['admin', 'tenants'] }),
+  });
+}
+
+// §7.10 — open a free trial (sales-assisted). Same list refresh as a create.
+export function useCreateTrialTenant() {
+  const api = useApi();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: CreateTrialTenantInput) =>
+      api<TenantRow>('/admin/tenants/trial', { method: 'POST', body: JSON.stringify(input) }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['admin', 'tenants'] }),
+  });
+}
+
+// §7.10 — a trial customer paid. 409 COS-PLAN-002 / COS-PLAN-004 are told apart by ApiError.code.
+export function useConvertTenant() {
+  const api = useApi();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, ...input }: ConvertTenantInput & { id: string }) =>
+      api<TenantRow>(`/admin/tenants/${id}/convert`, {
+        method: 'PATCH',
+        body: JSON.stringify(input),
+      }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['admin', 'tenants'] }),
   });
 }
