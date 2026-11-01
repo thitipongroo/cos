@@ -14,6 +14,7 @@ import {
   Scope,
   Inject,
   NotFoundException,
+  Optional,
   UnprocessableEntityException,
 } from '@nestjs/common';
 import { REQUEST } from '@nestjs/core';
@@ -25,6 +26,10 @@ import type { OutboxEventInput } from '../../shared/outbox/outbox.types';
 import { createLogger } from '@cos/logger';
 import type { CosRole } from '@cos/types';
 import { ProjectRepository } from './project.repository';
+import { FeatureFlagService } from '../../shared/feature-flags/feature-flag.service';
+
+/** QM-15 flag for the active-project limit at creation (§26.1, COS-PLAN-001). Registered in DEFAULT_FLAGS. */
+export const PLAN_PROJECT_LIMIT_FLAG = 's1.project.plan-project-limit';
 import type { MemberProjectRow, ProjectRow } from './project.repository';
 import { validateTransition } from './project.state-machine';
 import type { ProjectStatus } from './project.state-machine';
@@ -57,6 +62,9 @@ export class ProjectService {
       tenantId?: string;
       user?: { user_id?: string; role?: string };
     },
+    // @Optional so test modules that do not import FeatureFlagsModule keep working; absent means "flag off",
+    // matching the registry default. FeatureFlagsModule is @Global, so the application always injects it.
+    @Optional() private readonly flags?: FeatureFlagService,
   ) {
     this.userRole = request.user?.role ?? '';
     this.correlationId = randomUUID();
@@ -80,27 +88,37 @@ export class ProjectService {
     // (shared/outbox/outbox-poller.service.ts) relays it to Kafka. Replaces the previous
     // fire-and-forget publish, which was neither atomic nor retried (§35.13 ESC-13).
     // The builder receives the INSERTed row, so the payload carries the real generated ids.
-    const project = await this.repo.create(dto, this.userId, (row) =>
-      buildOutboxEvent({
-        eventType: 'construction.project.created.v1',
+    const enforcePlanLimit =
+      this.flags?.isEnabled(PLAN_PROJECT_LIMIT_FLAG, {
         tenantId: this.tenantId,
-        actorId: this.userId,
-        correlationId: this.correlationId,
-        payload: {
-          project_id: row.project_id,
-          project_code: row.project_code,
-          project_name: row.project_name,
-          project_type: row.project_type as
-            'RESIDENTIAL' | 'COMMERCIAL' | 'INFRASTRUCTURE' | 'INDUSTRIAL',
-          budget: {
-            amount: row.budget_amount ?? '0.0000',
-            currency_code: row.budget_currency ?? 'THB',
+        userId: this.userId,
+      }) ?? false;
+
+    const project = await this.repo.create(
+      dto,
+      this.userId,
+      (row) =>
+        buildOutboxEvent({
+          eventType: 'construction.project.created.v1',
+          tenantId: this.tenantId,
+          actorId: this.userId,
+          correlationId: this.correlationId,
+          payload: {
+            project_id: row.project_id,
+            project_code: row.project_code,
+            project_name: row.project_name,
+            project_type: row.project_type as
+              'RESIDENTIAL' | 'COMMERCIAL' | 'INFRASTRUCTURE' | 'INDUSTRIAL',
+            budget: {
+              amount: row.budget_amount ?? '0.0000',
+              currency_code: row.budget_currency ?? 'THB',
+            },
+            start_date: row.start_date ?? '',
+            end_date: row.end_date ?? '',
+            created_by: row.created_by,
           },
-          start_date: row.start_date ?? '',
-          end_date: row.end_date ?? '',
-          created_by: row.created_by,
-        },
-      }),
+        }),
+      enforcePlanLimit,
     );
 
     return project;

@@ -1420,6 +1420,9 @@
       },
       "projectDetail": "Project detail",
       "issuesLabel": "Issues"
+    },
+    "error": {
+      "planLimitReached": "Your plan's active-project limit is reached. Complete a project or upgrade the plan to create another."
     }
   },
   "pm": {
@@ -3629,6 +3632,11 @@
         "ytd": "YTD",
         "all": "All"
       }
+    }
+  },
+  "trial": {
+    "error": {
+      "readOnly": "Your free trial has ended. The account is read-only until a plan is chosen — you can still view and export your data."
     }
   }
 }

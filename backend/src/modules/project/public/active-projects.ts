@@ -15,7 +15,8 @@ export const ACTIVE_PROJECT_STATUSES = ['DRAFT', 'ACTIVE', 'ON_HOLD'] as const;
 
 /** How many active projects the tenant has. Call inside the transaction that acts on the answer. */
 export async function countActiveProjects(
-  tx: Prisma.TransactionClient,
+  // Only what is used, so both a $transaction client and TenantPrismaService.run's client fit.
+  tx: Pick<Prisma.TransactionClient, '$queryRaw'>,
   tenantId: string,
 ): Promise<number> {
   // The status list is static SQL, kept in step with ACTIVE_PROJECT_STATUSES by the spec beside this file.

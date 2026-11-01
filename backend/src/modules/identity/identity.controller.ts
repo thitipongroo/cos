@@ -41,10 +41,14 @@ import { RequestStepUpDto, VerifyStepUpDto } from './dto/step-up.dto';
 import { StepUpService } from './step-up/step-up.service';
 import { JwtAuthGuard } from '../../shared/guards/jwt-auth.guard';
 import type { JwtPayload } from '../../shared/context/jwt-payload';
+import { AllowWhileReadOnly } from '../../shared/interceptors/trial-read-only.interceptor';
 
 // Auth endpoints: 10 req/min per IP — brute force protection (spec §5.5, QM-7)
 @Throttle({ default: { limit: 10, ttl: 60000 } })
 @ApiTags('auth')
+// Authentication and session — sign-in, refresh, sign-out, MFA, step-up, devices — must work while an ended
+// trial is read-only, or nobody could sign in to read or export (§7.10, ADR-109).
+@AllowWhileReadOnly()
 @Controller('auth')
 export class IdentityController {
   constructor(

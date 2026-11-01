@@ -77,6 +77,14 @@ export const DEFAULT_FLAGS: Readonly<Record<string, boolean>> = {
   // Because it is publicly writable, OFF is also the kill switch for abuse: a spam wave is stopped in
   // under 60 seconds without a deploy (QM-15), and nothing a person is entitled to is lost meanwhile.
   's1.identity.privacy-inquiry': false,
+  // Free-trial lifecycle (ADR-109, §7.10): TrialReadOnlyInterceptor and the daily trial job. New feature, so OFF
+  // until rollout — OFF is exactly today's behaviour (no tenant is read-only, no status moves); trials can still be
+  // opened and converted. It is also the kill switch if read-only ever refuses a request it should not.
+  's1.tenant.trial-lifecycle': false,
+  // Active-project limit per plan at project creation (§26.1, COS-PLAN-001). New feature, OFF until rollout:
+  // OFF is today's behaviour (no limit). Separate from the trial flag because it applies to every paying
+  // tenant, not only trials, and may need to be switched off on its own.
+  's1.project.plan-project-limit': false,
 };
 
 export interface FlagContext {

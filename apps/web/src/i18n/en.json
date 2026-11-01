@@ -938,6 +938,12 @@
       "title": "Coming soon",
       "body": "is not available yet.",
       "close": "Close"
+    },
+    "tenant": {
+      "error": {
+        "notConvertible": "This tenant is not in a trial that can be converted — it is already on a paid plan.",
+        "planBelowUsage": "This tenant has more active projects than the chosen plan allows. Choose a larger plan."
+      }
     }
   },
   "auth": {
@@ -1610,6 +1616,16 @@
         "unavailable": "No active central price exists for this item code.",
         "unitCostConflict": "Give a unit cost or use the central price, not both."
       }
+    }
+  },
+  "trial": {
+    "error": {
+      "readOnly": "Your free trial has ended. The account is read-only until a plan is chosen — you can still view and export your data."
+    }
+  },
+  "project": {
+    "error": {
+      "planLimitReached": "Your plan's active-project limit is reached. Complete a project or upgrade the plan to create another."
     }
   }
 }

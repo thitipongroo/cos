@@ -40,6 +40,7 @@ import { AuditInterceptor } from './shared/interceptors/audit.interceptor';
 import { HttpMetricsInterceptor } from './shared/interceptors/http-metrics.interceptor';
 import { RequestIdInterceptor } from './shared/interceptors/request-id.interceptor';
 import { TenantContextInterceptor } from './shared/interceptors/tenant-context.interceptor';
+import { TrialReadOnlyInterceptor } from './shared/interceptors/trial-read-only.interceptor';
 import { CloudflareWafMiddleware } from './shared/middleware/cloudflare-waf.middleware';
 import { UnmatchedRouteMetricsMiddleware } from './shared/middleware/unmatched-route-metrics.middleware';
 import { SecureHeadersMiddleware } from './shared/middleware/secure-headers.middleware';
@@ -138,6 +139,10 @@ import { ServiceAuthModule } from './shared/auth/auth.module';
     // Projects req.user (set by JwtAuthGuard) onto req.tenantId/tenantCode/userId/userRole
     // before the route handler runs. Must precede AuditInterceptor (which reads tenant context).
     { provide: APP_INTERCEPTOR, useClass: TenantContextInterceptor },
+    // An ended free trial is read-only: refuses writes with 403 COS-PLAN-003 (§7.10, ADR-109). After
+    // TenantContextInterceptor (needs req.user) and before AuditInterceptor, so a refused write is not audited
+    // as performed.
+    { provide: APP_INTERCEPTOR, useClass: TrialReadOnlyInterceptor },
     // HTTP metrics — records http_request_duration_seconds and http_requests_total (Phase 15)
     { provide: APP_INTERCEPTOR, useClass: HttpMetricsInterceptor },
     // Global audit interceptor — logs all mutating operations (QM-4, Phase 16 RLS)

@@ -9,6 +9,8 @@ import { ProjectService } from '../project.service';
 import { EventOutboxService } from '../../../shared/events/event-outbox.service';
 import { makeOutboxDouble } from '../../../shared/events/__tests__/outbox-double';
 import { ProjectRepository } from '../project.repository';
+import { FeatureFlagService } from '../../../shared/feature-flags/feature-flag.service';
+import { PLAN_PROJECT_LIMIT_FLAG } from '../project.service';
 import type { ProjectRow } from '../project.repository';
 
 jest.mock('@opensearch-project/opensearch', () => ({
@@ -72,13 +74,18 @@ function makeRepo(overrides: Partial<ProjectRepository> = {}): ProjectRepository
   } as unknown as ProjectRepository;
 }
 
-async function buildService(repo: ProjectRepository, reqOverride = {}): Promise<ProjectService> {
+async function buildService(
+  repo: ProjectRepository,
+  reqOverride = {},
+  flags?: { isEnabled: jest.Mock },
+): Promise<ProjectService> {
   const module = await Test.createTestingModule({
     providers: [
       ProjectService,
       { provide: EventOutboxService, useValue: makeOutboxDouble().service },
       { provide: ProjectRepository, useValue: repo },
       { provide: REQUEST, useValue: { ...mockRequest, ...reqOverride } },
+      ...(flags ? [{ provide: FeatureFlagService, useValue: flags }] : []),
     ],
   }).compile();
 
@@ -117,6 +124,41 @@ describe('ProjectService', () => {
   });
 
   describe('create()', () => {
+    // §26.1 / COS-PLAN-001: the service decides WHETHER the limit applies (QM-15 flag); the repository applies
+    // it inside the INSERT's transaction.
+    it.each([
+      [true, true],
+      [false, false],
+    ])(
+      'asks the repository to enforce the plan limit when the flag is %s',
+      async (on, expected) => {
+        const repo = makeRepo();
+        const flags = { isEnabled: jest.fn().mockReturnValue(on) };
+        const service = await buildService(repo, { userId: 'user-uuid-001' }, flags);
+        await service.create({
+          project_code: 'PROJ-001',
+          project_name: 'Test Project',
+          project_type: 'COMMERCIAL' as never,
+        });
+        expect(flags.isEnabled).toHaveBeenCalledWith(PLAN_PROJECT_LIMIT_FLAG, {
+          tenantId: 'tenant-uuid-001',
+          userId: 'user-uuid-001',
+        });
+        expect((repo.create as jest.Mock).mock.calls[0]![3]).toBe(expected);
+      },
+    );
+
+    it('does not enforce the limit when no flag service is present (registry default OFF)', async () => {
+      const repo = makeRepo();
+      const service = await buildService(repo);
+      await service.create({
+        project_code: 'PROJ-001',
+        project_name: 'Test Project',
+        project_type: 'COMMERCIAL' as never,
+      });
+      expect((repo.create as jest.Mock).mock.calls[0]![3]).toBe(false);
+    });
+
     it('creates a project and returns it', async () => {
       const repo = makeRepo();
       const service = await buildService(repo);

@@ -237,11 +237,12 @@ export class KeycloakJwtStrategy
         tenant_code: string;
         dedicated_db_url: string | null;
         keycloak_realm: string;
+        subscription_status: string;
         role: string | null;
         bound_subject: string | null;
       }>
     >`
-      SELECT t.tenant_code, t.dedicated_db_url, t.keycloak_realm, m.role,
+      SELECT t.tenant_code, t.dedicated_db_url, t.keycloak_realm, t.subscription_status, m.role,
              ub.keycloak_user_id AS bound_subject
       FROM platform.tenants t
       LEFT JOIN platform.users u
@@ -351,6 +352,8 @@ export class KeycloakJwtStrategy
       ...payload,
       role: effectiveRole,
       tenantCode: row.tenant_code,
+      // Same row, no extra query: TrialReadOnlyInterceptor refuses writes for an ended trial (§7.10, ADR-109).
+      subscriptionStatus: row.subscription_status,
       // Accepts ciphertext (s1.tenant.encrypted-db-url) or legacy plaintext — this value goes straight
       // into TenantPrismaService's connection pool, so it must be the usable URL (security review F5b).
       dedicatedDbUrl: row.dedicated_db_url

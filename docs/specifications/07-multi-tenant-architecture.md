@@ -578,11 +578,15 @@ outbox in the same transaction as the status change.
 
 ### Read-only enforcement
 
-While a tenant is `EXPIRED` or `PENDING_DELETION`, the tenant middleware refuses every request that is not
+While a tenant is `EXPIRED` or `PENDING_DELETION`, `TrialReadOnlyInterceptor` (global, after authentication) refuses
+every request that is not
 `GET`, `HEAD` or `OPTIONS` with `403 COS-PLAN-003`, except:
 
 - authentication and session endpoints (sign-in, token refresh, sign-out)
 - data-subject rights — data export and consent changes (PDPA §19, §30, §31) must never be blocked
+
+Exempt endpoints carry `@AllowWhileReadOnly()`; no other endpoint may. Vendor-portal requests authenticate on a
+separate path and are not covered.
 
 ### Notifications
 
@@ -608,7 +612,8 @@ schedule.
 
 ### Feature flag
 
-The daily job and the read-only enforcement are gated by the `trial-lifecycle` feature flag (QM-15). With the
+The daily job and the read-only enforcement are gated by the `s1.tenant.trial-lifecycle` feature flag (QM-15,
+default OFF). With the
 flag off, no status changes and no requests are refused; trials can still be opened and converted.
 
 ---

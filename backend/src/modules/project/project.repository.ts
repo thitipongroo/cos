@@ -4,9 +4,10 @@
 // Callbacks are `async` so TypeScript unwraps PrismaPromise<T> → T, giving
 // TenantPrismaService.run<T>() clean type inference under Node16 resolution.
 
-import { Injectable, Scope, Inject } from '@nestjs/common';
+import { ConflictException, Injectable, Scope, Inject } from '@nestjs/common';
 import { REQUEST } from '@nestjs/core';
 import type { Request } from 'express';
+import type { Prisma } from '@prisma/client';
 import { OutboxPublisher } from '@cos/kafka';
 import { TenantPrismaService } from '../tenant/prisma/tenant-prisma.service';
 import type { OutboxEventInput } from '../../shared/outbox/outbox.types';
@@ -16,6 +17,11 @@ import type { UpdateProjectDto } from './dto/update-project.dto';
 import type { ProjectStatus } from './project.state-machine';
 import type { CosRole } from '@cos/types';
 import { decodeCursor, encodeCursor } from '../../shared/pagination/cursor';
+import { createLogger } from '@cos/logger';
+import { countActiveProjects } from './public/active-projects';
+import { lockTenantPlan, PLAN_ERROR, PLAN_PROJECT_LIMIT } from '../tenant/public/plan-limits';
+
+const logger = createLogger('project-repository');
 
 export interface ProjectRow {
   project_id: string;
@@ -106,13 +112,18 @@ export class ProjectRepository {
    * The parameter is a **builder**, not a pre-built envelope: `project_id`, `created_at` and the
    * other server-generated columns only exist after the INSERT returns, so the event payload must
    * be derived from the inserted row — otherwise the relayed event would carry ids that match no row.
+   *
+   * `enforcePlanLimit` applies the plan's active-project limit (§26.1) in the same transaction as the INSERT,
+   * under a per-tenant lock, so the count it checks is the count the INSERT commits against.
    */
   async create(
     dto: CreateProjectDto,
     createdBy: string,
     buildOutboxEvent?: (row: ProjectRow) => OutboxEventInput,
+    enforcePlanLimit = false,
   ): Promise<ProjectRow> {
     const rows = await this.tenantPrisma.run(async (tx) => {
+      if (enforcePlanLimit) await this.assertUnderPlanLimit(tx);
       const inserted = await tx.$queryRaw<ProjectRow[]>`
         INSERT INTO projects.projects (
           tenant_id, project_code, project_name, project_type,
@@ -137,6 +148,33 @@ export class ProjectRepository {
       return inserted;
     });
     return rows[0]!;
+  }
+
+  /** Refuses with 409 COS-PLAN-001 when the tenant already runs as many active projects as its plan allows. */
+  private async assertUnderPlanLimit(
+    tx: Pick<Prisma.TransactionClient, '$queryRaw' | '$executeRaw'>,
+  ): Promise<void> {
+    const plan = await lockTenantPlan(tx, this.tenantId);
+    if (!plan) {
+      // RLS shows app_user its own tenant row, so this means the context is wrong, not that the limit is met.
+      // Fail open — refusing every project creation on a context fault is worse than one unlimited create.
+      logger.warn({ tenantId: this.tenantId }, 'project.plan_limit.plan_unreadable');
+      return;
+    }
+    const limit = PLAN_PROJECT_LIMIT[plan];
+    if (limit === null) return;
+    const active = await countActiveProjects(tx, this.tenantId);
+    if (active >= limit) {
+      throw new ConflictException({
+        error: {
+          code: PLAN_ERROR.PROJECT_LIMIT_REACHED,
+          message:
+            "Your plan's active-project limit is reached. Complete a project or upgrade the plan.",
+          messageKey: 'project.error.planLimitReached',
+          details: { plan, limit, active_projects: active },
+        },
+      });
+    }
   }
 
   async findById(projectId: string): Promise<ProjectRow | null> {

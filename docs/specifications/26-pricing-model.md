@@ -46,7 +46,8 @@ fee on any plan; users of the tenant and external collaborators (26.1.1) are nev
 - **Enforcement.** Creating a project that would exceed the plan's limit is refused with `COS-PLAN-001`
   (409). A plan change to a tier whose limit is below the tenant's current active-project count is refused
   with `COS-PLAN-002` (409) — the tenant completes or cancels projects first; no project is ever closed
-  automatically
+  automatically. The creation check is behind the `s1.project.plan-project-limit` feature flag (QM-15, default
+  OFF until rollout)
 - **Annual billing.** `LITE`, `STARTER` and `PROFESSIONAL` may be paid annually at 15% off the monthly
   price. `ENTERPRISE` is an annual contract with a platform fee and usage-based AI pricing
 - **Prices** exclude 7% VAT. They are the published list prices; commercial terms are in the Terms of
