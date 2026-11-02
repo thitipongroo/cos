@@ -6,6 +6,25 @@
 [extend]
 useDefault = true
 
-[allowlist]
+# [[allowlists]] needs gitleaks >= 8.25 — CI pins the version (.github/workflows/ci.yml, secret-scan).
+
+[[allowlists]]
 description = ".env.example contains documented placeholders only (REPLACE_ME_*, dev-only literals verified in audit 2026-07-04) — never real credentials"
 paths = ['''^\.env\.example$''']
+
+# CocoaPods writes a SHA-1 of every podspec under SPEC CHECKSUMS ("  PodName: <40 hex>"); generic-api-key reads
+# that shape as a key (first hit 2026-11-02, ExpoLocalAuthentication after the expo 56.0.24 bump).
+#
+# Scoped to that ONE rule, not global: a global allowlist's `paths` skips the whole file before any finding exists,
+# whatever `condition` says — measured 2026-11-02, it let a ghp_ token and an api_key line in a Podfile.lock
+# through. Here gitleaks checks each generic-api-key finding: the file must be a Podfile.lock AND the match exactly
+# "PodName: <40 hex>". Every other rule, and every other shape of line, still scans Podfile.lock. Targets the
+# match, not the line: in --pre-commit mode gitleaks scans the staged diff, where the line carries a leading "+".
+[[rules]]
+id = "generic-api-key"
+[[rules.allowlists]]
+description = "Podfile.lock SPEC CHECKSUMS entries — CocoaPods podspec SHA-1s, not credentials"
+condition = "AND"
+paths = ['''(^|/)Podfile\.lock$''']
+regexTarget = "match"
+regexes = ['''^[A-Za-z0-9_+.\-]+: [0-9a-f]{40}$''']

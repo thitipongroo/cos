@@ -1011,6 +1011,9 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITLEAKS_CONFIG: ${{ github.workspace }}/.gitleaks.toml
+          # Pinned: .gitleaks.toml uses [[allowlists]] (gitleaks >= 8.25). Same version the pre-commit hook was
+          # verified with (2026-11-02); bump both together.
+          GITLEAKS_VERSION: 8.30.1
 
   # ─── Step 5c: Security Scan (Trivy) ─────────────────────────────────────────
   security-scan:
