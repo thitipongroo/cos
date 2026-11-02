@@ -11,7 +11,7 @@ ADR-046 verified the iOS build on **Xcode 26.5**. On **Xcode 27.1 / Swift 6.4** 
 separate places. Every one below was hit and resolved on 2026-11-02, ending in a Debug build that installs, signs
 in and runs on the iPhone 17 simulator.
 
-Items 1 and 2 are fixed in the repository. Items 3–7 are per-machine or tooling problems, and you have to deal
+Items 1–3 are fixed in the repository. Items 4–7 are per-machine or tooling problems, and you have to deal
 with them yourself — the steps are here.
 
 ## Fixed in the repository — nothing to do
@@ -36,9 +36,35 @@ The iOS Simulator deployment target 'IPHONEOS_DEPLOYMENT_TARGET' is set to 12.4,
 that minimum. The same block is re-applied on every `expo prebuild` by `plugins/withPodfileFixes.js` fix (4);
 `src/lib/__tests__/podfileFixes.spec.ts` fails if the two drift apart. Run `pod install` after pulling.
 
+### 3. Debug link fails on `Sealable` / `getDebugProps` symbols
+
+```text
+Undefined symbols for architecture arm64:
+  "facebook::react::Sealable::Sealable()", "facebook::react::ShadowNode::getDebugName() const", …
+Ld …/COS.app/COS.debug.dylib
+```
+
+The app was linking against the **prebuilt** React Native core (`Pods/React-Core-prebuilt/React.xcframework`), and
+the copy installed was the Release flavour, which lacks the debug symbols that source-built new-architecture
+libraries (react-native-svg, gesture-handler, reanimated) reference in a Debug build. React Native's own swap
+phase only replaces it when `Pods/React-Core-prebuilt/.last_build_configuration` exists, so a fresh `pod install`
+could leave the wrong flavour in place.
+
+Since 2026-11-02 React Native is **built from source** on iOS: `app.json` → `expo-build-properties` →
+`ios.buildReactNativeFromSource: true`, which `expo prebuild` writes into `ios/Podfile.properties.json` (also
+committed there). `pod install` then reports `[ReactNativeCore] Building from source: true` and
+`[ReactNativeDependencies] Building from source: true`, and React core is compiled with the same configuration as
+the app, so Debug always links. Android is unaffected (the option is set under `ios` only).
+
+The cost is build time — React Native and its C++ dependencies (RCT-Folly, boost, glog, fmt, DoubleConversion)
+compile with the app. Switching an existing build tree to source on 2026-11-02 took **about 5½ minutes** on an
+Apple M3 (8 cores), with the other pods already compiled; a build from an empty `build/` takes longer.
+Incremental builds recompile only what changed. If a build still fails on these symbols, `pod install` was not
+re-run after pulling.
+
 ## Per machine — do these once
 
-### 3. `npx expo run:ios` treats the simulator as a physical device
+### 4. `npx expo run:ios` treats the simulator as a physical device
 
 ```text
 Unexpected devicectl JSON version output from devicectl. Connecting to physical Apple devices may not work as expected.
@@ -49,7 +75,7 @@ Expo CLI cannot parse Xcode 27's `devicectl` output, so it asks for a signing ce
 a UDID or with a device name. Build with `xcodebuild` and install with `simctl` instead (see
 [Build and run](#build-and-run)).
 
-### 4. `NODE_BINARY` points at a Node that no longer exists
+### 5. `NODE_BINARY` points at a Node that no longer exists
 
 ```text
 Script-….sh: line 9: /opt/homebrew/Cellar/node@24/24.18.0/bin/node: No such file or directory
@@ -62,33 +88,6 @@ upgrade. Point it at the version-stable link:
 ```bash
 echo 'export NODE_BINARY=/opt/homebrew/opt/node@24/bin/node' > apps/mobile/ios/.xcode.env.local
 ```
-
-### 5. Debug link fails on `Sealable` / `getDebugProps` symbols
-
-```text
-Undefined symbols for architecture arm64:
-  "facebook::react::Sealable::Sealable()", "facebook::react::ShadowNode::getDebugName() const", …
-Ld …/COS.app/COS.debug.dylib
-```
-
-The React core prebuilt in `ios/Pods/React-Core-prebuilt` is the **Release** flavour, and a Debug app needs the
-Debug one. React Native's own build phase (`[RNCore] Replace React Native Core for the right configuration`) swaps
-them, but only when `Pods/React-Core-prebuilt/.last_build_configuration` says what is installed; with no file it
-assumes Debug and swaps nothing. Check, then tell it the truth:
-
-```bash
-ls -la apps/mobile/ios/Pods/React-Core-prebuilt/React.xcframework/ios-arm64_x86_64-simulator/React.framework/React
-# about 23 MB = Release, about 130 MB = Debug
-printf 'Release' > apps/mobile/ios/Pods/React-Core-prebuilt/.last_build_configuration
-```
-
-The next Debug build replaces it from `Pods/ReactNativeCore-artifacts/`. `Pods/` is git-ignored.
-
-> **Known gap.** `plugins/withPodfileFixes.js` fix (3) was written to prevent exactly this on react-native 0.74
-> (`EXPO_USE_PRECOMPILED_MODULES=false`). On 0.85 the prebuilt is selected by `RCT_USE_PREBUILT_RNCORE` (from
-> `ios.buildReactNativeFromSource` in `Podfile.properties.json`), so that fix no longer applies. Building React
-> Native from source would remove the problem at the cost of much longer builds — a decision for the team, not
-> made here.
 
 ### 6. Detox framework cache is for another Xcode
 
@@ -143,8 +142,14 @@ to fail with "Invalid or expired OTP" although the server accepted the code — 
 screenshot`). On the login screen, the phone-pad keyboard covers **SEND OTP**: tap outside the field (for example
 the "FIELD WORKER ACCESS" heading) before tapping the button, or Detox reports it "not hittable".
 
+`launchApp({ delete: true })` does not sign you out: the iOS keychain survives an uninstall, so the app opens
+straight on Home with the previous session and a login step waiting for `phone-input` times out. Start from a
+signed-out state with the E2E reset link (`cos://e2e/reset`, only when the bundle runs with `EXPO_PUBLIC_E2E=1`) or
+erase the simulator (`xcrun simctl erase <device>`).
+
 ## Verification record
 
 | Date       | Xcode / Swift | Simulator | Result                                                                                                                                           |
 | ---------- | ------------- | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
 | 2026-11-02 | 27.1 / 6.4    | iPhone 17 | Debug build signed ad hoc, installed, signed in (Path A against a local fixture API), trial banner and `+` verified in three subscription states |
+| 2026-11-02 | 27.1 / 6.4    | iPhone 17 | Same, with React Native built from source (`ios.buildReactNativeFromSource`) — no prebuilt, links in Debug with no manual step                   |

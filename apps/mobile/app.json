@@ -41,7 +41,9 @@
               "pickFirst": ["**/libc++_shared.so"]
             }
           },
-          "ios": {}
+          "ios": {
+            "buildReactNativeFromSource": true
+          }
         }
       ],
       [

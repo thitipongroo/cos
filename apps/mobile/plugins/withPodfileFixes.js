@@ -16,7 +16,9 @@
 //    React from source keeps the debug flags consistent so Debug links. (Release already links either way.)
 //    NOTE (2026-11-02): fixes 1–3 were written for react-native 0.74. On 0.85 the React core prebuilt is
 //    chosen by RCT_USE_PREBUILT_RNCORE (Podfile, from `ios.buildReactNativeFromSource`), not by this
-//    property, so (3) no longer prevents that link error — see docs/runbooks/mobile-ios-build-xcode-27.md.
+//    property, so (3) alone no longer prevents that link error. The fix on 0.85 is app.json
+//    `expo-build-properties` → `ios.buildReactNativeFromSource: true`, which prebuild writes into
+//    Podfile.properties.json; (3) stays because it still governs Expo's own precompiled modules.
 // 4. Raise every pod's iOS deployment target to the app's own minimum (2026-11-02). Xcode 27 refuses a
 //    target below 15.0 and some pods still declare one (RNSVG-RNSVGFilters: 12.4), which fails the whole
 //    build. The app cannot run on an older iOS anyway, so raising them loses nothing.
