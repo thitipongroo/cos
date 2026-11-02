@@ -13,7 +13,7 @@ import {
 import type { SyncQueueItem } from '../db/sync-queue';
 import { ConflictHandler } from './ConflictHandler';
 import type { ServerSyncStatus, LocalSyncStatus } from './ConflictHandler';
-import { isNetworkError, isPermanentFailure } from './httpFailure';
+import { isNetworkError, isPermanentFailure, isTrialReadOnly } from './httpFailure';
 
 const MAX_RETRIES = 5;
 /**
@@ -89,6 +89,11 @@ export interface SyncResult {
    * show the queue as errored (it is not — nothing is wrong with the items).
    */
   interrupted: boolean;
+  /**
+   * True when the batch stopped because the tenant's free trial has ended (403 COS-PLAN-003, §7.10). Implies
+   * `interrupted`: nothing was spent or discarded, and the queue resumes as is once the tenant can write again.
+   */
+  readOnly?: boolean;
 }
 
 export interface SyncManagerCallbacks {
@@ -165,6 +170,16 @@ export class SyncManager {
         if (isNetworkError(err)) {
           resetStale();
           result.interrupted = true;
+          break;
+        }
+
+        // THE TRIAL HAS ENDED — hold everything, spend nothing (§7.10). Every item would be refused the same way,
+        // and none of them is wrong: buying a plan makes the tenant writable again, and then this queue goes
+        // through as it stands. Same handling as a dropped network, plus the flag that says why.
+        if (isTrialReadOnly(err)) {
+          resetStale();
+          result.interrupted = true;
+          result.readOnly = true;
           break;
         }
 

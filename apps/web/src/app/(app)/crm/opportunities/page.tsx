@@ -15,6 +15,7 @@ import {
 import type { OpportunityRow } from '../../../../lib/api/types';
 import { formatDate, formatMoney } from '../../../../lib/format';
 import { useValidatedForm } from '../../../../lib/forms';
+import { useReadOnly } from '../../../../lib/auth/useReadOnly';
 
 /** CRM opportunities — create from a lead + convert to customer (§20.7.10 → /crm/opportunities). */
 export default function CrmOpportunitiesPage() {
@@ -23,6 +24,8 @@ export default function CrmOpportunitiesPage() {
   const query = useCrmOpportunities();
   const create = useCreateOpportunity();
   const convert = useConvertOpportunity();
+  // VIEWER, or a free trial that has ended (§7.10): no write actions — the server would refuse them.
+  const readOnly = useReadOnly();
   const {
     control,
     handleSubmit,
@@ -58,7 +61,7 @@ export default function CrmOpportunitiesPage() {
     {
       headerKey: 'table.actions',
       cell: (o) =>
-        o.status === 'OPEN' ? (
+        o.status === 'OPEN' && !readOnly ? (
           <button
             type="button"
             disabled={convert.isPending}
@@ -82,50 +85,52 @@ export default function CrmOpportunitiesPage() {
   return (
     <div>
       <h1 className="mb-4 text-2xl font-bold text-gray-800">{t('crm.opportunitiesTitle')}</h1>
-      <form onSubmit={submit} noValidate className="mb-6 flex flex-wrap items-start gap-2">
-        <Controller
-          name="lead_id"
-          control={control}
-          render={({ field }) => (
-            <NativeSelectField
-              {...field}
-              label={t('crm.selectLead')}
-              placeholder={t('crm.selectLead')}
-              options={leadOptions}
-              errorMessage={messageFor(errors.lead_id?.message)}
-            />
-          )}
-        />
-        <Controller
-          name="title"
-          control={control}
-          render={({ field }) => (
-            <TextInputField
-              {...field}
-              label={t('crm.colTitle')}
-              errorMessage={messageFor(errors.title?.message)}
-            />
-          )}
-        />
-        <Controller
-          name="value"
-          control={control}
-          render={({ field }) => (
-            <TextInputField
-              {...field}
-              label={t('crm.colValue')}
-              errorMessage={messageFor(errors.value?.message)}
-            />
-          )}
-        />
-        <button
-          type="submit"
-          disabled={isSubmitting || create.isPending}
-          className="mt-6 rounded-md bg-blue-600 px-4 py-1.5 text-sm text-white hover:bg-blue-700 disabled:opacity-50"
-        >
-          {t('crm.createOpportunity')}
-        </button>
-      </form>
+      {!readOnly && (
+        <form onSubmit={submit} noValidate className="mb-6 flex flex-wrap items-start gap-2">
+          <Controller
+            name="lead_id"
+            control={control}
+            render={({ field }) => (
+              <NativeSelectField
+                {...field}
+                label={t('crm.selectLead')}
+                placeholder={t('crm.selectLead')}
+                options={leadOptions}
+                errorMessage={messageFor(errors.lead_id?.message)}
+              />
+            )}
+          />
+          <Controller
+            name="title"
+            control={control}
+            render={({ field }) => (
+              <TextInputField
+                {...field}
+                label={t('crm.colTitle')}
+                errorMessage={messageFor(errors.title?.message)}
+              />
+            )}
+          />
+          <Controller
+            name="value"
+            control={control}
+            render={({ field }) => (
+              <TextInputField
+                {...field}
+                label={t('crm.colValue')}
+                errorMessage={messageFor(errors.value?.message)}
+              />
+            )}
+          />
+          <button
+            type="submit"
+            disabled={isSubmitting || create.isPending}
+            className="mt-6 rounded-md bg-blue-600 px-4 py-1.5 text-sm text-white hover:bg-blue-700 disabled:opacity-50"
+          >
+            {t('crm.createOpportunity')}
+          </button>
+        </form>
+      )}
       <DataTable
         columns={columns}
         rows={query.data ?? []}

@@ -3,7 +3,7 @@
  * @cos/ui-logic's `trialBanner`, shared with mobile; this maps it onto this app's i18n keys and tone.
  */
 
-import type { TrialBanner } from '@cos/ui-logic';
+import { TRIAL_READ_ONLY_CODE, type TrialBanner } from '@cos/ui-logic';
 
 export interface TrialBannerCopy {
   /** i18n key — never copy (QM-3). */
@@ -44,5 +44,18 @@ export function trialBannerCopy(
 export function interpolate(message: string, values: Record<string, string | number>): string {
   return message.replace(/\{(\w+)\}/g, (whole, name: string) =>
     Object.prototype.hasOwnProperty.call(values, name) ? String(values[name]) : whole,
+  );
+}
+
+/** The window event the query client raises when a save was refused because the trial ended (COS-PLAN-003). */
+export const TRIAL_READ_ONLY_EVENT = 'cos:trial-read-only';
+
+/** True for the 403 the API answers a write with while the tenant is read-only (§7.10) — told apart by its code. */
+export function isTrialReadOnlyError(error: unknown): boolean {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    (error as { status?: unknown }).status === 403 &&
+    (error as { code?: unknown }).code === TRIAL_READ_ONLY_CODE
   );
 }

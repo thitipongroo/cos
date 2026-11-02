@@ -8,13 +8,14 @@
 // No in-app checkout exists (plans are sold by the team, ADR-109), so the strip carries the two ways to choose one:
 // the published price list and a mail to sales naming the tenant (`TRIAL_CONTACT`, shared with the web app).
 
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { Linking, Pressable, StyleSheet, Text, View } from 'react-native';
 import { TRIAL_CONTACT, trialBanner, trialContactMailto } from '@cos/ui-logic';
-import { getMyTenant, type MyTenant } from '../api/tenant';
+import { getMyTenant } from '../api/tenant';
 import { useNetworkStatus } from '../hooks/useNetworkStatus';
 import { useI18n } from '../i18n';
 import { trialBannerCopy } from '../lib/trialBanner';
+import { useTenantStore } from '../store/tenantStore';
 import { usePalette } from '../theme/usePalette';
 import { fontFamily, spacing } from '../theme/tokens';
 
@@ -22,7 +23,9 @@ export function TrialBanner() {
   const { t, formatDate } = useI18n();
   const p = usePalette();
   const { isOnline } = useNetworkStatus();
-  const [tenant, setTenant] = useState<MyTenant | null>(null);
+  // In the shared store, not local state: <Fab /> and the sync runner read the same answer (useTenantReadOnly).
+  const tenant = useTenantStore((st) => st.tenant);
+  const setTenant = useTenantStore((st) => st.setTenant);
 
   useEffect(() => {
     if (!isOnline) return;
@@ -36,7 +39,7 @@ export function TrialBanner() {
     return () => {
       cancelled = true;
     };
-  }, [isOnline]);
+  }, [isOnline, setTenant]);
 
   const copy = trialBannerCopy(trialBanner(tenant, new Date()), (iso) => formatDate(iso));
   if (!copy) return null;

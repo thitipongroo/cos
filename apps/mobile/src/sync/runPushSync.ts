@@ -22,6 +22,8 @@ import { apiClient } from '../api/client';
 import { useAuthStore } from '../store/authStore';
 import { useOfflineStore } from '../store/offlineStore';
 import { useSyncStore } from '../store/syncStore';
+import { useTenantStore } from '../store/tenantStore';
+import { getMyTenant } from '../api/tenant';
 
 const API_BASE = process.env['EXPO_PUBLIC_API_URL'] ?? 'http://localhost:3000/api/v1';
 
@@ -102,6 +104,16 @@ export async function runPushSync(): Promise<void> {
 
   // 1. Drain the mutation queue (includes annotations enqueued on a previous cycle's upload).
   const result = await manager.processQueue();
+
+  // §7.10: the push was refused because the trial ended. Re-read the tenant so the banner turns read-only and every
+  // `+` disappears now, not at the next launch. Best-effort: the queue is already safe either way. The photo
+  // uploads below are skipped too (`interrupted`), so nothing leaves the device while the tenant is read-only.
+  if (result.readOnly) {
+    await getMyTenant().then(
+      (tenant) => useTenantStore.getState().setTenant(tenant),
+      () => undefined,
+    );
+  }
 
   // 2. Upload photo binaries last; each success enqueues its dirty annotation for the next cycle.
   //    Skipped when the queue pass was cut short by the network going away — the uploads would fail

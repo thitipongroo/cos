@@ -61,5 +61,19 @@ target 'COS' do
       :mac_catalyst_enabled => false,
       :ccache_enabled => ccache_enabled?(podfile_properties),
     )
+
+    # @cos raise-pod-deployment-targets (plugins/withPodfileFixes.js — keep the two in step)
+    # Xcode 27 refuses an iOS deployment target below 15.0, and some pods still declare an older one
+    # (RNSVG-RNSVGFilters: 12.4), which fails the whole build. Raise every pod below the app's own minimum
+    # to that minimum: the app cannot run on an older iOS anyway, so nothing is lost.
+    app_min_ios = podfile_properties['ios.deploymentTarget'] || '16.4'
+    installer.pods_project.targets.each do |pod_target|
+      pod_target.build_configurations.each do |build_config|
+        target_ios = build_config.build_settings['IPHONEOS_DEPLOYMENT_TARGET']
+        if target_ios && Gem::Version.new(target_ios) < Gem::Version.new(app_min_ios)
+          build_config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = app_min_ios
+        end
+      end
+    end
   end
 end

@@ -74,9 +74,10 @@ a **DR drill before every Stage transition**, recorded in the drill log above.
 
 ## Testing
 
-| Runbook                                    | Covers                                                          | State                           |
-| ------------------------------------------ | --------------------------------------------------------------- | ------------------------------- |
-| [mobile-e2e-detox.md](mobile-e2e-detox.md) | Mobile E2E (Detox) on CI — the six secrets and the staging data | **never run** — see the runbook |
+| Runbook                                                      | Covers                                                                                     | State                           |
+| ------------------------------------------------------------ | ------------------------------------------------------------------------------------------ | ------------------------------- |
+| [mobile-e2e-detox.md](mobile-e2e-detox.md)                   | Mobile E2E (Detox) on CI — the six secrets and the staging data                            | **never run** — see the runbook |
+| [mobile-ios-build-xcode-27.md](mobile-ios-build-xcode-27.md) | Building the mobile app for the iOS simulator on Xcode 27 — seven failures and their fixes | —                               |
 
 ## AI
 

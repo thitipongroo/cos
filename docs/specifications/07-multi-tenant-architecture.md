@@ -583,7 +583,8 @@ every request that is not
 `GET`, `HEAD` or `OPTIONS` with `403 COS-PLAN-003`, except:
 
 - authentication and session endpoints (sign-in, token refresh, sign-out)
-- data-subject rights — data export and consent changes (PDPA §19, §30, §31) must never be blocked
+- data-subject rights — data export, consent changes and the tenant's subject-request desk (record, verify,
+  erase, close a request; PDPA §19, §30–§33) must never be blocked
 
 Exempt endpoints carry `@AllowWhileReadOnly()`; no other endpoint may. Vendor-portal requests authenticate on a
 separate path (`VendorAuthGuard`), which applies the same rule to vendor writes (product owner, 2026-11-01).
@@ -620,6 +621,12 @@ At day 60 the job also notifies every SYSTEM_ADMIN, in-app and by email, that th
   shows the trial state and its date. `COS-PLAN-002` names the plan limit and the active-project count. The Global
   Audit Log filters `tenant.create_trial`, `tenant.convert` and `tenant.trial_purge`
 - `LITE` is offered in Create Tenant and in the System Settings tier table
+- **Write actions while read-only** — the web hides create / edit / approve actions through `useReadOnly()` (also the
+  VIEWER rule) and the mobile app hides every `+` (`<Fab />`). A save the server refuses with `COS-PLAN-003` makes
+  the web banner say "your last change was not saved" and re-reads the tenant
+- **Mobile offline queue** — a push refused with `COS-PLAN-003` is **held, not discarded**: the queue stops as it
+  does with no signal, spends no retry, uploads no photos, and goes through unchanged once a plan is bought. Every
+  other 4xx is still discarded and reported (§17.2)
 
 ### Deletion
 

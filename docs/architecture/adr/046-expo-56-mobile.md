@@ -36,6 +36,9 @@ Verified on this machine (Xcode 26.5, iPhone 17 Pro simulator): `expo prebuild` 
 (WatermelonDB + simdjson pods) + `xcodebuild` → **BUILD SUCCEEDED**; the app installs, launches and
 stays running (no crash).
 
+> On **Xcode 27** (2026-11-02) the build needs `expo` ≥ 56.0.24 and the Podfile deployment-target raise, and
+> several per-machine steps — see [docs/runbooks/mobile-ios-build-xcode-27.md](../../runbooks/mobile-ios-build-xcode-27.md).
+
 ## Rationale
 
 The SDK-51 lock existed because of the `@skam22` plugin, not a fundamental blocker; `@morrowdigital`

@@ -31,6 +31,11 @@ export const TRIAL_URGENT_DAYS = 7;
 /** The 403 the API answers a write with while the trial is read-only. */
 export const TRIAL_READ_ONLY_CODE = 'COS-PLAN-003';
 
+/** The statuses in which the tenant may read but not write (§7.10) — the server answers writes with COS-PLAN-003. */
+export function isReadOnlyStatus(status: string | null | undefined): boolean {
+  return status === 'EXPIRED' || status === 'PENDING_DELETION';
+}
+
 /** Which banner, if any, a tenant in this state should see at `now`. */
 export function trialBanner(
   tenant: TenantSubscription | null | undefined,

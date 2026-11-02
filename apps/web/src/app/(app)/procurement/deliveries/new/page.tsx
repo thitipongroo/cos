@@ -14,6 +14,7 @@ import {
   useRecordDelivery,
 } from '../../../../../lib/api/queries';
 import { useValidatedForm } from '../../../../../lib/forms';
+import { useReadOnly } from '../../../../../lib/auth/useReadOnly';
 
 /** Record/receive a delivery against a purchase order (§20.7.3 → POST /procurement/deliveries).
  *  Pick a PO, then enter the quantity received per line item. */
@@ -21,6 +22,8 @@ export default function RecordDeliveryPage() {
   const { t } = useI18n();
   const orders = useAllPurchaseOrders({});
   const record = useRecordDelivery();
+  // VIEWER, or a free trial that has ended (§7.10): no write actions — the server would refuse them.
+  const readOnly = useReadOnly();
 
   // Per-line quantities stay in local state because the set of lines depends on which PO is
   // selected — they are UI state, not form state. What react-hook-form validates is the `items`
@@ -236,7 +239,7 @@ export default function RecordDeliveryPage() {
 
         <button
           type="submit"
-          disabled={isSubmitting || record.isPending}
+          disabled={readOnly || isSubmitting || record.isPending}
           className="rounded-md bg-blue-600 px-4 py-1.5 text-sm text-white hover:bg-blue-700 disabled:opacity-50"
         >
           {t('proc.recordDelivery')}

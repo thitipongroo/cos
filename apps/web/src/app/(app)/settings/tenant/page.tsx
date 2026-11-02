@@ -7,12 +7,15 @@ import { TextInputField } from '../../../../components/form/TextInputField';
 import { useI18n } from '../../../../i18n';
 import { useTenantSettings, useUpdateTenantSettings } from '../../../../lib/api/queries';
 import { useValidatedForm } from '../../../../lib/forms';
+import { useReadOnly } from '../../../../lib/auth/useReadOnly';
 
 /** Tenant settings — variance/retention defaults, LINE token, notifications (§20.7.8, ADR-028). */
 export default function SettingsTenantPage() {
   const { t } = useI18n();
   const query = useTenantSettings();
   const update = useUpdateTenantSettings();
+  // VIEWER, or a free trial that has ended (§7.10): no write actions — the server would refuse them.
+  const readOnly = useReadOnly();
 
   const {
     control,
@@ -112,7 +115,7 @@ export default function SettingsTenantPage() {
         />
         <button
           type="submit"
-          disabled={isSubmitting || update.isPending || query.isLoading}
+          disabled={readOnly || isSubmitting || update.isPending || query.isLoading}
           className="rounded-md bg-blue-600 px-4 py-1.5 text-sm text-white hover:bg-blue-700 disabled:opacity-50"
         >
           {t('settings.save')}

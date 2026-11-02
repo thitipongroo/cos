@@ -2,10 +2,11 @@
 
 import { TRIAL_CONTACT, trialBanner, trialContactMailto } from '@cos/ui-logic';
 import { useSession } from 'next-auth/react';
+import { useEffect, useState } from 'react';
 import { useI18n } from '../../i18n';
 import { useMyTenant } from '../../lib/api/queries';
 import { formatDate } from '../../lib/format';
-import { interpolate, trialBannerCopy } from '../../lib/trial';
+import { interpolate, TRIAL_READ_ONLY_EVENT, trialBannerCopy } from '../../lib/trial';
 
 const TONE = {
   info: 'border-blue-200 bg-blue-50 text-blue-800',
@@ -25,6 +26,14 @@ export function TrialBanner() {
   const { t, locale } = useI18n();
   const { status } = useSession();
   const tenant = useMyTenant(status === 'authenticated');
+  // Set when a save was just refused with COS-PLAN-003 (app/providers.tsx): the banner then leads with that, so
+  // the user learns why their click did nothing rather than reading a generic error.
+  const [blocked, setBlocked] = useState(false);
+  useEffect(() => {
+    const onBlocked = () => setBlocked(true);
+    window.addEventListener(TRIAL_READ_ONLY_EVENT, onBlocked);
+    return () => window.removeEventListener(TRIAL_READ_ONLY_EVENT, onBlocked);
+  }, []);
 
   const copy = trialBannerCopy(trialBanner(tenant.data, new Date()), (iso) =>
     formatDate(locale, iso),
@@ -36,7 +45,10 @@ export function TrialBanner() {
       role={copy.tone === 'danger' ? 'alert' : 'status'}
       className={`flex flex-wrap items-center gap-x-4 gap-y-1 border-b px-4 py-2 text-sm ${TONE[copy.tone]}`}
     >
-      <span className="min-w-0 flex-1">{interpolate(t(copy.key), copy.values)}</span>
+      <span className="min-w-0 flex-1">
+        {blocked ? <strong className="mr-1">{t('trial.banner.saveBlocked')}</strong> : null}
+        {interpolate(t(copy.key), copy.values)}
+      </span>
       <span className="flex shrink-0 items-center gap-3 font-medium">
         <a
           href={TRIAL_CONTACT.pricingUrl}

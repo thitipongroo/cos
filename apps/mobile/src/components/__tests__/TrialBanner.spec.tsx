@@ -8,6 +8,7 @@ import { I18nProvider } from '../../i18n';
 import { TrialBanner } from '../TrialBanner';
 import { getMyTenant } from '../../api/tenant';
 import { useNetworkStatus } from '../../hooks/useNetworkStatus';
+import { useTenantStore } from '../../store/tenantStore';
 
 jest.mock('../../api/tenant', () => ({ getMyTenant: jest.fn() }));
 jest.mock('../../hooks/useNetworkStatus', () => ({ useNetworkStatus: jest.fn() }));
@@ -36,6 +37,8 @@ const renderBanner = () =>
 
 beforeEach(() => {
   jest.clearAllMocks();
+  // The banner writes the shared tenant store (<Fab /> and the sync runner read it); start each test empty.
+  useTenantStore.getState().setTenant(null);
   netMock.mockReturnValue({ isOnline: true });
 });
 
@@ -99,12 +102,20 @@ it('opens the price list and a mail to sales naming the tenant', async () => {
   const r = await renderBanner();
   await r.findByTestId('trial-banner');
 
-  fireEvent.press(r.getByTestId('trial-banner-plans'));
+  await fireEvent.press(r.getByTestId('trial-banner-plans'));
   expect(open).toHaveBeenLastCalledWith('https://construction-os.io/#pricing');
 
-  fireEvent.press(r.getByTestId('trial-banner-contact'));
+  await fireEvent.press(r.getByTestId('trial-banner-contact'));
   const mail = open.mock.calls.at(-1)![0];
   expect(mail.startsWith('mailto:info@construction-os.io?subject=')).toBe(true);
   expect(decodeURIComponent(mail)).toContain('somchai_build');
   open.mockRestore();
+});
+
+it('publishes what it read to the shared tenant store', async () => {
+  const t = tenant({ subscription_status: 'EXPIRED', read_only_until: '2026-12-31T00:00:00Z' });
+  getMock.mockResolvedValue(t);
+  const r = await renderBanner();
+  await r.findByTestId('trial-banner');
+  expect(useTenantStore.getState().tenant).toEqual(t);
 });

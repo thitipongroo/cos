@@ -1,4 +1,5 @@
 import {
+  isReadOnlyStatus,
   TRIAL_CONTACT,
   TRIAL_READ_ONLY_CODE,
   TRIAL_URGENT_DAYS,
@@ -85,5 +86,18 @@ describe('trial contact (no in-app checkout)', () => {
     const url = trialContactMailto('a&b', 'เลือกแพ็กเกจ');
     expect(url.startsWith('mailto:info@construction-os.io?subject=')).toBe(true);
     expect(decodeURIComponent(url.split('subject=')[1]!)).toBe('เลือกแพ็กเกจ — a&b');
+  });
+});
+
+describe('isReadOnlyStatus', () => {
+  it.each([
+    ['EXPIRED', true],
+    ['PENDING_DELETION', true],
+    ['TRIAL', false],
+    ['ACTIVE', false],
+    [null, false],
+    [undefined, false],
+  ])('%s → %s', (status, expected) => {
+    expect(isReadOnlyStatus(status)).toBe(expected);
   });
 });

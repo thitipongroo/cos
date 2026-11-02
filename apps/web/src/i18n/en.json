@@ -1666,7 +1666,8 @@
       "deletionPending": "Your free trial's read-only period is over and the data is due for deletion. Contact our team now if you want to keep it.",
       "seePlans": "See plans and prices",
       "contact": "Contact our team",
-      "mailSubject": "Choose a plan after the free trial"
+      "mailSubject": "Choose a plan after the free trial",
+      "saveBlocked": "Your last change was not saved."
     }
   },
   "project": {

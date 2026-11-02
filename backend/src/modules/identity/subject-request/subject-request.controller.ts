@@ -6,6 +6,11 @@
 //
 // The search is a GET and is audited EXPLICITLY in the service — the global AuditInterceptor only
 // covers mutating verbs, so without that write the one privileged read here would leave no trace.
+//
+// OPEN WHILE A TRIAL IS READ-ONLY (§7.10, ADR-109; 2026-11-01). Answering a data subject — recording the request,
+// verifying the person, erasing, closing — is the controller's PDPA duty and §7.10 lists data-subject rights among
+// what read-only must never block. An ended trial still holds the people's data until it is deleted, so it must
+// still be able to answer them. The public verify endpoint below has no signed-in user and is not affected.
 
 import {
   Body,
@@ -31,10 +36,12 @@ import { CloseSubjectRequestDto } from './dto/close-subject-request.dto';
 import { EraseSubjectRequestDto } from './dto/erase-subject-request.dto';
 import { SubjectVerifyTokenGuard } from './subject-verify-token.guard';
 import type { TenantRequest } from '../../../shared/context/tenant-request';
+import { AllowWhileReadOnly } from '../../../shared/interceptors/trial-read-only.interceptor';
 
 @ApiTags('subject-requests')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard, RolesGuard)
+@AllowWhileReadOnly()
 @Controller('subject-requests')
 export class SubjectRequestController {
   constructor(private readonly service: SubjectRequestService) {}

@@ -1,4 +1,4 @@
-import { interpolate, trialBannerCopy } from '../trial';
+import { interpolate, isTrialReadOnlyError, trialBannerCopy } from '../trial';
 
 const fmt = (iso: string | null) => (iso ? `D(${iso})` : '—');
 
@@ -52,5 +52,16 @@ describe('interpolate', () => {
 
   it('leaves an unknown placeholder, and never reads inherited members', () => {
     expect(interpolate('{days} {toString}', { days: 1 })).toBe('1 {toString}');
+  });
+});
+
+describe('isTrialReadOnlyError', () => {
+  it('matches only the read-only 403 by its code', () => {
+    expect(isTrialReadOnlyError({ status: 403, code: 'COS-PLAN-003' })).toBe(true);
+    expect(isTrialReadOnlyError({ status: 403, code: 'COS-AUTH-403' })).toBe(false);
+    expect(isTrialReadOnlyError({ status: 403 })).toBe(false);
+    expect(isTrialReadOnlyError({ status: 409, code: 'COS-PLAN-003' })).toBe(false);
+    expect(isTrialReadOnlyError(null)).toBe(false);
+    expect(isTrialReadOnlyError('COS-PLAN-003')).toBe(false);
   });
 });

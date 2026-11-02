@@ -12,6 +12,7 @@ import {
 import { IdentityController } from '../../../modules/identity/identity.controller';
 import { ConsentController } from '../../../modules/identity/consent/consent.controller';
 import { DataExportController } from '../../../modules/identity/data-export/data-export.controller';
+import { SubjectRequestController } from '../../../modules/identity/subject-request/subject-request.controller';
 import { DEFAULT_FLAGS } from '../../feature-flags/feature-flag.service';
 
 const TENANT = '11111111-1111-4111-8111-111111111111';
@@ -144,5 +145,9 @@ describe('@AllowWhileReadOnly() exemptions (§7.10) — exactly auth/session and
   it('covers consent changes (PDPA §19) and the data-export request (§30/§31)', () => {
     expect(marked(ConsentController.prototype.record)).toBe(true);
     expect(marked(DataExportController.prototype.request)).toBe(true);
+  });
+
+  it('covers the tenant data-subject request desk (PDPA §30–§33) — record, verify, erase, close', () => {
+    expect(marked(SubjectRequestController)).toBe(true);
   });
 });

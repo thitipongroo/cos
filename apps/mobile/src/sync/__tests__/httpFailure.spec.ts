@@ -1,4 +1,11 @@
-import { isNetworkError, isPermanentFailure, isTimeout, responseStatus } from '../httpFailure';
+import {
+  isNetworkError,
+  isPermanentFailure,
+  isTimeout,
+  responseStatus,
+  isTrialReadOnly,
+  TRIAL_READ_ONLY_CODE,
+} from '../httpFailure';
 
 // Shapes matching what axios actually produces. `axios.isAxiosError(x)` is defined as
 // `isObject(x) && x.isAxiosError === true`, so these are the real thing, not an approximation.
@@ -81,5 +88,25 @@ describe('httpFailure', () => {
       expect(isPermanentFailure(answered(302))).toBe(false);
       expect(isPermanentFailure(offline)).toBe(false);
     });
+  });
+});
+
+describe('isTrialReadOnly (§7.10)', () => {
+  const refused = (status: number, code?: unknown) => ({
+    response: { status, data: { error: { code } } },
+  });
+
+  it('recognises the read-only 403 by its code — and does not call it permanent', () => {
+    expect(TRIAL_READ_ONLY_CODE).toBe('COS-PLAN-003');
+    expect(isTrialReadOnly(refused(403, 'COS-PLAN-003'))).toBe(true);
+    expect(isPermanentFailure(refused(403, 'COS-PLAN-003'))).toBe(false);
+  });
+
+  it('leaves every other 4xx permanent, including other 403s', () => {
+    expect(isTrialReadOnly(refused(403, 'COS-AUTH-403'))).toBe(false);
+    expect(isPermanentFailure(refused(403, 'COS-AUTH-403'))).toBe(true);
+    expect(isTrialReadOnly(refused(409, 'COS-PLAN-003'))).toBe(false);
+    expect(isTrialReadOnly({ response: { status: 403 } })).toBe(false);
+    expect(isTrialReadOnly(null)).toBe(false);
   });
 });
