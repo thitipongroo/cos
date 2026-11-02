@@ -14,6 +14,13 @@ info:
 
     All tokens are RS256-signed JWTs. Access token TTL: 15 minutes.
 
+    **Ended free trials (§7.10, ADR-109; 2026-11-01).** While a tenant is `EXPIRED` or `PENDING_DELETION`, every
+    non-GET request elsewhere in the API is refused with `403 COS-PLAN-003`. The endpoints in this document stay
+    open for writes: every `/auth/*` route (sign-in, refresh, sign-out, MFA, step-up, devices), consent changes
+    (`POST /users/me/consents`), the data-export request (`POST /users/me/data-export`) and the subject-request desk
+    (`/subject-requests`), because authentication and data-subject rights must never be blocked. No route,
+    parameter or response shape changed. Reviewed 2026-11-02 against the module's controllers.
+
     **Reviewed 2026-08-31** against the module's controllers at the origin/develop merge. The source
     changed in that merge only where the package restructure moved import paths — `JwtAuthGuard` and
     `JwtPayload` from `modules/identity/` to `shared/` — with no route, parameter, request body or

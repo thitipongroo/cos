@@ -135,6 +135,7 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/QuotationResult' }
         '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/TrialReadOnly' }
         '404': { $ref: '#/components/responses/NotFound' }
         '422': { $ref: '#/components/responses/UnprocessableEntity' }
 
@@ -197,7 +198,13 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/Invoice' }
         '401': { $ref: '#/components/responses/Unauthorized' }
-        '403': { $ref: '#/components/responses/Forbidden' }
+        '403':
+          description: |
+            No active trading relationship / insufficient role — or `COS-PLAN-003`: the buying tenant's free trial
+            has ended and it is read-only (§7.10; only while `s1.tenant.trial-lifecycle` is on).
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
         '422': { $ref: '#/components/responses/UnprocessableEntity' }
 
 components:
@@ -222,6 +229,13 @@ components:
   responses:
     Unauthorized:
       description: Missing/invalid token or expired invitation
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorResponse' }
+    TrialReadOnly:
+      description: |
+        `COS-PLAN-003` — the buying tenant's free trial has ended and it is read-only (§7.10, ADR-109): writes are
+        refused, reads still work. Only while `s1.tenant.trial-lifecycle` is on.
       content:
         application/json:
           schema: { $ref: '#/components/schemas/ErrorResponse' }

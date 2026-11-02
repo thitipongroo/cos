@@ -26,11 +26,15 @@
 -- every table. Foreign keys between tenant tables are handled by retrying in passes until a pass deletes nothing.
 -- tenant_id is compared as text: most tables hold a uuid, a few (the outbox) hold text.
 
+-- psql meta-commands and :'variable' interpolation are not SQL, so sqlfluff (raw templater, postgres dialect)
+-- cannot lay them out; this block is excluded and everything below is linted as usual.
+-- noqa: disable=all
 \set ON_ERROR_STOP on
 SELECT set_config('cos.purge_tenant', :'tenant_id', false) IS NOT NULL AS tenant_set,
        set_config('cos.purge_mode', :'mode', false) IS NOT NULL AS mode_set,
        set_config('cos.purge_actor', :'actor_id', false) IS NOT NULL AS actor_set,
        set_config('cos.purge_justification', :'justification', false) IS NOT NULL AS justification_set;
+-- noqa: enable=all
 
 BEGIN;
 
