@@ -73,6 +73,13 @@ function actionLook(action: string): { ink: string; dot: string; icon: AdminIcon
     return { ink: 'text-cos-op-secondary', dot: 'bg-cos-op-secondary', icon: 'timer' };
   if (action === 'tenant.convert')
     return { ink: 'text-cos-op-success', dot: 'bg-cos-op-success', icon: 'payments' };
+  // ADR-110: a tenant's first administrator created, or its invitation resent.
+  if (action === 'tenant.bootstrap_admin' || action === 'tenant.resend_admin_invite')
+    return {
+      ink: 'text-cos-op-secondary',
+      dot: 'bg-cos-op-secondary',
+      icon: 'admin_panel_settings',
+    };
   if (action === 'tenant.trial_purge')
     return { ink: 'text-cos-op-error', dot: 'bg-cos-op-high-privilege', icon: 'archive' };
   const tone = auditTone(action);

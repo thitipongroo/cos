@@ -68,6 +68,8 @@ PAIRS = [
     # §7.10 / ADR-109 — opening a free trial and converting it (2026-11-01).
     ('tenantTrialCreateSchema', 'CreateTrialTenantInput'),
     ('tenantConvertSchema', 'ConvertTenantInput'),
+    # ADR-110 — a tenant's first TENANT_ADMIN (2026-11-02).
+    ('tenantAdminBootstrapSchema', 'BootstrapTenantAdminInput'),
     # §6.7 — the reason every other SYSTEM_ADMIN tenant action sends (2026-09-14).
     ('adminJustificationSchema', 'AdminJustificationInput'),
     ('leadCreateSchema', 'CreateLeadInput'),

@@ -182,6 +182,40 @@ describe('UserService', () => {
       expect(result.role).toBe(CosRole.PROJECT_MANAGER);
     });
 
+    // ADR-110: TenantAdminBootstrapService re-checks and audits inside the SAME transaction as the insert.
+    it('runs inTransaction with the transaction and the created row, before commit', async () => {
+      const emailRow = { ...mockUserRow, email: 'w@a.com' };
+      mockCreateSetup(emailRow);
+      const inTransaction = jest.fn().mockResolvedValue(undefined);
+
+      await service.createUser(
+        { display_name: 'วิชัย', email: 'w@a.com', role: CosRole.TENANT_ADMIN },
+        TENANT_ID,
+        ACTOR_ID,
+        inTransaction,
+      );
+
+      expect(inTransaction).toHaveBeenCalledTimes(1);
+      const [tx, created] = inTransaction.mock.calls[0] as [{ $queryRaw: jest.Mock }, unknown];
+      expect(tx.$queryRaw).toHaveBeenCalledTimes(2); // user + membership inserted first
+      expect(created).toBe(emailRow);
+    });
+
+    it('rolls the Keycloak account back when inTransaction refuses', async () => {
+      mockCreateSetup({ ...mockUserRow, email: 'w@a.com' });
+      const refusal = new ConflictException('already has an administrator');
+
+      await expect(
+        service.createUser(
+          { display_name: 'วิชัย', email: 'w@a.com', role: CosRole.TENANT_ADMIN },
+          TENANT_ID,
+          ACTOR_ID,
+          jest.fn().mockRejectedValue(refusal),
+        ),
+      ).rejects.toBe(refusal);
+      expect(keycloakAdmin.deleteUser).toHaveBeenCalledWith(KC_USER_ID, REALM);
+    });
+
     it('rolls back Keycloak user when COS DB transaction fails', async () => {
       (prismaMock.$queryRaw as jest.Mock)
         .mockResolvedValueOnce([{ keycloak_realm: REALM }]) // tenant lookup

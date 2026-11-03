@@ -15,6 +15,7 @@ import { TrialLifecycleService } from './trial-lifecycle.service';
 import { AdminAuditLogService } from './admin-audit-log.service';
 import { TenantAuditLogController } from './tenant-audit-log.controller';
 import { AdminAuditLogController } from './admin-audit-log.controller';
+import { TenantAdminBootstrapService } from './tenant-admin-bootstrap.service';
 
 // Tenant context (req.tenantId/tenantCode/userId/userRole) is resolved in
 // KeycloakJwtStrategy.validate(), which runs as part of JwtAuthGuard — AFTER the JWT is
@@ -39,6 +40,7 @@ import { AdminAuditLogController } from './admin-audit-log.controller';
     TenantSettingsRepository,
     AdminAuditLogService,
     TrialLifecycleService,
+    TenantAdminBootstrapService,
   ],
   controllers: [
     TenantController,

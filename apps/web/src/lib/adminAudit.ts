@@ -58,6 +58,9 @@ export const AUDIT_ACTION_FILTERS = [
   { key: 'trial', action: 'tenant.create_trial' },
   { key: 'convert', action: 'tenant.convert' },
   { key: 'purge', action: 'tenant.trial_purge' },
+  // ADR-110 — a tenant's first administrator, and its invitation sent again.
+  { key: 'bootstrapAdmin', action: 'tenant.bootstrap_admin' },
+  { key: 'resendInvite', action: 'tenant.resend_admin_invite' },
 ] as const satisfies ReadonlyArray<{ key: string; action: string | null | undefined }>;
 
 export type AuditActionFilterKey = (typeof AUDIT_ACTION_FILTERS)[number]['key'];

@@ -326,6 +326,16 @@ export class KeycloakAdminService {
     logger.info({ keycloakUserId, realm, lifespanSec }, 'keycloak.password.reset_email_sent');
   }
 
+  /**
+   * Whether the account has a password credential. A Path B account is created without one (createEmailUser), so
+   * `false` means its UPDATE_PASSWORD invitation has not been used yet — the test ADR-110's resend relies on.
+   */
+  async hasPassword(keycloakUserId: string, realm: string): Promise<boolean> {
+    const client = await this.getAuthenticatedClient(realm);
+    const credentials = await client.users.getCredentials({ id: keycloakUserId });
+    return credentials.some((c) => c.type === 'password');
+  }
+
   /** Delete Keycloak user — rollback on downstream COS DB failure. */
   async deleteUser(keycloakUserId: string, realm: string): Promise<void> {
     const client = await this.getAuthenticatedClient(realm);

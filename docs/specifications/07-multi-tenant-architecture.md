@@ -408,7 +408,15 @@ Steps :
    HashiCorp Vault (on-premise and hybrid deployments — see 04-tech-stack section 4.4)
 8. Default roles seeded per RBAC matrix (see 06-rbac-permission-matrix)
 9. Provisioning event published: `platform.tenant.provisioned.v1`
-10. Welcome notification dispatched to tenant admin (see 19-notification-architecture)
+10. First TENANT_ADMIN invited by a SYSTEM_ADMIN — `POST /api/v1/admin/tenants/{tenantId}/tenant-admin` (ADR-110).
+    Creating a tenant writes no user, so until this step nobody can sign in. A Path B (email) account (§5.4.4) is
+    created with role `TENANT_ADMIN`, and Keycloak emails it a single-use `UPDATE_PASSWORD` link valid **72 hours**:
+    the customer sets their own password and enrols MFA at first sign-in; COS never handles a password. Allowed
+    **only while the tenant has no active TENANT_ADMIN** (primary or additional role) — otherwise `409 COS-TADM-001`,
+    and the tenant's own administrator adds everyone else. While that administrator's invitation is unused (no
+    password in Keycloak), it can be resent (`POST …/tenant-admin/invite`; otherwise `409 COS-TADM-002`). Product owner,
+    2026-11-02. Behind `s1.tenant.bootstrap-admin` (QM-15, default OFF)
+11. Welcome notification dispatched to tenant admin (see 19-notification-architecture)
 
 ---
 
@@ -618,8 +626,11 @@ At day 60 the job also notifies every SYSTEM_ADMIN, in-app and by email, that th
   `PENDING_DELETION`; nothing for `ACTIVE`. The decision is `trialBanner` in `@cos/ui-logic`, shared by both
 - **SYSTEM_ADMIN** — the Tenant List has *Start free trial* (`POST /admin/tenants/trial`) and, for a tenant that is
   not `ACTIVE`, *Convert to paid plan* (`PATCH /admin/tenants/{id}/convert`), also in Tenant Detail. The plan cell
-  shows the trial state and its date. `COS-PLAN-002` names the plan limit and the active-project count. The Global
-  Audit Log filters `tenant.create_trial`, `tenant.convert` and `tenant.trial_purge`
+  shows the trial state and its date. `COS-PLAN-002` names the plan limit and the active-project count. A tenant
+  with no administrator — every newly opened trial — offers *Create tenant admin*, and one whose only administrator
+  has not signed in offers *Resend admin invitation* (§7.6 step 10, ADR-110); until then the notices below reach
+  nobody and are retried daily. The Global Audit Log filters `tenant.create_trial`, `tenant.convert`,
+  `tenant.trial_purge`, `tenant.bootstrap_admin` and `tenant.resend_admin_invite`
 - `LITE` is offered in Create Tenant and in the System Settings tier table
 - **Write actions while read-only** — the web hides create / edit / approve actions through `useReadOnly()` (also the
   VIEWER rule) and the mobile app hides every `+` (`<Fab />`). A save the server refuses with `COS-PLAN-003` makes

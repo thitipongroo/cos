@@ -37,6 +37,7 @@ import {
   type SubscriptionStatus,
   type TrialPlan,
 } from './public/plan-limits';
+import { NO_TENANT_ADMIN, tenantAdminStates, type TenantAdminState } from './public/tenant-admins';
 import { FeatureFlagService } from '../../shared/feature-flags/feature-flag.service';
 import {
   decryptDedicatedDbUrl,
@@ -124,7 +125,7 @@ interface TrialOrigin {
  * password and was taken off the wire for that reason (see listTenants), so the server decrypts it,
  * parses it and sends the host alone. `null` means the tenant is on the shared database.
  */
-export interface TenantListRow extends TenantSummaryRow {
+export interface TenantListRow extends TenantSummaryRow, TenantAdminState {
   dedicated_db_host: string | null;
   /** §7.10 commercial state — the list shows trials and lets a SYSTEM_ADMIN convert one. */
   subscription_status: SubscriptionStatus;
@@ -163,7 +164,9 @@ export type TenantAdminAction =
   | 'tenant.assign_dedicated_db'
   | 'tenant.mark_contracted'
   | 'tenant.provisioning.approve'
-  | 'tenant.provisioning.abort';
+  | 'tenant.provisioning.abort'
+  | 'tenant.bootstrap_admin'
+  | 'tenant.resend_admin_invite';
 
 /** How long one provisioning-state query may take before the run is reported as unreadable. */
 export const PROVISIONING_QUERY_DEADLINE_MS = 5_000;
@@ -181,6 +184,43 @@ export function dedicatedDbHost(stored: string): string {
 }
 
 type Tx = Prisma.TransactionClient;
+
+/**
+ * Write one audit row for a SYSTEM_ADMIN action, inside the caller's transaction.
+ *
+ * `tenant_id` is the TARGET tenant, not the admin's own — an auditor reading one tenant's trail must
+ * find what was done TO it. RLS on audit_logs checks `tenant_id` against app.current_tenant_id (the
+ * same WITH CHECK AuditInterceptor satisfies), so the GUC is set in this transaction first. The id is
+ * UUID-validated before interpolation because a GUC cannot be a bound parameter (QM-4).
+ *
+ * `metadata` holds the justification and IDs only — never a URL, which may carry credentials.
+ *
+ * Exported for TenantAdminBootstrapService, whose audit row joins UserService's insert transaction.
+ */
+export async function writeTenantAdminAudit(
+  tx: Pick<Tx, '$executeRaw' | '$executeRawUnsafe'>,
+  entry: {
+    tenantId: string;
+    actorId: string;
+    action: TenantAdminAction;
+    justification: string;
+    extra?: Record<string, string | null>;
+  },
+): Promise<void> {
+  assertSafeTenantId(entry.tenantId);
+  await tx.$executeRawUnsafe(`SET LOCAL app.current_tenant_id = '${entry.tenantId}'`);
+  await tx.$executeRaw`
+    INSERT INTO platform.audit_logs (tenant_id, actor_id, action, resource_type, resource_id, metadata)
+    VALUES (
+      ${entry.tenantId}::uuid,
+      ${entry.actorId}::uuid,
+      ${entry.action},
+      'tenant',
+      ${entry.tenantId}::uuid,
+      ${JSON.stringify({ justification: entry.justification, ...entry.extra })}::jsonb
+    )
+  `;
+}
 
 @Injectable()
 export class TenantService implements OnModuleDestroy {
@@ -202,39 +242,12 @@ export class TenantService implements OnModuleDestroy {
     await this.prisma.$disconnect();
   }
 
-  /**
-   * Write one audit row for a SYSTEM_ADMIN action, inside the caller's transaction.
-   *
-   * `tenant_id` is the TARGET tenant, not the admin's own — an auditor reading one tenant's trail must
-   * find what was done TO it. RLS on audit_logs checks `tenant_id` against app.current_tenant_id (the
-   * same WITH CHECK AuditInterceptor satisfies), so the GUC is set in this transaction first. The id is
-   * UUID-validated before interpolation because a GUC cannot be a bound parameter (QM-4).
-   *
-   * `metadata` holds the justification and IDs only — never a URL, which may carry credentials.
-   */
+  /** See writeTenantAdminAudit. */
   private async writeAdminAudit(
     tx: Tx,
-    entry: {
-      tenantId: string;
-      actorId: string;
-      action: TenantAdminAction;
-      justification: string;
-      extra?: Record<string, string | null>;
-    },
+    entry: Parameters<typeof writeTenantAdminAudit>[1],
   ): Promise<void> {
-    assertSafeTenantId(entry.tenantId);
-    await tx.$executeRawUnsafe(`SET LOCAL app.current_tenant_id = '${entry.tenantId}'`);
-    await tx.$executeRaw`
-      INSERT INTO platform.audit_logs (tenant_id, actor_id, action, resource_type, resource_id, metadata)
-      VALUES (
-        ${entry.tenantId}::uuid,
-        ${entry.actorId}::uuid,
-        ${entry.action},
-        'tenant',
-        ${entry.tenantId}::uuid,
-        ${JSON.stringify({ justification: entry.justification, ...entry.extra })}::jsonb
-      )
-    `;
+    await writeTenantAdminAudit(tx, entry);
   }
 
   /**
@@ -793,7 +806,11 @@ export class TenantService implements OnModuleDestroy {
    */
   async listTenants(): Promise<TenantListRow[]> {
     const rows = await this.prisma.$queryRaw<
-      Array<Omit<TenantListRow, 'dedicated_db_host'> & { dedicated_db_url: string | null }>
+      Array<
+        Omit<TenantListRow, 'dedicated_db_host' | keyof TenantAdminState> & {
+          dedicated_db_url: string | null;
+        }
+      >
     >`
       SELECT tenant_id, tenant_code, tenant_name, keycloak_realm, plan_type, is_active,
              data_region, timezone, created_at, updated_at, dedicated_db_url,
@@ -801,8 +818,11 @@ export class TenantService implements OnModuleDestroy {
         FROM platform.tenants
        ORDER BY created_at DESC
     `;
+    // ADR-110: whether each tenant has an administrator yet — the panel offers "Create tenant admin" at 0.
+    const admins = await tenantAdminStates(this.prisma);
     return rows.map(({ dedicated_db_url, ...row }) => ({
       ...row,
+      ...(admins.get(row.tenant_id) ?? NO_TENANT_ADMIN),
       dedicated_db_host: dedicated_db_url === null ? null : dedicatedDbHost(dedicated_db_url),
     }));
   }

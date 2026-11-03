@@ -12,6 +12,9 @@
 /** Client-side form validation via `@cos/schemas` + react-hook-form (docs/registers/feature-flag-registry.md). */
 export const FLAG_WEB_CLIENT_VALIDATION = 's1.web.client-validation';
 
+/** A SYSTEM_ADMIN may create a tenant's first TENANT_ADMIN (ADR-110). Server flag, read here to show the action. */
+export const FLAG_TENANT_BOOTSTRAP_ADMIN = 's1.tenant.bootstrap-admin';
+
 /**
  * How often the browser refetches the flag map.
  *
@@ -32,6 +35,8 @@ export const FLAGS_REFETCH_MS = 30_000;
  */
 export const FLAG_FALLBACKS: Readonly<Record<string, boolean>> = {
   [FLAG_WEB_CLIENT_VALIDATION]: false,
+  // Fail-closed: the action is hidden and the endpoint answers 503 COS-FLAG-001 — today's behaviour.
+  [FLAG_TENANT_BOOTSTRAP_ADMIN]: false,
 };
 
 /** Shape of `GET /api/v1/flags`. */

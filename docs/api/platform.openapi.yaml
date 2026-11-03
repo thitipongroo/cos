@@ -125,7 +125,9 @@ paths:
         the identity retrofit kill switches `s1.identity.authoritative-role-check` (ADR-077) and
         `s1.identity.subject-binding` (ADR-106), both defaulting ON, and since 2026-11-01 (ADR-109)
         `s1.tenant.trial-lifecycle` (read-only enforcement for ended trials and the daily trial job) and
-        `s1.project.plan-project-limit` (the plan's active-project limit at project creation), both defaulting OFF.
+        `s1.project.plan-project-limit` (the plan's active-project limit at project creation), both defaulting OFF,
+        and since 2026-11-02 (ADR-110) `s1.tenant.bootstrap-admin` (a SYSTEM_ADMIN creating a tenant's first
+        TENANT_ADMIN), defaulting OFF.
       tags: [Feature Flags]
       security:
         - bearerAuth: []

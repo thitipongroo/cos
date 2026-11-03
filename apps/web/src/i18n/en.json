@@ -401,7 +401,9 @@
         "assign": "Assign Dedicated DB",
         "mark": "Mark as Enterprise Contracted",
         "deactivate": "Deactivate Tenant",
-        "convert": "Convert to paid plan"
+        "convert": "Convert to paid plan",
+        "createAdmin": "Create tenant admin",
+        "resendInvite": "Resend admin invitation"
       },
       "footer": {
         "mesh": "Cluster Mesh"
@@ -727,7 +729,9 @@
         "gate": "Schema Migration Human Gate",
         "trial": "Free Trial Opened",
         "convert": "Trial Converted to Paid",
-        "purge": "Trial Data Purged"
+        "purge": "Trial Data Purged",
+        "bootstrapAdmin": "Tenant Admin Created",
+        "resendInvite": "Admin Invitation Resent"
       },
       "range": "Date range (UTC)",
       "rangeFrom": "From (UTC)",
@@ -979,6 +983,29 @@
       "requestRefHelp": "The request’s ID from the website, so the trial can be traced back to it.",
       "terms": "The trial lasts 30 days and needs no card. Nothing is charged when it ends. If no plan is chosen, the account becomes read-only for 30 days and the data is then deleted.",
       "submit": "Start trial"
+    },
+    "tenantAdmin": {
+      "createTitle": "Create tenant admin",
+      "resendTitle": "Resend admin invitation",
+      "createLead": "This tenant has no administrator yet, so nobody can sign in. Create the first one; they then add everyone else from their own account.",
+      "resendLead": "The tenant administrator has not signed in yet. Send the invitation again with a new 72-hour link.",
+      "nameLabel": "Full name",
+      "emailLabel": "Work email",
+      "emailHelp": "The administrator signs in with this address. Check it with the customer: it cannot be corrected from this panel later.",
+      "terms": "Keycloak emails a single-use link, valid for {hours} hours, where the administrator sets their own password. Two-step verification (an authenticator app) is set up at first sign-in. Nobody at Construction OS sees the password.",
+      "createSubmit": "Create and send invitation",
+      "resendSubmit": "Send invitation again",
+      "sentTo": "Invitation sent to",
+      "expires": "link valid until",
+      "notSent": "The account was created, but the invitation email could not be sent. Close this dialog and use “Resend admin invitation”.",
+      "nextSteps": "The tenant list shows the invitation as pending until the administrator signs in for the first time.",
+      "done": "Done",
+      "error": {
+        "alreadyHasAdmin": "This tenant already has an administrator. Ask them to add users from their own account.",
+        "notResendable": "The invitation can be resent only to the tenant administrator created here, while it is unused. If a password is already set, the administrator should sign in or use “Forgot password”.",
+        "disabled": "Creating tenant administrators is switched off right now. Try again later.",
+        "emailTaken": "This email already has an account. Use a different address."
+      }
     }
   },
   "auth": {

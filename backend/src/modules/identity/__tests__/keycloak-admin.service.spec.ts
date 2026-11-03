@@ -42,6 +42,7 @@ describe('KeycloakAdminService', () => {
       update: jest.Mock;
       logout: jest.Mock;
       findOne: jest.Mock;
+      getCredentials: jest.Mock;
     };
   };
 
@@ -60,6 +61,7 @@ describe('KeycloakAdminService', () => {
         resetPassword: jest.fn().mockResolvedValue(undefined),
         update: jest.fn().mockResolvedValue(undefined),
         logout: jest.fn().mockResolvedValue(undefined),
+        getCredentials: jest.fn().mockResolvedValue([]),
         findOne: jest.fn().mockResolvedValue({
           id: 'kc-1',
           attributes: { tenant_id: ['t-1'], user_id: ['u-1'], role: ['SITE_WORKER'] },
@@ -321,6 +323,20 @@ describe('KeycloakAdminService', () => {
     it('logs warn but does not throw when logout endpoint returns non-ok (covers warn branch)', async () => {
       mockFetch.mockResolvedValue({ ok: false, status: 400 } as unknown as Response);
       await expect(service.revokeToken('expired-rt', 'tenant-acme')).resolves.toBeUndefined();
+    });
+  });
+
+  // ADR-110: a Path B account has no password until its invitation is used.
+  describe('hasPassword', () => {
+    it('is false for an account with no password credential', async () => {
+      mockKcInstance.users.getCredentials.mockResolvedValueOnce([{ type: 'otp' }]);
+      expect(await service.hasPassword('kc-1', 'tenant-acme')).toBe(false);
+      expect(mockKcInstance.users.getCredentials).toHaveBeenCalledWith({ id: 'kc-1' });
+    });
+
+    it('is true once a password is set', async () => {
+      mockKcInstance.users.getCredentials.mockResolvedValueOnce([{ type: 'password' }]);
+      expect(await service.hasPassword('kc-1', 'tenant-acme')).toBe(true);
     });
   });
 

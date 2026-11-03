@@ -252,6 +252,7 @@ System Admin platform capabilities :
 | Capability               | Description                                                                                     |
 | ------------------------ | ----------------------------------------------------------------------------------------------- |
 | Tenant management        | Create, suspend, delete, and configure tenants via the platform admin API                       |
+| Tenant bootstrap         | Create the first TENANT_ADMIN of a tenant that has none, and resend its unused invitation — nothing else inside a tenant (ADR-110; §7.6 step 10) |
 | Cross-tenant read        | Read-only access to any tenant's data for support, debugging, and compliance                    |
 | Platform configuration   | Update platform-wide settings: feature flags, rate limits, SLA parameters                       |
 | Keycloak administration  | Manage realms, clients, and IdP federation configurations                                       |

@@ -12,6 +12,11 @@ const mockTenantService = {
   decideProvisioning: jest.fn(),
 };
 
+const mockTenantAdmins = {
+  bootstrap: jest.fn(),
+  resendInvite: jest.fn(),
+};
+
 import { TenantController } from '../tenant.controller';
 
 const TENANT_ID = '00000000-0000-0000-0000-000000000001';
@@ -22,7 +27,7 @@ describe('TenantController', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    controller = new TenantController(mockTenantService as never);
+    controller = new TenantController(mockTenantService as never, mockTenantAdmins as never);
   });
 
   describe('list', () => {
@@ -37,6 +42,56 @@ describe('TenantController', () => {
       const rows = [{ tenant_id: 't1', workflow_state: 'AWAITING_APPROVAL' }];
       mockTenantService.listProvisioning.mockResolvedValue(rows);
       expect(await controller.listProvisioning()).toBe(rows);
+    });
+  });
+
+  // ADR-110 — both endpoints delegate to TenantAdminBootstrapService with the actor and the justification.
+  describe('bootstrapAdmin', () => {
+    it('passes the tenant, the account, the actor and the justification', async () => {
+      const result = { user_id: 'u1', email: 'a@b.co', invite_sent: true, invite_expires_at: null };
+      mockTenantAdmins.bootstrap.mockResolvedValue(result);
+
+      expect(
+        await controller.bootstrapAdmin(
+          TENANT_ID,
+          { email: 'a@b.co', display_name: 'Somchai', justification: JUSTIFICATION } as never,
+          { userId: 'admin-user' } as never,
+        ),
+      ).toBe(result);
+      expect(mockTenantAdmins.bootstrap).toHaveBeenCalledWith(
+        TENANT_ID,
+        { email: 'a@b.co', display_name: 'Somchai' },
+        'admin-user',
+        JUSTIFICATION,
+      );
+    });
+
+    it("falls back to 'system' with no userId", async () => {
+      await controller.bootstrapAdmin(
+        TENANT_ID,
+        { email: 'a@b.co', display_name: 'S', justification: JUSTIFICATION } as never,
+        {} as never,
+      );
+      expect(mockTenantAdmins.bootstrap.mock.calls[0]![2]).toBe('system');
+    });
+  });
+
+  describe('resendAdminInvite', () => {
+    it('passes the tenant, the actor and the justification', async () => {
+      mockTenantAdmins.resendInvite.mockResolvedValue({ invite_sent: true });
+      await controller.resendAdminInvite(TENANT_ID, { justification: JUSTIFICATION }, {
+        userId: 'admin-user',
+      } as never);
+      expect(mockTenantAdmins.resendInvite).toHaveBeenCalledWith(
+        TENANT_ID,
+        'admin-user',
+        JUSTIFICATION,
+      );
+    });
+
+    it("falls back to 'system' with no userId", async () => {
+      await controller.resendAdminInvite(TENANT_ID, { justification: JUSTIFICATION }, {} as never);
+      expect(mockTenantAdmins.resendInvite.mock.calls[0]![1]).toBe('system');
     });
   });
 

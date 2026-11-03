@@ -139,6 +139,18 @@ constraint — a CHECK cannot see a graph — so both are enforced in `TasksServ
 
 ---
 
+## COS-TADM — A tenant's first administrator (§6.7 Tenant bootstrap, §7.6 step 10; ADR-110)
+
+| Code         | HTTP | Message                                                                                                       | Trigger                                                                                                                                                                                                                                                                                                               |
+| ------------ | ---- | ------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| COS-TADM-001 | 409  | This tenant already has an administrator. Ask them to add users from their own account.                       | `POST /admin/tenants/{id}/tenant-admin` when the tenant has an active user holding `TENANT_ADMIN` (primary or additional role) — checked before Keycloak is called and again under a per-tenant lock inside the insert transaction. messageKey `admin.tenantAdmin.error.alreadyHasAdmin`                              |
+| COS-TADM-002 | 409  | The invitation can be resent only to the tenant administrator created by Construction OS, while it is unused. | `POST /admin/tenants/{id}/tenant-admin/invite` unless the tenant has exactly one active administrator, created by the bootstrap, with no password in Keycloak. `details`: `tenant_admin_count`, `reason` (`admin_count` / `not_bootstrapped` / `invitation_used`). messageKey `admin.tenantAdmin.error.notResendable` |
+
+An email that already has an account on the tenant's realm is the existing `409` of `POST /users` (same message,
+whichever tenant holds it). Both endpoints answer `503` while `s1.tenant.bootstrap-admin` is off.
+
+---
+
 ## COS-PSET — Platform settings (§6.7; ADR-108)
 
 The settings are one versioned document. A save names the version it read. Validation failures stay on

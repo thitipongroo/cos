@@ -1220,6 +1220,9 @@ jobs:
           BASE_URL: ${{ secrets.STAGING_URL }}
           E2E_EMAIL: ${{ secrets.E2E_EMAIL }}
           E2E_PASSWORD: ${{ secrets.E2E_PASSWORD }}
+          # ADR-110 admin-tenant-admin.spec.ts — a staging SYSTEM_ADMIN; the spec skips itself when unset.
+          E2E_SYSADMIN_EMAIL: ${{ secrets.E2E_SYSADMIN_EMAIL }}
+          E2E_SYSADMIN_PASSWORD: ${{ secrets.E2E_SYSADMIN_PASSWORD }}
         run: pnpm exec playwright test
       - uses: actions/upload-artifact@v6
         if: failure()

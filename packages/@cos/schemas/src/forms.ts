@@ -303,6 +303,23 @@ export const tenantTrialCreateSchema = z.object({
   justification: adminJustification,
 });
 
+/**
+ * ADR-110 → POST /admin/tenants/{id}/tenant-admin (`BootstrapTenantAdminInput`): a tenant's first administrator.
+ * Path B only (§5.4.4), so an email and a name; the role is always TENANT_ADMIN. Mirrors BootstrapTenantAdminDto.
+ */
+export const tenantAdminBootstrapSchema = z.object({
+  email: z
+    .string()
+    .check(
+      z.trim(),
+      z.minLength(1, 'validation.required'),
+      z.maxLength(255, 'validation.tooLong'),
+      z.email('validation.notAnEmail'),
+    ),
+  display_name: requiredText(255),
+  justification: adminJustification,
+});
+
 /** §7.10 → PATCH /admin/tenants/{id}/convert (`ConvertTenantInput`): the plan paid for, and the reason. */
 export const tenantConvertSchema = z.object({
   planType: trialPlanType,

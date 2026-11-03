@@ -221,6 +221,8 @@ components:
           subscription_status,
           trial_ends_at,
           converted_at,
+          tenant_admin_count,
+          tenant_admin_pending,
         ]
       properties:
         tenant_id:
@@ -268,6 +270,18 @@ components:
         converted_at:
           type: [string, 'null']
           format: date-time
+        tenant_admin_count:
+          type: integer
+          minimum: 0
+          description: |
+            Active users holding `TENANT_ADMIN` as primary or additional role (ADR-110). `0` — the panel offers
+            *Create tenant admin*.
+        tenant_admin_pending:
+          type: boolean
+          description: |
+            The tenant's only administrator has never made an authenticated request (`last_seen_at = created_at`) —
+            the panel offers *Resend admin invitation*. A display hint: the resend endpoint decides by Keycloak's
+            password credential.
 
     MyTenant:
       type: object
@@ -351,6 +365,47 @@ components:
           type: string
           enum: [LITE, STARTER, PROFESSIONAL]
           description: The plan the customer paid for. ENTERPRISE is contracted through §34, not converted.
+
+    BootstrapTenantAdminRequest:
+      type: object
+      required: [email, display_name, justification]
+      properties:
+        email:
+          type: string
+          format: email
+          maxLength: 255
+          example: somchai@acme.co.th
+          description: The Path B sign-in identifier (§5.4.4). Trimmed.
+        display_name:
+          type: string
+          minLength: 1
+          maxLength: 255
+          example: สมชาย ใจดี
+        justification:
+          type: string
+          minLength: 10
+          maxLength: 500
+          example: Trial request TR-0042 from construction-os.io — first administrator.
+
+    TenantAdminInviteResult:
+      type: object
+      required: [user_id, email, invite_sent, invite_expires_at]
+      properties:
+        user_id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        invite_sent:
+          type: boolean
+          description: |
+            `false` — Keycloak could not send the email. On create the account still exists; resend it. On resend
+            nothing happened and no audit row was written.
+        invite_expires_at:
+          type: [string, 'null']
+          format: date-time
+          description: When the 72-hour link stops working; `null` when no email was sent.
 
     TenantSubscriptionRow:
       type: object
@@ -1099,6 +1154,137 @@ paths:
           description: Unauthenticated
         '403':
           description: Insufficient role — SYSTEM_ADMIN required
+
+  /admin/tenants/{tenantId}/tenant-admin:
+    post:
+      operationId: postAdminTenantsByTenantidTenantAdmin
+      summary: Create a tenant's first TENANT_ADMIN and email a 72-hour invitation (SYSTEM_ADMIN only — ADR-110)
+      description: |
+        Only while the tenant has no active TENANT_ADMIN (primary or additional role). Creates a Path B account
+        with role `TENANT_ADMIN` (§5.4.4) — Keycloak provisioning, realm-wide email conflict guard and
+        `identity.user.created.v1`, as `POST /users` — then Keycloak emails a single-use `UPDATE_PASSWORD` link
+        valid 259,200 s. The customer sets their own password and enrols MFA at first sign-in.
+
+        "No administrator" is re-checked under a per-tenant advisory lock inside the insert transaction, so two
+        concurrent calls create one administrator; the other's Keycloak account is deleted. Audited as
+        `tenant.bootstrap_admin` (justification, `user_id`) in that transaction (§6.7). The email is sent after
+        commit: if it fails, the account stays and `invite_sent` is `false`. An `EXPIRED` trial is not refused —
+        the read-only rule applies to the caller's tenant.
+
+        Behind `s1.tenant.bootstrap-admin` (QM-15, default OFF).
+      tags: [tenants]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: tenantId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BootstrapTenantAdminRequest'
+      responses:
+        '201':
+          description: Administrator created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TenantAdminInviteResult'
+        '400':
+          description: Invalid body, or the tenant is deactivated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Tenant not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: |
+            `COS-TADM-001` — the tenant already has an administrator.
+            Otherwise — the email already has an account on the tenant's realm (same message whichever tenant
+            holds it).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthenticated
+        '403':
+          description: Insufficient role — SYSTEM_ADMIN required
+        '503':
+          description: '`s1.tenant.bootstrap-admin` is off'
+
+  /admin/tenants/{tenantId}/tenant-admin/invite:
+    post:
+      operationId: postAdminTenantsByTenantidTenantAdminInvite
+      summary: Resend the first TENANT_ADMIN's unused invitation (SYSTEM_ADMIN only — ADR-110)
+      description: |
+        Only when the tenant has exactly one active administrator, that account was created by
+        `POST …/tenant-admin` (a `tenant.bootstrap_admin` audit row names it), and Keycloak holds no password for it
+        (the invitation is unused). Read with the tenant row locked and under the same lock as the create. Audited as
+        `tenant.resend_admin_invite` BEFORE the email is sent, so every sent email is recorded; a failed send answers
+        `invite_sent: false`. Keycloak does not revoke an earlier link, which stays valid until its own expiry.
+
+        Behind `s1.tenant.bootstrap-admin` (QM-15, default OFF).
+      tags: [tenants]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: tenantId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminJustificationRequest'
+      responses:
+        '201':
+          description: Invitation handled — see `invite_sent`
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TenantAdminInviteResult'
+        '400':
+          description: Missing justification, or the tenant is deactivated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Tenant not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: |
+            `COS-TADM-002` — `details.reason`: `admin_count` (not exactly one active administrator),
+            `not_bootstrapped` (the administrator was not created by the bootstrap) or `invitation_used` (a password
+            is set); `details.tenant_admin_count`.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthenticated
+        '403':
+          description: Insufficient role — SYSTEM_ADMIN required
+        '503':
+          description: '`s1.tenant.bootstrap-admin` is off'
 
   /admin/tenants/{tenantId}/convert:
     patch:

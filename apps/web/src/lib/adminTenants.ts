@@ -30,6 +30,10 @@ export interface TenantListRow {
   subscription_status: SubscriptionStatus;
   trial_ends_at: string | null;
   converted_at: string | null;
+  /** Active TENANT_ADMIN users (ADR-110) — 0 offers "Create tenant admin". */
+  tenant_admin_count: number;
+  /** The only administrator has never signed in — offers "Resend invitation". */
+  tenant_admin_pending: boolean;
 }
 
 /** One row of GET /admin/tenants/provisioning. `null` state = the run exists but did not answer. */

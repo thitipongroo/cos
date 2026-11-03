@@ -470,6 +470,21 @@ export interface ConvertTenantInput {
   justification: string;
 }
 
+/** POST /admin/tenants/{id}/tenant-admin body — matches BootstrapTenantAdminDto (ADR-110). Always a TENANT_ADMIN. */
+export interface BootstrapTenantAdminInput {
+  email: string;
+  display_name: string;
+  justification: string;
+}
+
+/** What both tenant-admin endpoints return (ADR-110). `invite_sent: false` — the email failed; resend it. */
+export interface TenantAdminInviteResult {
+  user_id: string;
+  email: string;
+  invite_sent: boolean;
+  invite_expires_at: string | null;
+}
+
 /** Create-tenant body (camelCase — matches CreateTenantDto). `justification` is mandatory (§6.7). */
 export interface CreateTenantInput {
   tenantCode: string;

@@ -19,6 +19,7 @@ import { buildOutboxEvent } from '../../shared/outbox/outbox.types';
 import { EventOutboxService } from '../../shared/events/event-outbox.service';
 import { createLogger } from '@cos/logger';
 import { CosRole } from '@cos/types';
+import type { Prisma } from '@prisma/client';
 import { KeycloakAdminService } from '../identity/keycloak-admin.service';
 // The two roles that are Path B only (§5.4.4). Imported rather than re-listed: the enforcement guard
 // and this promotion guard must never disagree about who is privileged.
@@ -252,7 +253,20 @@ export class UserService implements OnModuleDestroy {
     return this.getMe(tenantId, userId);
   }
 
-  async createUser(dto: CreateUserDto, tenantId: string, actorId: string): Promise<UserRow> {
+  /**
+   * `inTransaction` runs inside the insert transaction, after the user, membership and outbox rows. It is how
+   * TenantAdminBootstrapService re-checks "no administrator yet" under a lock and writes its audit row atomically
+   * with the account (ADR-110). Throwing from it rolls the transaction back and deletes the Keycloak account, like
+   * any other failure here. `created` is the RETURNING row: it has no `role` (the membership row holds it). The hook
+   * runs last, and it may `SET LOCAL app.current_tenant_id` (the audit writer does) — nothing after it relies on the
+   * GUC being unset.
+   */
+  async createUser(
+    dto: CreateUserDto,
+    tenantId: string,
+    actorId: string,
+    inTransaction?: (tx: Prisma.TransactionClient, created: Omit<UserRow, 'role'>) => Promise<void>,
+  ): Promise<UserRow> {
     assertRoleAssignableByTenant(dto.role);
     if (!dto.phone_number && !dto.email) {
       throw new BadRequestException('Either phone_number (Path A) or email (Path B) is required');
@@ -374,6 +388,8 @@ export class UserService implements OnModuleDestroy {
             },
           }),
         );
+
+        if (inTransaction) await inTransaction(tx, created!);
 
         return created!;
       });

@@ -85,6 +85,9 @@ export const DEFAULT_FLAGS: Readonly<Record<string, boolean>> = {
   // OFF is today's behaviour (no limit). Separate from the trial flag because it applies to every paying
   // tenant, not only trials, and may need to be switched off on its own.
   's1.project.plan-project-limit': false,
+  // First TENANT_ADMIN bootstrap by a SYSTEM_ADMIN (ADR-110, §6.7). New feature and an authorization change, so OFF
+  // until rollout: OFF is today's behaviour — both endpoints answer 503 COS-FLAG-001 and the panel hides the action.
+  's1.tenant.bootstrap-admin': false,
 };
 
 export interface FlagContext {

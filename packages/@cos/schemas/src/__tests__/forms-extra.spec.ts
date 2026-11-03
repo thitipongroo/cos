@@ -14,6 +14,7 @@ import {
   tenantConvertSchema,
   tenantCreateSchema,
   tenantTrialCreateSchema,
+  tenantAdminBootstrapSchema,
   adminJustificationSchema,
   tenantSettingsSchema,
   userCreateSchema,
@@ -688,5 +689,37 @@ describe('tenantConvertSchema (§7.10)', () => {
       false,
     );
     expect(tenantConvertSchema.safeParse({ planType: 'STARTER' }).success).toBe(false);
+  });
+});
+
+describe('tenantAdminBootstrapSchema (ADR-110)', () => {
+  const base = {
+    email: 'somchai@acme.co.th',
+    display_name: 'สมชาย ใจดี',
+    justification: 'Trial request TR-0042 from construction-os.io — first admin.',
+  };
+  const firstMessage = (patch: Record<string, unknown>) => {
+    const r = tenantAdminBootstrapSchema.safeParse({ ...base, ...patch });
+    return r.success ? null : r.error.issues[0]?.message;
+  };
+
+  it('accepts an email, a name and a justification, trimmed', () => {
+    const r = tenantAdminBootstrapSchema.safeParse({
+      ...base,
+      email: '  somchai@acme.co.th ',
+      display_name: ' สมชาย ',
+    });
+    expect(r.success && r.data).toEqual({ ...base, display_name: 'สมชาย' });
+  });
+
+  it.each([
+    [{ email: '' }, 'validation.required'],
+    [{ email: 'not-an-email' }, 'validation.notAnEmail'],
+    [{ email: `${'a'.repeat(251)}@x.co` }, 'validation.tooLong'],
+    [{ display_name: '  ' }, 'validation.required'],
+    [{ display_name: 'ก'.repeat(256) }, 'validation.tooLong'],
+    [{ justification: 'short' }, 'validation.tooShort'],
+  ])('refuses %j with %s', (patch, message) => {
+    expect(firstMessage(patch)).toBe(message);
   });
 });

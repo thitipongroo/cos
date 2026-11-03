@@ -70,6 +70,8 @@ import type {
   ErasureResult,
   ConvertTenantInput,
   CreateTrialTenantInput,
+  BootstrapTenantAdminInput,
+  TenantAdminInviteResult,
   MyTenant,
 } from './types';
 
@@ -845,6 +847,34 @@ export function useCreateTrialTenant() {
   return useMutation({
     mutationFn: (input: CreateTrialTenantInput) =>
       api<TenantRow>('/admin/tenants/trial', { method: 'POST', body: JSON.stringify(input) }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['admin', 'tenants'] }),
+  });
+}
+
+// ADR-110 — a tenant's first TENANT_ADMIN. 409 COS-TADM-001 / an email held elsewhere are told apart by ApiError.code.
+export function useBootstrapTenantAdmin() {
+  const api = useApi();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, ...input }: BootstrapTenantAdminInput & { id: string }) =>
+      api<TenantAdminInviteResult>(`/admin/tenants/${id}/tenant-admin`, {
+        method: 'POST',
+        body: JSON.stringify(input),
+      }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['admin', 'tenants'] }),
+  });
+}
+
+// ADR-110 — resend while the only administrator has never signed in; otherwise 409 COS-TADM-002.
+export function useResendTenantAdminInvite() {
+  const api = useApi();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, justification }: { id: string; justification: string }) =>
+      api<TenantAdminInviteResult>(`/admin/tenants/${id}/tenant-admin/invite`, {
+        method: 'POST',
+        body: JSON.stringify({ justification }),
+      }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['admin', 'tenants'] }),
   });
 }

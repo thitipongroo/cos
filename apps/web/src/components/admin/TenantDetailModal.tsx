@@ -32,11 +32,15 @@ import {
 } from '../../lib/adminTenants';
 import { DETAIL, forTenant } from '../../lib/adminDrawnFigures';
 import { canConvert } from '../../lib/adminTrial';
+import { tenantAdminAction } from '../../lib/adminTenantAdmin';
+import { useFlag } from '../../lib/api/flags';
+import { FLAG_TENANT_BOOTSTRAP_ADMIN } from '../../lib/flags';
 import { formatDate } from '../../lib/format';
 import { AdminIcon, type AdminIconName } from './AdminIcon';
 import { useComingSoon } from './ComingSoon';
 
-export type TenantDetailAction = 'audit' | 'assign' | 'mark' | 'deactivate' | 'convert';
+export type TenantDetailAction =
+  'audit' | 'assign' | 'mark' | 'deactivate' | 'convert' | 'createAdmin' | 'resendInvite';
 
 /** The drawing's ink for each engine figure (replication lag emerald, chunks cyan, IOPS slate). */
 const ENGINE_INK = {
@@ -66,6 +70,8 @@ export function TenantDetailModal({
   const provisioning = provisioningView(state, tenant.is_active);
   const inProgress = status.tone === 'pending';
   const atGate = state === GATE_STATE;
+  // ADR-110: the first TENANT_ADMIN, or its unused invitation sent again.
+  const adminAction = tenantAdminAction(tenant, useFlag(FLAG_TENANT_BOOTSTRAP_ADMIN));
 
   const actions: Array<{
     key: TenantDetailAction;
@@ -74,6 +80,18 @@ export function TenantDetailModal({
     show: boolean;
   }> = [
     { key: 'audit', icon: 'history', tone: 'text-cos-v3-cyan-400', show: true },
+    {
+      key: 'createAdmin',
+      icon: 'admin_panel_settings',
+      tone: 'text-cos-v3-cyan-400',
+      show: adminAction === 'create',
+    },
+    {
+      key: 'resendInvite',
+      icon: 'admin_panel_settings',
+      tone: 'text-cos-v3-cyan-400',
+      show: adminAction === 'resend',
+    },
     // §7.10 — a trial (running, read-only or due for deletion) the customer has paid for.
     { key: 'convert', icon: 'payments', tone: 'text-cos-v3-emerald-400', show: canConvert(tenant) },
     {

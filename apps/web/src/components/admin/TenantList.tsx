@@ -48,6 +48,7 @@ import { TenantAuditLogModal } from './TenantAuditLogModal';
 import { GateDecisionDialog } from './GateDecisionDialog';
 import { MarkContractedModal } from './MarkContractedModal';
 import { TenantDetailModal } from './TenantDetailModal';
+import { TenantAdminModal } from './TenantAdminModal';
 import { LoadingState } from '../../components/ui/LoadingState';
 import { useI18n } from '../../i18n';
 import {
@@ -70,6 +71,9 @@ import {
 import { ApiError } from '../../lib/api/client';
 import { useDecideProvisioning, useTenantProvisioning, useTenants } from '../../lib/api/queries';
 import { TENANT_LIST } from '../../lib/adminDrawnFigures';
+import { tenantAdminAction, type TenantAdminAction } from '../../lib/adminTenantAdmin';
+import { useFlag } from '../../lib/api/flags';
+import { FLAG_TENANT_BOOTSTRAP_ADMIN } from '../../lib/flags';
 import {
   canConvert,
   subscriptionDate,
@@ -136,13 +140,22 @@ function TenantList({ createOpen }: { createOpen: boolean }) {
   const tenants = useTenants();
   const provisioning = useTenantProvisioning();
   const decide = useDecideProvisioning();
+  const bootstrapAdminEnabled = useFlag(FLAG_TENANT_BOOTSTRAP_ADMIN);
 
   const [query, setQuery] = useState('');
   const [plan, setPlan] = useState<PlanFilter>('ALL');
   const [page, setPage] = useState(1);
   // R17: the row actions open their Stitch modals; each modal owns its request, justification and errors.
   const [rowAction, setRowAction] = useState<{
-    kind: 'detail' | 'assign' | 'mark' | 'deactivate' | 'audit' | 'convert';
+    kind:
+      | 'detail'
+      | 'assign'
+      | 'mark'
+      | 'deactivate'
+      | 'audit'
+      | 'convert'
+      | 'createAdmin'
+      | 'resendInvite';
     row: TenantListRow;
   } | null>(null);
   const [approving, setApproving] = useState<TenantListRow | null>(null);
@@ -421,6 +434,13 @@ function TenantList({ createOpen }: { createOpen: boolean }) {
                       onMarkContracted={() => setRowAction({ kind: 'mark', row })}
                       onDeactivate={() => setRowAction({ kind: 'deactivate', row })}
                       onConvert={() => setRowAction({ kind: 'convert', row })}
+                      adminAction={tenantAdminAction(row, bootstrapAdminEnabled)}
+                      onTenantAdmin={(mode) =>
+                        setRowAction({
+                          kind: mode === 'create' ? 'createAdmin' : 'resendInvite',
+                          row,
+                        })
+                      }
                       onAudit={() => setRowAction({ kind: 'audit', row })}
                     />
                   ))
@@ -516,6 +536,14 @@ function TenantList({ createOpen }: { createOpen: boolean }) {
         />
       ) : null}
 
+      {rowAction?.kind === 'createAdmin' || rowAction?.kind === 'resendInvite' ? (
+        <TenantAdminModal
+          tenant={rowAction.row}
+          mode={rowAction.kind === 'createAdmin' ? 'create' : 'resend'}
+          onClose={() => setRowAction(null)}
+        />
+      ) : null}
+
       {rowAction?.kind === 'detail' ? (
         <TenantDetailModal
           tenant={rowAction.row}
@@ -589,6 +617,8 @@ function TenantRow({
   onMarkContracted,
   onDeactivate,
   onConvert,
+  adminAction,
+  onTenantAdmin,
   onAudit,
 }: {
   row: TenantListRow;
@@ -603,6 +633,9 @@ function TenantRow({
   onMarkContracted: () => void;
   onDeactivate: () => void;
   onConvert: () => void;
+  /** ADR-110 — `create` / `resend` the first TENANT_ADMIN, or nothing (lib/adminTenantAdmin.ts). */
+  adminAction: TenantAdminAction | null;
+  onTenantAdmin: (mode: TenantAdminAction) => void;
   onAudit: () => void;
 }) {
   const subscription = subscriptionView(row.subscription_status);
@@ -746,6 +779,18 @@ function TenantRow({
               icon="payments"
               label={t('admin.convert.title')}
               onClick={onConvert}
+              tone="cyan"
+            />
+          ) : null}
+          {adminAction ? (
+            <IconButton
+              icon="admin_panel_settings"
+              label={t(
+                adminAction === 'create'
+                  ? 'admin.tenantAdmin.createTitle'
+                  : 'admin.tenantAdmin.resendTitle',
+              )}
+              onClick={() => onTenantAdmin(adminAction)}
               tone="cyan"
             />
           ) : null}

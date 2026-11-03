@@ -22,6 +22,12 @@ import { CosRole } from '@cos/types';
 import { RolesGuard } from '../../shared/guards/roles.guard';
 import { JwtAuthGuard } from '../../shared/guards/jwt-auth.guard';
 import { TenantRequest } from './tenant.middleware';
+import { BootstrapTenantAdminDto } from './dto/bootstrap-tenant-admin.dto';
+import {
+  BOOTSTRAP_ADMIN_FLAG,
+  TenantAdminBootstrapService,
+} from './tenant-admin-bootstrap.service';
+import { FeatureFlag } from '../../shared/feature-flags/feature-flag.decorator';
 
 // Every mutation below carries a `justification` (§6.7, product-owner decision 2026-09-14) and is
 // audited by TenantService inside its own transaction. The request DTOs enforce the reason's presence
@@ -30,7 +36,10 @@ import { TenantRequest } from './tenant.middleware';
 @ApiBearerAuth()
 @Controller('admin/tenants')
 export class TenantController {
-  constructor(private readonly tenantService: TenantService) {}
+  constructor(
+    private readonly tenantService: TenantService,
+    private readonly tenantAdmins: TenantAdminBootstrapService,
+  ) {}
 
   @Get()
   @UseGuards(JwtAuthGuard, RolesGuard)
@@ -84,6 +93,45 @@ export class TenantController {
       req.userId ?? 'system',
       dto.justification,
     );
+  }
+
+  // ADR-110 — the first TENANT_ADMIN of a tenant that has none. 404 unknown tenant · 400 inactive ·
+  // 409 COS-TADM-001 the tenant already has an administrator · 409 identity exists · 503 COS-FLAG-001 flag off.
+  @Post(':tenantId/tenant-admin')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(CosRole.SYSTEM_ADMIN)
+  @FeatureFlag(BOOTSTRAP_ADMIN_FLAG)
+  @ApiOperation({
+    summary:
+      "Create a tenant's first TENANT_ADMIN and email a 72-hour invitation (SYSTEM_ADMIN only)",
+  })
+  async bootstrapAdmin(
+    @Param('tenantId', ParseUUIDPipe) tenantId: string,
+    @Body() dto: BootstrapTenantAdminDto,
+    @Req() req: TenantRequest,
+  ) {
+    return this.tenantAdmins.bootstrap(
+      tenantId,
+      { email: dto.email, display_name: dto.display_name },
+      req.userId ?? 'system',
+      dto.justification,
+    );
+  }
+
+  // 409 COS-TADM-002 unless the tenant's only administrator has never signed in.
+  @Post(':tenantId/tenant-admin/invite')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(CosRole.SYSTEM_ADMIN)
+  @FeatureFlag(BOOTSTRAP_ADMIN_FLAG)
+  @ApiOperation({
+    summary: "Resend the first TENANT_ADMIN's invitation while it is unused (SYSTEM_ADMIN only)",
+  })
+  async resendAdminInvite(
+    @Param('tenantId', ParseUUIDPipe) tenantId: string,
+    @Body() dto: AdminJustificationDto,
+    @Req() req: TenantRequest,
+  ) {
+    return this.tenantAdmins.resendInvite(tenantId, req.userId ?? 'system', dto.justification);
   }
 
   @Patch(':tenantId/dedicated-db')
