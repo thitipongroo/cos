@@ -21,6 +21,14 @@ info:
     (`/subject-requests`), because authentication and data-subject rights must never be blocked. No route,
     parameter or response shape changed. Reviewed 2026-11-02 against the module's controllers.
 
+    **First tenant administrator (ADR-110; 2026-11-03).** A TENANT_ADMIN created by a SYSTEM_ADMIN
+    (`POST /admin/tenants/{id}/tenant-admin`, tenant.openapi.yaml) is a Path B account with no credential. Keycloak
+    emails it a single-use `UPDATE_PASSWORD` link valid 72 hours; the person sets their own password there and is
+    made to enrol TOTP at the first Path B sign-in — the realm's `browser-mfa` flow, verified locally on Keycloak
+    26.6.4 on 2026-11-03. The identity module gained `KeycloakAdminService.hasAnyCredential`, an internal admin-API read
+    (no route here). No route, parameter or response shape in this document changed. Reviewed 2026-11-03 against the
+    module's controllers.
+
     **Reviewed 2026-08-31** against the module's controllers at the origin/develop merge. The source
     changed in that merge only where the package restructure moved import paths — `JwtAuthGuard` and
     `JwtPayload` from `modules/identity/` to `shared/` — with no route, parameter, request body or

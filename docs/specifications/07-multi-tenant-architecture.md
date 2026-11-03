@@ -414,8 +414,11 @@ Steps :
     the customer sets their own password and enrols MFA at first sign-in; COS never handles a password. Allowed
     **only while the tenant has no active TENANT_ADMIN** (primary or additional role) — otherwise `409 COS-TADM-001`,
     and the tenant's own administrator adds everyone else. While that administrator's invitation is unused (no
-    password in Keycloak), it can be resent (`POST …/tenant-admin/invite`; otherwise `409 COS-TADM-002`). Product owner,
-    2026-11-02. Behind `s1.tenant.bootstrap-admin` (QM-15, default OFF)
+    credential in Keycloak), it can be resent (`POST …/tenant-admin/invite`; otherwise `409 COS-TADM-002`) or, when it
+    went to a wrong address, cancelled (`POST …/tenant-admin/cancel`; otherwise `409 COS-TADM-003`) — the account is
+    deactivated and the tenant can be bootstrapped again. Product owner, 2026-11-02 and 2026-11-03. Behind
+    `s1.tenant.bootstrap-admin` (QM-15, default OFF). With `s1.tenant.last-admin-guard` on, the tenant's own users
+    cannot deactivate or demote its last active TENANT_ADMIN (`409 COS-TADM-004`)
 11. Welcome notification dispatched to tenant admin (see 19-notification-architecture)
 
 ---
@@ -628,9 +631,9 @@ At day 60 the job also notifies every SYSTEM_ADMIN, in-app and by email, that th
   not `ACTIVE`, *Convert to paid plan* (`PATCH /admin/tenants/{id}/convert`), also in Tenant Detail. The plan cell
   shows the trial state and its date. `COS-PLAN-002` names the plan limit and the active-project count. A tenant
   with no administrator — every newly opened trial — offers *Create tenant admin*, and one whose only administrator
-  has not signed in offers *Resend admin invitation* (§7.6 step 10, ADR-110); until then the notices below reach
+  has not signed in offers *Resend admin invitation* and _Cancel admin invitation_ (§7.6 step 10, ADR-110); until then the notices below reach
   nobody and are retried daily. The Global Audit Log filters `tenant.create_trial`, `tenant.convert`,
-  `tenant.trial_purge`, `tenant.bootstrap_admin` and `tenant.resend_admin_invite`
+  `tenant.trial_purge`, `tenant.bootstrap_admin`, `tenant.resend_admin_invite` and `tenant.cancel_admin_invite`
 - `LITE` is offered in Create Tenant and in the System Settings tier table
 - **Write actions while read-only** — the web hides create / edit / approve actions through `useReadOnly()` (also the
   VIEWER rule) and the mobile app hides every `+` (`<Fab />`). A save the server refuses with `COS-PLAN-003` makes

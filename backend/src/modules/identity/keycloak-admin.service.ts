@@ -327,13 +327,15 @@ export class KeycloakAdminService {
   }
 
   /**
-   * Whether the account has a password credential. A Path B account is created without one (createEmailUser), so
-   * `false` means its UPDATE_PASSWORD invitation has not been used yet — the test ADR-110's resend relies on.
+   * Whether the account holds ANY credential. A Path B account is created with none (createEmailUser), and using its
+   * UPDATE_PASSWORD invitation adds one; so `false` means the invitation is unused — the test ADR-110's resend and
+   * cancel rely on. Any type, not only `password`: the realm enables passwordless WebAuthn registration, which leaves
+   * an account in use with no password credential.
    */
-  async hasPassword(keycloakUserId: string, realm: string): Promise<boolean> {
+  async hasAnyCredential(keycloakUserId: string, realm: string): Promise<boolean> {
     const client = await this.getAuthenticatedClient(realm);
     const credentials = await client.users.getCredentials({ id: keycloakUserId });
-    return credentials.some((c) => c.type === 'password');
+    return credentials.length > 0;
   }
 
   /** Delete Keycloak user — rollback on downstream COS DB failure. */

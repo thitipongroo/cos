@@ -40,7 +40,14 @@ import { AdminIcon, type AdminIconName } from './AdminIcon';
 import { useComingSoon } from './ComingSoon';
 
 export type TenantDetailAction =
-  'audit' | 'assign' | 'mark' | 'deactivate' | 'convert' | 'createAdmin' | 'resendInvite';
+  | 'audit'
+  | 'assign'
+  | 'mark'
+  | 'deactivate'
+  | 'convert'
+  | 'createAdmin'
+  | 'resendInvite'
+  | 'cancelInvite';
 
 /** The drawing's ink for each engine figure (replication lag emerald, chunks cyan, IOPS slate). */
 const ENGINE_INK = {
@@ -90,6 +97,12 @@ export function TenantDetailModal({
       key: 'resendInvite',
       icon: 'admin_panel_settings',
       tone: 'text-cos-v3-cyan-400',
+      show: adminAction === 'resend',
+    },
+    {
+      key: 'cancelInvite',
+      icon: 'cancel',
+      tone: 'text-cos-v3-red-400',
       show: adminAction === 'resend',
     },
     // §7.10 — a trial (running, read-only or due for deletion) the customer has paid for.

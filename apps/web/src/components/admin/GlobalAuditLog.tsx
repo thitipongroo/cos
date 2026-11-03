@@ -74,7 +74,11 @@ function actionLook(action: string): { ink: string; dot: string; icon: AdminIcon
   if (action === 'tenant.convert')
     return { ink: 'text-cos-op-success', dot: 'bg-cos-op-success', icon: 'payments' };
   // ADR-110: a tenant's first administrator created, or its invitation resent.
-  if (action === 'tenant.bootstrap_admin' || action === 'tenant.resend_admin_invite')
+  if (
+    action === 'tenant.bootstrap_admin' ||
+    action === 'tenant.resend_admin_invite' ||
+    action === 'tenant.cancel_admin_invite'
+  )
     return {
       ink: 'text-cos-op-secondary',
       dot: 'bg-cos-op-secondary',

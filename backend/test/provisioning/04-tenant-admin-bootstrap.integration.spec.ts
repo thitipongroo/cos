@@ -11,6 +11,8 @@
  *   3. the audit row lands under the TARGET tenant with the justification;
  *   4. a tenant whose trial has ended (EXPIRED) can still be given its administrator.
  */
+import { readFileSync } from 'fs';
+import { join } from 'path';
 import {
   startIntegrationInfra,
   stopIntegrationInfra,
@@ -36,8 +38,9 @@ describe('Tenant admin bootstrap · real database', () => {
     createEmailUser: jest.fn(async () => ({ keycloakUserId: `kc-bootstrap-${++kcSeq}` })),
     sendPasswordResetEmail: jest.fn().mockResolvedValue(undefined),
     // No password until the invitation is used — what Keycloak reports for a fresh Path B account.
-    hasPassword: jest.fn().mockResolvedValue(false),
+    hasAnyCredential: jest.fn().mockResolvedValue(false),
     deleteUser: jest.fn().mockResolvedValue(undefined),
+    disableUser: jest.fn().mockResolvedValue(undefined),
   };
 
   async function seedTenant(id: string, code: string): Promise<void> {
@@ -77,7 +80,7 @@ describe('Tenant admin bootstrap · real database', () => {
       ACTOR_HOME_TENANT,
     );
     const outbox = { write: jest.fn() } as never;
-    users = new UserService(keycloak as never, outbox);
+    users = new UserService(keycloak as never, outbox, flagsOff);
     tenants = new TenantService(flagsOff);
     bootstrap = new TenantAdminBootstrapService(users, keycloak as never);
   });
@@ -157,7 +160,7 @@ describe('Tenant admin bootstrap · real database', () => {
     ]);
 
     // The customer used the link (Keycloak now holds a password) and made a first request.
-    keycloak.hasPassword.mockResolvedValue(true);
+    keycloak.hasAnyCredential.mockResolvedValue(true);
     await infra.prisma.$executeRawUnsafe(
       `UPDATE platform.users SET last_seen_at = now() + interval '1 second' WHERE user_id = $1::uuid`,
       created.user_id,
@@ -169,7 +172,7 @@ describe('Tenant admin bootstrap · real database', () => {
     await expect(bootstrap.resendInvite(tenantId, ACTOR_ID, JUSTIFICATION)).rejects.toMatchObject({
       response: { error: { code: 'COS-TADM-002', details: { reason: 'invitation_used' } } },
     });
-    keycloak.hasPassword.mockResolvedValue(false);
+    keycloak.hasAnyCredential.mockResolvedValue(false);
     await expect(
       bootstrap.bootstrap(
         tenantId,
@@ -262,5 +265,172 @@ describe('Tenant admin bootstrap · real database', () => {
 
     expect(created.invite_sent).toBe(true);
     expect(await admins(tenantId)).toEqual([{ email: 'owner@expired.example' }]);
+  });
+
+  // Round 2 (D6): cancel the unused invitation sent to a wrong address, then invite the right one.
+  it('cancel deactivates the bootstrapped account, deletes it in Keycloak, and lets the tenant be bootstrapped again', async () => {
+    const tenantId = '99999999-2222-4000-8000-000000000006';
+    await seedTenant(tenantId, 'bootstrap-cancel');
+    const wrong = await bootstrap.bootstrap(
+      tenantId,
+      { email: 'owner@typo.example', display_name: 'Owner' },
+      ACTOR_ID,
+      JUSTIFICATION,
+    );
+
+    const cancelled = await bootstrap.cancelInvite(tenantId, ACTOR_ID, JUSTIFICATION);
+
+    expect(cancelled).toEqual({
+      user_id: wrong.user_id,
+      email: 'owner@typo.example',
+      keycloak: 'deleted',
+    });
+    expect(keycloak.deleteUser).toHaveBeenCalledTimes(1);
+    expect(await listed(tenantId)).toMatchObject({ tenant_admin_count: 0 });
+    const [row] = await infra.prisma.$queryRawUnsafe<Array<{ is_active: boolean }>>(
+      `SELECT is_active FROM platform.users WHERE user_id = $1::uuid`,
+      wrong.user_id,
+    );
+    expect(row!.is_active).toBe(false);
+
+    const right = await bootstrap.bootstrap(
+      tenantId,
+      { email: 'owner@right.example', display_name: 'Owner' },
+      ACTOR_ID,
+      JUSTIFICATION,
+    );
+    expect(right.invite_sent).toBe(true);
+    expect((await audit(tenantId)).map((r) => r.action)).toEqual([
+      'tenant.bootstrap_admin',
+      'tenant.cancel_admin_invite',
+      'tenant.bootstrap_admin',
+    ]);
+
+    // Once the invitation is used, cancel is refused and nothing changes.
+    keycloak.hasAnyCredential.mockResolvedValue(true);
+    await expect(bootstrap.cancelInvite(tenantId, ACTOR_ID, JUSTIFICATION)).rejects.toMatchObject({
+      response: { error: { code: 'COS-TADM-003', details: { reason: 'invitation_used' } } },
+    });
+    keycloak.hasAnyCredential.mockResolvedValue(false);
+    expect(await listed(tenantId)).toMatchObject({ tenant_admin_count: 1 });
+  });
+
+  // Round 2 (D7): with the guard on, two concurrent demotions of a tenant's last two administrators leave one.
+  it('last-admin guard: concurrent demotions of the last two administrators leave exactly one', async () => {
+    const tenantId = '99999999-2222-4000-8000-000000000007';
+    const a = '99999999-3333-4000-8000-00000000000a';
+    const b = '99999999-3333-4000-8000-00000000000b';
+    await seedTenant(tenantId, 'bootstrap-guard');
+    for (const [id, kc] of [
+      [a, 'kc-guard-a'],
+      [b, 'kc-guard-b'],
+    ] as const) {
+      await infra.prisma.$executeRawUnsafe(
+        `INSERT INTO platform.users (user_id, tenant_id, keycloak_user_id, email, display_name)
+         VALUES ($1::uuid, $2::uuid, $3::text, $3::text || '@guard.example', $3::text)`,
+        id,
+        tenantId,
+        kc,
+      );
+      await infra.prisma.$executeRawUnsafe(
+        `INSERT INTO platform.tenant_memberships (tenant_id, user_id, role)
+         VALUES ($1::uuid, $2::uuid, 'TENANT_ADMIN'::platform."CosRoleEnum")`,
+        tenantId,
+        id,
+      );
+    }
+    const guarded = new UserService(
+      { syncUserRole: jest.fn(), disableUser: jest.fn() } as never,
+      { write: jest.fn() } as never,
+      { isEnabled: (f: string) => f === 's1.tenant.last-admin-guard' } as never,
+    );
+    try {
+      const results = await Promise.allSettled([
+        guarded.changeRole(a, { role: 'PROJECT_MANAGER' as never }, tenantId, a),
+        guarded.deactivateUser(b, tenantId, a),
+      ]);
+      expect(results.filter((r) => r.status === 'fulfilled')).toHaveLength(1);
+      const refused = results.find((r) => r.status === 'rejected') as PromiseRejectedResult;
+      expect(refused.reason).toMatchObject({ response: { error: { code: 'COS-TADM-004' } } });
+      expect((await listed(tenantId)).tenant_admin_count).toBe(1);
+    } finally {
+      await guarded.onModuleDestroy();
+    }
+  });
+
+  // Round 3 (D9): setUserRoles cannot make a phone-only account a TENANT_ADMIN — it could never sign in as one.
+  it('setUserRoles refuses TENANT_ADMIN as an additional role on a phone-only account, and changes nothing', async () => {
+    const tenantId = '99999999-2222-4000-8000-000000000008';
+    const worker = '99999999-3333-4000-8000-000000000008';
+    await seedTenant(tenantId, 'bootstrap-path-b');
+    await infra.prisma.$executeRawUnsafe(
+      `INSERT INTO platform.users (user_id, tenant_id, keycloak_user_id, phone_number, email, display_name)
+       VALUES ($1::uuid, $2::uuid, 'kc-path-a-worker', '+66890000008', '', 'Worker')`,
+      worker,
+      tenantId,
+    );
+    await infra.prisma.$executeRawUnsafe(
+      `INSERT INTO platform.tenant_memberships (tenant_id, user_id, role)
+       VALUES ($1::uuid, $2::uuid, 'SITE_WORKER'::platform."CosRoleEnum")`,
+      tenantId,
+      worker,
+    );
+
+    await expect(
+      users.setUserRoles(
+        worker,
+        { primary_role: 'SITE_WORKER' as never, additional_roles: ['TENANT_ADMIN' as never] },
+        tenantId,
+        ACTOR_ID,
+      ),
+    ).rejects.toMatchObject({ response: { error: { code: 'COS-AUTH-002' } } });
+
+    const extra = await infra.prisma.$queryRawUnsafe<unknown[]>(
+      `SELECT role FROM platform.user_additional_roles WHERE user_id = $1::uuid`,
+      worker,
+    );
+    expect(extra).toEqual([]);
+    expect((await listed(tenantId)).tenant_admin_count).toBe(0);
+
+    // The readiness query (scripts/readiness/check-path-b-roles.sh) finds an account already in that state —
+    // seeded directly, as setUserRoles no longer allows it. Read for this tenant only: the database is shared.
+    await infra.prisma.$executeRawUnsafe(
+      `INSERT INTO platform.user_additional_roles (user_id, tenant_id, role)
+       VALUES ($1::uuid, $2::uuid, 'FINANCE'::platform."CosRoleEnum")`,
+      worker,
+      tenantId,
+    );
+    const script = readFileSync(
+      join(__dirname, '../../../scripts/readiness/check-path-b-roles.sh'),
+      'utf8',
+    );
+    const query = /-- BEGIN QUERY\r?\n([\s\S]*?)-- END QUERY/.exec(script)![1]!;
+    const found = await infra.prisma.$queryRawUnsafe<Array<Record<string, string>>>(query);
+    expect(found.filter((r) => r['tenant_code'] === 'bootstrap-path-b')).toEqual([
+      { tenant_code: 'bootstrap-path-b', user_id: worker, role: 'FINANCE' },
+    ]);
+  });
+
+  // Round 3 (10.8): POST /users cannot create a phone-number TENANT_ADMIN either.
+  it('createUser refuses a phone-number TENANT_ADMIN — no row, no Keycloak account', async () => {
+    const tenantId = '99999999-2222-4000-8000-000000000009';
+    await seedTenant(tenantId, 'bootstrap-create-path-a');
+    await expect(
+      users.createUser(
+        {
+          display_name: 'Phone admin',
+          phone_number: '+66890000009',
+          role: 'TENANT_ADMIN' as never,
+        },
+        tenantId,
+        ACTOR_ID,
+      ),
+    ).rejects.toMatchObject({ response: { error: { code: 'COS-AUTH-002' } } });
+    const rows = await infra.prisma.$queryRawUnsafe<unknown[]>(
+      `SELECT 1 FROM platform.users WHERE tenant_id = $1::uuid`,
+      tenantId,
+    );
+    expect(rows).toEqual([]);
+    expect(keycloak.createEmailUser).not.toHaveBeenCalled();
   });
 });

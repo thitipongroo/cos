@@ -27,6 +27,13 @@ import { MFA_REQUIRED_ROLES } from '../../shared/guards/mfa-enforcement';
 import type { CreateUserDto } from './dto/create-user.dto';
 import type { ChangeRoleDto } from './dto/change-role.dto';
 import type { SetRolesDto } from './dto/set-roles.dto';
+import { FeatureFlagService } from '../../shared/feature-flags/feature-flag.service';
+import {
+  assertTenantKeepsAnAdmin,
+  isTenantAdmin,
+  LAST_ADMIN_GUARD_FLAG,
+  lockTenantAdmins,
+} from './public/tenant-admins';
 
 // SYSTEM_ADMIN is a cross-tenant platform role (spec §6.7 — "NOT provisioned to any tenant"). The
 // user-management endpoints are gated by @Roles(TENANT_ADMIN), and the role field is validated only
@@ -44,6 +51,26 @@ function assertRoleAssignableByTenant(role: CosRole): void {
 }
 
 const logger = createLogger('user-service');
+
+/**
+ * TENANT_ADMIN and FINANCE are Path B only (§5.4.4): giving either to an account with no email — a phone-only Path A
+ * account — leaves a person who can use neither path (TDD OQ-11). Refuse, primary or additional role alike, before any
+ * write. One function so changeRole and setUserRoles cannot disagree (the second was missing it until 2026-11-03).
+ */
+function assertPathBRolesHaveEmail(roles: readonly string[], email: string): void {
+  const role = roles.find((r) => MFA_REQUIRED_ROLES.has(r));
+  if (role === undefined || email.trim() !== '') return;
+  throw new BadRequestException({
+    error: {
+      code: 'COS-AUTH-002',
+      message:
+        `${role} sign in by email and password only, and this account has no email — ` +
+        'it would be left unable to use either path. Create a Path B account for this person ' +
+        'instead of promoting their phone-only one.',
+      messageKey: 'user.role.pathBRequiresEmail',
+    },
+  });
+}
 
 // A readable, complexity-satisfying one-time password for admin-triggered resets. Fixed shape
 // (4 upper · 4 lower · 3 digit, hyphen-grouped, e.g. "KMNP-qrst-234") guarantees mixed case + digit +
@@ -149,7 +176,18 @@ export class UserService implements OnModuleDestroy {
   constructor(
     private readonly keycloakAdmin: KeycloakAdminService,
     private readonly outbox: EventOutboxService,
+    private readonly flags: FeatureFlagService,
   ) {}
+
+  /**
+   * ADR-110 round 2 (product owner, 2026-11-03): a tenant must keep an active TENANT_ADMIN, or nobody in it can manage
+   * users and only a SYSTEM_ADMIN bootstrap could restore one. With `s1.tenant.last-admin-guard` on, changeRole,
+   * setUserRoles and deactivateUser take the administrator lock first and, after their write, refuse with 409
+   * COS-TADM-004 if no active administrator is left. Off, they behave as before.
+   */
+  private lastAdminGuard(tenantId: string): boolean {
+    return this.flags.isEnabled(LAST_ADMIN_GUARD_FLAG, { tenantId });
+  }
 
   /** Close the Prisma connection on shutdown so the query-engine socket does not leak. */
   async onModuleDestroy(): Promise<void> {
@@ -277,8 +315,11 @@ export class UserService implements OnModuleDestroy {
 
     const isPathA = Boolean(dto.phone_number);
     const emailValue = isPathA ? '' : dto.email!;
+    // A phone-number account cannot hold TENANT_ADMIN or FINANCE (§5.4.4) — refused before Keycloak is touched
+    // (ADR-110 round 3, plan 10.8).
+    assertPathBRolesHaveEmail([dto.role], emailValue);
 
-    // Step 1 — get tenant realm for Keycloak provisioning (and for the Path B guard below)
+    // Step 1 — get tenant realm for Keycloak provisioning (and for the conflict guard below)
     const [tenant] = await this.prisma.$queryRaw<Array<{ keycloak_realm: string }>>`
       SELECT keycloak_realm FROM platform.tenants
       WHERE tenant_id = ${tenantId}::uuid AND is_active = true
@@ -455,30 +496,23 @@ export class UserService implements OnModuleDestroy {
     // Nothing caught this before: the role change succeeded, `syncUserRole` dutifully wrote the new
     // role into Keycloak, and the account went dark at the person's next login with no error that
     // named the cause. Refuse the promotion instead, and say what to do about it.
-    if (MFA_REQUIRED_ROLES.has(dto.role) && membership.email.trim() === '') {
-      throw new BadRequestException({
-        error: {
-          code: 'COS-AUTH-002',
-          message:
-            `${dto.role} sign in by email and password only, and this account has no email — ` +
-            'it would be left unable to use either path. Create a Path B account for this person ' +
-            'instead of promoting their phone-only one.',
-          messageKey: 'user.role.pathBRequiresEmail',
-        },
-      });
-    }
+    assertPathBRolesHaveEmail([dto.role], membership.email);
 
     const oldRole = membership.role;
 
     // Outbox (§35.13 ESC-13) — role change and its event in one transaction. A permission change
     // that downstream consumers never hear about is a security-relevant divergence, so this one
     // must not be fire-and-forget.
+    const guard = this.lastAdminGuard(tenantId);
     await this.prisma.$transaction(async (tx) => {
+      if (guard) await lockTenantAdmins(tx, tenantId);
+      const wasAdmin = guard && (await isTenantAdmin(tx, tenantId, userId));
       await tx.$queryRaw`
         UPDATE platform.tenant_memberships
         SET role = ${dto.role}::platform."CosRoleEnum"
         WHERE user_id = ${userId}::uuid AND tenant_id = ${tenantId}::uuid
       `;
+      if (guard) await assertTenantKeepsAnAdmin(tx, tenantId, userId, wasAdmin);
 
       await OutboxPublisher.write(
         tx,
@@ -549,23 +583,40 @@ export class UserService implements OnModuleDestroy {
     // failure after the DELETE (a dropped connection, a rejected enum value) left the user holding the
     // NEW primary role with NO additional roles — a silently under-privileged account that nothing
     // retries or repairs. Role state is a security boundary: it moves all at once or not at all.
+    const guard = this.lastAdminGuard(tenantId);
     const membershipRow = await this.prisma.$transaction(async (tx) => {
+      // Before the FOR UPDATE below: the administrator lock is always taken first (tenant-admins.ts).
+      if (guard) await lockTenantAdmins(tx, tenantId);
+      const wasAdmin = guard && (await isTenantAdmin(tx, tenantId, userId));
       // keycloak_user_id + realm ride along so the Keycloak `role` attribute can be re-synced after the
       // transaction commits, without a second round trip (security review F2).
       const [membership] = await tx.$queryRaw<
-        Array<{ role: string; keycloak_user_id: string; keycloak_realm: string }>
+        Array<{ role: string; keycloak_user_id: string; keycloak_realm: string; email: string }>
       >`
-        SELECT m.role, u.keycloak_user_id, t.keycloak_realm
+        SELECT m.role, u.keycloak_user_id, t.keycloak_realm, u.email
         FROM platform.tenant_memberships m
         JOIN platform.users u   ON u.user_id   = m.user_id AND u.tenant_id = m.tenant_id
         JOIN platform.tenants t ON t.tenant_id = m.tenant_id
         WHERE m.user_id = ${userId}::uuid AND m.tenant_id = ${tenantId}::uuid
         LIMIT 1
-        FOR UPDATE OF m
+        FOR UPDATE OF m FOR SHARE OF u
       `;
       if (!membership) {
         throw new NotFoundException(`User ${userId} not found in tenant`);
       }
+      // Before any write: a refusal here changes nothing and never reaches Keycloak. Only roles this call GRANTS are
+      // checked — a legacy account that already holds one (scripts/readiness/check-path-b-roles.sh) is not frozen, so
+      // its other roles can still be edited while it is settled. `FOR SHARE OF u` above keeps the email from changing
+      // under the check without blocking foreign-key inserts that reference the user.
+      const held = await tx.$queryRaw<Array<{ role: string }>>`
+        SELECT role::text AS role FROM platform.user_additional_roles
+        WHERE user_id = ${userId}::uuid AND tenant_id = ${tenantId}::uuid
+      `;
+      const alreadyHeld = new Set([membership.role, ...held.map((r) => r.role)]);
+      assertPathBRolesHaveEmail(
+        [dto.primary_role, ...additional].filter((r) => !alreadyHeld.has(r)),
+        membership.email,
+      );
 
       await tx.$queryRaw`
         UPDATE platform.tenant_memberships
@@ -584,6 +635,7 @@ export class UserService implements OnModuleDestroy {
         FROM unnest(${additional}::text[]) AS r
         ON CONFLICT (user_id, tenant_id, role) DO NOTHING
       `;
+      if (guard) await assertTenantKeepsAnAdmin(tx, tenantId, userId, wasAdmin);
 
       return membership;
     });
@@ -822,14 +874,24 @@ export class UserService implements OnModuleDestroy {
    * the retry path is the Keycloak-side runbook, not this endpoint.
    */
   async deactivateUser(userId: string, tenantId: string, actorId: string): Promise<void> {
-    const [user] = await this.prisma.$queryRaw<Array<{ keycloak_user_id: string }>>`
-      UPDATE platform.users
-      SET is_active = false, updated_at = now()
-      WHERE user_id = ${userId}::uuid
-        AND tenant_id = ${tenantId}::uuid
-        AND is_active = true
-      RETURNING keycloak_user_id
-    `;
+    const deactivate = (db: Pick<Prisma.TransactionClient, '$queryRaw'>) =>
+      db.$queryRaw<Array<{ keycloak_user_id: string }>>`
+        UPDATE platform.users
+        SET is_active = false, updated_at = now()
+        WHERE user_id = ${userId}::uuid
+          AND tenant_id = ${tenantId}::uuid
+          AND is_active = true
+        RETURNING keycloak_user_id
+      `;
+    const [user] = this.lastAdminGuard(tenantId)
+      ? await this.prisma.$transaction(async (tx) => {
+          await lockTenantAdmins(tx, tenantId);
+          const wasAdmin = await isTenantAdmin(tx, tenantId, userId);
+          const rows = await deactivate(tx);
+          if (rows.length > 0) await assertTenantKeepsAnAdmin(tx, tenantId, userId, wasAdmin);
+          return rows;
+        })
+      : await deactivate(this.prisma);
     if (!user) {
       throw new NotFoundException(`User ${userId} not found or already inactive`);
     }

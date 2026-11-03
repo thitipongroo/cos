@@ -41,44 +41,12 @@ On the new tenant's row (or in Tenant Detail) → **Create tenant admin** (shiel
 - "The account was created, but the invitation email could not be sent" — fix SMTP, then step 3
 - "This tenant already has an administrator" — someone already did step 2; nothing to do
 - "This email already has an account" — the address belongs to another tenant on the shared realm; ask for another
-- **A wrong address cannot be fixed from the panel** (ADR-110 open question). Check the email with the customer
-  before you submit
-
-## 3. If the link expired or never arrived
-
-While the administrator has not signed in, the row shows **Resend admin invitation**. It sends a new 72-hour link;
-an earlier link may still work until it expires. If the server answers that the invitation was already used, the
-customer has set a password and should sign in or use "Forgot password". Once they have signed in, the action
-disappears: password help is their own reset flow
-(sign-in page → "Forgot password", or another TENANT_ADMIN of the tenant).
-
-## 4. Confirm the hand-over
-
-The administrator opens the link, sets a password, signs in and enrols an authenticator app (MFA is required for
-TENANT_ADMIN, `docs/runbooks/mfa-enforcement.md`). After their first request the row no longer offers _Resend_; the
-§7.10 day-0 notice reaches them on the next daily run.
-
-Every step is in the Global Audit Log: `tenant.create_trial`, `tenant.bootstrap_admin`, `tenant.resend_admin_invite`.
-
-## Verification
-
-Run locally on 2026-11-03 against Keycloak **26.6.4** (the `docker-compose.yml` version) with this repository's realm
-file, and a mail catcher on the Keycloak network under the host name the realm expects (`mailhog`). The account was
-created and invited by the backend's own `KeycloakAdminService`; the browser steps were driven by Playwright.
-
-| Check                                                 | Expected                                             | Result (2026-11-03, local)                                                                             |
-| ----------------------------------------------------- | ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
-| Invitation for a fresh TENANT_ADMIN account           | Email arrives; link opens Keycloak "Update password" | Pass — subject "Update Your Account", "This link will expire within 3 days"; form shown                |
-| Link lifetime                                         | 72 hours                                             | Pass — action token `exp − iat` = 259,200 s                                                            |
-| `hasPassword` before / after the link is used         | `false` / `true` (what resend relies on)             | Pass — `false`, then `true`                                                                            |
-| The same link a second time                           | Refused                                              | Pass — "Action expired"                                                                                |
-| An earlier link after a resend                        | (documented as possibly still valid)                 | Confirmed — the older link still opened "Update password" after a second invitation                    |
-| First sign-in after setting the password              | Forced to set up the authenticator app               | Pass — "Mobile Authenticator Setup — You need to set up Mobile Authenticator to activate your account" |
-| Tenant List after first sign-in                       | _Resend admin invitation_ no longer offered          | Not run here (needs the web app against this Keycloak) — covered by the staging spec below             |
-| Staging: `tests/e2e/specs/admin-tenant-admin.spec.ts` | Passes with `E2E_SYSADMIN_EMAIL` / `_PASSWORD` set   | **Not yet run** — needs a staging SYSTEM_ADMIN and the two secrets                                     |
-
-Findings from the run:
-
+- **Wrong address?** Use **Cancel admin invitation** on the row (while the invitation is unused): the account is
+  deactivated and its sign-in account removed, and _Create tenant admin_ is offered again. The cancelled address
+  cannot be used for a new account on the same sign-in realm (for the shared realm: any tenant). If the dialog says
+  the sign-in account was **disabled instead**, the link no longer works — ask platform engineering to remove the
+  account; if it says it could be **neither removed nor disabled**, the link may still work — ask them to remove it
+  now (Keycloak admin console → realm → Users → the address → Delete)
 - The invitation email is Keycloak's generic **English** "Update Your Account" template. QM-3 asks for Thai and
   English; a Thai email needs the realm's email theme or `internationalizationEnabled` — not part of ADR-110.
 - On the development realm imported as `construction-os-dev`, the `account-console` client's redirect URIs point at

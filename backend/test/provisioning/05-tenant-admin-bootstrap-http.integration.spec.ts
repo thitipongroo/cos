@@ -77,7 +77,7 @@ describe('Tenant admin bootstrap · HTTP · real database', () => {
       .useValue({
         createEmailUser: jest.fn(async () => ({ keycloakUserId: `kc-http-${++kcSeq}` })),
         sendPasswordResetEmail: jest.fn().mockResolvedValue(undefined),
-        hasPassword: jest.fn().mockResolvedValue(false),
+        hasAnyCredential: jest.fn().mockResolvedValue(false),
         deleteUser: jest.fn().mockResolvedValue(undefined),
       })
       .overrideProvider(FeatureFlagService)
@@ -131,6 +131,16 @@ describe('Tenant admin bootstrap · HTTP · real database', () => {
   it('503 while s1.tenant.bootstrap-admin is off', async () => {
     flags['s1.tenant.bootstrap-admin'] = false;
     expect((await post('off@http.example')).status).toBe(503);
+  });
+
+  it('cancel and resend also answer 503 while the flag is off', async () => {
+    flags['s1.tenant.bootstrap-admin'] = false;
+    for (const path of ['cancel', 'invite']) {
+      const res = await request(app.getHttpServer())
+        .post(`/api/v1/admin/tenants/${TARGET}/tenant-admin/${path}`)
+        .send({ justification: JUSTIFICATION });
+      expect(res.status).toBe(503);
+    }
   });
 
   it('403 for a caller who is not SYSTEM_ADMIN', async () => {

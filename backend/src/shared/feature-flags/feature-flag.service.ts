@@ -88,6 +88,10 @@ export const DEFAULT_FLAGS: Readonly<Record<string, boolean>> = {
   // First TENANT_ADMIN bootstrap by a SYSTEM_ADMIN (ADR-110, §6.7). New feature and an authorization change, so OFF
   // until rollout: OFF is today's behaviour — both endpoints answer 503 COS-FLAG-001 and the panel hides the action.
   's1.tenant.bootstrap-admin': false,
+  // Last-administrator guard (ADR-110 round 2): UserService refuses to deactivate or demote a tenant's last active
+  // TENANT_ADMIN (409 COS-TADM-004). A change to authorization behaviour, so OFF until rollout; OFF is today's
+  // behaviour, and the kill switch if the guard ever blocks a legitimate change.
+  's1.tenant.last-admin-guard': false,
 };
 
 export interface FlagContext {

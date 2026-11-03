@@ -280,8 +280,8 @@ components:
           type: boolean
           description: |
             The tenant's only administrator has never made an authenticated request (`last_seen_at = created_at`) —
-            the panel offers *Resend admin invitation*. A display hint: the resend endpoint decides by Keycloak's
-            password credential.
+            the panel offers *Resend* and *Cancel admin invitation*. A display hint: the endpoints decide by
+            Keycloak's credentials.
 
     MyTenant:
       type: object
@@ -995,12 +995,29 @@ paths:
       responses:
         '204':
           description: Roles updated
+        '400':
+          description: |
+            `COS-AUTH-002` (`user.role.pathBRequiresEmail`) — TENANT_ADMIN or FINANCE that the call GRANTS (as the
+            primary or an additional role, and not already held) to an account with no email: both are Path B only (§5.4.4). Nothing is changed. Since 2026-11-03
+            (ADR-110 round 3), as `PATCH /users/{userId}/role` already did.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Unauthenticated
         '403':
           description: Requires TENANT_ADMIN
         '404':
           description: User not found in this tenant
+        '409':
+          description: |
+            `COS-TADM-004` — the change would leave the tenant with no active TENANT_ADMIN (ADR-110). Only while
+            `s1.tenant.last-admin-guard` is on.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
 
   /users/{userId}/reset-password:
     post:
@@ -1229,8 +1246,10 @@ paths:
       summary: Resend the first TENANT_ADMIN's unused invitation (SYSTEM_ADMIN only — ADR-110)
       description: |
         Only when the tenant has exactly one active administrator, that account was created by
-        `POST …/tenant-admin` (a `tenant.bootstrap_admin` audit row names it), and Keycloak holds no password for it
-        (the invitation is unused). Read with the tenant row locked and under the same lock as the create. Audited as
+        `POST …/tenant-admin` (a `tenant.bootstrap_admin` audit row names it), and Keycloak holds no credential of any
+        kind for it (the invitation is unused). Keycloak is asked before the transaction; inside it, under the same
+        lock as the create and with the tenant row locked, the same account must still be the only active
+        administrator. Audited as
         `tenant.resend_admin_invite` BEFORE the email is sent, so every sent email is recorded; a failed send answers
         `invite_sent: false`. Keycloak does not revoke an earlier link, which stays valid until its own expiry.
 
@@ -1275,6 +1294,75 @@ paths:
             `COS-TADM-002` — `details.reason`: `admin_count` (not exactly one active administrator),
             `not_bootstrapped` (the administrator was not created by the bootstrap) or `invitation_used` (a password
             is set); `details.tenant_admin_count`.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthenticated
+        '403':
+          description: Insufficient role — SYSTEM_ADMIN required
+        '503':
+          description: '`s1.tenant.bootstrap-admin` is off'
+
+  /admin/tenants/{tenantId}/tenant-admin/cancel:
+    post:
+      operationId: postAdminTenantsByTenantidTenantAdminCancel
+      summary: Cancel the first TENANT_ADMIN's unused invitation (SYSTEM_ADMIN only — ADR-110)
+      description: |
+        For an invitation sent to a wrong address. Same conditions as the resend (one active administrator, created
+        by the bootstrap, no credential in Keycloak). The account is deactivated and the cancel audited as
+        `tenant.cancel_admin_invite` in one transaction; the Keycloak account is then deleted, which kills its link
+        (`keycloak: deleted`; a Keycloak 404 counts as deleted). If the delete fails the account is disabled instead
+        (`disabled` — the link no longer works); if that fails too, `failed` — the link may still work and the
+        account must be removed by hand (runbook). The tenant then has no administrator and can be bootstrapped
+        again; the cancelled email cannot be used for a new account on that realm.
+
+        Behind `s1.tenant.bootstrap-admin` (QM-15, default OFF).
+      tags: [tenants]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: tenantId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminJustificationRequest'
+      responses:
+        '201':
+          description: Invitation cancelled
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [user_id, email, keycloak]
+                properties:
+                  user_id: { type: string, format: uuid }
+                  email: { type: string, format: email }
+                  keycloak: { type: string, enum: [deleted, disabled, failed] }
+        '400':
+          description: Missing justification, or the tenant is deactivated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Tenant not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: |
+            `COS-TADM-003` — `details.reason`: `admin_count`, `not_bootstrapped` or `invitation_used`;
+            `details.tenant_admin_count`.
           content:
             application/json:
               schema:
@@ -2013,7 +2101,10 @@ paths:
               schema:
                 $ref: '#/components/schemas/UserResponse'
         '400':
-          description: Validation error — phone_number or email required (not both)
+          description: |
+            Validation error — phone_number or email required (not both). `COS-AUTH-002`
+            (`user.role.pathBRequiresEmail`) — TENANT_ADMIN or FINANCE with a phone number: both are Path B only
+            (§5.4.4); refused before Keycloak is called (since 2026-11-03, ADR-110 round 3).
           content:
             application/json:
               schema:
@@ -2062,6 +2153,14 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+        '409':
+          description: |
+            `COS-TADM-004` — the change would leave the tenant with no active TENANT_ADMIN (ADR-110). Only while
+            `s1.tenant.last-admin-guard` is on.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Unauthenticated
         '403':
@@ -2090,6 +2189,14 @@ paths:
           description: User deactivated — no content returned
         '404':
           description: User not found or already inactive
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: |
+            `COS-TADM-004` — the change would leave the tenant with no active TENANT_ADMIN (ADR-110). Only while
+            `s1.tenant.last-admin-guard` is on.
           content:
             application/json:
               schema:

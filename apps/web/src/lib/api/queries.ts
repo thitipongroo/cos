@@ -72,6 +72,7 @@ import type {
   CreateTrialTenantInput,
   BootstrapTenantAdminInput,
   TenantAdminInviteResult,
+  TenantAdminCancelResult,
   MyTenant,
 } from './types';
 
@@ -872,6 +873,20 @@ export function useResendTenantAdminInvite() {
   return useMutation({
     mutationFn: ({ id, justification }: { id: string; justification: string }) =>
       api<TenantAdminInviteResult>(`/admin/tenants/${id}/tenant-admin/invite`, {
+        method: 'POST',
+        body: JSON.stringify({ justification }),
+      }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['admin', 'tenants'] }),
+  });
+}
+
+// ADR-110 round 2 — withdraw an unused invitation (a mistyped address); 409 COS-TADM-003 otherwise.
+export function useCancelTenantAdminInvite() {
+  const api = useApi();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, justification }: { id: string; justification: string }) =>
+      api<TenantAdminCancelResult>(`/admin/tenants/${id}/tenant-admin/cancel`, {
         method: 'POST',
         body: JSON.stringify({ justification }),
       }),

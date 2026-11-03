@@ -134,6 +134,22 @@ export class TenantController {
     return this.tenantAdmins.resendInvite(tenantId, req.userId ?? 'system', dto.justification);
   }
 
+  // ADR-110 round 2 — withdraw an unused invitation (a mistyped address). 409 COS-TADM-003 otherwise.
+  @Post(':tenantId/tenant-admin/cancel')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(CosRole.SYSTEM_ADMIN)
+  @FeatureFlag(BOOTSTRAP_ADMIN_FLAG)
+  @ApiOperation({
+    summary: "Cancel the first TENANT_ADMIN's unused invitation (SYSTEM_ADMIN only)",
+  })
+  async cancelAdminInvite(
+    @Param('tenantId', ParseUUIDPipe) tenantId: string,
+    @Body() dto: AdminJustificationDto,
+    @Req() req: TenantRequest,
+  ) {
+    return this.tenantAdmins.cancelInvite(tenantId, req.userId ?? 'system', dto.justification);
+  }
+
   @Patch(':tenantId/dedicated-db')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(CosRole.SYSTEM_ADMIN)

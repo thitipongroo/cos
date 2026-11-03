@@ -1,6 +1,14 @@
 // Unit tests for the tenant-administrator definition shared by the SYSTEM_ADMIN list and the bootstrap guard (ADR-110).
 
-import { NO_TENANT_ADMIN, tenantAdminStates, tenantAdmins } from '../public/tenant-admins';
+import {
+  assertTenantKeepsAnAdmin,
+  isTenantAdmin,
+  LAST_ADMIN_GUARD_FLAG,
+  lockTenantAdmins,
+  NO_TENANT_ADMIN,
+  tenantAdminStates,
+  tenantAdmins,
+} from '../public/tenant-admins';
 
 const TENANT_ID = '11111111-1111-4111-8111-111111111111';
 const sqlOf = (db: { $queryRaw: jest.Mock }) =>
@@ -54,5 +62,55 @@ describe('tenantAdminStates', () => {
 
   it('a tenant missing from the map has no administrator', () => {
     expect(NO_TENANT_ADMIN).toEqual({ tenant_admin_count: 0, tenant_admin_pending: false });
+  });
+});
+
+describe('lockTenantAdmins / assertTenantKeepsAnAdmin', () => {
+  it('locks on the tenant-admin key', async () => {
+    const tx = { $executeRaw: jest.fn() };
+    await lockTenantAdmins(tx, TENANT_ID);
+    expect((tx.$executeRaw.mock.calls[0]![0] as TemplateStringsArray).join('?')).toContain(
+      'pg_advisory_xact_lock',
+    );
+    expect(tx.$executeRaw.mock.calls[0]![1]).toBe(`cos:tenant-admin:${TENANT_ID}`);
+  });
+
+  it('passes while an administrator remains', async () => {
+    const db = {
+      $queryRaw: jest.fn().mockResolvedValue([{ user_id: 'a', never_signed_in: false }]),
+    };
+    await expect(assertTenantKeepsAnAdmin(db, TENANT_ID, 'u1', true)).resolves.toBeUndefined();
+  });
+
+  it('refuses with 409 COS-TADM-004 when the write removed the last one', async () => {
+    const db = { $queryRaw: jest.fn().mockResolvedValue([]) };
+    await expect(assertTenantKeepsAnAdmin(db, TENANT_ID, 'u1', true)).rejects.toMatchObject({
+      status: 409,
+      response: {
+        error: {
+          code: 'COS-TADM-004',
+          messageKey: 'user.error.lastTenantAdmin',
+          details: { user_id: 'u1' },
+        },
+      },
+    });
+  });
+
+  it('never refuses a write that did not touch an administrator, even with none left', async () => {
+    const db = { $queryRaw: jest.fn().mockResolvedValue([]) };
+    await expect(assertTenantKeepsAnAdmin(db, TENANT_ID, 'u1', false)).resolves.toBeUndefined();
+    expect(db.$queryRaw).not.toHaveBeenCalled();
+  });
+
+  it('isTenantAdmin reads the current administrators', async () => {
+    const db = {
+      $queryRaw: jest.fn().mockResolvedValue([{ user_id: 'u1', never_signed_in: false }]),
+    };
+    expect(await isTenantAdmin(db, TENANT_ID, 'u1')).toBe(true);
+    expect(await isTenantAdmin(db, TENANT_ID, 'u2')).toBe(false);
+  });
+
+  it('names the guard flag', () => {
+    expect(LAST_ADMIN_GUARD_FLAG).toBe('s1.tenant.last-admin-guard');
   });
 });

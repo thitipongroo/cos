@@ -166,7 +166,8 @@ export type TenantAdminAction =
   | 'tenant.provisioning.approve'
   | 'tenant.provisioning.abort'
   | 'tenant.bootstrap_admin'
-  | 'tenant.resend_admin_invite';
+  | 'tenant.resend_admin_invite'
+  | 'tenant.cancel_admin_invite';
 
 /** How long one provisioning-state query may take before the run is reported as unreadable. */
 export const PROVISIONING_QUERY_DEADLINE_MS = 5_000;

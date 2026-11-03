@@ -403,7 +403,8 @@
         "deactivate": "Deactivate Tenant",
         "convert": "Convert to paid plan",
         "createAdmin": "Create tenant admin",
-        "resendInvite": "Resend admin invitation"
+        "resendInvite": "Resend admin invitation",
+        "cancelInvite": "Cancel admin invitation"
       },
       "footer": {
         "mesh": "Cluster Mesh"
@@ -731,7 +732,8 @@
         "convert": "Trial Converted to Paid",
         "purge": "Trial Data Purged",
         "bootstrapAdmin": "Tenant Admin Created",
-        "resendInvite": "Admin Invitation Resent"
+        "resendInvite": "Admin Invitation Resent",
+        "cancelInvite": "Admin Invitation Cancelled"
       },
       "range": "Date range (UTC)",
       "rangeFrom": "From (UTC)",
@@ -1004,8 +1006,16 @@
         "alreadyHasAdmin": "This tenant already has an administrator. Ask them to add users from their own account.",
         "notResendable": "The invitation can be resent only to the tenant administrator created here, while it is unused. If a password is already set, the administrator should sign in or use “Forgot password”.",
         "disabled": "Creating tenant administrators is switched off right now. Try again later.",
-        "emailTaken": "This email already has an account. Use a different address."
-      }
+        "emailTaken": "This email already has an account. Use a different address.",
+        "notCancellable": "Only an unused invitation to the administrator created here can be cancelled. If a password is already set, the customer manages their own account."
+      },
+      "cancelTitle": "Cancel admin invitation",
+      "cancelLead": "Use this when the invitation went to a wrong address. The account is deactivated and its link stops working; the tenant then has no administrator, so you can create one with the right address.",
+      "cancelSubmit": "Cancel invitation",
+      "cancelledFor": "Invitation cancelled for",
+      "cancelNext": "Create the tenant admin again with the correct address. The cancelled address cannot be used for a new account on the same sign-in realm — for the shared realm, that means any tenant.",
+      "keycloakDisabled": "The sign-in account could not be removed, so it was disabled instead: its link no longer works. Ask platform engineering to remove it.",
+      "keycloakNotRemoved": "The sign-in account could not be removed or disabled, so its link may still work. Ask platform engineering to remove it now."
     }
   },
   "auth": {
@@ -1443,7 +1453,8 @@
     "srVerified": "Verified",
     "srUnverified": "Not verified",
     "srVerifySent": "Verification link sent to {to}",
-    "srVerifyHint": "Anonymisation is blocked until the subject confirms the link. It is sent to the address on the matched record, not the one typed above."
+    "srVerifyHint": "Anonymisation is blocked until the subject confirms the link. It is sent to the address on the matched record, not the one typed above.",
+    "userChangeFailed": "Could not save the change. Nothing was changed."
   },
   "shell": {
     "notifications": "Notifications",
@@ -1701,6 +1712,14 @@
     "error": {
       "planLimitReached": "Your plan's active-project limit is reached. Complete a project or upgrade the plan to create another.",
       "planUnreadable": "Your plan could not be checked, so the project was not created. Try again; if it keeps happening, contact support."
+    }
+  },
+  "user": {
+    "error": {
+      "lastTenantAdmin": "A tenant must keep at least one administrator. Make someone else an administrator first."
+    },
+    "role": {
+      "pathBRequiresEmail": "TENANT_ADMIN and FINANCE sign in by email only, and this account has no email. Create an email account for this person instead."
     }
   }
 }

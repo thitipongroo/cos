@@ -15,6 +15,7 @@ const mockTenantService = {
 const mockTenantAdmins = {
   bootstrap: jest.fn(),
   resendInvite: jest.fn(),
+  cancelInvite: jest.fn(),
 };
 
 import { TenantController } from '../tenant.controller';
@@ -92,6 +93,25 @@ describe('TenantController', () => {
     it("falls back to 'system' with no userId", async () => {
       await controller.resendAdminInvite(TENANT_ID, { justification: JUSTIFICATION }, {} as never);
       expect(mockTenantAdmins.resendInvite.mock.calls[0]![1]).toBe('system');
+    });
+  });
+
+  describe('cancelAdminInvite', () => {
+    it('passes the tenant, the actor and the justification', async () => {
+      mockTenantAdmins.cancelInvite.mockResolvedValue({ keycloak: 'deleted' });
+      await controller.cancelAdminInvite(TENANT_ID, { justification: JUSTIFICATION }, {
+        userId: 'admin-user',
+      } as never);
+      expect(mockTenantAdmins.cancelInvite).toHaveBeenCalledWith(
+        TENANT_ID,
+        'admin-user',
+        JUSTIFICATION,
+      );
+    });
+
+    it("falls back to 'system' with no userId", async () => {
+      await controller.cancelAdminInvite(TENANT_ID, { justification: JUSTIFICATION }, {} as never);
+      expect(mockTenantAdmins.cancelInvite.mock.calls[0]![1]).toBe('system');
     });
   });
 

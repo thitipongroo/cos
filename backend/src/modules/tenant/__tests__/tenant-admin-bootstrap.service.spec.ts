@@ -43,7 +43,12 @@ describe('TenantAdminBootstrapService', () => {
   let service: TenantAdminBootstrapService;
   let prisma: { $queryRaw: Mock; $executeRaw: Mock; $transaction: Mock; $disconnect: Mock };
   let users: { createUser: Mock };
-  let keycloak: { sendPasswordResetEmail: Mock; hasPassword: Mock };
+  let keycloak: {
+    sendPasswordResetEmail: Mock;
+    hasAnyCredential: Mock;
+    deleteUser: Mock;
+    disableUser: Mock;
+  };
   let tx: ReturnType<typeof makeTx>;
 
   beforeEach(() => {
@@ -59,7 +64,9 @@ describe('TenantAdminBootstrapService', () => {
     };
     keycloak = {
       sendPasswordResetEmail: jest.fn().mockResolvedValue(undefined),
-      hasPassword: jest.fn().mockResolvedValue(false),
+      hasAnyCredential: jest.fn().mockResolvedValue(false),
+      deleteUser: jest.fn().mockResolvedValue(undefined),
+      disableUser: jest.fn().mockResolvedValue(undefined),
     };
     service = new TenantAdminBootstrapService(users as never, keycloak as never);
     prisma = (service as unknown as { prisma: typeof prisma }).prisma;
@@ -71,6 +78,8 @@ describe('TenantAdminBootstrapService', () => {
     expect(TENANT_ADMIN_ERROR).toEqual({
       ALREADY_HAS_ADMIN: 'COS-TADM-001',
       INVITE_NOT_RESENDABLE: 'COS-TADM-002',
+      INVITE_NOT_CANCELLABLE: 'COS-TADM-003',
+      LAST_ADMIN: 'COS-TADM-004',
     });
   });
 
@@ -192,6 +201,37 @@ describe('TenantAdminBootstrapService', () => {
     });
   });
 
+  // Resend and cancel share one precondition: phase 1 reads on the client and asks Keycloak; phase 2 re-checks
+  // under the lock in a transaction. Reads in order — client: tenant · admins · account · bootstrap row;
+  // transaction: tenant FOR SHARE · admins.
+  const ONE = [{ user_id: USER_ID, never_signed_in: true }];
+  const reads = (
+    over: {
+      tenant?: unknown[];
+      admins?: unknown[];
+      user?: unknown[];
+      bootstrapped?: unknown[];
+      adminsNow?: unknown[];
+    } = {},
+  ) => {
+    prisma.$queryRaw
+      .mockResolvedValueOnce(over.tenant ?? [{ is_active: true, keycloak_realm: REALM }])
+      .mockResolvedValueOnce(over.admins ?? ONE)
+      .mockResolvedValueOnce(over.user ?? [{ keycloak_user_id: KC_ID, email: EMAIL }])
+      .mockResolvedValueOnce(over.bootstrapped ?? [{ found: 1 }]);
+    tx.$queryRaw
+      .mockResolvedValueOnce([{ is_active: true, keycloak_realm: REALM }])
+      .mockResolvedValueOnce(over.adminsNow ?? ONE);
+  };
+
+  const refusalOf = async (p: Promise<unknown>) => {
+    const err = await p.catch((e: unknown) => e);
+    expect(err).toBeInstanceOf(ConflictException);
+    return (err as ConflictException).getResponse() as {
+      error: { code: string; details: { tenant_admin_count: number; reason: string } };
+    };
+  };
+
   describe('resendInvite', () => {
     const run = () => service.resendInvite(TENANT_ID, ACTOR_ID, JUSTIFICATION);
 
@@ -201,25 +241,21 @@ describe('TenantAdminBootstrapService', () => {
       );
     });
 
-    /** tenant row · administrators · the account · the bootstrap audit row, in the order the code reads them. */
-    const reads = (
-      admins: Array<{ user_id: string; never_signed_in: boolean }>,
-      over: { tenant?: unknown[]; user?: unknown[]; bootstrapped?: unknown[] } = {},
-    ) => {
-      tx.$queryRaw
-        .mockResolvedValueOnce(over.tenant ?? [{ is_active: true, keycloak_realm: REALM }])
-        .mockResolvedValueOnce(admins)
-        .mockResolvedValueOnce(over.user ?? [{ keycloak_user_id: KC_ID, email: EMAIL }])
-        .mockResolvedValueOnce(over.bootstrapped ?? [{ found: 1 }]);
-    };
-    const one = [{ user_id: USER_ID, never_signed_in: true }];
-
-    it('resends to the bootstrapped administrator while the invitation is unused, audited before the email', async () => {
-      reads(one);
-      keycloak.hasPassword.mockResolvedValueOnce(false);
+    it('asks Keycloak outside the transaction, re-checks under the lock, audits, then emails', async () => {
+      reads();
       const order: string[] = [];
+      keycloak.hasAnyCredential.mockImplementationOnce(async () => {
+        order.push('keycloak-read');
+        return false;
+      });
+      prisma.$transaction.mockImplementationOnce(async (fn: (t: unknown) => Promise<unknown>) => {
+        order.push('tx');
+        return fn(tx);
+      });
       tx.$executeRaw.mockImplementation(async (strings: TemplateStringsArray) => {
-        if (strings.join('?').includes('platform.audit_logs')) order.push('audit');
+        const sql = strings.join('?');
+        if (sql.includes('pg_advisory_xact_lock')) order.push('lock');
+        if (sql.includes('platform.audit_logs')) order.push('audit');
       });
       keycloak.sendPasswordResetEmail.mockImplementationOnce(async () => {
         order.push('email');
@@ -227,75 +263,73 @@ describe('TenantAdminBootstrapService', () => {
 
       const result = await run();
 
-      const tenantRead = sqlOf(tx.$queryRaw.mock.calls[0] as unknown[]);
-      expect(tenantRead).toContain('FOR SHARE');
-      expect(callsMatching(tx.$executeRaw, 'pg_advisory_xact_lock')).toHaveLength(1);
-      expect(sqlOf(tx.$queryRaw.mock.calls[2] as unknown[])).toContain('AND is_active');
-      const bootstrapRead = tx.$queryRaw.mock.calls[3] as unknown[];
+      expect(order).toEqual(['keycloak-read', 'tx', 'lock', 'audit', 'email']);
+      expect(sqlOf(prisma.$queryRaw.mock.calls[2] as unknown[])).toContain('AND is_active');
+      const bootstrapRead = prisma.$queryRaw.mock.calls[3] as unknown[];
       expect(sqlOf(bootstrapRead)).toContain("action = 'tenant.bootstrap_admin'");
       expect(bootstrapRead).toContain(USER_ID);
-      expect(keycloak.hasPassword).toHaveBeenCalledWith(KC_ID, REALM);
+      expect(sqlOf(tx.$queryRaw.mock.calls[0] as unknown[])).toContain('FOR SHARE');
+      expect(keycloak.hasAnyCredential).toHaveBeenCalledWith(KC_ID, REALM);
       const audit = callsMatching(tx.$executeRaw, 'platform.audit_logs');
       expect(audit[0]![3]).toBe('tenant.resend_admin_invite');
       expect(JSON.parse(audit[0]![5] as string)).toEqual({
         justification: JUSTIFICATION,
         user_id: USER_ID,
       });
-      // The transaction (and its audit row) completes before the email leaves.
-      expect(order).toEqual(['audit', 'email']);
       expect(keycloak.sendPasswordResetEmail).toHaveBeenCalledWith(KC_ID, REALM, 259_200);
       expect(result).toMatchObject({ user_id: USER_ID, email: EMAIL, invite_sent: true });
       expect(result.invite_expires_at).toBeInstanceOf(Date);
     });
 
-    const refusal = async (count: number, reason: string) => {
-      const err = await run().catch((e: unknown) => e);
-      expect(err).toBeInstanceOf(ConflictException);
-      expect((err as ConflictException).getResponse()).toEqual({
+    it('refuses with the full COS-TADM-002 envelope', async () => {
+      reads({ admins: [] });
+      expect(await refusalOf(run())).toEqual({
         error: {
           code: 'COS-TADM-002',
           message:
             'The invitation can be resent only to the tenant administrator created by Construction OS, while it is unused.',
           messageKey: 'admin.tenantAdmin.error.notResendable',
-          details: { tenant_admin_count: count, reason },
+          details: { tenant_admin_count: 0, reason: 'admin_count' },
         },
       });
-      expect(callsMatching(tx.$executeRaw, 'platform.audit_logs')).toHaveLength(0);
+      expect(prisma.$transaction).not.toHaveBeenCalled();
+    });
+
+    it.each([
+      ['two administrators', { admins: [...ONE, { user_id: 'b' }] }, 2, 'admin_count'],
+      ['an account no longer active', { user: [] }, 1, 'admin_count'],
+      ['a customer-made administrator', { bootstrapped: [] }, 1, 'not_bootstrapped'],
+    ])('409 for %s, before any transaction', async (_l, over, count, reason) => {
+      reads(over);
+      expect((await refusalOf(run())).error.details).toEqual({ tenant_admin_count: count, reason });
+      expect(prisma.$transaction).not.toHaveBeenCalled();
       expect(keycloak.sendPasswordResetEmail).not.toHaveBeenCalled();
-    };
-
-    it('409 with no administrator', async () => {
-      reads([]);
-      await refusal(0, 'admin_count');
     });
 
-    it('409 with two administrators', async () => {
-      reads([...one, { user_id: 'second', never_signed_in: true }]);
-      await refusal(2, 'admin_count');
+    it('409 invitation_used once the account holds any credential', async () => {
+      reads();
+      keycloak.hasAnyCredential.mockResolvedValueOnce(true);
+      expect((await refusalOf(run())).error.details.reason).toBe('invitation_used');
+      expect(prisma.$transaction).not.toHaveBeenCalled();
     });
 
-    it('409 when the account stopped being active under us', async () => {
-      reads(one, { user: [] });
-      await refusal(1, 'admin_count');
+    it('409 when another administrator appeared before the lock — nothing written', async () => {
+      reads({ adminsNow: [...ONE, { user_id: 'new' }] });
+      expect((await refusalOf(run())).error.details).toEqual({
+        tenant_admin_count: 2,
+        reason: 'admin_count',
+      });
+      expect(callsMatching(tx.$executeRaw, 'platform.audit_logs')).toHaveLength(0);
     });
 
-    it('409 for an administrator the customer created — not a bootstrap account', async () => {
-      reads(one, { bootstrapped: [] });
-      await refusal(1, 'not_bootstrapped');
-      expect(keycloak.hasPassword).not.toHaveBeenCalled();
-    });
-
-    it('409 once the invitation has been used (a password exists)', async () => {
-      reads(one);
-      keycloak.hasPassword.mockResolvedValueOnce(true);
-      await refusal(1, 'invitation_used');
+    it('409 when the only administrator is now someone else', async () => {
+      reads({ adminsNow: [{ user_id: 'other', never_signed_in: true }] });
+      expect((await refusalOf(run())).error.details.reason).toBe('admin_count');
     });
 
     it('a failed email still leaves the recorded request and reports invite_sent false', async () => {
-      reads(one);
-      keycloak.hasPassword.mockResolvedValueOnce(false);
+      reads();
       keycloak.sendPasswordResetEmail.mockRejectedValueOnce(new Error('SMTP down'));
-
       expect(await run()).toEqual({
         user_id: USER_ID,
         email: EMAIL,
@@ -305,14 +339,111 @@ describe('TenantAdminBootstrapService', () => {
       expect(callsMatching(tx.$executeRaw, 'platform.audit_logs')).toHaveLength(1);
     });
 
-    it('404 for an unknown tenant', async () => {
-      reads([], { tenant: [] });
+    it('404 / 400 for an unknown or deactivated tenant', async () => {
+      prisma.$queryRaw.mockResolvedValueOnce([]);
       await expect(run()).rejects.toBeInstanceOf(NotFoundException);
+      prisma.$queryRaw.mockResolvedValueOnce([{ is_active: false, keycloak_realm: REALM }]);
+      await expect(run()).rejects.toBeInstanceOf(BadRequestException);
     });
 
-    it('400 for a deactivated tenant', async () => {
-      reads([], { tenant: [{ is_active: false, keycloak_realm: REALM }] });
+    it('400 when the tenant was deactivated between the phases', async () => {
+      reads();
+      tx.$queryRaw.mockReset().mockResolvedValueOnce([{ is_active: false, keycloak_realm: REALM }]);
       await expect(run()).rejects.toBeInstanceOf(BadRequestException);
+      expect(callsMatching(tx.$executeRaw, 'platform.audit_logs')).toHaveLength(0);
+    });
+  });
+
+  // Round 2 (D6): a mistyped address is fixed by cancelling the unused invitation, then bootstrapping again.
+  describe('cancelInvite', () => {
+    const run = () => service.cancelInvite(TENANT_ID, ACTOR_ID, JUSTIFICATION);
+
+    beforeEach(() => {
+      prisma.$transaction.mockImplementation(async (fn: (t: unknown) => Promise<unknown>) =>
+        fn(tx),
+      );
+    });
+
+    it('deactivates and audits in one transaction, then deletes the Keycloak account', async () => {
+      reads();
+      const order: string[] = [];
+      tx.$executeRaw.mockImplementation(async (strings: TemplateStringsArray) => {
+        const sql = strings.join('?');
+        if (sql.includes('pg_advisory_xact_lock')) order.push('lock');
+        if (sql.includes('UPDATE platform.users')) order.push('deactivate');
+        if (sql.includes('platform.audit_logs')) order.push('audit');
+      });
+      keycloak.deleteUser.mockImplementationOnce(async () => {
+        order.push('keycloak');
+      });
+
+      const result = await run();
+
+      expect(order).toEqual(['lock', 'deactivate', 'audit', 'keycloak']);
+      const deactivate = callsMatching(tx.$executeRaw, 'UPDATE platform.users')[0]!;
+      expect(sqlOf(deactivate)).toContain('is_active = false');
+      expect(deactivate).toContain(USER_ID);
+      const audit = callsMatching(tx.$executeRaw, 'platform.audit_logs');
+      expect(audit[0]![3]).toBe('tenant.cancel_admin_invite');
+      expect(JSON.parse(audit[0]![5] as string)).toEqual({
+        justification: JUSTIFICATION,
+        user_id: USER_ID,
+      });
+      expect(keycloak.deleteUser).toHaveBeenCalledWith(KC_ID, REALM);
+      expect(keycloak.disableUser).not.toHaveBeenCalled();
+      expect(keycloak.sendPasswordResetEmail).not.toHaveBeenCalled();
+      expect(result).toEqual({ user_id: USER_ID, email: EMAIL, keycloak: 'deleted' });
+    });
+
+    it('a Keycloak 404 means the account is already gone', async () => {
+      reads();
+      keycloak.deleteUser.mockRejectedValueOnce({ response: { status: 404 } });
+      expect((await run()).keycloak).toBe('deleted');
+      expect(keycloak.disableUser).not.toHaveBeenCalled();
+    });
+
+    it('disables the Keycloak account when the delete fails', async () => {
+      reads();
+      keycloak.deleteUser.mockRejectedValueOnce(new Error('keycloak busy'));
+      expect((await run()).keycloak).toBe('disabled');
+      expect(keycloak.disableUser).toHaveBeenCalledWith(KC_ID, REALM);
+    });
+
+    it('reports failed when both the delete and the disable fail', async () => {
+      reads();
+      keycloak.deleteUser.mockRejectedValueOnce('timeout');
+      keycloak.disableUser.mockRejectedValueOnce(new Error('keycloak down'));
+      expect((await run()).keycloak).toBe('failed');
+    });
+
+    it('reports failed for a non-Error disable failure too', async () => {
+      reads();
+      keycloak.deleteUser.mockRejectedValueOnce(null);
+      keycloak.disableUser.mockRejectedValueOnce('down');
+      expect((await run()).keycloak).toBe('failed');
+    });
+
+    it('refuses with the full COS-TADM-003 envelope and writes nothing', async () => {
+      reads({ bootstrapped: [] });
+      expect(await refusalOf(run())).toEqual({
+        error: {
+          code: 'COS-TADM-003',
+          message:
+            'Only an unused invitation to the tenant administrator created by Construction OS can be cancelled.',
+          messageKey: 'admin.tenantAdmin.error.notCancellable',
+          details: { tenant_admin_count: 1, reason: 'not_bootstrapped' },
+        },
+      });
+      expect(keycloak.deleteUser).not.toHaveBeenCalled();
+    });
+
+    it('409 COS-TADM-003 once the invitation has been used', async () => {
+      reads();
+      keycloak.hasAnyCredential.mockResolvedValueOnce(true);
+      expect((await refusalOf(run())).error).toMatchObject({
+        code: 'COS-TADM-003',
+        details: { reason: 'invitation_used' },
+      });
     });
   });
 });

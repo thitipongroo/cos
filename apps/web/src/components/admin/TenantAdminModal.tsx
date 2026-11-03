@@ -8,6 +8,8 @@
  *   `POST /admin/tenants/{id}/tenant-admin`.
  * - `resend` — its only administrator has never signed in (the server also requires the invitation unused): justification →
  *   `POST /admin/tenants/{id}/tenant-admin/invite`.
+ * - `cancel` — offered with `resend`, for an invitation sent to a wrong address: justification →
+ *   `POST /admin/tenants/{id}/tenant-admin/cancel`. The account is deactivated and the tenant can be bootstrapped again.
  *
  * Either way Keycloak emails a single-use link, valid 72 hours, where the customer sets their own password; MFA is
  * enrolled at first sign-in. COS never sees the password, and the dialog says so rather than offering one.
@@ -23,12 +25,16 @@ import { useI18n } from '../../i18n';
 import {
   ADMIN_INVITE_HOURS,
   tenantAdminErrorKey,
-  type TenantAdminAction,
+  type TenantAdminMode,
 } from '../../lib/adminTenantAdmin';
 import type { TenantListRow } from '../../lib/adminTenants';
 import { ApiError } from '../../lib/api/client';
-import { useBootstrapTenantAdmin, useResendTenantAdminInvite } from '../../lib/api/queries';
-import type { TenantAdminInviteResult } from '../../lib/api/types';
+import {
+  useBootstrapTenantAdmin,
+  useCancelTenantAdminInvite,
+  useResendTenantAdminInvite,
+} from '../../lib/api/queries';
+import type { TenantAdminCancelResult, TenantAdminInviteResult } from '../../lib/api/types';
 import { formatDate } from '../../lib/format';
 import { TextInputField } from '../form/TextInputField';
 import { LoadingState } from '../ui/LoadingState';
@@ -36,19 +42,40 @@ import { AdminIcon } from './AdminIcon';
 
 type Field = 'email' | 'display_name' | 'justification';
 
+/** i18n keys per mode — never copy (QM-3). */
+const COPY: Record<TenantAdminMode, { title: string; lead: string; submit: string }> = {
+  create: {
+    title: 'admin.tenantAdmin.createTitle',
+    lead: 'admin.tenantAdmin.createLead',
+    submit: 'admin.tenantAdmin.createSubmit',
+  },
+  resend: {
+    title: 'admin.tenantAdmin.resendTitle',
+    lead: 'admin.tenantAdmin.resendLead',
+    submit: 'admin.tenantAdmin.resendSubmit',
+  },
+  cancel: {
+    title: 'admin.tenantAdmin.cancelTitle',
+    lead: 'admin.tenantAdmin.cancelLead',
+    submit: 'admin.tenantAdmin.cancelSubmit',
+  },
+};
+
 export function TenantAdminModal({
   tenant,
   mode,
   onClose,
 }: {
   tenant: TenantListRow;
-  mode: TenantAdminAction;
+  mode: TenantAdminMode;
   onClose: () => void;
 }) {
   const { t, locale } = useI18n();
   const bootstrap = useBootstrapTenantAdmin();
   const resend = useResendTenantAdminInvite();
-  const mutation = mode === 'create' ? bootstrap : resend;
+  const cancel = useCancelTenantAdminInvite();
+  const mutation = mode === 'create' ? bootstrap : mode === 'resend' ? resend : cancel;
+  const copy = COPY[mode];
   const [values, setValues] = useState<Record<Field, string>>({
     email: '',
     display_name: '',
@@ -57,6 +84,7 @@ export function TenantAdminModal({
   const [touched, setTouched] = useState<Partial<Record<Field, boolean>>>({});
   const [submitted, setSubmitted] = useState(false);
   const [result, setResult] = useState<TenantAdminInviteResult | null>(null);
+  const [cancelled, setCancelled] = useState<TenantAdminCancelResult | null>(null);
 
   const parsed =
     mode === 'create'
@@ -78,11 +106,14 @@ export function TenantAdminModal({
     setSubmitted(true);
     if (!parsed.success || busy) return;
     const done = { onSuccess: (r: TenantAdminInviteResult) => setResult(r) };
+    const justification = values.justification.trim();
     if (mode === 'create') {
       const d = tenantAdminBootstrapSchema.parse(values);
       bootstrap.mutate({ id: tenant.tenant_id, ...d }, done);
+    } else if (mode === 'resend') {
+      resend.mutate({ id: tenant.tenant_id, justification }, done);
     } else {
-      resend.mutate({ id: tenant.tenant_id, justification: values.justification.trim() }, done);
+      cancel.mutate({ id: tenant.tenant_id, justification }, { onSuccess: setCancelled });
     }
   };
 
@@ -110,11 +141,7 @@ export function TenantAdminModal({
               </span>
               <div>
                 <Heading slot="title" className="text-[18px] font-bold tracking-tight text-white">
-                  {t(
-                    mode === 'create'
-                      ? 'admin.tenantAdmin.createTitle'
-                      : 'admin.tenantAdmin.resendTitle',
-                  )}
+                  {t(copy.title)}
                 </Heading>
                 <p className="mt-1 text-[12px] text-cos-v3-slate-400">
                   <span className="font-mono font-semibold text-cos-v3-cyan-300">
@@ -137,7 +164,30 @@ export function TenantAdminModal({
             </Button>
           </header>
 
-          {result ? (
+          {cancelled ? (
+            <div className="space-y-3 p-6 text-[12px] leading-relaxed text-cos-v3-slate-300">
+              <p role="status" className="flex items-start gap-2 text-cos-v3-emerald-400">
+                <AdminIcon name="check_circle" size={16} className="mt-0.5 shrink-0" />
+                <span>
+                  {t('admin.tenantAdmin.cancelledFor')}{' '}
+                  <span className="font-mono text-white">{cancelled.email}</span>
+                </span>
+              </p>
+              {cancelled.keycloak === 'deleted' ? null : (
+                <p role="alert" className="flex items-start gap-2 text-cos-op-warning">
+                  <AdminIcon name="warning" size={16} className="mt-0.5 shrink-0" />
+                  <span>
+                    {t(
+                      cancelled.keycloak === 'disabled'
+                        ? 'admin.tenantAdmin.keycloakDisabled'
+                        : 'admin.tenantAdmin.keycloakNotRemoved',
+                    )}
+                  </span>
+                </p>
+              )}
+              <p>{t('admin.tenantAdmin.cancelNext')}</p>
+            </div>
+          ) : result ? (
             <div className="space-y-3 p-6 text-[12px] leading-relaxed text-cos-v3-slate-300">
               {result.invite_sent ? (
                 <p role="status" className="flex items-start gap-2 text-cos-v3-emerald-400">
@@ -160,13 +210,7 @@ export function TenantAdminModal({
             </div>
           ) : (
             <div className="space-y-5 p-6">
-              <p className="text-[12px] leading-relaxed text-cos-v3-slate-300">
-                {t(
-                  mode === 'create'
-                    ? 'admin.tenantAdmin.createLead'
-                    : 'admin.tenantAdmin.resendLead',
-                )}
-              </p>
+              <p className="text-[12px] leading-relaxed text-cos-v3-slate-300">{t(copy.lead)}</p>
 
               {mode === 'create' ? (
                 <>
@@ -210,12 +254,14 @@ export function TenantAdminModal({
                 errorMessage={errorFor('justification')}
               />
 
-              <p className="flex items-start gap-2 rounded-md border border-cos-op-container-highest bg-cos-op-modal-notice p-3 text-[11px] leading-relaxed text-cos-op-pending">
-                <AdminIcon name="info" size={16} className="mt-0.5 shrink-0 text-cos-op-cyan" />
-                <span>
-                  {t('admin.tenantAdmin.terms').replace('{hours}', String(ADMIN_INVITE_HOURS))}
-                </span>
-              </p>
+              {mode === 'cancel' ? null : (
+                <p className="flex items-start gap-2 rounded-md border border-cos-op-container-highest bg-cos-op-modal-notice p-3 text-[11px] leading-relaxed text-cos-op-pending">
+                  <AdminIcon name="info" size={16} className="mt-0.5 shrink-0 text-cos-op-cyan" />
+                  <span>
+                    {t('admin.tenantAdmin.terms').replace('{hours}', String(ADMIN_INVITE_HOURS))}
+                  </span>
+                </p>
+              )}
 
               {apiError ? (
                 <p role="alert" className="text-[11px] text-cos-op-error">
@@ -226,7 +272,7 @@ export function TenantAdminModal({
           )}
 
           <footer className="flex items-center justify-end gap-3 border-t border-cos-op-container-highest bg-cos-op-dialog-edge px-6 py-4">
-            {result ? (
+            {result || cancelled ? (
               <Button
                 onPress={onClose}
                 className="rounded-md bg-cos-op-primary-container px-5 py-2 text-[12px] font-bold text-white outline-none transition-all hover:brightness-110 data-[focus-visible]:ring-2 data-[focus-visible]:ring-cos-op-primary-container"
@@ -252,11 +298,7 @@ export function TenantAdminModal({
                   ) : (
                     <AdminIcon name="admin_panel_settings" size={16} />
                   )}
-                  {t(
-                    mode === 'create'
-                      ? 'admin.tenantAdmin.createSubmit'
-                      : 'admin.tenantAdmin.resendSubmit',
-                  )}
+                  {t(copy.submit)}
                 </Button>
               </>
             )}

@@ -30,7 +30,7 @@ test.describe('SYSTEM_ADMIN · first tenant admin (ADR-110)', () => {
     await loginViaKeycloak(page, { email: SYSADMIN_EMAIL!, password: SYSADMIN_PASSWORD! });
   });
 
-  test('open a trial, create its administrator, and see the action change and the audit row', async ({
+  test('open a trial, create its administrator, cancel the invitation, and see the audit rows', async ({
     page,
   }) => {
     await page.goto('/admin');
@@ -77,9 +77,20 @@ test.describe('SYSTEM_ADMIN · first tenant admin (ADR-110)', () => {
     await expect(row.getByRole('button', { name: 'Create tenant admin' })).toHaveCount(0);
     await expect(row.getByRole('button', { name: 'Resend admin invitation' })).toBeVisible();
 
-    // 5. A second create is impossible from the panel, and the action is in the Global Audit Log.
+    // 5. A wrong address is fixed by cancelling the unused invitation (round 2): Create is offered again.
+    await row.getByRole('button', { name: 'Cancel admin invitation' }).click();
+    const cancel = page.getByRole('dialog');
+    await cancel.getByLabel('Justification').fill(JUSTIFICATION);
+    await cancel.getByRole('button', { name: 'Cancel invitation' }).click();
+    await expect(cancel.getByRole('status')).toContainText(adminEmail);
+    await cancel.getByRole('button', { name: 'Done' }).click();
+    await expect(row.getByRole('button', { name: 'Create tenant admin' })).toBeVisible();
+
+    // 6. Both actions are in the Global Audit Log.
     await page.goto('/admin/audit');
     await page.getByLabel('Filter by action category').selectOption('bootstrapAdmin');
+    await expect(page.getByText(code).first()).toBeVisible();
+    await page.getByLabel('Filter by action category').selectOption('cancelInvite');
     await expect(page.getByText(code).first()).toBeVisible();
   });
 });

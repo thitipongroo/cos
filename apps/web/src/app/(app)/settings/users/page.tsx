@@ -15,6 +15,8 @@ import {
 import type { UserRow } from '../../../../lib/api/types';
 import { useValidatedForm } from '../../../../lib/forms';
 import { useReadOnly } from '../../../../lib/auth/useReadOnly';
+import { ApiError } from '../../../../lib/api/client';
+import { userChangeErrorKey } from '../../../../lib/userManagement';
 
 const ROLES = [
   'TENANT_ADMIN',
@@ -50,6 +52,12 @@ export default function SettingsUsersPage() {
   });
 
   const messageFor = (key?: string) => (key ? t(key) : undefined);
+  // A refused role change or deactivation — e.g. the tenant's last administrator (COS-TADM-004, ADR-110).
+  // Each action clears the other's error (below), so at most one is set: the latest attempt's.
+  const changeError = changeRole.error ?? deactivate.error ?? null;
+  const changeErrorText = changeError
+    ? t(userChangeErrorKey(changeError instanceof ApiError ? changeError : null))
+    : undefined;
 
   const submit = handleSubmit((values) => {
     create.mutate({
@@ -71,7 +79,10 @@ export default function SettingsUsersPage() {
           <select
             value={u.role}
             disabled={readOnly}
-            onChange={(e) => changeRole.mutate({ id: u.user_id, role: e.target.value })}
+            onChange={(e) => {
+              deactivate.reset();
+              changeRole.mutate({ id: u.user_id, role: e.target.value });
+            }}
             className="rounded border border-gray-300 px-2 py-0.5 text-xs"
           >
             {ROLES.map((r) => (
@@ -95,7 +106,10 @@ export default function SettingsUsersPage() {
           <button
             type="button"
             disabled={deactivate.isPending}
-            onClick={() => deactivate.mutate(u.user_id)}
+            onClick={() => {
+              changeRole.reset();
+              deactivate.mutate(u.user_id);
+            }}
             className="rounded border border-red-600 px-2 py-0.5 text-xs text-red-600 hover:bg-red-50 disabled:opacity-50"
           >
             {t('settings.deactivate')}
@@ -109,6 +123,14 @@ export default function SettingsUsersPage() {
   return (
     <div>
       <h1 className="mb-4 text-2xl font-bold text-gray-800">{t('settings.usersTitle')}</h1>
+      {changeErrorText ? (
+        <p
+          role="alert"
+          className="mb-4 rounded border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700"
+        >
+          {changeErrorText}
+        </p>
+      ) : null}
       {!readOnly && (
         <form onSubmit={submit} noValidate className="mb-6 flex flex-wrap items-start gap-2">
           <Controller

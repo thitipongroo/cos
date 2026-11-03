@@ -326,17 +326,21 @@ describe('KeycloakAdminService', () => {
     });
   });
 
-  // ADR-110: a Path B account has no password until its invitation is used.
-  describe('hasPassword', () => {
-    it('is false for an account with no password credential', async () => {
-      mockKcInstance.users.getCredentials.mockResolvedValueOnce([{ type: 'otp' }]);
-      expect(await service.hasPassword('kc-1', 'tenant-acme')).toBe(false);
+  // ADR-110: a Path B account holds no credential until its invitation is used.
+  describe('hasAnyCredential', () => {
+    it('is false for an account with no credential', async () => {
+      mockKcInstance.users.getCredentials.mockResolvedValueOnce([]);
+      expect(await service.hasAnyCredential('kc-1', 'tenant-acme')).toBe(false);
       expect(mockKcInstance.users.getCredentials).toHaveBeenCalledWith({ id: 'kc-1' });
     });
 
-    it('is true once a password is set', async () => {
+    it('is true for any credential — a password, or a passwordless WebAuthn key', async () => {
       mockKcInstance.users.getCredentials.mockResolvedValueOnce([{ type: 'password' }]);
-      expect(await service.hasPassword('kc-1', 'tenant-acme')).toBe(true);
+      expect(await service.hasAnyCredential('kc-1', 'tenant-acme')).toBe(true);
+      mockKcInstance.users.getCredentials.mockResolvedValueOnce([
+        { type: 'webauthn-passwordless' },
+      ]);
+      expect(await service.hasAnyCredential('kc-1', 'tenant-acme')).toBe(true);
     });
   });
 

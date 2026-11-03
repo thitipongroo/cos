@@ -485,6 +485,16 @@ export interface TenantAdminInviteResult {
   invite_expires_at: string | null;
 }
 
+/**
+ * POST /admin/tenants/{id}/tenant-admin/cancel (ADR-110 round 2). `keycloak`: the sign-in account was removed, disabled
+ * instead (the removal failed), or neither — then its link may still work and platform engineering must remove it.
+ */
+export interface TenantAdminCancelResult {
+  user_id: string;
+  email: string;
+  keycloak: 'deleted' | 'disabled' | 'failed';
+}
+
 /** Create-tenant body (camelCase — matches CreateTenantDto). `justification` is mandatory (§6.7). */
 export interface CreateTenantInput {
   tenantCode: string;

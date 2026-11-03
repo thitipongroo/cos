@@ -63,10 +63,11 @@ describe('auditActionFor', () => {
     ['purge', 'tenant.trial_purge'],
     ['bootstrapAdmin', 'tenant.bootstrap_admin'],
     ['resendInvite', 'tenant.resend_admin_invite'],
+    ['cancelInvite', 'tenant.cancel_admin_invite'],
   ] as const)('%s → %s', (key, action) => {
     expect(auditActionFor(key)).toBe(action);
   });
-  it('lists the six drawn categories in order, the three §7.10 trial ones, then the two ADR-110 ones', () => {
+  it('lists the six drawn categories in order, the three §7.10 trial ones, then the three ADR-110 ones', () => {
     expect(AUDIT_ACTION_FILTERS.map((f) => f.key)).toEqual([
       'all',
       'deactivate',
@@ -79,6 +80,7 @@ describe('auditActionFor', () => {
       'purge',
       'bootstrapAdmin',
       'resendInvite',
+      'cancelInvite',
     ]);
   });
 });

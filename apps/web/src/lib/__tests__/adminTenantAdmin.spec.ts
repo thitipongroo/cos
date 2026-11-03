@@ -42,6 +42,7 @@ describe('tenantAdminErrorKey', () => {
   it.each([
     [{ status: 409, code: 'COS-TADM-001' }, 'admin.tenantAdmin.error.alreadyHasAdmin'],
     [{ status: 409, code: 'COS-TADM-002' }, 'admin.tenantAdmin.error.notResendable'],
+    [{ status: 409, code: 'COS-TADM-003' }, 'admin.tenantAdmin.error.notCancellable'],
     [{ status: 503, code: 'COS-FLAG-001' }, 'admin.tenantAdmin.error.disabled'],
     [{ status: 503, code: 'COS-GENERAL-503' }, 'admin.tenantAdmin.error.disabled'],
     [{ status: 409 }, 'admin.tenantAdmin.error.emailTaken'],

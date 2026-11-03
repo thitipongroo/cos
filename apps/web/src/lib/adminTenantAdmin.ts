@@ -11,6 +11,9 @@ export const ADMIN_INVITE_HOURS = 72;
 
 export type TenantAdminAction = 'create' | 'resend';
 
+/** What the modal does: the two row states above, plus withdrawing the unused invitation (offered with `resend`). */
+export type TenantAdminMode = TenantAdminAction | 'cancel';
+
 /**
  * `create` for an active tenant with no administrator; `resend` while its only administrator has never signed in (a
  * hint — the server refuses with COS-TADM-002 once the invitation is used);
@@ -34,6 +37,7 @@ export function tenantAdminErrorKey(
 ): string {
   if (error?.code === 'COS-TADM-001') return 'admin.tenantAdmin.error.alreadyHasAdmin';
   if (error?.code === 'COS-TADM-002') return 'admin.tenantAdmin.error.notResendable';
+  if (error?.code === 'COS-TADM-003') return 'admin.tenantAdmin.error.notCancellable';
   // 503 by status as well as by code: FeatureFlagGuard's body has no `error` envelope, so it reaches the client as
   // COS-GENERAL-503 (http-exception.filter.ts). Both endpoints have no other 503.
   if (error?.code === 'COS-FLAG-001' || error?.status === 503)

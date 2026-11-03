@@ -71,7 +71,11 @@ import {
 import { ApiError } from '../../lib/api/client';
 import { useDecideProvisioning, useTenantProvisioning, useTenants } from '../../lib/api/queries';
 import { TENANT_LIST } from '../../lib/adminDrawnFigures';
-import { tenantAdminAction, type TenantAdminAction } from '../../lib/adminTenantAdmin';
+import {
+  tenantAdminAction,
+  type TenantAdminAction,
+  type TenantAdminMode,
+} from '../../lib/adminTenantAdmin';
 import { useFlag } from '../../lib/api/flags';
 import { FLAG_TENANT_BOOTSTRAP_ADMIN } from '../../lib/flags';
 import {
@@ -155,7 +159,8 @@ function TenantList({ createOpen }: { createOpen: boolean }) {
       | 'audit'
       | 'convert'
       | 'createAdmin'
-      | 'resendInvite';
+      | 'resendInvite'
+      | 'cancelInvite';
     row: TenantListRow;
   } | null>(null);
   const [approving, setApproving] = useState<TenantListRow | null>(null);
@@ -437,7 +442,12 @@ function TenantList({ createOpen }: { createOpen: boolean }) {
                       adminAction={tenantAdminAction(row, bootstrapAdminEnabled)}
                       onTenantAdmin={(mode) =>
                         setRowAction({
-                          kind: mode === 'create' ? 'createAdmin' : 'resendInvite',
+                          kind:
+                            mode === 'create'
+                              ? 'createAdmin'
+                              : mode === 'resend'
+                                ? 'resendInvite'
+                                : 'cancelInvite',
                           row,
                         })
                       }
@@ -536,10 +546,18 @@ function TenantList({ createOpen }: { createOpen: boolean }) {
         />
       ) : null}
 
-      {rowAction?.kind === 'createAdmin' || rowAction?.kind === 'resendInvite' ? (
+      {rowAction?.kind === 'createAdmin' ||
+      rowAction?.kind === 'resendInvite' ||
+      rowAction?.kind === 'cancelInvite' ? (
         <TenantAdminModal
           tenant={rowAction.row}
-          mode={rowAction.kind === 'createAdmin' ? 'create' : 'resend'}
+          mode={
+            rowAction.kind === 'createAdmin'
+              ? 'create'
+              : rowAction.kind === 'resendInvite'
+                ? 'resend'
+                : 'cancel'
+          }
           onClose={() => setRowAction(null)}
         />
       ) : null}
@@ -635,7 +653,7 @@ function TenantRow({
   onConvert: () => void;
   /** ADR-110 — `create` / `resend` the first TENANT_ADMIN, or nothing (lib/adminTenantAdmin.ts). */
   adminAction: TenantAdminAction | null;
-  onTenantAdmin: (mode: TenantAdminAction) => void;
+  onTenantAdmin: (mode: TenantAdminMode) => void;
   onAudit: () => void;
 }) {
   const subscription = subscriptionView(row.subscription_status);
@@ -792,6 +810,14 @@ function TenantRow({
               )}
               onClick={() => onTenantAdmin(adminAction)}
               tone="cyan"
+            />
+          ) : null}
+          {adminAction === 'resend' ? (
+            <IconButton
+              icon="cancel"
+              label={t('admin.tenantAdmin.cancelTitle')}
+              onClick={() => onTenantAdmin('cancel')}
+              tone="danger"
             />
           ) : null}
           <IconButton icon="history" label={t('admin.row.auditLog')} onClick={onAudit} />
