@@ -168,12 +168,15 @@ expect_silent "rule-38  approved plan allows the same write" \
 # THE MARKER MUST NAME THE PLAN IT APPROVED (2026-09-08). Presence alone used to be the whole
 # check, so a marker outlived its plan three rounds running and the gate stood open for a list
 # nobody had read. The cases below are those three rounds reduced to their mechanics.
-touch -d '2020-01-01' .claude/impl-approved
+touch -t 202001010000 .claude/impl-approved  # -t, not -d: POSIX, works with BSD touch (macOS) too
 expect_signal "rule-38  a marker OLDER than the plan is stale and refuses" \
   rule-38-check-approval.sh "src/service.ts" "export const x = 1;"
 touch .claude/impl-approved
 expect_silent "rule-38  a marker newer than the plan approves it" \
   rule-38-check-approval.sh "src/service.ts" "export const x = 1;"
+# One second apart: the hook compares with `-ot`, which bash 3.2 (macOS /bin/bash) resolves to whole seconds, so a
+# plan rewritten in the same second as the approval would read as "not newer". bash 5 compares nanoseconds.
+sleep 1
 printf '# a different plan, written after approval\n' >.claude/impl-pending.md
 expect_signal "rule-38  rewriting the plan after approval refuses again" \
   rule-38-check-approval.sh "src/service.ts" "export const x = 1;"
@@ -183,7 +186,7 @@ expect_signal "rule-38  rewriting the plan after approval refuses again" \
 sha256sum .claude/impl-pending.md | cut -d ' ' -f 1 >.claude/impl-approved
 expect_silent "rule-38  a marker naming this plan approves it" \
   rule-38-check-approval.sh "src/service.ts" "export const x = 1;"
-touch -d '2020-01-01' .claude/impl-approved
+touch -t 202001010000 .claude/impl-approved  # -t, not -d: POSIX, works with BSD touch (macOS) too
 expect_silent "rule-38  a naming marker approves whatever its timestamp says" \
   rule-38-check-approval.sh "src/service.ts" "export const x = 1;"
 printf '# yet another plan\n' >.claude/impl-pending.md

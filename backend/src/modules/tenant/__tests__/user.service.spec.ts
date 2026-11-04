@@ -53,6 +53,16 @@ const mockUserRow = {
   updated_at: new Date(),
 };
 
+// The post-commit read UserService.syncKeycloakRoles makes (ADR-110 round 6): the roles as the database holds them.
+function kcRow(role: string, additional: string[] = [], email = 'wichai@acme.co.th') {
+  return [{ role, email, keycloak_user_id: KC_USER_ID, keycloak_realm: REALM, additional }];
+}
+// Default $queryRaw: [] for every query except that sync read, which gets `row`.
+function syncAware(row = kcRow(CosRole.PROJECT_MANAGER)) {
+  return async (strings: TemplateStringsArray) =>
+    strings.join('?').includes('AS additional') ? row : [];
+}
+
 describe('UserService', () => {
   let service: UserService;
   let keycloakAdmin: jest.Mocked<KeycloakAdminService>;
@@ -66,11 +76,13 @@ describe('UserService', () => {
       // Security review F1/F2 — deactivation must disable the Keycloak account, and a role change must
       // rewrite the `role` user attribute the JWT claim is mapped from.
       disableUser: jest.fn().mockResolvedValue(undefined),
-      syncUserRole: jest.fn().mockResolvedValue(undefined),
+      syncRoleAttributes: jest.fn().mockResolvedValue(undefined),
     } as unknown as jest.Mocked<KeycloakAdminService>;
 
     service = new UserService(keycloakAdmin, makeOutboxDouble().service, flags as never);
     prismaMock = (service as unknown as { prisma: jest.Mocked<PrismaClient> }).prisma;
+    // Role changes read the roles back after commit for the Keycloak sync (ADR-110 round 6).
+    (prismaMock.$queryRaw as jest.Mock).mockImplementation(syncAware());
   });
 
   afterEach(() => {
@@ -360,7 +372,15 @@ describe('UserService', () => {
           TENANT_ID,
           ACTOR_ID,
         ),
-      ).rejects.toThrow('User with this identity already exists');
+      ).rejects.toMatchObject({
+        response: {
+          error: {
+            code: 'COS-USER-003',
+            message: 'User with this identity already exists',
+            messageKey: 'user.error.identityExists',
+          },
+        },
+      });
       const guard = (prismaMock.$queryRaw as jest.Mock).mock.calls[1] as unknown[];
       const sql = (guard[0] as string[]).join('?');
       expect(sql).toMatch(/lower\(u\.email\) = lower\(\?\)/);
@@ -389,9 +409,15 @@ describe('UserService', () => {
         (keycloakAdmin[method] as jest.Mock).mockRejectedValueOnce(
           Object.assign(new Error('Request failed with status 409'), { response: { status: 409 } }),
         );
-        await expect(service.createUser(dto as never, TENANT_ID, ACTOR_ID)).rejects.toThrow(
-          new ConflictException('User with this identity already exists'),
-        );
+        await expect(service.createUser(dto as never, TENANT_ID, ACTOR_ID)).rejects.toMatchObject({
+          response: {
+            error: {
+              code: 'COS-USER-003',
+              message: 'User with this identity already exists',
+              messageKey: 'user.error.identityExists',
+            },
+          },
+        });
         expect(prismaMock.$transaction).not.toHaveBeenCalled();
       },
     );
@@ -489,6 +515,68 @@ describe('UserService', () => {
   // ─── changeRole ──────────────────────────────────────────────────────────
 
   describe('changeRole', () => {
+    // ADR-110 rounds 5–6: role and mfa_required in ONE Keycloak update, from the roles the database holds after commit.
+    function inTx(): void {
+      (prismaMock.$transaction as jest.Mock).mockImplementationOnce(
+        async (fn: (t: unknown) => unknown) => fn({ $queryRaw: jest.fn().mockResolvedValue([]) }),
+      );
+    }
+
+    it('syncs role and mfa_required together, from the new role and the additional roles already held', async () => {
+      (prismaMock.$queryRaw as jest.Mock)
+        .mockResolvedValueOnce([{ role: CosRole.FINANCE, email: 'f@a.co' }])
+        .mockResolvedValueOnce(kcRow(CosRole.PROJECT_MANAGER, [CosRole.FINANCE], 'f@a.co'));
+      inTx();
+      await service.changeRole(USER_ID, { role: CosRole.PROJECT_MANAGER }, TENANT_ID, ACTOR_ID);
+      expect(keycloakAdmin.syncRoleAttributes).toHaveBeenCalledTimes(1);
+      expect(keycloakAdmin.syncRoleAttributes).toHaveBeenCalledWith(
+        KC_USER_ID,
+        REALM,
+        CosRole.PROJECT_MANAGER,
+        true,
+      );
+    });
+
+    it('writes what the database holds after commit, not what the request asked for', async () => {
+      // An overlapping change committed after this one: the sync must not write this request's older state.
+      (prismaMock.$queryRaw as jest.Mock)
+        .mockResolvedValueOnce([{ role: CosRole.SITE_WORKER, email: 'f@a.co' }])
+        .mockResolvedValueOnce(kcRow(CosRole.SITE_ENGINEER));
+      inTx();
+      await service.changeRole(USER_ID, { role: CosRole.FINANCE }, TENANT_ID, ACTOR_ID);
+      expect(keycloakAdmin.syncRoleAttributes).toHaveBeenCalledWith(
+        KC_USER_ID,
+        REALM,
+        CosRole.SITE_ENGINEER,
+        false,
+      );
+    });
+
+    it('D18: a phone-only account with an additional FINANCE is not given mfa_required', async () => {
+      (prismaMock.$queryRaw as jest.Mock)
+        .mockResolvedValueOnce([{ role: CosRole.SITE_WORKER, email: '' }])
+        .mockResolvedValueOnce(kcRow(CosRole.SITE_ENGINEER, [CosRole.FINANCE], ''));
+      inTx();
+      await service.changeRole(USER_ID, { role: CosRole.SITE_ENGINEER }, TENANT_ID, ACTOR_ID);
+      expect(keycloakAdmin.syncRoleAttributes).toHaveBeenCalledWith(
+        KC_USER_ID,
+        REALM,
+        CosRole.SITE_ENGINEER,
+        false,
+      );
+    });
+
+    it('surfaces a membership that vanished before the sync read as not found', async () => {
+      (prismaMock.$queryRaw as jest.Mock)
+        .mockResolvedValueOnce([{ role: CosRole.SITE_WORKER, email: 'f@a.co' }])
+        .mockResolvedValueOnce([]);
+      inTx();
+      await expect(
+        service.changeRole(USER_ID, { role: CosRole.SITE_ENGINEER }, TENANT_ID, ACTOR_ID),
+      ).rejects.toThrow(NotFoundException);
+      expect(keycloakAdmin.syncRoleAttributes).not.toHaveBeenCalled();
+    });
+
     it('updates membership role, re-syncs the Keycloak role attribute, and emits user.role_changed', async () => {
       (prismaMock.$queryRaw as jest.Mock)
         .mockResolvedValueOnce([
@@ -498,8 +586,8 @@ describe('UserService', () => {
             keycloak_realm: REALM,
             email: 'wichai@acme.co.th',
           },
-        ]) // SELECT membership + keycloak identifiers + email (the Path B guard reads it)
-        .mockResolvedValueOnce([{}]); // UPDATE
+        ]) // SELECT membership + email (the Path B guard reads it); $transaction is a bare mock here
+        .mockResolvedValueOnce(kcRow(CosRole.PROJECT_MANAGER)); // read back after commit for the Keycloak sync
 
       await expect(
         service.changeRole(USER_ID, { role: CosRole.PROJECT_MANAGER }, TENANT_ID, ACTOR_ID),
@@ -507,10 +595,11 @@ describe('UserService', () => {
 
       // Security review F2 — without this the JWT `role` claim keeps the OLD role forever, so a
       // demotion never takes effect for anything reading the token.
-      expect(keycloakAdmin.syncUserRole).toHaveBeenCalledWith(
+      expect(keycloakAdmin.syncRoleAttributes).toHaveBeenCalledWith(
         KC_USER_ID,
         REALM,
         CosRole.PROJECT_MANAGER,
+        false,
       );
     });
 
@@ -544,7 +633,7 @@ describe('UserService', () => {
       // Nothing was written anywhere: no membership UPDATE, and no Keycloak attribute change that
       // would leave the two stores disagreeing about the role.
       expect(prismaMock.$queryRaw).toHaveBeenCalledTimes(1);
-      expect(keycloakAdmin.syncUserRole).not.toHaveBeenCalled();
+      expect(keycloakAdmin.syncRoleAttributes).not.toHaveBeenCalled();
     });
 
     it('refuses the same promotion to FINANCE', async () => {
@@ -572,15 +661,16 @@ describe('UserService', () => {
             email: 'wichai@acme.co.th',
           },
         ])
-        .mockResolvedValueOnce([{}]);
+        .mockResolvedValueOnce(kcRow(CosRole.TENANT_ADMIN)); // read back after commit
 
       await expect(
         service.changeRole(USER_ID, { role: CosRole.TENANT_ADMIN }, TENANT_ID, ACTOR_ID),
       ).resolves.toBeUndefined();
-      expect(keycloakAdmin.syncUserRole).toHaveBeenCalledWith(
+      expect(keycloakAdmin.syncRoleAttributes).toHaveBeenCalledWith(
         KC_USER_ID,
         REALM,
         CosRole.TENANT_ADMIN,
+        true,
       );
     });
 
@@ -897,10 +987,11 @@ describe('UserService setUserRoles', () => {
 
   beforeEach(() => {
     keycloakAdmin = {
-      syncUserRole: jest.fn().mockResolvedValue(undefined),
+      syncRoleAttributes: jest.fn().mockResolvedValue(undefined),
     } as unknown as jest.Mocked<KeycloakAdminService>;
     service = new UserService(keycloakAdmin, makeOutboxDouble().service, flags as never);
     prismaMock = (service as unknown as { prisma: jest.Mocked<PrismaClient> }).prisma;
+    (prismaMock.$queryRaw as jest.Mock).mockImplementation(syncAware());
     outboxMock = (
       service as unknown as {
         outbox: { publish: jest.Mock };
@@ -941,10 +1032,46 @@ describe('UserService setUserRoles', () => {
 
     // SELECT membership + roles already held + UPDATE primary + DELETE additional + one set-based INSERT
     expect(txQueryRaw).toHaveBeenCalledTimes(5);
-    // Every write went through the transaction, never straight at the client.
-    expect(prismaMock.$queryRaw).not.toHaveBeenCalled();
+    // Every write went through the transaction; the client only made the post-commit read for the Keycloak sync.
+    expect(prismaMock.$queryRaw).toHaveBeenCalledTimes(1);
     // oldRole (SITE_ENGINEER) !== primary (PROJECT_MANAGER) → role_changed published
     expect(outboxMock.publish).toHaveBeenCalledTimes(1);
+  });
+
+  it('syncs role and mfa_required in one update, from the roles read back after commit (ADR-110 round 6)', async () => {
+    mockRoleTx([{ role: CosRole.PROJECT_MANAGER }]);
+    (prismaMock.$queryRaw as jest.Mock).mockResolvedValueOnce(
+      kcRow(CosRole.PROJECT_MANAGER, [CosRole.TENANT_ADMIN]),
+    );
+    await service.setUserRoles(
+      USER_ID,
+      { primary_role: CosRole.PROJECT_MANAGER, additional_roles: [CosRole.TENANT_ADMIN] },
+      TENANT_ID,
+      ACTOR_ID,
+    );
+    expect(keycloakAdmin.syncRoleAttributes).toHaveBeenCalledTimes(1);
+    expect(keycloakAdmin.syncRoleAttributes).toHaveBeenCalledWith(
+      KC_USER_ID,
+      REALM,
+      CosRole.PROJECT_MANAGER,
+      true,
+    );
+    mockRoleTx([{ role: CosRole.PROJECT_MANAGER }]);
+    (prismaMock.$queryRaw as jest.Mock).mockResolvedValueOnce(
+      kcRow(CosRole.PROJECT_MANAGER, [CosRole.VIEWER]),
+    );
+    await service.setUserRoles(
+      USER_ID,
+      { primary_role: CosRole.PROJECT_MANAGER, additional_roles: [CosRole.VIEWER] },
+      TENANT_ID,
+      ACTOR_ID,
+    );
+    expect(keycloakAdmin.syncRoleAttributes).toHaveBeenLastCalledWith(
+      KC_USER_ID,
+      REALM,
+      CosRole.PROJECT_MANAGER,
+      false,
+    );
   });
 
   // Round 3 (D9): TENANT_ADMIN and FINANCE are Path B only (§5.4.4) — as in changeRole, for either kind of role.
@@ -979,7 +1106,7 @@ describe('UserService setUserRoles', () => {
       ((err as BadRequestException).getResponse() as { error: { message: string } }).error.message,
     ).toMatch(new RegExp(`^${role} sign in by email and password only`));
     expect(txQueryRaw).toHaveBeenCalledTimes(2); // the two reads only — no UPDATE, DELETE or INSERT
-    expect(keycloakAdmin.syncUserRole).not.toHaveBeenCalled();
+    expect(keycloakAdmin.syncRoleAttributes).not.toHaveBeenCalled();
   });
 
   // Round 3 review: only roles this call GRANTS are checked, so a legacy account is not frozen while it is settled.
@@ -1305,7 +1432,7 @@ describe('UserService last-admin guard', () => {
   let prismaMock: jest.Mocked<PrismaClient>;
   let tx: { $queryRaw: jest.Mock; $executeRaw: jest.Mock };
   const kc = {
-    syncUserRole: jest.fn().mockResolvedValue(undefined),
+    syncRoleAttributes: jest.fn().mockResolvedValue(undefined),
     disableUser: jest.fn().mockResolvedValue(undefined),
   };
   const sqlOf = (c: unknown[]) => (c[0] as TemplateStringsArray).join('?');
@@ -1336,6 +1463,8 @@ describe('UserService last-admin guard', () => {
     flags.isEnabled.mockReturnValue(true);
     service = new UserService(kc as never, makeOutboxDouble().service, flags as never);
     prismaMock = (service as unknown as { prisma: jest.Mocked<PrismaClient> }).prisma;
+    // Role changes read the roles back after commit for the Keycloak sync (ADR-110 round 6).
+    (prismaMock.$queryRaw as jest.Mock).mockImplementation(syncAware());
     tx = { $queryRaw: jest.fn(), $executeRaw: jest.fn() };
     (prismaMock.$transaction as jest.Mock).mockImplementation(
       async (fn: (t: unknown) => Promise<unknown>) => fn(tx),
@@ -1377,14 +1506,14 @@ describe('UserService last-admin guard', () => {
       });
       expect(lockCalls(tx.$executeRaw)).toHaveLength(1);
       expect(lockCalls(tx.$executeRaw)[0]![1]).toBe(`cos:tenant-admin:${TENANT_ID}`);
-      expect(kc.syncUserRole).not.toHaveBeenCalled();
+      expect(kc.syncRoleAttributes).not.toHaveBeenCalled();
     });
 
     it('allows it while another administrator remains', async () => {
       (prismaMock.$queryRaw as jest.Mock).mockResolvedValueOnce([membership]);
       txReads([ME, OTHER], [OTHER]);
       await demote();
-      expect(kc.syncUserRole).toHaveBeenCalled();
+      expect(kc.syncRoleAttributes).toHaveBeenCalled();
     });
 
     it('never refuses a change to a user who was not an administrator, even in a tenant with none', async () => {
@@ -1393,7 +1522,7 @@ describe('UserService last-admin guard', () => {
       ]);
       txReads([], []);
       await demote();
-      expect(kc.syncUserRole).toHaveBeenCalled();
+      expect(kc.syncRoleAttributes).toHaveBeenCalled();
     });
 
     it('with the flag off takes no lock and reads no administrators', async () => {
@@ -1423,7 +1552,7 @@ describe('UserService last-admin guard', () => {
         response: lastAdmin,
       });
       expect(order.slice(0, 2)).toEqual(['lock', 'select']);
-      expect(kc.syncUserRole).not.toHaveBeenCalled();
+      expect(kc.syncRoleAttributes).not.toHaveBeenCalled();
     });
 
     it('allows a change that keeps the user an administrator (TENANT_ADMIN as additional role)', async () => {
@@ -1434,7 +1563,7 @@ describe('UserService last-admin guard', () => {
         TENANT_ID,
         ACTOR_ID,
       );
-      expect(kc.syncUserRole).toHaveBeenCalled();
+      expect(kc.syncRoleAttributes).toHaveBeenCalled();
     });
   });
 

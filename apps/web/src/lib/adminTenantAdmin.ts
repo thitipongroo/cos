@@ -29,8 +29,9 @@ export function tenantAdminAction(
 }
 
 /**
- * What a refused request says. The two COS-TADM conflicts and an email held by another account are all 409, and tell
- * the operator different things, so they are told apart by code; a switched-off flag is 503.
+ * What a refused request says. The COS-TADM conflicts and an email held by another account (COS-USER-003) are all
+ * 409 and tell the operator different things, so they are told apart by code; a resend too soon is 429 COS-TADM-005;
+ * a switched-off flag is 503 COS-FLAG-001.
  */
 export function tenantAdminErrorKey(
   error: { status?: number; code?: string } | null | undefined,
@@ -38,8 +39,10 @@ export function tenantAdminErrorKey(
   if (error?.code === 'COS-TADM-001') return 'admin.tenantAdmin.error.alreadyHasAdmin';
   if (error?.code === 'COS-TADM-002') return 'admin.tenantAdmin.error.notResendable';
   if (error?.code === 'COS-TADM-003') return 'admin.tenantAdmin.error.notCancellable';
-  // 503 by status as well as by code: FeatureFlagGuard's body has no `error` envelope, so it reaches the client as
-  // COS-GENERAL-503 (http-exception.filter.ts). Both endpoints have no other 503.
+  if (error?.code === 'COS-TADM-005') return 'admin.tenantAdmin.error.resendTooSoon';
+  if (error?.code === 'COS-USER-003') return 'admin.tenantAdmin.error.emailTaken';
+  if (error?.code === 'COS-USER-004') return 'admin.errors.invalid';
+  // These endpoints have no other 503, so status alone also reads as switched off.
   if (error?.code === 'COS-FLAG-001' || error?.status === 503)
     return 'admin.tenantAdmin.error.disabled';
   if (error?.status === 409) return 'admin.tenantAdmin.error.emailTaken';

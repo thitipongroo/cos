@@ -25,7 +25,8 @@ overrides:
   # Single fastify version — file-service imports fastify directly while @nestjs/platform-fastify
   # pulls its own; a duplicate breaks file-service's plugin type augmentation (FastifyTypeProvider
   # mismatch). Pin both to one v5 release (NestJS 11 / ADR-042 requires Fastify 5).
-  fastify: '5.9.0'
+  # 5.12.2 (2026-11-03): GHSA-667r-xxjv-c9mm + GHSA-9q9j-q6p8-xq58 + GHSA-hwr6-493r-vm6h + GHSA-p68q-wchp-6fh7. Same single-version rule; file-service and credential-service pin it too.
+  fastify: '5.12.2'
   # Single pg version — same class of failure as fastify above, but it fails at RUNTIME, not in the
   # type checker. @prisma/adapter-pg decides whether it was handed a live pool or a config object
   # with `poolOrConfig instanceof pg.Pool` (adapter-pg@7.8.0 dist/index.js:772), resolved against ITS
@@ -61,7 +62,7 @@ overrides:
   # test adapter is used — Test.createTestingModule(...).createNestApplication() with no adapter,
   # which is Express — so the backend unit and integration suites are what actually exercise it,
   # and they are what proves this bump.
-  multer: '^2.3.0'
+  multer: '^2.5.0' # 2026-11-03: GHSA-q7qp-rjg7-q26m — the 2.3.0 floor became vulnerable where it stood, as above
   lodash: '^4.18.1'
   'picomatch@>=4.0.0 <4.0.4': '4.0.4'
   'glob@>=10.2.0 <10.5.0': '10.5.0'
@@ -77,10 +78,10 @@ overrides:
   'turbo-stream@<3.0.0': '^3.2.0'
   # Newly-disclosed transitive advisories — patched versions exist, no major upgrade needed:
   '@opentelemetry/propagator-jaeger@<2.9.0': '^2.9.0' # GHSA-45rx-2jwx-cxfr — DoS via malformed Jaeger header (via @opentelemetry/sdk-node)
-  'fast-uri@>=3.0.0 <3.1.6': '^3.1.6' # GHSA-4c8g-83qw-93j6 + GHSA-v2hh-gcrm-f6hx + GHSA-7p8r-x3mc-p8w7 (host confusion, patched 3.1.5) + GHSA-5jgf-p345-68v8 (host confusion via skipped IDN canonicalisation on scheme-relative refs) + GHSA-f65p-4m7j-42xc (SSRF via malformed IPv6 normalisation) + GHSA-fph4-wmhf-6fwf (SSRF via repeated hostname percent-decoding) + GHSA-jqff-g426-hqxp (host confusion via percent-encoded scheme normalisation) — the four disclosed 2026-09-02 are patched only in 3.1.6, so the version this override itself pinned became vulnerable where it stood; range widened <3.1.5 → <3.1.6, exactly as happened to nanoid below (via ajv / @fastify/ajv-compiler / @confluentinc/schemaregistry)
+  'fast-uri@>=3.0.0 <3.1.7': '^3.1.7' # 2026-11-03: GHSA-58mr-gqgx-xq4g + GHSA-qw65-cvwx-89v3 — patched only in 3.1.7, so the 3.1.6 pin became vulnerable; range widened again. # GHSA-4c8g-83qw-93j6 + GHSA-v2hh-gcrm-f6hx + GHSA-7p8r-x3mc-p8w7 (host confusion, patched 3.1.5) + GHSA-5jgf-p345-68v8 (host confusion via skipped IDN canonicalisation on scheme-relative refs) + GHSA-f65p-4m7j-42xc (SSRF via malformed IPv6 normalisation) + GHSA-fph4-wmhf-6fwf (SSRF via repeated hostname percent-decoding) + GHSA-jqff-g426-hqxp (host confusion via percent-encoded scheme normalisation) — the four disclosed 2026-09-02 are patched only in 3.1.6, so the version this override itself pinned became vulnerable where it stood; range widened <3.1.5 → <3.1.6, exactly as happened to nanoid below (via ajv / @fastify/ajv-compiler / @confluentinc/schemaregistry)
   'browserslist@<4.28.7': '^4.28.7' # GHSA-c83g-rgw3-j3cx (unbounded memory growth — no cache eviction on distinct query results, eventual OOM) + GHSA-73wf-gq98-2v4g (uncaught crash / prototype write via untrusted browserslist-stats.json in normalizeStats). Build-time only and transitive twice over — @babel/helper-compilation-targets under jest and mermaid-cli, and @serwist/utils under apps/web — but a patch release exists, so it is bumped rather than suppressed
   'mysql2@<3.22.0': '^3.22.0' # GHSA-3f6p-5ww8-9rcr — the server can downgrade auth to mysql_clear_password and the client sends the password in plaintext. Reaches this tree only as an optional driver Prisma ships (backend > @prisma/client > prisma > mysql2); this repo connects to PostgreSQL and never loads it, so the exposure is nil — bumped anyway because a patched release exists and "we do not call it" is not a property the audit gate can check
-  'sharp@<0.35.0': '^0.35.0' # GHSA-f88m-g3jw-g9cj — inherited libvips CVEs (via next / @serwist/turbopack)
+  'sharp@<0.35.5': '^0.35.5' # 2026-11-03: GHSA-wq5f-xc86-pv6w — floor raised from 0.35.0. # GHSA-f88m-g3jw-g9cj — inherited libvips CVEs (via next / @serwist/turbopack)
   'postcss@<8.5.18': '^8.5.18' # GHSA-6g55-p6wh-862q (<8.5.12) + GHSA-r28c-9q8g-f849 (<8.5.18) — path traversal / arbitrary .map file read via sourceMappingURL (transitive, via next/tailwind toolchain)
   'find-my-way@<9.6.1': '^9.6.1' # GHSA-c96f-x56v-gq3h — DoS with HTTP/2 (transitive, via fastify)
   'js-yaml@>=5.0.0 <5.2.2': '^5.2.2' # GHSA-pm4m-ph32-ghv5 — DoS via exponential parsing in flow collections (5.x only; 3.x/4.x are not in that advisory's range — but see the two below, which are)
@@ -88,7 +89,7 @@ overrides:
   'js-yaml@>=4.0.0 <4.3.2': '^4.3.2' # GHSA-5p4m-2wfm-xmqj — same advisory, 4.x branch, patched in 4.3.1 (via @nestjs/swagger / cosmiconfig) — and then GHSA-2883-xcg3-v3hh on the same day as the 3.x line above, patched here in 4.3.2; range widened <4.3.1 → <4.3.2. The 5.x entry above is NOT touched: that advisory lists two affected branches, 3.x and 4.x, and 5.x is in neither
   'ip-address@<=10.3.0': '^10.3.1' # GHSA-mwp4-54f8-5fhr — Address4 reads leading-zero octets as decimal while resolvers read them as octal, giving SSRF / trust-boundary bypass (via socks-proxy-agent / unleash-client)
   '@fastify/static@<10.1.1': '^10.1.1' # GHSA-83w8-p2f5-377r — route-guard bypass via path traversal; patched only in 10.1.1 (major bump, Fastify 5 compatible — via @fastify/swagger-ui / @nestjs/platform-fastify / @nestjs/swagger)
-  'brace-expansion@<5.0.8': '5.0.9' # GHSA-mh99-v99m-4gvg — DoS via unbounded expansion (OOM); env advisory patches only >=5.0.8, so every vulnerable major (1.x/2.x/5.x, all transitive dev/build tooling) is bumped to 5.0.9
+  'brace-expansion@<5.0.11': '5.0.11' # 2026-11-03: GHSA-6j4f-fj2g-mc7p + GHSA-qhr7-859c-m2p7 — the 5.0.9 pin became vulnerable; still one copy for every major. # GHSA-mh99-v99m-4gvg — DoS via unbounded expansion (OOM); env advisory patches only >=5.0.8, so every vulnerable major (1.x/2.x/5.x, all transitive dev/build tooling) is bumped to 5.0.9
   # GHSA-jmr9-qjv8-65gv — extract-zip follows symlinks out of the extraction directory. It cannot be
   # fixed by bumping extract-zip: the advisory names 2.0.2 as the patched release and NO SUCH VERSION
   # EXISTS on npm (2.0.1 is the newest published). The dependency is dev-only and single-sourced —
@@ -145,9 +146,26 @@ overrides:
   # It also CONVERGES the tree rather than adding to it: undici 6.27.0 is already present via
   # @digitalbazaar/http-client, so this replaces two copies with one. undici 6 requires Node >= 18;
   # CI runs Node 24.
-  'undici@<6.27.0': '^6.27.0'
+  'undici@<6.29.1': '^6.29.1' # 2026-11-03: GHSA-2m5v-pch6-74hx + GHSA-qrxm-fqhp-jwvm + GHSA-rfgv-xxqx-mfg5 + GHSA-xjj6-f33q-929c — patched in the 6.x line at 6.29.1; the testcontainers reasoning above is unchanged (same major)
   'smol-toml@<=1.7.0': '^1.7.1' # GHSA-7w5x-hrqm-74c2 — DoS parsing a malformed TOML document. Dev-only and single-sourced (root devDependency markdownlint-cli2@0.23.1 > smol-toml), and a patch release fixes it, so it is bumped rather than suppressed
   'nanoid@<3.3.18': '^3.3.18' # GHSA-2v37-7h3g-55p8 — a custom alphabet generator loops forever when size is 0, hanging the caller; only the 3.x line is in this tree (via postcss ← next / tailwind / webpack), so the advisory's other branch (>=4.0.0 <5.1.6) needs no entry. Range widened from <3.3.17: the advisory was re-scoped after 3.3.17 shipped an incomplete fix, and now reads vulnerable <3.3.18 / patched >=3.3.18 — the pinned 3.3.17 became vulnerable again where it stood, which is what turned the audit gate red
+  # 2026-11-03 (ADR-110 round 4, D14): high/critical advisories with a patch inside the current major. Each floor is
+  # the lowest patched release, not the newest, so the tree moves as little as possible.
+  'axios@>=1.0.0 <1.20.0': '^1.20.0' # GHSA-3pq3-5fj3-cg6v + GHSA-542g-h47m-68v8 + GHSA-c29m-xwm3-cm6r + GHSA-m8m8-qj5v-23w3 + GHSA-mghh-pgcx-3jjj + GHSA-r4gj-5m52-g5wh + GHSA-x97p-jq2g-jp4f
+  '@grpc/grpc-js@<1.14.5': '^1.14.5' # GHSA-m9gg-hp2v-232j
+  '@fastify/busboy@<3.2.1': '^3.2.1' # GHSA-x8mw-p69m-v3mx + GHSA-xjh9-v7x6-24jw
+  'source-map-js@<1.2.2': '^1.2.2' # GHSA-68fv-2mgg-jv7q
+  'proxy-addr@<2.0.8': '^2.0.8' # GHSA-jqcg-44mw-7w3h
+  'compression@<1.8.2': '^1.8.2' # GHSA-vc2v-76pw-4v95
+  'joi@>=17.0.0 <17.13.9': '^17.13.9' # GHSA-4528-x5fx-h6hg + GHSA-6h2x-m376-mqjq
+  'markdown-it@>=14.0.0 <14.3.3': '^14.3.3' # GHSA-gfr2-rv44-r23c + GHSA-r7fv-28h4-cvq7
+  'follow-redirects@<1.16.2': '^1.16.2' # GHSA-8r9p-f939-6h3c + GHSA-mrwp-f3q8-3g9p + GHSA-q3jh-wrc6-jgq8
+  'dompurify@>=3.0.0 <3.4.17': '^3.4.17' # GHSA-cg2g-xh64-v4q7 + GHSA-mrv2-3pqr-j5jr
+  'systeminformation@<5.33.16': '^5.33.16' # GHSA-3f7j-7jwc-fxfj
+  'body-parser@>=1.0.0 <1.20.9': '^1.20.9' # GHSA-27r3-jxmh-p828 (1.x line)
+  'body-parser@>=2.0.0 <2.4.0': '^2.4.0' # same advisories, 2.x line
+  'handlebars@>=3.0.0 <4.7.10': '^4.7.10' # GHSA-8r5x-fm3f-whwj + GHSA-p8wg-vrv2-v86f — the copies ts-jest pulls (backend also declares it directly)
+  'zod@>=4.0.0 <4.6.6': '^4.6.6' # GHSA-mrhx-c7xc-m3w5 — 4.x copies only; the 3.x copies need a major bump (reported, not forced)
 
 auditConfig:
   ignoreCves:

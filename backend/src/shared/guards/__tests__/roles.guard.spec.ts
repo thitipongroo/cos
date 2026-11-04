@@ -18,8 +18,11 @@ import { CosRole } from '@cos/types';
 
 // The guard falls back to a DB query (user_additional_roles) only when the primary role is
 // insufficient. Inject a fake client so unit tests never touch a real database.
+// s1.identity.additional-role-mfa — OFF unless a test turns it on (ADR-110 round 4).
+const flags = { isEnabled: jest.fn().mockReturnValue(false) };
+
 function makeGuard(reflector: Reflector, additionalRoles: string[] = []): RolesGuard {
-  const guard = new RolesGuard(reflector);
+  const guard = new RolesGuard(reflector, flags as never);
   (guard as unknown as { prisma: unknown }).prisma = {
     $queryRaw: jest.fn().mockResolvedValue(additionalRoles.map((role) => ({ role }))),
     $disconnect: jest.fn().mockResolvedValue(undefined),
@@ -142,5 +145,87 @@ describe('RolesGuard', () => {
     const prisma = (guard as unknown as { prisma: { $disconnect: jest.Mock } }).prisma;
     await expect(guard.onModuleDestroy()).resolves.toBeUndefined();
     expect(prisma.$disconnect).toHaveBeenCalledTimes(1);
+  });
+});
+
+// ADR-110 round 4: an ADDITIONAL TENANT_ADMIN / FINANCE needs a token that proved MFA, like the primary role.
+describe('RolesGuard — additional privileged role needs MFA', () => {
+  const env = { ...process.env };
+  const required = (roles: CosRole[]) => {
+    const reflector = new Reflector();
+    jest.spyOn(reflector, 'getAllAndOverride').mockReturnValue(roles);
+    return reflector;
+  };
+  const worker = (acr?: string) => ({
+    user_id: 'u1',
+    tenant_id: 't1',
+    role: CosRole.SITE_WORKER,
+    ...(acr ? { acr } : {}),
+  });
+
+  beforeEach(() => {
+    flags.isEnabled.mockReturnValue(true);
+    process.env['MFA_ENFORCE'] = 'true';
+    delete process.env['MFA_REQUIRED_ACR'];
+  });
+  afterEach(() => {
+    flags.isEnabled.mockReturnValue(false);
+    process.env = { ...env };
+  });
+
+  it('refuses an additional TENANT_ADMIN without MFA with 403 COS-AUTH-001', async () => {
+    const guard = makeGuard(required([CosRole.TENANT_ADMIN]), [CosRole.TENANT_ADMIN]);
+    const err = await guard.canActivate(ctxWith(worker())).catch((e: unknown) => e);
+    expect((err as { getStatus: () => number }).getStatus()).toBe(403);
+    expect((err as { getResponse: () => unknown }).getResponse()).toEqual({
+      error: {
+        code: 'COS-AUTH-001',
+        message: 'Multi-factor authentication is required for this role',
+        messageKey: 'auth.mfa.required',
+      },
+    });
+    expect(flags.isEnabled).toHaveBeenCalledWith('s1.identity.additional-role-mfa', {
+      tenantId: 't1',
+      userId: 'u1',
+    });
+  });
+
+  it('allows it once the token proved MFA (acr gold)', async () => {
+    const guard = makeGuard(required([CosRole.TENANT_ADMIN]), [CosRole.TENANT_ADMIN]);
+    await expect(guard.canActivate(ctxWith(worker('gold')))).resolves.toBe(true);
+  });
+
+  it('FINANCE as an additional role follows the same rule', async () => {
+    const guard = makeGuard(required([CosRole.FINANCE]), [CosRole.FINANCE]);
+    await expect(guard.canActivate(ctxWith(worker()))).rejects.toMatchObject({
+      response: { error: { code: 'COS-AUTH-001' } },
+    });
+  });
+
+  it('a non-privileged additional role still counts without MFA', async () => {
+    const guard = makeGuard(required([CosRole.TENANT_ADMIN, CosRole.SITE_ENGINEER]), [
+      CosRole.TENANT_ADMIN,
+      CosRole.SITE_ENGINEER,
+    ]);
+    await expect(guard.canActivate(ctxWith(worker()))).resolves.toBe(true);
+  });
+
+  it('while MFA_ENFORCE is off it is allowed, as for the primary role', async () => {
+    process.env['MFA_ENFORCE'] = 'false';
+    const guard = makeGuard(required([CosRole.TENANT_ADMIN]), [CosRole.TENANT_ADMIN]);
+    await expect(guard.canActivate(ctxWith(worker()))).resolves.toBe(true);
+    expect(loggerMock.warn).toHaveBeenCalled();
+  });
+
+  it('with the flag off every additional role counts — today', async () => {
+    flags.isEnabled.mockReturnValue(false);
+    const guard = makeGuard(required([CosRole.TENANT_ADMIN]), [CosRole.TENANT_ADMIN]);
+    await expect(guard.canActivate(ctxWith(worker()))).resolves.toBe(true);
+  });
+
+  it('hasAnyRole applies the same rule (SyncAuthGuard)', async () => {
+    const guard = makeGuard(new Reflector(), [CosRole.TENANT_ADMIN]);
+    expect(await guard.hasAnyRole(worker(), [CosRole.TENANT_ADMIN])).toBe(false);
+    expect(await guard.hasAnyRole(worker('gold'), [CosRole.TENANT_ADMIN])).toBe(true);
   });
 });

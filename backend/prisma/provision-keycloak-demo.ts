@@ -17,6 +17,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { createPrismaClient } from '../src/shared/prisma/create-prisma-client';
 import { createLogger } from '@cos/logger';
+import { mfaRequiredFor } from '../src/shared/guards/mfa-enforcement';
 
 const logger = createLogger('provision-kc-demo');
 const prisma = createPrismaClient();
@@ -27,22 +28,21 @@ const ADMIN_USER = process.env['KEYCLOAK_ADMIN_USER'] ?? 'admin';
 const ADMIN_PW = process.env['KEYCLOAK_ADMIN_PASSWORD'] ?? 'cos_keycloak_admin';
 const DEMO_PASSWORD = process.env['DEMO_USER_PASSWORD'] ?? 'Ekachai@2026';
 
-/**
- * The roles the realm refuses to let in through Path A, and therefore the ones a seeded demo
- * environment has to give a second factor to.
+/*
+ * Which demo accounts need a second factor: the ones the realm refuses through Path A.
  *
  * `construction-os-realm.json` binds a `direct-grant-mfa` flow whose `conditional-user-attribute`
- * matches `role` against this same regex and then DENIES (ADR-067 as amended 2026-08-22, product
- * owner 2026-08-21). Those accounts sign in through Path B — browser, Authorization Code + PKCE —
- * and Path B puts them through the privileged-role OTP subflow. With no `otp` credential Keycloak
- * answers a correct password with `302 → required-action?execution=CONFIGURE_TOTP`, which a person
- * can complete and a script cannot.
+ * matches `mfa_required` (ADR-110 rounds 5–6; before that `role`) and then DENIES (ADR-067 as amended
+ * 2026-08-22, product owner 2026-08-21). Those accounts sign in through Path B — browser, Authorization
+ * Code + PKCE — and Path B puts them through the privileged-role OTP subflow. With no `otp` credential
+ * Keycloak answers a correct password with `302 → required-action?execution=CONFIGURE_TOTP`, which a
+ * person can complete and a script cannot.
  *
- * So a demo account for one of these roles is not usable until it HAS the factor. Provisioning it
- * here is what makes `capture-android-finance.mjs` — and any Detox flow that ever needs a
- * privileged session — able to run at all.
+ * So a demo account that gets `mfa_required` (`mfaRequiredFor`: a privileged primary role, or a
+ * privileged additional role on an account with an email) is not usable until it HAS the factor.
+ * Provisioning it here is what makes `capture-android-finance.mjs` — and any Detox flow that ever needs
+ * a privileged session — able to run at all.
  */
-const MFA_ROLES = new Set(['TENANT_ADMIN', 'FINANCE']);
 
 /**
  * The TOTP secret those accounts get — a RAW string, fixed.
@@ -113,6 +113,7 @@ interface DemoUser {
   email: string;
   display_name: string;
   role: string;
+  additional: string[];
   phone_number: string | null;
 }
 
@@ -252,7 +253,14 @@ async function upsertKeycloakUser(
     enabled: true,
     firstName,
     lastName,
-    attributes: { tenant_id: [tenantId], user_id: [u.user_id], role: [u.role] },
+    attributes: {
+      tenant_id: [tenantId],
+      user_id: [u.user_id],
+      role: [u.role],
+      // The realm asks for OTP on `mfa_required` (ADR-110 rounds 5–6), set from the primary and additional roles as
+      // UserService sets it — this map replaces the account's, so a primary-only test would drop it on a re-run.
+      ...(mfaRequiredFor(u.role, u.additional, email) ? { mfa_required: ['true'] } : {}),
+    },
   };
   const rep = {
     username,
@@ -378,20 +386,25 @@ async function main(): Promise<void> {
   const tenantId = tenantRows[0].tenant_id;
 
   const users = await prisma.$queryRaw<DemoUser[]>`
-    SELECT u.user_id::text, u.email, u.display_name, u.phone_number, m.role::text AS role
+    SELECT u.user_id::text, u.email, u.display_name, u.phone_number, m.role::text AS role,
+           COALESCE(array_agg(r.role::text) FILTER (WHERE r.role IS NOT NULL), '{}') AS additional
     FROM platform.users u
     JOIN platform.tenant_memberships m ON m.user_id = u.user_id AND m.tenant_id = u.tenant_id
+    LEFT JOIN platform.user_additional_roles r ON r.user_id = u.user_id AND r.tenant_id = u.tenant_id
     WHERE u.tenant_id = ${tenantId}::uuid
+    GROUP BY u.user_id, u.email, u.display_name, u.phone_number, m.role
     ORDER BY u.email`;
 
   const token = await adminToken();
   for (const u of users) {
     const { id: kcId, identity, username } = await upsertKeycloakUser(token, tenantId, u);
     await prisma.$executeRaw`UPDATE platform.users SET keycloak_user_id = ${kcId} WHERE user_id = ${u.user_id}::uuid`;
-    // A privileged role cannot sign in at all without a second factor — see MFA_ROLES. The identity
-    // is handed through because the import that carries the factor REPLACES the account; see
+    // An account with `mfa_required` cannot sign in at all without a second factor — see above. The
+    // identity is handed through because the import that carries the factor REPLACES the account; see
     // ensureTotp for what a partial representation costs.
-    const otp = MFA_ROLES.has(u.role) ? await ensureTotp(token, kcId, username, identity) : 'n/a';
+    const otp = mfaRequiredFor(u.role, u.additional, u.email)
+      ? await ensureTotp(token, kcId, username, identity)
+      : 'n/a';
     logger.info({ login: u.phone_number ?? u.email, role: u.role, kcId, otp }, 'provisioned');
   }
 

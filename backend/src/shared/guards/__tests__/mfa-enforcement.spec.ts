@@ -7,7 +7,11 @@ jest.mock('@cos/logger', () => ({
 }));
 
 import { ForbiddenException } from '@nestjs/common';
-import { enforceMfaForPrivilegedRoles, MFA_REQUIRED_ROLES } from '../mfa-enforcement';
+import {
+  enforceMfaForPrivilegedRoles,
+  MFA_REQUIRED_ROLES,
+  mfaRequiredFor,
+} from '../mfa-enforcement';
 
 describe('enforceMfaForPrivilegedRoles', () => {
   const ORIGINAL_ENV = { ...process.env };
@@ -72,5 +76,32 @@ describe('enforceMfaForPrivilegedRoles', () => {
     expect(() =>
       enforceMfaForPrivilegedRoles({ role: 'FINANCE', acr: 'bronze', user_id: 'u1' }),
     ).toThrow(ForbiddenException);
+  });
+});
+
+// ADR-110 round 6 (D18): the `mfa_required` attribute Keycloak's MFA conditions read.
+describe('mfaRequiredFor', () => {
+  it.each([
+    ['primary TENANT_ADMIN with an email', 'TENANT_ADMIN', [], 'a@b.co', true],
+    [
+      'primary FINANCE without an email (as before round 5: refused on Direct Grant)',
+      'FINANCE',
+      [],
+      '',
+      true,
+    ],
+    ['additional FINANCE with an email', 'PROJECT_MANAGER', ['FINANCE'], 'a@b.co', true],
+    [
+      'additional TENANT_ADMIN on a phone-only account — keeps Path A',
+      'SITE_WORKER',
+      ['TENANT_ADMIN'],
+      '',
+      false,
+    ],
+    ['additional FINANCE with a null email', 'SITE_WORKER', ['FINANCE'], null, false],
+    ['additional FINANCE with a blank email', 'SITE_WORKER', ['FINANCE'], '  ', false],
+    ['no privileged role', 'SITE_ENGINEER', ['SAFETY_OFFICER'], 'a@b.co', false],
+  ] as const)('%s → %s', (_label, primary, additional, email, expected) => {
+    expect(mfaRequiredFor(primary, additional, email)).toBe(expected);
   });
 });

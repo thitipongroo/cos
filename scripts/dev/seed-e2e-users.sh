@@ -34,21 +34,28 @@ USERS=(
 
 for row in "${USERS[@]}"; do
   IFS='|' read -r EMAIL ROLE USERID NAME <<< "$row"
+  # The realm asks for OTP on `mfa_required` (ADR-110 round 5), which the backend sets for these two roles.
+  MFA_ATTR=""
+  if [[ "$ROLE" == "TENANT_ADMIN" || "$ROLE" == "FINANCE" ]]; then MFA_ATTR=',"mfa_required":["true"]'; fi
 
   # Create the Keycloak user (ignore 409 if it already exists), then fetch its id.
   curl -s -o /dev/null -w "  KC create %{http_code} $EMAIL\n" -X POST "$KC/admin/realms/$REALM/users" \
     -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
     -d "{\"username\":\"$EMAIL\",\"email\":\"$EMAIL\",\"firstName\":\"$NAME\",\"enabled\":true,\"emailVerified\":true,
-         \"attributes\":{\"tenant_id\":[\"$TENANT\"],\"user_id\":[\"$USERID\"],\"role\":[\"$ROLE\"]},
+         \"attributes\":{\"tenant_id\":[\"$TENANT\"],\"user_id\":[\"$USERID\"],\"role\":[\"$ROLE\"]$MFA_ATTR},
          \"credentials\":[{\"type\":\"password\",\"value\":\"$PASSWORD\",\"temporary\":false}]}" || true
 
   KCID=$(curl -s "$KC/admin/realms/$REALM/users?username=$EMAIL&exact=true" \
     -H "Authorization: Bearer $TOKEN" | python3 -c "import sys,json;u=json.load(sys.stdin);print(u[0]['id'] if u else '')")
 
-  # Ensure attributes + password are set even if the user pre-existed without them.
-  curl -s -o /dev/null -X PUT "$KC/admin/realms/$REALM/users/$KCID" \
+  # Ensure attributes + password are set even if the user pre-existed without them. The body names the user:
+  # Keycloak 26 refuses an update carrying attributes without `username` (400 "User name is missing", ADR-110 round 6),
+  # and a refusal here used to vanish into /dev/null.
+  PUT_STATUS=$(curl -s -o /dev/null -w "%{http_code}" -X PUT "$KC/admin/realms/$REALM/users/$KCID" \
     -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
-    -d "{\"attributes\":{\"tenant_id\":[\"$TENANT\"],\"user_id\":[\"$USERID\"],\"role\":[\"$ROLE\"]},\"emailVerified\":true,\"enabled\":true}"
+    -d "{\"username\":\"$EMAIL\",\"email\":\"$EMAIL\",\"firstName\":\"$NAME\",
+         \"attributes\":{\"tenant_id\":[\"$TENANT\"],\"user_id\":[\"$USERID\"],\"role\":[\"$ROLE\"]$MFA_ATTR},\"emailVerified\":true,\"enabled\":true}")
+  if [[ "$PUT_STATUS" != 2* ]]; then echo "  KC update FAILED ($PUT_STATUS) for $EMAIL" >&2; exit 1; fi
   curl -s -o /dev/null -X PUT "$KC/admin/realms/$REALM/users/$KCID/reset-password" \
     -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
     -d "{\"type\":\"password\",\"value\":\"$PASSWORD\",\"temporary\":false}"

@@ -16,6 +16,8 @@ import { CosRole } from '@cos/types';
 import { createLogger } from '@cos/logger';
 import { JwtPayload } from '../context/jwt-payload';
 import { createPrismaClient } from '../prisma/create-prisma-client';
+import { FeatureFlagService } from '../feature-flags/feature-flag.service';
+import { ADDITIONAL_ROLE_MFA_FLAG, additionalPrivilegedRoleUsable } from './mfa-enforcement';
 
 const logger = createLogger('permissions-guard');
 
@@ -31,7 +33,10 @@ export class PermissionsGuard implements CanActivate, OnModuleDestroy {
   // Shared client for the additional-roles union lookup (only hit when the primary role alone is
   // insufficient). @RequirePermissions endpoints are rare, so this is a cold path.
   private readonly prisma = createPrismaClient();
-  constructor(private readonly reflector: Reflector) {}
+  constructor(
+    private readonly reflector: Reflector,
+    private readonly flags: FeatureFlagService,
+  ) {}
 
   async onModuleDestroy(): Promise<void> {
     await this.prisma.$disconnect();
@@ -65,9 +70,17 @@ export class PermissionsGuard implements CanActivate, OnModuleDestroy {
       SELECT role FROM platform.user_additional_roles
       WHERE user_id = ${user.user_id}::uuid AND tenant_id = ${user.tenant_id}::uuid
     `;
+    // Same rule as RolesGuard (ADR-110 round 4): with s1.identity.additional-role-mfa on, an additional TENANT_ADMIN /
+    // FINANCE contributes its permissions only to a token that proved MFA.
+    const mfaRule = this.flags.isEnabled(ADDITIONAL_ROLE_MFA_FLAG, {
+      tenantId: user.tenant_id,
+      userId: user.user_id,
+    });
     const granted = [
       ...primaryGranted,
-      ...extra.flatMap((r) => ROLE_PERMISSIONS[r.role as CosRole] ?? []),
+      ...extra
+        .filter((r) => !mfaRule || additionalPrivilegedRoleUsable(user, r.role))
+        .flatMap((r) => ROLE_PERMISSIONS[r.role as CosRole] ?? []),
     ];
     const missing = required.filter((p) => !permissionGranted(granted, p));
     if (missing.length > 0) {

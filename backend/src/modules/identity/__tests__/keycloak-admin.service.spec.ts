@@ -64,6 +64,12 @@ describe('KeycloakAdminService', () => {
         getCredentials: jest.fn().mockResolvedValue([]),
         findOne: jest.fn().mockResolvedValue({
           id: 'kc-1',
+          username: 'someone@acme.co',
+          email: 'someone@acme.co',
+          firstName: 'Some',
+          lastName: 'One',
+          enabled: true,
+          requiredActions: ['CONFIGURE_TOTP'],
           attributes: { tenant_id: ['t-1'], user_id: ['u-1'], role: ['SITE_WORKER'] },
         }),
       },
@@ -140,6 +146,32 @@ describe('KeycloakAdminService', () => {
       expect(result.keycloakUserId).toBe('kc-created-id');
       expect(mockKcInstance.users.create).toHaveBeenCalledWith(
         expect.objectContaining({ email: 'user@example.com', enabled: true }),
+      );
+    });
+  });
+
+  // ADR-110 round 5: a privileged primary role carries mfa_required from the start.
+  describe('createEmailUser — mfa_required', () => {
+    it('is set for TENANT_ADMIN', async () => {
+      await service.createEmailUser('a@b.co', 'A', 'tenant-acme', 't-1', 'u-1', 'TENANT_ADMIN');
+      expect(mockKcInstance.users.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          attributes: {
+            tenant_id: ['t-1'],
+            user_id: ['u-1'],
+            role: ['TENANT_ADMIN'],
+            mfa_required: ['true'],
+          },
+        }),
+      );
+    });
+
+    it('is absent for a non-privileged role', async () => {
+      await service.createEmailUser('a@b.co', 'A', 'tenant-acme', 't-1', 'u-1', 'PROJECT_MANAGER');
+      expect(mockKcInstance.users.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          attributes: { tenant_id: ['t-1'], user_id: ['u-1'], role: ['PROJECT_MANAGER'] },
+        }),
       );
     });
   });
@@ -367,44 +399,114 @@ describe('KeycloakAdminService', () => {
   });
 
   // ─── Security review F2 — the JWT `role` claim is mapped from this user attribute ──────────
-  describe('syncUserRole', () => {
-    it('rewrites the role attribute while PRESERVING tenant_id and user_id', async () => {
-      await expect(
-        service.syncUserRole('kc-uuid-1', 'tenant-acme', 'PROJECT_MANAGER'),
-      ).resolves.toBeUndefined();
+  // ADR-110 round 5–6: the realm asks for OTP when mfa_required is true; a role change writes both in one update.
+  // The body is the profile's root fields + the attribute map: Keycloak 26 refuses attributes alone ("User name is
+  // missing"), and `enabled` / `requiredActions` must not travel or a concurrent change would be undone.
+  const root = {
+    username: 'someone@acme.co',
+    email: 'someone@acme.co',
+    firstName: 'Some',
+    lastName: 'One',
+  };
 
-      // Keycloak REPLACES the whole attribute map when `attributes` is present, so sending only
-      // { role } would silently drop the two claims every guard and RLS transaction depends on.
+  describe('syncRoleAttributes', () => {
+    it('writes role and mfa_required in ONE update, keeping tenant_id and user_id', async () => {
+      await expect(
+        service.syncRoleAttributes('kc-uuid-1', 'tenant-acme', 'TENANT_ADMIN', true),
+      ).resolves.toBeUndefined();
+      expect(mockKcInstance.users.update).toHaveBeenCalledTimes(1);
       expect(mockKcInstance.users.update).toHaveBeenCalledWith(
         { id: 'kc-uuid-1' },
         {
+          ...root,
           attributes: {
             tenant_id: ['t-1'],
             user_id: ['u-1'],
-            role: ['PROJECT_MANAGER'],
+            role: ['TENANT_ADMIN'],
+            mfa_required: ['true'],
           },
         },
       );
     });
 
-    it('tolerates a Keycloak user that carries no attributes yet', async () => {
-      mockKcInstance.users.findOne.mockResolvedValue({ id: 'kc-1' });
+    it('never sends enabled or requiredActions', async () => {
+      await service.syncRoleAttributes('kc-uuid-1', 'tenant-acme', 'FINANCE', true);
+      const body = mockKcInstance.users.update.mock.calls[0][1] as Record<string, unknown>;
+      expect(Object.keys(body).sort()).toEqual([
+        'attributes',
+        'email',
+        'firstName',
+        'lastName',
+        'username',
+      ]);
+    });
 
-      await service.syncUserRole('kc-uuid-1', 'tenant-acme', 'FINANCE');
-
+    it('removes mfa_required on a demotion', async () => {
+      mockKcInstance.users.findOne.mockResolvedValueOnce({
+        id: 'kc-1',
+        ...root,
+        attributes: { tenant_id: ['t-1'], role: ['FINANCE'], mfa_required: ['true'] },
+      });
+      await service.syncRoleAttributes('kc-uuid-1', 'tenant-acme', 'PROJECT_MANAGER', false);
       expect(mockKcInstance.users.update).toHaveBeenCalledWith(
         { id: 'kc-uuid-1' },
-        { attributes: { role: ['FINANCE'] } },
+        { ...root, attributes: { tenant_id: ['t-1'], role: ['PROJECT_MANAGER'] } },
+      );
+    });
+
+    it('tolerates a Keycloak user that carries no attributes yet', async () => {
+      mockKcInstance.users.findOne.mockResolvedValueOnce({ id: 'kc-1', username: 'p' });
+      await service.syncRoleAttributes('kc-uuid-1', 'tenant-acme', 'SITE_WORKER', false);
+      expect(mockKcInstance.users.update).toHaveBeenCalledWith(
+        { id: 'kc-uuid-1' },
+        { username: 'p', attributes: { role: ['SITE_WORKER'] } },
       );
     });
 
     it('throws when the Keycloak user does not exist — never writes a partial attribute map', async () => {
-      mockKcInstance.users.findOne.mockResolvedValue(undefined);
-
-      await expect(service.syncUserRole('missing', 'tenant-acme', 'FINANCE')).rejects.toThrow(
-        InternalServerErrorException,
-      );
+      mockKcInstance.users.findOne.mockResolvedValueOnce(undefined);
+      await expect(
+        service.syncRoleAttributes('missing', 'tenant-acme', 'FINANCE', true),
+      ).rejects.toThrow(InternalServerErrorException);
       expect(mockKcInstance.users.update).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('syncMfaRequired', () => {
+    it('sets mfa_required alone, keeping role and every other attribute', async () => {
+      await service.syncMfaRequired('kc-uuid-1', 'tenant-acme', true);
+      expect(mockKcInstance.users.update).toHaveBeenCalledWith(
+        { id: 'kc-uuid-1' },
+        {
+          ...root,
+          attributes: {
+            tenant_id: ['t-1'],
+            user_id: ['u-1'],
+            role: ['SITE_WORKER'],
+            mfa_required: ['true'],
+          },
+        },
+      );
+    });
+
+    it('removes it', async () => {
+      mockKcInstance.users.findOne.mockResolvedValueOnce({
+        id: 'kc-1',
+        ...root,
+        attributes: { tenant_id: ['t-1'], mfa_required: ['true'] },
+      });
+      await service.syncMfaRequired('kc-uuid-1', 'tenant-acme', false);
+      expect(mockKcInstance.users.update).toHaveBeenCalledWith(
+        { id: 'kc-uuid-1' },
+        { ...root, attributes: { tenant_id: ['t-1'] } },
+      );
+    });
+
+    it('throws when the Keycloak user does not exist', async () => {
+      mockKcInstance.users.findOne.mockResolvedValueOnce(undefined);
+      await expect(service.syncMfaRequired('kc-x', 'tenant-acme', true)).rejects.toThrow(
+        'Keycloak user kc-x not found in realm tenant-acme',
+      );
     });
   });
 

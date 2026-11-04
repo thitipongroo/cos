@@ -16,6 +16,8 @@
 import {
   BadRequestException,
   ConflictException,
+  HttpException,
+  HttpStatus,
   Injectable,
   NotFoundException,
   OnModuleDestroy,
@@ -24,6 +26,7 @@ import { createLogger } from '@cos/logger';
 import { CosRole } from '@cos/types';
 import type { Prisma } from '@prisma/client';
 import { createPrismaClient } from '../../shared/prisma/create-prisma-client';
+import { assertSafeTenantId } from '../../shared/prisma/assert-safe-tenant-id';
 import { KeycloakAdminService } from '../identity/keycloak-admin.service';
 import { UserService } from './user.service';
 import { writeTenantAdminAudit } from './tenant.service';
@@ -33,6 +36,9 @@ const logger = createLogger('tenant-admin-bootstrap');
 
 /** QM-15 flag for both endpoints. New feature and an authorization change, so default OFF. */
 export const BOOTSTRAP_ADMIN_FLAG = 's1.tenant.bootstrap-admin';
+
+/** Minimum gap between two invitations to one tenant — 5 minutes (product owner, 2026-11-03). */
+export const RESEND_COOLDOWN_SEC = 5 * 60;
 
 /** Invitation link lifetime — 72 hours (product owner, 2026-11-02). The admin reset link stays 15 minutes. */
 export const ADMIN_INVITE_LIFESPAN_SEC = 72 * 60 * 60;
@@ -96,6 +102,7 @@ export class TenantAdminBootstrapService implements OnModuleDestroy {
 
     // After commit: a mail server that is down must not undo a correct account. The SYSTEM_ADMIN resends.
     const sent = await this.sendInvite(user.keycloak_user_id, realm, tenantId, user.user_id);
+    if (!sent) await this.recordNotSent(tenantId, actorId, user.user_id);
     logger.info({ tenantId, userId: user.user_id, actorId, sent }, 'tenant_admin.bootstrapped');
     return inviteResult(user.user_id, user.email, sent);
   }
@@ -113,6 +120,7 @@ export class TenantAdminBootstrapService implements OnModuleDestroy {
     justification: string,
   ): Promise<TenantAdminInviteResult> {
     const target = await this.unusedInvitation(tenantId, notResendable, async (tx, t) => {
+      await this.assertCooldownElapsed(tx, tenantId);
       await writeTenantAdminAudit(tx, {
         tenantId,
         actorId,
@@ -128,6 +136,7 @@ export class TenantAdminBootstrapService implements OnModuleDestroy {
       tenantId,
       target.userId,
     );
+    if (!sent) await this.recordNotSent(tenantId, actorId, target.userId);
     logger.info({ tenantId, userId: target.userId, actorId, sent }, 'tenant_admin.invite.resent');
     return inviteResult(target.userId, target.email, sent);
   }
@@ -172,6 +181,73 @@ export class TenantAdminBootstrapService implements OnModuleDestroy {
       'tenant_admin.invite.cancelled',
     );
     return { user_id: target.userId, email: target.email, keycloak };
+  }
+
+  /**
+   * Record that the invitation email just requested could not be sent, so the cooldown lets the next resend through
+   * at once. Best effort: if even this write fails, it is logged and the operator waits out the cooldown.
+   */
+  private async recordNotSent(tenantId: string, actorId: string, userId: string): Promise<void> {
+    try {
+      await this.prisma.$transaction((tx) =>
+        writeTenantAdminAudit(tx, {
+          tenantId,
+          actorId,
+          action: 'tenant.admin_invite_not_sent',
+          justification: 'Keycloak could not send the invitation email',
+          extra: { user_id: userId },
+        }),
+      );
+    } catch (err) {
+      logger.error(
+        { tenantId, userId, err: err instanceof Error ? err.message : String(err) },
+        'tenant_admin.invite.not_sent_unrecorded',
+      );
+    }
+  }
+
+  /** `SET LOCAL app.current_tenant_id` — the GUC audit_logs' RLS policies read (UUID checked first, QM-4). */
+  private async setTenantGuc(tx: Pick<Tx, '$executeRawUnsafe'>, tenantId: string): Promise<void> {
+    assertSafeTenantId(tenantId);
+    await tx.$executeRawUnsafe(`SET LOCAL app.current_tenant_id = '${tenantId}'`);
+  }
+
+  /**
+   * 429 COS-TADM-005 when the tenant's latest invitation — the bootstrap or a resend, read from the audit trail under
+   * the administrator lock, so it holds across pods — is younger than RESEND_COOLDOWN_SEC. Each resend emails the
+   * customer a new 72-hour credential link; a slow panel clicked twice should not send two.
+   */
+  private async assertCooldownElapsed(tx: Tx, tenantId: string): Promise<void> {
+    // An invitation whose email then failed (`tenant.admin_invite_not_sent`, written after it) does not count: the
+    // operator must be able to resend at once — that failure is what resend is for. clock_timestamp(), not now():
+    // now() is this transaction's start, which can precede a row committed by the transaction we waited on.
+    const [latest] = await tx.$queryRaw<Array<{ age_seconds: number | null }>>`
+      WITH sent AS (
+        SELECT max(occurred_at) AS at FROM platform.audit_logs
+         WHERE tenant_id = ${tenantId}::uuid
+           AND action IN ('tenant.bootstrap_admin', 'tenant.resend_admin_invite')
+      ), failed AS (
+        SELECT max(occurred_at) AS at FROM platform.audit_logs
+         WHERE tenant_id = ${tenantId}::uuid AND action = 'tenant.admin_invite_not_sent'
+      )
+      SELECT CASE WHEN failed.at IS NOT NULL AND failed.at >= sent.at THEN NULL
+                  ELSE greatest(0, floor(EXTRACT(EPOCH FROM (clock_timestamp() - sent.at))))::int END AS age_seconds
+        FROM sent, failed
+    `;
+    const age = latest?.age_seconds ?? null;
+    if (age === null || age >= RESEND_COOLDOWN_SEC) return;
+    throw new HttpException(
+      {
+        error: {
+          code: TENANT_ADMIN_ERROR.RESEND_TOO_SOON,
+          message:
+            'An invitation was sent a moment ago. Wait a few minutes before sending another.',
+          messageKey: 'admin.tenantAdmin.error.resendTooSoon',
+          details: { retry_after_seconds: RESEND_COOLDOWN_SEC - age },
+        },
+      },
+      HttpStatus.TOO_MANY_REQUESTS,
+    );
   }
 
   /** Delete; a 404 is already deleted; on any other failure disable instead (ADR-110 round 2). */
@@ -234,13 +310,18 @@ export class TenantAdminBootstrapService implements OnModuleDestroy {
     `;
     if (!user) throw refuse(admins.length, 'admin_count');
 
-    const [bootstrapped] = await this.prisma.$queryRaw<Array<{ found: number }>>`
-      SELECT 1 AS found FROM platform.audit_logs
-       WHERE tenant_id = ${tenantId}::uuid
-         AND action = 'tenant.bootstrap_admin'
-         AND metadata->>'user_id' = ${userId}
-       LIMIT 1
-    `;
+    // audit_logs is under FORCE RLS for app_user (rls_audit_select reads app.current_tenant_id), and a GUC can only be
+    // set LOCAL inside a transaction — so this read gets one of its own.
+    const [bootstrapped] = await this.prisma.$transaction(async (tx) => {
+      await this.setTenantGuc(tx, tenantId);
+      return tx.$queryRaw<Array<{ found: number }>>`
+        SELECT 1 AS found FROM platform.audit_logs
+         WHERE tenant_id = ${tenantId}::uuid
+           AND action = 'tenant.bootstrap_admin'
+           AND metadata->>'user_id' = ${userId}
+         LIMIT 1
+      `;
+    });
     if (!bootstrapped) throw refuse(admins.length, 'not_bootstrapped');
     if (await this.keycloakAdmin.hasAnyCredential(user.keycloak_user_id, realm)) {
       throw refuse(admins.length, 'invitation_used');
@@ -249,6 +330,7 @@ export class TenantAdminBootstrapService implements OnModuleDestroy {
 
     await this.prisma.$transaction(async (tx) => {
       await lockTenantAdmins(tx, tenantId);
+      await this.setTenantGuc(tx, tenantId); // the cooldown read in `act` is under audit_logs' RLS
       await this.activeTenantRealm(tx, tenantId, true);
       const now = await tenantAdmins(tx, tenantId);
       if (now.length !== 1 || now[0]!.user_id !== userId) throw refuse(now.length, 'admin_count');

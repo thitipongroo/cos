@@ -7,9 +7,11 @@
 //   asserts it stays there, in the CI lint job.
 //
 //   THE MECHANISM IS NOT THE ONE ADR-067 ORIGINALLY SPECIFIED. `conditional-user-role` appears zero
-//   times: it was proven unusable and replaced by a `Condition - user attribute` on the `role` user
-//   attribute (`^(TENANT_ADMIN|FINANCE)$`), which is what the two custom flows condition on. The
-//   composite role `mfa-required` does not exist and is not needed.
+//   times: it was proven unusable and replaced by a `Condition - user attribute`, which is what the two
+//   custom flows condition on. Until ADR-110 round 5 it read the `role` user attribute
+//   (`^(TENANT_ADMIN|FINANCE)$`, the PRIMARY role only); it now reads `mfa_required` = `^true$`, which the
+//   backend writes from the primary and additional roles (`mfaRequiredFor` below). The composite role
+//   `mfa-required` does not exist and is not needed.
 //
 //   This comment asserted the opposite until 2026-08-23 — it still described the pre-2026-08-22
 //   realm and told the reader that Layer 2 was "the only depth there is". It was stale by a day when
@@ -80,7 +82,58 @@ export function enforceMfaForPrivilegedRoles(user: {
     return;
   }
 
-  throw new ForbiddenException({
+  throw mfaRequiredError();
+}
+
+/** QM-15 flag for the additional-role MFA rule in RolesGuard (ADR-110 round 4). Default OFF. */
+export const ADDITIONAL_ROLE_MFA_FLAG = 's1.identity.additional-role-mfa';
+
+/**
+ * Whether Keycloak should ask this account for OTP and refuse it on Direct Grant — the `mfa_required` user attribute
+ * the realm conditions on (ADR-110 rounds 5 and 6).
+ *
+ * True for a privileged PRIMARY role, as before round 5. For a privileged ADDITIONAL role only when the account has an
+ * email (D18): a legacy phone-only account holding one (scripts/readiness/check-path-b-roles.sh) would otherwise be
+ * refused on Direct Grant — its only way in — and lose all access, not just that role. It cannot use the role with
+ * `s1.identity.additional-role-mfa` on, since it can never prove MFA.
+ */
+export function mfaRequiredFor(
+  primaryRole: string,
+  additionalRoles: readonly string[],
+  email: string | null | undefined,
+): boolean {
+  if (MFA_REQUIRED_ROLES.has(primaryRole)) return true;
+  // Blank counts as no email, as assertPathBRolesHaveEmail reads it.
+  return !!email?.trim() && additionalRoles.some((r) => MFA_REQUIRED_ROLES.has(r));
+}
+
+/**
+ * Whether a TENANT_ADMIN / FINANCE held as an ADDITIONAL role may be used by this token (ADR-110 round 4).
+ *
+ * The primary role is checked by enforceMfaForPrivilegedRoles in JwtAuthGuard. Until round 5 Keycloak's Path B gate
+ * read the primary role attribute only, so an additional privileged role was usable with no MFA at all; it now reads
+ * `mfa_required` (`mfaRequiredFor`). Same rule as the primary: usable when the token's `acr` proves MFA, or while MFA_ENFORCE is off (warned, as
+ * there).
+ */
+export function additionalPrivilegedRoleUsable(
+  user: { acr?: string; user_id?: string },
+  role: string,
+): boolean {
+  if (!MFA_REQUIRED_ROLES.has(role)) return true;
+  if (acceptedAcrValues().has(user.acr ?? '')) return true;
+  if (!enforcementEnabled()) {
+    logger.warn(
+      { userId: user.user_id, role, acr: user.acr ?? null },
+      'mfa.shortfall — additional privileged role without MFA acr (enforcement disabled: MFA_ENFORCE!=true)',
+    );
+    return true;
+  }
+  return false;
+}
+
+/** The 403 an additional privileged role without MFA gets — the same COS-AUTH-001 as the primary-role check. */
+export function mfaRequiredError(): ForbiddenException {
+  return new ForbiddenException({
     error: {
       code: 'COS-AUTH-001',
       message: 'Multi-factor authentication is required for this role',

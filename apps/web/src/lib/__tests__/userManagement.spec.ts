@@ -5,6 +5,10 @@ describe('userChangeErrorKey', () => {
     expect(userChangeErrorKey({ code: 'COS-TADM-004' })).toBe('user.error.lastTenantAdmin');
   });
 
+  it('names a user who is no longer in the tenant', () => {
+    expect(userChangeErrorKey({ code: 'COS-USER-002', status: 404 })).toBe('user.error.notFound');
+  });
+
   it('names the Path B role refusal', () => {
     expect(userChangeErrorKey({ code: 'COS-AUTH-002', status: 400 })).toBe(
       'user.role.pathBRequiresEmail',

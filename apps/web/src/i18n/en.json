@@ -1007,7 +1007,8 @@
         "notResendable": "The invitation can be resent only to the tenant administrator created here, while it is unused. If a password is already set, the administrator should sign in or use “Forgot password”.",
         "disabled": "Creating tenant administrators is switched off right now. Try again later.",
         "emailTaken": "This email already has an account. Use a different address.",
-        "notCancellable": "Only an unused invitation to the administrator created here can be cancelled. If a password is already set, the customer manages their own account."
+        "notCancellable": "Only an unused invitation to the administrator created here can be cancelled. If a password is already set, the customer manages their own account.",
+        "resendTooSoon": "An invitation was sent a moment ago. Wait five minutes before sending another."
       },
       "cancelTitle": "Cancel admin invitation",
       "cancelLead": "Use this when the invitation went to a wrong address. The account is deactivated and its link stops working; the tenant then has no administrator, so you can create one with the right address.",
@@ -1716,7 +1717,8 @@
   },
   "user": {
     "error": {
-      "lastTenantAdmin": "A tenant must keep at least one administrator. Make someone else an administrator first."
+      "lastTenantAdmin": "A tenant must keep at least one administrator. Make someone else an administrator first.",
+      "notFound": "This user is no longer in the tenant. Refresh the list."
     },
     "role": {
       "pathBRequiresEmail": "TENANT_ADMIN and FINANCE sign in by email only, and this account has no email. Create an email account for this person instead."

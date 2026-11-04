@@ -5,6 +5,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { createLogger } from '@cos/logger';
+import { mfaRequiredFor } from '../../shared/guards/mfa-enforcement';
 
 const logger = createLogger('keycloak-admin-service');
 
@@ -90,6 +91,15 @@ export const KEYCLOAK_ERASED_MARKER = 'ERASED';
  */
 export const OFFLINE_ACCESS_SCOPE = 'offline_access';
 
+/** The attribute map with `mfa_required` set to `["true"]` or removed. */
+function withMfaRequired(
+  attributes: Record<string, unknown>,
+  required: boolean,
+): Record<string, unknown> {
+  const { mfa_required: _drop, ...rest } = attributes;
+  return required ? { ...rest, mfa_required: ['true'] } : rest;
+}
+
 @Injectable()
 export class KeycloakAdminService {
   private readonly baseUrl: string;
@@ -163,7 +173,13 @@ export class KeycloakAdminService {
       email,
       firstName: displayName,
       enabled: true,
-      attributes: { tenant_id: [tenantId], user_id: [userId], role: [role] },
+      attributes: {
+        tenant_id: [tenantId],
+        user_id: [userId],
+        role: [role],
+        // Set at creation as syncRoleAttributes would (ADR-110 rounds 5–6); this account always has an email.
+        ...(mfaRequiredFor(role, [], email) ? { mfa_required: ['true'] } : {}),
+      },
     });
     logger.info({ userId, tenantId, realm }, 'keycloak.user.created (Path B)');
     return { keycloakUserId: id };
@@ -373,7 +389,7 @@ export class KeycloakAdminService {
    *
    * Disable-and-scrub rather than `deleteUser`: `platform.users.keycloak_user_id` is
    * `VARCHAR(255) NOT NULL UNIQUE`, so it cannot be nulled. Deleting the Keycloak account would leave
-   * that column pointing at nothing, and every later call through it — `disableUser`, `syncUserRole`,
+   * that column pointing at nothing, and every later call through it — `disableUser`, `syncRoleAttributes`,
    * `setTemporaryPassword` — would 404 on a row that still looks live. The account object survives as
    * an empty shell; the person does not (PO decision 2026-08-23).
    *
@@ -423,22 +439,60 @@ export class KeycloakAdminService {
   }
 
   /**
-   * Rewrite the `role` user attribute the JWT `role` claim is mapped from (security review F2).
+   * Rewrite the `role` user attribute the JWT `role` claim is mapped from (security review F2), and the
+   * `mfa_required` attribute the realm's MFA conditions read (ADR-110 round 5), in ONE update (round 6, D17).
    *
    * The realm maps `role` with an `oidc-usermodel-attribute-mapper` over the user attribute of the
    * same name (infrastructure/keycloak/realms/construction-os-realm.json), and that attribute was
    * previously written ONLY at user-creation time. A role change in `platform.tenant_memberships`
    * therefore never reached any token Keycloak minted afterwards, so a demotion never took effect.
    *
-   * Attributes are read-modify-written: Keycloak REPLACES the whole attribute map when the field is
-   * present, so sending `{ role }` alone would silently drop `tenant_id` and `user_id` — the two
-   * claims every downstream guard and RLS transaction depends on.
+   * One update, not two: written separately, a failure between them left a new primary TENANT_ADMIN with `role` set
+   * and `mfa_required` absent — and the realm, which asks for OTP on `mfa_required`, then neither asked it for OTP nor
+   * refused it on Direct Grant. The caller computes `mfaRequired` (`mfaRequiredFor`).
    *
    * No forced logout here, deliberately: KeycloakJwtStrategy resolves the effective role from
    * `platform.tenant_memberships` on every request (F2b), so a live session already sees the new role.
    * This keeps Keycloak's own view correct for tokens minted later, without signing everyone out.
    */
-  async syncUserRole(keycloakUserId: string, realm: string, role: string): Promise<void> {
+  async syncRoleAttributes(
+    keycloakUserId: string,
+    realm: string,
+    role: string,
+    mfaRequired: boolean,
+  ): Promise<void> {
+    await this.rewriteAttributes(keycloakUserId, realm, (attributes) =>
+      withMfaRequired({ ...attributes, role: [role] }, mfaRequired),
+    );
+    logger.info({ keycloakUserId, realm, role, mfaRequired }, 'keycloak.user.role_synced');
+  }
+
+  /**
+   * Set or clear `mfa_required` alone, keeping every other attribute — the round-5 backfill
+   * (backend/prisma/backfill-mfa-required.ts). Role changes go through syncRoleAttributes.
+   */
+  async syncMfaRequired(keycloakUserId: string, realm: string, required: boolean): Promise<void> {
+    await this.rewriteAttributes(keycloakUserId, realm, (attributes) =>
+      withMfaRequired(attributes, required),
+    );
+    logger.info({ keycloakUserId, realm, required }, 'keycloak.user.mfa_required_synced');
+  }
+
+  /**
+   * Read-modify-write of the user's attribute map. Keycloak REPLACES the whole map when `attributes` is present, so
+   * sending `{ role }` alone would silently drop `tenant_id` and `user_id` — the two claims every downstream guard and
+   * RLS transaction depends on.
+   *
+   * The body is the profile's root fields from the read plus the new map, and nothing else. Not `{ attributes }`
+   * alone: with the declarative user profile (Keycloak 24+) that is refused with 400 "User name is missing" (measured on
+   * 26.6.4). Not the whole representation either: it carries `enabled` and `requiredActions`, so a `disableUser` or a
+   * required action set between the read and the write would be undone (measured: both survive this body).
+   */
+  private async rewriteAttributes(
+    keycloakUserId: string,
+    realm: string,
+    edit: (attributes: Record<string, unknown>) => Record<string, unknown>,
+  ): Promise<void> {
     const client = await this.getAuthenticatedClient(realm);
     const existing = await client.users.findOne({ id: keycloakUserId });
     if (!existing) {
@@ -448,9 +502,14 @@ export class KeycloakAdminService {
     }
     await client.users.update(
       { id: keycloakUserId },
-      { attributes: { ...(existing.attributes ?? {}), role: [role] } },
+      {
+        username: existing.username,
+        email: existing.email,
+        firstName: existing.firstName,
+        lastName: existing.lastName,
+        attributes: edit(existing.attributes ?? {}),
+      },
     );
-    logger.info({ keycloakUserId, realm, role }, 'keycloak.user.role_synced');
   }
 
   private async callTokenEndpoint(

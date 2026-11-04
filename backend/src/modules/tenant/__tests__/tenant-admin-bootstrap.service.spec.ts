@@ -18,6 +18,7 @@ import { CosRole } from '@cos/types';
 import {
   ADMIN_INVITE_LIFESPAN_SEC,
   BOOTSTRAP_ADMIN_FLAG,
+  RESEND_COOLDOWN_SEC,
   TENANT_ADMIN_ERROR,
   TenantAdminBootstrapService,
 } from '../tenant-admin-bootstrap.service';
@@ -80,7 +81,9 @@ describe('TenantAdminBootstrapService', () => {
       INVITE_NOT_RESENDABLE: 'COS-TADM-002',
       INVITE_NOT_CANCELLABLE: 'COS-TADM-003',
       LAST_ADMIN: 'COS-TADM-004',
+      RESEND_TOO_SOON: 'COS-TADM-005',
     });
+    expect(RESEND_COOLDOWN_SEC).toBe(300);
   });
 
   it('disconnects Prisma on shutdown', async () => {
@@ -212,16 +215,22 @@ describe('TenantAdminBootstrapService', () => {
       user?: unknown[];
       bootstrapped?: unknown[];
       adminsNow?: unknown[];
+      /** Seconds since the tenant's latest invitation (resend only); null = none. Default: long ago. */
+      ageSeconds?: number | null;
     } = {},
   ) => {
     prisma.$queryRaw
       .mockResolvedValueOnce(over.tenant ?? [{ is_active: true, keycloak_realm: REALM }])
       .mockResolvedValueOnce(over.admins ?? ONE)
-      .mockResolvedValueOnce(over.user ?? [{ keycloak_user_id: KC_ID, email: EMAIL }])
-      .mockResolvedValueOnce(over.bootstrapped ?? [{ found: 1 }]);
+      .mockResolvedValueOnce(over.user ?? [{ keycloak_user_id: KC_ID, email: EMAIL }]);
+    // The bootstrap-row read runs in its own transaction (it needs the RLS GUC), then phase 2.
     tx.$queryRaw
+      .mockResolvedValueOnce(over.bootstrapped ?? [{ found: 1 }])
       .mockResolvedValueOnce([{ is_active: true, keycloak_realm: REALM }])
-      .mockResolvedValueOnce(over.adminsNow ?? ONE);
+      .mockResolvedValueOnce(over.adminsNow ?? ONE)
+      .mockResolvedValueOnce([
+        { age_seconds: over.ageSeconds === undefined ? 3_600 : over.ageSeconds },
+      ]);
   };
 
   const refusalOf = async (p: Promise<unknown>) => {
@@ -248,9 +257,12 @@ describe('TenantAdminBootstrapService', () => {
         order.push('keycloak-read');
         return false;
       });
-      prisma.$transaction.mockImplementationOnce(async (fn: (t: unknown) => Promise<unknown>) => {
+      prisma.$transaction.mockImplementation(async (fn: (t: unknown) => Promise<unknown>) => {
         order.push('tx');
         return fn(tx);
+      });
+      tx.$executeRawUnsafe.mockImplementation(async () => {
+        order.push('guc');
       });
       tx.$executeRaw.mockImplementation(async (strings: TemplateStringsArray) => {
         const sql = strings.join('?');
@@ -263,12 +275,27 @@ describe('TenantAdminBootstrapService', () => {
 
       const result = await run();
 
-      expect(order).toEqual(['keycloak-read', 'tx', 'lock', 'audit', 'email']);
+      // tx 1: the bootstrap-row read (GUC first, for audit_logs' RLS); then Keycloak, outside any transaction;
+      // tx 2: lock, GUC, re-check, cooldown, audit; the email after commit.
+      expect(order).toEqual([
+        'tx',
+        'guc',
+        'keycloak-read',
+        'tx',
+        'lock',
+        'guc',
+        'guc',
+        'audit',
+        'email',
+      ]);
+      expect(tx.$executeRawUnsafe).toHaveBeenCalledWith(
+        `SET LOCAL app.current_tenant_id = '${TENANT_ID}'`,
+      );
       expect(sqlOf(prisma.$queryRaw.mock.calls[2] as unknown[])).toContain('AND is_active');
-      const bootstrapRead = prisma.$queryRaw.mock.calls[3] as unknown[];
+      const bootstrapRead = tx.$queryRaw.mock.calls[0] as unknown[];
       expect(sqlOf(bootstrapRead)).toContain("action = 'tenant.bootstrap_admin'");
       expect(bootstrapRead).toContain(USER_ID);
-      expect(sqlOf(tx.$queryRaw.mock.calls[0] as unknown[])).toContain('FOR SHARE');
+      expect(sqlOf(tx.$queryRaw.mock.calls[1] as unknown[])).toContain('FOR SHARE');
       expect(keycloak.hasAnyCredential).toHaveBeenCalledWith(KC_ID, REALM);
       const audit = callsMatching(tx.$executeRaw, 'platform.audit_logs');
       expect(audit[0]![3]).toBe('tenant.resend_admin_invite');
@@ -279,6 +306,39 @@ describe('TenantAdminBootstrapService', () => {
       expect(keycloak.sendPasswordResetEmail).toHaveBeenCalledWith(KC_ID, REALM, 259_200);
       expect(result).toMatchObject({ user_id: USER_ID, email: EMAIL, invite_sent: true });
       expect(result.invite_expires_at).toBeInstanceOf(Date);
+    });
+
+    // Round 4 (D12): at most one invitation per tenant every 5 minutes, read from the audit trail under the lock.
+    it('429 COS-TADM-005 within 5 minutes of the last invitation — nothing written or sent', async () => {
+      reads({ ageSeconds: 120 });
+      const err = await run().catch((e: unknown) => e);
+      expect((err as { getStatus: () => number }).getStatus()).toBe(429);
+      expect((err as { getResponse: () => unknown }).getResponse()).toEqual({
+        error: {
+          code: 'COS-TADM-005',
+          message:
+            'An invitation was sent a moment ago. Wait a few minutes before sending another.',
+          messageKey: 'admin.tenantAdmin.error.resendTooSoon',
+          details: { retry_after_seconds: 180 },
+        },
+      });
+      const cooldownRead = sqlOf(tx.$queryRaw.mock.calls[3] as unknown[]);
+      expect(cooldownRead).toContain(
+        "action IN ('tenant.bootstrap_admin', 'tenant.resend_admin_invite')",
+      );
+      // A send that failed after the last invitation releases the cooldown at once.
+      expect(cooldownRead).toContain("action = 'tenant.admin_invite_not_sent'");
+      expect(cooldownRead).toContain('clock_timestamp()');
+      expect(callsMatching(tx.$executeRaw, 'platform.audit_logs')).toHaveLength(0);
+      expect(keycloak.sendPasswordResetEmail).not.toHaveBeenCalled();
+    });
+
+    it.each([
+      ['exactly 5 minutes', 300],
+      ['no earlier invitation on record', null],
+    ])('sends after %s', async (_l, age) => {
+      reads({ ageSeconds: age });
+      expect((await run()).invite_sent).toBe(true);
     });
 
     it('refuses with the full COS-TADM-002 envelope', async () => {
@@ -299,10 +359,10 @@ describe('TenantAdminBootstrapService', () => {
       ['two administrators', { admins: [...ONE, { user_id: 'b' }] }, 2, 'admin_count'],
       ['an account no longer active', { user: [] }, 1, 'admin_count'],
       ['a customer-made administrator', { bootstrapped: [] }, 1, 'not_bootstrapped'],
-    ])('409 for %s, before any transaction', async (_l, over, count, reason) => {
+    ])('409 for %s, before the lock is taken', async (_l, over, count, reason) => {
       reads(over);
       expect((await refusalOf(run())).error.details).toEqual({ tenant_admin_count: count, reason });
-      expect(prisma.$transaction).not.toHaveBeenCalled();
+      expect(callsMatching(tx.$executeRaw, 'pg_advisory_xact_lock')).toHaveLength(0);
       expect(keycloak.sendPasswordResetEmail).not.toHaveBeenCalled();
     });
 
@@ -310,7 +370,7 @@ describe('TenantAdminBootstrapService', () => {
       reads();
       keycloak.hasAnyCredential.mockResolvedValueOnce(true);
       expect((await refusalOf(run())).error.details.reason).toBe('invitation_used');
-      expect(prisma.$transaction).not.toHaveBeenCalled();
+      expect(callsMatching(tx.$executeRaw, 'pg_advisory_xact_lock')).toHaveLength(0);
     });
 
     it('409 when another administrator appeared before the lock — nothing written', async () => {
@@ -336,7 +396,35 @@ describe('TenantAdminBootstrapService', () => {
         invite_sent: false,
         invite_expires_at: null,
       });
-      expect(callsMatching(tx.$executeRaw, 'platform.audit_logs')).toHaveLength(1);
+      // The request, then the failure — which releases the cooldown for the next resend.
+      expect(callsMatching(tx.$executeRaw, 'platform.audit_logs').map((c) => c[3])).toEqual([
+        'tenant.resend_admin_invite',
+        'tenant.admin_invite_not_sent',
+      ]);
+    });
+
+    it('a failure to record the failed send is logged, not thrown', async () => {
+      reads();
+      keycloak.sendPasswordResetEmail.mockRejectedValueOnce(new Error('SMTP down'));
+      let calls = 0;
+      prisma.$transaction.mockImplementation(async (fn: (t: unknown) => Promise<unknown>) => {
+        calls += 1;
+        if (calls === 3) throw new Error('db down'); // tx 3 = the not-sent record
+        return fn(tx);
+      });
+      expect((await run()).invite_sent).toBe(false);
+    });
+
+    it('a non-Error failure to record it is logged the same way', async () => {
+      reads();
+      keycloak.sendPasswordResetEmail.mockRejectedValueOnce(new Error('SMTP down'));
+      let calls = 0;
+      prisma.$transaction.mockImplementation(async (fn: (t: unknown) => Promise<unknown>) => {
+        calls += 1;
+        if (calls === 3) throw 'db down';
+        return fn(tx);
+      });
+      expect((await run()).invite_sent).toBe(false);
     });
 
     it('404 / 400 for an unknown or deactivated tenant', async () => {
@@ -348,7 +436,10 @@ describe('TenantAdminBootstrapService', () => {
 
     it('400 when the tenant was deactivated between the phases', async () => {
       reads();
-      tx.$queryRaw.mockReset().mockResolvedValueOnce([{ is_active: false, keycloak_realm: REALM }]);
+      tx.$queryRaw
+        .mockReset()
+        .mockResolvedValueOnce([{ found: 1 }])
+        .mockResolvedValueOnce([{ is_active: false, keycloak_realm: REALM }]);
       await expect(run()).rejects.toBeInstanceOf(BadRequestException);
       expect(callsMatching(tx.$executeRaw, 'platform.audit_logs')).toHaveLength(0);
     });

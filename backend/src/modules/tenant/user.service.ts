@@ -23,7 +23,7 @@ import type { Prisma } from '@prisma/client';
 import { KeycloakAdminService } from '../identity/keycloak-admin.service';
 // The two roles that are Path B only (§5.4.4). Imported rather than re-listed: the enforcement guard
 // and this promotion guard must never disagree about who is privileged.
-import { MFA_REQUIRED_ROLES } from '../../shared/guards/mfa-enforcement';
+import { MFA_REQUIRED_ROLES, mfaRequiredFor } from '../../shared/guards/mfa-enforcement';
 import type { CreateUserDto } from './dto/create-user.dto';
 import type { ChangeRoleDto } from './dto/change-role.dto';
 import type { SetRolesDto } from './dto/set-roles.dto';
@@ -51,6 +51,42 @@ function assertRoleAssignableByTenant(role: CosRole): void {
 }
 
 const logger = createLogger('user-service');
+
+/**
+ * QM-10 errors of this service (`COS-USER`, docs/api/error-codes.md; ADR-110 round 4). Statuses and messages are
+ * what these refusals always said; the envelope adds a code and a messageKey so a client can tell them apart instead
+ * of reading COS-GENERAL-4xx.
+ */
+const userError = {
+  /** 400 — phone_number (Path A) or email (Path B): exactly one. */
+  identifier: (message: string) =>
+    new BadRequestException({
+      error: { code: 'COS-USER-001', message, messageKey: 'user.error.oneIdentifier' },
+    }),
+  /** 404 — no such (active) user in this tenant. */
+  notFound: (message: string) =>
+    new NotFoundException({
+      error: { code: 'COS-USER-002', message, messageKey: 'user.error.notFound' },
+    }),
+  /** 409 — the phone or email is an account already (realm-wide; never says which tenant holds it). */
+  identityExists: () =>
+    new ConflictException({
+      error: {
+        code: 'COS-USER-003',
+        message: 'User with this identity already exists',
+        messageKey: 'user.error.identityExists',
+      },
+    }),
+  /** 400 — the tenant is unknown or deactivated. */
+  tenantInactive: () =>
+    new BadRequestException({
+      error: {
+        code: 'COS-USER-004',
+        message: 'Tenant not found or inactive',
+        messageKey: 'user.error.tenantInactive',
+      },
+    }),
+};
 
 /**
  * TENANT_ADMIN and FINANCE are Path B only (§5.4.4): giving either to an account with no email — a phone-only Path A
@@ -180,6 +216,42 @@ export class UserService implements OnModuleDestroy {
   ) {}
 
   /**
+   * Keycloak's `role` and `mfa_required` attributes in one update (ADR-110 round 6, D17), from the roles the database
+   * holds NOW rather than the ones the request asked for: of two overlapping role changes, a sync that reads after the
+   * later commit writes the later state. After commit, outside the transaction (QM-18). `role` keeps the primary role
+   * in the tokens Keycloak mints (security review F2); `mfa_required` makes the realm ask for OTP (`mfaRequiredFor`).
+   */
+  private async syncKeycloakRoles(userId: string, tenantId: string): Promise<void> {
+    const [row] = await this.prisma.$queryRaw<
+      Array<{
+        role: string;
+        email: string;
+        keycloak_user_id: string;
+        keycloak_realm: string;
+        additional: string[];
+      }>
+    >`
+      SELECT m.role::text AS role, u.email, u.keycloak_user_id, t.keycloak_realm,
+             COALESCE(array_agg(r.role::text) FILTER (WHERE r.role IS NOT NULL), '{}') AS additional
+      FROM platform.tenant_memberships m
+      JOIN platform.users u   ON u.user_id   = m.user_id AND u.tenant_id = m.tenant_id
+      JOIN platform.tenants t ON t.tenant_id = m.tenant_id
+      LEFT JOIN platform.user_additional_roles r ON r.user_id = m.user_id AND r.tenant_id = m.tenant_id
+      WHERE m.user_id = ${userId}::uuid AND m.tenant_id = ${tenantId}::uuid
+      GROUP BY m.role, u.email, u.keycloak_user_id, t.keycloak_realm
+    `;
+    if (!row) {
+      throw userError.notFound(`User ${userId} not found in tenant`);
+    }
+    await this.keycloakAdmin.syncRoleAttributes(
+      row.keycloak_user_id,
+      row.keycloak_realm,
+      row.role,
+      mfaRequiredFor(row.role, row.additional, row.email),
+    );
+  }
+
+  /**
    * ADR-110 round 2 (product owner, 2026-11-03): a tenant must keep an active TENANT_ADMIN, or nobody in it can manage
    * users and only a SYSTEM_ADMIN bootstrap could restore one. With `s1.tenant.last-admin-guard` on, changeRole,
    * setUserRoles and deactivateUser take the administrator lock first and, after their write, refuse with 409
@@ -307,10 +379,10 @@ export class UserService implements OnModuleDestroy {
   ): Promise<UserRow> {
     assertRoleAssignableByTenant(dto.role);
     if (!dto.phone_number && !dto.email) {
-      throw new BadRequestException('Either phone_number (Path A) or email (Path B) is required');
+      throw userError.identifier('Either phone_number (Path A) or email (Path B) is required');
     }
     if (dto.phone_number && dto.email) {
-      throw new BadRequestException('Provide either phone_number or email — not both');
+      throw userError.identifier('Provide either phone_number or email — not both');
     }
 
     const isPathA = Boolean(dto.phone_number);
@@ -325,7 +397,7 @@ export class UserService implements OnModuleDestroy {
       WHERE tenant_id = ${tenantId}::uuid AND is_active = true
       LIMIT 1
     `;
-    if (!tenant) throw new BadRequestException('Tenant not found or inactive');
+    if (!tenant) throw userError.tenantInactive();
 
     // Conflict guard (parameterized — no string interpolation)
     //
@@ -349,7 +421,7 @@ export class UserService implements OnModuleDestroy {
         `;
 
     if (existing.length) {
-      throw new ConflictException(`User with this identity already exists`);
+      throw userError.identityExists();
     }
 
     // Step 2 — provision Keycloak user; get UUID for keycloak_user_id column
@@ -386,7 +458,7 @@ export class UserService implements OnModuleDestroy {
       }
     } catch (err) {
       if ((err as { response?: { status?: number } } | null)?.response?.status === 409) {
-        throw new ConflictException(`User with this identity already exists`);
+        throw userError.identityExists();
       }
       throw err;
     }
@@ -449,7 +521,7 @@ export class UserService implements OnModuleDestroy {
       // name is ours.
       const message = err instanceof Error ? err.message : String(err);
       if (isPathA && message.includes('users_phone_number_key')) {
-        throw new ConflictException(`User with this identity already exists`);
+        throw userError.identityExists();
       }
       throw err;
     }
@@ -467,21 +539,16 @@ export class UserService implements OnModuleDestroy {
     actorId: string,
   ): Promise<void> {
     assertRoleAssignableByTenant(dto.role);
-    // keycloak_user_id + realm are selected alongside the membership so the Keycloak `role` attribute
-    // can be re-synced below without a second round trip (security review F2). `email` rides along for
-    // the privileged-path guard below.
-    const [membership] = await this.prisma.$queryRaw<
-      Array<{ role: string; keycloak_user_id: string; keycloak_realm: string; email: string }>
-    >`
-      SELECT m.role, u.keycloak_user_id, t.keycloak_realm, u.email
+    // `email` rides along for the privileged-path guard below.
+    const [membership] = await this.prisma.$queryRaw<Array<{ role: string; email: string }>>`
+      SELECT m.role, u.email
       FROM platform.tenant_memberships m
       JOIN platform.users u   ON u.user_id   = m.user_id AND u.tenant_id = m.tenant_id
-      JOIN platform.tenants t ON t.tenant_id = m.tenant_id
       WHERE m.user_id = ${userId}::uuid AND m.tenant_id = ${tenantId}::uuid
       LIMIT 1
     `;
     if (!membership) {
-      throw new NotFoundException(`User ${userId} not found in tenant`);
+      throw userError.notFound(`User ${userId} not found in tenant`);
     }
 
     // PROMOTING A PHONE-ONLY ACCOUNT TO A PATH B ROLE LOCKS THE PERSON OUT (TDD OQ-11).
@@ -493,7 +560,7 @@ export class UserService implements OnModuleDestroy {
     // no email to sign in with. `sendPasswordResetLink` cannot rescue them either; it also needs an
     // email on file.
     //
-    // Nothing caught this before: the role change succeeded, `syncUserRole` dutifully wrote the new
+    // Nothing caught this before: the role change succeeded, the Keycloak sync dutifully wrote the new
     // role into Keycloak, and the account went dark at the person's next login with no error that
     // named the cause. Refuse the promotion instead, and say what to do about it.
     assertPathBRolesHaveEmail([dto.role], membership.email);
@@ -533,11 +600,7 @@ export class UserService implements OnModuleDestroy {
 
     // Keep the identity store in step with the membership table. Without this the `role` claim in every
     // token Keycloak mints afterwards still carries the OLD role (security review F2).
-    await this.keycloakAdmin.syncUserRole(
-      membership.keycloak_user_id,
-      membership.keycloak_realm,
-      dto.role,
-    );
+    await this.syncKeycloakRoles(userId, tenantId);
 
     logger.info({ userId, tenantId, actorId, oldRole, newRole: dto.role }, 'user.role_changed');
   }
@@ -553,7 +616,7 @@ export class UserService implements OnModuleDestroy {
       LIMIT 1
     `;
     if (!membership) {
-      throw new NotFoundException(`User ${userId} not found in tenant`);
+      throw userError.notFound(`User ${userId} not found in tenant`);
     }
     const extra = await this.prisma.$queryRaw<Array<{ role: string }>>`
       SELECT role FROM platform.user_additional_roles
@@ -588,21 +651,16 @@ export class UserService implements OnModuleDestroy {
       // Before the FOR UPDATE below: the administrator lock is always taken first (tenant-admins.ts).
       if (guard) await lockTenantAdmins(tx, tenantId);
       const wasAdmin = guard && (await isTenantAdmin(tx, tenantId, userId));
-      // keycloak_user_id + realm ride along so the Keycloak `role` attribute can be re-synced after the
-      // transaction commits, without a second round trip (security review F2).
-      const [membership] = await tx.$queryRaw<
-        Array<{ role: string; keycloak_user_id: string; keycloak_realm: string; email: string }>
-      >`
-        SELECT m.role, u.keycloak_user_id, t.keycloak_realm, u.email
+      const [membership] = await tx.$queryRaw<Array<{ role: string; email: string }>>`
+        SELECT m.role, u.email
         FROM platform.tenant_memberships m
         JOIN platform.users u   ON u.user_id   = m.user_id AND u.tenant_id = m.tenant_id
-        JOIN platform.tenants t ON t.tenant_id = m.tenant_id
         WHERE m.user_id = ${userId}::uuid AND m.tenant_id = ${tenantId}::uuid
         LIMIT 1
         FOR UPDATE OF m FOR SHARE OF u
       `;
       if (!membership) {
-        throw new NotFoundException(`User ${userId} not found in tenant`);
+        throw userError.notFound(`User ${userId} not found in tenant`);
       }
       // Before any write: a refusal here changes nothing and never reaches Keycloak. Only roles this call GRANTS are
       // checked — a legacy account that already holds one (scripts/readiness/check-path-b-roles.sh) is not frozen, so
@@ -645,11 +703,7 @@ export class UserService implements OnModuleDestroy {
     // pins a PgBouncer server connection for the duration of that call (QM-18). The membership row is
     // already committed, so a Keycloak failure here surfaces as a 500 with COS and Keycloak briefly
     // disagreeing — which the per-request role resolution in KeycloakJwtStrategy already covers.
-    await this.keycloakAdmin.syncUserRole(
-      membershipRow.keycloak_user_id,
-      membershipRow.keycloak_realm,
-      dto.primary_role,
-    );
+    await this.syncKeycloakRoles(userId, tenantId);
 
     logger.info(
       { userId, tenantId, actorId, primaryRole: dto.primary_role, additionalRoles: additional },
@@ -687,14 +741,14 @@ export class UserService implements OnModuleDestroy {
       LIMIT 1
     `;
     if (!user) {
-      throw new NotFoundException(`User ${userId} not found in tenant`);
+      throw userError.notFound(`User ${userId} not found in tenant`);
     }
     const [tenant] = await this.prisma.$queryRaw<Array<{ keycloak_realm: string }>>`
       SELECT keycloak_realm FROM platform.tenants
       WHERE tenant_id = ${tenantId}::uuid AND is_active = true
       LIMIT 1
     `;
-    if (!tenant) throw new BadRequestException('Tenant not found or inactive');
+    if (!tenant) throw userError.tenantInactive();
 
     const tempPassword = generateTempPassword();
     await this.keycloakAdmin.setTemporaryPassword(
@@ -747,7 +801,7 @@ export class UserService implements OnModuleDestroy {
       LIMIT 1
     `;
     if (!user) {
-      throw new NotFoundException(`User ${userId} not found in tenant`);
+      throw userError.notFound(`User ${userId} not found in tenant`);
     }
     if (!user.email || user.email === '') {
       throw new BadRequestException(
@@ -759,7 +813,7 @@ export class UserService implements OnModuleDestroy {
       WHERE tenant_id = ${tenantId}::uuid AND is_active = true
       LIMIT 1
     `;
-    if (!tenant) throw new BadRequestException('Tenant not found or inactive');
+    if (!tenant) throw userError.tenantInactive();
 
     // 15 minutes — NIST 800-63B Rev.4 wants a short (< 60 min), single-use reset token.
     await this.keycloakAdmin.sendPasswordResetEmail(
@@ -839,7 +893,7 @@ export class UserService implements OnModuleDestroy {
       WHERE tenant_id = ${tenantId}::uuid AND is_active = true
       LIMIT 1
     `;
-    if (!tenant) throw new BadRequestException('Tenant not found or inactive');
+    if (!tenant) throw userError.tenantInactive();
 
     // 15 minutes — NIST 800-63B Rev.4 wants a short (< 60 min), single-use reset token.
     await this.keycloakAdmin.sendPasswordResetEmail(
@@ -893,7 +947,7 @@ export class UserService implements OnModuleDestroy {
         })
       : await deactivate(this.prisma);
     if (!user) {
-      throw new NotFoundException(`User ${userId} not found or already inactive`);
+      throw userError.notFound(`User ${userId} not found or already inactive`);
     }
 
     const [tenant] = await this.prisma.$queryRaw<Array<{ keycloak_realm: string }>>`
@@ -901,7 +955,7 @@ export class UserService implements OnModuleDestroy {
       WHERE tenant_id = ${tenantId}::uuid AND is_active = true
       LIMIT 1
     `;
-    if (!tenant) throw new BadRequestException('Tenant not found or inactive');
+    if (!tenant) throw userError.tenantInactive();
 
     await this.keycloakAdmin.disableUser(user.keycloak_user_id, tenant.keycloak_realm);
 

@@ -78,6 +78,7 @@ export const TENANT_ADMIN_ERROR = {
   INVITE_NOT_RESENDABLE: 'COS-TADM-002',
   INVITE_NOT_CANCELLABLE: 'COS-TADM-003',
   LAST_ADMIN: 'COS-TADM-004',
+  RESEND_TOO_SOON: 'COS-TADM-005',
 } as const;
 
 /** QM-15 flag for the last-administrator guard in UserService (ADR-110 round 2). Default OFF. */

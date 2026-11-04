@@ -961,7 +961,7 @@ paths:
         '403':
           description: Requires TENANT_ADMIN
         '404':
-          description: User not found in this tenant
+          description: '`COS-USER-002` — user not found in this tenant'
 
     put:
       security:
@@ -1009,7 +1009,7 @@ paths:
         '403':
           description: Requires TENANT_ADMIN
         '404':
-          description: User not found in this tenant
+          description: '`COS-USER-002` — user not found in this tenant'
         '409':
           description: |
             `COS-TADM-004` — the change would leave the tenant with no active TENANT_ADMIN (ADR-110). Only while
@@ -1046,7 +1046,7 @@ paths:
         '403':
           description: Requires TENANT_ADMIN
         '404':
-          description: User not found in this tenant
+          description: '`COS-USER-002` — user not found in this tenant'
 
   /users/{userId}/reset-password/email:
     post:
@@ -1075,7 +1075,7 @@ paths:
         '403':
           description: Requires TENANT_ADMIN
         '404':
-          description: User not found in this tenant
+          description: '`COS-USER-002` — user not found in this tenant'
   /admin/tenants:
     get:
       operationId: getAdminTenants
@@ -1294,6 +1294,14 @@ paths:
             `COS-TADM-002` — `details.reason`: `admin_count` (not exactly one active administrator),
             `not_bootstrapped` (the administrator was not created by the bootstrap) or `invitation_used` (a password
             is set); `details.tenant_admin_count`.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: |
+            `COS-TADM-005` — an invitation was sent to this tenant less than 5 minutes ago;
+            `details.retry_after_seconds`.
           content:
             application/json:
               schema:
@@ -2102,7 +2110,8 @@ paths:
                 $ref: '#/components/schemas/UserResponse'
         '400':
           description: |
-            Validation error — phone_number or email required (not both). `COS-AUTH-002`
+            `COS-USER-001` — phone_number or email required (not both); `COS-USER-004` — tenant not found or
+            inactive. `COS-AUTH-002`
             (`user.role.pathBRequiresEmail`) — TENANT_ADMIN or FINANCE with a phone number: both are Path B only
             (§5.4.4); refused before Keycloak is called (since 2026-11-03, ADR-110 round 3).
           content:
@@ -2110,7 +2119,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
         '409':
-          description: User with this identity (phone or email) already exists
+          description: '`COS-USER-003` — a user with this identity (phone or email) already exists'
           content:
             application/json:
               schema:
@@ -2148,7 +2157,7 @@ paths:
         '204':
           description: Role updated — no content returned
         '404':
-          description: User not found in tenant
+          description: '`COS-USER-002` — user not found in tenant'
           content:
             application/json:
               schema:
@@ -2188,7 +2197,7 @@ paths:
         '204':
           description: User deactivated — no content returned
         '404':
-          description: User not found or already inactive
+          description: '`COS-USER-002` — user not found or already inactive'
           content:
             application/json:
               schema:

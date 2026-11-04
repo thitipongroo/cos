@@ -95,8 +95,8 @@ home tenant is not a trial. An expired trial can still be given its administrato
 - With `s1.tenant.last-admin-guard` OFF, a customer can still deactivate or demote its last administrator, and then
   a SYSTEM_ADMIN can bootstrap a new one ("no ACTIVE administrator" is the rule). The guard is what closes that path
   once it is rolled out
-- `FeatureFlagGuard`'s 503 body has no `error` envelope, so clients see `COS-GENERAL-503` rather than `COS-FLAG-001`
-  (pre-existing, `http-exception.filter.ts`); the panel maps 503 to "switched off" for these endpoints
+- `FeatureFlagGuard` answered with a bare 503 body, which clients saw as `COS-GENERAL-503`; fixed in round 4 (the
+  `{ error }` envelope, `COS-FLAG-001`). The panel still reads any 503 from these endpoints as "switched off"
 
 ### Neutral
 
@@ -160,6 +160,115 @@ failed`); a 404 counts as deleted.
 14. **`createUser`** (`POST /users`) refuses a phone-number account with TENANT_ADMIN or FINANCE with the same
     `400 COS-AUTH-002`, before Keycloak is called (review of round 3; product owner, 2026-11-03). All three writers of a
     role now use `assertPathBRolesHaveEmail`.
+
+## Amendment — round 4 (product owner, 2026-11-03)
+
+15. **An ADDITIONAL TENANT_ADMIN / FINANCE needs MFA** (`s1.identity.additional-role-mfa`, default OFF): `RolesGuard`
+    lets such a role satisfy `@Roles` only when the token's `acr` proves MFA, or while `MFA_ENFORCE` is off (warned) —
+    the same rule as the primary role; otherwise `403 COS-AUTH-001`. `hasAnyRole` (sync) follows it. Closes the gap in
+    the round-2 notes: Keycloak's Path B gate and `MfaEnforcement` read the primary role only. Accounts listed by
+    `check-path-b-roles.sh` lose that role's access when the flag is on.
+16. **Resend cooldown**: one invitation per tenant every 5 minutes, from the latest `tenant.bootstrap_admin` /
+    `tenant.resend_admin_invite` audit row under the administrator lock (so across pods); `429 COS-TADM-005` with
+    `details.retry_after_seconds`. Cancel is not limited.
+17. **`COS-USER`** codes for `UserService`'s refusals (QM-10); statuses and messages unchanged.
+18. **Invitation emails in Thai then English** from the `cos` email theme (`infrastructure/keycloak/themes/cos/email`),
+    as the §7.10 notices are: `platform.users` holds no locale to choose by.
+
+Review of round 4 (Rule 41, 2026-11-03):
+
+- **Decision 15 cannot be switched on yet — DO NOT enable `s1.identity.additional-role-mfa`.** Keycloak asks for OTP
+  only when the `role` user attribute — the PRIMARY role, all `syncUserRole` writes — is TENANT_ADMIN or FINANCE,
+  and no client requests a higher `acr`. So a person whose primary role is, say, PROJECT_MANAGER and who holds
+  FINANCE as an additional role never receives an MFA token, and with the flag on loses FINANCE permanently — not
+  only the no-email accounts `check-path-b-roles.sh` lists. The guard code is right; the identity side that would
+  let such a person prove MFA does not exist. Open decision for the product owner.
+- The same rule now also applies in `PermissionsGuard` (additional-role permission union), which RolesGuard alone did
+  not cover. On the sync path `hasAnyRole` returns false for such a role, so a push is a plain 403 and a delta drops
+  the entity type, without `COS-AUTH-001`; and no web or mobile client yet tells the user to enrol MFA on
+  `COS-AUTH-001`.
+- The cooldown reads `audit_logs` with the RLS GUC set (in phase 2, and in a short transaction of its own for the
+  bootstrap-row read in phase 1), uses `clock_timestamp()` and clamps at 0. An invitation whose email failed is
+  followed by a `tenant.admin_invite_not_sent` audit row, and the cooldown ignores an invitation that has one — the
+  operator can resend at once. The cooldown has no flag of its own; turning `s1.tenant.bootstrap-admin` off is its
+  kill switch. No `Retry-After` header is set (the body carries `retry_after_seconds`).
+- `FeatureFlagGuard`'s envelope fix is a behaviour change for every flagged endpoint while its flag is OFF: clients
+  now see `COS-FLAG-001` instead of `COS-GENERAL-503`, and the mobile app's `isFeatureDisabled` — which could never
+  return true before — now does, so screens such as data export show their "disabled" state as designed. Shipped
+  unflagged on purpose (plan 15.1).
+
+## Amendment — round 5 (product owner, 2026-11-03)
+
+Answers the open decision in the review of round 4.
+
+19. **Keycloak asks for OTP on `mfa_required`, not on `role`.** `UserService` sets the user attribute
+    `mfa_required=true` whenever the effective roles (primary ∪ additional) include TENANT_ADMIN or FINANCE, and removes
+    it when they no longer do (`changeRole`, `setUserRoles`); `createEmailUser` sets it on creation. Both realm
+    conditions — the browser OTP subflow and the Direct Grant deny — match `mfa_required` = `^true$`. A person holding
+    either role as an additional role is therefore asked for OTP, receives `acr=gold`, and can satisfy Decision 15.
+20. **Accounts that predate this are backfilled** by `backend/prisma/backfill-mfa-required.ts` (dry run by default,
+    `--apply` writes), **before** an environment's realm switches to the new condition
+    (`docs/runbooks/mfa-enforcement.md` Step 4).
+
+Review of round 5 (Rule 41, 2026-11-03):
+
+- **Deviation from plan 17.3.** The plan added sibling conditional subflows (one on `role`, one on `mfa_required`).
+  Imported into Keycloak 26.6.4, two `Condition - Level of Authentication` at the same level fail every request in the
+  realm with `IllegalStateException: Duplicate key 2`, and conditions inside one subflow are ANDed, so they cannot be
+  combined either. The existing conditions were switched to `mfa_required` instead. The cost is the ordering rule of
+  Decision 20: between a realm switch and the backfill, a primary TENANT_ADMIN without the attribute would be
+  neither asked for OTP nor refused on Direct Grant (measured: HTTP 200). Layer 2 still refuses its token when
+  `MFA_ENFORCE=true`.
+- **Keycloak 26 refuses an attributes-only user update** (HTTP 400 "User name is missing", declarative user profile).
+  Found by running the backfill against a real Keycloak; mocks could not show it. `syncUserRole`, which predates this
+  ADR, sent that shape, so on 26.6.4 every role change committed in the database and then returned 500 with Keycloak's
+  `role` left stale. Both `syncUserRole` and `syncMfaRequired` now send the whole representation.
+- With round 5 deployed, backfilled and the realm switched, the "DO NOT enable" note on Decision 15 no longer holds;
+  `s1.identity.additional-role-mfa` follows `docs/runbooks/tenant-admin-flags-rollout.md`. Still true: accounts with
+  no email that hold a privileged role (`check-path-b-roles.sh`) cannot use Path B at all, and no client yet tells the
+  user to enrol MFA on `COS-AUTH-001`.
+
+## Amendment — round 6 (product owner, 2026-11-03)
+
+From the review of round 5.
+
+21. **One Keycloak update per role change** (D17). `changeRole` and `setUserRoles` call
+    `KeycloakAdminService.syncRoleAttributes` once, after commit, with `role` and `mfa_required` together, computed
+    from the primary and additional roles read back from the database rather than from the request. Two separate
+    updates could fail between them and leave a new primary TENANT_ADMIN without `mfa_required`, which the round-5
+    realm neither challenges nor refuses. The body is `username`, `email`, `firstName`, `lastName` and the attribute
+    map: never `enabled` or `requiredActions`, so a deactivation or a required action set in between is not undone
+    (measured on 26.6.4). Replaces the round-5 review's "whole representation" fix.
+22. **Phone-only accounts keep Path A** (D18). `mfa_required` is set when the primary role is TENANT_ADMIN / FINANCE, or
+    when the account has an email and holds one as an additional role (`mfaRequiredFor`). A legacy phone-only account
+    whose privileged role is only additional is not given it — Direct Grant is its only way in — and the backfill
+    skips it. It still cannot use that role while `s1.identity.additional-role-mfa` is on.
+
+Notes for round 6:
+
+- Change made outside a plan, recorded here: during plan item 17.5 `syncUserRole` (which predates this ADR) was found
+  to fail on Keycloak 26.6.4 and was changed before the round-6 plan existed. Decision 21 replaces it.
+- Reading the roles back after commit narrows, but does not close, the window for two overlapping role changes: a sync
+  that reads before the later commit can still land last. Each later role change or a re-run of the backfill corrects
+  it (the backfill only for a missing `mfa_required`); with `MFA_ENFORCE=true`, Layer 2 refuses a non-gold
+  primary-privileged token meanwhile.
+- `check-keycloak-mfa-config.mjs` (CI) and `verify-keycloak-mfa-live.mjs` now check the CONDITIONAL subflow that holds
+  the OTP form / Deny: one REQUIRED attribute condition that holds for `mfa_required` = `true` as Keycloak evaluates it
+  (`regex`, `not`), no other condition beside it (the browser subflow's Level of Authentication excepted), and no
+  CONDITIONAL or DISABLED subflow above it. A bad client secret (401 `unauthorized_client`) stops the probe instead of
+  counting as a refusal. The live probe adds a `role=SITE_ENGINEER` + `mfa_required` user
+  that must get HTTP 401. The CI check fails on realm copies with `regex: "false"`, `^nottrue$`, `not: true`, a
+  DISABLED subflow or condition, a `role` condition beside it, and the pre-round-5 realm; the live check, run against
+  Keycloak 26.6.4 with each change applied and reverted, fails on the browser condition back on `role`, `regex: "false"`,
+  a DISABLED browser subflow, a DISABLED `browser-mfa forms` above it, a REQUIRED `conditional-user-role` beside Deny,
+  and the Direct Grant condition back on `role` (where only the new probe user got a token); the CI check also fails on
+  the Deny subflow wrapped in a CONDITIONAL one.
+- The round-5 backfill only ever sets `mfa_required`; where its `--apply` already ran, phone-only holders of an
+  additional privileged role keep it until their roles are saved again (runbook Step 4). The runs made while
+  building it were against local containers only.
+- The realm file's diff also carries round-4 changes (`emailTheme: "cos"`, account-console redirect URIs on
+  `construction-os-dev`). Install the `cos` theme on a Keycloak before importing or switching that realm, or invitation
+  emails fall back to Keycloak's template.
 
 ## References
 

@@ -52,12 +52,15 @@ describe('FeatureFlagGuard', () => {
       caught = err;
     }
     expect(caught).toBeInstanceOf(ServiceUnavailableException);
-    const response = (caught as ServiceUnavailableException).getResponse() as Record<
-      string,
-      unknown
-    >;
-    expect(response['code']).toBe('COS-FLAG-001');
-    expect(response['messageKey']).toBe('common.featureFlag.disabled');
+    // QM-10 envelope, so GlobalExceptionFilter passes the code through instead of COS-GENERAL-503.
+    expect((caught as ServiceUnavailableException).getResponse()).toEqual({
+      error: {
+        code: 'COS-FLAG-001',
+        message: expect.stringContaining('is temporarily disabled'),
+        messageKey: 'common.featureFlag.disabled',
+        details: { flag: expect.any(String) },
+      },
+    });
   });
 });
 

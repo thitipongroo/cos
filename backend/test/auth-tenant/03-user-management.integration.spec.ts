@@ -82,13 +82,13 @@ describe('Phase 2 · user management + MFA (master:1967-1991, 1957-1960)', () =>
     const moduleRef: TestingModule = await Test.createTestingModule({ imports: [AppModule] })
       .overrideProvider(KeycloakAdminService)
       // Method names taken from KeycloakAdminService itself, not guessed: user.service.ts calls
-      // provisionPhoneUser, createEmailUser, syncUserRole, disableUser, setTemporaryPassword and
+      // provisionPhoneUser, createEmailUser, syncRoleAttributes, disableUser, setTemporaryPassword and
       // sendPasswordResetEmail. A missing name is `undefined` at the call site and surfaces as a
       // 500, which is how the first draft of this file failed.
       .useValue({
         provisionPhoneUser,
         createEmailUser,
-        syncUserRole: jest.fn().mockResolvedValue(undefined),
+        syncRoleAttributes: jest.fn().mockResolvedValue(undefined),
         disableUser: jest.fn().mockResolvedValue(undefined),
         setTemporaryPassword: jest.fn().mockResolvedValue(undefined),
         sendPasswordResetEmail: jest.fn().mockResolvedValue(undefined),

@@ -92,6 +92,10 @@ export const DEFAULT_FLAGS: Readonly<Record<string, boolean>> = {
   // TENANT_ADMIN (409 COS-TADM-004). A change to authorization behaviour, so OFF until rollout; OFF is today's
   // behaviour, and the kill switch if the guard ever blocks a legitimate change.
   's1.tenant.last-admin-guard': false,
+  // An ADDITIONAL TENANT_ADMIN / FINANCE role needs a token that proved MFA, like the primary role (ADR-110 round 4;
+  // RolesGuard). An authorization change, so OFF until rollout; OFF is today's behaviour. Run
+  // scripts/readiness/check-path-b-roles.sh first: the accounts it lists lose that role's access when this is on.
+  's1.identity.additional-role-mfa': false,
 };
 
 export interface FlagContext {

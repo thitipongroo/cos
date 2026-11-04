@@ -152,6 +152,17 @@ describe('Tenant admin bootstrap · real database', () => {
       tenant_admin_pending: true,
     });
 
+    // Round 4 (D12): not within 5 minutes of the invitation, on the real audit trail.
+    await expect(bootstrap.resendInvite(tenantId, ACTOR_ID, JUSTIFICATION)).rejects.toMatchObject({
+      status: 429,
+      response: { error: { code: 'COS-TADM-005' } },
+    });
+    // Ten minutes pass. The container user is a superuser, so it may move the audit timestamp; app_user cannot
+    // (rls_audit_no_update) — this is the test simulating time, not something the application can do.
+    await infra.prisma.$executeRawUnsafe(
+      `UPDATE platform.audit_logs SET occurred_at = occurred_at - interval '10 minutes' WHERE tenant_id = $1::uuid`,
+      tenantId,
+    );
     const resent = await bootstrap.resendInvite(tenantId, ACTOR_ID, JUSTIFICATION);
     expect(resent).toMatchObject({ user_id: created.user_id, invite_sent: true });
     expect((await audit(tenantId)).map((r) => r.action)).toEqual([
@@ -340,7 +351,7 @@ describe('Tenant admin bootstrap · real database', () => {
       );
     }
     const guarded = new UserService(
-      { syncUserRole: jest.fn(), disableUser: jest.fn() } as never,
+      { syncRoleAttributes: jest.fn(), disableUser: jest.fn() } as never,
       { write: jest.fn() } as never,
       { isEnabled: (f: string) => f === 's1.tenant.last-admin-guard' } as never,
     );
@@ -432,5 +443,94 @@ describe('Tenant admin bootstrap · real database', () => {
     );
     expect(rows).toEqual([]);
     expect(keycloak.createEmailUser).not.toHaveBeenCalled();
+  });
+
+  // Round 4 review: a failed email must not hold the operator to the 5-minute cooldown.
+  it('an invitation whose email failed can be resent at once', async () => {
+    const tenantId = '99999999-2222-4000-8000-00000000000a';
+    await seedTenant(tenantId, 'bootstrap-not-sent');
+    keycloak.sendPasswordResetEmail.mockRejectedValueOnce(new Error('SMTP down'));
+    const created = await bootstrap.bootstrap(
+      tenantId,
+      { email: 'owner@not-sent.example', display_name: 'Owner' },
+      ACTOR_ID,
+      JUSTIFICATION,
+    );
+    expect(created.invite_sent).toBe(false);
+
+    const resent = await bootstrap.resendInvite(tenantId, ACTOR_ID, JUSTIFICATION);
+
+    expect(resent.invite_sent).toBe(true);
+    expect((await audit(tenantId)).map((r) => r.action)).toEqual([
+      'tenant.bootstrap_admin',
+      'tenant.admin_invite_not_sent',
+      'tenant.resend_admin_invite',
+    ]);
+    // …and a resend that DID go out starts the cooldown again.
+    await expect(bootstrap.resendInvite(tenantId, ACTOR_ID, JUSTIFICATION)).rejects.toMatchObject({
+      status: 429,
+    });
+  });
+
+  // Round 6 (D17, D18): one Keycloak update per role change, computed from the roles read back from the database.
+  it('a role change sends role and mfa_required together, from the stored roles (D17, D18)', async () => {
+    const tenantId = '99999999-2222-4000-8000-000000000011';
+    const office = '99999999-3333-4000-8000-000000000011';
+    const phone = '99999999-3333-4000-8000-000000000012';
+    await seedTenant(tenantId, 'bootstrap-role-sync');
+    await infra.prisma.$executeRawUnsafe(
+      `INSERT INTO platform.users (user_id, tenant_id, keycloak_user_id, email, display_name)
+       VALUES ($1::uuid, $2::uuid, 'kc-role-sync-office', 'office@sync.example', 'Office')`,
+      office,
+      tenantId,
+    );
+    await infra.prisma.$executeRawUnsafe(
+      `INSERT INTO platform.users (user_id, tenant_id, keycloak_user_id, phone_number, email, display_name)
+       VALUES ($1::uuid, $2::uuid, 'kc-role-sync-phone', '+66890000012', '', 'Phone')`,
+      phone,
+      tenantId,
+    );
+    for (const id of [office, phone]) {
+      await infra.prisma.$executeRawUnsafe(
+        `INSERT INTO platform.tenant_memberships (tenant_id, user_id, role)
+         VALUES ($1::uuid, $2::uuid, 'SITE_WORKER'::platform."CosRoleEnum")`,
+        tenantId,
+        id,
+      );
+    }
+    // A legacy phone-only account already holding FINANCE (setUserRoles no longer grants one).
+    await infra.prisma.$executeRawUnsafe(
+      `INSERT INTO platform.user_additional_roles (user_id, tenant_id, role)
+       VALUES ($1::uuid, $2::uuid, 'FINANCE'::platform."CosRoleEnum")`,
+      phone,
+      tenantId,
+    );
+    const kc = { syncRoleAttributes: jest.fn().mockResolvedValue(undefined) };
+    const outbox = { write: jest.fn(), publish: jest.fn().mockResolvedValue(undefined) };
+    const svc = new UserService(kc as never, outbox as never, flagsOff);
+    try {
+      await svc.setUserRoles(
+        office,
+        { primary_role: 'PROJECT_MANAGER' as never, additional_roles: ['FINANCE' as never] },
+        tenantId,
+        ACTOR_ID,
+      );
+      await svc.changeRole(office, { role: 'SITE_ENGINEER' as never }, tenantId, ACTOR_ID);
+      await svc.setUserRoles(
+        phone,
+        { primary_role: 'SITE_ENGINEER' as never, additional_roles: ['FINANCE' as never] },
+        tenantId,
+        ACTOR_ID,
+      );
+      expect(kc.syncRoleAttributes.mock.calls).toEqual([
+        ['kc-role-sync-office', 'construction-os', 'PROJECT_MANAGER', true],
+        // changeRole kept the additional FINANCE: still required.
+        ['kc-role-sync-office', 'construction-os', 'SITE_ENGINEER', true],
+        // D18: no email, privilege only additional → not set, so Path A keeps working.
+        ['kc-role-sync-phone', 'construction-os', 'SITE_ENGINEER', false],
+      ]);
+    } finally {
+      await svc.onModuleDestroy();
+    }
   });
 });

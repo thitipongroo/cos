@@ -18,8 +18,17 @@
 // carry it as the `role` user ATTRIBUTE, which is what the `oidc-usermodel-attribute-mapper` turns
 // into the `role` claim (spec §5.4.2). `Condition - user role` reads role mappings, so the ADR-067
 // construction would have fired for nobody even if it had been applied. The working mechanism is
-// `Condition - user attribute` on `role`, which reads the same source the JWT claim reads — so the
-// condition and the token can never disagree.
+// `Condition - user attribute`. Until ADR-110 round 5 it read `role` — the PRIMARY role only, so a
+// TENANT_ADMIN / FINANCE held as an ADDITIONAL role was never challenged. It now reads `mfa_required`,
+// which the backend writes from the primary and additional roles (`mfaRequiredFor`).
+//
+// WHAT "PRESENT" MEANS HERE (ADR-110 round 6). The condition must sit in the same CONDITIONAL subflow as
+// the OTP form / Deny it guards, be REQUIRED, and match the value `true` the way Keycloak evaluates it
+// (`regex` on → the whole value matches the pattern; off → equality; `not` inverts). Any other
+// condition beside it (other than the Level-of-Authentication one the OTP subflow needs) is ANDed with
+// it and is reported — a `role` condition left there means an additional-only holder is still not
+// challenged — and so is a CONDITIONAL or DISABLED subflow above it. Each of these used to pass: `regex: "false"` with
+// `^true$`, an expected value of `^nottrue$`, a DISABLED subflow.
 //
 // THE acr TRAP THIS ENCODES. Keycloak emits `acr` from the realm's `acr.loa.map`. Measured on a live
 // realm: a password-only Direct Grant token already carries LoA 1. With the map `{"gold":1}` that the
@@ -51,6 +60,8 @@ const DEFAULT_REALM = join(
 const PRIVILEGED_ROLES = ['TENANT_ADMIN', 'FINANCE'];
 /** The claim/attribute the role travels in (spec §5.4.1, §5.4.2). */
 const ROLE_ATTRIBUTE = 'role';
+/** Set by UserService when the EFFECTIVE roles (primary ∪ additional) include a privileged one (ADR-110 round 5). */
+const MFA_REQUIRED_ATTRIBUTE = 'mfa_required';
 
 const COND_ATTRIBUTE = 'conditional-user-attribute';
 const COND_CONFIGURED = 'conditional-user-configured';
@@ -86,36 +97,146 @@ const configFor = (realm, e) =>
     ? ((realm.authenticatorConfig ?? []).find((c) => c.alias === e.authenticatorConfig) ?? null)
     : null;
 
-/** A privileged-role condition: reads the `role` attribute and its expected value covers both roles. */
+/** A condition on the `role` attribute whose expected value names both roles — the pre-round-5 mechanism, used only to
+ *  explain a failure. A negated one does not count. */
 function privilegedConditions(realm, executions) {
   return executions.filter((e) => {
     if (e.authenticator !== COND_ATTRIBUTE) return false;
     const cfg = configFor(realm, e)?.config ?? {};
     if (cfg.attribute_name !== ROLE_ATTRIBUTE) return false;
+    if (String(cfg.not) === 'true') return false;
     const expected = String(cfg.attribute_expected_value ?? '');
     return PRIVILEGED_ROLES.every((r) => expected.includes(r));
   });
 }
 
-function checkBinding(realm, flowsByAlias, { label, boundAlias, required }) {
+/** Whether a `conditional-user-attribute` config holds for an attribute value, as Keycloak evaluates it. */
+function conditionHolds(cfg, value) {
+  const expected = String(cfg.attribute_expected_value ?? '');
+  let matches;
+  if (String(cfg.regex) === 'true') {
+    try {
+      matches = new RegExp(`^(?:${expected})$`).test(value); // Java String.matches: the whole value
+    } catch {
+      matches = false;
+    }
+  } else {
+    matches = expected === value;
+  }
+  return String(cfg.not) === 'true' ? !matches : matches;
+}
+
+/** The CONDITIONAL subflow holding `gate` (the OTP form or Deny) must be guarded by exactly one REQUIRED attribute
+ *  condition that holds for `mfa_required` = `true` and not for `false` or an absent value (ADR-110 rounds 5–6).
+ *  Every subflow above it must be REQUIRED or ALTERNATIVE: a CONDITIONAL one adds conditions of its own, a DISABLED
+ *  one switches it off. `allowed` names the other condition types that may sit beside the guard (LoA, for OTP). */
+function checkGate(realm, executions, label, gate, boundAlias, allowed) {
+  const sub = gate.subflowOf;
+  const at = `${label}: subflow "${sub}"`;
+  const parent = executions.find((e) => e.autheticatorFlow && e.flowAlias === sub);
+  if (!parent || parent.requirement !== 'CONDITIONAL') {
+    fail(
+      at,
+      `is ${parent?.requirement ?? 'the bound flow itself'}, not CONDITIONAL — its conditions are not evaluated`,
+    );
+    return;
+  }
+  for (let up = parent; up && up.subflowOf !== boundAlias;) {
+    const outer = executions.find((e) => e.autheticatorFlow && e.flowAlias === up.subflowOf);
+    if (outer && !['REQUIRED', 'ALTERNATIVE'].includes(outer.requirement)) {
+      fail(
+        at,
+        `sits inside subflow "${outer.flowAlias}", which is ${outer.requirement} — ` +
+          (outer.requirement === 'CONDITIONAL'
+            ? 'its own conditions decide whether the gate is reached at all'
+            : 'the gate is never reached'),
+      );
+    }
+    up = outer;
+  }
+  if (gate.requirement !== 'REQUIRED') {
+    fail(at, `"${gate.authenticator}" is ${gate.requirement}, not REQUIRED`);
+  }
+  const conditions = executions.filter(
+    (e) => e.subflowOf === sub && e.authenticator === COND_ATTRIBUTE,
+  );
+  // Any other condition type in the subflow is ANDed with the guard just the same (`conditional-user-role`, …).
+  const otherTypes = executions.filter(
+    (e) =>
+      e.subflowOf === sub &&
+      e.authenticator?.startsWith('conditional-') &&
+      e.authenticator !== COND_ATTRIBUTE &&
+      !allowed.includes(e.authenticator) &&
+      e.requirement !== 'DISABLED',
+  );
+  const guards = conditions.filter((e) => {
+    const cfg = configFor(realm, e)?.config ?? {};
+    return (
+      e.requirement === 'REQUIRED' &&
+      cfg.attribute_name === MFA_REQUIRED_ATTRIBUTE &&
+      conditionHolds(cfg, 'true') &&
+      !conditionHolds(cfg, 'false') &&
+      !conditionHolds(cfg, '')
+    );
+  });
+  if (guards.length === 0) {
+    const roleOnly = privilegedConditions(realm, conditions).length > 0;
+    const usesConfigured = executions.some(
+      (e) => e.subflowOf === sub && e.authenticator === COND_CONFIGURED,
+    );
+    fail(
+      at,
+      `no REQUIRED "${COND_ATTRIBUTE}" that holds for "${MFA_REQUIRED_ATTRIBUTE}" = true (and not for false / absent)` +
+        (roleOnly
+          ? ` — it reads "${ROLE_ATTRIBUTE}", the PRIMARY role only, so an additional ${PRIVILEGED_ROLES.join(' / ')} is never challenged`
+          : '') +
+        (usesConfigured
+          ? ` — it relies on "${COND_CONFIGURED}", which only challenges users who already enrolled`
+          : ''),
+    );
+  }
+  const others = [
+    ...conditions.filter((e) => !guards.includes(e) && e.requirement !== 'DISABLED'),
+    ...otherTypes,
+  ];
+  if (guards.length > 0 && others.length > 0) {
+    fail(
+      at,
+      `${others.map((e) => `"${e.authenticator}"`).join(', ')} beside the ${MFA_REQUIRED_ATTRIBUTE} condition — ` +
+        'conditions in a subflow are ANDed, so a user must meet both and an additional-only holder can slip through',
+    );
+  }
+}
+
+function checkBinding(realm, flowsByAlias, { label, boundAlias, gateProvider, allowed, required }) {
   if (!boundAlias || !flowsByAlias.has(boundAlias)) {
-    fail(`${label}: binding`, `bound flow "${boundAlias ?? '(none)'}" is not defined in this realm`);
+    fail(
+      `${label}: binding`,
+      `bound flow "${boundAlias ?? '(none)'}" is not defined in this realm`,
+    );
     return;
   }
   if (flowsByAlias.get(boundAlias).builtIn) {
-    fail(`${label}: binding`, `bound flow "${boundAlias}" is builtIn — it carries no MFA condition`);
+    fail(
+      `${label}: binding`,
+      `bound flow "${boundAlias}" is builtIn — it carries no MFA condition`,
+    );
   }
 
   const executions = collect(flowsByAlias, boundAlias);
 
-  if (privilegedConditions(realm, executions).length === 0) {
-    const usesConfigured = executions.some((e) => e.authenticator === COND_CONFIGURED);
+  for (const gate of executions.filter((e) => e.authenticator === gateProvider)) {
+    checkGate(realm, executions, label, gate, boundAlias, allowed);
+  }
+
+  const loaLevels = executions
+    .filter((e) => e.authenticator === COND_LOA)
+    .map((e) => String(configFor(realm, e)?.config?.['loa-condition-level'] ?? ''));
+  const duplicated = loaLevels.filter((l, i) => loaLevels.indexOf(l) !== i);
+  if (duplicated.length > 0) {
     fail(
-      `${label}: privileged condition`,
-      `no "${COND_ATTRIBUTE}" on attribute "${ROLE_ATTRIBUTE}" covering ${PRIVILEGED_ROLES.join(' + ')}` +
-        (usesConfigured
-          ? ` — the chain relies on "${COND_CONFIGURED}", which only challenges users who already enrolled`
-          : ''),
+      `${label}: ${COND_LOA}`,
+      `level ${[...new Set(duplicated)].join(', ')} appears twice — Keycloak 26.6.4 then fails every request to the realm`,
     );
   }
 
@@ -180,9 +301,14 @@ function main() {
   checkBinding(realm, flowsByAlias, {
     label: 'browser flow (Path B)',
     boundAlias: realm.browserFlow,
+    gateProvider: OTP_BROWSER,
+    allowed: [COND_LOA],
     required: [
       { provider: OTP_BROWSER, why: 'privileged users must be challenged for TOTP' },
-      { provider: COND_LOA, why: 'without it the OTP does not raise the LoA and acr cannot prove MFA' },
+      {
+        provider: COND_LOA,
+        why: 'without it the OTP does not raise the LoA and acr cannot prove MFA',
+      },
     ],
   });
 
@@ -192,7 +318,11 @@ function main() {
   checkBinding(realm, flowsByAlias, {
     label: 'direct grant flow (Path A)',
     boundAlias: realm.directGrantFlow,
-    required: [{ provider: DENY, why: 'privileged roles are Path B only and must be refused here' }],
+    gateProvider: DENY,
+    allowed: [],
+    required: [
+      { provider: DENY, why: 'privileged roles are Path B only and must be refused here' },
+    ],
   });
 
   for (const n of notes) console.log(`  ${n}`);

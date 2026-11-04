@@ -127,7 +127,8 @@ paths:
         `s1.tenant.trial-lifecycle` (read-only enforcement for ended trials and the daily trial job) and
         `s1.project.plan-project-limit` (the plan's active-project limit at project creation), both defaulting OFF,
         and since 2026-11-02 (ADR-110) `s1.tenant.bootstrap-admin` (a SYSTEM_ADMIN creating a tenant's first
-        TENANT_ADMIN) and `s1.tenant.last-admin-guard` (a tenant keeps an active TENANT_ADMIN), both defaulting OFF.
+        TENANT_ADMIN), `s1.tenant.last-admin-guard` (a tenant keeps an active TENANT_ADMIN) and
+        `s1.identity.additional-role-mfa` (an additional privileged role needs MFA), all defaulting OFF.
       tags: [Feature Flags]
       security:
         - bearerAuth: []
