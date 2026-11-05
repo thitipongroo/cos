@@ -51,15 +51,15 @@ The numbers are the ones used while the work was planned. Decisions about the wi
 
 ## The series
 
-| Branch                        | Content                                                                                                                       | State                |
-| ----------------------------- | ----------------------------------------------------------------------------------------------------------------------------- | -------------------- |
-| 1a `chore/deps-1a-audit-gate` | the audit script made to report fully, with no suppression; dead suppressions and `auditConfig` removed; no dependency change | committed `c94c183a` |
-| 1b `chore/deps-1b-basic-ftp`  | basic-ftp override (dev; GHSA-c475-qrg2-pj4r and four repository-only advisories)                                             | implemented          |
-| 1c                            | decode-uri-component override (file-service runtime; GHSA-qr28-fpjm-wq7f) and file-service's Jest                             | not started          |
-| 2                             | zod 3, first source (`@mermaid-js/mermaid-cli` 11 → 12)                                                                       | not started          |
-| 3                             | zod 3, second source (`@lhci/cli` 0.15 → 0.16)                                                                                | not started          |
-| 4                             | @azure/msal-node (5 → 7 via `@azure/identity` 4.14.1)                                                                         | not started          |
-| 5                             | Pillow (12.3.0 → 13.0.0, `ai-ocr-pipeline`)                                                                                   | not started          |
+| Branch                                  | Content                                                                                                                       | State                |
+| --------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- | -------------------- |
+| 1a `chore/deps-1a-audit-gate`           | the audit script made to report fully, with no suppression; dead suppressions and `auditConfig` removed; no dependency change | committed `c94c183a` |
+| 1b `chore/deps-1b-basic-ftp`            | basic-ftp override (dev; GHSA-c475-qrg2-pj4r and four repository-only advisories)                                             | committed `1a0b9f0b` |
+| 1c `chore/deps-1c-decode-uri-component` | decode-uri-component override (file-service runtime; GHSA-qr28-fpjm-wq7f) and file-service's Jest                             | implemented          |
+| 2                                       | zod 3, first source (`@mermaid-js/mermaid-cli` 11 → 12)                                                                       | not started          |
+| 3                                       | zod 3, second source (`@lhci/cli` 0.15 → 0.16)                                                                                | not started          |
+| 4                                       | @azure/msal-node (5 → 7 via `@azure/identity` 4.14.1)                                                                         | not started          |
+| 5                                       | Pillow (12.3.0 → 13.0.0, `ai-ocr-pipeline`)                                                                                   | not started          |
 
 CI's audit job stays red until branch 5 is in. The pnpm step clears after 1b, 1c and 2–4. pip-audit, which CI
 reaches only once the pnpm step passes, clears after 5. Both assume that govulncheck passes. It has not been run
@@ -658,15 +658,219 @@ Limitations:
 - **`scripts/pnpm-audit.sh`:** 3 unresolved (zod, @azure/msal-node, decode-uri-component). basic-ftp is gone.
 - **`verify-before-push.sh --full` and the Docker builds:** reported in the hand-off.
 
-## Branch 1c (not started)
+## Branch 1c — decode-uri-component 0.2.2 → 0.5.1
 
-decode-uri-component 0.5.1 is ESM-only, and Jest cannot load it as file-service's config stands. That is what 1c has
-to solve.
+1c adds one override, `'query-string@7.1.3>decode-uri-component': '^0.5.1'`, and one Jest transform in file-service.
+The lockfile diff is decode-uri-component's package and snapshot entries, query-string's dependency line and the
+overrides line. The installed 0.5.1 is byte-identical to the npm tarball, whose SHA-512 matches the lockfile's
+`integrity`.
+
+The override is scoped to query-string 7.1.3 (product owner, 2026-11-06, after /doubt cycle 3). A workspace-wide
+`decode-uri-component@<0.5.1` would hand the ESM-only 0.5.1 to any future package that asks for 0.2.x, whose
+`require()` of it would then fail at runtime with nothing to flag it. Scoped, such a package gets 0.2.x, and the audit
+gate reports it. Measured on pnpm 11.22.0 in a scratch project depending on both `query-string@7.1.3` and
+`decode-uri-component@^0.2.2`: the direct dependency resolved to 0.2.2, and query-string's to 0.5.1. In this repo the
+scoped and the workspace-wide override give the same lockfile.
+
+### The advisory
+
+| Advisory            | Severity | Affected   | Patched | What it is                                                                                               |
+| ------------------- | -------- | ---------- | ------- | -------------------------------------------------------------------------------------------------------- |
+| GHSA-qr28-fpjm-wq7f | high     | `<= 0.5.0` | `0.5.1` | CVE-2026-118664, published 2026-10-29. The fallback decoder runs one full-string replace per run, O(K·L) |
+
+0.5.1 was published on 2026-10-23, so the release-age rule did not block it and pnpm added no exclude entry.
+
+The published diff from 0.5.0 to 0.5.1 touches `index.js` only (and `package.json`'s version). The UTF-16 BOM pair
+and a truncated `%C2` are now handled inside the scanner. The table of runs and its `new RegExp(key, 'g')` replace
+loop are gone, replaced by one `input.replace(multiMatcher, run => decode(run))`.
+
+The advisory's own proof of concept (224 KB, 32 000 distinct runs and a trailing `%zz`) under Node 24.22.2:
+
+| Version                 | Time      |
+| ----------------------- | --------- |
+| 0.2.2 (what 1b shipped) | 21 604 ms |
+| 0.5.0                   | 21 603 ms |
+| 0.5.1 (installed)       | 31 ms     |
+
+### Where it runs, and upstream
+
+`pnpm why decode-uri-component -r` finds one version on one path:
+`@cos/file-service` (`minio ^7.1.0`) → `minio@7.1.4` → `query-string@7.1.3` → `decode-uri-component`. It is a
+production dependency of file-service.
+
+query-string declares `^0.2.2`, so 0.5.1 is outside its range (D2). No upstream release clears it: minio 8.0.7, the
+newest, still declares `query-string ^7.1.3`, and 7.1.3 is the last 7.x.
+
+### What the override costs: query-string's decoding functions throw
+
+decode-uri-component is ESM-only from 0.4.0 (`"type": "module"`, `export default`; 0.3.0 still had
+`module.exports`). query-string 7.1.3 is CommonJS
+and does `const decodeComponent = require('decode-uri-component')`. Node 24's `require()` of an ES module returns the
+module namespace, `{ __esModule, default }`, not the function. Node 24 is what runs everywhere here: root `engines`
+`>=24.0.0`, CI's `NODE_VERSION: '24'`, and `node:24-alpine` in file-service's Dockerfile. So, through the installed
+tree:
+
+| query-string 7.1.3                               | With 0.5.1                                                                                                        |
+| ------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------- |
+| `stringify`, `extract`                           | work; they never decode                                                                                           |
+| `parse`, `parseUrl`, `pick`, `exclude`           | throw `TypeError: decodeComponent is not a function` (`decode: true`, the default); work with `{ decode: false }` |
+| `stringifyUrl`, when the URL already has a query | throws the same, even with `{ decode: false }`: it calls `parse` on that query without passing the option on      |
+| `stringifyUrl` on a URL with no query            | works                                                                                                             |
+
+minio 7.1.4 calls `stringify` only: 6 call sites in `dist/main` (`minio.js`, `internal/client.js`, `helpers.js`) and
+the same 6 in `dist/esm`, and nothing else on query-string. Nothing else in the tree uses query-string.
+So nothing that runs today breaks.
+
+The vulnerable decoder was not reachable before either: it runs only inside `parse`. The override removes the
+advisory, and with it the need to rely on that fact. A minio release that starts calling `parse` would break;
+file-service's new spec reads minio's published code and fails first (see below).
+
+### file-service's Jest
+
+Jest's CommonJS runtime cannot load an untransformed `export`. No unit spec loaded the real minio
+(`minio.service.spec.ts` mocks it with a factory), so all 21 suites passed with 0.5.1 in place. The integration suite
+`test/minio-tenant-isolation.integration.spec.ts` does load it, and failed with `SyntaxError: Unexpected token
+'export'`.
+
+`services/file-service/jest.config.js` now compiles that one file to CommonJS with ts-jest (`allowJs`), and lets it
+past `transformIgnorePatterns`. Every other `node_modules` file is still left alone. `jest --showConfig` shows the
+preset's `^.+\.tsx?$` transform still in place beside the new one, and `jest.integration.config.js` inherits both
+through `...base`. The transformed module behaves as it does under Node: `parse` throws the same `TypeError`. That
+match comes from ts-jest emitting `exports.default`, not from Node's rules; a transformer that adds a
+`module.exports = default` shim would make `parse` work in Jest while it still throws in production.
+
+`src/__tests__/minio-dependency.spec.ts` is the one unit spec that loads the real minio. Its three tests:
+
+1. presign a GET offline (explicit region, so no bucket-region lookup);
+2. check query-string's side of the trade-off: `stringify` works, `parse` throws;
+3. read every `.js` / `.mjs` / `.cjs` file under minio's `dist`, find the name each file binds query-string to
+   (`var qs = …require("query-string")`, `import * as qs from 'query-string'`), and require every use of it to be
+   `.stringify`. A file that mentions query-string without such a binding fails, as does the name being used other
+   than as `name.method`, and an empty scan fails. Every mention of `query-string` in a file must be one of those
+   bindings, so a second binding is checked too. Checked against fake minio builds, each of which fails it:
+   `qs.parse(…)` added; `{ stringify, parse }` destructured; `qs` passed to a helper; a second
+   `var qs2 = …require("query-string")` calling `parse`; a bare `require("query-string").parse(…)`; a named
+   `import { parse } from 'query-string'` beside the namespace import; a dynamic `import("query-string")`; and two
+   one-line forms, `var a = 1, qs = require(…); qs.parse(…)` and `var a = 1; var qs = require(…); qs.parse(…)`.
+   Builds with only `stringify`, one of them in the one-line form, pass. It also fails on harmless changes, such as
+   the bound name in a comment.
+
+Without the transform the spec fails with `Unexpected token 'export'`.
+
+### Evidence
+
+- **Unit suite:** `pnpm test:cov` passes, 22 suites, 284 tests (281 before plus the new 3), coverage still 100 %.
+- **Real MinIO.** The integration suite's own image, `quay.io/minio/minio:RELEASE.2024-09-13T20-26-02Z`, no longer
+  exists ("no such manifest"), and docker.io's `minio/minio` needs authentication (see [Open](#open)). So the suite was
+  run unchanged except for three lines, from a scratch copy:
+  - the image: `cgr.dev/chainguard/minio@sha256:cee9a8e35885e93f14b3cb32960e5017aff74e2adfb52ba87c65003b0163886b`
+    (MinIO `RELEASE.2026-10-23T20-06-51Z`);
+  - the data directory: `/tmp/data`, because that image runs as uid 65532;
+  - the two relative `../src/` imports made absolute.
+
+  With file-service's integration config, 8 of 8 pass. With the same config minus the transform, the suite fails to
+  load (`Unexpected token 'export'`).
+
+- **Node, through the installed tree:** the probe below, run from `services/file-service`, printed:
+
+  ```text
+  decode-uri-component 0.5.1 …/node_modules/.pnpm/decode-uri-component@0.5.1/node_modules/decode-uri-component/index.js
+  require shape object [ '__esModule', 'default' ] function
+  stringify response-content-disposition=attachment%3B%20filename%3D%22%E0%B9%83…pdf%22
+  parse THROWS TypeError decodeComponent is not a function
+  parseUrl THROWS TypeError decodeComponent is not a function
+  stringifyUrl THROWS TypeError decodeComponent is not a function
+  presignedGetObject http://localhost:9/cos-tenant/%E0%B9%83%E0%B8%9A%20%E0%B8%87%E0%B8%B2%E0%B8%99.pdf
+  advisory PoC (224 KB): 30.7 ms
+  ```
+
+  ```js
+  // Run from services/file-service: node installed-probe.cjs
+  const path = require('node:path');
+  const minioPath = require.resolve('minio', { paths: [process.cwd()] });
+  const fromMinio = { paths: [path.dirname(minioPath)] };
+  const qsPath = require.resolve('query-string', fromMinio);
+  const dcPath = require.resolve('decode-uri-component', { paths: [path.dirname(qsPath)] });
+  const dcVersion = require(path.join(path.dirname(dcPath), 'package.json')).version;
+  console.log('decode-uri-component', dcVersion, dcPath);
+  const dc = require(dcPath);
+  console.log('require shape', typeof dc, Object.keys(dc), typeof dc.default);
+  const qs = require(qsPath);
+  const disposition = { 'response-content-disposition': 'attachment; filename="ใบ งาน.pdf"' };
+  console.log('stringify', qs.stringify(disposition));
+  for (const [n, f] of [
+    ['parse', () => qs.parse('a=1')],
+    ['parseUrl', () => qs.parseUrl('http://x/?a=1')],
+    ['stringifyUrl', () => qs.stringifyUrl({ url: 'http://x/?a=1', query: { b: 2 } })],
+  ]) {
+    try {
+      console.log(n, JSON.stringify(f()));
+    } catch (e) {
+      console.log(n, 'THROWS', e.constructor.name, e.message);
+    }
+  }
+  const Minio = require(minioPath);
+  const c = new Minio.Client({
+    endPoint: 'localhost',
+    port: 9,
+    useSSL: false,
+    accessKey: 'k',
+    secretKey: 's',
+    region: 'us-east-1',
+  });
+  c.presignedGetObject('cos-tenant', 'ใบ งาน.pdf', 60).then((u) => {
+    console.log('presignedGetObject', u.split('?')[0]);
+    let p = '';
+    for (let i = 0; i < 32000; i++) {
+      const high = Math.floor(i / 256)
+        .toString(16)
+        .padStart(2, '0');
+      const low = (i % 256).toString(16).padStart(2, '0');
+      p += `%${high}%${low}x`;
+    }
+    p += '%zz';
+    const t = process.hrtime.bigint();
+    dc.default(p);
+    console.log(
+      'advisory PoC (224 KB):',
+      (Number(process.hrtime.bigint() - t) / 1e6).toFixed(1),
+      'ms',
+    );
+  });
+  ```
+
+  Node printed no warning for the `require()` of an ES module. The same probe, mounted read-only into the built
+  file-service image (`node:24-alpine`, Node 24.22.2, working directory `/app/services/file-service`), printed the same
+  lines from `/app/node_modules/.pnpm/decode-uri-component@0.5.1/…`, with the proof of concept at 99.9 ms.
+
+### Production closure (1c)
+
+The walker from [1b](#production-closure), on 1b's lockfile (`1a0b9f0b`) against this branch's, over 19 importers:
+`services/file-service: -[decode-uri-component@0.2.2] +[decode-uri-component@0.5.1]`, and nothing else. Its sanity
+check on `fb20451f^` against `fb20451f` again reports four importers.
+
+### Gates (1c)
+
+- **`pnpm install --frozen-lockfile`:** passes, with no diff.
+- **`scripts/pnpm-audit.sh`:** 2 unresolved (zod, @azure/msal-node). decode-uri-component is gone.
+- **file-service:** `pnpm test:cov` passes (above); `pnpm build` and `tsc --noEmit` pass.
+- **Docker builds:** the four Dockerfiles that run pnpm (file-service, backend, web, credential-service) build from
+  the root context, as CI builds them.
+  That was with the workspace-wide override. After it was scoped, file-service's image was rebuilt (corepack
+  `pnpm@11.9.0`, frozen install) and the in-image probe re-run, with the same output; the other three were not rebuilt.
+  The lockfile differs only in the overrides line, and frozen install checks that line the same way in each image.
+- **`verify-before-push.sh --full`:** 44 passed, 5 failed, 4 skipped. Four failures are the ones 1b had: the pnpm
+  audit (zod and msal-node remain), pip-audit (Pillow, branch 5), openapi freshness (`auth` and `ai`, see [Open](#open))
+  and the file-service MinIO suite, whose quay.io image returned `401 UNAUTHORIZED` — the image pull, not Jest. The
+  fifth, "Unit tests — Temporal workflows (serial)", failed because `temporal.download` answered HTTP 503 while
+  fetching the Temporal test server; `pnpm run test:workflows` in `backend`, re-run on its own, passed: 6 suites and
+  23 tests.
 
 ## Open
 
 - **Remove `basic-ftp@6.2.6` from `minimumReleaseAgeExclude`** once 2026-11-05T20:58:52Z has passed (D24). Until then
-  it is required. If 1b is merged after that time, remove the entry before merging.
+  it is required. 1c leaves it in place (product owner, 2026-11-06); it is removed in branch 2, or before the series
+  is merged, whichever comes first.
 - **The `allowBuilds` comment in `pnpm-workspace.yaml`** says puppeteer's postinstall never runs on a CI runner. But
   the 12 CI jobs that install, and `apps/web/Dockerfile`, run an unfiltered `pnpm install --frozen-lockfile` that
   includes root devDependencies, so it does run there. It reaches proxy-agent through `@puppeteer/browsers`'
@@ -677,8 +881,10 @@ to solve.
   - react-navigation's `getStateFromPath` calls `queryString.parse` on deep-link input.
   - Nothing audits that lockfile.
 - **file-service MinIO integration suite.**
-  - Its image `quay.io/minio/minio:RELEASE.2024-09-13T20-26-02Z` can no longer be pulled. quay.io returns 401, and the
-    image is not on docker.io.
+  - Its image `quay.io/minio/minio:RELEASE.2024-09-13T20-26-02Z` can no longer be pulled. quay.io returned 401, and on
+    2026-11-05 "no such manifest". docker.io's `minio/minio` needs authentication.
+  - `cgr.dev/chainguard/minio` can be pulled, and the suite passes 8/8 on it with its data directory moved to
+    `/tmp/data` (branch 1c). Switching the suite's image is a separate decision.
   - The series did not cause this.
 - **`openapi freshness`.**
   - It reports `auth` and `ai` stale since commit `10be1567`.
