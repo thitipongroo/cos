@@ -24,7 +24,8 @@
 ## Reference table — pinned vs latest (2026-06-30)
 
 Risk legend: 🟢 in-range/same-major · 🟡 same-major minor/patch · 🔴 ≥1 major behind ·
-🔒 intentionally pinned (auditConfig / spec).
+🔒 intentionally pinned (auditConfig / spec). _(Legend as of this 2026-06-30 snapshot; `auditConfig` was removed
+later, and `scripts/pnpm-audit.sh` now suppresses nothing.)_
 
 ### npm
 
@@ -147,13 +148,15 @@ all healthy; rebuild + test Python/Go services.
 
 ## Wave D — Framework majors, spec-locked (ADR + spec update + product-owner gate FIRST)
 
-auditConfig records these as intentionally locked. Resolve the lock reason, write ADR, update
-`docs/specifications/` + `context/*` (Rule 37), get product-owner approval (Rule 38), THEN:
+**Done since this plan was written (audit date 2026-06-30)**, each through the gate below. `auditConfig`, which
+recorded these as intentionally locked, has since been removed, and `scripts/pnpm-audit.sh` suppresses nothing.
 
-- NestJS 10→11 (+ @nestjs/swagger 7→11, @nestjs/throttler 5→6, platform-fastify → fastify v5;
-  removes several CVE-ignores in auditConfig)
-- Next 14→16 + react/react-dom 18→19 (together)
-- @opentelemetry/sdk-node 0.51→0.219 (coordinate with Python OTel + Go OTel + collector config)
+For any future framework major: resolve the lock reason, write the ADR, update `docs/specifications/` + `context/*`
+(Rule 37), and get product-owner approval (Rule 38) — then:
+
+- ~~NestJS 10→11 (+ @nestjs/swagger 7→11, @nestjs/throttler 5→6, platform-fastify → fastify v5)~~ — done (ADR-042)
+- ~~Next 14→16 + react/react-dom 18→19 (together)~~ — done (ADR-043)
+- ~~@opentelemetry/sdk-node 0.51→0.219 (coordinate with Python OTel + Go OTel + collector config)~~ — done (ADR-044)
 
 ## Wave E — Mobile native stack, spec-locked (product-owner + ADR required)
 

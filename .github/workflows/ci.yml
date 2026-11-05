@@ -949,8 +949,8 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       # Node.js dependency audit — fail on HIGH or CRITICAL
-      # Uses scripts/pnpm-audit.sh to suppress advisories blocked by major dep upgrades
-      # (see script for full list of suppressed GHSAs and their blocking packages).
+      # Uses scripts/pnpm-audit.sh, which forces pnpm to report every severity for prod, dev and optional
+      # dependencies, checks the result against pnpm's own counts, and suppresses nothing.
       - name: pnpm audit (Node.js dependencies)
         run: bash scripts/pnpm-audit.sh
       # Go vulnerability check for kg-ingestion-worker
