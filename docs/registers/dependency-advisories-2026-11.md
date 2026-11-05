@@ -46,18 +46,20 @@ The numbers are the ones used while the work was planned. Decisions about the wi
 | D17 | For basic-ftp, D2 counts the tests that reach basic-ftp. Any other failure must also happen on 5.3.1.                                                                                                                                                                                     |
 | D20 | decode-uri-component is fixed by a plain override, with file-service's Jest made to load it (branch 1c). The audit script holds no suppression. It supersedes D8, D15, D16 and the "unreached" part of D19 — earlier decisions to suppress decode-uri-component instead, not listed here. |
 | D21 | The audit runs in an isolated copy under `env -i`, so no pnpm configuration reaches it and it cannot write into the repo.                                                                                                                                                                 |
+| D23 | basic-ftp's override floor is `^6.2.6`, which also fixes GHSA-2w5v-vj22-jp27.                                                                                                                                                                                                             |
+| D24 | basic-ftp 6.2.6 is taken before the release-age window closed, with a `minimumReleaseAgeExclude` entry that gives the reason and the date it can go.                                                                                                                                      |
 
 ## The series
 
-| Branch                        | Content                                                                                                                       | State       |
-| ----------------------------- | ----------------------------------------------------------------------------------------------------------------------------- | ----------- |
-| 1a `chore/deps-1a-audit-gate` | the audit script made to report fully, with no suppression; dead suppressions and `auditConfig` removed; no dependency change | implemented |
-| 1b                            | basic-ftp override (dev; GHSA-c475-qrg2-pj4r)                                                                                 | not started |
-| 1c                            | decode-uri-component override (file-service runtime; GHSA-qr28-fpjm-wq7f) and file-service's Jest                             | not started |
-| 2                             | zod 3, first source (`@mermaid-js/mermaid-cli` 11 → 12)                                                                       | not started |
-| 3                             | zod 3, second source (`@lhci/cli` 0.15 → 0.16)                                                                                | not started |
-| 4                             | @azure/msal-node (5 → 7 via `@azure/identity` 4.14.1)                                                                         | not started |
-| 5                             | Pillow (12.3.0 → 13.0.0, `ai-ocr-pipeline`)                                                                                   | not started |
+| Branch                        | Content                                                                                                                       | State                |
+| ----------------------------- | ----------------------------------------------------------------------------------------------------------------------------- | -------------------- |
+| 1a `chore/deps-1a-audit-gate` | the audit script made to report fully, with no suppression; dead suppressions and `auditConfig` removed; no dependency change | committed `c94c183a` |
+| 1b `chore/deps-1b-basic-ftp`  | basic-ftp override (dev; GHSA-c475-qrg2-pj4r and four repository-only advisories)                                             | implemented          |
+| 1c                            | decode-uri-component override (file-service runtime; GHSA-qr28-fpjm-wq7f) and file-service's Jest                             | not started          |
+| 2                             | zod 3, first source (`@mermaid-js/mermaid-cli` 11 → 12)                                                                       | not started          |
+| 3                             | zod 3, second source (`@lhci/cli` 0.15 → 0.16)                                                                                | not started          |
+| 4                             | @azure/msal-node (5 → 7 via `@azure/identity` 4.14.1)                                                                         | not started          |
+| 5                             | Pillow (12.3.0 → 13.0.0, `ai-ocr-pipeline`)                                                                                   | not started          |
 
 CI's audit job stays red until branch 5 is in. The pnpm step clears after 1b, 1c and 2–4. pip-audit, which CI
 reaches only once the pnpm step passes, clears after 5. Both assume that govulncheck passes. It has not been run
@@ -130,8 +132,9 @@ happened once during this work, and the block was removed straight away.
 
 #### Measured (pnpm 11.22.0, 2026-11-05)
 
-This tree has 56 advisories: 4 high, 47 moderate and 5 low. Path counts are the sum of `findings[].paths`. pnpm caps each
-finding at 100 paths (`MAX_PATHS_PER_FINDING`), and five findings here reach that cap, so the totals are capped.
+1a's tree had 56 advisories: 4 high, 47 moderate and 5 low (1b's has 55, 3 high). Path counts are the sum of
+`findings[].paths`. pnpm caps each finding at 100 paths (`MAX_PATHS_PER_FINDING`), and five findings here reach that
+cap, so the totals are capped.
 
 **Without the isolation, plain `pnpm audit --json`.** Settings in `pnpm_config_*` environment variables or in a scratch
 worktree's `pnpm-workspace.yaml` blind or change it:
@@ -149,7 +152,7 @@ In a later review, `lockfileDir` pointed at an empty lockfile, set in the enviro
 PASSED". So did a registry returning `{}`. The metadata agreed in both cases. With `ignoreUnfixable` or `ignore` in the
 yaml, pnpm wrote `auditConfig` into the file.
 
-**With the script.** The script reported the same 4 high advisories every time. In the scratch worktree,
+**With the script.** On 1a's tree, the script reported the same 4 high advisories every time. In the scratch worktree,
 `pnpm-workspace.yaml` and the `.npmrc` placed there were byte-identical before and after each run (checksums). The
 repo has no root `.npmrc`. The full, isolated run audits 2,323 dependencies with 897 paths, the baseline the table
 above departs from. The settings tried, each on its own:
@@ -195,7 +198,7 @@ It does not read the environment:
 
 | Fixture                                         | Exit | Output                                                               |
 | ----------------------------------------------- | ---- | -------------------------------------------------------------------- |
-| `real` (this tree)                              | 1    | 4 unresolved: basic-ftp, zod, @azure/msal-node, decode-uri-component |
+| `real` (1a's tree)                              | 1    | 4 unresolved: basic-ftp, zod, @azure/msal-node, decode-uri-component |
 | `no-high`, with a warning on stderr             | 0    | the warning, then "Audit PASSED"                                     |
 | `hidden` (high listed 0, metadata 4)            | 1    | "disagree (high: metadata 4, listed 0) … ignore list"                |
 | `hidden-low` (low metadata one more)            | 1    | "disagree (low: metadata 6, listed 5)"                               |
@@ -288,19 +291,386 @@ Reported in the hand-off once they have run on this version of 1a:
 - `verify-before-push.sh --full`;
 - a Docker build of the backend and web images.
 
-## Branches 1b and 1c (not started)
+## Branch 1b — basic-ftp 5.3.1 → 6.2.6
 
-Each gets its own plan, its own measurements and its own section here when it starts. Material from the withdrawn
-attempts is not evidence for them until it is re-run. Two facts already checked carry forward:
+This branch adds the override `'basic-ftp@<6.2.6': '^6.2.6'` to `pnpm-workspace.yaml`. The lockfile diff is that
+override line, basic-ftp's package and snapshot entries, and get-uri's dependency line.
 
-- **basic-ftp:** only GHSA-c475-qrg2-pj4r of its four advisories is in the global database. The other three
-  (GHSA-5rfr-xx34-2xxv, GHSA-r4jh-29pc-gfqr, GHSA-5pm8-86m8-9m6r) return 404 there, so the gate cannot see them, but
-  the same override floor (6.2.4) fixes them: the basic-ftp `CHANGELOG.md` at tag `v6.2.4` (`patrickjuchli/basic-ftp`)
-  names each of them in its 6.2.2, 6.2.3 and 6.2.4 entries.
-- **decode-uri-component 0.5.1:** it is ESM-only, and Jest cannot load it as file-service's config stands. That is
-  what 1c has to solve.
+### The five advisories 6.2.6 clears
+
+6.2.6 is the lowest release that clears all five advisories known on 2026-11-05.
+
+There is one conflict between sources. GHSA-2w5v's own metadata
+(`gh api repos/patrickjuchli/basic-ftp/security-advisories/GHSA-2w5v-vj22-jp27`) gives its vulnerable range as
+`< 6.2.5`, with 6.2.6 patched, which would leave 6.2.5 unaffected. But:
+
+- 6.2.5's `basic-ftp@6.2.5/dist/Client.js:650` still has the old `basename` check;
+- the CHANGELOG names the fix in 6.2.6.
+
+The code and the CHANGELOG are taken over the metadata (product-owner decision after review). Sources:
+
+- the `CHANGELOG.md` of `patrickjuchli/basic-ftp` at tag `v6.2.6`, which names each GHSA;
+- `gh api /advisories/<GHSA>` (GitHub's global advisory endpoint): GHSA-c475 returns high, the other four 404.
+
+| Advisory            | In the global database | Fixed in | What                                                                                      |
+| ------------------- | ---------------------- | -------- | ----------------------------------------------------------------------------------------- |
+| GHSA-c475-qrg2-pj4r | yes, high              | 6.2.1    | quadratic CPU parsing a Unix `LIST` reply                                                 |
+| GHSA-5rfr-xx34-2xxv | no (404)               | 6.2.2    | quadratic CPU detecting `MLSD` and parsing a `PASV` reply                                 |
+| GHSA-r4jh-29pc-gfqr | no (404)               | 6.2.3    | control characters in a password, or in the path of a resumed download, crash the process |
+| GHSA-5pm8-86m8-9m6r | no (404)               | 6.2.4    | a `__proto__` fact in `MLSD` breaks listing                                               |
+| GHSA-2w5v-vj22-jp27 | no (404)               | 6.2.6    | path traversal in `downloadToDir()`                                                       |
+
+`pnpm audit` sees only GHSA-c475. get-uri calls `downloadTo()`, never `downloadToDir()`. The published
+`basic-ftp@6.2.5` → `basic-ftp@6.2.6` diff (`diff -r` of the two npm tarballs) changes three things:
+
+- `dist/Client.js`: one new `require` line, and `_downloadFromWorkingDir`, which is what `downloadToDir` uses;
+- `package.json`;
+- new `dist/safePathNames.js` and `dist/safePathNames.d.ts`.
+
+### The release-age exception (D24)
+
+The repo sets no `minimumReleaseAge`, so pnpm's default of 24 hours applies. The release has two timestamps:
+
+- 2026-11-04T20:56:39Z, which pnpm 11.22.0 reported here from 6.2.6's provenance attestation;
+- 20:58:51.621Z, npm's `time` field. pnpm can use this one instead when its full-metadata cache already holds it.
+
+On `pnpm install`, pnpm added `basic-ftp@6.2.6` to `minimumReleaseAgeExclude` by itself. The entry stays, with a
+comment giving the reason.
+
+**The entry is required while the window is open.** With it removed, `pnpm install --frozen-lockfile` failed (scratch
+worktree, `--lockfile-only`) with `ERR_PNPM_MINIMUM_RELEASE_AGE_VIOLATION … basic-ftp@6.2.6 was published at
+2026-11-04T20:56:39.000Z`. A filtered install fails the same way. That frozen install runs in 12 of the 20 jobs in
+`.github/workflows/ci.yml`, on pnpm 11.22.0.
+
+The four Dockerfiles that run pnpm (web, backend, credential-service and file-service) built with the entry in place.
+Three of them pin `pnpm@11.9.0` through corepack, and whether they would fail without the entry was not measured.
+
+The entry can be removed from 2026-11-05T20:58:52Z, the later of the two timestamps. That is tracked under
+[Open](#open). pnpm 11.22.0 only ever appends to `minimumReleaseAgeExclude`. Nothing removes the entry or
+flags it as stale, so it has to be removed by hand.
+
+### Where it runs, and upstream
+
+basic-ftp's network code runs only for a PAC file fetched over `ftp://`. Its module code loads for any `pac+…` URL,
+because `get-uri@6.0.5/dist/index.js:11` requires `./ftp` eagerly.
+
+- `proxy-agent@6.5.0/dist/index.js:40-47` loads `pac-proxy-agent` lazily, and lines 60-64 map the `pac+…` schemes to
+  it.
+- proxy-agent's real parent is `@lhci/cli`. It is also linked into `@puppeteer/browsers@3.1.0` as an optional peer
+  that declares `proxy-agent >=8.0.1`. pnpm fills that peer with 6.5.0, outside the declared range, and the
+  puppeteer-postinstall path exists only because of that link.
+- `pac-proxy-agent` fetches the PAC file through `get-uri@6.0.5`, and passes its agent options on to it. get-uri passes
+  them to `client.access()`.
+- The proxy URL comes from configuration or from the proxy environment variables (`proxy-from-env`). Those include
+  `npm_config_*` variables that a user's `.npmrc` produces.
+- Nothing in this repo sets one, but the environment can. That includes the environment of puppeteer's postinstall
+  browser download (`allowBuilds: puppeteer: true`), during `pnpm install`.
+
+The override is outside get-uri 6.0.5's declared `^5.0.2`. get-uri 8.0.1, the newest, still declares `^5.3.1`.
+
+### What changed from 5.3.1 to 6.2.6 that get-uri reaches
+
+**6.0.0: the NAT regression (D13).** 6.0.0 changed `allowSeparateTransferHost`'s default from `true`
+(`basic-ftp@5.3.1/dist/Client.js:24`) to `false`.
+
+- With `false`, a `PASV` reply naming a host other than the control host is refused. The exception is when both hosts
+  are loopback (`basic-ftp@6.2.6/dist/transfer.js`, `enterPassiveModeIPv4_forceControlHostIP`).
+- 5.3.1 instead replaced a private `PASV` host with a public control host (`basic-ftp@5.3.1/dist/transfer.js:56-63`).
+- get-uri cannot set the option: `get-uri@6.0.5/dist/ftp.js` calls `new Client()` with no options.
+- The regression needs a server that offers no EPSV, because basic-ftp tries EPSV first and an EPSV reply carries no
+  host. It then hits any `PASV` host other than the control host:
+  - a server behind NAT (the probe below: a masqueraded private address, reached over `::1`);
+  - a dual-stack server reached over IPv6, since `PASV` can only carry IPv4;
+  - a genuinely separate data host.
+- How it fails depends on the server.
+  - **Server answers `MDTM`** (as pyftpdlib does): the failure has two steps. `downloadTo`'s `finally` still ends the
+    destination stream (`basic-ftp@6.2.6/dist/Client.js:505-509`), so `getUri` first hands back an empty stream, and
+    pac-proxy-agent sees a 0-byte PAC file as if it had been fetched. Then the refusal escapes as an unhandled
+    rejection, because get-uri starts `downloadTo()` without a `.catch`. Under Node's default that ends the process.
+  - **`MDTM` fails with a code other than 550:** get-uri falls back to `client.list()` inside its `try`. `list()` needs
+    a data connection, so the refusal rejects `getUri()` cleanly. This was read from `get-uri@6.0.5/dist/ftp.js`, not
+    measured.
+
+**The other releases**, from the same CHANGELOG:
+
+- **6.0.1 and 6.0.2** change TLS data connections. They can reach get-uri only if `secure` is passed through the agent
+  options, which nothing here does.
+- **6.1.0** changes uploads, which get-uri never does.
+- **6.2.0–6.2.4** change timeouts, double failure reports, the listing parsers, the `PASV` reply parser (6.2.2, which
+  every non-EPSV transfer goes through) and control-character rejection. get-uri passes the URL-decoded user and
+  password to `access()`.
+- **6.2.5** changes the release process only.
+- **6.2.6** is the `downloadToDir` fix above.
+
+The upstream suite below exercises the download and `list()` paths. It does not exercise FTPS or the TLS options.
+
+### Evidence (D2, D17)
+
+**get-uri's own suite.** It was run from `TooTallNate/proxy-agents` at tag `get-uri@6.0.5`, in a scratch clone outside
+this repo.
+
+The suite runs ts-jest on the tag's `packages/get-uri/src`. Its equivalence to the published `get-uri@6.0.5/dist` is
+assumed, not checked. It ran on Node 24.22.2 with pnpm 7.32.2, the clone's `packageManager`, from the clone's root:
+
+```sh
+git clone --depth 1 --branch get-uri@6.0.5 https://github.com/TooTallNate/proxy-agents.git && cd proxy-agents
+# ftpd's original tarball URL now returns 404; npm has the same version (contents not compared — the original is gone)
+sed -i '' 's#"ftpd": "https://files-jg1s1zt9l.n8.io/ftpd-v0.2.14.tgz"#"ftpd": "0.2.14"#' packages/get-uri/package.json
+sed -i '' -E 's#"basic-ftp": "[^"]+"#"basic-ftp": "<5.3.1 or 6.2.6>"#' packages/get-uri/package.json
+pnpm install --ignore-scripts --no-frozen-lockfile --filter get-uri... --config.manage-package-manager-versions=false
+pnpm --filter data-uri-to-buffer run build
+cd packages/get-uri && NODE_OPTIONS="--tls-cipher-list=DEFAULT@SECLEVEL=0" npx jest --env node --verbose --bail
+```
+
+Notes on that recipe:
+
+- `sed -i ''` is BSD sed (macOS). With GNU sed, use `sed -i`.
+- The jest command is the package's own `test` script. Run without `--forceExit`, Jest exited cleanly on both
+  versions, so an asynchronous failure after a test would have shown.
+- `SECLEVEL=0` is needed because the fixtures' test certificates are below Node 24's default OpenSSL level.
+
+How far each suite reaches basic-ftp:
+
+- **get-uri's `ftp.test.ts`** (4 tests) runs basic-ftp code: endpoints, special characters, `ENOTFOUND`, and
+  `ENOTMODIFIED` with `cache`. Under D17 this is the evidence.
+- **pac-proxy-agent** (tag `pac-proxy-agent@7.2.0`) loads basic-ftp, because get-uri requires `./ftp` eagerly. Its one
+  ftp test only constructs a `pac+ftp://` agent and never calls it.
+- **proxy-agent** (tag `proxy-agent@6.5.0`) never loads basic-ftp at all: it imports `pac-proxy-agent` lazily, and its
+  tests use no `pac+…` scheme.
+
+Both of those workspaces carry get-uri 6.0.4. They were run the same way as get-uri: the same `sed` lines on
+`packages/get-uri/package.json`, then the commands below, each with its own `jest --env node`, `SECLEVEL=0` and no
+`--forceExit`.
+
+```sh
+pnpm install --ignore-scripts --no-frozen-lockfile --filter "<pkg>..." --config.manage-package-manager-versions=false
+pnpm --filter "<pkg>^..." run build
+```
+
+| Suite                 | basic-ftp 5.3.1 | basic-ftp 6.2.6                                  |
+| --------------------- | --------------- | ------------------------------------------------ |
+| get-uri 6.0.5         | 22/22           | 22/22, identical test by test; `ftp.test.ts` 4/4 |
+| pac-proxy-agent 7.2.0 | 14/14           | 14/14 (loads basic-ftp, never calls it)          |
+| proxy-agent 6.5.0     | 12/12           | 12/12 (never loads basic-ftp; context only)      |
+
+**Probes.** These ran against a throwaway pyftpdlib 2.0.1 server in Docker, which was removed afterwards.
+
+- **6.2.6 side:** this repo's installed get-uri, used by both probes.
+- **5.3.1 side:** `npm install --ignore-scripts get-uri@6.0.5 basic-ftp@5.3.1` in a scratch directory, used by
+  `nat-probe.cjs` only, since `probe.cjs` finds get-uri in pnpm's `node_modules/.pnpm` layout.
+- **Where files live:** `root/`, `server.py` and the probes go in a scratch directory outside the repo.
+- **Fixtures:** `head -c 300000 /dev/urandom > root/pub/data.bin`, plus `root/pub/proxy.pac` containing
+  `function FindProxyForURL(u,h){return "DIRECT";}` and a newline (48 bytes).
+- **Exit codes:** from `node <probe> <args>; echo "exit code $?"`.
+
+```sh
+# one container, two servers: a normal one on 2121 and a "behind NAT" one on [::1]:2122 (PASV names 10.255.255.1, no EPSV)
+docker run -d --name cos-ftp-probe -p 2121:2121 -p 30000-30009:30000-30009 \
+  -p '[::1]:2122:2122' -p '[::1]:30010-30019:30010-30019' \
+  -v "$PWD/root:/srv:ro" -v "$PWD/server.py:/server.py:ro" python:3.12-slim \
+  sh -c "pip install -q pyftpdlib==2.0.1 && (python /server.py 2122 30010 10.255.255.1 no-epsv & python /server.py 2121 30000 127.0.0.1)"
+```
+
+```python
+# server.py <port> <first passive port> <masquerade address> [no-epsv]
+import sys
+from pyftpdlib.authorizers import DummyAuthorizer
+from pyftpdlib.handlers import FTPHandler
+from pyftpdlib.servers import FTPServer
+port, pasv_lo, masq = int(sys.argv[1]), int(sys.argv[2]), sys.argv[3]
+a = DummyAuthorizer(); a.add_anonymous('/srv')
+class H(FTPHandler):
+    authorizer = a
+    passive_ports = range(pasv_lo, pasv_lo + 10)
+    masquerade_address = masq
+    if len(sys.argv) > 4 and sys.argv[4] == 'no-epsv':
+        proto_cmds = {k: v for k, v in FTPHandler.proto_cmds.items() if k != 'EPSV'}
+FTPServer(('0.0.0.0', port), H).serve_forever()
+```
+
+Normal server. The probe was run with the repo root as working directory, as `node <scratch>/probe.cjs
+<scratch>/root/pub`:
+
+```js
+const fs = require('fs'),
+  path = require('path'),
+  crypto = require('crypto');
+const pnpmDir = path.resolve('node_modules/.pnpm');
+const getUriDir = path.join(
+  pnpmDir,
+  fs.readdirSync(pnpmDir).find((d) => d.startsWith('get-uri@6.')),
+  'node_modules/get-uri',
+);
+const { getUri } = require(getUriDir);
+const ftpVersion = require(
+  require.resolve('basic-ftp/package.json', { paths: [getUriDir] }),
+).version;
+const sha = (b) => crypto.createHash('sha256').update(b).digest('hex');
+const read = (s) =>
+  new Promise((ok, no) => {
+    const c = [];
+    s.on('data', (d) => c.push(d));
+    s.on('end', () => ok(Buffer.concat(c)));
+    s.on('error', no);
+  });
+const code = (p) =>
+  p.then(
+    () => 'no error',
+    (e) => e.code || e.message,
+  );
+(async () => {
+  console.log(
+    'get-uri',
+    require(path.join(getUriDir, 'package.json')).version,
+    'basic-ftp',
+    ftpVersion,
+  );
+  for (const f of ['data.bin', 'proxy.pac']) {
+    const got = await read(await getUri(`ftp://127.0.0.1:2121/pub/${f}`));
+    const want = fs.readFileSync(path.join(process.argv[2], f));
+    console.log(
+      f,
+      got.length,
+      'bytes',
+      sha(got) === sha(want) ? 'sha256 match' : 'SHA256 MISMATCH',
+    );
+  }
+  console.log('missing file      ->', await code(getUri('ftp://127.0.0.1:2121/pub/missing.txt')));
+  const first = await getUri('ftp://127.0.0.1:2121/pub/proxy.pac');
+  await read(first);
+  console.log(
+    'cached fetch      ->',
+    await code(getUri('ftp://127.0.0.1:2121/pub/proxy.pac', { cache: first })),
+  );
+})().catch((e) => {
+  console.error('FAILED', e);
+  process.exit(1);
+});
+```
+
+```text
+get-uri 6.0.5 basic-ftp 6.2.6
+data.bin 300000 bytes sha256 match
+proxy.pac 48 bytes sha256 match
+missing file      -> ENOTFOUND
+cached fetch      -> ENOTMODIFIED
+```
+
+NAT case. The probe was run as `node nat-probe.cjs <get-uri dir>`, where `<get-uri dir>` is
+`node_modules/.pnpm/get-uri@6.0.5_supports-color@8.1.1/node_modules/get-uri` on the 6.2.6 side and the scratch
+directory's `node_modules/get-uri` on the 5.3.1 side, with no `unhandledRejection` listener. The control
+connection goes to `localhost`, which on the machine used (macOS) resolves to `::1` first, and basic-ftp does not
+class `::1` as private. Where `localhost` resolves to `127.0.0.1`, this setup does not reproduce. `ftp://[::1]`
+cannot be used, because get-uri passes the brackets to DNS.
+
+```js
+const { getUri } = require(process.argv[2]);
+const ftp = require(
+  require.resolve('basic-ftp/package.json', { paths: [process.argv[2]] }),
+).version;
+const read = (s) =>
+  new Promise((ok, no) => {
+    const c = [];
+    s.on('data', (d) => c.push(d));
+    s.on('end', () => ok(Buffer.concat(c)));
+    s.on('error', no);
+  });
+getUri('ftp://localhost:2122/pub/proxy.pac')
+  .then(read)
+  .then((b) => console.log(`basic-ftp ${ftp}: fetched ${b.length} bytes`))
+  .catch((e) => console.log(`basic-ftp ${ftp}: getUri rejected — ${e.code || e.message}`));
+setTimeout(() => {
+  console.log(`basic-ftp ${ftp}: still running after 20 s`);
+  process.exit(3);
+}, 20000).unref();
+```
+
+The output below keeps only the `basic-ftp` and `Error:` lines. The error line is cut at 220 characters, marked `[…]`:
+
+```text
+basic-ftp 5.3.1: fetched 48 bytes
+exit code 0
+basic-ftp 6.2.6: fetched 0 bytes
+Error: None of the available transfer strategies work. Last error response was 'Error: PASV returned another host (10.255.255.1) for data transfer that you have connected to (::1). Even though the FTP protocol allows th[…]
+exit code 1
+```
+
+### Production closure
+
+For each of the 19 workspace importers, the `dependencies` / `optionalDependencies` closure was walked, following
+`link:` workspace packages, in 1a's lockfile and in this branch's. **No importer's closure changed.** The same walker
+on `fb20451f^` against `fb20451f` reports changes in four importers, so it does detect them.
+
+```js
+// YAML=<path to js-yaml@4> node prod-closure.cjs <old pnpm-lock.yaml> <new pnpm-lock.yaml>
+const fs = require('fs'),
+  path = require('path');
+const yaml = require(process.env.YAML);
+function closure(lock, importer) {
+  const seen = new Set(),
+    seenImp = new Set(),
+    stack = [];
+  const visitImporter = (imp) => {
+    if (seenImp.has(imp)) return;
+    seenImp.add(imp);
+    const e = lock.importers[imp] || {};
+    for (const sec of ['dependencies', 'optionalDependencies'])
+      for (const [n, v] of Object.entries(e[sec] || {})) {
+        if (v.version.startsWith('link:'))
+          visitImporter(path.posix.normalize(path.posix.join(imp, v.version.slice(5))));
+        else stack.push(`${n}@${v.version}`);
+      }
+  };
+  visitImporter(importer);
+  while (stack.length) {
+    const k = stack.pop();
+    if (seen.has(k)) continue;
+    seen.add(k);
+    const sn = lock.snapshots[k];
+    if (!sn) continue;
+    for (const sec of ['dependencies', 'optionalDependencies'])
+      for (const [n, v] of Object.entries(sn[sec] || {}))
+        if (!v.startsWith('link:')) stack.push(`${n}@${v}`);
+  }
+  return new Set([...seen].map((k) => k.replace(/\(.*$/, '')));
+}
+const [oldL, newL] = process.argv.slice(2).map((p) => yaml.load(fs.readFileSync(p, 'utf8')));
+for (const imp of Object.keys(newL.importers).sort()) {
+  const a = closure(oldL, imp),
+    b = closure(newL, imp);
+  const rm = [...a].filter((x) => !b.has(x)),
+    add = [...b].filter((x) => !a.has(x));
+  if (rm.length || add.length) console.log(`${imp}: -[${rm.join(' ')}] +[${add.join(' ')}]`);
+}
+console.log('importers checked:', Object.keys(newL.importers).length);
+```
+
+Limitations:
+
+- A snapshot key the walker cannot find is skipped, not reported (`if (!sn) continue`). An alias edge
+  (`name: real@version`) builds such a key. Instrumented on 1a's and 1b's lockfiles, the production walk skips 3:
+  `string-width-cjs`, `strip-ansi-cjs` and `wrap-ansi-cjs`. Their subtrees are not walked.
+- Stripping the `(…)` peer suffix hides changes that alter only peer resolution.
+
+### Gates (1b)
+
+- **`pnpm install --frozen-lockfile`:** passes.
+- **`scripts/pnpm-audit.sh`:** 3 unresolved (zod, @azure/msal-node, decode-uri-component). basic-ftp is gone.
+- **`verify-before-push.sh --full` and the Docker builds:** reported in the hand-off.
+
+## Branch 1c (not started)
+
+decode-uri-component 0.5.1 is ESM-only, and Jest cannot load it as file-service's config stands. That is what 1c has
+to solve.
 
 ## Open
+
+- **Remove `basic-ftp@6.2.6` from `minimumReleaseAgeExclude`** once 2026-11-05T20:58:52Z has passed (D24). Until then
+  it is required. If 1b is merged after that time, remove the entry before merging.
+- **The `allowBuilds` comment in `pnpm-workspace.yaml`** says puppeteer's postinstall never runs on a CI runner. But
+  the 12 CI jobs that install, and `apps/web/Dockerfile`, run an unfiltered `pnpm install --frozen-lockfile` that
+  includes root devDependencies, so it does run there. It reaches proxy-agent through `@puppeteer/browsers`'
+  out-of-range optional peer. This predates the series.
 
 - **`apps/mobile` (D7).**
   - Its own lockfile has expo-router → `query-string@7.1.3` → `decode-uri-component@0.2.2`.

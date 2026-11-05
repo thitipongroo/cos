@@ -166,6 +166,32 @@ overrides:
   'body-parser@>=2.0.0 <2.4.0': '^2.4.0' # same advisories, 2.x line
   'handlebars@>=3.0.0 <4.7.10': '^4.7.10' # GHSA-8r5x-fm3f-whwj + GHSA-p8wg-vrv2-v86f — the copies ts-jest pulls (backend also declares it directly)
   'zod@>=4.0.0 <4.6.6': '^4.6.6' # GHSA-mrhx-c7xc-m3w5 — 4.x copies only; the 3.x copies need a major bump (reported, not forced)
+  # 2026-11-05 (docs/registers/dependency-advisories-2026-11.md, branch 1b): basic-ftp 5.3.1 →
+  # 6.x. Floor 6.2.6, the lowest release clearing all five known advisories: GHSA-c475-qrg2-pj4r
+  # (high, quadratic LIST parsing, 6.2.1 — the only one in the global database, so the only one
+  # `pnpm audit` sees) and the repository-only GHSA-5rfr-xx34-2xxv (MLSD / PASV parsing, 6.2.2),
+  # GHSA-r4jh-29pc-gfqr (control characters in a password or resumed path, 6.2.3),
+  # GHSA-5pm8-86m8-9m6r (__proto__ MLSD fact, 6.2.4) and GHSA-2w5v-vj22-jp27 (path traversal in
+  # downloadToDir, 6.2.6; get-uri never calls downloadToDir). That advisory's metadata says
+  # "< 6.2.5", but 6.2.5's _downloadFromWorkingDir still has the old check and the CHANGELOG at
+  # v6.2.6 names the fix there, so the code and CHANGELOG are taken over the metadata.
+  # Dev only: get-uri@6.0.5 under pac-proxy-agent, which proxy-agent loads lazily for a `pac+…`
+  # proxy URL. proxy-agent sits under @lhci/cli, and is linked into @puppeteer/browsers as an
+  # optional peer that pnpm fills from outside its declared range. basic-ftp's network code runs
+  # only for `pac+ftp://`. That proxy can come from the environment (proxy-from-env), including
+  # during puppeteer's postinstall browser download. OUTSIDE get-uri 6.0.5's declared '^5.0.2';
+  # get-uri 8.0.1, the newest, still declares '^5.3.1', so no upstream release clears it.
+  # KNOWN REGRESSION, kept by product-owner decision (D13): 6.0.0 changed the default of
+  # allowSeparateTransferHost to false and get-uri cannot set it. With a server that offers no
+  # EPSV, a PASV reply naming any host other than the control host (unless both are loopback) is
+  # now refused: a server behind NAT (5.3.1 swapped a private PASV host for a public control
+  # host), one reached over IPv6, or a separate data host (5.3.1 connected to it). Where the
+  # server answers MDTM, basic-ftp still ends the stream, so get-uri first hands back an empty PAC
+  # file as if fetched, then the refusal escapes as an unhandled rejection (downloadTo() has no
+  # .catch), which by default ends the process; where MDTM fails, the list() fallback rejects
+  # getUri() cleanly.
+  # Measured — see the record.
+  'basic-ftp@<6.2.6': '^6.2.6'
 
 allowBuilds:
   '@nestjs/core': true
@@ -219,3 +245,12 @@ minimumReleaseAgeExclude:
   - prettier@3.9.4
   - recharts@3.9.1
   - '@hookform/resolvers@5.7.1'
+  # basic-ftp 6.2.6 was taken before pnpm's default 24 h release-age window closed, by
+  # product-owner decision (D24, docs/registers/dependency-advisories-2026-11.md): it fixes
+  # GHSA-2w5v-vj22-jp27 and its published diff from 6.2.5 was read. Required while the window is
+  # open: without it `pnpm install --frozen-lockfile` fails ERR_PNPM_MINIMUM_RELEASE_AGE_VIOLATION
+  # (measured on pnpm 11.22.0, which the CI jobs that install use). The release is dated
+  # 2026-11-04T20:56:39Z by the provenance attestation pnpm read and 20:58:51.621Z by npm's `time`
+  # field, so remove this entry from 2026-11-05T20:58:52Z, the later of the two. pnpm 11.22.0 only
+  # appends to this list, so the entry has to be removed by hand.
+  - basic-ftp@6.2.6
