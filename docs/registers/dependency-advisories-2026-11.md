@@ -50,6 +50,7 @@ The numbers are the ones used while the work was planned. Decisions about the wi
 | D24 | basic-ftp 6.2.6 is taken before the release-age window closed, with a `minimumReleaseAgeExclude` entry that gives the reason and the date it can go.                                                                                                                                      |
 | D25 | Branch 2 moves puppeteer within mermaid-cli 11's peer range instead of upgrading mermaid-cli to 12. mermaid-cli 12 needs puppeteer `^25` too and moves no zod by itself; mermaid-cli 12 is a separate, later choice.                                                                      |
 | D26 | Lighthouse 13 lowers /login's simulated LCP far below Lighthouse 12's. The LCP budget stays 3200 in branch 3; it is re-measured on ubuntu-latest under 13 afterwards (Open).                                                                                                              |
+| D27 | msal-node is fixed by moving `@azure/identity` 4.13.1 → 4.14.1 inside `@confluentinc/schemaregistry`'s declared `^4.13.0`, not by removing the unused `@confluentinc/schemaregistry` from backend; removing it is an Open item.                                                           |
 
 ## The series
 
@@ -59,8 +60,8 @@ The numbers are the ones used while the work was planned. Decisions about the wi
 | 1b `chore/deps-1b-basic-ftp`            | basic-ftp override (dev; GHSA-c475-qrg2-pj4r and four repository-only advisories)                                             | committed `1a0b9f0b` |
 | 1c `chore/deps-1c-decode-uri-component` | decode-uri-component override (file-service runtime; GHSA-qr28-fpjm-wq7f) and file-service's Jest                             | committed `8310449d` |
 | 2 `chore/deps-2-puppeteer`              | zod 3, first source: puppeteer 25.5.0 → 25.16.0 under `@mermaid-js/mermaid-cli` 11 (D25)                                      | committed `87d2e8fa` |
-| 3 `chore/deps-3-lhci`                   | zod 3, second source: `@lhci/cli` 0.15.1 → 0.16.0 (lighthouse 12.6.1 → 13.6.0); basic-ftp release-age entry removed           | implemented          |
-| 4                                       | @azure/msal-node (5 → 7 via `@azure/identity` 4.14.1)                                                                         | not started          |
+| 3 `chore/deps-3-lhci`                   | zod 3, second source: `@lhci/cli` 0.15.1 → 0.16.0 (lighthouse 12.6.1 → 13.6.0); basic-ftp release-age entry removed           | committed `97791d75` |
+| 4 `chore/deps-4-azure-identity`         | @azure/msal-node 5.2.2 → 7.1.2 via `@azure/identity` 4.13.1 → 4.14.1 (backend runtime; D27)                                   | implemented          |
 | 5                                       | Pillow (12.3.0 → 13.0.0, `ai-ocr-pipeline`)                                                                                   | not started          |
 
 CI's audit job stays red until branch 5 is in. The pnpm step clears after 1b, 1c and 2–4. pip-audit, which CI
@@ -1140,6 +1141,118 @@ importers: no importer's production closure changed. (On the two-step lockfile i
   measurements above; the directory is gitignored but not in `.prettierignore`. With it removed,
   `pnpm run format:check` passes.
 
+## Branch 4 — @azure/msal-node 5.2.2 → 7.1.2 via @azure/identity 4.14.1
+
+Branch 4 adds one override, `'@azure/identity@>=4.0.0 <4.14.1': '^4.14.1'`, inside the declared range of its only
+parent. It is the first branch of the series that changes a production closure.
+
+### The advisory and the path
+
+| Advisory            | Severity | Affected                   | Patched | What                                                                                         |
+| ------------------- | -------- | -------------------------- | ------- | -------------------------------------------------------------------------------------------- |
+| GHSA-xcx6-jx8p-x3h5 | high     | `>= 5.0.0-beta.0, < 7.1.0` | `7.1.0` | CVE-2026-109461, published 2026-10-23. Origin validation error in MSAL Node's auth_code flow |
+
+One path, in production: backend's `dependencies` declare `@confluentinc/schemaregistry ^1.0.0` (1.9.0) →
+`@azure/identity ^4.13.0` (4.13.1) → `@azure/msal-node ^5.1.0` (5.2.2).
+
+**Nothing in this repo imports `@confluentinc/schemaregistry`.** No `.ts`, `.js`, `.mjs`, `.cjs` or `.json` file outside
+`node_modules` names it except `backend/package.json` (one README, `packages/@cos/shared/README.md`, lists it; see
+[Open](#open)), where it has been since the scaffold commit `3378bcec`.
+`@cos/kafka` talks to the schema registry through its own HTTP client. The package's `dist/index.js` requires
+`rules/encryption/azurekms/azure-driver` eagerly, so `@azure/identity` would load the moment anything required it.
+
+### The fix, inside the declared range (D27)
+
+`@azure/identity` 4.14.1 (2026-10-29, the latest) declares `@azure/msal-node ^7.1.0`; 4.14.0 declared `^6.0.0`.
+schemaregistry 1.9.0, and the latest 1.11.0, declare `@azure/identity ^4.13.0`, so 4.14.1 is in range and no
+out-of-range override is needed. identity 4.14.x needs Node `>=22` (the repo runs 24); msal-node 7.1.2 needs `>=20`.
+
+What changes on the way, from identity's CHANGELOG: 4.14.0 moves msal-node to `^6.0.0` and fixes
+`AzurePipelinesCredential` error details, `InteractiveBrowserCredential` with an already-running browser, and
+`AZURE_ADDITIONALLY_ALLOWED_TENANTS`; 4.14.1 moves msal-node to `^7.1.0` ("Interactive browser authentication now
+requires `form_post` callbacks", per the MSAL Node v7 migration guide) and restores a `DefaultAzureCredential` →
+`ManagedIdentityCredential` option fix. Nothing here constructs a credential.
+
+### What changed
+
+The production closure walker (from [1b](#production-closure)), branch 3's lockfile (`97791d75`) against this
+branch's, over 19 importers: only backend changes, and only inside `@azure/identity`'s subtree.
+
+| Removed from backend's closure                                                                                | Added to backend's closure                                                                                                                                                                                            |
+| ------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `@azure/identity@4.13.1`, `@azure/msal-node@5.2.2`, `open@10.2.0`, `wsl-utils@0.1.0`, `default-browser@5.5.0` | `@azure/identity@4.14.1`, `@azure/msal-node@7.1.2`, `@azure/msal-common@16.15.0`, `@azure/core-process@1.0.0`, `open@11.0.4`, `wsl-utils@1.0.1`, `default-browser@5.5.1`, `powershell-utils@0.2.1`, `is-in-ssh@1.0.0` |
+
+`@azure/core-process` is new in identity's dependencies: 4.13.2 and 4.14.0-beta.5 replaced the shell-based developer
+credential commands with structured process execution. `open` and its helpers are identity's own dependency
+(`open ^11.0.0` in 4.14.1), used to launch a browser for interactive sign-in. msal-node 7.1.2 pins
+`@azure/msal-common 16.15.0`, while `@azure/msal-browser 5.11.0` keeps 16.6.2, so there are now two msal-common
+copies. `open@11.0.4`, `wsl-utils@1.0.1`, `default-browser@5.5.1`, `powershell-utils@0.2.1` and `is-in-ssh@1.0.0` were
+already in the tree under lighthouse 13 (branch 3), so the lockfile adds only four packages. `open` 10 → 11 and
+`wsl-utils` 0.1 → 1.0 are majors; both serve only interactive browser sign-in, which nothing here reaches.
+
+Outside production, `@puppeteer/browsers@3.2.6` moved from `yargs@18.1.0` to the `yargs@18.2.0` that lighthouse 13
+already brought, and `yargs@18.1.0` left the lockfile. Three re-resolutions from branch 3's lockfile in isolated
+copies (`pnpm install --lockfile-only`, `env -i`, sharing one metadata cache), run 2026-11-06T02:48–02:50Z, all
+produced the committed lockfile byte for byte. That stopped holding at 03:33Z, when `@azure/msal-node@7.2.0`
+(published 2026-11-05T03:33Z) left the 24 h release-age window: a /doubt reviewer's re-resolution at 03:34Z gave
+msal-node 7.2.0 and `@azure/msal-common@16.16.0`. The lockfile keeps 7.1.2 on purpose: it is patched (≥ 7.1.0),
+everything below was measured on it, and `--frozen-lockfile` does not re-resolve. Every package the lockfile adds was
+older than 24 hours, and pnpm added no release-age entry. `pnpm why @azure/msal-node -r` finds one version, 7.1.2.
+
+### Evidence (D2)
+
+Nothing imports the package, so there is no behaviour of this repo to test through it. What is tested is that it still
+loads and that the patched msal-node is what it would load: the probe below, run from `backend/` under Node 24 and
+offline, printed
+
+```text
+schemaregistry 1.9.0 | identity 4.14.1 | msal-node 7.1.2
+schemaregistry loads; AzureKmsDriver exported: function
+ClientSecretCredential constructed: ClientSecretCredential
+msal-node >= 7.1.0: true
+```
+
+```js
+// Run from backend/: node probe.cjs. Offline: nothing here sends a request.
+const path = require('node:path');
+const from = (name, dir) => require.resolve(name, { paths: [dir] });
+const srPkg = from('@confluentinc/schemaregistry/package.json', process.cwd());
+const srDir = path.dirname(srPkg);
+const idDir = path.dirname(from('@azure/identity/package.json', srDir));
+const msalDir = path.dirname(from('@azure/msal-node/package.json', idDir));
+const v = (d) => require(path.join(d, 'package.json')).version;
+console.log('schemaregistry', v(srDir), '| identity', v(idDir), '| msal-node', v(msalDir));
+const sr = require(from('@confluentinc/schemaregistry', process.cwd()));
+console.log('schemaregistry loads; AzureKmsDriver exported:', typeof sr.AzureKmsDriver);
+const id = require(from('@azure/identity', srDir));
+const cred = new id.ClientSecretCredential(
+  '00000000-0000-0000-0000-000000000000',
+  'client',
+  'secret',
+);
+console.log('ClientSecretCredential constructed:', cred.constructor.name);
+const [maj, min] = v(msalDir).split('.').map(Number);
+console.log('msal-node >= 7.1.0:', maj > 7 || (maj === 7 && min >= 1));
+```
+
+### Gates (4)
+
+- **`pnpm install --frozen-lockfile`:** passes.
+- **`scripts/pnpm-audit.sh`:** `Audit PASSED: 0 high/critical vulnerabilities.` — the first pass of the series.
+- **backend:** `pnpm test:cov` passes, 257 suites and 4,207 tests, with its coverage gate; `pnpm build` passes.
+- **backend Docker image:** builds, and the probe above, mounted read-only into it and run from `/app/backend`, printed
+  the same four lines.
+- **`verify-before-push.sh --full`:** 46 passed, 3 failed, 4 skipped. "Audit — pnpm (Node deps)" passes for the first
+  time in the series. The three failures are the known ones: pip-audit (Pillow, branch 5), openapi freshness and the
+  file-service MinIO suite (quay.io image). When that suite failed, turbo stopped backend's, `@cos/kafka`'s and
+  credential-service's integration suites before they reported, so they did not run in it; the separate
+  "Multi-tenant isolation" step did run and passed 13 of 13.
+- **backend's integration suite, run on its own** (`pnpm --filter @cos/backend test:integration`, 54 spec files, one at
+  a time): stopped by product-owner decision after 25 minutes with one file finished, since nothing in backend loads
+  `@azure/identity` and the suite runs in CI. That file, `test/auth-tenant/01-entities-rls.integration.spec.ts`,
+  failed on `plan_type admits exactly STARTER, PROFESSIONAL, ENTERPRISE`: the enum also has `LITE`, added by
+  `512dc085` (trial lifecycle) without updating the spec. See [Open](#open).
+
 ## Open
 
 - **Re-measure the LCP budget under Lighthouse 13 (D26).** `apps/web/.lighthouserc.json` keeps the LCP
@@ -1153,6 +1266,23 @@ importers: no importer's production closure changed. (On the two-step lockfile i
   156 take about 367 MB and 203 MB on macOS. It reaches proxy-agent through `@puppeteer/browsers`' out-of-range
   optional peer (branch 2 removed that link and branch 3 brought it back). This predates the series.
 
+- **`backend/test/auth-tenant/01-entities-rls.integration.spec.ts` expects three `plan_type` values.** The database
+  has four since `512dc085` added `LITE` (trial lifecycle); the assertion at line 101 fails. This predates the series.
+- **The backend image is 5.56 GB, and a build after a lockfile change took more than 17 minutes on a dev machine.**
+  Measured in branch 4. `docker image inspect` gave 5.56 GB. The first build (`docker build -q`) had run for 17.5
+  minutes by `ps` when it was stopped to get step timings; the rebuild with `--progress=plain` then found every step
+  cached and took 104 s, 76.8 s of it unpacking the image. The runner stage copies all of `/app` from the builder
+  (`COPY --from=builder … /app ./`), `node_modules` with devDependencies included, and the workspace packages build
+  one at a time (`--workspace-concurrency=1`). The build context is small (6.07 MB; `.dockerignore` already excludes
+  the mobile build output). This predates the series.
+- **Remove the unused `@confluentinc/schemaregistry` from backend (D27).** Nothing imports it (branch 4).
+  `packages/@cos/shared/README.md` lists it as "Avro schema validation", but `@cos/shared` does not declare it; the
+  Avro client in use is `@kafkajs/confluent-schema-registry`, in `@cos/kafka`. Measured in
+  an isolated copy, not applied: dropping it from `backend/package.json` removes 89 packages from backend's production
+  closure and adds none, among them the Azure SDK (`@azure/identity`, both `@azure/msal-common`, `@azure/msal-node`,
+  `@azure/msal-browser`, `@azure/keyvault-keys`), `@aws-sdk/client-kms` and `@aws-sdk/credential-providers`,
+  `@google-cloud/kms` and `google-auth-library`. Whether Confluent's schema registry client (Avro, client-side field
+  encryption) is still planned is a product-owner decision.
 - **The markdownlint step of `verify-before-push.sh` lints nothing on macOS.** Line 82 of
   `scripts/ci/check-markdown-changed.sh` fails under `/bin/bash` 3.2 with "bad substitution: no closing" (a `$( … )`
   holding comments), so its file list comes out empty, it prints "no changed (non-legacy) Markdown files" and reports

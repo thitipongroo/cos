@@ -208,6 +208,16 @@ overrides:
   # zod 3 stays under @lhci/cli → lighthouse → puppeteer-core 24 until branch 3.
   # Measured — see the record.
   'puppeteer@>=25.0.0 <25.13.0': '^25.13.0'
+  # 2026-11-06 (docs/registers/dependency-advisories-2026-11.md, branch 4): @azure/identity 4.13.1 →
+  # 4.14.1, which takes @azure/msal-node 5.2.2 → 7.x. GHSA-xcx6-jx8p-x3h5 (high, msal-node >=
+  # 5.0.0-beta.0 < 7.1.0, origin validation in the auth_code flow). PRODUCTION path: backend's
+  # @confluentinc/schemaregistry 1.9.0 declares '@azure/identity ^4.13.0'; identity 4.14.1 is the
+  # first to declare msal-node '^7.1.0' (4.14.0: '^6.0.0'). Inside the parent's range, so no
+  # out-of-range override. Nothing in this repo imports @confluentinc/schemaregistry; removing it is
+  # an open item in the record (D27). msal-node 7 needs form_post callbacks for interactive browser
+  # auth, which nothing here uses.
+  # Measured — see the record.
+  '@azure/identity@>=4.0.0 <4.14.1': '^4.14.1'
 
 allowBuilds:
   '@nestjs/core': true
