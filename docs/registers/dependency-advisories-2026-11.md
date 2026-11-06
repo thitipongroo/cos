@@ -1429,13 +1429,136 @@ print(PIL.__version__, '16-bit grayscale PNG file opens as', Image.open(io.Bytes
   `docs/architecture/adr/108-platform-settings-store.md` still lists three plans and is left as decided at the time.
   `docs/specifications/11-database-schema.md`'s `platform.tenants` table does not yet show the other columns that
   migration added (`subscription_status`, the `trial_*` columns, `converted_at`) or `tenant_trial_notices`.
-- **The ai-ocr-pipeline image has no Thai OCR data.** `ocr_pipeline.py` calls tesseract with `lang="tha+eng"`, but the
-  image installs only `tesseract-ocr` (languages `eng` and `osd`); its Dockerfile says to add `tesseract-ocr-tha` "if
-  Tier-1 must read Thai documents". English text still reads under `tha+eng`, which suggests tesseract skips the
-  missing language (its stderr was not captured). This predates the series; found in branch 5.
-- **A 32-bit I mode TIFF fails OCR with `KeyError: 'text'`**, on Pillow 12.3.0 and 13.0.0 alike: pytesseract raises
-  `TesseractError` only on a non-zero exit, so tesseract most likely exited 0 with no data for it (not confirmed from
-  its stderr), and `_ocr_image` indexes the result without checking. This predates the series; found in branch 5.
+- **Closed — the ai-ocr-pipeline image had no Thai OCR data.** Fixed on `fix/ocr-thai`. Without `tha`, tesseract
+  printed "Failed loading language 'tha'", carried on with English only and exited 0, so Thai came back as Latin
+  noise. The Dockerfile now installs `tesseract-ocr-tha` (Debian 1:4.1.0-2; the image grows 619.0 → 621.0 MB). That
+  showed a second fault: `_ocr_image` joined tesseract's tokens with spaces, and for Thai each token is a character or
+  cluster, so the text read "ร า ย ง า น". `_join_words` now joins Thai-to-Thai tokens on one line without a space
+  unless the gap is wider than half the line's median token height (product-owner decision to fix it here). Measured
+  in the service image before and after, on inputs Chrome rendered (Pillow here has no raqm and dropped Thai tone
+  marks) and branch 5's eight English inputs:
+
+  | Input                | CER before | CER after | Spaced CER before | Spaced CER after |
+  | -------------------- | ---------- | --------- | ----------------- | ---------------- |
+  | Thai, Tahoma         | 0.932      | 0.080     | 0.845             | 0.093            |
+  | Thai, Thonburi       | 0.938      | 0.062     | 0.864             | 0.068            |
+  | Thai + English       | 0.413      | 0.064     | 0.351             | 0.054            |
+  | Thai PDF, two pages  | 0.718      | 0.000     | 0.659             | 0.023            |
+  | seven English inputs | 0          | 0         | 0                 | 0                |
+
+  Spaces between Thai words are best-effort: tesseract's gaps separate them only roughly. A /doubt reviewer's six
+  further Chrome-rendered pages (Tahoma 16, 20, 28 px; Sukhumvit 28 px; grey text 28 px) gave spaced CER 0.79–0.81
+  joined as before, 0.030–0.037 with no Thai spaces, and 0.022–0.030 with this rule, never worse than either; some
+  real spaces are still lost and a tone mark on grey text gained one. CER ignores whitespace; spaced CER counts it.
+  The English texts are byte-identical before and after. The 32-bit I mode TIFF still fails (now `KeyError: 'conf'`,
+  before `'text'`; see below). The service's suite: 50 passed (41 + 9 new), coverage 100 %.
+  `verify-before-push.sh --full`: 47 passed, 2 failed (openapi freshness, the MinIO image), 4 skipped; "Python —
+  ai-ocr-pipeline", both audits and markdownlint pass. `pip-audit` on the service: no known vulnerabilities.
+
+  ```js
+  // node make_thai_inputs.mjs <outdir>: Thai OCR inputs rendered by Chrome (correct Thai shaping), plus truth.json.
+  import { writeFileSync, realpathSync } from 'node:fs';
+  import { createRequire } from 'node:module';
+  const require = createRequire(
+    realpathSync(process.env.REPO + '/node_modules/@mermaid-js/mermaid-cli') + '/package.json',
+  );
+  const puppeteer = require('puppeteer');
+  const out = process.argv[2];
+  const docs = {
+    'thai_tahoma.png': {
+      font: 'Tahoma',
+      lines: [
+        'รายงานประจำวัน ๖ พฤศจิกายน ๒๕๖๙',
+        'เทคอนกรีตพื้นชั้นที่ ๓ เรียบร้อยแล้ว',
+        'ผู้ตรวจสอบลงนามเวลา 14:30 น.',
+      ],
+    },
+    'thai_thonburi.png': {
+      font: 'Thonburi',
+      lines: [
+        'ใบสั่งซื้อเหล็กเสริม 12 มิลลิเมตร',
+        'จำนวน 250 เส้น ส่งที่หน้างาน',
+        'กรุณาตรวจรับภายในวันศุกร์',
+      ],
+    },
+    'mixed.png': {
+      font: 'Tahoma',
+      lines: ['Concrete pour ชั้น 3 เสร็จแล้ว', 'Inspector: สมชาย ใจดี', 'Rebar check ผ่าน 100%'],
+    },
+  };
+  const html = (font, lines) =>
+    `<html><body style="margin:0;background:#fff"><div style="font-family:'${font}';font-size:40px;line-height:70px;padding:30px 40px;color:#000">${lines.map((l) => `<div>${l}</div>`).join('')}</div></body></html>`;
+  const browser = await puppeteer.launch({ headless: 'shell' });
+  const page = await browser.newPage();
+  await page.setViewport({ width: 1000, height: 280 });
+  const truth = {};
+  for (const [name, d] of Object.entries(docs)) {
+    await page.setContent(html(d.font, d.lines));
+    await page.screenshot({ path: `${out}/${name}`, fullPage: true });
+    truth[name] = d.lines.join('\n');
+  }
+  const pdfLines = [
+    ['งวดงานที่ ๒ ส่งมอบแล้ว', 'ค่าแรงรวม 45,000 บาท'],
+    ['หน้าสอง: ตรวจรับโดยวิศวกร', 'Rebar check passed'],
+  ];
+  await page.setContent(
+    `<html><body style="margin:0">${pdfLines.map((p, i) => `<div style="font-family:Tahoma;font-size:40px;line-height:70px;padding:40px;${i ? 'page-break-before:always' : ''}">${p.map((l) => `<div>${l}</div>`).join('')}</div>`).join('')}</body></html>`,
+  );
+  await page.pdf({
+    path: `${out}/thai_two_pages.pdf`,
+    format: 'A5',
+    landscape: true,
+    printBackground: true,
+  });
+  truth['thai_two_pages.pdf'] = pdfLines.map((p) => p.join('\n')).join('\n\n');
+  await browser.close();
+  writeFileSync(`${out}/truth.json`, JSON.stringify(truth, null, 1));
+  console.log(Object.keys(truth).join(' '));
+  ```
+
+  ```python
+  # Inside the service image: python run_ocr_cer.py <dir>... Each dir holds inputs and a truth.json. One JSON line per
+  # input: text, confidence, and two character error rates against the truth: `cer` with all whitespace removed, and
+  # `cer_spaced` with spacing scored (whitespace runs and line breaks count as one space).
+  import json, sys
+  from pathlib import Path
+  import ocr_pipeline
+
+  def _ed(ref, hyp):
+      prev = list(range(len(hyp) + 1))
+      for i, r in enumerate(ref, 1):
+          cur = [i]
+          for j, h in enumerate(hyp, 1):
+              cur.append(min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (r != h)))
+          prev = cur
+      return round(prev[-1] / max(len(ref), 1), 4)
+
+
+  def cer(ref, hyp):  # spacing ignored
+      return _ed(''.join(ref.split()), ''.join(hyp.split()))
+
+
+  def cer_spaced(ref, hyp):  # spaces count; runs of whitespace and line breaks become one space
+      return _ed(' '.join(ref.split()), ' '.join(hyp.split()))
+
+  for d in map(Path, sys.argv[1:]):
+      truth = json.loads((d / 'truth.json').read_text(encoding='utf-8'))
+      for name, ref in truth.items():
+          f = d / name
+          mime = 'application/pdf' if f.suffix == '.pdf' else 'image/' + f.suffix.lstrip('.')
+          row = {'file': name}
+          try:
+              o = ocr_pipeline.process_file(f.stem, f.read_bytes(), mime)
+              row.update(cer=cer(ref, o.extracted_text), cer_spaced=cer_spaced(ref, o.extracted_text), confidence=round(o.confidence_score, 4), text=o.extracted_text)
+          except Exception as e:
+              row['error'] = f'{type(e).__name__}: {str(e).splitlines()[0][:120]}'
+          print(json.dumps(row, ensure_ascii=False), flush=True)
+  ```
+
+- **A 32-bit I mode TIFF fails OCR with `KeyError: 'text'`** (`'conf'` since `fix/ocr-thai`, which reads `conf`
+  first), on Pillow 12.3.0 and 13.0.0 alike: pytesseract raises `TesseractError` only on a non-zero exit, so tesseract
+  most likely exited 0 with no data for it (not confirmed from its stderr), and `_ocr_image` indexes the result
+  without checking. This predates the series; found in branch 5.
 - **Pillow outside `services/*` is unpinned and unaudited.** `mlops` (through mlflow → matplotlib) and
   `apps/mobile/scripts/stitch-*.py` pull Pillow in without a pin, and CI's pip-audit covers only `services/*`.
   `docs/runbooks/dependency-upgrade-plan.md:69` still calls Pillow 12.2.0 "current". This predates the series.

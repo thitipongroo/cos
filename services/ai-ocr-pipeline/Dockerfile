@@ -23,9 +23,12 @@ WORKDIR /app
 # Tier-1 OCR runtime dependencies (spec §22.7 OCR Provider):
 #   tesseract-ocr  — binary that pytesseract wraps
 #   poppler-utils  — pdftoppm/pdftocairo, required by pdf2image
-#   add tesseract-ocr-tha for Thai-language OCR if Tier-1 must read Thai documents
+#   tesseract-ocr-tha — Thai language data. ocr_pipeline.py asks for lang="tha+eng" and Thai is
+#                      first-class (spec §22). Without it tesseract prints "Failed loading language
+#                      'tha'", carries on with English only and exits 0, so Thai came back as Latin
+#                      noise (character error rate 0.93 on a Thai test page, measured 2026-11-06).
 RUN apt-get update && apt-get install -y --no-install-recommends \
-      tesseract-ocr poppler-utils \
+      tesseract-ocr tesseract-ocr-tha poppler-utils \
     && rm -rf /var/lib/apt/lists/*
 RUN useradd --system --uid 1001 cosuser
 COPY --from=builder /opt/venv /opt/venv
