@@ -1519,10 +1519,14 @@ print(PIL.__version__, '16-bit grayscale PNG file opens as', Image.open(io.Bytes
   reset_state
   ```
 
-- **Markdown backlog the broken gate hid: 19 markdownlint errors in 3 files, changed since `origin/develop`.**
-  `docs/architecture/adr/110-first-tenant-admin-bootstrap.md` (17: MD013, MD029), `docs/api/error-codes.md` (1) and
-  `docs/runbooks/mfa-enforcement.md` (1), all last changed in `10be1567` (before the series). CI's Lint job will
-  fail on them when this work opens a PR into `develop`.
+- **Closed — Markdown backlog the broken gate hid: 19 markdownlint errors in 3 files, changed since
+  `origin/develop`.** Fixed on `fix/markdown-backlog`, formatting only (`git diff --word-diff` changes no word): the
+  MD013 lines rewrapped, and ADR-110 keeps its decision numbers 1–22, which run across the amendment rounds and are
+  cited by number, under a file-level `markdownlint-disable MD029` with its reason (product-owner decision).
+  `docs/architecture/adr/110-first-tenant-admin-bootstrap.md` (17: 15 MD029, 2 MD013), `docs/api/error-codes.md` (1)
+  and `docs/runbooks/mfa-enforcement.md` (1), all last changed in `10be1567` (before the series). CI's Lint job would
+  have failed on them when this work opened a PR into `develop`; after the fix the three files lint clean and the
+  local gate passes on `/bin/bash` 3.2.
 - **`apps/mobile` (D7).**
   - Its own lockfile has expo-router → `query-string@7.1.3` → `decode-uri-component@0.2.2`.
   - react-navigation's `getStateFromPath` calls `queryString.parse` on deep-link input.

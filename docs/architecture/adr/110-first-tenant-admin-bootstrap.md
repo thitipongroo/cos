@@ -5,6 +5,10 @@
 **Deciders:** product owner, 2026-11-02
 **Tags:** security | identity
 
+<!-- markdownlint-disable MD029 -->
+<!-- The decisions are numbered 1–22 across the amendment rounds and cited by number ("Decision 21",
+"decision 4"), so each round's list continues the count instead of restarting at 1 (MD029). -->
+
 ---
 
 ## Context
@@ -49,16 +53,17 @@ The product owner decided on 2026-11-02:
    has (any kind, because the realm allows passwordless WebAuthn registration; the realm has no identity provider
    configured — if one is added, a federated sign-in must be added to this test). Keycloak is asked BEFORE the
    transaction (QM-18), and inside it, under the lock, the same account must still be the only active administrator;
-   a credential added in that window of one round trip is not seen. Otherwise `409 COS-TADM-002` with `details.reason` (`admin_count`, `not_bootstrapped`, `invitation_used`). The
-   audit row commits before the email is sent, so every email that leaves is recorded; a failed send leaves the
-   recorded request and `invite_sent: false`. Keycloak does not revoke an earlier action token when a new one is
+   a credential added in that window of one round trip is not seen. Otherwise `409 COS-TADM-002` with
+   `details.reason` (`admin_count`, `not_bootstrapped`, `invitation_used`). The audit row commits before the email
+   is sent, so every email that leaves is recorded; a failed send leaves the recorded request and
+   `invite_sent: false`. Keycloak does not revoke an earlier action token when a new one is
    issued, so an earlier link may stay valid until its own expiry.
    The list's `tenant_admin_pending` (`last_seen_at = created_at`: both default to `now()` in the same INSERT and
    `LastSeenService` moves `last_seen_at` on the first authenticated request) only decides whether the panel shows
    the button; the server decides by the Keycloak credential.
 5. **Audited** under the target tenant with the justification (§6.7): `tenant.bootstrap_admin` in the insert
-   transaction, `tenant.resend_admin_invite` in the resend transaction, before its email. Metadata is the justification and `user_id` —
-   no email.
+   transaction, `tenant.resend_admin_invite` in the resend transaction, before its email. Metadata is the
+   justification and `user_id` — no email.
 6. **`GET /admin/tenants`** carries `tenant_admin_count` and `tenant_admin_pending`, from which the panel offers
    _Create tenant admin_ (count 0) or _Resend admin invitation_ (pending).
 7. **Feature flag `s1.tenant.bootstrap-admin`** (QM-15), default OFF, on both endpoints (503 `COS-FLAG-001`) and on

@@ -150,7 +150,8 @@ constraint — a CHECK cannot see a graph — so both are enforced in `TasksServ
 | COS-TADM-005 | 429  | An invitation was sent a moment ago. Wait a few minutes before sending another.                               | `POST /admin/tenants/{id}/tenant-admin/invite` within 5 minutes of the tenant's last invitation (bootstrap or resend), read from the audit trail under the administrator lock. `details`: `retry_after_seconds`. messageKey `admin.tenantAdmin.error.resendTooSoon`                                                                                                        |
 
 An email that already has an account on the tenant's realm is `409 COS-USER-003`, as on `POST /users` (same message,
-whichever tenant holds it). The three `/admin/tenants/{id}/tenant-admin…` endpoints answer `503` while `s1.tenant.bootstrap-admin` is off.
+whichever tenant holds it). The three `/admin/tenants/{id}/tenant-admin…` endpoints answer `503` while
+`s1.tenant.bootstrap-admin` is off.
 
 ---
 

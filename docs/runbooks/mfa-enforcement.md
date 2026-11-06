@@ -231,8 +231,8 @@ attribute early is harmless: the old conditions ignore it.
    `Condition - Level of Authentication` at the same level make Keycloak 26.6.4 fail every login in the realm with
    `IllegalStateException: Duplicate key 2` (measured while building round 5).
 5. Verify: `node scripts/ops/verify-keycloak-mfa-live.mjs --realm <realm> --probe`. It checks both subflows (the
-   condition must hold for `mfa_required` = `true` the way Keycloak evaluates it, with no other condition beside it except the browser subflow's Level of
-   Authentication, and no CONDITIONAL or DISABLED subflow above it) and
+   condition must hold for `mfa_required` = `true` the way Keycloak evaluates it, with no other condition beside
+   it except the browser subflow's Level of Authentication, and no CONDITIONAL or DISABLED subflow above it) and
    probes a user carrying `role=SITE_ENGINEER` + `mfa_required`, which must get HTTP 401. Then cases 1–6 of Step 2,
    plus a browser login of a user who holds FINANCE as an additional role only: they must
    be asked for OTP and receive `acr=gold`.
