@@ -1446,14 +1446,21 @@ print(PIL.__version__, '16-bit grayscale PNG file opens as', Image.open(io.Bytes
   (`COPY --from=builder … /app ./`), `node_modules` with devDependencies included, and the workspace packages build
   one at a time (`--workspace-concurrency=1`). The build context is small (6.07 MB; `.dockerignore` already excludes
   the mobile build output). This predates the series.
-- **Remove the unused `@confluentinc/schemaregistry` from backend (D27).** Nothing imports it (branch 4).
-  `packages/@cos/shared/README.md` lists it as "Avro schema validation", but `@cos/shared` does not declare it; the
-  Avro client in use is `@kafkajs/confluent-schema-registry`, in `@cos/kafka`. Measured in
-  an isolated copy, not applied: dropping it from `backend/package.json` removes 89 packages from backend's production
-  closure and adds none, among them the Azure SDK (`@azure/identity`, both `@azure/msal-common`, `@azure/msal-node`,
-  `@azure/msal-browser`, `@azure/keyvault-keys`), `@aws-sdk/client-kms` and `@aws-sdk/credential-providers`,
-  `@google-cloud/kms` and `google-auth-library`. Whether Confluent's schema registry client (Avro, client-side field
-  encryption) is still planned is a product-owner decision.
+- **Closed — the unused `@confluentinc/schemaregistry` removed from backend (D27).** On `chore/remove-schemaregistry`:
+  the dependency line goes from `backend/package.json`; backend's production closure loses 89 packages and gains
+  none (the lockfile loses 68; the rest are still used elsewhere), and no other importer changes. The Azure SDK
+  leaves the lockfile entirely, so branch 4's `@azure/identity` override, which now matched nothing, is removed with a
+  note (D14). Four overrides that already matched nothing before this change (`@xmldom/xmldom`,
+  `@expo/plist>@xmldom/xmldom`, `@remix-run/server-runtime`, `turbo-stream`) are reported, not touched.
+  Six entries are now marked optional in the lockfile, their only remaining path being optional: `joi@17.13.9`,
+  `@hapi/hoek@9.3.0`, `@hapi/topo@5.1.0` and the three `@sideway/*`. `packages/@cos/shared/README.md`'s
+  dependency list, which named this package and `@cos/kafka`'s dependencies, now lists what `@cos/shared` declares.
+  backend: `pnpm test:cov` 257 suites / 4,207 tests with its gate, `pnpm build` and `tsc --noEmit` pass. The backend
+  image builds and is 5.48 GB (branch 4: 5.56 GB). Started offline in that image, `node backend/dist/main` loads
+  `./app.module` and every module behind it (line 13 of `main.js`), reaches `bootstrap()` and stops at the expected
+  `APP_DATABASE_URL is not set` check, with no `MODULE_NOT_FOUND`.
+  `verify-before-push.sh --full`: 47 passed, 2 failed (openapi freshness, the MinIO image), 4 skipped; both audits and
+  "Lint — markdownlint" (421 files, now actually linted) pass.
 - **Closed — the markdownlint step of `verify-before-push.sh` linted nothing on macOS.** Fixed on
   `fix/markdownlint-gate-bash32`. `scripts/ci/check-markdown-changed.sh` built its file list inside `<( … )`, and a
   comment in that body held an unpaired quote (the apostrophe in "CI's Lint job"), which `/bin/bash` 3.2 cannot parse
