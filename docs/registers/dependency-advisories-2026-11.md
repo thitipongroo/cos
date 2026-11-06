@@ -61,12 +61,13 @@ The numbers are the ones used while the work was planned. Decisions about the wi
 | 1c `chore/deps-1c-decode-uri-component` | decode-uri-component override (file-service runtime; GHSA-qr28-fpjm-wq7f) and file-service's Jest                             | committed `8310449d` |
 | 2 `chore/deps-2-puppeteer`              | zod 3, first source: puppeteer 25.5.0 → 25.16.0 under `@mermaid-js/mermaid-cli` 11 (D25)                                      | committed `87d2e8fa` |
 | 3 `chore/deps-3-lhci`                   | zod 3, second source: `@lhci/cli` 0.15.1 → 0.16.0 (lighthouse 12.6.1 → 13.6.0); basic-ftp release-age entry removed           | committed `97791d75` |
-| 4 `chore/deps-4-azure-identity`         | @azure/msal-node 5.2.2 → 7.1.2 via `@azure/identity` 4.13.1 → 4.14.1 (backend runtime; D27)                                   | implemented          |
-| 5                                       | Pillow (12.3.0 → 13.0.0, `ai-ocr-pipeline`)                                                                                   | not started          |
+| 4 `chore/deps-4-azure-identity`         | @azure/msal-node 5.2.2 → 7.1.2 via `@azure/identity` 4.13.1 → 4.14.1 (backend runtime; D27)                                   | committed `341d2b0a` |
+| 5 `chore/deps-5-pillow`                 | Pillow 12.3.0 → 13.0.0 (`ai-ocr-pipeline` runtime; 39 advisories)                                                             | implemented          |
 
-CI's audit job stays red until branch 5 is in. The pnpm step clears after 1b, 1c and 2–4. pip-audit, which CI
-reaches only once the pnpm step passes, clears after 5. Both assume that govulncheck passes. It has not been run
-locally, because it is not installed here.
+CI's audit job stays red until branch 5 is in. The pnpm step clears after 1b, 1c and 2–4 (measured: it first passes
+on branch 4). pip-audit, which CI reaches only once the pnpm step passes, clears after 5 (measured on branch 5: all
+five services clean). Both assume that govulncheck passes. It has not been run locally, because it is not installed
+here.
 
 Under D3 this is expected. So the runbook's "CI must stay green each wave" is not met for the audit job, by decision.
 
@@ -1253,6 +1254,150 @@ console.log('msal-node >= 7.1.0:', maj > 7 || (maj === 7 && min >= 1));
   failed on `plan_type admits exactly STARTER, PROFESSIONAL, ENTERPRISE`: the enum also has `LITE`, added by
   `512dc085` (trial lifecycle) without updating the spec. See [Open](#open).
 
+## Branch 5 — Pillow 12.3.0 → 13.0.0 in ai-ocr-pipeline
+
+Branch 5 changes one line of `services/ai-ocr-pipeline/requirements.txt`, `Pillow==12.3.0` → `Pillow==13.0.0`, with a
+comment. It is the only Pillow pin in the repo, and a runtime dependency of the service.
+
+### The advisories
+
+`pip-audit` 2.10.0 reported 39 vulnerabilities against `pillow 12.3.0`: 18 PYSEC-2026-4326 to 4343 entries, 20 further
+CVE ids and GHSA-78g4-xqwv-q3g8 (the bundled OpenJPEG), and gave 13.0.0 as the only fix version for every one; there
+is no 12.x fix. 13.0.0 (2026-10-16, the latest) requires Python `>=3.11` (the service and its image run 3.12) and
+ships cp312 manylinux wheels for aarch64 and x86_64. `pdf2image 1.17.0` requires `pillow` with no version range.
+
+### What 13.0.0 changes that the service could reach
+
+The service opens uploads with `Image.open(io.BytesIO(bytes))`, renders PDFs with `pdf2image.convert_from_bytes`
+(pdftoppm → PPM → RGB images), and passes each image to `pytesseract.image_to_data(…, lang="tha+eng")`, which saves it
+to a temporary file in its own `image.format` (PNG if it has none) after flattening any alpha onto white.
+
+Of 13.0.0's backwards-incompatible changes (Python 3.10 dropped; `Image.fromarray` `mode` changing dtype; removed
+`get_child_images()`, `Image._show`, `ImageCms` product name / info, `ExifTags.IFD.Makernote`), the one on that path is
+**saving I mode images as PNG**: 12 clipped the 32-bit values to 16 bits, 13 raises. Measured inside the service
+image on both versions: pytesseract's own `save()` of an I mode image with format PNG succeeded on 12.3.0 and raised
+`OSError: cannot write mode I as PNG` on 13.0.0. But a PNG file cannot open in mode I (PNG holds at most 16 bits per
+channel): a 16-bit grayscale PNG opens as `I;16` on both versions, and pdf2image yields RGB. So the service's inputs do
+not reach it. One other 13.0.0 change is on the path for TIFF uploads: with duplicate TIFF tags, the first value is now
+kept. Only crafted or malformed TIFFs carry duplicate tags, and none was tested. A /doubt reviewer ran `Image.open` and
+pytesseract's `save()` on 26 further inputs on both versions (PNG variants, CMYK and EXIF-rotated JPEG, WebP, GIF,
+TIFF `I;16` / `F`, JPEG 2000, PGM, BMP, PPM, PBM, AVIF) and got identical results; `MAX_IMAGE_PIXELS` is the same.
+
+### Evidence (D2)
+
+**The service's suite**, in scratch venvs on Python 3.12 with `requirements-dev.txt`: 41 passed with 100 % coverage
+(gate 99 %) on 12.3.0, and the same on 13.0.0. Those tests mock `Image.open` and pytesseract, so they do not exercise
+Pillow itself.
+
+**Real OCR, before and after.** The service's own Dockerfile built twice from the repo root, with 12.3.0 and then with
+13.0.0, and the same eight generated inputs run through `ocr_pipeline.process_file` in each, offline
+(`--network none`):
+
+| Input           | Mode         | Pillow 12.3.0             | Pillow 13.0.0             |
+| --------------- | ------------ | ------------------------- | ------------------------- |
+| `gray16.png`    | I;16         | read, confidence 0.958    | read, confidence 0.958    |
+| `imode.tif`     | I            | error: `KeyError: 'text'` | error: `KeyError: 'text'` |
+| `one_bit.png`   | 1            | read, confidence 0.958    | read, confidence 0.958    |
+| `rgb.jpg`       | RGB          | read, confidence 0.958    | read, confidence 0.958    |
+| `rgb.png`       | RGB          | read, confidence 0.958    | read, confidence 0.958    |
+| `rgb.tif`       | RGB          | read, confidence 0.958    | read, confidence 0.958    |
+| `rgba.png`      | RGBA         | read, confidence 0.958    | read, confidence 0.958    |
+| `two_pages.pdf` | PDF, 2 pages | read, confidence 0.959    | read, confidence 0.959    |
+
+Every input reads the same text with the same confidence on both versions; the outputs differ only in the version
+field. The text read is the text drawn ("Daily report 2026-11-06 Concrete pour level 3 Inspector signed 14:30", and
+for the PDF also "Page two Rebar check passed"). The 32-bit I mode TIFF fails on both, before any Pillow 13 change
+(see [Open](#open)).
+
+```python
+# python make_inputs.py <outdir>: the OCR inputs for branch 5, made once (Pillow 12.3.0), used by both runs.
+import sys
+from pathlib import Path
+from PIL import Image, ImageDraw, ImageFont
+
+out = Path(sys.argv[1])
+font = ImageFont.truetype('/System/Library/Fonts/Supplemental/Arial.ttf', 40)
+LINES = ['Daily report 2026-11-06', 'Concrete pour level 3', 'Inspector signed 14:30']
+
+
+def page(lines=LINES):
+    im = Image.new('RGB', (1000, 260), 'white')
+    d = ImageDraw.Draw(im)
+    for i, line in enumerate(lines):
+        d.text((40, 30 + i * 70), line, fill='black', font=font)
+    return im
+
+
+rgb = page()
+rgb.save(out / 'rgb.png')
+rgb.save(out / 'rgb.jpg', quality=95)
+rgb.save(out / 'rgb.tif')
+rgba = rgb.convert('RGBA')
+rgba.putalpha(Image.new('L', rgb.size, 255).point(lambda v: v))
+alpha = Image.new('L', rgb.size, 255)
+ImageDraw.Draw(alpha).rectangle((0, 0, 999, 20), fill=0)  # a transparent band at the top
+rgba.putalpha(alpha)
+rgba.save(out / 'rgba.png')
+rgb.convert('1').save(out / 'one_bit.png')
+gray = rgb.convert('L')
+gray.convert('I').point(lambda v: v * 257).convert('I;16').save(out / 'gray16.png')  # 16-bit grayscale PNG
+gray.convert('I').point(lambda v: v * 65793).save(out / 'imode.tif')  # 32-bit I, TIFF
+rgb.save(out / 'two_pages.pdf', save_all=True, append_images=[page(['Page two', 'Rebar check passed'])])
+for f in sorted(out.iterdir()):
+    print(f.name, Image.open(f).mode if f.suffix != '.pdf' else 'pdf', f.stat().st_size)
+```
+
+```python
+# Inside the service image: python /probe/run_ocr.py /probe/inputs. One JSON line per input: Pillow version, the mode
+# Image.open reports, and process_file's text and confidence, or the exception it raised.
+import json, sys, traceback
+from pathlib import Path
+import PIL
+from PIL import Image
+import ocr_pipeline
+
+for f in sorted(Path(sys.argv[1]).iterdir()):
+    mime = 'application/pdf' if f.suffix == '.pdf' else 'image/' + f.suffix.lstrip('.')
+    row = {'pillow': PIL.__version__, 'file': f.name}
+    if f.suffix != '.pdf':
+        with Image.open(f) as im:
+            row['mode'] = im.mode
+    try:
+        o = ocr_pipeline.process_file(f.stem, f.read_bytes(), mime)
+        row.update(text=o.extracted_text, confidence=round(o.confidence_score, 4))
+    except Exception as e:  # recorded, not hidden
+        row['error'] = f'{type(e).__name__}: {str(e).splitlines()[0][:160]}'
+    print(json.dumps(row, ensure_ascii=False), flush=True)
+```
+
+```python
+# Inside the service image: the one Pillow 13 change that can reach pytesseract — an I mode image whose format is PNG.
+import io
+import PIL
+from PIL import Image
+from pytesseract import pytesseract as pt
+
+im = Image.new('I', (50, 20), 70000)  # a value above 16 bits
+im.format = 'PNG'
+try:
+    with pt.save(im) as (_, path):
+        print(PIL.__version__, 'I-mode PNG saved by pytesseract; reopened as', Image.open(path).mode)
+except Exception as e:
+    print(PIL.__version__, 'I-mode PNG save raised', type(e).__name__, str(e)[:120])
+# Can a PNG *file* open in mode I at all? (PNG holds at most 16 bits per channel.)
+buf = io.BytesIO(); Image.new('I;16', (5, 5), 60000).save(buf, 'PNG')
+print(PIL.__version__, '16-bit grayscale PNG file opens as', Image.open(io.BytesIO(buf.getvalue())).mode)
+```
+
+### Gates (5)
+
+- **`pip-audit -r requirements.txt`**, in each of the five `services/*` that have one, as CI and vbp run it: "No known
+  vulnerabilities found" and exit 0 in all five.
+- **Docker build of ai-ocr-pipeline:** passes with 13.0.0 (and passed with 12.3.0 for the comparison).
+- **`verify-before-push.sh --full`:** 47 passed, 2 failed, 4 skipped. Both audit steps pass, "Audit — pnpm (Node deps)"
+  and "Audit — pip-audit (Python services)", for the first time together. The two failures are the known ones:
+  openapi freshness and the integration step (the file-service MinIO image).
+
 ## Open
 
 - **Re-measure the LCP budget under Lighthouse 13 (D26).** `apps/web/.lighthouserc.json` keeps the LCP
@@ -1268,6 +1413,16 @@ console.log('msal-node >= 7.1.0:', maj > 7 || (maj === 7 && min >= 1));
 
 - **`backend/test/auth-tenant/01-entities-rls.integration.spec.ts` expects three `plan_type` values.** The database
   has four since `512dc085` added `LITE` (trial lifecycle); the assertion at line 101 fails. This predates the series.
+- **The ai-ocr-pipeline image has no Thai OCR data.** `ocr_pipeline.py` calls tesseract with `lang="tha+eng"`, but the
+  image installs only `tesseract-ocr` (languages `eng` and `osd`); its Dockerfile says to add `tesseract-ocr-tha` "if
+  Tier-1 must read Thai documents". English text still reads under `tha+eng`, which suggests tesseract skips the
+  missing language (its stderr was not captured). This predates the series; found in branch 5.
+- **A 32-bit I mode TIFF fails OCR with `KeyError: 'text'`**, on Pillow 12.3.0 and 13.0.0 alike: pytesseract raises
+  `TesseractError` only on a non-zero exit, so tesseract most likely exited 0 with no data for it (not confirmed from
+  its stderr), and `_ocr_image` indexes the result without checking. This predates the series; found in branch 5.
+- **Pillow outside `services/*` is unpinned and unaudited.** `mlops` (through mlflow → matplotlib) and
+  `apps/mobile/scripts/stitch-*.py` pull Pillow in without a pin, and CI's pip-audit covers only `services/*`.
+  `docs/runbooks/dependency-upgrade-plan.md:69` still calls Pillow 12.2.0 "current". This predates the series.
 - **The backend image is 5.56 GB, and a build after a lockfile change took more than 17 minutes on a dev machine.**
   Measured in branch 4. `docker image inspect` gave 5.56 GB. The first build (`docker build -q`) had run for 17.5
   minutes by `ps` when it was stopped to get step timings; the rebuild with `--progress=plain` then found every step

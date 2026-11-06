@@ -18,7 +18,12 @@ httpx==0.28.1
 python-dotenv==1.2.2
 pytesseract==0.3.13
 pdf2image==1.17.0
-Pillow==12.3.0
+# Pillow 13.0.0 — pip-audit reported 39 advisories against 12.3.0 (18 PYSEC, 20 CVE, 1 GHSA ids),
+# all fixed only in 13.0.0; there is no 12.x fix. 13 no longer clips 32-bit I mode images
+# when saving them as PNG (it raises instead); pytesseract re-saves each image in its own format.
+# Measured with real OCR before and after:
+# docs/registers/dependency-advisories-2026-11.md, branch 5.
+Pillow==13.0.0
 
 # Prometheus exposition for the :9464 scrape target (§31.3, QM-8) — see metrics.py.
 prometheus-client>=0.21
