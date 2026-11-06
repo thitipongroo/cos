@@ -2,8 +2,9 @@
 
 Reads the REAL metering the gateway already writes on every LLM call (ai.ai_usage_logs, via
 middleware/token_logger.py) and compares this billing month's tokens to the plan quota (§26 pricing:
-STARTER 500K / PROFESSIONAL 5M / ENTERPRISE uncapped). §31.3 / §22.10 COST-001 bands: warning ≥80 %,
-critical ≥100 %. No placeholders (ห้ามเดา): a tenant with no calls this month reads 0.
+LITE and STARTER 500K / PROFESSIONAL 5M / ENTERPRISE uncapped). §31.3 / §22.10 COST-001 bands:
+warning ≥80 %, critical ≥100 %. No placeholders (ห้ามเดา): a tenant with no calls this month
+reads 0.
 
 Split like intent/: summarize_usage() is pure (unit-gated); get_usage_summary() does the DB I/O.
 The DB pool is the RLS-exempt owner role, so rows are scoped by explicit WHERE tenant_id (parity with
@@ -16,6 +17,7 @@ from db import tenant_scoped
 
 # §26 "Included Quota" per plan tier. ENTERPRISE is contract-custom → uncapped in-app (None).
 QUOTA_BY_PLAN: dict[str, int | None] = {
+    "LITE": 500_000,  # §26.1: LITE shares the SMB quota with STARTER
     "STARTER": 500_000,
     "PROFESSIONAL": 5_000_000,
     "ENTERPRISE": None,

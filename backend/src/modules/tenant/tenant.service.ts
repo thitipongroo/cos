@@ -319,7 +319,7 @@ export class TenantService implements OnModuleDestroy {
       throw new BadRequestException('dedicatedDbUrl must start with postgresql:// or postgres://');
     }
 
-    // SMB/mid-market (STARTER, PROFESSIONAL) → shared realm per spec §5, §7.6 step 3
+    // SMB/mid-market (LITE, STARTER, PROFESSIONAL) → shared realm per spec §5, §7.6 step 3
     // ENTERPRISE → per-tenant realm; provisioned by Phase 25 EnterpriseProvisioningWorkflow
     const keycloakRealm =
       dto.planType === 'ENTERPRISE' ? `cos-${dto.tenantCode}` : 'construction-os';

@@ -407,7 +407,7 @@ paths:
         the current UTC calendar month, scoped to the tenant in the verified token. A tenant that
         has made no calls reads `0`, never a placeholder.
 
-        Quotas are the §26 plan tiers: STARTER 500,000 and PROFESSIONAL 5,000,000 tokens.
+        Quotas are the §26 plan tiers: LITE and STARTER 500,000, PROFESSIONAL 5,000,000 tokens.
         ENTERPRISE is contract-custom and therefore uncapped in-app, which is why `quota` and
         `percentUsed` are nullable — they are null for ENTERPRISE and for any unrecognised plan.
 
@@ -709,8 +709,8 @@ components:
         quota:
           type: [integer, 'null']
           description: |
-            The plan's included monthly quota — STARTER 500000, PROFESSIONAL 5000000. `null` for
-            ENTERPRISE (contract-custom, uncapped in-app) and for an unrecognised plan.
+            The plan's included monthly quota — LITE and STARTER 500000, PROFESSIONAL 5000000.
+            `null` for ENTERPRISE (contract-custom, uncapped in-app) and for an unrecognised plan.
           examples: [500000]
         percentUsed:
           type: [integer, 'null']

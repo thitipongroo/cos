@@ -1411,8 +1411,24 @@ print(PIL.__version__, '16-bit grayscale PNG file opens as', Image.open(io.Bytes
   156 take about 367 MB and 203 MB on macOS. It reaches proxy-agent through `@puppeteer/browsers`' out-of-range
   optional peer (branch 2 removed that link and branch 3 brought it back). This predates the series.
 
-- **`backend/test/auth-tenant/01-entities-rls.integration.spec.ts` expects three `plan_type` values.** The database
-  has four since `512dc085` added `LITE` (trial lifecycle); the assertion at line 101 fails. This predates the series.
+- **Closed — `backend/test/auth-tenant/01-entities-rls.integration.spec.ts` expected three `plan_type` values.** The
+  database has four since `512dc085` added `LITE` (trial lifecycle). Fixed on `fix/rls-spec-lite`: the assertion
+  expects LITE, the spec's shared-realm comment and `docs/specifications/11-database-schema.md` (`plan_type`,
+  `keycloak_realm`) name it too. That spec file alone, against its Testcontainers database: 14 of 15 before, 15 of 15
+  after. `docs/architecture/technical-design/phase-02-authentication-and-tenant-system.md` (the `tenants` row and
+  the realm model) names LITE too, with the commit that added it (product-owner decision). A /doubt review of that
+  branch found LITE missing in one more place that matters: `services/ai-gateway/usage.py` `QUOTA_BY_PLAN` had no
+  `LITE` key, so a LITE tenant's AI usage summary read as uncapped, with no 80 % / 100 % alert, against §26.1's 500K
+  SMB quota. The same branch adds `"LITE": 500_000` with a test (ai-gateway: 651 passed, 2 skipped, coverage 99.39 %),
+  and names LITE in `docs/api/ai.openapi.yaml` (the `/ai/usage` description and the `quota` field),
+  `apps/mobile/src/api/ai.ts`, `docs/specifications/20-ux-flow.md`, `DESIGN.md`,
+  `context/phases/phase-02-authentication-tenant-system.md` (the `plan_type` and `keycloak_realm` lines and the realm
+  model), and the shared-realm comments in `tenant.service.ts`, `schema.prisma`, `@cos/types` `admin-api.ts`,
+  `backend/src/modules/identity/README.md` and `tests/conformance/auth-tenant/01-keycloak-realm.spec.ts`. The RLS spec
+  re-run after the last edit: 15 of 15.
+  `docs/architecture/adr/108-platform-settings-store.md` still lists three plans and is left as decided at the time.
+  `docs/specifications/11-database-schema.md`'s `platform.tenants` table does not yet show the other columns that
+  migration added (`subscription_status`, the `trial_*` columns, `converted_at`) or `tenant_trial_notices`.
 - **The ai-ocr-pipeline image has no Thai OCR data.** `ocr_pipeline.py` calls tesseract with `lang="tha+eng"`, but the
   image installs only `tesseract-ocr` (languages `eng` and `osd`); its Dockerfile says to add `tesseract-ocr-tha` "if
   Tier-1 must read Thai documents". English text still reads under `tha+eng`, which suggests tesseract skips the

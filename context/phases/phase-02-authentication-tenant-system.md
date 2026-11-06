@@ -161,8 +161,9 @@ Entities (PostgreSQL — all in schema: platform):
     tenant_id        UUID PK DEFAULT gen_random_uuid()
     tenant_code      VARCHAR(50) UNIQUE NOT NULL
     tenant_name      VARCHAR(255) NOT NULL
-    keycloak_realm   VARCHAR(100) NOT NULL  -- UNIQUE except the shared realm (partial index, 20260914000001); STARTER/PROFESSIONAL share `construction-os` (spec §7.6)
-    plan_type        ENUM('STARTER','PROFESSIONAL','ENTERPRISE') NOT NULL
+    keycloak_realm   VARCHAR(100) NOT NULL  -- UNIQUE except the shared realm (partial index, 20260914000001); LITE/STARTER/PROFESSIONAL share `construction-os` (spec §7.6)
+    -- LITE since migration 20261101000001_trial_lifecycle
+    plan_type        ENUM('LITE','STARTER','PROFESSIONAL','ENTERPRISE') NOT NULL
     is_active        BOOLEAN DEFAULT true
     dedicated_db_url VARCHAR(500) NULL  -- NULL = shared DB; non-NULL = enterprise dedicated DB URL
     data_region      VARCHAR(20) NOT NULL DEFAULT 'ap-southeast-1'  -- data-residency region; Thai→ap-southeast-7, EU→eu-west-1, default→ap-southeast-1 (spec §5.6); immutable after first write
@@ -236,7 +237,7 @@ Generate:
 - NestJS Identity Service: Keycloak adapter, JWT validation middleware
 - NestJS Tenant Service: tenant CRUD, realm assignment on tenant create
     Realm model (spec §05 §5, §07 §7.6 step 3):
-      STARTER/PROFESSIONAL → shared realm 'construction-os'
+      LITE/STARTER/PROFESSIONAL → shared realm 'construction-os'
       ENTERPRISE → dedicated realm 'cos-{tenantCode}' (Phase 25 EnterpriseProvisioningWorkflow)
 - @cos/rbac package: role enum, permission map, NestJS guard decorators and metadata keys
     (@cos/rbac contains: CosRole enum, ROLE_PERMISSIONS map, @Roles/@RequirePermissions decorators,

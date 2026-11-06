@@ -104,12 +104,12 @@ named here so the schema is not read as complete: `tenant_settings` (ADR-028, te
 `sync_tombstones` (Phase 10 delta sync). `users` additionally carries `photo_url` and `is_active` in
 §11.1 — the column list below is the identity-relevant subset, not the full table.
 
-| Table                | Key columns                                                                                                                                                                                    |
-| -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `tenants`            | `tenant_id` PK · `tenant_code` UNIQUE · `keycloak_realm` UNIQUE · `plan_type` ENUM(STARTER, PROFESSIONAL, ENTERPRISE) · `dedicated_db_url` NULL · `data_region` DEFAULT `ap-southeast-1`       |
-| `users`              | `user_id` PK · `tenant_id` FK · `keycloak_user_id` UNIQUE · `email` · `display_name` · `mfa_enabled` · `mfa_totp_secret` (encrypted at rest, AES-256-GCM, ADR-035) · INDEX (tenant_id, email)  |
-| `tenant_memberships` | `membership_id` PK · `tenant_id` FK · `user_id` FK · `role` ENUM · UNIQUE (tenant_id, user_id)                                                                                                 |
-| `audit_logs`         | `log_id` PK · `tenant_id` (denormalised) · `actor_id` · `action` · `resource_type` · `resource_id` · `ip_address` INET · `user_agent` · `metadata` JSONB · INDEX (tenant_id, occurred_at DESC) |
+| Table                | Key columns                                                                                                                                                                                                              |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `tenants`            | `tenant_id` PK · `tenant_code` UNIQUE · `keycloak_realm` UNIQUE · `plan_type` ENUM(LITE, STARTER, PROFESSIONAL, ENTERPRISE; LITE added by `512dc085`) · `dedicated_db_url` NULL · `data_region` DEFAULT `ap-southeast-1` |
+| `users`              | `user_id` PK · `tenant_id` FK · `keycloak_user_id` UNIQUE · `email` · `display_name` · `mfa_enabled` · `mfa_totp_secret` (encrypted at rest, AES-256-GCM, ADR-035) · INDEX (tenant_id, email)                            |
+| `tenant_memberships` | `membership_id` PK · `tenant_id` FK · `user_id` FK · `role` ENUM · UNIQUE (tenant_id, user_id)                                                                                                                           |
+| `audit_logs`         | `log_id` PK · `tenant_id` (denormalised) · `actor_id` · `action` · `resource_type` · `resource_id` · `ip_address` INET · `user_agent` · `metadata` JSONB · INDEX (tenant_id, occurred_at DESC)                           |
 
 `dedicated_db_url` is `NULL` for shared-DB tenants and non-`NULL` for Enterprise; it is set either at
 tenant creation or via `PATCH /api/v1/admin/tenants/{id}/dedicated-db` (§7.1).
@@ -241,8 +241,8 @@ fail P3015 (QM-9). All 89 are paired as of 2026-08-22, enforced by
 - **Protocol mappers are mandatory on every realm**, shared or dedicated —
   `oidc-usermodel-attribute-mapper` for each of the three claims. Missing mappers cause Kong to reject
   every request (§5.4.2; §7.6 step 3).
-- **Realm model:** STARTER / PROFESSIONAL share realm `construction-os`; ENTERPRISE gets
-  `cos-{tenantCode}`, provisioned by Phase 25 (`00_master` § PHASE 2 COMMAND → Keycloak Realm Model).
+- **Realm model:** LITE / STARTER / PROFESSIONAL share realm `construction-os` (LITE since `512dc085`);
+  ENTERPRISE gets `cos-{tenantCode}`, provisioned by Phase 25 (`00_master` § PHASE 2 COMMAND → Keycloak Realm Model).
 - **Roles** are the nine in `06-rbac-permission-matrix` §6.2 plus the three implementation sub-roles
   in §6.8 (`PROC_MANAGER`, `SITE_WORKER`, `VIEWER`). `SYSTEM_ADMIN` is never provisioned to a tenant
   (§6.7).

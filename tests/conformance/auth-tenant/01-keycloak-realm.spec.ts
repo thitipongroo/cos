@@ -6,7 +6,7 @@
  *    (see spec §05-security-compliance §5.4.2 and §07-multi-tenant-architecture §7.6 step 3)"
  *
  * Also master:1931-1933 — the realm model:
- *   STARTER/PROFESSIONAL -> shared realm 'construction-os'
+ *   LITE/STARTER/PROFESSIONAL -> shared realm 'construction-os'
  *   ENTERPRISE           -> dedicated realm 'cos-{tenantCode}' (Phase 25)
  *
  * The realm file is located THROUGH compose rather than by a guessed path: whatever the

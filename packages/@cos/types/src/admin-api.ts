@@ -185,7 +185,7 @@ export interface PlatformSettings {
   };
   maintenance: {
     safety_non_suspension: boolean | null;
-    /** STARTER + PROFESSIONAL window, free text. */
+    /** Shared-tier (LITE, STARTER, PROFESSIONAL) window, free text. */
     shared_tiers_window: string | null;
     /** e.g. "ZERO_DOWNTIME". */
     enterprise_mode: string | null;

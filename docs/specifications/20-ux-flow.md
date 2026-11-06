@@ -197,7 +197,7 @@ Not visible to tenant users.
 | ------------ | ------------------------------------------------- |
 | Tenant code  | Unique slug                                       |
 | Tenant name  | Display name                                      |
-| Plan type    | STARTER / PROFESSIONAL / ENTERPRISE               |
+| Plan type    | LITE / STARTER / PROFESSIONAL / ENTERPRISE        |
 | Status       | Active / Inactive                                 |
 | Dedicated DB | — (shared) or URL hostname (dedicated, truncated) |
 | Region       | `data_region` (§5.6) — added 2026-09-14           |
@@ -226,13 +226,13 @@ Every row action opens its Stitch modal over the list (R17); none uses a browser
 
 **Form fields:**
 
-| Field            | Required | Validation                          |
-| ---------------- | -------- | ----------------------------------- |
-| Tenant code      | Yes      | a-z, 0-9, underscore; 2-50 chars    |
-| Tenant name      | Yes      | 2-255 characters                    |
-| Plan type        | Yes      | STARTER / PROFESSIONAL / ENTERPRISE |
-| Dedicated DB URL | No       | Must start with postgresql://       |
-| Justification    | Yes      | 10-500 characters (§6.7)            |
+| Field            | Required | Validation                                 |
+| ---------------- | -------- | ------------------------------------------ |
+| Tenant code      | Yes      | a-z, 0-9, underscore; 2-50 chars           |
+| Tenant name      | Yes      | 2-255 characters                           |
+| Plan type        | Yes      | LITE / STARTER / PROFESSIONAL / ENTERPRISE |
+| Dedicated DB URL | No       | Must start with postgresql://              |
+| Justification    | Yes      | 10-500 characters (§6.7)                   |
 
 The Dedicated DB URL field is enabled only while ENTERPRISE is selected (2026-09-14), matching the note
 below. Presentation (2026-09-15, R13): a modal over the Tenant List on `/admin`, opened by its Create Tenant button

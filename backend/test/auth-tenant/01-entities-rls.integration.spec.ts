@@ -88,7 +88,8 @@ describe('Phase 2 · platform entities and RLS (real database)', () => {
       expect(cols['dedicated_db_url']?.is_nullable).toBe('YES');
     });
 
-    it('plan_type admits exactly STARTER, PROFESSIONAL, ENTERPRISE (master:1883)', async () => {
+    // master:1883 listed three plans; 20261101000001_trial_lifecycle added LITE (§26.1, ADR-109).
+    it('plan_type admits exactly LITE, STARTER, PROFESSIONAL, ENTERPRISE', async () => {
       const rows = await prisma.$queryRawUnsafe<Array<{ label: string }>>(
         `SELECT e.enumlabel AS label
            FROM pg_type t
@@ -99,14 +100,15 @@ describe('Phase 2 · platform entities and RLS (real database)', () => {
           ORDER BY e.enumsortorder`,
       );
       expect(rows.map((r) => r.label).sort()).toEqual(
-        ['ENTERPRISE', 'PROFESSIONAL', 'STARTER'].sort(),
+        ['ENTERPRISE', 'LITE', 'PROFESSIONAL', 'STARTER'].sort(),
       );
     });
 
     // keycloak_realm is UNIQUE for every realm except the shared `construction-os` since 20260914000001:
-    // STARTER and PROFESSIONAL tenants share that realm (§7.6), which a full UNIQUE made impossible past the
-    // first. The old assertion (/UNIQUE[\s\S]*keycloak_realm/) also matched the partial index, so it could
-    // not tell the two apart — this one pins the predicate. 04-shared-realm exercises both halves.
+    // LITE, STARTER and PROFESSIONAL tenants share that realm (§7.6), which a full UNIQUE made
+    // impossible past the first. The old assertion (/UNIQUE[\s\S]*keycloak_realm/) also matched the
+    // partial index, so it could not tell the two apart — this one pins the predicate.
+    // 04-shared-realm exercises both halves.
     it('tenant_code is UNIQUE; keycloak_realm is UNIQUE except the shared realm (master:1880, 1882)', async () => {
       const rows = await prisma.$queryRawUnsafe<Array<{ indexdef: string }>>(
         `SELECT indexdef FROM pg_indexes WHERE schemaname='platform' AND tablename='tenants'`,

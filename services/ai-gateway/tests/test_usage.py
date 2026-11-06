@@ -22,6 +22,15 @@ def test_starter_under_threshold():
     }
 
 
+def test_lite_has_the_smb_quota():
+    # §26.1 gives LITE the SMB 500K quota. Without its own key it fell into the unknown-plan
+    # branch: uncapped, with no 80 % / 100 % alert.
+    out = summarize_usage(450_000, "LITE", "2026-07")
+    assert out["quota"] == 500_000
+    assert out["percentUsed"] == 90
+    assert out["alertLevel"] == "warning"
+
+
 def test_starter_soft_alert_at_80():
     out = summarize_usage(400_000, "STARTER", "2026-07")
     assert out["percentUsed"] == 80
