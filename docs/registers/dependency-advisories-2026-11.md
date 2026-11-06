@@ -48,6 +48,7 @@ The numbers are the ones used while the work was planned. Decisions about the wi
 | D21 | The audit runs in an isolated copy under `env -i`, so no pnpm configuration reaches it and it cannot write into the repo.                                                                                                                                                                 |
 | D23 | basic-ftp's override floor is `^6.2.6`, which also fixes GHSA-2w5v-vj22-jp27.                                                                                                                                                                                                             |
 | D24 | basic-ftp 6.2.6 is taken before the release-age window closed, with a `minimumReleaseAgeExclude` entry that gives the reason and the date it can go.                                                                                                                                      |
+| D25 | Branch 2 moves puppeteer within mermaid-cli 11's peer range instead of upgrading mermaid-cli to 12. mermaid-cli 12 needs puppeteer `^25` too and moves no zod by itself; mermaid-cli 12 is a separate, later choice.                                                                      |
 
 ## The series
 
@@ -55,8 +56,8 @@ The numbers are the ones used while the work was planned. Decisions about the wi
 | --------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- | -------------------- |
 | 1a `chore/deps-1a-audit-gate`           | the audit script made to report fully, with no suppression; dead suppressions and `auditConfig` removed; no dependency change | committed `c94c183a` |
 | 1b `chore/deps-1b-basic-ftp`            | basic-ftp override (dev; GHSA-c475-qrg2-pj4r and four repository-only advisories)                                             | committed `1a0b9f0b` |
-| 1c `chore/deps-1c-decode-uri-component` | decode-uri-component override (file-service runtime; GHSA-qr28-fpjm-wq7f) and file-service's Jest                             | implemented          |
-| 2                                       | zod 3, first source (`@mermaid-js/mermaid-cli` 11 → 12)                                                                       | not started          |
+| 1c `chore/deps-1c-decode-uri-component` | decode-uri-component override (file-service runtime; GHSA-qr28-fpjm-wq7f) and file-service's Jest                             | committed `8310449d` |
+| 2 `chore/deps-2-puppeteer`              | zod 3, first source: puppeteer 25.5.0 → 25.16.0 under `@mermaid-js/mermaid-cli` 11 (D25)                                      | implemented          |
 | 3                                       | zod 3, second source (`@lhci/cli` 0.15 → 0.16)                                                                                | not started          |
 | 4                                       | @azure/msal-node (5 → 7 via `@azure/identity` 4.14.1)                                                                         | not started          |
 | 5                                       | Pillow (12.3.0 → 13.0.0, `ai-ocr-pipeline`)                                                                                   | not started          |
@@ -358,7 +359,8 @@ because `get-uri@6.0.5/dist/index.js:11` requires `./ftp` eagerly.
   it.
 - proxy-agent's real parent is `@lhci/cli`. It is also linked into `@puppeteer/browsers@3.1.0` as an optional peer
   that declares `proxy-agent >=8.0.1`. pnpm fills that peer with 6.5.0, outside the declared range, and the
-  puppeteer-postinstall path exists only because of that link.
+  puppeteer-postinstall path exists only because of that link. (Branch 2 removed that link: see
+  [its section](#branch-2--zod-3-first-source-puppeteer-2550--25160).)
 - `pac-proxy-agent` fetches the PAC file through `get-uri@6.0.5`, and passes its agent options on to it. get-uri passes
   them to `client.access()`.
 - The proxy URL comes from configuration or from the proxy environment variables (`proxy-from-env`). Those include
@@ -866,15 +868,136 @@ check on `fb20451f^` against `fb20451f` again reports four importers.
   fetching the Temporal test server; `pnpm run test:workflows` in `backend`, re-run on its own, passed: 6 suites and
   23 tests.
 
+## Branch 2 — zod 3, first source: puppeteer 25.5.0 → 25.16.0
+
+Branch 2 adds one override, `'puppeteer@>=25.0.0 <25.13.0': '^25.13.0'`, and corrects one stale comment. mermaid-cli
+stays on 11.16.0 (D25). No production dependency changes.
+
+### The advisory and the path
+
+| Advisory            | Severity | Affected  | Patched | Note                                                 |
+| ------------------- | -------- | --------- | ------- | ---------------------------------------------------- |
+| GHSA-mrhx-c7xc-m3w5 | high     | `< 4.6.6` | `4.6.6` | CVE-2023-54404, published 2026-10-01. No 3.x release |
+
+The tree had one copy of zod 3, `zod@3.25.76`, reached two ways:
+
+1. **This branch.** The root devDependency `@mermaid-js/mermaid-cli@11.16.0` → `puppeteer@25.5.0` →
+   `chromium-bidi@17.0.2`, which declares `zod ^3.24.1`. Nothing declares puppeteer: mermaid-cli 11.16.0 lists it as
+   a peer (`^23 || ^24 || ^25`), and pnpm installs it.
+2. **Branch 3.** apps/web's `@lhci/cli@0.15.1` → lighthouse 12.6.1 → `puppeteer-core@24.43.1` →
+   `chromium-bidi@14.0.0`.
+
+So the audit still lists the zod advisory after this branch, through path 2 only.
+
+### Why puppeteer, not mermaid-cli 12 (D25)
+
+puppeteer-core 25.5.0 to 25.12.0 pin `chromium-bidi 17.0.2` (zod 3). 25.13.0 (2026-10-08) is the first on
+`chromium-bidi 157.0.8090-0`, which declares `zod ^4.6.5`; the existing `zod@>=4.0.0 <4.6.6` override lifts that to
+4.6.6 or later. mermaid-cli 12.0.0 and 12.2.0 declare `puppeteer ^25.0.0`: upgrading to them alone would leave
+puppeteer, and zod, where they were, and would add mermaid 12 and a Node `>=22.13.0` floor.
+
+The floor is 25.13.0, the lowest release that clears it, as the file's other entries do; `^25.13.0` resolves the
+newest 25.x, 25.16.0 (2026-10-22). Every new package is older than the 24 h release-age window, and pnpm added no
+exclude entry.
+
+### What changed
+
+`pnpm why zod -r` now finds zod 3 only under lighthouse, and `pnpm why puppeteer -r` finds one version, 25.16.0,
+under mermaid-cli. The lockfile adds `puppeteer@25.16.0`, `puppeteer-core@25.16.0`, `chromium-bidi@157.0.8090-0`,
+`@puppeteer/browsers@3.2.6`, `devtools-protocol@0.0.1704951`, `webdriver-bidi-protocol@1.0.1`, `ws@8.22.1`,
+`typed-query-selector@2.12.3` and `modern-tar@0.8.6`, and drops the 25.5.0 set (`chromium-bidi@17.0.2`,
+`devtools-protocol@0.0.1653615`, `webdriver-bidi-protocol@0.4.2`, `ws@8.21.2`).
+
+puppeteer's own browser moves with it: `revisions.js` in puppeteer-core 25.5.0 names Chrome and
+chrome-headless-shell `151.0.7922.71`; 25.16.0 names `156.0.8078.47`. On this machine 156.0.8078.47 was already in
+`~/.cache/puppeteer` (created 2026-11-04, before this branch), so the postinstall found it there; the web Docker
+build below shows a real download.
+
+**`@puppeteer/browsers` now has two copies.** The override `'@puppeteer/browsers@<3': '3.1.0'` (from an earlier
+round) keeps lighthouse's puppeteer-core 24 on 3.1.0, and its comment said puppeteer 25.5.0 also resolved 3.1.0, so
+there was one copy. puppeteer 25.16.0 asks for 3.2.6. The pin is left as it is, since the lighthouse path is branch
+3's, and its comment now says there are two.
+
+**This removes the basic-ftp path through puppeteer's postinstall** (branch 1b). Both copies declare
+`proxy-agent >=8.0.1` as an optional peer, but pnpm fills it only in 3.1.0: the lockfile entry
+`'@puppeteer/browsers@3.2.6(yauzl@3.4.0)'` has `modern-tar`, `yargs` and `yauzl` and no proxy-agent, and its
+`node_modules` holds only those. `pnpm peers check` now names only `@puppeteer/browsers@3.1.0` for proxy-agent.
+3.1.0 sits under lighthouse's puppeteer-core 24, which has no postinstall. basic-ftp is still reachable through
+`@lhci/cli` itself, as 1b recorded.
+
+**The override also rewrites mermaid-cli's peer range in the lockfile**, from `^23 || ^24 || ^25` to `^25.13.0`.
+pnpm 11.22.0 matches an override's selector by whether its range intersects the specifier, not by the resolved
+version, and then replaces the whole specifier. Measured in scratch projects on pnpm 11.22.0: `^25 || ^26`,
+`>=24 <26`, `25.5.0` and `~25.12.0` all became `^25.13.0`, so their 23, 24 or 26 alternatives were dropped too;
+`^24`, `^25.14.0` and an explicit `25.16.0` were left alone. So any later spec reaching below 25.13 within 25.x is
+clamped, including an explicit `puppeteer` spec of that kind and mermaid-cli 12's `^25.0.0`. The `pnpm-workspace.yaml`
+comment says so.
+
+### Evidence (D2): every mermaid block in `docs/`, before and after
+
+Nothing in `scripts/`, the hooks or CI runs `mmdc`; it is a dev tool for the mermaid blocks in `docs/`. There are
+38 (`^```mermaid` lines); the plan's count of 40 also matched two prose mentions. So each block
+was rendered with `pnpm exec mmdc`, on the same machine, first with puppeteer 25.5.0 and then with 25.16.0:
+
+| Run               | Blocks | Rendered | Failed                                                             |
+| ----------------- | ------ | -------- | ------------------------------------------------------------------ |
+| puppeteer 25.5.0  | 38     | 37       | 1: `phase-07-finance-service.md` block 2, "Parse error on line 13" |
+| puppeteer 25.16.0 | 38     | 37       | the same block, the same message                                   |
+
+The 37 SVGs are byte-identical between the two runs (`cmp`). The two failure logs differ only in the
+`node_modules` paths in the stack trace.
+
+````python
+# python3 -I render-all.py <repo> <outdir>: extracts every ```mermaid block under docs/ and renders it with the
+# repo's `pnpm exec mmdc`, one process per block. Writes <outdir>/results.tsv: id, source file, block no., exit, ms.
+import pathlib, re, subprocess, sys, time
+repo, out = pathlib.Path(sys.argv[1]), pathlib.Path(sys.argv[2])
+(out / 'src').mkdir(parents=True, exist_ok=True); (out / 'svg').mkdir(exist_ok=True); (out / 'log').mkdir(exist_ok=True)
+rows = []
+for md in sorted((repo / 'docs').rglob('*.md')):
+    for n, m in enumerate(re.finditer(r'^```mermaid[ \t]*\n(.*?)^```', md.read_text(encoding='utf-8'), re.S | re.M), 1):
+        bid = f'{len(rows) + 1:03d}'
+        src = out / 'src' / f'{bid}.mmd'; src.write_text(m.group(1), encoding='utf-8')
+        t = time.time()
+        p = subprocess.run(['pnpm', 'exec', 'mmdc', '-q', '-i', str(src), '-o', str(out / 'svg' / f'{bid}.svg')],
+                           cwd=repo, capture_output=True, text=True, timeout=180)
+        (out / 'log' / f'{bid}.log').write_text(p.stdout + p.stderr, encoding='utf-8')
+        rows.append(f'{bid}\t{md.relative_to(repo)}\t{n}\t{p.returncode}\t{int((time.time() - t) * 1000)}')
+        print(rows[-1], flush=True)
+(out / 'results.tsv').write_text('\n'.join(rows) + '\n', encoding='utf-8')
+````
+
+### Production closure (2)
+
+The walker from [1b](#production-closure), on 1c's lockfile (`8310449d`) against this branch's, over 19 importers:
+no importer's production closure changed.
+
+### The basic-ftp release-age entry
+
+Not removed in this branch: this branch was implemented at 2026-11-05T17:54Z, before 20:58:52Z, so the entry was
+still required (see [Open](#open)). Dates written as 2026-11-06 in this section are Bangkok time (UTC+7).
+
+### Gates (2)
+
+- **`pnpm install --frozen-lockfile`:** passes.
+- **`scripts/pnpm-audit.sh`:** 2 unresolved (zod, now through lighthouse only; @azure/msal-node).
+- **Docker build of web:** passes. apps/web's Dockerfile runs an unfiltered frozen install, so puppeteer's
+  postinstall runs in it: it downloaded Chrome and chrome-headless-shell `156.0.8078.47` (`linux_arm`) to
+  `/root/.cache/puppeteer`, in about 27 s of the install step.
+- **`verify-before-push.sh --full`:** 45 passed, 4 failed, 4 skipped. The four failures are the known ones: the pnpm
+  audit (zod via lighthouse, msal-node), pip-audit (Pillow, branch 5), openapi freshness (`auth` and `ai`) and the
+  file-service MinIO suite, whose quay.io image cannot be pulled.
+
 ## Open
 
 - **Remove `basic-ftp@6.2.6` from `minimumReleaseAgeExclude`** once 2026-11-05T20:58:52Z has passed (D24). Until then
-  it is required. 1c leaves it in place (product owner, 2026-11-06); it is removed in branch 2, or before the series
-  is merged, whichever comes first.
+  it is required. 1c and branch 2 leave it in place (branch 2 was implemented before that time); it is removed in
+  branch 3, or before the series is merged, whichever comes first.
 - **The `allowBuilds` comment in `pnpm-workspace.yaml`** says puppeteer's postinstall never runs on a CI runner. But
   the 12 CI jobs that install, and `apps/web/Dockerfile`, run an unfiltered `pnpm install --frozen-lockfile` that
-  includes root devDependencies, so it does run there. It reaches proxy-agent through `@puppeteer/browsers`'
-  out-of-range optional peer. This predates the series.
+  includes root devDependencies, so it does run there. Its "~150 MB" is also low: Chrome and chrome-headless-shell
+  156 take about 367 MB and 203 MB on macOS. Until branch 2 it reached proxy-agent through `@puppeteer/browsers`'
+  out-of-range optional peer; branch 2's 3.2.6 has no such link. This predates the series.
 
 - **`apps/mobile` (D7).**
   - Its own lockfile has expo-router → `query-string@7.1.3` → `decode-uri-component@0.2.2`.
