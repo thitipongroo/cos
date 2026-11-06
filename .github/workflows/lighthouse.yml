@@ -11,13 +11,21 @@ name: Lighthouse CI
 # the same page reported ~3,860 locally. 3.2s is the highest median observed across those runs
 # (2,913ms) plus ~10%. It is a regression gate, not a performance target.
 #
+# Those numbers came from Lighthouse 12. Lighthouse 13 (via @lhci/cli 0.16, 2026-11-06) computes
+# the simulated LCP of /login much lower: on one machine and one Chrome the median went from
+# 2,985ms to 909ms: 12 placed LCP 2s after FCP although both were observed at the same moment,
+# and 13 does not (which of them is right is not established). So until the budget is re-measured
+# on ubuntu-latest under 13, the 3.2s gate has far more headroom than when it was ratified
+# (docs/registers/dependency-advisories-2026-11.md, branch 3, D26).
+#
 # `aggregationMethod: median` is set in .lighthouserc.json rather than lhci's `optimistic` default.
 # Optimistic compares the best of the three runs, which is how a 1,190ms TBT — nearly 6x its budget
 # — passed unnoticed on 2026-08-03.
 #
-# The accessibility gate is `minScore: 1`, not a fraction. Measured on /login: the category has 24
-# scored audits totalling weight 163, and the lightest weighs 1 — so failing a single audit scores
-# 0.9939. Any floor below 1 would let a real regression through. 1.0 was measured three consecutive
+# The accessibility gate is `minScore: 1`, not a fraction. Measured on /login under Lighthouse
+# 13.6.0 (2026-11-06): the category has 22 scored audits totalling weight 173, and the lightest
+# weighs 1 — so failing a single audit scores 0.9942 (12.6.1: 23 audits, weight 163, 0.9939).
+# Any floor below 1 would let a real regression through. 1.0 was measured three consecutive
 # runs after the contrast and label-in-name fixes, and the Lighthouse version is pinned by
 # pnpm-lock.yaml + --frozen-lockfile, so the audit set cannot shift underneath the gate without a
 # deliberate dependency PR. `color-contrast` is asserted separately only because its failure message

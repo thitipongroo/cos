@@ -90,26 +90,9 @@ overrides:
   'ip-address@<=10.3.0': '^10.3.1' # GHSA-mwp4-54f8-5fhr — Address4 reads leading-zero octets as decimal while resolvers read them as octal, giving SSRF / trust-boundary bypass (via socks-proxy-agent / unleash-client)
   '@fastify/static@<10.1.1': '^10.1.1' # GHSA-83w8-p2f5-377r — route-guard bypass via path traversal; patched only in 10.1.1 (major bump, Fastify 5 compatible — via @fastify/swagger-ui / @nestjs/platform-fastify / @nestjs/swagger)
   'brace-expansion@<5.0.11': '5.0.11' # 2026-11-03: GHSA-6j4f-fj2g-mc7p + GHSA-qhr7-859c-m2p7 — the 5.0.9 pin became vulnerable; still one copy for every major. # GHSA-mh99-v99m-4gvg — DoS via unbounded expansion (OOM); env advisory patches only >=5.0.8, so every vulnerable major (1.x/2.x/5.x, all transitive dev/build tooling) is bumped to 5.0.9
-  # GHSA-jmr9-qjv8-65gv — extract-zip follows symlinks out of the extraction directory. It cannot be
-  # fixed by bumping extract-zip: the advisory names 2.0.2 as the patched release and NO SUCH VERSION
-  # EXISTS on npm (2.0.1 is the newest published). The dependency is dev-only and single-sourced —
-  # apps/web devDependency @lhci/cli@0.15.1 (already the latest) pins lighthouse to EXACTLY 12.6.1,
-  # whose puppeteer-core@24 asks for @puppeteer/browsers@^2, which is the last line still using
-  # extract-zip. @puppeteer/browsers@3 replaced it with modern-tar, so overriding the 2.x line removes
-  # the vulnerable package from the tree entirely rather than suppressing the finding.
-  #
-  # Compatibility was verified, not assumed: puppeteer-core@24.43.1 uses 13 symbols from this package
-  # and 3.1.0 exports all 13. 3.x is ESM-only ("type": "module"), which would break a `require()` —
-  # but lighthouse is ESM and does `import puppeteer from 'puppeteer-core'`, so the ESM build is what
-  # loads, and it imports @puppeteer/browsers as ESM. Its `engines` floor of node >=22.12 is met by
-  # the repo's Node 24 (CI NODE_VERSION: '24').
-  #
-  # Pinned exactly, not ^3.1.0: when this was written, puppeteer@25.5.0 (mermaid-cli) also resolved
-  # 3.1.0, so the pin kept one copy. Since branch 2 (2026-11-06 UTC+7) puppeteer@25.16.0 asks for
-  # 3.2.6, so there are two: 3.1.0 for lighthouse's puppeteer-core@24, 3.2.6 for mermaid-cli's
-  # puppeteer. The pin stays as it is; the lighthouse path is branch 3's
-  # (docs/registers/dependency-advisories-2026-11.md).
-  '@puppeteer/browsers@<3': '3.1.0'
+  # '@puppeteer/browsers@<3': '3.1.0' (GHSA-jmr9-qjv8-65gv, extract-zip) removed 2026-11-06,
+  # branch 3: with lighthouse 13 on puppeteer-core 25 nothing asks for @puppeteer/browsers < 3, and
+  # extract-zip is out of the tree (docs/registers/dependency-advisories-2026-11.md).
   # GHSA-ggr8-5vv4-36mx — deepmerge-ts blows the stack merging a recursive object graph. Disclosed
   # 2026-08-17, hours after the tree it sits in was last touched: nothing here changed, the advisory
   # arrived under a dependency that had been still for months. It surfaced only once the Lint job went
@@ -278,12 +261,3 @@ minimumReleaseAgeExclude:
   - prettier@3.9.4
   - recharts@3.9.1
   - '@hookform/resolvers@5.7.1'
-  # basic-ftp 6.2.6 was taken before pnpm's default 24 h release-age window closed, by
-  # product-owner decision (D24, docs/registers/dependency-advisories-2026-11.md): it fixes
-  # GHSA-2w5v-vj22-jp27 and its published diff from 6.2.5 was read. Required while the window is
-  # open: without it `pnpm install --frozen-lockfile` fails ERR_PNPM_MINIMUM_RELEASE_AGE_VIOLATION
-  # (measured on pnpm 11.22.0, which the CI jobs that install use). The release is dated
-  # 2026-11-04T20:56:39Z by the provenance attestation pnpm read and 20:58:51.621Z by npm's `time`
-  # field, so remove this entry from 2026-11-05T20:58:52Z, the later of the two. pnpm 11.22.0 only
-  # appends to this list, so the entry has to be removed by hand.
-  - basic-ftp@6.2.6

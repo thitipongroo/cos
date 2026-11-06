@@ -49,6 +49,7 @@ The numbers are the ones used while the work was planned. Decisions about the wi
 | D23 | basic-ftp's override floor is `^6.2.6`, which also fixes GHSA-2w5v-vj22-jp27.                                                                                                                                                                                                             |
 | D24 | basic-ftp 6.2.6 is taken before the release-age window closed, with a `minimumReleaseAgeExclude` entry that gives the reason and the date it can go.                                                                                                                                      |
 | D25 | Branch 2 moves puppeteer within mermaid-cli 11's peer range instead of upgrading mermaid-cli to 12. mermaid-cli 12 needs puppeteer `^25` too and moves no zod by itself; mermaid-cli 12 is a separate, later choice.                                                                      |
+| D26 | Lighthouse 13 lowers /login's simulated LCP far below Lighthouse 12's. The LCP budget stays 3200 in branch 3; it is re-measured on ubuntu-latest under 13 afterwards (Open).                                                                                                              |
 
 ## The series
 
@@ -57,8 +58,8 @@ The numbers are the ones used while the work was planned. Decisions about the wi
 | 1a `chore/deps-1a-audit-gate`           | the audit script made to report fully, with no suppression; dead suppressions and `auditConfig` removed; no dependency change | committed `c94c183a` |
 | 1b `chore/deps-1b-basic-ftp`            | basic-ftp override (dev; GHSA-c475-qrg2-pj4r and four repository-only advisories)                                             | committed `1a0b9f0b` |
 | 1c `chore/deps-1c-decode-uri-component` | decode-uri-component override (file-service runtime; GHSA-qr28-fpjm-wq7f) and file-service's Jest                             | committed `8310449d` |
-| 2 `chore/deps-2-puppeteer`              | zod 3, first source: puppeteer 25.5.0 → 25.16.0 under `@mermaid-js/mermaid-cli` 11 (D25)                                      | implemented          |
-| 3                                       | zod 3, second source (`@lhci/cli` 0.15 → 0.16)                                                                                | not started          |
+| 2 `chore/deps-2-puppeteer`              | zod 3, first source: puppeteer 25.5.0 → 25.16.0 under `@mermaid-js/mermaid-cli` 11 (D25)                                      | committed `87d2e8fa` |
+| 3 `chore/deps-3-lhci`                   | zod 3, second source: `@lhci/cli` 0.15.1 → 0.16.0 (lighthouse 12.6.1 → 13.6.0); basic-ftp release-age entry removed           | implemented          |
 | 4                                       | @azure/msal-node (5 → 7 via `@azure/identity` 4.14.1)                                                                         | not started          |
 | 5                                       | Pillow (12.3.0 → 13.0.0, `ai-ocr-pipeline`)                                                                                   | not started          |
 
@@ -359,8 +360,9 @@ because `get-uri@6.0.5/dist/index.js:11` requires `./ftp` eagerly.
   it.
 - proxy-agent's real parent is `@lhci/cli`. It is also linked into `@puppeteer/browsers@3.1.0` as an optional peer
   that declares `proxy-agent >=8.0.1`. pnpm fills that peer with 6.5.0, outside the declared range, and the
-  puppeteer-postinstall path exists only because of that link. (Branch 2 removed that link: see
-  [its section](#branch-2--zod-3-first-source-puppeteer-2550--25160).)
+  puppeteer-postinstall path exists only because of that link. (Branch 2 removed that link and branch 3 brought
+  it back, on `@puppeteer/browsers@3.2.6`: see [branch 2](#branch-2--zod-3-first-source-puppeteer-2550--25160) and
+  [branch 3](#branch-3--zod-3-second-source-lhcicli-0151--0160).)
 - `pac-proxy-agent` fetches the PAC file through `get-uri@6.0.5`, and passes its agent options on to it. get-uri passes
   them to `client.access()`.
 - The proxy URL comes from configuration or from the proxy environment variables (`proxy-from-env`). Those include
@@ -918,7 +920,8 @@ round) keeps lighthouse's puppeteer-core 24 on 3.1.0, and its comment said puppe
 there was one copy. puppeteer 25.16.0 asks for 3.2.6. The pin is left as it is, since the lighthouse path is branch
 3's, and its comment now says there are two.
 
-**This removes the basic-ftp path through puppeteer's postinstall** (branch 1b). Both copies declare
+**This removes the basic-ftp path through puppeteer's postinstall** (branch 1b), for this branch only: branch 3
+brings it back (see [branch 3](#branch-3--zod-3-second-source-lhcicli-0151--0160)). Both copies declare
 `proxy-agent >=8.0.1` as an optional peer, but pnpm fills it only in 3.1.0: the lockfile entry
 `'@puppeteer/browsers@3.2.6(yauzl@3.4.0)'` has `modern-tar`, `yargs` and `yauzl` and no proxy-agent, and its
 `node_modules` holds only those. `pnpm peers check` now names only `@puppeteer/browsers@3.1.0` for proxy-agent.
@@ -988,17 +991,173 @@ still required (see [Open](#open)). Dates written as 2026-11-06 in this section 
   audit (zod via lighthouse, msal-node), pip-audit (Pillow, branch 5), openapi freshness (`auth` and `ai`) and the
   file-service MinIO suite, whose quay.io image cannot be pulled.
 
+## Branch 3 — zod 3, second source: @lhci/cli 0.15.1 → 0.16.0
+
+Branch 3 bumps one devDependency, apps/web's `@lhci/cli` `^0.15.1` → `^0.16.0`, which brings lighthouse 12.6.1 →
+13.6.0. It also removes the `@puppeteer/browsers@<3` override, which no longer matches anything (D14), and the
+`basic-ftp@6.2.6` release-age entry (D24). After it `pnpm audit` reports one high advisory, `@azure/msal-node`
+(branch 4); zod's is the only advisory that goes.
+
+### The path and upstream
+
+The last zod 3 path was apps/web `@lhci/cli@0.15.1` → `lighthouse@12.6.1` (pinned exactly) →
+`puppeteer-core@24.43.1` → `chromium-bidi@14.0.0` (`zod ^3`). `@lhci/cli@0.16.0` (2026-11-02, the latest) pins
+`lighthouse@13.6.0` (2026-10-27), which declares `puppeteer-core ^25.16.0` and so `chromium-bidi 157.0.8090-0`
+(`zod ^4.6.5`). No 0.15.x carries lighthouse 13, so this is two majors coupled by upstream: @lhci/cli 0.15 → 0.16 and
+lighthouse 12 → 13. lighthouse is reached only through @lhci/cli. Both need Node `>=22.19`; the repo runs 24.
+
+After the install, `pnpm why -r` finds one version each of zod (4.6.7), puppeteer-core (25.16.0),
+`@puppeteer/browsers` (3.2.6) and lighthouse (13.6.0), and no extract-zip.
+
+### Lighthouse 13 and this repo's gate
+
+`.github/workflows/lighthouse.yml` runs `pnpm run lighthouse` in apps/web (`next start`, five warm-up requests, then
+`lhci autorun`) with `apps/web/.lighthouserc.json`: mobile, simulated throttling, 3 runs, median. It asserts LCP ≤
+3200 ms, CLS ≤ 0.1, TBT ≤ 200 ms, `resource-summary:script:size` ≤ 256000, `categories:accessibility` = 1 and
+`color-contrast` = 1.
+
+[Lighthouse 13.0.0](https://github.com/GoogleChrome/lighthouse/releases/tag/v13.0.0) removed the performance audits
+replaced by insights, plus preload-fonts, uses-rel-preload, font-size, offscreen-images, no-document-write,
+uses-passive-event-listeners and third-party-facades, and adjusted the accessibility weights. All five audits asserted
+here still exist in 13.6.0 (`core/audits/metrics/largest-contentful-paint.js`, `…/cumulative-layout-shift.js`,
+`…/total-blocking-time.js`, `core/audits/resource-summary.js`, `core/audits/accessibility/color-contrast.js`).
+
+The accessibility category, read from each version's `core/config/default-config.js`:
+
+| Lighthouse | Audits | Total weight | Changes                                                                                                                                                                                                                        |
+| ---------- | ------ | ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 12.6.1     | 73     | 404          |                                                                                                                                                                                                                                |
+| 13.6.0     | 76     | 416          | new: `autocomplete-valid` 1, `presentation-role-conflict` 1, `svg-img-alt` 1; `landmark-one-main` 0 → 3; `aria-roles`, `label`, `select-name` 7 → 10; `aria-allowed-role`, `image-redundant-alt`, `table-duplicate-name` 1 → 0 |
+
+With `minScore: 1`, a /login failing any newly weighted audit would fail the gate. It does not.
+
+### Evidence (D2): the gate, before and after
+
+`pnpm --filter @cos/web build`, then `pnpm run lighthouse` in apps/web, on one machine with one Chrome
+(`Google Chrome --version`: 156.0.8078.80; the reports carry only the reduced `HeadlessChrome/156.0.0.0`), first on
+lhci 0.15.1 / lighthouse 12.6.1 and then on 0.16.0 / 13.6.0 with this branch's final lockfile. These are this
+machine's lab numbers, not CI's; what they show is before against after.
+
+| Median of 3 runs             | Lighthouse 12.6.1           | Lighthouse 13.6.0           | Budget |
+| ---------------------------- | --------------------------- | --------------------------- | ------ |
+| LCP (ms)                     | 2984.6                      | 908.7                       | 3200   |
+| CLS                          | 0                           | 0                           | 0.1    |
+| TBT (ms)                     | 21                          | 18                          | 200    |
+| script transfer size (bytes) | 231730                      | 231730                      | 256000 |
+| accessibility                | 1                           | 1                           | 1      |
+| color-contrast               | 1                           | 1                           | 1      |
+| a11y audits failing          | none (73 audits, 23 scored) | none (76 audits, 22 scored) |        |
+
+The 13.6.0 column is the run on the final lockfile. Two earlier 13.6.0 runs, on lockfiles from before the
+`content-type` re-resolution below, gave medians of LCP 906.9 / 907.3 ms and TBT 20 / 9.5 ms, the rest the same. lhci
+asserted every budget as passing in all of them (`assertion-results.json` empty).
+
+**LCP moves by a factor of three, and that is Lighthouse, not the app (D26).** Both versions pick the same text `<p>`
+as the LCP element, make the same 28 requests and load the same 231,730 script bytes. In the three 12.6.1 runs the
+simulated LCP lands 2.0–2.1 s after the simulated FCP (for example 3023 ms against 908 ms), while the observed FCP
+and LCP are equal in every run (69 ms in that one): the largest paint is the first one. In the three 13.6.0 runs on
+the final lockfile the simulated LCP equals the simulated FCP (911 / 909 / 907 ms), and the observed values are again
+equal (98 / 65 / 65 ms); the same holds in all nine 13.6.0 runs. So 12 and 13 disagree, and 13 agrees with its own FCP
+and with the observed paint; these lab runs cannot rule out that 13 under-reports under real throttled CPU, which the
+re-baseline on CI will show. 13.0.0's notes list "defer to trace engine for lcp-breakdown". The 3.2 s budget was set
+from 12's medians ("the highest median observed … (2,913ms) plus ~10%", `lighthouse.yml`). On this machine the LCP is
+now a third of what it was, and the headroom under 3200 went from about 0.2 s to about 2.3 s. By D26 the budget stays
+at 3200 here, the workflow's comment now says where its numbers came from, and re-measuring it on ubuntu-latest is in
+[Open](#open).
+
+```python
+# python3 -I summarise.py <.lighthouseci dir>: per run and median, the six values .lighthouserc.json asserts on,
+# plus every accessibility audit that is weighted and not passing.
+import glob, json, statistics, sys
+runs = [json.load(open(f)) for f in sorted(glob.glob(sys.argv[1] + '/lhr-*.json'))]
+def vals(r):
+    a = r['audits']
+    script = next((i['transferSize'] for i in a['resource-summary']['details']['items'] if i['resourceType'] == 'script'), None)
+    return {'lcp': a['largest-contentful-paint']['numericValue'], 'cls': a['cumulative-layout-shift']['numericValue'],
+            'tbt': a['total-blocking-time']['numericValue'], 'script_bytes': script,
+            'a11y': r['categories']['accessibility']['score'], 'color_contrast': a['color-contrast']['score']}
+print('lighthouse', {r['lighthouseVersion'] for r in runs}, 'chrome', {r['environment']['hostUserAgent'].split('Chrome/')[1].split()[0] for r in runs})
+rows = [vals(r) for r in runs]
+for i, v in enumerate(rows, 1): print('run', i, {k: round(x, 4) if isinstance(x, float) else x for k, x in v.items()})
+print('median', {k: statistics.median(v[k] for v in rows) for k in rows[0]})
+for i, r in enumerate(runs, 1):
+    refs = {x['id']: x['weight'] for x in r['categories']['accessibility']['auditRefs']}
+    bad = [(k, r['audits'][k]['score']) for k, w in refs.items() if w > 0 and r['audits'][k]['score'] not in (1, None)]
+    print('run', i, 'a11y audits', len(refs), 'weighted not passing:', bad)
+print(json.load(open(sys.argv[1] + '/assertion-results.json')) if __import__('os').path.getsize(sys.argv[1] + '/assertion-results.json') > 2 else 'assertion-results: []')
+```
+
+### What else the lockfile changed
+
+72 packages left and 62 arrived, all under `@lhci/cli` (dev only). Among them: lighthouse, `@lhci/cli` and
+`@lhci/utils` themselves; `puppeteer-core@24.43.1`, `chromium-bidi@14.0.0`, `@puppeteer/browsers@3.1.0` and
+`zod@3.25.76` gone; lighthouse's `@sentry/node` 7.120.4 → 11.10.0, which brings `@sentry/bundler-plugins`, the Sentry
+CLI package `sentry@0.45.0` (`getsentry/cli`, no install scripts) and `oxc-parser@0.152.0` with its per-platform
+optional bindings; inside lhci, `inquirer` 6 → 8, `open` 7 → 11, `uuid` 8 → 14, `configstore` 5 → 8, `js-yaml@5.5.0`
+and `express` 4.22.2 → 4.22.3. Every new package is older than 24 hours, and pnpm added no release-age entry. No new
+package needs a build script.
+
+**backend's `content-type` is not stable under re-resolution.** On the first install in the repo, pnpm moved
+backend's `type-is@2.1.0` from `content-type@2.0.0` to 2.1.0, a production change the walker flagged, and
+`@puppeteer/browsers` from `yargs@18.1.0` to 18.2.0. Re-resolving from branch 2's lockfile with this branch's final
+`package.json` and `pnpm-workspace.yaml` (`pnpm install --lockfile-only`, isolated copy, `env -i`) kept 2.0.0 in 2 of 6
+runs (mine and two /doubt reviewers') and moved it in the other 4, so moving it is the usual outcome and the number
+of install steps is not what decides it. The committed lockfile is one of the runs that kept both where they were. It
+is pnpm's own output, not a hand edit, and re-resolving from it leaves it byte-identical (in the repo with
+`pnpm install`, and in three isolated copies). `--frozen-lockfile`, which CI and the Dockerfiles use, does not
+re-resolve. A lockfile regenerated from branch 2's, after a rebase conflict for example, will most likely land on
+2.1.0, and the walker will then report `backend: -[content-type@2.0.0]`; 2.0.0 → 2.1.0 only adds options that are off
+by default. (lighthouse 13 also brings its own `yargs@18.2.0`, so there are two yargs 18 copies.)
+
+**The `@puppeteer/browsers@<3` override is removed (D14).** It existed so that lighthouse 12's puppeteer-core 24 would
+not pull `@puppeteer/browsers@2` and with it extract-zip (GHSA-jmr9-qjv8-65gv). With puppeteer-core 25 everywhere,
+nothing asks for `<3`; a three-line note replaces the comment block.
+
+**The basic-ftp path through puppeteer's postinstall is back.** Branch 2 had left mermaid-cli's `puppeteer@25.16.0`
+on a `@puppeteer/browsers@3.2.6` variant without proxy-agent. Now lighthouse's puppeteer-core 25.16 shares 3.2.6 with
+it, and pnpm fills the optional `proxy-agent` peer there from `@lhci/cli`'s 6.5.0, so `puppeteer@25.16.0` uses
+`@puppeteer/browsers@3.2.6(proxy-agent@6.5.0…)`. That is the 1b path again; basic-ftp is 6.2.6, the patched release.
+
+### The basic-ftp release-age entry is removed
+
+2026-11-05T20:58:52Z has passed. The entry and its comment are gone from `minimumReleaseAgeExclude`, and
+`pnpm install --frozen-lockfile` passes without it.
+
+### Production closure (3)
+
+The walker from [1b](#production-closure), on branch 2's lockfile (`87d2e8fa`) against this branch's, over 19
+importers: no importer's production closure changed. (On the two-step lockfile it reported
+`backend: -[content-type@2.0.0]`, which is how the paragraph above was found.)
+
+### Gates (3)
+
+- **`pnpm install --frozen-lockfile`:** passes, without the basic-ftp entry.
+- **`scripts/pnpm-audit.sh`:** 1 unresolved, `@azure/msal-node`. zod is gone.
+- **Docker build of web:** passes; puppeteer's postinstall downloaded Chrome 156.0.8078.47 (`linux_arm`) in it.
+- **`verify-before-push.sh --full`:** 44 passed, 5 failed, 4 skipped. Four are the known ones: the pnpm audit
+  (msal-node), pip-audit (Pillow, branch 5), openapi freshness and the file-service MinIO suite (quay.io image). The
+  fifth, "Lint — prettier", flagged the eight JSON files lhci had written to `apps/web/.lighthouseci/` during the
+  measurements above; the directory is gitignored but not in `.prettierignore`. With it removed,
+  `pnpm run format:check` passes.
+
 ## Open
 
-- **Remove `basic-ftp@6.2.6` from `minimumReleaseAgeExclude`** once 2026-11-05T20:58:52Z has passed (D24). Until then
-  it is required. 1c and branch 2 leave it in place (branch 2 was implemented before that time); it is removed in
-  branch 3, or before the series is merged, whichever comes first.
+- **Re-measure the LCP budget under Lighthouse 13 (D26).** `apps/web/.lighthouserc.json` keeps the LCP
+  `maxNumericValue` at 3200, which was set from Lighthouse 12's numbers. Lighthouse 13 reports a much lower simulated
+  LCP for /login (see [branch 3](#branch-3--zod-3-second-source-lhcicli-0151--0160)), so the gate has far more
+  headroom than when it was ratified. A new budget needs ubuntu-latest runs of `lighthouse.yml` under 13, as that
+  workflow requires; it is a product-owner decision.
 - **The `allowBuilds` comment in `pnpm-workspace.yaml`** says puppeteer's postinstall never runs on a CI runner. But
   the 12 CI jobs that install, and `apps/web/Dockerfile`, run an unfiltered `pnpm install --frozen-lockfile` that
   includes root devDependencies, so it does run there. Its "~150 MB" is also low: Chrome and chrome-headless-shell
-  156 take about 367 MB and 203 MB on macOS. Until branch 2 it reached proxy-agent through `@puppeteer/browsers`'
-  out-of-range optional peer; branch 2's 3.2.6 has no such link. This predates the series.
+  156 take about 367 MB and 203 MB on macOS. It reaches proxy-agent through `@puppeteer/browsers`' out-of-range
+  optional peer (branch 2 removed that link and branch 3 brought it back). This predates the series.
 
+- **The markdownlint step of `verify-before-push.sh` lints nothing on macOS.** Line 82 of
+  `scripts/ci/check-markdown-changed.sh` fails under `/bin/bash` 3.2 with "bad substitution: no closing" (a `$( … )`
+  holding comments), so its file list comes out empty, it prints "no changed (non-legacy) Markdown files" and reports
+  PASS. Every markdownlint result in this record comes from running `markdownlint-cli2` directly. This predates the
+  series; found by a /doubt reviewer in branch 3.
 - **`apps/mobile` (D7).**
   - Its own lockfile has expo-router → `query-string@7.1.3` → `decode-uri-component@0.2.2`.
   - react-navigation's `getStateFromPath` calls `queryString.parse` on deep-link input.
