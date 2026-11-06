@@ -1454,11 +1454,75 @@ print(PIL.__version__, '16-bit grayscale PNG file opens as', Image.open(io.Bytes
   `@azure/msal-browser`, `@azure/keyvault-keys`), `@aws-sdk/client-kms` and `@aws-sdk/credential-providers`,
   `@google-cloud/kms` and `google-auth-library`. Whether Confluent's schema registry client (Avro, client-side field
   encryption) is still planned is a product-owner decision.
-- **The markdownlint step of `verify-before-push.sh` lints nothing on macOS.** Line 82 of
-  `scripts/ci/check-markdown-changed.sh` fails under `/bin/bash` 3.2 with "bad substitution: no closing" (a `$( … )`
-  holding comments), so its file list comes out empty, it prints "no changed (non-legacy) Markdown files" and reports
-  PASS. Every markdownlint result in this record comes from running `markdownlint-cli2` directly. This predates the
-  series; found by a /doubt reviewer in branch 3.
+- **Closed — the markdownlint step of `verify-before-push.sh` linted nothing on macOS.** Fixed on
+  `fix/markdownlint-gate-bash32`. `scripts/ci/check-markdown-changed.sh` built its file list inside `<( … )`, and a
+  comment in that body held an unpaired quote (the apostrophe in "CI's Lint job"), which `/bin/bash` 3.2 cannot parse
+  there: "bad substitution", an empty list, "nothing to lint", exit 0. The list is now built in a function, and the
+  script fails closed when any of its three `git` listings fails. Eight cases, run with the harness below in a scratch
+  clone on `/bin/bash` 3.2 and on bash 5.2 (Docker `node:24`): the old script exited 0 in all eight on 3.2, lint
+  errors included, and on 5.2 exited 0 in the three cases where `git` failed; the new one fails on lint errors and on
+  each `git` failure on both shells, and otherwise behaves as before. The clone links `node_modules` from the repo, so
+  the harness runs with `pnpm_config_verify_deps_before_run=false`.
+
+  ```bash
+  #!/usr/bin/env bash
+  # cases.sh <clone> <script-under-test> [label]: the six M.2 cases, each from a clean state in <clone>
+  # (HEAD = upstream, nothing changed). One line per case: name, exit status, the gate's last line.
+  set -u
+  clone=$1 script=$2 label=${3:-}
+  cd "$clone" || exit 2
+  LONG=$(for i in $(seq 1 30); do printf 'word%s ' "$i"; done)  # ~200 chars with spaces, so MD013 counts it
+  reset_state() {
+    # .fakebin is in .git/info/exclude, so `git clean` keeps it: remove it and the PATH entry by hand.
+    rm -rf .fakebin; PATH=$BASE_PATH
+    "$REAL_GIT" reset -q --hard "$start" && "$REAL_GIT" clean -qfd -e node_modules
+  }
+  run_case() {
+    local name=$1; shift
+    reset_state
+    "$@"
+    out=$(bash "$script" 2>&1); rc=$?
+    last=$(printf '%s\n' "$out" | grep -E 'nothing to lint|Summary:|✗|bad substitution' | tail -1)
+    printf '%-34s exit=%-3s %s\n' "$label$name" "$rc" "$last"
+  }
+  start=$(git rev-parse HEAD)
+  REAL_GIT=$(command -v git)  # resolved once, before any fake exists
+  BASE_PATH=$PATH
+  case_a() { printf '\n%s\n' "$LONG" >> docs/runbooks/README.md; git commit -qam 'case a'; }
+  case_b() { printf '\nA short, clean line.\n' >> docs/runbooks/README.md; git commit -qam 'case b'; }
+  case_c() { :; }
+  case_d() { printf '# New\n\n%s\n' "$LONG" > docs/runbooks/brand-new.md; }
+  case_e() { printf '\n%s\n' "$LONG" >> docs/specifications/README.md; git commit -qam 'case e'; }
+  case_f() {
+    mkdir -p .fakebin
+    printf '#!/bin/sh\n[ "$1" = ls-files ] && { echo "fatal: simulated failure" >&2; exit 128; }\nexec %s "$@"\n' "$REAL_GIT" > .fakebin/git
+    chmod +x .fakebin/git; export PATH="$PWD/.fakebin:$PATH"
+  }
+  case_f2() {
+    mkdir -p .fakebin
+    printf '#!/bin/sh\n[ "$1" = diff ] && [ "$4" != HEAD ] && { echo "fatal: simulated failure" >&2; exit 128; }\nexec %s "$@"\n' "$REAL_GIT" > .fakebin/git
+    chmod +x .fakebin/git; export PATH="$PWD/.fakebin:$PATH"
+  }
+  case_f3() {
+    mkdir -p .fakebin
+    printf '#!/bin/sh\n[ "$1" = diff ] && [ "$4" = HEAD ] && [ "$5" = "--" ] && { echo "fatal: simulated failure" >&2; exit 128; }\nexec %s "$@"\n' "$REAL_GIT" > .fakebin/git
+    chmod +x .fakebin/git; export PATH="$PWD/.fakebin:$PATH"
+  }
+  run_case "a lint error, committed" case_a
+  run_case "b clean change, committed" case_b
+  run_case "c no Markdown change" case_c
+  run_case "d untracked new file, error" case_d
+  run_case "e excluded tree only, error" case_e
+  run_case "f ls-files fails" case_f
+  run_case "f2 the base diff fails" case_f2
+  run_case "f3 the HEAD diff fails" case_f3
+  reset_state
+  ```
+
+- **Markdown backlog the broken gate hid: 19 markdownlint errors in 3 files, changed since `origin/develop`.**
+  `docs/architecture/adr/110-first-tenant-admin-bootstrap.md` (17: MD013, MD029), `docs/api/error-codes.md` (1) and
+  `docs/runbooks/mfa-enforcement.md` (1), all last changed in `10be1567` (before the series). CI's Lint job will
+  fail on them when this work opens a PR into `develop`.
 - **`apps/mobile` (D7).**
   - Its own lockfile has expo-router → `query-string@7.1.3` → `decode-uri-component@0.2.2`.
   - react-navigation's `getStateFromPath` calls `queryString.parse` on deep-link input.

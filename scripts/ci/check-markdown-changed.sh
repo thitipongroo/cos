@@ -25,7 +25,7 @@
 set -uo pipefail
 
 ROOT="$(git rev-parse --show-toplevel 2>/dev/null || echo .)"
-cd "$ROOT"
+cd "$ROOT" || exit 1
 
 echo "==> markdownlint (changed Markdown only)"
 
@@ -54,32 +54,51 @@ fi
 # header was written about, one shell version down. `while IFS= read -r` behaves identically on
 # bash 3.2 and bash 5.
 #
-# The two diffs are unioned in a single pipeline instead of two appends: `sort -u` then sees both
-# at once, which is what the third `mapfile` was doing separately.
+# NOR IS THE LIST BUILT INSIDE `<( … )` ANY MORE, for a second bash 3.2 reason. Its parser scans a
+# process substitution's body for the closing paren, and a comment in that body holding an unpaired
+# quote or paren (this one had an apostrophe, in "CI's Lint job") makes it give up with "bad
+# substitution: no closing `)'". `$( … )` is not affected; backticks in a comment are not either.
+# The error is not fatal: the loop then read nothing, and the script printed "nothing to lint" and
+# exited 0 — a PASS that linted no file, on every Mac, from the day that comment was written until
+# 2026-11-06. A function body is parsed as ordinary commands, so the comments are safe
+# there, and the list goes through a file so each git exit status can be checked.
+#
+# The three listings are unioned before `sort -u`, so it sees them all at once.
+EXCLUDES=(':(exclude)context.md' ':(exclude)context/**' ':(exclude)docs/specifications/**'
+  ':(exclude)mockup/**')
+list_changed() {
+  git diff --name-only --diff-filter=ACMR "$base" HEAD -- '*.md' "${EXCLUDES[@]}" || return 1
+  # Uncommitted work is what a pre-push check is usually asked about, and a file edited but not
+  # yet committed is still going to reach CI on the next commit. Include it.
+  git diff --name-only --diff-filter=ACMR HEAD -- '*.md' "${EXCLUDES[@]}" || return 1
+  # UNTRACKED FILES TOO, and this is why the gate exists at all. Neither `git diff` above
+  # reports a file git has never seen, so a BRAND NEW Markdown document was invisible here and
+  # was linted for the first time in CI — where it is already committed. That happened on
+  # 2026-09-06: a new file left this gate green and turned CI's Lint job red with 20 MD013
+  # errors. A new document is the likeliest one to be unlinted, so it is the one the local
+  # mirror must not skip. `--exclude-standard` honours .gitignore, so ignored plans stay out.
+  git ls-files --others --exclude-standard -- '*.md' "${EXCLUDES[@]}" || return 1
+}
+
+# FAIL CLOSED. The listings used to run with 2>/dev/null and no status check, so a git error (an
+# unknown base, say) also came out as an empty list and "nothing to lint". An empty list is only
+# believed when all three listings succeeded.
+if ! list_file="$(mktemp)"; then
+  echo "  ✗ could not create a temporary file for the changed-file list."
+  exit 1
+fi
+trap 'rm -f "$list_file"' EXIT
+if ! list_changed > "$list_file"; then
+  echo "  ✗ git could not list the changed Markdown files (its error is above) — not treating"
+  echo "    that as nothing to lint."
+  exit 1
+fi
+sort -u -o "$list_file" "$list_file"
+
 changed=()
 while IFS= read -r line; do
   [[ -n "$line" ]] && changed+=("$line")
-done < <(
-  {
-    git diff --name-only --diff-filter=ACMR "$base" HEAD -- '*.md' \
-      ':(exclude)context.md' ':(exclude)context/**' ':(exclude)docs/specifications/**' \
-      ':(exclude)mockup/**' 2>/dev/null
-    # Uncommitted work is what a pre-push check is usually asked about, and a file edited but not
-    # yet committed is still going to reach CI on the next commit. Include it.
-    git diff --name-only --diff-filter=ACMR HEAD -- '*.md' \
-      ':(exclude)context.md' ':(exclude)context/**' ':(exclude)docs/specifications/**' \
-      ':(exclude)mockup/**' 2>/dev/null
-    # UNTRACKED FILES TOO, and this is why the gate exists at all. Neither `git diff` above
-    # reports a file git has never seen, so a BRAND NEW Markdown document was invisible here and
-    # was linted for the first time in CI — where it is already committed. That happened on
-    # 2026-09-06: a new file left this gate green and turned CI's Lint job red with 20 MD013
-    # errors. A new document is the likeliest one to be unlinted, so it is the one the local
-    # mirror must not skip. `--exclude-standard` honours .gitignore, so ignored plans stay out.
-    git ls-files --others --exclude-standard -- '*.md' \
-      ':(exclude)context.md' ':(exclude)context/**' ':(exclude)docs/specifications/**' \
-      ':(exclude)mockup/**' 2>/dev/null
-  } | sort -u
-)
+done < "$list_file"
 
 if [[ ${#changed[@]} -eq 0 ]]; then
   echo "  - no changed (non-legacy) Markdown files — nothing to lint"
@@ -101,6 +120,7 @@ echo "  ${#changed[@]} changed Markdown file(s)"
 # being safe when a longer path appears. -s counts the command and its initial arguments too, and
 # 4000 leaves room under the measured boundary. -0 so a path containing a space could never split.
 #
-# xargs exits 123 when any invocation fails, so a lint error in any batch still fails this script —
-# a repair that turned the crash into a silent pass would be worse than the crash.
+# xargs exits non-zero (123 with GNU xargs, 1 with BSD xargs on macOS) when any invocation fails,
+# so a lint error in any batch still fails this script — a repair that turned the crash into a
+# silent pass would be worse than the crash.
 printf '%s\0' "${changed[@]}" | xargs -0 -s 4000 pnpm exec markdownlint-cli2
