@@ -17,6 +17,12 @@ info:
     `tenant_id` is passed explicitly in the request body for these internal AI services.
     Errors follow the FastAPI shape `{ "detail": ... }`.
 
+    **Reviewed 2026-11-07** against the four services. `/ocr/process` now joins Tesseract's Thai tokens without
+    the spaces it puts between them (`tha+eng` was already the recognition language, and the image installs
+    `tesseract-ocr-tha`), so `extracted_text` for Thai pages reads as words rather than separated characters;
+    text without Thai is joined as before. `QUOTA_BY_PLAN` gained `LITE` (500,000 tokens, as `STARTER`), which
+    `/ai/usage` already documents. No route, parameter, request body or response shape in this document changed.
+
     **`/ai/transcribe`, `/ai/intent` and `/ai/usage` were added to this document on 2026-09-03.**
     All three had run since their ADRs shipped (ADR-052, ADR-073, and the §26 metering work) named
     in no §14.3 table and carried by no OpenAPI document. §14.3 additionally stated that voice

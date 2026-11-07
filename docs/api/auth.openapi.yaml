@@ -29,6 +29,13 @@ info:
     (no route here). No route, parameter or response shape in this document changed. Reviewed 2026-11-03 against the
     module's controllers.
 
+    **Reviewed 2026-11-07** against the module's controllers. The source changed on 2026-11-04 only inside
+    `KeycloakAdminService`, an internal admin-API client with no route here: a new Path B account is created with
+    the `mfa_required` attribute when its role requires MFA, and `syncUserRole` became `syncRoleAttributes`, which
+    writes `role` and `mfa_required` in one update (ADR-110 rounds 5–6). The realm reads that attribute to ask for
+    OTP; the TOTP enrolment routes (`/auth/mfa/*`) are unchanged. No route, parameter, request body or response
+    shape in this document changed.
+
     **Reviewed 2026-08-31** against the module's controllers at the origin/develop merge. The source
     changed in that merge only where the package restructure moved import paths — `JwtAuthGuard` and
     `JwtPayload` from `modules/identity/` to `shared/` — with no route, parameter, request body or

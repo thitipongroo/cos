@@ -13,6 +13,13 @@ info:
 
     All operations work on the `platform` schema (cross-tenant identity tables).
 
+    **Reviewed 2026-11-07** against the module's controllers. Since the 2026-11-04 revision the source changed
+    only in `TenantService`: an inline comment now lists `LITE` among the plans that share the
+    `construction-os` realm (the `LITE` plan type itself was already in every `planType` enum here), and
+    `tenant.admin_invite_not_sent` joined the internal `TenantAdminAction` audit-action union. The
+    `COS-TADM-005` resend cooldown is documented on the resend operation. No route, parameter, request body
+    or response shape in this document changed.
+
     **Reviewed 2026-08-31** against the module's controllers at the origin/develop merge. The source
     changed in that merge only where the package restructure moved import paths — `JwtAuthGuard` and
     `JwtPayload` from `modules/identity/` to `shared/` — with no route, parameter, request body or
