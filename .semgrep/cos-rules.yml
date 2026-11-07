@@ -85,7 +85,9 @@ rules:
         - '**/*.script.ts'
         # Standalone operational scripts (e.g. the tenant-isolation probe CronJob) print to stdout
         # by design — that IS their output contract, and @cos/logger is not available to them.
-        - 'infrastructure/**'
+        - '**/infrastructure/**'
+        # Operational backfill and seed CLI scripts in backend/prisma/ print human-readable dry-run reports
+        - 'backend/prisma/**'
     pattern-either:
       - pattern: console.log(...)
       - pattern: console.debug(...)
