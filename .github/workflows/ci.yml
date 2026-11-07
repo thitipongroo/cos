@@ -722,10 +722,14 @@ jobs:
   # ─── Step 4a: Integration Tests ─────────────────────────────────────────────
   # Source: spec §30.4 — Testcontainers (PostgreSQL, Redis) per test run; blocks PR merge
   integration-tests:
-    name: Integration Tests (Testcontainers)
+    name: Integration Tests (Testcontainers) — Shard ${{ matrix.shard }}
     runs-on: ubuntu-latest
-    timeout-minutes: 25
-    needs: [lint, type-check, unit-tests]
+    timeout-minutes: 15
+    needs: [lint, type-check]
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: ['1/3', '2/3', '3/3']
     steps:
       - uses: actions/checkout@v5
       - uses: pnpm/action-setup@v5
@@ -739,19 +743,22 @@ jobs:
         run: pnpm exec prisma generate
       - name: Run integration tests
         working-directory: backend
-        run: pnpm run test:integration
+        run: pnpm run test:integration --shard=${{ matrix.shard }}
       # services/file-service owns object-storage tenant isolation (TC-P09-ISO-001): a presigned
       # URL must be bound to one tenant bucket + key. Only a real MinIO can show that — a mocked
       # client returns whatever it is told. Wired 2026-08-23 (§35.13 ESC-30).
       - name: Run integration tests — services/file-service (MinIO)
+        if: matrix.shard == '1/3'
         working-directory: services/file-service
         run: pnpm run test:integration
       # Same reason as in unit-tests: credential-service resolves @cos/service-identity through its dist.
       - name: Build @cos/service-identity (credential-service resolves its dist)
+        if: matrix.shard == '1/3'
         run: pnpm --filter @cos/service-identity build
       # Testcontainers Postgres + the credentials migration: RLS isolation, did:web verification and
       # the Status List revocation loop (ADR-019 CS-9/CS-6).
       - name: Run integration tests — credential-service
+        if: matrix.shard == '1/3'
         working-directory: services/credential-service
         run: pnpm run test:integration
 
