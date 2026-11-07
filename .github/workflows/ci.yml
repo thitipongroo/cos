@@ -964,7 +964,7 @@ jobs:
       # step with the `go` directive in the service go.mod files, which is what actually builds them.
       - uses: actions/setup-go@v6
         with:
-          go-version: '1.26.6'
+          go-version: '1.26.10'
       - name: govulncheck — kg-ingestion-worker
         working-directory: services/kg-ingestion-worker
         run: |
