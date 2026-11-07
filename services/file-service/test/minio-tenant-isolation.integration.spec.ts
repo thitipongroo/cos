@@ -28,13 +28,16 @@ describe('TC-P09-ISO-001 — object storage is tenant-isolated (Testcontainers �
   let baseUrl: string;
 
   beforeAll(async () => {
-    // quay.io, not Docker Hub: hub.docker.com's `minio/minio` repository returns 404 (measured 2026-09-14); quay.io serves the same tag.
-    container = await new GenericContainer('quay.io/minio/minio:RELEASE.2024-09-13T20-26-02Z')
+    // cgr.dev/chainguard/minio: quay.io 2024 tag pruned; docker.io needs auth. Verified in docs/registers/dependency-advisories-2026-11.md §Evidence.
+    container = await new GenericContainer(
+      process.env['MINIO_IMAGE'] ??
+        'cgr.dev/chainguard/minio@sha256:cee9a8e35885e93f14b3cb32960e5017aff74e2adfb52ba87c65003b0163886b',
+    )
       .withEnvironment({
         MINIO_ROOT_USER: ROOT_USER,
         MINIO_ROOT_PASSWORD: ROOT_PASSWORD,
       })
-      .withCommand(['server', '/data'])
+      .withCommand(['server', '/tmp/data'])
       .withExposedPorts(9000)
       .withWaitStrategy(Wait.forListeningPorts())
       .start();

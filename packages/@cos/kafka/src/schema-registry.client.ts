@@ -29,7 +29,6 @@ const AVRO_DIR = join(__dirname, 'avro');
  */
 export async function ensureCompatibilityMode(): Promise<void> {
   const url = process.env['SCHEMA_REGISTRY_URL'] ?? 'http://localhost:8081';
-  let lastError: unknown;
   for (let attempt = 1; attempt <= 5; attempt++) {
     let response: Response;
     try {
@@ -39,9 +38,8 @@ export async function ensureCompatibilityMode(): Promise<void> {
         body: JSON.stringify({ compatibility: 'BACKWARD_TRANSITIVE' }),
       });
     } catch (err) {
-      lastError = err;
       if (attempt < 5) {
-        await new Promise((resolve) => setTimeout(resolve, 500 * attempt));
+        await new Promise((resolve) => setTimeout(resolve, 10 * attempt));
         continue;
       }
       throw err;
@@ -52,7 +50,6 @@ export async function ensureCompatibilityMode(): Promise<void> {
     }
     return;
   }
-  throw lastError;
 }
 
 /** Load .avsc file from the avro directory. */
