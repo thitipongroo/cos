@@ -3666,5 +3666,36 @@
     "confirmSimulatedPayment": "จำลองการสแกนจ่ายเงินสำเร็จ",
     "paymentReceived": "ได้รับการชำระเงินเรียบร้อยแล้ว! กำลังนำท่านไป...",
     "cancel": "ยกเลิกและกลับสู่แดชบอร์ด"
+  },
+  "lineGuide": {
+    "headerTitle": "คู่มือรับ LINE Token",
+    "badgeText": "ตั้งค่าการแจ้งเตือน",
+    "heroTitle": "ขั้นตอนการขอ LINE Messaging API Token",
+    "heroSubtitle": "ทำตามขั้นตอนบน LINE Developers Console เพื่อขอ Channel Access Token สำหรับส่งการแจ้งเตือนงานและระบบอัตโนมัติ",
+    "step1Title": "ลงทะเบียนหรือเลือก Provider",
+    "step1Desc": "เข้าสู่ระบบ LINE Developers Console และสร้าง Provider ใหม่ หรือเลือกองค์กรของคุณที่มีอยู่แล้ว",
+    "step2Title": "สร้าง Messaging API Channel",
+    "step2Desc": "สร้าง Channel ชนิด 'Messaging API' กรอกชื่อระบบ และอัปโหลดรูปไอคอนที่ต้องการแสดง",
+    "step3Title": "ออก Channel Access Token (v2.1)",
+    "step3Desc": "ไปที่แท็บ 'Messaging API' เลื่อนลงไปที่ส่วน 'Channel access token' แล้วกด 'Issue' (แบบ Long-lived)",
+    "step4Title": "บันทึกในระบบ COS System Settings",
+    "step4Desc": "คัดลอก Token ที่ได้ นำไปวางในหน้าการตั้งค่าระบบ (System Settings) ของ COS ในช่อง LINE Notification Token",
+    "goToSettings": "ไปยังการตั้งค่าระบบ",
+    "openConsole": "เปิด LINE Developers"
+  },
+  "leasing": {
+    "portfolioOverview": "พอร์ตโฟลิโอและการเช่า",
+    "portfolioOccupancy": "อัตราการเช่า",
+    "noiYield": "ผลตอบแทน NOI",
+    "unitsAvailable": "ยูนิตที่ว่าง"
+  },
+  "drone": {
+    "realityCapture": "สำรวจภาพถ่ายทางอากาศ",
+    "liveTelemetry": "ข้อมูลการบินสด",
+    "startSurvey": "เริ่มบินสำรวจภาคสนาม",
+    "stopSurvey": "หยุดการบินสำรวจ",
+    "aiRealityScan": "การประมวลผลวัตถุด้วย AI",
+    "recentMissions": "ภารกิจบินสำรวจล่าสุด",
+    "cutFillCalculation": "คำนวณปริมาตรดินขุด-ดินถม"
   }
 }

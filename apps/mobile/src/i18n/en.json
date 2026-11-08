@@ -3666,5 +3666,36 @@
     "confirmSimulatedPayment": "Simulate Bank Scan & Pay",
     "paymentReceived": "Payment Received! Redirecting...",
     "cancel": "Cancel & Return to Dashboard"
+  },
+  "lineGuide": {
+    "headerTitle": "LINE Token Guide",
+    "badgeText": "Alerts Setup",
+    "heroTitle": "LINE Messaging API Token Setup",
+    "heroSubtitle": "Follow these steps on LINE Developers Console to issue a channel access token for automated project and alert notifications.",
+    "step1Title": "Register or Open Provider",
+    "step1Desc": "Sign in to LINE Developers Console and create a new Provider or select your existing company organization.",
+    "step2Title": "Create Messaging API Channel",
+    "step2Desc": "Create a Channel with type 'Messaging API', fill in your system app name, and upload a display icon.",
+    "step3Title": "Issue Channel Access Token",
+    "step3Desc": "Navigate to the 'Messaging API' tab, scroll down to 'Channel access token', and click 'Issue' (Long-lived).",
+    "step4Title": "Save into COS System Settings",
+    "step4Desc": "Copy the generated token string, open System Settings in COS, and paste into the LINE Notification Token field.",
+    "goToSettings": "Go to System Settings",
+    "openConsole": "Open LINE Developers"
+  },
+  "leasing": {
+    "portfolioOverview": "Portfolio & Leasing",
+    "portfolioOccupancy": "Occupancy",
+    "noiYield": "NOI Yield",
+    "unitsAvailable": "Available Units"
+  },
+  "drone": {
+    "realityCapture": "Reality Capture",
+    "liveTelemetry": "Live Telemetry",
+    "startSurvey": "START REAL-TIME SURVEY",
+    "stopSurvey": "STOP SURVEY",
+    "aiRealityScan": "AI Reality Scan",
+    "recentMissions": "Recent Missions",
+    "cutFillCalculation": "Cut & Fill Volumetric Calculation"
   }
 }
