@@ -64,6 +64,8 @@ apps/web/CLAUDE.md
 *.p12
 *.crt
 *.cer
+mcp_config.json
+.agents/mcp_config.json
 
 # OS
 .DS_Store
