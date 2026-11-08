@@ -34,10 +34,11 @@ All 15 canonical cross-service event types (see `src/events/`) conform to the BA
 
 ## Dependencies
 
-- `kafkajs` — Kafka client (Node.js only)
-- `@confluentinc/schemaregistry` — Avro schema validation
-- `ioredis` — idempotency key store
 - `@cos/types` — `BaseEventEnvelope`, `CosRole`, enums
+
+The Kafka client (`kafkajs`), the Avro schema-registry client (`@kafkajs/confluent-schema-registry`) and the
+idempotency store (`ioredis`) are `@cos/kafka`'s dependencies since the split (ADR-055); this package declares none
+of them.
 
 ## Configuration
 

@@ -68,6 +68,12 @@ import type {
   EraseSubjectRequestInput,
   SubjectMatchResult,
   ErasureResult,
+  ConvertTenantInput,
+  CreateTrialTenantInput,
+  BootstrapTenantAdminInput,
+  TenantAdminInviteResult,
+  TenantAdminCancelResult,
+  MyTenant,
 } from './types';
 
 function filterQuery(filter: ProcurementListFilter): string {
@@ -750,6 +756,21 @@ export function useDeactivateUser() {
   });
 }
 
+/**
+ * The caller's own tenant, with its free-trial state (§7.10) — what the shell's trial banner reads. Refreshed
+ * every 10 minutes and on focus: the daily job changes the status, and a tab left open overnight should notice.
+ */
+export function useMyTenant(enabled = true) {
+  const api = useApi();
+  return useQuery({
+    queryKey: ['tenant', 'me'],
+    queryFn: () => api<MyTenant>('/tenant'),
+    enabled,
+    staleTime: 10 * 60 * 1000,
+    refetchInterval: 10 * 60 * 1000,
+  });
+}
+
 export function useTenantSettings() {
   const api = useApi();
   return useQuery({
@@ -816,6 +837,73 @@ export function useCreateTenant() {
   return useMutation({
     mutationFn: (input: CreateTenantInput) =>
       api<TenantRow>('/admin/tenants', { method: 'POST', body: JSON.stringify(input) }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['admin', 'tenants'] }),
+  });
+}
+
+// §7.10 — open a free trial (sales-assisted). Same list refresh as a create.
+export function useCreateTrialTenant() {
+  const api = useApi();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: CreateTrialTenantInput) =>
+      api<TenantRow>('/admin/tenants/trial', { method: 'POST', body: JSON.stringify(input) }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['admin', 'tenants'] }),
+  });
+}
+
+// ADR-110 — a tenant's first TENANT_ADMIN. 409 COS-TADM-001 / an email held elsewhere are told apart by ApiError.code.
+export function useBootstrapTenantAdmin() {
+  const api = useApi();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, ...input }: BootstrapTenantAdminInput & { id: string }) =>
+      api<TenantAdminInviteResult>(`/admin/tenants/${id}/tenant-admin`, {
+        method: 'POST',
+        body: JSON.stringify(input),
+      }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['admin', 'tenants'] }),
+  });
+}
+
+// ADR-110 — resend while the only administrator has never signed in; otherwise 409 COS-TADM-002.
+export function useResendTenantAdminInvite() {
+  const api = useApi();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, justification }: { id: string; justification: string }) =>
+      api<TenantAdminInviteResult>(`/admin/tenants/${id}/tenant-admin/invite`, {
+        method: 'POST',
+        body: JSON.stringify({ justification }),
+      }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['admin', 'tenants'] }),
+  });
+}
+
+// ADR-110 round 2 — withdraw an unused invitation (a mistyped address); 409 COS-TADM-003 otherwise.
+export function useCancelTenantAdminInvite() {
+  const api = useApi();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, justification }: { id: string; justification: string }) =>
+      api<TenantAdminCancelResult>(`/admin/tenants/${id}/tenant-admin/cancel`, {
+        method: 'POST',
+        body: JSON.stringify({ justification }),
+      }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['admin', 'tenants'] }),
+  });
+}
+
+// §7.10 — a trial customer paid. 409 COS-PLAN-002 / COS-PLAN-004 are told apart by ApiError.code.
+export function useConvertTenant() {
+  const api = useApi();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, ...input }: ConvertTenantInput & { id: string }) =>
+      api<TenantRow>(`/admin/tenants/${id}/convert`, {
+        method: 'PATCH',
+        body: JSON.stringify(input),
+      }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['admin', 'tenants'] }),
   });
 }

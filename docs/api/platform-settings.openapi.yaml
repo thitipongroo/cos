@@ -159,8 +159,13 @@ components:
         tiers:
           type: object
           additionalProperties: false
-          required: [STARTER, PROFESSIONAL, ENTERPRISE]
+          description: |
+            One row per plan tier of `platform."PlanType"`. LITE since 2026-11-01 (ADR-109). A document saved before
+            LITE existed is returned with a LITE row of nulls ("not set"); a save must include it.
+          required: [LITE, STARTER, PROFESSIONAL, ENTERPRISE]
           properties:
+            LITE:
+              $ref: '#/components/schemas/TierLimits'
             STARTER:
               $ref: '#/components/schemas/TierLimits'
             PROFESSIONAL:

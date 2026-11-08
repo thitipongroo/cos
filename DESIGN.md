@@ -508,7 +508,7 @@ SERVER_WINS → `CONFLICT_REJECTED`).
 Internal platform-operator UI. Not visible to tenants. All actions audit-logged.
 
 1. **Tenant List (20.4.1)** — table columns: tenant code, name, plan type
-   (STARTER/PROFESSIONAL/ENTERPRISE), status (Active/Inactive), Dedicated DB (— or
+   (LITE/STARTER/PROFESSIONAL/ENTERPRISE), status (Active/Inactive), Dedicated DB (— or
    truncated hostname), created date. Row actions: View detail · Deactivate ·
    Assign Dedicated DB (ENTERPRISE only). Provisioning-in-progress badge ("Provisioning…").
 2. **Create Tenant (20.4.2)** — form: tenant code (a-z, 0-9, underscore; 2–50 chars),

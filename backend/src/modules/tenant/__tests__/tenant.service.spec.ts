@@ -635,21 +635,53 @@ describe('TenantService', () => {
     const row = (over: Record<string, unknown>) => ({ ...mockTenant, ...over });
 
     it('returns every tenant with the dedicated DB HOST, and never the URL', async () => {
-      (prismaMock.$queryRaw as jest.Mock).mockResolvedValue([
-        row({
-          tenant_id: 't1',
-          dedicated_db_url: 'postgresql://db_admin:s3cret@db-ent-042.cos.internal:5432/bkk',
-        }),
-        row({ tenant_id: 't2', dedicated_db_url: null }),
-      ]);
+      (prismaMock.$queryRaw as jest.Mock)
+        .mockResolvedValueOnce([
+          row({
+            tenant_id: 't1',
+            dedicated_db_url: 'postgresql://db_admin:s3cret@db-ent-042.cos.internal:5432/bkk',
+          }),
+          row({ tenant_id: 't2', dedicated_db_url: null }),
+        ])
+        .mockResolvedValueOnce([]);
 
       const result = await service.listTenants();
 
       expect(result.map((r) => r.dedicated_db_host)).toEqual(['db-ent-042.cos.internal', null]);
+      // §7.10: the list carries the commercial state the trial badge and Convert action read.
+      const sql = (
+        (prismaMock.$queryRaw as jest.Mock).mock.calls[0]![0] as TemplateStringsArray
+      ).join('?');
+      expect(sql).toContain('subscription_status, trial_ends_at, converted_at');
       // §20.4.1 asks for the hostname; the URL carries the password and must not leave the server.
       for (const r of result) expect(r).not.toHaveProperty('dedicated_db_url');
       expect(JSON.stringify(result)).not.toContain('s3cret');
       expect(JSON.stringify(result)).not.toContain('db_admin');
+    });
+
+    // ADR-110: the panel offers "Create tenant admin" only where the count is 0.
+    it("adds each tenant's administrator state, defaulting to none", async () => {
+      (prismaMock.$queryRaw as jest.Mock)
+        .mockResolvedValueOnce([
+          row({ tenant_id: 't1', dedicated_db_url: null }),
+          row({ tenant_id: 't2', dedicated_db_url: null }),
+        ])
+        .mockResolvedValueOnce([
+          { tenant_id: 't1', tenant_admin_count: 1, tenant_admin_pending: true },
+        ]);
+
+      const result = await service.listTenants();
+
+      expect(result.map((r) => [r.tenant_admin_count, r.tenant_admin_pending])).toEqual([
+        [1, true],
+        [0, false],
+      ]);
+      const sql = (
+        (prismaMock.$queryRaw as jest.Mock).mock.calls[1]![0] as TemplateStringsArray
+      ).join('?');
+      expect(sql).toContain("m.role = 'TENANT_ADMIN'");
+      expect(sql).toContain("r.role = 'TENANT_ADMIN'");
+      expect(sql).toContain('u.is_active');
     });
 
     it('throws rather than show an undecryptable tenant as pooled', async () => {
@@ -917,15 +949,26 @@ describe('TenantService', () => {
   });
 
   describe('getMyTenant', () => {
-    it('returns the caller own tenant identity (name, code, plan)', async () => {
+    it('returns the caller own tenant identity and its trial state (§7.10)', async () => {
       const row = {
         tenant_name: 'ACME Construction',
         tenant_code: 'acme_corp',
         plan_type: 'STARTER',
+        subscription_status: 'TRIAL',
+        trial_ends_at: new Date('2026-12-01T00:00:00Z'),
+        read_only_until: new Date('2026-12-31T00:00:00Z'),
       };
       (prismaMock.$queryRaw as jest.Mock).mockResolvedValue([row]);
       const result = await service.getMyTenant('tenant-1');
       expect(result).toEqual(row);
+      const [strings, ...values] = (prismaMock.$queryRaw as jest.Mock).mock.calls[0] as [
+        TemplateStringsArray,
+        ...unknown[],
+      ];
+      const sql = strings.join('?');
+      expect(sql).toContain('subscription_status');
+      expect(sql).toContain('trial_ends_at + make_interval(days => ?::int) AS read_only_until');
+      expect(values).toEqual([30, 'tenant-1']);
     });
 
     it('throws NotFoundException (COS-TENANT-404) when the tenant is missing or inactive', async () => {

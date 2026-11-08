@@ -10,6 +10,7 @@ import {
 } from '../../../../lib/api/queries';
 import type { FinanceInvoiceRow } from '../../../../lib/api/types';
 import { formatDate, formatMoney } from '../../../../lib/format';
+import { useReadOnly } from '../../../../lib/auth/useReadOnly';
 
 const STATUSES = ['RECEIVED', 'VERIFIED', 'APPROVED', 'PAID', 'DISPUTED'];
 
@@ -21,6 +22,8 @@ export default function FinanceInvoicesPage() {
   const query = useFinanceInvoices(status);
   const approve = useApproveInvoice();
   const dispute = useDisputeInvoice();
+  // VIEWER, or a free trial that has ended (§7.10): no write actions — the server would refuse them.
+  const readOnly = useReadOnly();
   const busy = approve.isPending || dispute.isPending;
 
   const columns: Column<FinanceInvoiceRow>[] = [
@@ -33,7 +36,7 @@ export default function FinanceInvoicesPage() {
       headerKey: 'table.actions',
       cell: (i) => (
         <span className="flex gap-2">
-          {i.status === 'RECEIVED' || i.status === 'VERIFIED' ? (
+          {!readOnly && (i.status === 'RECEIVED' || i.status === 'VERIFIED') ? (
             <button
               type="button"
               disabled={busy}
@@ -43,7 +46,7 @@ export default function FinanceInvoicesPage() {
               {t('finance.approve')}
             </button>
           ) : null}
-          {i.status !== 'PAID' && i.status !== 'DISPUTED' ? (
+          {!readOnly && i.status !== 'PAID' && i.status !== 'DISPUTED' ? (
             <button
               type="button"
               disabled={busy}

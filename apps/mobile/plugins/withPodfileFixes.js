@@ -14,6 +14,14 @@
 //    reference React-Fabric debug symbols (ShadowNode::getDebugName/getDebugValue/getDebugChildren,
 //    Sealable) that the Release prebuilt omits → "Undefined symbols … linker command failed". Building
 //    React from source keeps the debug flags consistent so Debug links. (Release already links either way.)
+//    NOTE (2026-11-02): fixes 1–3 were written for react-native 0.74. On 0.85 the React core prebuilt is
+//    chosen by RCT_USE_PREBUILT_RNCORE (Podfile, from `ios.buildReactNativeFromSource`), not by this
+//    property, so (3) alone no longer prevents that link error. The fix on 0.85 is app.json
+//    `expo-build-properties` → `ios.buildReactNativeFromSource: true`, which prebuild writes into
+//    Podfile.properties.json; (3) stays because it still governs Expo's own precompiled modules.
+// 4. Raise every pod's iOS deployment target to the app's own minimum (2026-11-02). Xcode 27 refuses a
+//    target below 15.0 and some pods still declare one (RNSVG-RNSVGFilters: 12.4), which fails the whole
+//    build. The app cannot run on an older iOS anyway, so raising them loses nothing.
 //
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const { withDangerousMod } = require('@expo/config-plugins');
@@ -21,6 +29,38 @@ const { withDangerousMod } = require('@expo/config-plugins');
 const fs = require('fs');
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const path = require('path');
+
+/** Marker for fix (4) — also the comment line in ios/Podfile, so a re-run never inserts the block twice. */
+const RAISE_TARGETS_MARKER = '# @cos raise-pod-deployment-targets';
+
+const RAISE_TARGETS_BLOCK = `
+    ${RAISE_TARGETS_MARKER} (plugins/withPodfileFixes.js — keep the two in step)
+    # Xcode 27 refuses an iOS deployment target below 15.0, and some pods still declare an older one
+    # (RNSVG-RNSVGFilters: 12.4), which fails the whole build. Raise every pod below the app's own minimum
+    # to that minimum: the app cannot run on an older iOS anyway, so nothing is lost.
+    app_min_ios = podfile_properties['ios.deploymentTarget'] || '16.4'
+    installer.pods_project.targets.each do |pod_target|
+      pod_target.build_configurations.each do |build_config|
+        target_ios = build_config.build_settings['IPHONEOS_DEPLOYMENT_TARGET']
+        if target_ios && Gem::Version.new(target_ios) < Gem::Version.new(app_min_ios)
+          build_config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = app_min_ios
+        end
+      end
+    end`;
+
+/**
+ * Fix (4): append the deployment-target raise to the generated post_install, right after
+ * `react_native_post_install(...)`. Idempotent. Throws when the anchor is missing, so a template change
+ * fails prebuild loudly instead of producing a Podfile that silently lacks the fix.
+ */
+function raisePodDeploymentTargets(contents) {
+  if (contents.includes(RAISE_TARGETS_MARKER)) return contents;
+  const anchor = /(\n    react_native_post_install\([\s\S]*?\n    \)\n)/;
+  if (!anchor.test(contents)) {
+    throw new Error('withPodfileFixes: react_native_post_install(...) not found in ios/Podfile');
+  }
+  return contents.replace(anchor, `$1${RAISE_TARGETS_BLOCK}\n`);
+}
 
 module.exports = function withPodfileFixes(config) {
   return withDangerousMod(config, [
@@ -42,6 +82,9 @@ module.exports = function withPodfileFixes(config) {
           `$1\n  pod 'React-jsinspector', :path => "#{config[:reactNativePath]}/ReactCommon/jsinspector-modern", :modular_headers => true\n`,
         );
       }
+
+      // (4) raise pods' iOS deployment targets to the app minimum (Xcode 27)
+      contents = raisePodDeploymentTargets(contents);
 
       fs.writeFileSync(podfilePath, contents);
 
@@ -66,3 +109,5 @@ module.exports = function withPodfileFixes(config) {
     },
   ]);
 };
+
+module.exports.raisePodDeploymentTargets = raisePodDeploymentTargets;

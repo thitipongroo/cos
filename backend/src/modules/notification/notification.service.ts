@@ -291,6 +291,37 @@ export class NotificationService {
     );
   }
 
+  /**
+   * Deliver a templated notification that did not arrive over Kafka to every active user of a tenant holding one
+   * of `roles` — the trial notices of §7.10, sent by the daily trial job to TENANT_ADMIN and EXECUTIVE.
+   *
+   * The same path as an event-routed notification (templates, preferences, quiet hours for push, LINE where the
+   * user has linked it); only the audience comes from the caller. Returns how many users it addressed, so the
+   * caller can tell "sent to nobody" (no such users yet) from "sent".
+   */
+  async notifyTenantRoles(
+    tenantId: string,
+    roles: string[],
+    eventType: string,
+    payload: Record<string, unknown>,
+  ): Promise<number> {
+    const recipients = await this.repo.findUsersByRole(tenantId, roles);
+    await settleAll(
+      'notifyTenantRoles',
+      { event_type: eventType, tenant_id: tenantId },
+      recipients.map((r) =>
+        this.notifyUser({
+          tenant_id: tenantId,
+          user_id: r.user_id,
+          email: r.email,
+          event_type: eventType,
+          payload,
+        }),
+      ),
+    );
+    return recipients.length;
+  }
+
   // ── Per-user notification ──────────────────────────────────────────────────
 
   private async notifyUser(params: {

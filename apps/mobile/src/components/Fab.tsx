@@ -12,6 +12,7 @@ import { TouchableOpacity } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { usePalette } from '../theme/usePalette';
 import { screenChrome } from '../theme/screenStyles';
+import { useTenantReadOnly } from '../hooks/useTenantReadOnly';
 
 interface Props {
   testID: string;
@@ -26,9 +27,13 @@ export function Fab({
   accessibilityLabel,
   onPress,
   icon = 'add',
-}: Props): React.JSX.Element {
+}: Props): React.JSX.Element | null {
   const p = usePalette();
   const style = useMemo(() => screenChrome(p).fab, [p]);
+  // §7.10: once a free trial has ended the tenant is read-only. Every `+` in the app is this component — the list
+  // screens' create, and the Home screens' quick-action menus — so hiding it here removes them all at once.
+  const readOnly = useTenantReadOnly();
+  if (readOnly) return null;
 
   return (
     <TouchableOpacity

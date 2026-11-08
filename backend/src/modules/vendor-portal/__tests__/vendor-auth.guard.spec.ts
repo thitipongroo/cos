@@ -140,3 +140,74 @@ describe('VendorAuthGuard', () => {
     });
   });
 });
+
+describe('VendorAuthGuard — read-only trials (§7.10, ADR-109)', () => {
+  function buildWith(status: string | null, flagOn = true) {
+    const cls = { isActive: () => false, set: jest.fn() };
+    const magicLink = {
+      verifyInvitationToken: jest.fn().mockReturnValue({ tenantId: TENANT, invitationId: 'inv-1' }),
+      verifySessionToken: jest.fn().mockReturnValue('vid-1'),
+    };
+    const identities = {
+      findActiveRelationship: jest.fn().mockResolvedValue({ vendor_id: 'ven-1' }),
+      tenantSubscriptionStatus: jest.fn().mockResolvedValue(status),
+    };
+    const flags = { isEnabled: jest.fn().mockReturnValue(flagOn) };
+    const guard = new VendorAuthGuard(
+      cls as never,
+      magicLink as never,
+      identities as never,
+      flags as never,
+    );
+    return { guard, identities, flags };
+  }
+  const tier1 = (method: string) =>
+    ({ method, params: { token: 'T' }, headers: {} }) as unknown as VendorRequest;
+  const tier2 = (method: string) =>
+    ({
+      method,
+      headers: { authorization: 'Bearer s', 'x-vendor-tenant-id': TENANT },
+    }) as unknown as VendorRequest;
+
+  it.each([
+    ['Tier 1', tier1],
+    ['Tier 2', tier2],
+  ])('%s: refuses a write into an EXPIRED tenant with 403 COS-PLAN-003', async (_n, req) => {
+    const { guard, flags } = buildWith('EXPIRED');
+    const err = await guard.canActivate(ctxFor(req('POST'))).catch((e: unknown) => e);
+    expect(err).toBeInstanceOf(ForbiddenException);
+    expect((err as ForbiddenException).getResponse()).toEqual({
+      error: expect.objectContaining({ code: 'COS-PLAN-003', messageKey: 'trial.error.readOnly' }),
+    });
+    expect(flags.isEnabled).toHaveBeenCalledWith('s1.tenant.trial-lifecycle', { tenantId: TENANT });
+  });
+
+  it('lets a read through without looking the tenant up', async () => {
+    const { guard, identities } = buildWith('PENDING_DELETION');
+    await expect(guard.canActivate(ctxFor(tier2('GET')))).resolves.toBe(true);
+    expect(identities.tenantSubscriptionStatus).not.toHaveBeenCalled();
+  });
+
+  it.each(['ACTIVE', 'TRIAL', null])('lets a write through for status %s', async (status) => {
+    const { guard } = buildWith(status);
+    await expect(guard.canActivate(ctxFor(tier1('POST')))).resolves.toBe(true);
+  });
+
+  it('lets a write through when the flag is off, without a lookup', async () => {
+    const { guard, identities } = buildWith('EXPIRED', false);
+    await expect(guard.canActivate(ctxFor(tier2('PATCH')))).resolves.toBe(true);
+    expect(identities.tenantSubscriptionStatus).not.toHaveBeenCalled();
+  });
+
+  it('treats a missing flag service as off (registry default)', async () => {
+    const { identities } = buildWith('EXPIRED');
+    const guard = new VendorAuthGuard(
+      { isActive: () => false, set: jest.fn() } as never,
+      {
+        verifyInvitationToken: () => ({ tenantId: TENANT, invitationId: 'i' }),
+      } as never,
+      identities as never,
+    );
+    await expect(guard.canActivate(ctxFor(tier1('POST')))).resolves.toBe(true);
+  });
+});

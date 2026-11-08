@@ -412,6 +412,13 @@ made per-account choice look necessary is closed directly instead (§5.4.2, `off
 
 **One exception remains, on ROLE rather than on account.**
 
+> **Additional roles too (ADR-110 round 4, 2026-11-03).** The exception below binds the PRIMARY role. A TENANT_ADMIN or
+> FINANCE held as an ADDITIONAL role (§6.4.1) is usable only with a token that proved MFA, enforced in `RolesGuard`
+> behind `s1.identity.additional-role-mfa`; such a role can no longer be granted to an account with no email
+> (`setUserRoles`, `createUser`). Since round 5 the Keycloak gates (OTP on Path B, refusal on Path A) read the user
+> attribute `mfa_required`, which the backend sets from primary ∪ additional roles, so such a person is asked for OTP
+> and can obtain that token (`docs/runbooks/mfa-enforcement.md` Step 4).
+
 **Exception: `TENANT_ADMIN` and `FINANCE` are Path B only.** Two independent reasons, either of which
 is sufficient:
 

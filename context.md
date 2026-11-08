@@ -22,7 +22,7 @@ Before doing anything else, read `.claude/skills/phase-index/SKILL.md`.
 
 That index maps `context/00_master_construction_os.md` — which holds:
 
-- Architecture decisions (monolith, shared-db-tenant-id+RLS for STARTER/PROFESSIONAL; dedicated-db per tenant for ENTERPRISE via `platform.tenants.dedicated_db_url`, 3-platform mobile)
+- Architecture decisions (monolith, shared-db-tenant-id+RLS for LITE/STARTER/PROFESSIONAL; dedicated-db per tenant for ENTERPRISE via `platform.tenants.dedicated_db_url`, 3-platform mobile)
 - Full technology stack (AWS, ClickHouse, OpenAI GPT-4o, Keycloak, Temporal, etc.)
 - Phase 1–25 implementation specs
 - All EP (Extension Point) resolutions

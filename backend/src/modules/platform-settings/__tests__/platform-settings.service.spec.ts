@@ -94,6 +94,23 @@ describe('PlatformSettingsService', () => {
       });
     });
 
+    it('returns a document saved before the LITE tier with LITE read as "nothing set" (ADR-109)', async () => {
+      const settings = edited();
+      const { LITE: _absent, ...olderTiers } = settings.tiers;
+      const stored = { ...settings, tiers: olderTiers };
+      (prisma.$queryRaw as jest.Mock).mockImplementation((strings: TemplateStringsArray) =>
+        strings.join('').includes('platform.tenants')
+          ? Promise.resolve([{ shared: 0, dedicated: 0 }])
+          : Promise.resolve([
+              { value: stored, version: 2, updated_at: SAVED_AT, updated_by: null },
+            ]),
+      );
+
+      const res = await service.get();
+      expect(res.settings).toEqual(settings);
+      expect(res.settings.tiers.LITE).toEqual(defaultPlatformSettings().tiers.LITE);
+    });
+
     it('reads without a row lock, and never selects the dedicated DB URL itself', async () => {
       (prisma.$queryRaw as jest.Mock)
         .mockResolvedValueOnce([])

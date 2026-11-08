@@ -56,6 +56,10 @@ export type * from './events/platform.enterprise.contract_signed.v1';
 export type * from './events/platform.enterprise.db_provisioned.v1';
 export type * from './events/platform.sync.exhausted.v1';
 export type * from './events/platform.central_price_catalog.updated.v1';
+export type * from './events/platform.tenant.trial_started.v1';
+export type * from './events/platform.tenant.trial_expired.v1';
+export type * from './events/platform.tenant.deletion_due.v1';
+export type * from './events/platform.tenant.converted.v1';
 export type * from './events/safety.violation.detected.v1';
 export type * from './events/safety.compliance.failed.v1';
 

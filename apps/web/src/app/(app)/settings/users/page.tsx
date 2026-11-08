@@ -14,6 +14,9 @@ import {
 } from '../../../../lib/api/queries';
 import type { UserRow } from '../../../../lib/api/types';
 import { useValidatedForm } from '../../../../lib/forms';
+import { useReadOnly } from '../../../../lib/auth/useReadOnly';
+import { ApiError } from '../../../../lib/api/client';
+import { userChangeErrorKey } from '../../../../lib/userManagement';
 
 const ROLES = [
   'TENANT_ADMIN',
@@ -34,6 +37,8 @@ export default function SettingsUsersPage() {
   const create = useCreateUser();
   const changeRole = useChangeUserRole();
   const deactivate = useDeactivateUser();
+  // VIEWER, or a free trial that has ended (§7.10): no write actions — the server would refuse them.
+  const readOnly = useReadOnly();
 
   const {
     control,
@@ -47,6 +52,12 @@ export default function SettingsUsersPage() {
   });
 
   const messageFor = (key?: string) => (key ? t(key) : undefined);
+  // A refused role change or deactivation — e.g. the tenant's last administrator (COS-TADM-004, ADR-110).
+  // Each action clears the other's error (below), so at most one is set: the latest attempt's.
+  const changeError = changeRole.error ?? deactivate.error ?? null;
+  const changeErrorText = changeError
+    ? t(userChangeErrorKey(changeError instanceof ApiError ? changeError : null))
+    : undefined;
 
   const submit = handleSubmit((values) => {
     create.mutate({
@@ -67,7 +78,11 @@ export default function SettingsUsersPage() {
         u.is_active ? (
           <select
             value={u.role}
-            onChange={(e) => changeRole.mutate({ id: u.user_id, role: e.target.value })}
+            disabled={readOnly}
+            onChange={(e) => {
+              deactivate.reset();
+              changeRole.mutate({ id: u.user_id, role: e.target.value });
+            }}
             className="rounded border border-gray-300 px-2 py-0.5 text-xs"
           >
             {ROLES.map((r) => (
@@ -87,11 +102,14 @@ export default function SettingsUsersPage() {
     {
       headerKey: 'table.actions',
       cell: (u) =>
-        u.is_active ? (
+        u.is_active && !readOnly ? (
           <button
             type="button"
             disabled={deactivate.isPending}
-            onClick={() => deactivate.mutate(u.user_id)}
+            onClick={() => {
+              changeRole.reset();
+              deactivate.mutate(u.user_id);
+            }}
             className="rounded border border-red-600 px-2 py-0.5 text-xs text-red-600 hover:bg-red-50 disabled:opacity-50"
           >
             {t('settings.deactivate')}
@@ -105,54 +123,64 @@ export default function SettingsUsersPage() {
   return (
     <div>
       <h1 className="mb-4 text-2xl font-bold text-gray-800">{t('settings.usersTitle')}</h1>
-      <form onSubmit={submit} noValidate className="mb-6 flex flex-wrap items-start gap-2">
-        <Controller
-          name="display_name"
-          control={control}
-          render={({ field }) => (
-            <TextInputField
-              {...field}
-              label={t('settings.colName')}
-              errorMessage={messageFor(errors.display_name?.message)}
-            />
-          )}
-        />
-        <Controller
-          name="email"
-          control={control}
-          render={({ field }) => (
-            <TextInputField
-              {...field}
-              type="email"
-              label={t('settings.colEmail')}
-              errorMessage={messageFor(errors.email?.message)}
-            />
-          )}
-        />
-        {/* ROLES is this page's own list and is narrower than @cos/schemas' ASSIGNABLE_ROLE —
+      {changeErrorText ? (
+        <p
+          role="alert"
+          className="mb-4 rounded border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700"
+        >
+          {changeErrorText}
+        </p>
+      ) : null}
+      {!readOnly && (
+        <form onSubmit={submit} noValidate className="mb-6 flex flex-wrap items-start gap-2">
+          <Controller
+            name="display_name"
+            control={control}
+            render={({ field }) => (
+              <TextInputField
+                {...field}
+                label={t('settings.colName')}
+                errorMessage={messageFor(errors.display_name?.message)}
+              />
+            )}
+          />
+          <Controller
+            name="email"
+            control={control}
+            render={({ field }) => (
+              <TextInputField
+                {...field}
+                type="email"
+                label={t('settings.colEmail')}
+                errorMessage={messageFor(errors.email?.message)}
+              />
+            )}
+          />
+          {/* ROLES is this page's own list and is narrower than @cos/schemas' ASSIGNABLE_ROLE —
             PROC_MANAGER and CRM_SALES_MANAGER are omitted here. Left as-is: which roles a tenant
             admin may hand out is a product decision, and the schema accepting a superset only
             means the server still has the final say. */}
-        <Controller
-          name="role"
-          control={control}
-          render={({ field }) => (
-            <NativeSelectField
-              {...field}
-              label={t('settings.colRole')}
-              options={ROLES.map((r) => ({ id: r, label: r }))}
-              errorMessage={messageFor(errors.role?.message)}
-            />
-          )}
-        />
-        <button
-          type="submit"
-          disabled={isSubmitting || create.isPending}
-          className="mt-6 rounded-md bg-blue-600 px-4 py-1.5 text-sm text-white hover:bg-blue-700 disabled:opacity-50"
-        >
-          {t('settings.createUser')}
-        </button>
-      </form>
+          <Controller
+            name="role"
+            control={control}
+            render={({ field }) => (
+              <NativeSelectField
+                {...field}
+                label={t('settings.colRole')}
+                options={ROLES.map((r) => ({ id: r, label: r }))}
+                errorMessage={messageFor(errors.role?.message)}
+              />
+            )}
+          />
+          <button
+            type="submit"
+            disabled={isSubmitting || create.isPending}
+            className="mt-6 rounded-md bg-blue-600 px-4 py-1.5 text-sm text-white hover:bg-blue-700 disabled:opacity-50"
+          >
+            {t('settings.createUser')}
+          </button>
+        </form>
+      )}
       <DataTable
         columns={columns}
         rows={query.data?.data ?? []}

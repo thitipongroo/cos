@@ -11,6 +11,7 @@ import { runSyncCycle } from '../../sync/syncRunner';
 import { checkLocalDbLimit } from '../../db/database';
 import { TopBar } from '../../components/TopBar';
 import { Breadcrumb } from '../../components/Breadcrumb';
+import { TrialBanner } from '../../components/TrialBanner';
 import { MobileNav } from '../../components/MobileNav';
 import { NavigationDrawer } from '../../components/NavigationDrawer';
 import { useIsDark } from '../../theme/usePalette';
@@ -103,6 +104,8 @@ export default function AppLayout() {
       <TopBar variant={variant} />
       {/* Clickable breadcrumb for pushed child screens (null on main tabs / terminal screens). */}
       <Breadcrumb variant={variant} />
+      {/* §7.10 — a running free trial's countdown, or why saving is refused once it has ended. */}
+      <TrialBanner />
       <View style={styles.tabs}>
         <MobileNav />
       </View>

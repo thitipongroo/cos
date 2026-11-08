@@ -29,14 +29,26 @@ const AVRO_DIR = join(__dirname, 'avro');
  */
 export async function ensureCompatibilityMode(): Promise<void> {
   const url = process.env['SCHEMA_REGISTRY_URL'] ?? 'http://localhost:8081';
-  const response = await fetch(`${url}/config`, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/vnd.schemaregistry.v1+json' },
-    body: JSON.stringify({ compatibility: 'BACKWARD_TRANSITIVE' }),
-  });
-  if (!response.ok) {
-    const body = await response.text();
-    throw new Error(`Schema Registry compatibility set failed: ${response.status} ${body}`);
+  for (let attempt = 1; attempt <= 5; attempt++) {
+    let response: Response;
+    try {
+      response = await fetch(`${url}/config`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/vnd.schemaregistry.v1+json' },
+        body: JSON.stringify({ compatibility: 'BACKWARD_TRANSITIVE' }),
+      });
+    } catch (err) {
+      if (attempt < 5) {
+        await new Promise((resolve) => setTimeout(resolve, 10 * attempt));
+        continue;
+      }
+      throw err;
+    }
+    if (!response.ok) {
+      const body = await response.text();
+      throw new Error(`Schema Registry compatibility set failed: ${response.status} ${body}`);
+    }
+    return;
   }
 }
 

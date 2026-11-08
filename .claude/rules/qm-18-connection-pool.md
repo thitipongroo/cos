@@ -12,7 +12,7 @@ Indexed in: `context.md` §QUALITY MANDATES
 
 Isolation model:
 
-- **STARTER/PROFESSIONAL** — Shared DB + tenant_id + RLS (spec §7.7). `app.current_tenant_id` set at
+- **LITE/STARTER/PROFESSIONAL** — Shared DB + tenant_id + RLS (spec §7.7). `app.current_tenant_id` set at
   request start; RLS enforces tenant isolation at DB level.
 - **ENTERPRISE** — Dedicated DB per tenant. `platform.tenants.dedicated_db_url` non-NULL routes all
   domain queries to the tenant's own PostgreSQL instance (spec §7.1).

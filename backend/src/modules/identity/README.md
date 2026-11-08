@@ -69,7 +69,7 @@ OTP flow (Path A):
 - Offline session: cached JWT valid 7 days without internet (re-validates on reconnect)
 - MFA required for `TENANT_ADMIN` and `FINANCE` roles (Path B only)
 - `KeycloakJwtStrategy.validate()` refuses a token whose `sub` is not the `keycloak_user_id` of the account its
-  `user_id` claim names (ADR-106). Several STARTER/PROFESSIONAL tenants share one realm, so the realm check alone
+  `user_id` claim names (ADR-106). Several LITE/STARTER/PROFESSIONAL tenants share one realm, so the realm check alone
   cannot keep them apart. Kill switch `s1.identity.subject-binding` (default ON). Before relying on it in an
   environment, run `scripts/readiness/check-keycloak-subject-binding.sh` — it compares each Keycloak user's
   `user_id` attribute with that account's stored id, and each stored id of an active tenant with its realm. Exit 0

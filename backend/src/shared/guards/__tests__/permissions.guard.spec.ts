@@ -16,6 +16,9 @@ function ctx(user: unknown): ExecutionContext {
   } as unknown as ExecutionContext;
 }
 
+// s1.identity.additional-role-mfa — OFF unless a test turns it on (ADR-110 round 4).
+const flags = { isEnabled: jest.fn().mockReturnValue(false) };
+
 // The guard only hits the DB (additional-roles union) when the primary role alone is insufficient;
 // inject a fake client so unit tests never touch a real database.
 function guardWith(
@@ -25,7 +28,7 @@ function guardWith(
   const reflector = {
     getAllAndOverride: jest.fn().mockReturnValue(required),
   } as unknown as Reflector;
-  const guard = new PermissionsGuard(reflector);
+  const guard = new PermissionsGuard(reflector, flags as never);
   (guard as unknown as { prisma: unknown }).prisma = {
     $queryRaw: jest.fn().mockResolvedValue(additionalRoles.map((role) => ({ role }))),
     $disconnect: jest.fn().mockResolvedValue(undefined),
@@ -112,5 +115,47 @@ describe('PermissionsGuard', () => {
     const prisma = (guard as unknown as { prisma: { $disconnect: jest.Mock } }).prisma;
     await expect(guard.onModuleDestroy()).resolves.toBeUndefined();
     expect(prisma.$disconnect).toHaveBeenCalledTimes(1);
+  });
+});
+
+// ADR-110 round 4: an additional TENANT_ADMIN / FINANCE contributes its permissions only to a token that proved MFA.
+describe('PermissionsGuard — additional privileged role needs MFA', () => {
+  const env = { ...process.env };
+  beforeEach(() => {
+    flags.isEnabled.mockReturnValue(true);
+    process.env['MFA_ENFORCE'] = 'true';
+    delete process.env['MFA_REQUIRED_ACR'];
+  });
+  afterEach(() => {
+    flags.isEnabled.mockReturnValue(false);
+    process.env = { ...env };
+  });
+  const user = (acr?: string) => ({
+    user_id: 'u1',
+    tenant_id: 't1',
+    role: 'SITE_WORKER',
+    ...(acr ? { acr } : {}),
+  });
+
+  it('an additional FINANCE without MFA does not supply finance permissions', async () => {
+    await expect(
+      guardWith(['finance:approve'], ['FINANCE']).canActivate(ctx(user())),
+    ).rejects.toBeInstanceOf(ForbiddenException);
+    expect(flags.isEnabled).toHaveBeenCalledWith('s1.identity.additional-role-mfa', {
+      tenantId: 't1',
+      userId: 'u1',
+    });
+  });
+
+  it('it does with an MFA token', async () => {
+    await expect(
+      guardWith(['finance:approve'], ['FINANCE']).canActivate(ctx(user('gold'))),
+    ).resolves.toBe(true);
+  });
+
+  it('a non-privileged additional role still contributes without MFA', async () => {
+    await expect(
+      guardWith(['project:read'], ['PROJECT_MANAGER']).canActivate(ctx(user())),
+    ).resolves.toBe(true);
   });
 });

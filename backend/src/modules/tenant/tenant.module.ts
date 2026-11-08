@@ -10,9 +10,12 @@ import { TenantSettingsService } from './settings.service';
 import { TenantSettingsRepository } from './settings.repository';
 import { TenantSettingsController } from './settings.controller';
 import { IdentityModule } from '../identity/identity.module';
+import { NotificationModule } from '../notification/notification.module';
+import { TrialLifecycleService } from './trial-lifecycle.service';
 import { AdminAuditLogService } from './admin-audit-log.service';
 import { TenantAuditLogController } from './tenant-audit-log.controller';
 import { AdminAuditLogController } from './admin-audit-log.controller';
+import { TenantAdminBootstrapService } from './tenant-admin-bootstrap.service';
 
 // Tenant context (req.tenantId/tenantCode/userId/userRole) is resolved in
 // KeycloakJwtStrategy.validate(), which runs as part of JwtAuthGuard — AFTER the JWT is
@@ -23,7 +26,12 @@ import { AdminAuditLogController } from './admin-audit-log.controller';
   // The other half of the identity ↔ files ↔ tenant cycle (see identity.module.ts). NestJS requires
   // the lazy reference on BOTH sides of a circular edge; one side alone still leaves the other
   // evaluating a partially-initialised binding.
-  imports: [forwardRef(() => IdentityModule)],
+  imports: [
+    forwardRef(() => IdentityModule),
+    // NotificationService for the §7.10 trial notices (TrialLifecycleService). NotificationModule imports nothing,
+    // so this adds no cycle.
+    NotificationModule,
+  ],
   providers: [
     TenantService,
     TenantPrismaService,
@@ -31,6 +39,8 @@ import { AdminAuditLogController } from './admin-audit-log.controller';
     TenantSettingsService,
     TenantSettingsRepository,
     AdminAuditLogService,
+    TrialLifecycleService,
+    TenantAdminBootstrapService,
   ],
   controllers: [
     TenantController,

@@ -365,6 +365,40 @@ describe('SyncManager', () => {
       expect(result).toEqual({ synced: 0, failed: 0, exhausted: 0, interrupted: true });
     });
 
+    // §7.10 — a 4xx that is NOT permanent: the trial ended, the customer can still buy a plan, and the queue is
+    // their work. Held exactly like a dropped network: nothing spent, nothing discarded, nothing reported.
+    it('holds the whole queue when the trial has ended (403 COS-PLAN-003), discarding nothing', async () => {
+      mockFetchPending.mockReturnValueOnce([makeItem({ id: 1 }), makeItem({ id: 2 })]);
+      const refused = Object.assign(new Error('Request failed with status 403'), {
+        response: { status: 403, data: { error: { code: 'COS-PLAN-003' } } },
+      });
+      const http: HttpClient = { post: jest.fn().mockRejectedValue(refused) };
+      const onExhausted = jest.fn();
+
+      const result = await makeManager(http, 'test-token', { onExhausted }).processQueue();
+
+      expect(http.post).toHaveBeenCalledTimes(1);
+      expect(result).toEqual({
+        synced: 0,
+        failed: 0,
+        exhausted: 0,
+        interrupted: true,
+        readOnly: true,
+      });
+      expect(mockMarkFailed).not.toHaveBeenCalled();
+      expect(mockMarkPermanentlyFailed).not.toHaveBeenCalled();
+      expect(onExhausted).not.toHaveBeenCalled();
+      expect(mockResetStale).toHaveBeenCalledTimes(2); // once on entry, once to put the row back to PENDING
+    });
+
+    it('still discards on any other 403', async () => {
+      mockFetchPending.mockReturnValueOnce([makeItem({ id: 1 })]);
+      const http: HttpClient = { post: jest.fn().mockRejectedValue(httpError(403)) };
+      const result = await makeManager(http).processQueue();
+      expect(result).toMatchObject({ exhausted: 1, interrupted: false });
+      expect(mockMarkPermanentlyFailed).toHaveBeenCalled();
+    });
+
     it('puts the in-flight row back to PENDING when it stops', async () => {
       mockFetchPending.mockReturnValueOnce([makeItem({ id: 1 })]);
       const http: HttpClient = { post: jest.fn().mockRejectedValue(networkError()) };

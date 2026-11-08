@@ -37,15 +37,18 @@ in QM-17, not repeated here.
 
 ## Infrastructure recovery
 
-| Runbook                                                      | Covers                                                    | State |
-| ------------------------------------------------------------ | --------------------------------------------------------- | ----- |
-| [db-failover.md](db-failover.md)                             | DB Failover Runbook (PostgreSQL RDS Multi-AZ)             | STUB  |
-| [kafka-partition-rebalance.md](kafka-partition-rebalance.md) | Kafka Consumer Lag and Partition Rebalance Runbook        | —     |
-| [temporal-worker-restart.md](temporal-worker-restart.md)     | Temporal Worker Restart and Stuck Workflow Recovery       | —     |
-| [finance-ledger-drift.md](finance-ledger-drift.md)           | Finance Ledger Drift — cost ledger vs procurement (OQ-31) | —     |
-| [keycloak-realm-backup.md](keycloak-realm-backup.md)         | Keycloak Realm Daily Backup Runbook                       | —     |
-| [keycloak-realm-recovery.md](keycloak-realm-recovery.md)     | Keycloak Realm Recovery Runbook                           | STUB  |
-| [dedicated-db-provisioning.md](dedicated-db-provisioning.md) | Dedicated DB Provisioning Runbook (ENTERPRISE tenants)    | —     |
+| Runbook                                                        | Covers                                                             | State                                                                                     |
+| -------------------------------------------------------------- | ------------------------------------------------------------------ | ----------------------------------------------------------------------------------------- |
+| [db-failover.md](db-failover.md)                               | DB Failover Runbook (PostgreSQL RDS Multi-AZ)                      | STUB                                                                                      |
+| [kafka-partition-rebalance.md](kafka-partition-rebalance.md)   | Kafka Consumer Lag and Partition Rebalance Runbook                 | —                                                                                         |
+| [temporal-worker-restart.md](temporal-worker-restart.md)       | Temporal Worker Restart and Stuck Workflow Recovery                | —                                                                                         |
+| [finance-ledger-drift.md](finance-ledger-drift.md)             | Finance Ledger Drift — cost ledger vs procurement (OQ-31)          | —                                                                                         |
+| [keycloak-realm-backup.md](keycloak-realm-backup.md)           | Keycloak Realm Daily Backup Runbook                                | —                                                                                         |
+| [keycloak-realm-recovery.md](keycloak-realm-recovery.md)       | Keycloak Realm Recovery Runbook                                    | STUB                                                                                      |
+| [dedicated-db-provisioning.md](dedicated-db-provisioning.md)   | Dedicated DB Provisioning Runbook (ENTERPRISE tenants)             | —                                                                                         |
+| [trial-tenant-deletion.md](trial-tenant-deletion.md)           | Deleting an unconverted free-trial tenant (§7.10)                  | **staging run pending** — PostgreSQL step tested locally                                  |
+| [trial-tenant-onboarding.md](trial-tenant-onboarding.md)       | Opening a free trial and inviting its first TENANT_ADMIN (ADR-110) | **staging run pending** — API steps tested against PostgreSQL, Keycloak email not yet run |
+| [tenant-admin-flags-rollout.md](tenant-admin-flags-rollout.md) | Turning on the three ADR-110 flags: checks, order, kill switch     | —                                                                                         |
 
 ## Disaster recovery — [`disaster-recovery/`](disaster-recovery/)
 
@@ -73,9 +76,10 @@ a **DR drill before every Stage transition**, recorded in the drill log above.
 
 ## Testing
 
-| Runbook                                    | Covers                                                          | State                           |
-| ------------------------------------------ | --------------------------------------------------------------- | ------------------------------- |
-| [mobile-e2e-detox.md](mobile-e2e-detox.md) | Mobile E2E (Detox) on CI — the six secrets and the staging data | **never run** — see the runbook |
+| Runbook                                                      | Covers                                                                                     | State                           |
+| ------------------------------------------------------------ | ------------------------------------------------------------------------------------------ | ------------------------------- |
+| [mobile-e2e-detox.md](mobile-e2e-detox.md)                   | Mobile E2E (Detox) on CI — the six secrets and the staging data                            | **never run** — see the runbook |
+| [mobile-ios-build-xcode-27.md](mobile-ios-build-xcode-27.md) | Building the mobile app for the iOS simulator on Xcode 27 — seven failures and their fixes | —                               |
 
 ## AI
 

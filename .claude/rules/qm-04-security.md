@@ -53,7 +53,7 @@ Indexed in: `context.md` §QUALITY MANDATES
     working
   - Keycloak is the single source of truth for identity storage and JWT signing across both paths
   - **Keycloak Realm Model (spec §5, §7.6):**
-    - SMB/mid-market (STARTER, PROFESSIONAL): shared realm `construction-os`
+    - SMB/mid-market (LITE, STARTER, PROFESSIONAL): shared realm `construction-os`
     - ENTERPRISE: dedicated realm `cos-{tenantCode}`, provisioned by Phase 25
       EnterpriseProvisioningWorkflow
     - `keycloak-jwt.strategy.ts` resolves the issuer PER TOKEN (2026-08-23, TDD OQ-51):

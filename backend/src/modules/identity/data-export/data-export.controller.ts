@@ -31,6 +31,7 @@ import { DataExportService } from './data-export.service';
 import { RequestDataExportDto } from '../dto/request-data-export.dto';
 import type { ExportCategory } from './data-export.collector';
 import type { TenantRequest } from '../../../shared/context/tenant-request';
+import { AllowWhileReadOnly } from '../../../shared/interceptors/trial-read-only.interceptor';
 
 /**
  * QM-15 / ADR-049 kill switch.
@@ -52,6 +53,8 @@ export class DataExportController {
 
   // POST /api/v1/users/me/data-export
   @Post('me/data-export')
+  // PDPA §30/§31: an ended trial keeps the export it was promised (§7.10).
+  @AllowWhileReadOnly()
   @HttpCode(HttpStatus.ACCEPTED)
   @FeatureFlag(DATA_EXPORT_FLAG) // QM-15 kill-switch (ADR-049)
   @ApiOperation({

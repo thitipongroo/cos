@@ -1,8 +1,8 @@
 ---
 title: 'Multi-tenant Architecture'
-version: '1.5.0'
+version: '1.6.0'
 status: Active
-last_updated: '2026-06-05'
+last_updated: '2026-11-01'
 authors:
   - thitipongroo
 related_docs:
@@ -10,6 +10,7 @@ related_docs:
   - 06-rbac-permission-matrix.md
   - 08-enterprise-deployment.md
   - 11-database-schema.md
+  - 26-pricing-model.md
 ---
 
 # 7. Multi-tenant Architecture
@@ -27,6 +28,7 @@ related_docs:
 - [7.7 PostgreSQL Schema Convention](#77-postgresql-schema-convention)
 - [7.8 Enterprise Provisioning Workflow (Phase 25)](#78-enterprise-provisioning-workflow-phase-25)
 - [7.9 Connection Pool Management](#79-connection-pool-management)
+- [7.10 Trial Tenant Lifecycle](#710-trial-tenant-lifecycle)
 
 ---
 
@@ -364,7 +366,8 @@ Access controls :
 
 Steps :
 
-1. Tenant registration request received (via platform admin API)
+1. Tenant registration request received (via platform admin API). A free-trial tenant is created the same
+   way, through `POST /api/v1/admin/tenants/trial`, and then follows §7.10
 2. Tenant record created in `tenants` table with unique `tenant_id` (UUID)
 3. Keycloak assignment: shared realm for SMB/mid-market; dedicated realm created for enterprise.
 
@@ -405,7 +408,18 @@ Steps :
    HashiCorp Vault (on-premise and hybrid deployments — see 04-tech-stack section 4.4)
 8. Default roles seeded per RBAC matrix (see 06-rbac-permission-matrix)
 9. Provisioning event published: `platform.tenant.provisioned.v1`
-10. Welcome notification dispatched to tenant admin (see 19-notification-architecture)
+10. First TENANT_ADMIN invited by a SYSTEM_ADMIN — `POST /api/v1/admin/tenants/{tenantId}/tenant-admin` (ADR-110).
+    Creating a tenant writes no user, so until this step nobody can sign in. A Path B (email) account (§5.4.4) is
+    created with role `TENANT_ADMIN`, and Keycloak emails it a single-use `UPDATE_PASSWORD` link valid **72 hours**:
+    the customer sets their own password and enrols MFA at first sign-in; COS never handles a password. Allowed
+    **only while the tenant has no active TENANT_ADMIN** (primary or additional role) — otherwise `409 COS-TADM-001`,
+    and the tenant's own administrator adds everyone else. While that administrator's invitation is unused (no
+    credential in Keycloak), it can be resent (`POST …/tenant-admin/invite`; otherwise `409 COS-TADM-002`) or, when it
+    went to a wrong address, cancelled (`POST …/tenant-admin/cancel`; otherwise `409 COS-TADM-003`) — the account is
+    deactivated and the tenant can be bootstrapped again. Product owner, 2026-11-02 and 2026-11-03. Behind
+    `s1.tenant.bootstrap-admin` (QM-15, default OFF). With `s1.tenant.last-admin-guard` on, the tenant's own users
+    cannot deactivate or demote its last active TENANT_ADMIN (`409 COS-TADM-004`)
+11. Welcome notification dispatched to tenant admin (see 19-notification-architecture)
 
 ---
 
@@ -540,6 +554,110 @@ This threshold determines when database sharding evaluation must begin.
 
 ---
 
+## 7.10 Trial Tenant Lifecycle
+
+> Decision record — product owner, 2026-11-01. ADR-109. Commercial terms in
+> [26-pricing-model §26.1.2](26-pricing-model.md#2612-free-trial).
+
+### Subscription status
+
+`platform.tenants.subscription_status` records where a tenant is in its commercial life. It is independent of
+`is_active`, which stays the SYSTEM_ADMIN deactivation switch (§7.6, `identity.tenant.deactivated.v1`).
+
+| Status             | Meaning                                       | Writes allowed |
+| ------------------ | --------------------------------------------- | -------------- |
+| `ACTIVE`           | Paying customer. Every pre-existing tenant    | Yes            |
+| `TRIAL`            | Day 0–29 of a free trial                      | Yes            |
+| `EXPIRED`          | Day 30–59: trial ended, not converted         | No (read-only) |
+| `PENDING_DELETION` | Day 60 onward: awaiting manual deletion       | No (read-only) |
+
+Columns added with it: `trial_started_at`, `trial_ends_at` (= start + 30 days), `trial_source` and
+`trial_request_ref` (the construction-os.io request the trial came from), `converted_at`.
+
+### Transitions
+
+| From                                | To                 | When                                 | Actor                                               | Event (on `platform.events`)        |
+| ----------------------------------- | ------------------ | ------------------------------------ | --------------------------------------------------- | ----------------------------------- |
+| —                                   | `TRIAL`            | Trial opened                         | SYSTEM_ADMIN, `POST /api/v1/admin/tenants/trial`          | `platform.tenant.trial_started.v1`  |
+| `TRIAL`                             | `EXPIRED`          | `trial_ends_at` passed               | Daily `trial-lifecycle` job (`actor_id` `system`)   | `platform.tenant.trial_expired.v1`  |
+| `EXPIRED`                           | `PENDING_DELETION` | 30 days after `trial_ends_at`        | Daily `trial-lifecycle` job (`actor_id` `system`)   | `platform.tenant.deletion_due.v1`   |
+| `TRIAL`, `EXPIRED`, `PENDING_DELETION` | `ACTIVE`        | Customer pays                        | SYSTEM_ADMIN, `PATCH /api/v1/admin/tenants/{id}/convert`  | `platform.tenant.converted.v1`      |
+
+No other transition exists. Converting applies the plan-change rule of §26.1: a plan whose active-project limit
+is below the tenant's current count is refused with `COS-PLAN-002`. Each transition writes its event through the
+outbox in the same transaction as the status change.
+
+### Read-only enforcement
+
+While a tenant is `EXPIRED` or `PENDING_DELETION`, `TrialReadOnlyInterceptor` (global, after authentication) refuses
+every request that is not
+`GET`, `HEAD` or `OPTIONS` with `403 COS-PLAN-003`, except:
+
+- authentication and session endpoints (sign-in, token refresh, sign-out)
+- data-subject rights — data export, consent changes and the tenant's subject-request desk (record, verify,
+  erase, close a request; PDPA §19, §30–§33) must never be blocked
+
+Exempt endpoints carry `@AllowWhileReadOnly()`; no other endpoint may. Vendor-portal requests authenticate on a
+separate path (`VendorAuthGuard`), which applies the same rule to vendor writes (product owner, 2026-11-01).
+
+### Notifications
+
+Sent to every active `TENANT_ADMIN` and `EXECUTIVE` user of the tenant, by email and by LINE where the user has
+linked LINE. `platform.users` holds no locale, so each notice is written in Thai and then English in one message
+(QM-3). Each notice is sent at most once per tenant (`platform.tenant_trial_notices`). Only the notice of the
+trial's current stage is sent — a tenant first seen late does not receive the earlier ones at once — and a notice
+that reached nobody (no `TENANT_ADMIN` / `EXECUTIVE` yet) is retried the next day.
+
+The daily `trial-lifecycle` job (`TrialLifecycleService`) runs at 02:00 UTC (09:00 Bangkok) on one replica.
+
+| Day | Notice                                                         |
+| --- | -------------------------------------------------------------- |
+| 0   | Welcome — trial started, ends on `trial_ends_at`               |
+| 7   | Week one — features to try                                     |
+| 21  | 9 days left                                                    |
+| 28  | 2 days left — what happens at expiry                           |
+| 30  | Trial ended — account is now read-only for 30 days             |
+| 53  | 7 days before deletion                                         |
+
+At day 60 the job also notifies every SYSTEM_ADMIN, in-app and by email, that the tenant is due for deletion.
+
+### Client surfaces
+
+- **Trial banner** — the web shell (`TrialBanner`, under the top bar) and the mobile shell (`<TrialBanner />`,
+  under the breadcrumb) read `GET /api/v1/tenant` (`subscription_status`, `trial_ends_at`, `read_only_until`)
+  and show the days left while `TRIAL`, the read-only notice while `EXPIRED`, and the deletion notice while
+  `PENDING_DELETION`; nothing for `ACTIVE`. The decision is `trialBanner` in `@cos/ui-logic`, shared by both
+- **SYSTEM_ADMIN** — the Tenant List has *Start free trial* (`POST /admin/tenants/trial`) and, for a tenant that is
+  not `ACTIVE`, *Convert to paid plan* (`PATCH /admin/tenants/{id}/convert`), also in Tenant Detail. The plan cell
+  shows the trial state and its date. `COS-PLAN-002` names the plan limit and the active-project count. A tenant
+  with no administrator — every newly opened trial — offers *Create tenant admin*, and one whose only administrator
+  has not signed in offers *Resend admin invitation* and _Cancel admin invitation_ (§7.6 step 10, ADR-110); until then the notices below reach
+  nobody and are retried daily. The Global Audit Log filters `tenant.create_trial`, `tenant.convert`,
+  `tenant.trial_purge`, `tenant.bootstrap_admin`, `tenant.resend_admin_invite` and `tenant.cancel_admin_invite`
+- `LITE` is offered in Create Tenant and in the System Settings tier table
+- **Write actions while read-only** — the web hides create / edit / approve actions through `useReadOnly()` (also the
+  VIEWER rule) and the mobile app hides every `+` (`<Fab />`). A save the server refuses with `COS-PLAN-003` makes
+  the web banner say "your last change was not saved" and re-reads the tenant
+- **Mobile offline queue** — a push refused with `COS-PLAN-003` is **held, not discarded**: the queue stops as it
+  does with no signal, spends no retry, uploads no photos, and goes through unchanged once a plan is bought. Every
+  other 4xx is still discarded and reported (§17.2)
+
+### Deletion
+
+Trial data is deleted **manually** by a SYSTEM_ADMIN following `docs/runbooks/trial-tenant-deletion.md` once a
+tenant reaches `PENDING_DELETION`. The PostgreSQL step is `scripts/maintenance/trial-tenant-purge.sql`, audited as
+`tenant.trial_purge`; what is kept (tenant row, audit trail, anonymised users, consent records) is listed in
+`docs/policies/data-retention-policy.md` § Free-trial tenants. Automated tenant purge does not exist yet; backups expire on their normal
+schedule.
+
+### Feature flag
+
+The daily job and the read-only enforcement are gated by the `s1.tenant.trial-lifecycle` feature flag (QM-15,
+default OFF). With the
+flag off, no status changes and no requests are refused; trials can still be opened and converted.
+
+---
+
 ## References
 
 | ID               | Title                                                              | Source                                                                          |
@@ -554,4 +672,4 @@ This threshold determines when database sharding evaluation must begin.
 
 > 📎 See also: [05-security-compliance](05-security-compliance.md)
 > · [06-rbac-permission-matrix](06-rbac-permission-matrix.md) · [08-enterprise-deployment](08-enterprise-deployment.md)
-> · [11-database-schema](11-database-schema.md)
+> · [11-database-schema](11-database-schema.md) · [26-pricing-model](26-pricing-model.md)

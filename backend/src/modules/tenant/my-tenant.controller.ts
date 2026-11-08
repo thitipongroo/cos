@@ -20,9 +20,14 @@ export class MyTenantController {
   // GET /api/v1/tenant
   @Get()
   @ApiOperation({
-    summary: "The signed-in user's own tenant — name, code, plan (any authenticated role)",
+    summary:
+      "The signed-in user's own tenant — name, code, plan and trial state (any authenticated role)",
   })
-  @ApiResponse({ status: 200, description: 'tenant_name, tenant_code, plan_type' })
+  @ApiResponse({
+    status: 200,
+    description:
+      'tenant_name, tenant_code, plan_type, subscription_status, trial_ends_at, read_only_until',
+  })
   async myTenant(@Req() req: TenantRequest) {
     return this.tenantService.getMyTenant(req.tenantId!);
   }

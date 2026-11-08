@@ -1,9 +1,10 @@
 // AI usage — the Tenant Admin home's "AI Token Usage" + "AI Insights" widgets.
 //
-// §26 pricing: AI is metered per tenant (input + output tokens) against a monthly quota by plan tier
-// (STARTER 500K / PROFESSIONAL 5M / ENTERPRISE uncapped). §31.3 raises the "AI token budget near limit"
-// signal at ≥80 % of quota. `GET /ai/usage` returns the real figure the backend meters — never a mock:
-// until the LLM gateway records real consumption, `tokensUsed` is genuinely 0, not a placeholder %.
+// §26 pricing: AI is metered per tenant (input + output tokens) against a monthly quota by plan
+// tier (LITE and STARTER 500K / PROFESSIONAL 5M / ENTERPRISE uncapped). §31.3 raises the "AI token
+// budget near limit" signal at ≥80 % of quota. `GET /ai/usage` returns the real figure the backend
+// meters — never a mock: until the LLM gateway records real consumption, `tokensUsed` is genuinely
+// 0, not a placeholder %.
 //
 // `alertLevel` is the authoritative §31.3 band (computed server-side); the widget localises the insight
 // message from it + `percentUsed` so Thai/English render correctly (no server-side English strings).

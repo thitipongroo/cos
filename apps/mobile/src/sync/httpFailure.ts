@@ -17,7 +17,7 @@
 
 /** The shape both axios errors and hand-rolled test doubles satisfy. */
 interface HttpErrorLike {
-  response?: { status?: number };
+  response?: { status?: number; data?: { error?: { code?: unknown } } };
   code?: string;
   isAxiosError?: boolean;
 }
@@ -51,6 +51,21 @@ export function isNetworkError(err: unknown): boolean {
   return e.code === 'ERR_NETWORK' || e.code === 'ECONNABORTED' || e.isAxiosError === true;
 }
 
+/** docs/api/error-codes.md — the 403 a write gets while the tenant's free trial has ended (§7.10). */
+export const TRIAL_READ_ONLY_CODE = 'COS-PLAN-003';
+
+/**
+ * The server refused the write because the tenant's free trial has ended (403 COS-PLAN-003).
+ *
+ * NOT a permanent failure, although it is a 4xx: it ends the moment the customer buys a plan, and the work queued on
+ * the device — a morning's site reports, say — is exactly what they will want to keep. Discarding it the way a
+ * malformed item is discarded would lose real work over a billing state.
+ */
+export function isTrialReadOnly(err: unknown): boolean {
+  const e = asHttpError(err);
+  return e?.response?.status === 403 && e.response.data?.error?.code === TRIAL_READ_ONLY_CODE;
+}
+
 /**
  * A failure that repeating cannot fix: the server understood the request and refused it.
  *
@@ -61,5 +76,6 @@ export function isPermanentFailure(err: unknown): boolean {
   const status = responseStatus(err);
   if (status === null) return false;
   if (status === 408 || status === 429) return false;
+  if (isTrialReadOnly(err)) return false;
   return status >= 400 && status < 500;
 }

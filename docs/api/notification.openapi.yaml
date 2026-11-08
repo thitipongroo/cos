@@ -213,6 +213,11 @@ components:
           $ref: '#/components/schemas/NotificationChannel'
         event_type:
           type: string
+          description: |
+            The Kafka event that raised the notification, or — for notifications sent directly rather than from an
+            event — its template key: the §19.8 provisioning gate (`platform.enterprise.awaiting_approval`) and,
+            since 2026-11-01 (§7.10, ADR-109), the free-trial notices `tenant.trial.notice.day_0`, `…day_7`,
+            `…day_21`, `…day_28`, `…day_30`, `…day_53` (TENANT_ADMIN and EXECUTIVE) and `…day_60_admin` (SYSTEM_ADMIN).
           example: site.inspection.failed.v1
         subject:
           type: [string, 'null']

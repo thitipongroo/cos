@@ -5,6 +5,7 @@ import { Test } from '@nestjs/testing';
 import { MasterDataController } from '../master-data.controller';
 import { MasterDataService } from '../master-data.service';
 import { LastSeenService } from '../../../shared/last-seen/last-seen.service';
+import { FeatureFlagService } from '../../../shared/feature-flags/feature-flag.service';
 import type {
   MaterialRow,
   WorkCategoryRow,
@@ -90,6 +91,8 @@ describe('MasterDataController', () => {
         // the guard resolves under DI. The guard never runs here — these tests call the controller
         // methods directly — but the module must still compile.
         { provide: LastSeenService, useValue: { touch: jest.fn() } },
+        // RolesGuard gained a FeatureFlagService dependency (ADR-110 round 4); same reason as above.
+        { provide: FeatureFlagService, useValue: { isEnabled: () => false } },
       ],
     }).compile();
     ctrl = module.get(MasterDataController);

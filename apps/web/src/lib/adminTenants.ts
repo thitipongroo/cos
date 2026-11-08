@@ -9,7 +9,9 @@
  * 2026-09-14).
  */
 
-export type PlanType = 'STARTER' | 'PROFESSIONAL' | 'ENTERPRISE';
+import type { SubscriptionStatus } from '@cos/ui-logic';
+
+export type PlanType = 'LITE' | 'STARTER' | 'PROFESSIONAL' | 'ENTERPRISE';
 
 /** One row of GET /admin/tenants — snake_case, as the endpoint returns it. */
 export interface TenantListRow {
@@ -24,6 +26,14 @@ export interface TenantListRow {
   created_at: string;
   /** Hostname of the dedicated DB, or null on the shared database. Never the URL. */
   dedicated_db_host: string | null;
+  /** §7.10 commercial state (ADR-109). */
+  subscription_status: SubscriptionStatus;
+  trial_ends_at: string | null;
+  converted_at: string | null;
+  /** Active TENANT_ADMIN users (ADR-110) — 0 offers "Create tenant admin". */
+  tenant_admin_count: number;
+  /** The only administrator has never signed in — offers "Resend invitation". */
+  tenant_admin_pending: boolean;
 }
 
 /** One row of GET /admin/tenants/provisioning. `null` state = the run exists but did not answer. */

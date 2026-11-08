@@ -82,7 +82,8 @@ const ENUM_SYMBOL_ORDER: Record<string, readonly string[]> = {
   IssueSeverity: ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'],
   IssueStatus: ['OPEN', 'IN_PROGRESS', 'RESOLVED', 'CLOSED'],
   ModelType: ['DELAY_FORECAST', 'COST_OVERRUN', 'SAFETY_VISION', 'RISK_CLASSIFIER'],
-  PlanType: ['STARTER', 'PROFESSIONAL', 'ENTERPRISE'],
+  // LITE appended 2026-11-01 (ADR-109) — after ENTERPRISE, never before.
+  PlanType: ['STARTER', 'PROFESSIONAL', 'ENTERPRISE', 'LITE'],
   PoStatus: [
     'DRAFT',
     'PENDING_APPROVAL',
@@ -104,6 +105,8 @@ const ENUM_SYMBOL_ORDER: Record<string, readonly string[]> = {
   SafetyComplianceFailureType: ['PERMIT_EXPIRED', 'CHECKLIST_ITEM_FAILED'],
   SeverityLevel: ['LOW', 'MEDIUM', 'HIGH'],
   StateSource: ['IOT', 'MANUAL', 'AI_INFERRED'],
+  // platform.tenant.converted.v1 — §7.10 (2026-11-01).
+  TrialFromStatus: ['TRIAL', 'EXPIRED', 'PENDING_DELETION'],
   ViolationSeverity: ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'],
 };
 

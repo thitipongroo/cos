@@ -39,6 +39,9 @@ module.exports = {
   // same file also exports useApi/useUpload, which need that render host.
   collectCoverageFrom: [
     'src/lib/loadingState.ts',
+    // Free-trial banner copy and the SYSTEM_ADMIN trial / convert decisions (§7.10, ADR-109).
+    'src/lib/trial.ts',
+    'src/lib/adminTrial.ts',
     // Formatting, country/dial-code handling, navigation permissions and role landing routes —
     // the pure logic every screen depends on (§35.13 ESC-25).
     'src/lib/format.ts',

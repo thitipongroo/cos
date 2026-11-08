@@ -50,6 +50,9 @@ import { TextInputField } from '../form/TextInputField';
 import { LoadingState } from '../ui/LoadingState';
 
 const PLANS: Array<{ plan: PlanType; noteKey: string; tierKey: string }> = [
+  // Not drawn (ADR-109): LITE joined the price list after the drawing. Its tier line states the plan's real limit
+  // rather than a drawn compute figure.
+  { plan: 'LITE', noteKey: 'admin.create.planLite', tierKey: 'admin.create.tierLite' },
   { plan: 'STARTER', noteKey: 'admin.create.planStarter', tierKey: 'admin.create.tierStarter' },
   {
     plan: 'PROFESSIONAL',
@@ -247,7 +250,7 @@ export function CreateTenantModal({
                     </Label>
                     <RequiredMarker>{t('admin.create.required')}</RequiredMarker>
                   </div>
-                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                     {PLANS.map(({ plan, noteKey, tierKey }) => (
                       <Radio
                         key={plan}

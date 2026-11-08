@@ -53,6 +53,12 @@ const mockSetError = jest.fn();
 jest.mock('../../store/syncStore', () => ({
   useSyncStore: { getState: () => ({ setError: mockSetError }) },
 }));
+const mockGetMyTenant = jest.fn();
+jest.mock('../../api/tenant', () => ({ getMyTenant: () => mockGetMyTenant() }));
+const mockSetTenant = jest.fn();
+jest.mock('../../store/tenantStore', () => ({
+  useTenantStore: { getState: () => ({ setTenant: mockSetTenant }) },
+}));
 const mockSetSyncStatusByKey = jest.fn().mockResolvedValue(undefined);
 jest.mock('../../db/database', () => ({
   setSyncStatusByKey: (...a: unknown[]) => mockSetSyncStatusByKey(...a),
@@ -294,5 +300,46 @@ describe('runPushSync', () => {
       await expect(onExhausted()(item)).resolves.toBeUndefined();
       expect(mockSetError).toHaveBeenCalledWith('sync.exhausted.report_failed');
     });
+  });
+
+  // §7.10 — the queue was held because the trial ended: re-read the tenant so the banner and every `+` update now,
+  // and upload no photos (nothing leaves the device while the tenant is read-only).
+  it('re-reads the tenant and skips photos when the push was refused for a read-only trial', async () => {
+    const tenant = { tenant_code: 't', subscription_status: 'EXPIRED' };
+    mockGetMyTenant.mockResolvedValueOnce(tenant);
+    mockProcessQueue.mockResolvedValueOnce({
+      synced: 0,
+      failed: 0,
+      exhausted: 0,
+      interrupted: true,
+      readOnly: true,
+    });
+    await runPushSync();
+    expect(mockSetTenant).toHaveBeenCalledWith(tenant);
+    expect(mockProcessAll).not.toHaveBeenCalled();
+  });
+
+  it('keeps going quietly when that re-read fails', async () => {
+    mockGetMyTenant.mockRejectedValueOnce(new Error('offline'));
+    mockProcessQueue.mockResolvedValueOnce({
+      synced: 0,
+      failed: 0,
+      exhausted: 0,
+      interrupted: true,
+      readOnly: true,
+    });
+    await expect(runPushSync()).resolves.toBeUndefined();
+    expect(mockSetTenant).not.toHaveBeenCalled();
+  });
+
+  it('does not re-read the tenant on an ordinary cycle', async () => {
+    mockProcessQueue.mockResolvedValueOnce({
+      synced: 1,
+      failed: 0,
+      exhausted: 0,
+      interrupted: false,
+    });
+    await runPushSync();
+    expect(mockGetMyTenant).not.toHaveBeenCalled();
   });
 });

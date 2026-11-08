@@ -51,6 +51,8 @@ jest.mock('../../../db/database', () => ({
 // The shell's four children each have their own spec; what this file is about is the shell.
 jest.mock('../../../components/TopBar', () => ({ TopBar: () => null }));
 jest.mock('../../../components/Breadcrumb', () => ({ Breadcrumb: () => null }));
+// §7.10 — the trial banner reads GET /tenant; its own behaviour is TrialBanner.spec.tsx.
+jest.mock('../../../components/TrialBanner', () => ({ TrialBanner: () => null }));
 jest.mock('../../../components/MobileNav', () => ({ MobileNav: () => null }));
 jest.mock('../../../components/NavigationDrawer', () => ({ NavigationDrawer: () => null }));
 jest.mock('../../../components/SelectProjectSheet', () => {

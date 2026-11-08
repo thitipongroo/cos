@@ -8,12 +8,15 @@ import { TextInputField } from '../../../../../components/form/TextInputField';
 import { useI18n } from '../../../../../i18n';
 import { useCreateSiteReport, useProjects } from '../../../../../lib/api/queries';
 import { useValidatedForm } from '../../../../../lib/forms';
+import { useReadOnly } from '../../../../../lib/auth/useReadOnly';
 
 /** Submit a daily site report — manpower, blockers (§20.7.6 → POST /site/reports). */
 export default function NewSiteReportPage() {
   const { t } = useI18n();
   const projects = useProjects();
   const create = useCreateSiteReport();
+  // VIEWER, or a free trial that has ended (§7.10): no write actions — the server would refuse them.
+  const readOnly = useReadOnly();
 
   const {
     control,
@@ -114,7 +117,7 @@ export default function NewSiteReportPage() {
         />
         <button
           type="submit"
-          disabled={isSubmitting || create.isPending}
+          disabled={readOnly || isSubmitting || create.isPending}
           className="rounded-md bg-blue-600 px-4 py-1.5 text-sm text-white hover:bg-blue-700 disabled:opacity-50"
         >
           {t('site.submit')}

@@ -722,10 +722,14 @@ jobs:
   # ─── Step 4a: Integration Tests ─────────────────────────────────────────────
   # Source: spec §30.4 — Testcontainers (PostgreSQL, Redis) per test run; blocks PR merge
   integration-tests:
-    name: Integration Tests (Testcontainers)
+    name: Integration Tests (Testcontainers) — Shard ${{ matrix.shard }}
     runs-on: ubuntu-latest
-    timeout-minutes: 25
-    needs: [lint, type-check, unit-tests]
+    timeout-minutes: 15
+    needs: [lint, type-check]
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: ['1/3', '2/3', '3/3']
     steps:
       - uses: actions/checkout@v5
       - uses: pnpm/action-setup@v5
@@ -739,19 +743,22 @@ jobs:
         run: pnpm exec prisma generate
       - name: Run integration tests
         working-directory: backend
-        run: pnpm run test:integration
+        run: pnpm run test:integration --shard=${{ matrix.shard }}
       # services/file-service owns object-storage tenant isolation (TC-P09-ISO-001): a presigned
       # URL must be bound to one tenant bucket + key. Only a real MinIO can show that — a mocked
       # client returns whatever it is told. Wired 2026-08-23 (§35.13 ESC-30).
       - name: Run integration tests — services/file-service (MinIO)
+        if: matrix.shard == '1/3'
         working-directory: services/file-service
         run: pnpm run test:integration
       # Same reason as in unit-tests: credential-service resolves @cos/service-identity through its dist.
       - name: Build @cos/service-identity (credential-service resolves its dist)
+        if: matrix.shard == '1/3'
         run: pnpm --filter @cos/service-identity build
       # Testcontainers Postgres + the credentials migration: RLS isolation, did:web verification and
       # the Status List revocation loop (ADR-019 CS-9/CS-6).
       - name: Run integration tests — credential-service
+        if: matrix.shard == '1/3'
         working-directory: services/credential-service
         run: pnpm run test:integration
 
@@ -949,8 +956,8 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       # Node.js dependency audit — fail on HIGH or CRITICAL
-      # Uses scripts/pnpm-audit.sh to suppress advisories blocked by major dep upgrades
-      # (see script for full list of suppressed GHSAs and their blocking packages).
+      # Uses scripts/pnpm-audit.sh, which forces pnpm to report every severity for prod, dev and optional
+      # dependencies, checks the result against pnpm's own counts, and suppresses nothing.
       - name: pnpm audit (Node.js dependencies)
         run: bash scripts/pnpm-audit.sh
       # Go vulnerability check for kg-ingestion-worker
@@ -964,7 +971,7 @@ jobs:
       # step with the `go` directive in the service go.mod files, which is what actually builds them.
       - uses: actions/setup-go@v6
         with:
-          go-version: '1.26.6'
+          go-version: '1.26.10'
       - name: govulncheck — kg-ingestion-worker
         working-directory: services/kg-ingestion-worker
         run: |
@@ -1002,6 +1009,9 @@ jobs:
     name: Secret Scan (gitleaks)
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    permissions:
+      contents: read
+      pull-requests: read
     steps:
       - uses: actions/checkout@v5
         with:
@@ -1011,6 +1021,9 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITLEAKS_CONFIG: ${{ github.workspace }}/.gitleaks.toml
+          # Pinned: .gitleaks.toml uses [[allowlists]] (gitleaks >= 8.25). Same version the pre-commit hook was
+          # verified with (2026-11-02); bump both together.
+          GITLEAKS_VERSION: 8.30.1
 
   # ─── Step 5c: Security Scan (Trivy) ─────────────────────────────────────────
   security-scan:
@@ -1217,6 +1230,9 @@ jobs:
           BASE_URL: ${{ secrets.STAGING_URL }}
           E2E_EMAIL: ${{ secrets.E2E_EMAIL }}
           E2E_PASSWORD: ${{ secrets.E2E_PASSWORD }}
+          # ADR-110 admin-tenant-admin.spec.ts — a staging SYSTEM_ADMIN; the spec skips itself when unset.
+          E2E_SYSADMIN_EMAIL: ${{ secrets.E2E_SYSADMIN_EMAIL }}
+          E2E_SYSADMIN_PASSWORD: ${{ secrets.E2E_SYSADMIN_PASSWORD }}
         run: pnpm exec playwright test
       - uses: actions/upload-artifact@v6
         if: failure()

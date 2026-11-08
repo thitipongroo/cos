@@ -53,6 +53,7 @@
       "clusterZone": "Cluster Zone"
     },
     "plan": {
+      "LITE": "Lite",
       "STARTER": "Starter",
       "PROFESSIONAL": "Professional",
       "ENTERPRISE": "Enterprise"
@@ -184,7 +185,9 @@
       "portSuffix": "Open",
       "lifecycleTitle": "Automatic Provisioning Lifecycle:",
       "lifecycleBody": "Submitting this request will automatically allocate tenant secrets via HashiCorp Vault, register schema schemas in the central catalog, and configure mutual TLS certs for EMQX streaming broker.",
-      "zone": "Zone: ap-southeast-1a (Headroom: 72%)"
+      "zone": "Zone: ap-southeast-1a (Headroom: 72%)",
+      "planLite": "One active project, pooled DB",
+      "tierLite": "Max 1 active project"
     },
     "connection": {
       "online": "Synced",
@@ -397,7 +400,11 @@
         "audit": "Open Audit Log",
         "assign": "Assign Dedicated DB",
         "mark": "Mark as Enterprise Contracted",
-        "deactivate": "Deactivate Tenant"
+        "deactivate": "Deactivate Tenant",
+        "convert": "Convert to paid plan",
+        "createAdmin": "Create tenant admin",
+        "resendInvite": "Resend admin invitation",
+        "cancelInvite": "Cancel admin invitation"
       },
       "footer": {
         "mesh": "Cluster Mesh"
@@ -720,7 +727,13 @@
         "provision": "Dedicated DB Fleet Provision",
         "tier": "Enterprise Tier Upgrade / Downgrade",
         "gateway": "Gateway & e-GP Config",
-        "gate": "Schema Migration Human Gate"
+        "gate": "Schema Migration Human Gate",
+        "trial": "Free Trial Opened",
+        "convert": "Trial Converted to Paid",
+        "purge": "Trial Data Purged",
+        "bootstrapAdmin": "Tenant Admin Created",
+        "resendInvite": "Admin Invitation Resent",
+        "cancelInvite": "Admin Invitation Cancelled"
       },
       "range": "Date range (UTC)",
       "rangeFrom": "From (UTC)",
@@ -937,6 +950,73 @@
       "title": "Coming soon",
       "body": "is not available yet.",
       "close": "Close"
+    },
+    "tenant": {
+      "error": {
+        "notConvertible": "This tenant is not in a trial that can be converted — it is already on a paid plan.",
+        "planBelowUsage": "This tenant has more active projects than the chosen plan allows. Choose a larger plan."
+      }
+    },
+    "subscription": {
+      "ACTIVE": "Paid",
+      "TRIAL": "Trial — ends",
+      "EXPIRED": "Trial ended — read-only",
+      "PENDING_DELETION": "Due for deletion"
+    },
+    "convert": {
+      "title": "Convert to paid plan",
+      "lead": "The tenant becomes a paying customer on the plan below and can write again at once. Its projects and data are kept. The change is audited.",
+      "plan": "Plan paid for",
+      "upTo": "Up to",
+      "projects": "active projects",
+      "limit": "Plan limit",
+      "active": "active projects now",
+      "trialEnded": "trial ends",
+      "justificationHelp": "Why — for example the invoice or contract reference. Stored in the audit log (§6.7).",
+      "confirm": "Convert"
+    },
+    "trial": {
+      "open": "Start free trial",
+      "title": "Start a 30-day free trial",
+      "plan": "Plan to trial",
+      "sourceLabel": "Website source (optional)",
+      "sourceHelp": "Where on construction-os.io the request came from, e.g. pricing. Lowercase letters, numbers, hyphens.",
+      "requestRefLabel": "Trial request ID (optional)",
+      "requestRefHelp": "The request’s ID from the website, so the trial can be traced back to it.",
+      "terms": "The trial lasts 30 days and needs no card. Nothing is charged when it ends. If no plan is chosen, the account becomes read-only for 30 days and the data is then deleted.",
+      "submit": "Start trial"
+    },
+    "tenantAdmin": {
+      "createTitle": "Create tenant admin",
+      "resendTitle": "Resend admin invitation",
+      "createLead": "This tenant has no administrator yet, so nobody can sign in. Create the first one; they then add everyone else from their own account.",
+      "resendLead": "The tenant administrator has not signed in yet. Send the invitation again with a new 72-hour link.",
+      "nameLabel": "Full name",
+      "emailLabel": "Work email",
+      "emailHelp": "The administrator signs in with this address. Check it with the customer: it cannot be corrected from this panel later.",
+      "terms": "Keycloak emails a single-use link, valid for {hours} hours, where the administrator sets their own password. Two-step verification (an authenticator app) is set up at first sign-in. Nobody at Construction OS sees the password.",
+      "createSubmit": "Create and send invitation",
+      "resendSubmit": "Send invitation again",
+      "sentTo": "Invitation sent to",
+      "expires": "link valid until",
+      "notSent": "The account was created, but the invitation email could not be sent. Close this dialog and use “Resend admin invitation”.",
+      "nextSteps": "The tenant list shows the invitation as pending until the administrator signs in for the first time.",
+      "done": "Done",
+      "error": {
+        "alreadyHasAdmin": "This tenant already has an administrator. Ask them to add users from their own account.",
+        "notResendable": "The invitation can be resent only to the tenant administrator created here, while it is unused. If a password is already set, the administrator should sign in or use “Forgot password”.",
+        "disabled": "Creating tenant administrators is switched off right now. Try again later.",
+        "emailTaken": "This email already has an account. Use a different address.",
+        "notCancellable": "Only an unused invitation to the administrator created here can be cancelled. If a password is already set, the customer manages their own account.",
+        "resendTooSoon": "An invitation was sent a moment ago. Wait five minutes before sending another."
+      },
+      "cancelTitle": "Cancel admin invitation",
+      "cancelLead": "Use this when the invitation went to a wrong address. The account is deactivated and its link stops working; the tenant then has no administrator, so you can create one with the right address.",
+      "cancelSubmit": "Cancel invitation",
+      "cancelledFor": "Invitation cancelled for",
+      "cancelNext": "Create the tenant admin again with the correct address. The cancelled address cannot be used for a new account on the same sign-in realm — for the shared realm, that means any tenant.",
+      "keycloakDisabled": "The sign-in account could not be removed, so it was disabled instead: its link no longer works. Ask platform engineering to remove it.",
+      "keycloakNotRemoved": "The sign-in account could not be removed or disabled, so its link may still work. Ask platform engineering to remove it now."
     }
   },
   "auth": {
@@ -1374,7 +1454,8 @@
     "srVerified": "Verified",
     "srUnverified": "Not verified",
     "srVerifySent": "Verification link sent to {to}",
-    "srVerifyHint": "Anonymisation is blocked until the subject confirms the link. It is sent to the address on the matched record, not the one typed above."
+    "srVerifyHint": "Anonymisation is blocked until the subject confirms the link. It is sent to the address on the matched record, not the one typed above.",
+    "userChangeFailed": "Could not save the change. Nothing was changed."
   },
   "shell": {
     "notifications": "Notifications",
@@ -1453,7 +1534,9 @@
     "tooLong": "Too long",
     "tooShort": "Too short",
     "notATenantCode": "Use 2–50 lowercase letters, numbers or underscores",
-    "notAPostgresUrl": "Must start with postgresql://"
+    "notAPostgresUrl": "Must start with postgresql://",
+    "notATrialSource": "Use 1–40 lowercase letters, numbers or hyphens",
+    "notARequestRef": "Use letters, numbers, underscores or hyphens only"
   },
   "vendor": {
     "portalTitle": "Vendor Portal",
@@ -1609,6 +1692,36 @@
         "unavailable": "No active central price exists for this item code.",
         "unitCostConflict": "Give a unit cost or use the central price, not both."
       }
+    }
+  },
+  "trial": {
+    "error": {
+      "readOnly": "Your free trial has ended. The account is read-only until a plan is chosen — you can still view and export your data."
+    },
+    "banner": {
+      "running": "Free trial: {days} days left — it ends on {date}. Nothing is charged automatically; our team will contact you to choose a plan.",
+      "endsToday": "Your free trial ends today ({date}). After that the account is read-only for 30 days — you can view and export your data but not change it.",
+      "readOnly": "Your free trial has ended, so the account is read-only until {date}: you can view and export your data, but not change it. Choose a plan with our team to carry on.",
+      "deletionPending": "Your free trial's read-only period is over and the data is due for deletion. Contact our team now if you want to keep it.",
+      "seePlans": "See plans and prices",
+      "contact": "Contact our team",
+      "mailSubject": "Choose a plan after the free trial",
+      "saveBlocked": "Your last change was not saved."
+    }
+  },
+  "project": {
+    "error": {
+      "planLimitReached": "Your plan's active-project limit is reached. Complete a project or upgrade the plan to create another.",
+      "planUnreadable": "Your plan could not be checked, so the project was not created. Try again; if it keeps happening, contact support."
+    }
+  },
+  "user": {
+    "error": {
+      "lastTenantAdmin": "A tenant must keep at least one administrator. Make someone else an administrator first.",
+      "notFound": "This user is no longer in the tenant. Refresh the list."
+    },
+    "role": {
+      "pathBRequiresEmail": "TENANT_ADMIN and FINANCE sign in by email only, and this account has no email. Create an email account for this person instead."
     }
   }
 }

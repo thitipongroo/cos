@@ -44,4 +44,9 @@ export interface JwtPayload {
 export interface AuthenticatedUser extends JwtPayload {
   tenantCode: string;
   dedicatedDbUrl?: string;
+  /**
+   * platform.tenants.subscription_status (§7.10): ACTIVE | TRIAL | EXPIRED | PENDING_DELETION. Read by
+   * TrialReadOnlyInterceptor. Optional only because callers that build a user by hand predate it.
+   */
+  subscriptionStatus?: string;
 }

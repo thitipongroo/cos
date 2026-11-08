@@ -109,6 +109,83 @@ describe('ProjectRepository', () => {
     });
   });
 
+  describe('create() — plan project limit (§26.1, COS-PLAN-001)', () => {
+    const dto = { project_code: 'P', project_name: 'T', project_type: 'COMMERCIAL' as never };
+    const TENANT_UUID = '11111111-1111-4111-8111-111111111111';
+
+    /** tx.$queryRaw answers in order: the plan read, the active count, the INSERT. */
+    function limitRepo(plan: string | null, active: number) {
+      const txMock = {
+        $executeRaw: jest.fn().mockResolvedValue(1),
+        $queryRaw: jest
+          .fn()
+          .mockResolvedValueOnce(plan ? [{ plan_type: plan }] : [])
+          .mockResolvedValueOnce([{ active }])
+          .mockResolvedValue([baseRow]),
+      };
+      const tenantPrisma = {
+        run: jest.fn((fn: (tx: typeof txMock) => Promise<unknown>) => fn(txMock)),
+      };
+      const repo = new ProjectRepository(tenantPrisma as never, { tenantId: TENANT_UUID } as never);
+      return { repo, txMock };
+    }
+
+    it('locks the tenant, then inserts while under the limit', async () => {
+      const { repo, txMock } = limitRepo('STARTER', 2);
+      await expect(repo.create(dto, USER_ID, undefined, true)).resolves.toEqual(baseRow);
+      const lock = (txMock.$executeRaw.mock.calls[0]![0] as TemplateStringsArray).join('?');
+      expect(lock).toContain('pg_advisory_xact_lock');
+      expect(txMock.$executeRaw.mock.calls[0]![1]).toBe(`cos:plan-limit:${TENANT_UUID}`);
+      expect(txMock.$queryRaw).toHaveBeenCalledTimes(3);
+    });
+
+    it('refuses with 409 COS-PLAN-001 at the limit, before the INSERT', async () => {
+      const { repo, txMock } = limitRepo('LITE', 1);
+      const err = await repo.create(dto, USER_ID, undefined, true).catch((e: unknown) => e);
+      expect((err as { getStatus(): number }).getStatus()).toBe(409);
+      expect((err as { getResponse(): unknown }).getResponse()).toEqual({
+        error: expect.objectContaining({
+          code: 'COS-PLAN-001',
+          messageKey: 'project.error.planLimitReached',
+          details: { plan: 'LITE', limit: 1, active_projects: 1 },
+        }),
+      });
+      expect(txMock.$queryRaw).toHaveBeenCalledTimes(2);
+    });
+
+    it('never limits ENTERPRISE, and does not count', async () => {
+      const { repo, txMock } = limitRepo('ENTERPRISE', 0);
+      txMock.$queryRaw
+        .mockReset()
+        .mockResolvedValueOnce([{ plan_type: 'ENTERPRISE' }])
+        .mockResolvedValue([baseRow]);
+      await expect(repo.create(dto, USER_ID, undefined, true)).resolves.toEqual(baseRow);
+      expect(txMock.$queryRaw).toHaveBeenCalledTimes(2);
+    });
+
+    it('refuses with 503 COS-PLAN-005 when the tenant row is not visible, before the INSERT', async () => {
+      const { repo, txMock } = limitRepo(null, 0);
+      txMock.$queryRaw.mockReset().mockResolvedValueOnce([]).mockResolvedValue([baseRow]);
+      const err = await repo.create(dto, USER_ID, undefined, true).catch((e: unknown) => e);
+      expect((err as { getStatus(): number }).getStatus()).toBe(503);
+      expect((err as { getResponse(): unknown }).getResponse()).toEqual({
+        error: expect.objectContaining({
+          code: 'COS-PLAN-005',
+          messageKey: 'project.error.planUnreadable',
+        }),
+      });
+      expect(txMock.$queryRaw).toHaveBeenCalledTimes(1);
+    });
+
+    it('does nothing extra when enforcement is off', async () => {
+      const { repo, txMock } = limitRepo('LITE', 5);
+      txMock.$queryRaw.mockReset().mockResolvedValue([baseRow]);
+      await repo.create(dto, USER_ID);
+      expect(txMock.$executeRaw).not.toHaveBeenCalled();
+      expect(txMock.$queryRaw).toHaveBeenCalledTimes(1);
+    });
+  });
+
   describe('create()', () => {
     it('returns the inserted row', async () => {
       const repo = makeRepo([baseRow]);

@@ -6,6 +6,7 @@ import { useI18n } from '../../../../i18n';
 import { useAllRfqs, useAwardRfq, useQuotations } from '../../../../lib/api/queries';
 import type { QuotationRow } from '../../../../lib/api/types';
 import { formatMoney } from '../../../../lib/format';
+import { useReadOnly } from '../../../../lib/auth/useReadOnly';
 
 /**
  * Quotation comparison (§20.7.3). Quotations are RFQ-scoped in the backend:
@@ -19,6 +20,8 @@ export default function QuotationsPage() {
   const rfqsQuery = useAllRfqs({});
   const quotationsQuery = useQuotations(rfqId);
   const award = useAwardRfq(rfqId);
+  // VIEWER, or a free trial that has ended (§7.10): no write actions — the server would refuse them.
+  const readOnly = useReadOnly();
 
   const columns: Column<QuotationRow>[] = [
     { headerKey: 'proc.colVendor', cell: (q) => q.vendor_id },
@@ -32,6 +35,8 @@ export default function QuotationsPage() {
       cell: (q) =>
         q.is_selected ? (
           <span className="font-medium text-green-700">{t('proc.selected')}</span>
+        ) : readOnly ? (
+          '—'
         ) : (
           <button
             type="button"

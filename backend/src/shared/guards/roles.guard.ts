@@ -17,6 +17,12 @@ import { CosRole } from '@cos/types';
 import { createLogger } from '@cos/logger';
 import { JwtPayload } from '../context/jwt-payload';
 import { createPrismaClient } from '../prisma/create-prisma-client';
+import { FeatureFlagService } from '../feature-flags/feature-flag.service';
+import {
+  ADDITIONAL_ROLE_MFA_FLAG,
+  additionalPrivilegedRoleUsable,
+  mfaRequiredError,
+} from './mfa-enforcement';
 
 const logger = createLogger('roles-guard');
 
@@ -25,7 +31,10 @@ export class RolesGuard implements CanActivate, OnModuleDestroy {
   // One shared client for the additional-roles fallback. The fast path (primary role satisfies the
   // requirement) never touches the DB, so most requests do no extra query.
   private readonly prisma = createPrismaClient();
-  constructor(private readonly reflector: Reflector) {}
+  constructor(
+    private readonly reflector: Reflector,
+    private readonly flags: FeatureFlagService,
+  ) {}
 
   async onModuleDestroy(): Promise<void> {
     await this.prisma.$disconnect();
@@ -56,9 +65,12 @@ export class RolesGuard implements CanActivate, OnModuleDestroy {
 
     // Multi-role fallback — allow if ANY of the user's additional roles satisfies the requirement.
     const extra = await this.additionalRoles(user);
-    if (extra.some((r) => requiredRoles.includes(r as CosRole))) {
+    const granting = extra.filter((r) => requiredRoles.includes(r as CosRole));
+    if (granting.some((r) => this.usable(user, r))) {
       return true;
     }
+    // Every granting role is TENANT_ADMIN / FINANCE and the token has not proved MFA (ADR-110 round 4).
+    if (granting.length > 0) throw mfaRequiredError();
 
     logger.warn(
       {
@@ -84,13 +96,29 @@ export class RolesGuard implements CanActivate, OnModuleDestroy {
    * additional-roles lookup would silently deny multi-role users on sync but allow them on REST.
    */
   async hasAnyRole(
-    user: Pick<JwtPayload, 'role' | 'user_id' | 'tenant_id'>,
+    user: Pick<JwtPayload, 'role' | 'user_id' | 'tenant_id' | 'acr'>,
     requiredRoles: readonly CosRole[],
   ): Promise<boolean> {
     if (!user.role) return false;
     if (requiredRoles.includes(user.role as CosRole)) return true;
     const extra = await this.additionalRoles(user);
-    return extra.some((r) => requiredRoles.includes(r as CosRole));
+    return extra.some((r) => requiredRoles.includes(r as CosRole) && this.usable(user, r));
+  }
+
+  /**
+   * An ADDITIONAL role counts unless it is TENANT_ADMIN / FINANCE, `s1.identity.additional-role-mfa` is on for the
+   * tenant, and the token has not proved MFA (mfa-enforcement.ts). Flag off: every additional role counts, as before.
+   */
+  private usable(user: Pick<JwtPayload, 'user_id' | 'tenant_id' | 'acr'>, role: string): boolean {
+    if (
+      !this.flags.isEnabled(ADDITIONAL_ROLE_MFA_FLAG, {
+        tenantId: user.tenant_id,
+        userId: user.user_id,
+      })
+    ) {
+      return true;
+    }
+    return additionalPrivilegedRoleUsable(user, role);
   }
 
   /** The user's ADDITIONAL role codes (platform.user_additional_roles) — empty when they hold none. */

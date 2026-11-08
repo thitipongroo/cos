@@ -32,6 +32,6 @@ export function isFeatureDisabled(err: unknown): boolean {
   // this function could never return true, whatever the server sent. Verified against the live
   // endpoint on 2026-08-06, not inferred: the backend was also throwing the flat shape, which its
   // own exception filter silently rewrote to `COS-GENERAL-503`, so both ends were wrong at once and
-  // each hid the other.
+  // each hid the other. The backend end was fixed on 2026-11-03 (FeatureFlagGuard now throws the envelope).
   return res?.status === 503 && res.data?.error?.code === FEATURE_DISABLED_CODE;
 }

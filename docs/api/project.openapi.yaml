@@ -903,7 +903,25 @@ paths:
         '401':
           description: Unauthenticated
         '403':
-          description: Insufficient role
+          description: |
+            Insufficient role, or `COS-PLAN-003` — the tenant's free trial has ended and the account is read-only
+            (§7.10; only while `s1.tenant.trial-lifecycle` is on).
+        '409':
+          description: |
+            `COS-PLAN-001` — the plan's active-project limit is reached (§26.1); `details`: `plan`, `limit`,
+            `active_projects`. Only while `s1.project.plan-project-limit` is on.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CosError'
+        '503':
+          description: |
+            `COS-PLAN-005` — the tenant's plan could not be read, so the limit could not be checked and the project
+            was not created. Only while `s1.project.plan-project-limit` is on.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CosError'
         '422':
           description: Business rule violation
           content:

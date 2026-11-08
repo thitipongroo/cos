@@ -9,12 +9,15 @@ import { useCrmLeads, useCreateLead } from '../../../../lib/api/queries';
 import type { LeadRow } from '../../../../lib/api/types';
 import { formatDate } from '../../../../lib/format';
 import { useValidatedForm } from '../../../../lib/forms';
+import { useReadOnly } from '../../../../lib/auth/useReadOnly';
 
 /** CRM leads — list + create (§20.7.10 → /crm/leads, ADR-029). */
 export default function CrmLeadsPage() {
   const { t, locale } = useI18n();
   const query = useCrmLeads();
   const create = useCreateLead();
+  // VIEWER, or a free trial that has ended (§7.10): no write actions — the server would refuse them.
+  const readOnly = useReadOnly();
   const {
     control,
     handleSubmit,
@@ -51,50 +54,52 @@ export default function CrmLeadsPage() {
   return (
     <div>
       <h1 className="mb-4 text-2xl font-bold text-gray-800">{t('crm.leadsTitle')}</h1>
-      <form onSubmit={submit} noValidate className="mb-6 flex flex-wrap items-start gap-2">
-        <Controller
-          name="contact_name"
-          control={control}
-          render={({ field }) => (
-            <TextInputField
-              {...field}
-              label={t('crm.colContact')}
-              errorMessage={messageFor(errors.contact_name?.message)}
-            />
-          )}
-        />
-        <Controller
-          name="company"
-          control={control}
-          render={({ field }) => (
-            <TextInputField
-              {...field}
-              label={t('crm.colCompany')}
-              errorMessage={messageFor(errors.company?.message)}
-            />
-          )}
-        />
-        <Controller
-          name="source"
-          control={control}
-          render={({ field }) => (
-            <TextInputField
-              {...field}
-              label={t('crm.colSource')}
-              errorMessage={messageFor(errors.source?.message)}
-            />
-          )}
-        />
-        {/* The button is no longer disabled on "contact or company empty": the schema owns that
+      {!readOnly && (
+        <form onSubmit={submit} noValidate className="mb-6 flex flex-wrap items-start gap-2">
+          <Controller
+            name="contact_name"
+            control={control}
+            render={({ field }) => (
+              <TextInputField
+                {...field}
+                label={t('crm.colContact')}
+                errorMessage={messageFor(errors.contact_name?.message)}
+              />
+            )}
+          />
+          <Controller
+            name="company"
+            control={control}
+            render={({ field }) => (
+              <TextInputField
+                {...field}
+                label={t('crm.colCompany')}
+                errorMessage={messageFor(errors.company?.message)}
+              />
+            )}
+          />
+          <Controller
+            name="source"
+            control={control}
+            render={({ field }) => (
+              <TextInputField
+                {...field}
+                label={t('crm.colSource')}
+                errorMessage={messageFor(errors.source?.message)}
+              />
+            )}
+          />
+          {/* The button is no longer disabled on "contact or company empty": the schema owns that
             rule now, and a disabled submit gives a screen-reader user no reason why. */}
-        <button
-          type="submit"
-          disabled={isSubmitting || create.isPending}
-          className="mt-6 rounded-md bg-blue-600 px-4 py-1.5 text-sm text-white hover:bg-blue-700 disabled:opacity-50"
-        >
-          {t('crm.createLead')}
-        </button>
-      </form>
+          <button
+            type="submit"
+            disabled={isSubmitting || create.isPending}
+            className="mt-6 rounded-md bg-blue-600 px-4 py-1.5 text-sm text-white hover:bg-blue-700 disabled:opacity-50"
+          >
+            {t('crm.createLead')}
+          </button>
+        </form>
+      )}
       <DataTable
         columns={columns}
         rows={query.data ?? []}

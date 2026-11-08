@@ -10,6 +10,7 @@ import { useUpload, isQueued } from '../../../../../lib/api/client';
 import { useCreateIssue, useProjects } from '../../../../../lib/api/queries';
 import type { IssueSeverity, UploadedFileResult } from '../../../../../lib/api/types';
 import { useValidatedForm } from '../../../../../lib/forms';
+import { useReadOnly } from '../../../../../lib/auth/useReadOnly';
 
 const SEVERITIES: IssueSeverity[] = ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'];
 
@@ -18,6 +19,8 @@ export default function NewIssuePage() {
   const { t } = useI18n();
   const projects = useProjects();
   const create = useCreateIssue();
+  // VIEWER, or a free trial that has ended (§7.10): no write actions — the server would refuse them.
+  const readOnly = useReadOnly();
   const upload = useUpload();
   // The photo stays outside react-hook-form: it is not part of issueCreateSchema and is uploaded
   // in a second request, against the id the first one returns.
@@ -151,7 +154,7 @@ export default function NewIssuePage() {
         </div>
         <button
           type="submit"
-          disabled={isSubmitting || create.isPending}
+          disabled={readOnly || isSubmitting || create.isPending}
           className="rounded-md bg-blue-600 px-4 py-1.5 text-sm text-white hover:bg-blue-700 disabled:opacity-50"
         >
           {t('site.submit')}

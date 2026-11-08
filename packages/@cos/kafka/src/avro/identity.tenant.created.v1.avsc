@@ -20,7 +20,7 @@
         { "name": "tenant_code", "type": "string" },
         { "name": "tenant_name", "type": "string" },
         { "name": "plan_type", "type": { "type": "enum", "name": "PlanType",
-            "symbols": ["STARTER", "PROFESSIONAL", "ENTERPRISE"] } }
+            "symbols": ["STARTER", "PROFESSIONAL", "ENTERPRISE", "LITE"] } }
       ]
     }}
   ]

@@ -81,13 +81,13 @@ describe('emptySettings / settingsChanged', () => {
     expect(settingsChanged(emptySettings(), b)).toBe(true);
   });
   it('orders the tiers as the table draws them', () => {
-    expect(TIER_ORDER).toEqual(['STARTER', 'PROFESSIONAL', 'ENTERPRISE']);
+    expect(TIER_ORDER).toEqual(['LITE', 'STARTER', 'PROFESSIONAL', 'ENTERPRISE']);
   });
 });
 
 describe('countTexts / applyCounts', () => {
   it('lists four platform counts and three per tier', () => {
-    expect(COUNT_FIELDS).toHaveLength(13);
+    expect(COUNT_FIELDS).toHaveLength(16); // 4 + 3 × LITE, STARTER, PROFESSIONAL, ENTERPRISE
   });
   it('starts every unset count blank and a set one as its number', () => {
     const s = emptySettings();

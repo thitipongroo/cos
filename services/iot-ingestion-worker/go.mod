@@ -1,6 +1,6 @@
 module github.com/construction-os/iot-ingestion-worker
 
-go 1.26.6
+go 1.26.10
 
 require (
 	github.com/eclipse/paho.mqtt.golang v1.5.1
@@ -10,7 +10,7 @@ require (
 
 require (
 	github.com/gorilla/websocket v1.5.3 // indirect
-	github.com/klauspost/compress v1.18.6 // indirect
+	github.com/klauspost/compress v1.20.2 // indirect
 	github.com/pierrec/lz4/v4 v4.1.26 // indirect
 	github.com/twmb/franz-go/pkg/kmsg v1.13.1 // indirect
 	golang.org/x/crypto v0.51.0 // indirect

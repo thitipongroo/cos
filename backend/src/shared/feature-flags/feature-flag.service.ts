@@ -77,6 +77,25 @@ export const DEFAULT_FLAGS: Readonly<Record<string, boolean>> = {
   // Because it is publicly writable, OFF is also the kill switch for abuse: a spam wave is stopped in
   // under 60 seconds without a deploy (QM-15), and nothing a person is entitled to is lost meanwhile.
   's1.identity.privacy-inquiry': false,
+  // Free-trial lifecycle (ADR-109, §7.10): TrialReadOnlyInterceptor and the daily trial job. New feature, so OFF
+  // until rollout — OFF is exactly today's behaviour (no tenant is read-only, no status moves); trials can still be
+  // opened and converted. It is also the kill switch if read-only ever refuses a request it should not.
+  's1.tenant.trial-lifecycle': false,
+  // Active-project limit per plan at project creation (§26.1, COS-PLAN-001). New feature, OFF until rollout:
+  // OFF is today's behaviour (no limit). Separate from the trial flag because it applies to every paying
+  // tenant, not only trials, and may need to be switched off on its own.
+  's1.project.plan-project-limit': false,
+  // First TENANT_ADMIN bootstrap by a SYSTEM_ADMIN (ADR-110, §6.7). New feature and an authorization change, so OFF
+  // until rollout: OFF is today's behaviour — both endpoints answer 503 COS-FLAG-001 and the panel hides the action.
+  's1.tenant.bootstrap-admin': false,
+  // Last-administrator guard (ADR-110 round 2): UserService refuses to deactivate or demote a tenant's last active
+  // TENANT_ADMIN (409 COS-TADM-004). A change to authorization behaviour, so OFF until rollout; OFF is today's
+  // behaviour, and the kill switch if the guard ever blocks a legitimate change.
+  's1.tenant.last-admin-guard': false,
+  // An ADDITIONAL TENANT_ADMIN / FINANCE role needs a token that proved MFA, like the primary role (ADR-110 round 4;
+  // RolesGuard). An authorization change, so OFF until rollout; OFF is today's behaviour. Run
+  // scripts/readiness/check-path-b-roles.sh first: the accounts it lists lose that role's access when this is on.
+  's1.identity.additional-role-mfa': false,
 };
 
 export interface FlagContext {

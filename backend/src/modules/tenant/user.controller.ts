@@ -59,7 +59,11 @@ export class UserController {
       'Emits identity.user.created.v1.',
   })
   @ApiResponse({ status: 201, description: 'User created' })
-  @ApiResponse({ status: 400, description: 'phone_number or email required (not both)' })
+  @ApiResponse({
+    status: 400,
+    description:
+      'phone_number or email required (not both); COS-AUTH-002 — TENANT_ADMIN or FINANCE with a phone number (Path B only, §5.4.4)',
+  })
   @ApiResponse({ status: 409, description: 'User with this identity already exists' })
   async create(@Body() dto: CreateUserDto, @Req() req: TenantRequest) {
     return this.userService.createUser(dto, req.tenantId!, req.userId ?? 'system');
@@ -100,6 +104,11 @@ export class UserController {
   })
   @ApiResponse({ status: 204, description: 'Roles updated' })
   @ApiResponse({ status: 404, description: 'User not found in tenant' })
+  @ApiResponse({
+    status: 400,
+    description:
+      'COS-AUTH-002 — TENANT_ADMIN or FINANCE granted to an account with no email (Path B only, §5.4.4)',
+  })
   async setRoles(
     @Param('userId', ParseUUIDPipe) userId: string,
     @Body() dto: SetRolesDto,

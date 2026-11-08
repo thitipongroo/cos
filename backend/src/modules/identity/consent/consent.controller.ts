@@ -26,6 +26,7 @@ import { ConsentService } from './consent.service';
 import { NetworkOriginService } from '../network-origin/network-origin.service';
 import { RecordConsentDto } from '../dto/record-consent.dto';
 import type { TenantRequest } from '../../../shared/context/tenant-request';
+import { AllowWhileReadOnly } from '../../../shared/interceptors/trial-read-only.interceptor';
 
 @ApiTags('users')
 @ApiBearerAuth()
@@ -79,6 +80,8 @@ export class ConsentController {
 
   // POST /api/v1/users/me/consents
   @Post('me/consents')
+  // PDPA §19: withdrawing consent is never blocked, including on an ended trial (§7.10).
+  @AllowWhileReadOnly()
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({
     summary: 'Record a consent decision (grant or withdraw)',

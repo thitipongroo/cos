@@ -97,9 +97,11 @@ while IFS= read -r f; do
   fi
 done <<<"$STAGED"
 
-# ── pnpm-workspace.yaml: only the overrides block moves resolution ───────────────────────────────
-# Line-based extraction, no YAML parser: take from `overrides:` to the next top-level key. Enough to
-# tell an overrides edit from a comment or an auditConfig edit, which is all this needs to decide.
+# ── pnpm-workspace.yaml: the overrides block ─────────────────────────────────────────────────────
+# Line-based extraction, no YAML parser: take from `overrides:` to the next top-level key. Comment
+# lines up to that next key, top-level ones included, are read as part of the block. It is not the
+# only key that can move resolution — `packages:` (importers) and `minimumReleaseAgeExclude`, for
+# example, also can — and those are not checked here.
 if is_staged 'pnpm-workspace.yaml'; then
   extract_overrides() { awk '/^overrides:/{f=1;next} f&&/^[^[:space:]#]/{exit} f' ; }
   B="$(git show HEAD:pnpm-workspace.yaml 2>/dev/null | extract_overrides)"

@@ -34,11 +34,15 @@ export class FeatureFlagGuard implements CanActivate {
     if (this.flags.isEnabled(flag, { userId: req.userId, tenantId: req.tenantId })) {
       return true;
     }
-    // 503 per QM-10 (service temporarily unavailable — feature disabled via kill switch)
+    // 503 per QM-10 (service temporarily unavailable — feature disabled via kill switch). In the `{ error }` envelope
+    // so GlobalExceptionFilter passes the code through; a bare body reached clients as COS-GENERAL-503 until 2026-11-03.
     throw new ServiceUnavailableException({
-      code: 'COS-FLAG-001',
-      message: `Feature '${flag}' is temporarily disabled`,
-      messageKey: 'common.featureFlag.disabled',
+      error: {
+        code: 'COS-FLAG-001',
+        message: `Feature '${flag}' is temporarily disabled`,
+        messageKey: 'common.featureFlag.disabled',
+        details: { flag },
+      },
     });
   }
 }

@@ -29,7 +29,8 @@ Cloud OCR (AWS Textract / Google Document AI): EP-AI-003 stub — activate after
 - File Service (fetch signed URL for input file)
 - ai-embedding-worker (POST extracted text for embedding)
 - Kafka (consumer: `file.uploaded` where mime_type = PDF or image)
-- tesseract-ocr (system package — installed in Dockerfile)
+- tesseract-ocr with Thai and English data (`tesseract-ocr-tha`; system packages installed in the Dockerfile).
+  The pipeline reads `lang="tha+eng"` and joins Thai tokens without the spaces tesseract puts between them.
 
 ## Extension points
 

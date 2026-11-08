@@ -153,6 +153,7 @@ export class TierLimitsDto {
 }
 
 export class TiersDto {
+  @Section(() => TierLimitsDto) LITE!: TierLimitsDto;
   @Section(() => TierLimitsDto) STARTER!: TierLimitsDto;
   @Section(() => TierLimitsDto) PROFESSIONAL!: TierLimitsDto;
   @Section(() => TierLimitsDto) ENTERPRISE!: TierLimitsDto;

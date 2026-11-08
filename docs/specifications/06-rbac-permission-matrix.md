@@ -184,6 +184,10 @@ Security controls (RBAC/ABAC) are defined in 05-security-compliance section 5.2.
 
 ---
 
+> **A tenant keeps an administrator (ADR-110, product owner 2026-11-03).** With `s1.tenant.last-admin-guard` on, a
+> change to a user's role or roles, or a deactivation, that would leave the tenant with no active `TENANT_ADMIN`
+> (primary or additional role) is refused with `409 COS-TADM-004`. Make someone else an administrator first.
+
 ## 6.4.1 How many roles a user holds
 
 A user has **one primary role per tenant** (`platform.tenant_memberships.role`) and **any number of
@@ -252,6 +256,7 @@ System Admin platform capabilities :
 | Capability               | Description                                                                                     |
 | ------------------------ | ----------------------------------------------------------------------------------------------- |
 | Tenant management        | Create, suspend, delete, and configure tenants via the platform admin API                       |
+| Tenant bootstrap         | Create the first TENANT_ADMIN of a tenant that has none, and resend or cancel its unused invitation — nothing else inside a tenant (ADR-110; §7.6 step 10) |
 | Cross-tenant read        | Read-only access to any tenant's data for support, debugging, and compliance                    |
 | Platform configuration   | Update platform-wide settings: feature flags, rate limits, SLA parameters                       |
 | Keycloak administration  | Manage realms, clients, and IdP federation configurations                                       |

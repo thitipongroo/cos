@@ -9,6 +9,7 @@ import { navForRole } from '../../lib/nav';
 import { LanguageSwitcher } from './LanguageSwitcher';
 import { NotificationBell } from './NotificationBell';
 import { OfflineIndicator } from './OfflineIndicator';
+import { TrialBanner } from './TrialBanner';
 
 /**
  * Authenticated app shell (§20.6.2): role-filtered left navigation + top bar
@@ -69,6 +70,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             {t('common.signOut')}
           </Link>
         </header>
+        {/* §7.10: a running trial's countdown, or why saving is refused once it has ended. */}
+        <TrialBanner />
         <main className="min-w-0 flex-1 p-6">{children}</main>
       </div>
     </div>

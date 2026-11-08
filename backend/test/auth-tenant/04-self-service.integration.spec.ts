@@ -95,7 +95,7 @@ describe('§14 self-service · users/me (any authenticated role)', () => {
         sendPasswordResetEmail,
         provisionPhoneUser: jest.fn(),
         createEmailUser: jest.fn(),
-        syncUserRole: jest.fn().mockResolvedValue(undefined),
+        syncRoleAttributes: jest.fn().mockResolvedValue(undefined),
         disableUser: jest.fn().mockResolvedValue(undefined),
         setTemporaryPassword: jest.fn().mockResolvedValue(undefined),
         deleteUser: jest.fn().mockResolvedValue(undefined),

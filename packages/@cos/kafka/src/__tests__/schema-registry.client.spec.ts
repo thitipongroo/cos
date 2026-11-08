@@ -79,6 +79,25 @@ describe('ensureCompatibilityMode', () => {
       'Schema Registry compatibility set failed: 500',
     );
   });
+
+  it('retries on network error and succeeds on subsequent attempt', async () => {
+    fetchMock
+      .mockRejectedValueOnce(new Error('SocketError: other side closed'))
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+      } as Response);
+    const { ensureCompatibilityMode } = freshClient();
+    await expect(ensureCompatibilityMode()).resolves.toBeUndefined();
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it('exhausts retries and throws when network error persists', async () => {
+    fetchMock.mockRejectedValue(new Error('Persistent network error'));
+    const { ensureCompatibilityMode } = freshClient();
+    await expect(ensureCompatibilityMode()).rejects.toThrow('Persistent network error');
+    expect(fetchMock).toHaveBeenCalledTimes(5);
+  });
 });
 
 describe('Schema Registry client', () => {

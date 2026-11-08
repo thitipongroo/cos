@@ -68,6 +68,24 @@ function actionLook(action: string): { ink: string; dot: string; icon: AdminIcon
     return { ink: 'text-cos-op-secondary', dot: 'bg-cos-op-secondary', icon: 'database' };
   if (action === 'tenant.mark_contracted')
     return { ink: 'text-cos-op-primary', dot: 'bg-cos-op-primary', icon: 'workspace_premium' };
+  // §7.10 free trial (not drawn): opened, converted to paid, purged after the read-only month.
+  if (action === 'tenant.create_trial')
+    return { ink: 'text-cos-op-secondary', dot: 'bg-cos-op-secondary', icon: 'timer' };
+  if (action === 'tenant.convert')
+    return { ink: 'text-cos-op-success', dot: 'bg-cos-op-success', icon: 'payments' };
+  // ADR-110: a tenant's first administrator created, or its invitation resent.
+  if (
+    action === 'tenant.bootstrap_admin' ||
+    action === 'tenant.resend_admin_invite' ||
+    action === 'tenant.cancel_admin_invite'
+  )
+    return {
+      ink: 'text-cos-op-secondary',
+      dot: 'bg-cos-op-secondary',
+      icon: 'admin_panel_settings',
+    };
+  if (action === 'tenant.trial_purge')
+    return { ink: 'text-cos-op-error', dot: 'bg-cos-op-high-privilege', icon: 'archive' };
   const tone = auditTone(action);
   if (tone === 'gate')
     return { ink: 'text-cos-op-warning', dot: 'bg-cos-op-warning', icon: 'published_with_changes' };

@@ -29,7 +29,10 @@ const RFQ = {
   rfq_number: 'RFQ-089',
   project_id: 'p-1',
   status: 'PUBLISHED',
-  deadline: '2026-09-20T10:00:00.000Z',
+  // Relative to the clock, not a date: the fixed '2026-09-20' this held turned into a PAST deadline on
+  // 2026-09-21 — and a past deadline counts as urgent, so "no urgent chip" failed from then on (2026-11-01).
+  // Thirty days out is never urgent (deadlineCountdown's urgent window is days, not weeks).
+  deadline: new Date(Date.now() + 30 * 24 * 3600_000).toISOString(),
 };
 
 const COMMITTED = { ...PO, po_id: 'po-2', po_number: 'PO-8822', status: 'ACKNOWLEDGED' };
@@ -197,7 +200,7 @@ describe('ProcManagerHome', () => {
   });
 
   it('draws no urgent chip when nothing is urgent, rather than a zero', async () => {
-    // The default fixture's RFQ is due in 2026-09-20. The drawing never shows "0 Urgent".
+    // The default fixture's RFQ is due 30 days from now. The drawing never shows "0 Urgent".
     const { getByTestId, queryByTestId } = await renderScreen();
 
     await waitFor(() => expect(getByTestId('kpi-open-rfqs')).toBeTruthy());

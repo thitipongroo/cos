@@ -62,7 +62,7 @@ export const riskCategory = z.enum(RISK_CATEGORY, { error: 'validation.invalidOp
 export const riskStatus = z.enum(RISK_STATUS, { error: 'validation.invalidOption' });
 
 /** Tenant plan — apps/web/src/lib/api/types.ts `PlanType`. */
-export const PLAN_TYPE = ['STARTER', 'PROFESSIONAL', 'ENTERPRISE'] as const;
+export const PLAN_TYPE = ['LITE', 'STARTER', 'PROFESSIONAL', 'ENTERPRISE'] as const;
 
 /**
  * Tenant roles — `CosRole` in @cos/types (spec §6.2 + §6.8 sub-roles).

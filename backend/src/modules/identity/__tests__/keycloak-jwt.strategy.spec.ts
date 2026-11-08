@@ -92,6 +92,24 @@ describe('KeycloakJwtStrategy', () => {
       expect(result.dedicatedDbUrl).toBeUndefined();
     });
 
+    it('carries the tenant subscription status from the same query (§7.10, ADR-109)', async () => {
+      stubTenantQuery([
+        {
+          tenant_code: 'acme',
+          dedicated_db_url: null,
+          role: 'PROJECT_MANAGER',
+          subscription_status: 'EXPIRED',
+        } as never,
+      ]);
+      const result = await strategy.validate(validPayload);
+      expect(result.subscriptionStatus).toBe('EXPIRED');
+      const sql = (
+        (strategy as unknown as { platformPrisma: { $queryRaw: jest.Mock } }).platformPrisma
+          .$queryRaw.mock.calls[0]![0] as TemplateStringsArray
+      ).join('?');
+      expect(sql).toContain('t.subscription_status');
+    });
+
     it('passes through a dedicated DB URL when present', async () => {
       stubTenantQuery([
         {

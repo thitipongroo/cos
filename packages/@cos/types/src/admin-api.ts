@@ -159,8 +159,8 @@ export interface ImportResult {
 // ── platform settings (ADR-108; backend/src/modules/platform-settings) ───────────────────────────
 // STORED ONLY: nothing reads these values to change behaviour. Every field is nullable and null means "not set".
 
-/** The plan tiers of `platform."PlanType"` — the tier table has one row per tier. */
-export const PLAN_TIERS = ['STARTER', 'PROFESSIONAL', 'ENTERPRISE'] as const;
+/** The plan tiers of `platform."PlanType"` — the tier table has one row per tier. LITE since ADR-109. */
+export const PLAN_TIERS = ['LITE', 'STARTER', 'PROFESSIONAL', 'ENTERPRISE'] as const;
 export type PlanTier = (typeof PLAN_TIERS)[number];
 
 /** Where an advance maintenance broadcast is delivered. */
@@ -185,7 +185,7 @@ export interface PlatformSettings {
   };
   maintenance: {
     safety_non_suspension: boolean | null;
-    /** STARTER + PROFESSIONAL window, free text. */
+    /** Shared-tier (LITE, STARTER, PROFESSIONAL) window, free text. */
     shared_tiers_window: string | null;
     /** e.g. "ZERO_DOWNTIME". */
     enterprise_mode: string | null;

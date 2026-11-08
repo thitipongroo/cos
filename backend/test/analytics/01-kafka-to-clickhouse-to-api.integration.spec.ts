@@ -56,6 +56,10 @@ const makeCache = (): { get: jest.Mock; set: jest.Mock; del: jest.Mock } => {
 };
 
 describe('Phase 14 · Kafka → ClickHouse → API (master:4330)', () => {
+  // Heavy multi-container startup (Kafka + Schema Registry + ClickHouse + Redis) + Go compilation
+  // and 61 topic provisions in beforeAll can exceed the default 120s timeout under runner load.
+  jest.setTimeout(240_000);
+
   let containers: TestContainers;
   let ch: ClickHouseClient;
   let redis: Redis;
