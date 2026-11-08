@@ -3649,5 +3649,22 @@
       "contact": "Contact our team",
       "mailSubject": "Choose a plan after the free trial"
     }
+  },
+  "checkout": {
+    "headerTitle": "Checkout & Settlement",
+    "secureSession": "Secure SSL Encrypted Session",
+    "title": "Review & Settlement",
+    "transactionId": "Transaction ID",
+    "validFor": "Valid for",
+    "minutes": "minutes",
+    "settlementAmount": "Settlement Amount",
+    "primaryChannel": "Primary Channel",
+    "promptPay": "PromptPay / Thai QR",
+    "promptPayDesc": "Direct Settlement via Bank of Thailand Network",
+    "waitingPayment": "Waiting for payment...",
+    "scanInstructions": "Scan the QR code using your Corporate Banking App to authorize settlement.",
+    "confirmSimulatedPayment": "Simulate Bank Scan & Pay",
+    "paymentReceived": "Payment Received! Redirecting...",
+    "cancel": "Cancel & Return to Dashboard"
   }
 }
