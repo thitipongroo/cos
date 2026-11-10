@@ -13,6 +13,16 @@ import { formatMoney } from '../../../../lib/format';
  * the whole wizard rather than one small reader (as `login/page.tsx` does). The fallback holds no
  * text, so it has nothing to translate.
  */
+/**
+ * Fills every `{name}` in a translated template in one pass. A chain of `.replace('{x}', value)`
+ * would read `$&`, `$'` and `` $` `` in a value as replacement patterns and could fill a
+ * placeholder that an earlier value brought in — and the values here are typed by the user or come
+ * from the URL (`?property=`, `?unit=`). An unknown name is left as written.
+ */
+function fill(template: string, values: Record<string, string>): string {
+  return template.replace(/\{(\w+)\}/g, (match, name: string) => values[name] ?? match);
+}
+
 export default function LeaseWizardPage() {
   return (
     <Suspense fallback={<div className="flex flex-col h-full bg-[#020617]" />}>
@@ -71,7 +81,7 @@ function LeaseWizard() {
       setTimeout(() => {
         setIsSubmitting(false);
         setSuccessMessage(
-          `Lease Agreement LA-2026-${unitParam} successfully executed with ${formData.tenantLegalName}!`,
+          fill(t('leasing.wizard.success'), { unit: unitParam, tenant: formData.tenantLegalName }),
         );
         setTimeout(() => {
           router.push('/leasing');
@@ -104,13 +114,10 @@ function LeaseWizard() {
               {t('leasing.leaseAgreementWizard')}
             </h1>
             <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-950/70 text-blue-400 border border-blue-800/40 font-mono">
-              Step {step} of 5
+              {fill(t('leasing.wizard.stepOf'), { step: String(step) })}
             </span>
           </div>
-          <p className="text-xs text-slate-400 mt-1">
-            Configure unit parameters, tenant KYC verification, financial terms, and digital
-            e-signature
-          </p>
+          <p className="text-xs text-slate-400 mt-1">{t('leasing.wizard.subtitle')}</p>
         </div>
       </div>
 
@@ -163,7 +170,7 @@ function LeaseWizard() {
             <div className="space-y-4">
               <h2 className="text-base font-bold text-white flex items-center gap-2">
                 <span className="material-symbols-outlined text-blue-400">apartment</span>
-                Step 1: Property Asset & Unit Allocation
+                {t('leasing.wizard.step1Title')}
               </h2>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
@@ -172,7 +179,7 @@ function LeaseWizard() {
                     htmlFor="target-property"
                     className="block text-xs font-semibold text-slate-300 mb-1"
                   >
-                    Target Property
+                    {t('leasing.wizard.targetProperty')}
                   </label>
                   <input
                     id="target-property"
@@ -188,7 +195,7 @@ function LeaseWizard() {
                     htmlFor="unit-designation"
                     className="block text-xs font-semibold text-slate-300 mb-1"
                   >
-                    Unit Designation
+                    {t('leasing.wizard.unitDesignation')}
                   </label>
                   <input
                     id="unit-designation"
@@ -204,7 +211,7 @@ function LeaseWizard() {
                     htmlFor="usable-area"
                     className="block text-xs font-semibold text-slate-300 mb-1"
                   >
-                    Usable Floor Area (SQFT)
+                    {t('leasing.wizard.usableArea')}
                   </label>
                   <input
                     id="usable-area"
@@ -220,15 +227,15 @@ function LeaseWizard() {
                     htmlFor="space-class"
                     className="block text-xs font-semibold text-slate-300 mb-1"
                   >
-                    Space Classification
+                    {t('leasing.wizard.spaceClass')}
                   </label>
                   <select
                     id="space-class"
                     className="w-full px-3 py-2 rounded-lg bg-slate-900 border border-white/10 text-xs text-white focus:outline-none focus:ring-1 focus:ring-blue-500"
                   >
-                    <option>Grade A Prime Commercial</option>
-                    <option>Logistics Bay / Storage</option>
-                    <option>Retail Ground Concourse</option>
+                    <option>{t('leasing.wizard.spaceGradeA')}</option>
+                    <option>{t('leasing.wizard.spaceLogistics')}</option>
+                    <option>{t('leasing.wizard.spaceRetail')}</option>
                   </select>
                 </div>
               </div>
@@ -240,7 +247,7 @@ function LeaseWizard() {
             <div className="space-y-4">
               <h2 className="text-base font-bold text-white flex items-center gap-2">
                 <span className="material-symbols-outlined text-blue-400">badge</span>
-                Step 2: Tenant Profile & Corporate KYC
+                {t('leasing.wizard.step2Title')}
               </h2>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
@@ -249,7 +256,7 @@ function LeaseWizard() {
                     htmlFor="tenant-legal-name"
                     className="block text-xs font-semibold text-slate-300 mb-1"
                   >
-                    Registered Legal Entity
+                    {t('leasing.wizard.legalEntity')}
                   </label>
                   <input
                     id="tenant-legal-name"
@@ -265,7 +272,7 @@ function LeaseWizard() {
                     htmlFor="tax-id"
                     className="block text-xs font-semibold text-slate-300 mb-1"
                   >
-                    Tax / Company ID
+                    {t('leasing.wizard.taxId')}
                   </label>
                   <input
                     id="tax-id"
@@ -281,7 +288,7 @@ function LeaseWizard() {
                     htmlFor="signatory-name"
                     className="block text-xs font-semibold text-slate-300 mb-1"
                   >
-                    Authorized Signatory Name
+                    {t('leasing.wizard.signatoryName')}
                   </label>
                   <input
                     id="signatory-name"
@@ -297,7 +304,7 @@ function LeaseWizard() {
                     htmlFor="signatory-email"
                     className="block text-xs font-semibold text-slate-300 mb-1"
                   >
-                    Signatory Email (for Digital Signature)
+                    {t('leasing.wizard.signatoryEmail')}
                   </label>
                   <input
                     id="signatory-email"
@@ -316,7 +323,7 @@ function LeaseWizard() {
             <div className="space-y-4">
               <h2 className="text-base font-bold text-white flex items-center gap-2">
                 <span className="material-symbols-outlined text-blue-400">payments</span>
-                Step 3: Commercial Terms & Rent Schedule
+                {t('leasing.wizard.step3Title')}
               </h2>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
@@ -325,7 +332,7 @@ function LeaseWizard() {
                     htmlFor="lease-duration"
                     className="block text-xs font-semibold text-slate-300 mb-1"
                   >
-                    Lease Duration (Years)
+                    {t('leasing.wizard.leaseDuration')}
                   </label>
                   <select
                     id="lease-duration"
@@ -333,10 +340,10 @@ function LeaseWizard() {
                     onChange={(e) => setFormData({ ...formData, leaseTermYears: e.target.value })}
                     className="w-full px-3 py-2 rounded-lg bg-slate-900 border border-white/10 text-xs text-white focus:outline-none focus:ring-1 focus:ring-blue-500"
                   >
-                    <option value="1">1 Year Fixed</option>
-                    <option value="2">2 Years</option>
-                    <option value="3">3 Years (Standard Corporate)</option>
-                    <option value="5">5 Years (Long-Term Strategic)</option>
+                    <option value="1">{t('leasing.wizard.term1')}</option>
+                    <option value="2">{t('leasing.wizard.term2')}</option>
+                    <option value="3">{t('leasing.wizard.term3')}</option>
+                    <option value="5">{t('leasing.wizard.term5')}</option>
                   </select>
                 </div>
 
@@ -345,7 +352,7 @@ function LeaseWizard() {
                     htmlFor="commencement-date"
                     className="block text-xs font-semibold text-slate-300 mb-1"
                   >
-                    Commencement Date
+                    {t('leasing.wizard.commencementDate')}
                   </label>
                   <input
                     id="commencement-date"
@@ -361,7 +368,7 @@ function LeaseWizard() {
                     htmlFor="monthly-rent"
                     className="block text-xs font-semibold text-slate-300 mb-1"
                   >
-                    Monthly Base Rent (฿)
+                    {t('leasing.wizard.monthlyBaseRent')}
                   </label>
                   <input
                     id="monthly-rent"
@@ -377,7 +384,7 @@ function LeaseWizard() {
                     htmlFor="escalation-percent"
                     className="block text-xs font-semibold text-slate-300 mb-1"
                   >
-                    Annual Escalation Rate (%)
+                    {t('leasing.wizard.escalationRate')}
                   </label>
                   <input
                     id="escalation-percent"
@@ -398,19 +405,22 @@ function LeaseWizard() {
             <div className="space-y-4">
               <h2 className="text-base font-bold text-white flex items-center gap-2">
                 <span className="material-symbols-outlined text-blue-400">account_balance</span>
-                Step 4: Security Deposit & Settlement Channel
+                {t('leasing.wizard.step4Title')}
               </h2>
 
               <div className="p-4 rounded-xl bg-blue-950/30 border border-blue-800/40 space-y-2">
                 <div className="flex justify-between items-center text-xs">
-                  <span className="text-slate-300">Base Monthly Rent:</span>
+                  <span className="text-slate-300">{t('leasing.wizard.baseMonthlyRent')}</span>
                   <span className="font-mono font-bold text-white">
                     {formatMoney(locale, formData.monthlyRent, 'THB')}
                   </span>
                 </div>
                 <div className="flex justify-between items-center text-xs">
                   <span className="text-slate-300">
-                    Common Area Service (฿{formData.serviceCharge} × {formData.unitAreaSqft} sqft):
+                    {fill(t('leasing.wizard.commonAreaService'), {
+                      rate: formData.serviceCharge,
+                      area: formData.unitAreaSqft,
+                    })}
                   </span>
                   <span className="font-mono font-bold text-white">
                     {formatMoney(
@@ -423,7 +433,7 @@ function LeaseWizard() {
                   </span>
                 </div>
                 <div className="border-t border-white/10 pt-2 flex justify-between items-center text-sm">
-                  <span className="font-bold text-white">Total Security Deposit (3 Months):</span>
+                  <span className="font-bold text-white">{t('leasing.wizard.totalDeposit')}</span>
                   <span className="font-mono font-bold text-cyan-400">
                     {formatMoney(locale, securityDepositAmount.toString(), 'THB')}
                   </span>
@@ -432,7 +442,7 @@ function LeaseWizard() {
 
               <div className="pt-2">
                 <span className="block text-xs font-semibold text-slate-300 mb-2">
-                  Settlement Collection Channel
+                  {t('leasing.wizard.settlementChannel')}
                 </span>
                 <div className="grid grid-cols-2 gap-3">
                   <button
@@ -446,8 +456,8 @@ function LeaseWizard() {
                   >
                     <span className="material-symbols-outlined text-blue-400">qr_code_2</span>
                     <div>
-                      <p className="font-bold text-xs">PromptPay Corporate QR</p>
-                      <p className="text-[10px]">Instant Bank Settlement</p>
+                      <p className="font-bold text-xs">{t('leasing.wizard.promptpayTitle')}</p>
+                      <p className="text-[10px]">{t('leasing.wizard.promptpayDesc')}</p>
                     </div>
                   </button>
 
@@ -462,8 +472,8 @@ function LeaseWizard() {
                   >
                     <span className="material-symbols-outlined text-emerald-400">sync_alt</span>
                     <div>
-                      <p className="font-bold text-xs">Automated Direct Debit</p>
-                      <p className="text-[10px]">Monthly Recurring Deduction</p>
+                      <p className="font-bold text-xs">{t('leasing.wizard.directDebitTitle')}</p>
+                      <p className="text-[10px]">{t('leasing.wizard.directDebitDesc')}</p>
                     </div>
                   </button>
                 </div>
@@ -476,36 +486,47 @@ function LeaseWizard() {
             <div className="space-y-4">
               <h2 className="text-base font-bold text-white flex items-center gap-2">
                 <span className="material-symbols-outlined text-blue-400">draw</span>
-                Step 5: Review & Digital E-Signature Dispatch
+                {t('leasing.wizard.step5Title')}
               </h2>
 
               <div className="p-4 rounded-xl bg-slate-900/90 border border-white/5 space-y-3 text-xs">
                 <div className="flex justify-between border-b border-white/5 pb-2">
-                  <span className="text-slate-400">Property & Unit:</span>
+                  <span className="text-slate-400">{t('leasing.wizard.propertyUnit')}</span>
                   <span className="font-bold text-white">
-                    {formData.property} • Unit {formData.unit} ({formData.unitAreaSqft} SQFT)
+                    {fill(t('leasing.wizard.propertyUnitValue'), {
+                      property: formData.property,
+                      unit: formData.unit,
+                      area: formData.unitAreaSqft,
+                    })}
                   </span>
                 </div>
                 <div className="flex justify-between border-b border-white/5 pb-2">
-                  <span className="text-slate-400">Tenant Legal Name:</span>
+                  <span className="text-slate-400">{t('leasing.wizard.tenantLegalName')}</span>
                   <span className="font-bold text-white">{formData.tenantLegalName}</span>
                 </div>
                 <div className="flex justify-between border-b border-white/5 pb-2">
-                  <span className="text-slate-400">Signatory:</span>
+                  <span className="text-slate-400">{t('leasing.wizard.signatory')}</span>
                   <span className="font-bold text-white">
                     {formData.signatoryName} ({formData.signatoryEmail})
                   </span>
                 </div>
                 <div className="flex justify-between border-b border-white/5 pb-2">
-                  <span className="text-slate-400">Lease Term:</span>
+                  <span className="text-slate-400">{t('leasing.wizard.leaseTerm')}</span>
                   <span className="font-bold text-white">
-                    {formData.leaseTermYears} Years (Commencing {formData.commencementDate})
+                    {fill(t('leasing.wizard.leaseTermValue'), {
+                      years: formData.leaseTermYears,
+                      date: formData.commencementDate,
+                    })}
                   </span>
                 </div>
                 <div className="flex justify-between pt-1">
-                  <span className="font-bold text-white">Monthly Commitment:</span>
+                  <span className="font-bold text-white">
+                    {t('leasing.wizard.monthlyCommitment')}
+                  </span>
                   <span className="font-mono font-bold text-cyan-400">
-                    {formatMoney(locale, totalMonthlyCommitment.toString(), 'THB')} / Month
+                    {fill(t('leasing.wizard.perMonth'), {
+                      amount: formatMoney(locale, totalMonthlyCommitment.toString(), 'THB'),
+                    })}
                   </span>
                 </div>
               </div>
@@ -514,10 +535,7 @@ function LeaseWizard() {
                 <span className="material-symbols-outlined text-emerald-400 text-sm">
                   verified_user
                 </span>
-                <p className="text-[11px] text-emerald-200">
-                  Electronic signature compliant with Thailand Electronic Transactions Act B.E. 2544
-                  (2001).
-                </p>
+                <p className="text-[11px] text-emerald-200">{t('leasing.wizard.legalNotice')}</p>
               </div>
             </div>
           )}
@@ -542,7 +560,7 @@ function LeaseWizard() {
               {step === 5 ? (
                 <>
                   <span className="material-symbols-outlined text-[16px]">draw</span>
-                  {isSubmitting ? 'Executing Agreement...' : t('leasing.executeAgreement')}
+                  {isSubmitting ? t('leasing.wizard.executing') : t('leasing.executeAgreement')}
                 </>
               ) : (
                 <>

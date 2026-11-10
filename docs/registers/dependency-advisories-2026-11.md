@@ -1573,9 +1573,10 @@ gate's isolated run) checks the hash was not tested either; it ran 12.18.0 with 
 
 ## Open
 
-- **`/leasing/wizard` is in English only.** Its headings, labels, "Step n of 5", button states and success message are
-  hard-coded English (`apps/web/src/app/(app)/leasing/wizard/page.tsx`, from `6a076c6d`); only a few strings go through
-  `t()`. All user-facing text must be in Thai and English. Found on `fix/web-leasing-wizard-suspense`, not fixed there.
+- **Five more pages from `6a076c6d` have hard-coded English.** `leasing/page.tsx`, `crm/tenders/[id]/page.tsx`,
+  `finance/factoring/page.tsx`, `safety/ai-vision/page.tsx` and `leasing/properties/[id]/page.tsx` (under
+  `apps/web/src/app/(app)/`): a rough pattern count finds 11, 8, 8, 13 and 15 lines of English outside `t()` — a count,
+  not an inventory. The TH + EN rule is not met there. Found on `fix/web-leasing-wizard-i18n`, not fixed there.
 - **`apps/mobile` does not get the pinned pnpm on a dev machine.** It is outside the root workspace and its
   `package.json` has no `packageManager`, so `cd apps/mobile && pnpm install` runs whatever pnpm is on `PATH`: 11.1.3
   on the machine used here, against 12.18.0 at the root. CI is unaffected (`pnpm/action-setup` puts 12.18.0 on `PATH`
@@ -1865,6 +1866,20 @@ gate's isolated run) checks the hash was not tested either; it ran 12.18.0 with 
   `typecheck.log`, `lint.log`, `test.log`, `docker.log`, `docker-summary.txt`); before and after were each run twice.
   Not measured: the prefilled form in a browser — the `(app)` routes need a Keycloak login, and no Keycloak or test user
   was available locally; the component body is unchanged.
+- **Closed — `/leasing/wizard` was in English only.** Fixed on `fix/web-leasing-wizard-i18n`. An inventory of the page
+  found 45 user-facing strings outside `t()` (39 by a scan of JSX text, 6 more inside expressions); they are now 45 keys
+  under `leasing.wizard` in `en.json` and `th.json`, with the English values word for word as before, so the English
+  page reads the same, and variable parts as `{name}` placeholders, filled in one pass by a small `fill()` in the page
+  rather than a chain of `.replace` calls (the repo's way elsewhere): the values are typed by the user or come from the
+  URL, and a string `.replace` reads `$&` in a value as a pattern and can fill a placeholder an earlier value brought
+  in. Three Thai strings were reworded after /doubt (`targetProperty`, `monthlyCommitment`, `step5Title`). Icon ligature
+  names and the form's demo defaults (property, unit, company, tax id, signatory, amounts, dates) are data and were
+  left. A new test, `apps/web/src/i18n/__tests__/locales.spec.ts`, fails when the two files' keys differ or a key's
+  `{placeholders}` differ between languages (both checked by making each mismatch on purpose: 1 failed each); today both
+  files hold 1,539 keys. A third check, no empty values, was dropped because `risk.colActions` is empty in both files on
+  purpose (the actions column header). After: a rescan finds no English outside `t()` but the data defaults; the web
+  build exit 0 (72 of 72 pages), web `type-check` and `lint` exit 0, 415 tests pass. Not checked in a browser in either
+  language (Keycloak login, as for the Suspense fix).
 - **`apps/mobile` (D7).**
   - Its own lockfile has expo-router → `query-string@7.1.3` → `decode-uri-component@0.2.2`.
   - react-navigation's `getStateFromPath` calls `queryString.parse` on deep-link input.
