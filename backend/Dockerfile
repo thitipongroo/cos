@@ -6,7 +6,10 @@ FROM node:24-alpine AS base
 # but NOT the openssl CLI, so Prisma falls back to the openssl-1.1.x engine (→ "libssl.so.1.1: not
 # found" at runtime). Installing the openssl package makes Prisma detect 3.0.x and use that engine.
 RUN apk add --no-cache openssl
-RUN corepack enable && corepack prepare pnpm@11.9.0 --activate
+# pnpm comes from package.json's packageManager (version + sha512): Corepack downloads it on first use
+# and refuses a tarball whose hash differs. Do not name a version here: one source keeps CI, Docker and
+# dev machines on the same pnpm.
+RUN corepack enable
 WORKDIR /app
 # Run pnpm non-interactively (same as GitHub Actions). Without this, pnpm 11's pre-run
 # deps-status check aborts on a TTY prompt when it wants to purge the modules dir
@@ -54,7 +57,7 @@ RUN pnpm --filter @cos/backend... --workspace-concurrency=1 build
 FROM node:24-alpine AS runner
 # openssl CLI + libssl.so.3 so Prisma's runtime engine probe resolves to openssl-3.0.x (see base stage).
 RUN apk add --no-cache openssl
-RUN corepack enable && corepack prepare pnpm@11.9.0 --activate
+RUN corepack enable
 
 # Non-root user — QM-4 security hardening
 RUN addgroup --system --gid 1001 cosgroup && \

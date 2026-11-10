@@ -1,5 +1,8 @@
 FROM node:24-alpine AS builder
-RUN corepack enable && corepack prepare pnpm@11.9.0 --activate
+# pnpm comes from package.json's packageManager (version + sha512): Corepack downloads it on first use
+# and refuses a tarball whose hash differs. Do not name a version here: one source keeps CI, Docker and
+# dev machines on the same pnpm.
+RUN corepack enable
 WORKDIR /app
 # Non-interactive pnpm (same as CI) — avoids ERR_PNPM_ABORTED_REMOVE_MODULES_DIR_NO_TTY.
 ENV CI=true

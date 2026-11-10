@@ -94,8 +94,9 @@ Limitations:
 
 - A network that needs a proxy or extra CA certificates is not supported.
 - The isolated run starts pnpm with an empty `HOME`, so pnpm downloads its pinned version from the registry on each
-  local run (about 3 s, 67 MB, measured on macOS). That download is not integrity-pinned, because `packageManager`
-  carries no `+sha512`.
+  local run (about 3 s, 67 MB, measured on macOS). That download was not integrity-pinned, because `packageManager`
+  carried no `+sha512` at the time. It does now; whether this path checks the hash was not tested (see
+  [One pnpm pin, with its hash](#one-pnpm-pin-with-its-hash-chorepnpm-pin-hash)).
 - **The CI path is unmeasured.** All of the measurements here were made on macOS. There, a global pnpm 11.1.3 hands
   off to the pinned version. Whether `env -i` with only `PATH` and a temporary `HOME` works under
   `pnpm/action-setup` on ubuntu-latest will first be seen in the CI of this branch's PR.
@@ -1447,11 +1448,12 @@ case; a stub that reports 11.22.0 is refused ("pnpm 11.22.0 is running; this gat
 tree: `Audit PASSED: 0 high/critical vulnerabilities.` shellcheck clean.
 
 **The Dockerfiles that pin `pnpm@11.9.0`** (backend twice, file-service, credential-service) no longer run it, and
-`apps/web/Dockerfile`'s unversioned `corepack enable pnpm` gets the same: Corepack reads `packageManager` and
-downloads 12.18.0 ("Corepack is about to download …pnpm-12.18.0.tgz" in file-service's build log; `pnpm --version`
-prints 12.18.0 in a bare `node:24-alpine` with that `package.json`). file-service builds and its frozen install
-passes. The pin is now dead text; `packageManager` carries no `+sha512`, so no hash is pinned (see [Open](#open)). CI
-uses `pnpm/action-setup`, which also follows `packageManager`.
+`apps/web/Dockerfile`'s unversioned `corepack enable pnpm` gets the same: Corepack reads `packageManager` and downloads
+12.18.0 ("Corepack is about to download …pnpm-12.18.0.tgz" in file-service's build log; `pnpm --version` prints 12.18.0
+in a bare `node:24-alpine` with that `package.json`). file-service builds and its frozen install passes. The pin is now
+dead text; `packageManager` carries no `+sha512`, so no hash was pinned (closed in [One pnpm pin, with its
+hash](#one-pnpm-pin-with-its-hash-chorepnpm-pin-hash)). CI uses `pnpm/action-setup`, which also follows
+`packageManager`.
 
 ```bash
 #!/usr/bin/env bash
@@ -1509,13 +1511,73 @@ run home-global-config-macos "mkdir -p \"\$h/Library/Preferences/pnpm\"; printf 
 run xdg-global-config "mkdir -p '$W/xdg/pnpm'; printf 'audit:\n  ignore: %s\n' '$GH' > '$W/xdg/pnpm/config.yaml'" XDG_CONFIG_HOME="$W/xdg"
 ```
 
+## One pnpm pin, with its hash (`chore/pnpm-pin-hash`)
+
+pnpm's version and hash now live in one place, `packageManager` in `package.json`, and no Dockerfile names a version
+(product-owner decision, 2026-11-10).
+
+**The hash.** `packageManager` is `pnpm@12.18.0+sha512.9d7882d5…63beb3` (the full 128 hex digits are in the file).
+The hex is npm's `dist.integrity` for `pnpm@12.18.0` (base64 sha512) written as hex, and it equals `shasum -a 512` of
+the `pnpm-12.18.0.tgz` that `npm pack pnpm@12.18.0` downloads. On the dev machine `pnpm --version` prints 12.18.0, the
+frozen install passes and leaves the lockfile unchanged, and `scripts/pnpm-audit.sh`, which takes the version from
+`packageManager` up to the `+`, prints `Audit PASSED`.
+
+**What the hash covers.** It pins the `pnpm` npm tarball, a JavaScript launcher. On Linux that launcher then downloads a
+native binary (`@pnpm/exe.linux-arm64-musl` in these builds: "Downloading the pnpm 12.18.0 binary…"), which is what
+runs. pnpm checks that binary against the integrity the configured registry publishes (`COREPACK_NPM_REGISTRY` or
+pnpm's own config) and against npm's signature, not against this hash; `COREPACK_INTEGRITY_KEYS` set to `0` or empty
+turns the signature check off. The lockfile does record the binary's integrity (`packageManagerDependencies`, e.g.
+`@pnpm/exe.linux-arm64-musl@12.18.0`), but the Corepack launcher path does not read it. Read from the tarball's
+`dist/node_modules/get-pnpm/lib/downloadExecutable.js` and `get-pnpm/lib/corepack.js`, not run.
+
+**The Dockerfiles.** `backend/Dockerfile` (base and runner stages), `services/file-service/Dockerfile` and
+`services/credential-service/Dockerfile` went from `corepack enable && corepack prepare pnpm@11.9.0 --activate` to
+`corepack enable`, with a comment where the first one sits saying where pnpm comes from. `apps/web/Dockerfile` already
+ran `corepack enable pnpm` with no version and is unchanged. The backend runner stage never runs pnpm (its command is
+`node backend/dist/main`); `corepack enable` is kept there, without a version. hadolint now reports two more DL3059
+(info: consecutive `RUN`s) in `backend/Dockerfile`, three in all, where `apk add` and `corepack enable` are separate
+steps; it is not a CI gate and was left. The two service Dockerfiles report what they reported before.
+
+**Negative control.** In a bare `node:24-alpine` with this `package.json` and its hash's first two digits changed to
+`00`, `pnpm --version` stops with `Error: Mismatch hashes. Expected 007882…, got 9d7882…` and exit 1. With the real hash
+it prints "Downloading the pnpm 12.18.0 binary…" and `12.18.0`. Seen in the terminal; no log was kept, unlike the builds
+below.
+
+**The four images**, each built with `--no-cache-filter deps,builder` so that Corepack downloads pnpm afresh and the log
+shows it (exits and times: the session's scratch `summary.txt`; sizes: `docker images` before the images were removed):
+
+| Image                | Exit | Time  | pnpm downloaded | Hash mismatch | Size    |
+| -------------------- | ---- | ----- | --------------- | ------------- | ------- |
+| `file-service`       | 0    | 342 s | 12.18.0 only    | none          | 3.78 GB |
+| `credential-service` | 0    | 370 s | 12.18.0 only    | none          | 3.36 GB |
+| `web`                | 1    | 475 s | 12.18.0 only    | none          | —       |
+| `backend`            | 0    | 959 s | 12.18.0 only    | none          | 4.46 GB |
+
+`web` fails in `next build`, after pnpm has downloaded, verified and installed: prerendering `/leasing/wizard` stops
+on "useSearchParams() should be wrapped in a suspense boundary". Neither `apps/web` nor its Dockerfile changed on this
+branch, and pnpm was 12.18.0 before it too (see [Open](#open)).
+
+Most of a cold build is not the build. In file-service's log `pnpm install` takes 152.9 s, 39.3 s of it pnpm 12's
+supply-chain policy check over 2,246 lockfile entries and the rest downloading 1,325 packages with nothing reused;
+exporting the image takes 101.1 s and the runner's `COPY --from=builder /app` 51.0 s, against 6.3 s for the build.
+The cache-busting flag above makes the install cold on purpose.
+
+**CI, not measured.** `pnpm/action-setup@v5` reads `packageManager` and passes the string, hash included, to its bundled
+pnpm as `pnpm install <target> --no-lockfile`; the upstream changes that strip the hash first are not in v5. Run the
+same way with the dev machine's global pnpm 11.1.3, that spec resolved to 12.18.0. That is evidence, not proof: the
+bundled pnpm is a different version and was not run (running downloaded code was not allowed here). The first CI run of
+this branch's PR is the measurement. Its `conformance-tests` job will fail for another reason, already failing before
+this branch (see [Open](#open)). Whether pnpm's own version switching (the audit gate's isolated run) checks the hash
+was not tested either; it ran 12.18.0 with the hash present.
+
 ## Open
 
-- **Four Dockerfiles pin `pnpm@11.9.0` that no longer runs.** `backend/Dockerfile` (twice),
-  `services/file-service/Dockerfile` and `services/credential-service/Dockerfile` run `corepack prepare pnpm@11.9.0`,
-  but Corepack reads `packageManager` and downloads 12.18.0 during the build (as for `apps/web/Dockerfile`), with no
-  hash pinned (`packageManager` has no `+sha512`). Pinning the Dockerfiles to 12.18.0, or adding the hash to
-  `packageManager`, is a separate decision.
+- **`apps/web/Dockerfile` does not build.** `next build` stops prerendering `/leasing/wizard`: "useSearchParams() should
+  be wrapped in a suspense boundary" (`apps/web/src/app/(app)/leasing/wizard/page.tsx`). Found on `chore/pnpm-pin-hash`,
+  which does not touch `apps/web`; when it started was not measured.
+- **The conformance test and two docs still say pnpm 11.** `tests/conformance/foundation/02-workspace.spec.ts:96`
+  expects `packageManager` to match `/^pnpm@11\./`, so `conformance-tests` (`ci.yml`) fails since `de660667` moved to
+  12.18.0; `README.md` and `docs/manual/getting-started.md` say "11.x". Updating them is a separate decision.
 - **Re-measure the LCP budget under Lighthouse 13 (D26).** `apps/web/.lighthouserc.json` keeps the LCP
   `maxNumericValue` at 3200, which was set from Lighthouse 12's numbers. Lighthouse 13 reports a much lower simulated
   LCP for /login (see [branch 3](#branch-3--zod-3-second-source-lhcicli-0151--0160)), so the gate has far more
@@ -1773,6 +1835,10 @@ run xdg-global-config "mkdir -p '$W/xdg/pnpm'; printf 'audit:\n  ignore: %s\n' '
   and `docs/runbooks/mfa-enforcement.md` (1), all last changed in `10be1567` (before the series). CI's Lint job would
   have failed on them when this work opened a PR into `develop`; after the fix the three files lint clean and the
   local gate passes on `/bin/bash` 3.2.
+- **Closed — four Dockerfiles pinned `pnpm@11.9.0` that no longer ran, and no hash was pinned.** Fixed on
+  `chore/pnpm-pin-hash`: `packageManager` carries `+sha512`, and the Dockerfiles run `corepack enable` with no version.
+  Corepack refuses a launcher tarball whose hash differs (the native binary it fetches is checked by pnpm against the
+  registry, not this hash). See [One pnpm pin, with its hash](#one-pnpm-pin-with-its-hash-chorepnpm-pin-hash).
 - **`apps/mobile` (D7).**
   - Its own lockfile has expo-router → `query-string@7.1.3` → `decode-uri-component@0.2.2`.
   - react-navigation's `getStateFromPath` calls `queryString.parse` on deep-link input.
