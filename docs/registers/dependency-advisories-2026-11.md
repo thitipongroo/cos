@@ -1573,9 +1573,9 @@ gate's isolated run) checks the hash was not tested either; it ran 12.18.0 with 
 
 ## Open
 
-- **`apps/web/Dockerfile` does not build.** `next build` stops prerendering `/leasing/wizard`: "useSearchParams() should
-  be wrapped in a suspense boundary" (`apps/web/src/app/(app)/leasing/wizard/page.tsx`). Found on `chore/pnpm-pin-hash`,
-  which does not touch `apps/web`; when it started was not measured.
+- **`/leasing/wizard` is in English only.** Its headings, labels, "Step n of 5", button states and success message are
+  hard-coded English (`apps/web/src/app/(app)/leasing/wizard/page.tsx`, from `6a076c6d`); only a few strings go through
+  `t()`. All user-facing text must be in Thai and English. Found on `fix/web-leasing-wizard-suspense`, not fixed there.
 - **`apps/mobile` does not get the pinned pnpm on a dev machine.** It is outside the root workspace and its
   `package.json` has no `packageManager`, so `cd apps/mobile && pnpm install` runs whatever pnpm is on `PATH`: 11.1.3
   on the machine used here, against 12.18.0 at the root. CI is unaffected (`pnpm/action-setup` puts 12.18.0 on `PATH`
@@ -1852,6 +1852,19 @@ gate's isolated run) checks the hash was not tested either; it ran 12.18.0 with 
   `pnpm-workspace.yaml` (`hoisted`, then `isolated` when changed there) and are `undefined` with `node-linker=hoisted`
   only in `.npmrc`. That is how the setting resolves; no install was run. pnpm 10 was not measured, so it is no longer
   named; the dated OQ-5 row in the Phase 1 technical design keeps its wording.
+- **Closed — `apps/web` did not build: `/leasing/wizard` called `useSearchParams()` outside `<Suspense>`.** Fixed on
+  `fix/web-leasing-wizard-suspense`. The page (from `6a076c6d`, 2026-11-08) read `?property=` and `?unit=` at its top,
+  so Next.js 16.4.4 could not prerender it and `next build` stopped ("missing-suspense-with-csr-bailout"); CI's `build`
+  job runs `next build` on every PR. The wizard body is now `LeaseWizard`, unchanged, and the page renders it inside
+  `<Suspense>` whose fallback is an empty container with no text (the `AppShell` main area gives it no height, so until
+  hydration the page shows the shell's own background). `pnpm --filter @cos/web build`: exit 1 before, exit 0 after, 72
+  of 72 pages, `/leasing/wizard` static (its prerendered HTML holds only the fallback). web `type-check`, `lint` and its
+  413 tests pass. The web image, `docker build -f apps/web/Dockerfile .`: exit 1 on `chore/pnpm-pin-hash` (475 s, that
+  branch's build summary), exit 0 now (287 s, 72 of 72 pages, image 322 MB, then removed). Exit codes, times, the size
+  and the test summary were saved with each run's output in the session's scratch logs (`before.log`, `after.log`,
+  `typecheck.log`, `lint.log`, `test.log`, `docker.log`, `docker-summary.txt`); before and after were each run twice.
+  Not measured: the prefilled form in a browser — the `(app)` routes need a Keycloak login, and no Keycloak or test user
+  was available locally; the component body is unchanged.
 - **`apps/mobile` (D7).**
   - Its own lockfile has expo-router → `query-string@7.1.3` → `decode-uri-component@0.2.2`.
   - react-navigation's `getStateFromPath` calls `queryString.parse` on deep-link input.

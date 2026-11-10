@@ -1,17 +1,32 @@
 'use client';
 
-import { useState } from 'react';
+import { Suspense, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useI18n } from '../../../../i18n';
 import { formatMoney } from '../../../../lib/format';
 
 /**
+ * `useSearchParams()` makes everything up to its nearest <Suspense> boundary client-rendered, and
+ * without a boundary `next build` cannot prerender the route ("missing-suspense-with-csr-bailout")
+ * and stops. `?property=` and `?unit=` seed the whole form's initial state, so the boundary wraps
+ * the whole wizard rather than one small reader (as `login/page.tsx` does). The fallback holds no
+ * text, so it has nothing to translate.
+ */
+export default function LeaseWizardPage() {
+  return (
+    <Suspense fallback={<div className="flex flex-col h-full bg-[#020617]" />}>
+      <LeaseWizard />
+    </Suspense>
+  );
+}
+
+/**
  * 5-Step Lease Setup & Execution Wizard.
  * Implements Stitch Screens d19b2a418dfb47a2b39048295f525734,
  * e465de965dbd4514b509231e7372f19e, and f33a5345c56943c887642f0c29e88827.
  */
-export default function LeaseWizardPage() {
+function LeaseWizard() {
   const { t, locale } = useI18n();
   const router = useRouter();
   const searchParams = useSearchParams();
