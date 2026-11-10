@@ -217,10 +217,10 @@ export default function CheckoutScreen(): React.JSX.Element {
               <Rect x="156" y="156" width="10" height="10" fill="#0B1020" />
 
               {/* PromptPay Center Badge Overlay */}
-              <Rect x="78" y="78" width="44" height="44" fill="#003B70" rx={6} />
-              <Rect x="80" y="80" width="40" height="40" fill="#00569C" rx={4} />
+              <Rect x="78" y="78" width="44" height="44" fill={p.primary} rx={radius.md} />
+              <Rect x="80" y="80" width="40" height="40" fill={p.accent} rx={radius.sm} />
               <Path d="M90 92 L100 84 L110 92 L105 106 L95 106 Z" fill="#FFFFFF" />
-              <Rect x="96" y="92" width="8" height="8" fill="#00569C" />
+              <Rect x="96" y="92" width="8" height="8" fill={p.primary} />
             </Svg>
           </View>
 
@@ -353,7 +353,7 @@ function makeStyles(p: ReturnType<typeof usePalette>, isDark: boolean) {
       backgroundColor: p.surfaceBright,
       paddingHorizontal: spacing.sm,
       paddingVertical: 4,
-      borderRadius: radius.sm,
+      borderRadius: radius.xl,
       borderWidth: 1,
       borderColor: p.border,
     },
@@ -423,7 +423,7 @@ function makeStyles(p: ReturnType<typeof usePalette>, isDark: boolean) {
       textAlign: 'center',
     },
     thaiQrFrame: {
-      backgroundColor: '#003B70',
+      backgroundColor: isDark ? p.surfaceSunk : p.surfaceSoft,
       borderRadius: radius.md,
       padding: spacing.sm,
       alignItems: 'center',
@@ -438,7 +438,7 @@ function makeStyles(p: ReturnType<typeof usePalette>, isDark: boolean) {
     thaiQrBannerText: {
       fontFamily: fontFamily.bold,
       fontSize: 12,
-      color: '#FFFFFF',
+      color: p.onPrimary,
       letterSpacing: 1.5,
     },
     qrVisualContainer: {
@@ -454,10 +454,10 @@ function makeStyles(p: ReturnType<typeof usePalette>, isDark: boolean) {
     statusPendingBadge: {
       flexDirection: 'row',
       alignItems: 'center',
-      backgroundColor: isDark ? 'rgba(6, 182, 212, 0.15)' : '#E0F2FE',
+      backgroundColor: isDark ? 'rgba(6, 182, 212, 0.15)' : 'rgba(6, 182, 212, 0.12)',
       paddingHorizontal: spacing.md,
       paddingVertical: 6,
-      borderRadius: 999,
+      borderRadius: radius.xl,
       borderWidth: 1,
       borderColor: p.accent,
     },
@@ -469,10 +469,10 @@ function makeStyles(p: ReturnType<typeof usePalette>, isDark: boolean) {
     statusSuccessBadge: {
       flexDirection: 'row',
       alignItems: 'center',
-      backgroundColor: isDark ? 'rgba(0, 200, 83, 0.15)' : '#DCFCE7',
+      backgroundColor: isDark ? 'rgba(0, 200, 83, 0.15)' : 'rgba(0, 200, 83, 0.12)',
       paddingHorizontal: spacing.md,
       paddingVertical: 6,
-      borderRadius: 999,
+      borderRadius: radius.xl,
       borderWidth: 1,
       borderColor: p.success,
     },

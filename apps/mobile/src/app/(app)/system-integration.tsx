@@ -38,9 +38,9 @@ import { darkScreen } from '../../theme/screenStyles';
 
 type IconName = keyof typeof MaterialIcons.glyphMap;
 
-// Integration types offered (the mockup's three connectors). accent is each product's brand colour.
+// Integration types offered (the mockup's three connectors). accent uses semantic design tokens.
 const CONNECTORS: { key: string; icon: IconName; accent: string }[] = [
-  { key: 'line', icon: 'chat', accent: '#06C755' },
+  { key: 'line', icon: 'chat', accent: darkColors.success },
   { key: 'bim360', icon: 'view-in-ar', accent: darkColors.cyan },
   { key: 'erp', icon: 'account-balance-wallet', accent: darkColors.primary },
 ];
@@ -175,7 +175,7 @@ const styles = StyleSheet.create({
   aiIcon: {
     width: 44,
     height: 44,
-    borderRadius: 22,
+    borderRadius: 999,
     backgroundColor: `${darkColors.cyan}22`,
     alignItems: 'center',
     justifyContent: 'center',

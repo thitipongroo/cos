@@ -279,7 +279,7 @@ const styles = StyleSheet.create({
   toolIcon: {
     width: 40,
     height: 40,
-    borderRadius: 20,
+    borderRadius: plateRadius(40),
     backgroundColor: darkColors.elevated,
     alignItems: 'center',
     justifyContent: 'center',

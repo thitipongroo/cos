@@ -44,8 +44,8 @@ import {
   typography,
 } from '../../theme/tokens';
 
-const LINE_GREEN = '#00C300';
-const BIM_BLUE = '#0696D7';
+const LINE_GREEN = darkColors.success;
+const BIM_BLUE = darkColors.cyan;
 
 export default function SystemSettingsScreen(): React.JSX.Element {
   const t = useT();
@@ -508,7 +508,7 @@ const styles = StyleSheet.create({
   colorSwatch: {
     width: 40,
     height: 40,
-    borderRadius: 20,
+    borderRadius: 999,
     backgroundColor: darkColors.primary,
     borderWidth: 2,
     borderColor: `${darkColors.text}1A`,

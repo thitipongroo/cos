@@ -539,7 +539,7 @@ const styles = StyleSheet.create({
   successCircle: {
     width: 96,
     height: 96,
-    borderRadius: 48,
+    borderRadius: 999,
     backgroundColor: darkColors.success,
     alignItems: 'center',
     justifyContent: 'center',
@@ -586,7 +586,7 @@ const styles = StyleSheet.create({
   activeBadge: {
     borderWidth: 1,
     borderColor: `${darkColors.success}66`,
-    borderRadius: 6,
+    borderRadius: radius.xl,
     paddingHorizontal: spacing.sm,
     paddingVertical: 4,
   },

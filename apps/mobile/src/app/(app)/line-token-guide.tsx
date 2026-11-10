@@ -104,8 +104,8 @@ export default function LineTokenGuideScreen(): React.JSX.Element {
 
       {/* Hero Notice Card */}
       <View style={styles.heroCard}>
-        <View style={styles.heroIconBadge}>
-          <MaterialIcons name="security" size={22} color="#00C853" />
+        <View style={styles.heroIconPlate}>
+          <MaterialIcons name="security" size={22} color={p.success} />
         </View>
         <View style={styles.heroTextContainer}>
           <Text style={styles.heroTitle}>{t('lineGuide.heroTitle')}</Text>
@@ -118,7 +118,7 @@ export default function LineTokenGuideScreen(): React.JSX.Element {
         {steps.map((st) => (
           <View key={st.step} style={styles.stepCard} testID={`guide-step-${st.step}`}>
             <View style={styles.stepHeader}>
-              <View style={styles.stepNumberBadge}>
+              <View style={styles.stepNumberPlate}>
                 <Text style={styles.stepNumberText}>{st.step}</Text>
               </View>
               <View style={styles.stepTitleWrapper}>
@@ -206,18 +206,18 @@ function makeStyles(p: ReturnType<typeof usePalette>, isDark: boolean) {
     heroCard: {
       flexDirection: 'row',
       alignItems: 'flex-start',
-      backgroundColor: isDark ? 'rgba(0, 200, 83, 0.1)' : '#DCFCE7',
+      backgroundColor: isDark ? 'rgba(0, 200, 83, 0.1)' : 'rgba(0, 200, 83, 0.08)',
       borderRadius: radius.md,
       borderWidth: 1,
-      borderColor: isDark ? 'rgba(0, 200, 83, 0.3)' : '#86EFAC',
+      borderColor: isDark ? 'rgba(0, 200, 83, 0.3)' : 'rgba(0, 200, 83, 0.25)',
       padding: spacing.md,
       gap: spacing.sm,
     },
-    heroIconBadge: {
+    heroIconPlate: {
       width: 36,
       height: 36,
-      borderRadius: 18,
-      backgroundColor: isDark ? '#0F172A' : '#FFFFFF',
+      borderRadius: 999,
+      backgroundColor: p.surface,
       alignItems: 'center',
       justifyContent: 'center',
     },
@@ -227,12 +227,12 @@ function makeStyles(p: ReturnType<typeof usePalette>, isDark: boolean) {
     heroTitle: {
       fontFamily: fontFamily.bold,
       fontSize: typography.body.fontSize,
-      color: isDark ? '#F8FAFC' : '#14532D',
+      color: p.text,
     },
     heroSubtitle: {
       fontFamily: fontFamily.regular,
       fontSize: typography.caption.fontSize,
-      color: isDark ? '#94A3B8' : '#166534',
+      color: p.muted,
       marginTop: 2,
       lineHeight: 18,
     },
@@ -252,10 +252,10 @@ function makeStyles(p: ReturnType<typeof usePalette>, isDark: boolean) {
       alignItems: 'center',
       justifyContent: 'space-between',
     },
-    stepNumberBadge: {
+    stepNumberPlate: {
       width: 26,
       height: 26,
-      borderRadius: 13,
+      borderRadius: 999,
       backgroundColor: p.accent,
       alignItems: 'center',
       justifyContent: 'center',

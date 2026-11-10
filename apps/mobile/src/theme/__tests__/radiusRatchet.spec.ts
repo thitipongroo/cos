@@ -34,9 +34,12 @@ const SRC = join(__dirname, '..', '..');
  * of 56 — the circle rule) was written out in both users.tsx and TenantAdminHome.tsx, and is now
  * `darkScreen.fab`. 23 -> 22 the same day: `darkScreen.fab` itself is GONE (PO decision) — the two
  * screens that drew it now use the shared <Fab />, whose `screenChrome.fab` reaches the same circle
- * through the `999` capsule marker rather than a literal half-of-56. Lower this when literals are
+ * through the `999` capsule marker rather than a literal half-of-56. 22 -> 12 on 2026-11-08: mobile Stitch
+ * design token alignment sweep removed hardcoded literals in apps-services, mfa-enrollment,
+ * notification-preferences, reset-password-success, system-integration, system-settings, users, checkout,
+ * drone-capture, drone-mission-detail, line-token-guide, and portfolio-leasing. Lower this when literals are
  * removed; never raise it. */
-const CEILING = 22;
+const CEILING = 12;
 
 function sourceFiles(dir: string): string[] {
   const out: string[] = [];

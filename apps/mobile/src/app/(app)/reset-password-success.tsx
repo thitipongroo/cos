@@ -115,7 +115,7 @@ const styles = StyleSheet.create({
   checkCircle: {
     width: 72,
     height: 72,
-    borderRadius: 36,
+    borderRadius: 999,
     backgroundColor: `${darkColors.success}1A`,
     borderWidth: 1,
     borderColor: `${darkColors.success}4D`,
@@ -154,7 +154,7 @@ const styles = StyleSheet.create({
   },
   badge: {
     backgroundColor: `${darkColors.success}1A`,
-    borderRadius: 6,
+    borderRadius: radius.xl,
     paddingHorizontal: spacing.sm,
     paddingVertical: 3,
   },

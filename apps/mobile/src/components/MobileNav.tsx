@@ -301,6 +301,11 @@ export function MobileNav() {
       <Tabs.Screen name="account-security" options={{ href: null }} />
       <Tabs.Screen name="transparency-session" options={{ href: null }} />
       <Tabs.Screen name="transparency-timestamps" options={{ href: null }} />
+      <Tabs.Screen name="checkout" options={{ href: null }} />
+      <Tabs.Screen name="drone-capture" options={{ href: null }} />
+      <Tabs.Screen name="drone-mission-detail" options={{ href: null }} />
+      <Tabs.Screen name="line-token-guide" options={{ href: null }} />
+      <Tabs.Screen name="portfolio-leasing" options={{ href: null }} />
     </Tabs>
   );
 }

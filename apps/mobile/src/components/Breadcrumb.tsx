@@ -201,6 +201,22 @@ const BREADCRUMB_MAP: Record<string, Crumb[]> = {
     { key: 'transparency.network.title', href: '/transparency-network' },
     { key: 'reattest.title' },
   ],
+  '/checkout': [{ key: 'nav.tabs.home', href: '/home' }, { key: 'checkout.title' }],
+  '/drone-capture': [{ key: 'nav.tabs.home', href: '/home' }, { key: 'drone.realityCapture' }],
+  '/drone-mission-detail': [
+    { key: 'nav.tabs.home', href: '/home' },
+    { key: 'drone.realityCapture', href: '/drone-capture' },
+    { key: 'drone.liveTelemetry' },
+  ],
+  '/line-token-guide': [
+    { key: 'nav.tabs.home', href: '/home' },
+    { key: 'systemSettings.title', href: '/system-settings' },
+    { key: 'systemSettings.lineToken' },
+  ],
+  '/portfolio-leasing': [
+    { key: 'nav.tabs.home', href: '/home' },
+    { key: 'leasing.portfolioOverview' },
+  ],
 };
 
 /**

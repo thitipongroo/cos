@@ -9,7 +9,7 @@ import { useRouter } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useT } from '../../i18n';
 import { usePalette, useIsDark } from '../../theme/usePalette';
-import { fontFamily, radius, spacing, touchTarget } from '../../theme/tokens';
+import { colors, fontFamily, radius, spacing, touchTarget } from '../../theme/tokens';
 
 export default function DroneRealityCaptureScreen(): React.JSX.Element {
   const t = useT();
@@ -78,7 +78,7 @@ export default function DroneRealityCaptureScreen(): React.JSX.Element {
 
         <View style={styles.telemetryGrid}>
           <View style={styles.telemetryCard}>
-            <MaterialIcons name="battery-charging-full" size={20} color="#00C853" />
+            <MaterialIcons name="battery-charging-full" size={20} color={p.success} />
             <Text style={styles.telemetryVal}>84%</Text>
             <Text style={styles.telemetryLabel}>Power</Text>
           </View>
@@ -90,7 +90,7 @@ export default function DroneRealityCaptureScreen(): React.JSX.Element {
           </View>
 
           <View style={[styles.telemetryCard, styles.telemetryCardActive]}>
-            <MaterialIcons name="satellite-alt" size={20} color="#FFD60A" />
+            <MaterialIcons name="satellite-alt" size={20} color={colors.syncing} />
             <Text style={styles.telemetryVal}>18</Text>
             <Text style={styles.telemetryLabel}>GPS Sat</Text>
           </View>
@@ -116,10 +116,10 @@ export default function DroneRealityCaptureScreen(): React.JSX.Element {
 
               <View style={styles.hudButtonsCol}>
                 <View style={styles.hudCircleBtn}>
-                  <MaterialIcons name="zoom-in" size={18} color="#FFFFFF" />
+                  <MaterialIcons name="zoom-in" size={18} color={p.onPrimary} />
                 </View>
                 <View style={styles.hudCircleBtn}>
-                  <MaterialIcons name="grid-on" size={18} color="#FFFFFF" />
+                  <MaterialIcons name="grid-on" size={18} color={p.onPrimary} />
                 </View>
               </View>
             </View>
@@ -133,7 +133,7 @@ export default function DroneRealityCaptureScreen(): React.JSX.Element {
             {/* Bottom HUD Compass */}
             <View style={styles.hudBottomRow}>
               <View style={styles.compassBox}>
-                <MaterialIcons name="navigation" size={20} color="#06B6D4" />
+                <MaterialIcons name="navigation" size={20} color={p.accent} />
                 <Text style={styles.compassText}>N 45°</Text>
               </View>
               <Text style={styles.gsdText}>GSD: 1.42 cm/px</Text>
@@ -250,7 +250,7 @@ export default function DroneRealityCaptureScreen(): React.JSX.Element {
           <View style={styles.missionInfo}>
             <View style={styles.missionHeaderRow}>
               <Text style={styles.missionTitle}>Sector 7B Mesh Gen</Text>
-              <MaterialIcons name="check-circle" size={18} color="#00C853" />
+              <MaterialIcons name="check-circle" size={18} color={p.success} />
             </View>
             <Text style={styles.missionDate}>24 Oct 2026 • 14:20</Text>
             <View style={styles.missionTagsRow}>
@@ -310,8 +310,8 @@ function makeStyles(p: ReturnType<typeof usePalette>, isDark: boolean) {
     activeDot: {
       width: 7,
       height: 7,
-      borderRadius: 4,
-      backgroundColor: '#00C853',
+      borderRadius: 999,
+      backgroundColor: p.success,
     },
     badgeText: {
       fontSize: 10,
@@ -363,7 +363,7 @@ function makeStyles(p: ReturnType<typeof usePalette>, isDark: boolean) {
     },
     telemetryCardActive: {
       borderBottomWidth: 2,
-      borderBottomColor: '#FFD60A',
+      borderBottomColor: colors.syncing,
     },
     telemetryVal: {
       fontSize: 15,
@@ -384,7 +384,7 @@ function makeStyles(p: ReturnType<typeof usePalette>, isDark: boolean) {
       overflow: 'hidden',
       borderWidth: 1,
       borderColor: p.border,
-      backgroundColor: '#051322',
+      backgroundColor: p.surfaceSunk,
     },
     viewportBg: {
       flex: 1,
@@ -402,20 +402,20 @@ function makeStyles(p: ReturnType<typeof usePalette>, isDark: boolean) {
       backgroundColor: 'rgba(0, 0, 0, 0.65)',
       paddingHorizontal: 8,
       paddingVertical: 4,
-      borderRadius: radius.sm,
+      borderRadius: radius.xl,
       gap: 6,
     },
     recDot: {
       width: 7,
       height: 7,
-      borderRadius: 4,
-      backgroundColor: '#94A3B8',
+      borderRadius: 999,
+      backgroundColor: p.muted,
     },
     recDotRecording: {
-      backgroundColor: '#FF3B30',
+      backgroundColor: p.danger,
     },
     recText: {
-      color: '#FFFFFF',
+      color: p.onPrimary,
       fontSize: 11,
       fontWeight: 'bold',
       fontFamily: fontFamily.medium,
@@ -456,13 +456,13 @@ function makeStyles(p: ReturnType<typeof usePalette>, isDark: boolean) {
       gap: 4,
     },
     compassText: {
-      color: '#FFFFFF',
+      color: p.onPrimary,
       fontSize: 11,
       fontWeight: 'bold',
       fontFamily: fontFamily.medium,
     },
     gsdText: {
-      color: '#94A3B8',
+      color: p.muted,
       fontSize: 10,
       fontFamily: fontFamily.regular,
     },
@@ -476,7 +476,7 @@ function makeStyles(p: ReturnType<typeof usePalette>, isDark: boolean) {
       paddingHorizontal: spacing.md,
     },
     primaryActionButtonStop: {
-      backgroundColor: '#DC2626',
+      backgroundColor: p.danger,
     },
     primaryActionText: {
       fontSize: 14,
@@ -504,7 +504,7 @@ function makeStyles(p: ReturnType<typeof usePalette>, isDark: boolean) {
     },
     modeButtonActive: {
       borderColor: p.primary,
-      backgroundColor: isDark ? 'rgba(37, 99, 235, 0.15)' : '#EFF6FF',
+      backgroundColor: isDark ? 'rgba(37, 99, 235, 0.15)' : 'rgba(37, 99, 235, 0.08)',
     },
     modeButtonText: {
       fontSize: 12,
@@ -543,10 +543,10 @@ function makeStyles(p: ReturnType<typeof usePalette>, isDark: boolean) {
       fontFamily: fontFamily.bold,
     },
     liveTag: {
-      backgroundColor: isDark ? 'rgba(6, 182, 212, 0.2)' : '#CFFAFE',
+      backgroundColor: isDark ? 'rgba(6, 182, 212, 0.2)' : 'rgba(6, 182, 212, 0.12)',
       paddingHorizontal: 6,
       paddingVertical: 2,
-      borderRadius: radius.sm,
+      borderRadius: radius.xl,
     },
     liveTagText: {
       fontSize: 10,
@@ -584,7 +584,7 @@ function makeStyles(p: ReturnType<typeof usePalette>, isDark: boolean) {
       borderRadius: radius.md,
       backgroundColor: p.surface,
       borderLeftWidth: 4,
-      borderLeftColor: '#00C853',
+      borderLeftColor: p.success,
       gap: spacing.sm,
       alignItems: 'center',
     },
@@ -625,10 +625,10 @@ function makeStyles(p: ReturnType<typeof usePalette>, isDark: boolean) {
       fontSize: 10,
       fontFamily: fontFamily.medium,
       color: p.muted,
-      backgroundColor: isDark ? 'rgba(255, 255, 255, 0.06)' : '#E2E8F0',
+      backgroundColor: isDark ? 'rgba(255, 255, 255, 0.06)' : p.surfaceSoft,
       paddingHorizontal: 5,
       paddingVertical: 1,
-      borderRadius: radius.sm,
+      borderRadius: radius.xl,
     },
   });
 }

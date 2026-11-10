@@ -10,7 +10,7 @@ import { useRouter } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useT } from '../../i18n';
 import { usePalette, useIsDark } from '../../theme/usePalette';
-import { fontFamily, radius, spacing, touchTarget } from '../../theme/tokens';
+import { colors, fontFamily, radius, spacing, touchTarget } from '../../theme/tokens';
 
 export default function DroneMissionDetailScreen(): React.JSX.Element {
   const t = useT();
@@ -53,7 +53,7 @@ export default function DroneMissionDetailScreen(): React.JSX.Element {
             Sector 7B • Earthwork Survey
           </Text>
           <View style={styles.badgeRow}>
-            <MaterialIcons name="check-circle" size={13} color="#00C853" />
+            <MaterialIcons name="check-circle" size={13} color={p.success} />
             <Text style={styles.badgeText}>RTK Processed • High Precision</Text>
           </View>
         </View>
@@ -129,7 +129,7 @@ export default function DroneMissionDetailScreen(): React.JSX.Element {
                       : 'terrain'
                 }
                 size={54}
-                color={activeLayer === 'ortho' ? p.accent : '#FFD60A'}
+                color={activeLayer === 'ortho' ? p.accent : colors.syncing}
               />
               <Text style={styles.mapCenterLabel}>
                 {activeLayer === 'ortho'
@@ -153,14 +153,14 @@ export default function DroneMissionDetailScreen(): React.JSX.Element {
             {/* Cut */}
             <View style={styles.volumeCol}>
               <Text style={styles.volumeLabel}>Excavation (Cut)</Text>
-              <Text style={[styles.volumeVal, { color: '#FF3B30' }]}>14,250 m³</Text>
+              <Text style={[styles.volumeVal, { color: p.danger }]}>14,250 m³</Text>
               <Text style={styles.volumeSub}>Bedrock & subgrade</Text>
             </View>
 
             {/* Fill */}
             <View style={styles.volumeCol}>
               <Text style={styles.volumeLabel}>Embankment (Fill)</Text>
-              <Text style={[styles.volumeVal, { color: '#00C853' }]}>8,920 m³</Text>
+              <Text style={[styles.volumeVal, { color: p.success }]}>8,920 m³</Text>
               <Text style={styles.volumeSub}>Compacted fill</Text>
             </View>
           </View>
@@ -301,7 +301,7 @@ function makeStyles(p: ReturnType<typeof usePalette>, isDark: boolean) {
       overflow: 'hidden',
       borderWidth: 1,
       borderColor: p.border,
-      backgroundColor: '#071626',
+      backgroundColor: p.surfaceSunk,
     },
     mapInner: {
       flex: 1,
@@ -316,12 +316,12 @@ function makeStyles(p: ReturnType<typeof usePalette>, isDark: boolean) {
       backgroundColor: 'rgba(0, 0, 0, 0.65)',
       paddingHorizontal: 8,
       paddingVertical: 4,
-      borderRadius: radius.sm,
+      borderRadius: radius.xl,
     },
     pillText: {
       fontSize: 10,
       fontFamily: fontFamily.medium,
-      color: '#FFFFFF',
+      color: p.onPrimary,
       fontWeight: '600',
     },
     mapCenterGraphic: {
@@ -399,10 +399,10 @@ function makeStyles(p: ReturnType<typeof usePalette>, isDark: boolean) {
       fontFamily: fontFamily.bold,
     },
     exportBadge: {
-      backgroundColor: isDark ? 'rgba(6, 182, 212, 0.15)' : '#E0F2FE',
+      backgroundColor: isDark ? 'rgba(6, 182, 212, 0.15)' : 'rgba(6, 182, 212, 0.12)',
       paddingHorizontal: 8,
       paddingVertical: 4,
-      borderRadius: radius.sm,
+      borderRadius: radius.xl,
     },
     exportBadgeText: {
       fontSize: 10,

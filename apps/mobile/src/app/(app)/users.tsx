@@ -640,14 +640,14 @@ const styles = StyleSheet.create({
   avatar: {
     width: 44,
     height: 44,
-    borderRadius: 22,
+    borderRadius: 999,
     borderWidth: 2,
     borderColor: `${darkColors.primary}4D`,
   },
   avatarFallback: {
     width: 44,
     height: 44,
-    borderRadius: 22,
+    borderRadius: 999,
     borderWidth: 2,
     borderColor: `${darkColors.primary}4D`,
     backgroundColor: darkColors.elevated,
@@ -693,7 +693,7 @@ const styles = StyleSheet.create({
   roleBadge: {
     alignSelf: 'flex-start',
     backgroundColor: `${darkColors.primary}22`,
-    borderRadius: 6,
+    borderRadius: radius.xl,
     paddingHorizontal: spacing.xs,
     paddingVertical: 2,
   },

@@ -190,7 +190,7 @@ export default function MobilePortfolioLeasingScreen(): React.JSX.Element {
                 </View>
                 <View style={styles.statCol}>
                   <Text style={styles.statLabel}>Status</Text>
-                  <Text style={[styles.statVal, { color: '#00C853' }]}>Active</Text>
+                  <Text style={[styles.statVal, { color: p.success }]}>Active</Text>
                 </View>
               </View>
             </View>
@@ -240,8 +240,8 @@ function makeStyles(p: ReturnType<typeof usePalette>, isDark: boolean) {
     activeDot: {
       width: 7,
       height: 7,
-      borderRadius: 4,
-      backgroundColor: '#00C853',
+      borderRadius: 999,
+      backgroundColor: p.success,
     },
     badgeText: {
       fontSize: 11,
@@ -334,7 +334,7 @@ function makeStyles(p: ReturnType<typeof usePalette>, isDark: boolean) {
       width: 40,
       height: 40,
       borderRadius: radius.md,
-      backgroundColor: isDark ? 'rgba(6, 182, 212, 0.15)' : '#E0F2FE',
+      backgroundColor: isDark ? 'rgba(6, 182, 212, 0.15)' : 'rgba(6, 182, 212, 0.12)',
       justifyContent: 'center',
       alignItems: 'center',
     },
@@ -355,13 +355,13 @@ function makeStyles(p: ReturnType<typeof usePalette>, isDark: boolean) {
     occupancyBadge: {
       paddingHorizontal: 8,
       paddingVertical: 3,
-      borderRadius: radius.sm,
-      backgroundColor: isDark ? 'rgba(0, 200, 83, 0.15)' : '#DCFCE7',
+      borderRadius: radius.xl,
+      backgroundColor: isDark ? 'rgba(0, 200, 83, 0.15)' : 'rgba(0, 200, 83, 0.12)',
     },
     occupancyText: {
       fontSize: 12,
       fontWeight: 'bold',
-      color: '#00C853',
+      color: p.success,
       fontFamily: fontFamily.bold,
     },
     propertyStatsRow: {
