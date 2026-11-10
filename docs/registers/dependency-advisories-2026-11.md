@@ -1398,8 +1398,124 @@ print(PIL.__version__, '16-bit grayscale PNG file opens as', Image.open(io.Bytes
   and "Audit — pip-audit (Python services)", for the first time together. The two failures are the known ones:
   openapi freshness and the integration step (the file-service MinIO image).
 
+## The audit gate re-verified on pnpm 12.18.0
+
+`de660667` moved `packageManager` from pnpm 11.22.0 to 12.18.0, and `scripts/pnpm-audit.sh` stopped by design until
+its flags were measured again. Measured on 2026-11-10; `VERIFIED_PNPM` is now 12.18.0.
+
+**Release notes, 12.0 to 12.18.** Two changes touch the gate. From 12.0 the audit settings live in an `audit` section
+and `auditConfig` / `auditLevel` are deprecated spellings of it. From 12.4 the printed summary leaves out advisories
+an ignore list hides. And 12 adds new places a setting can come from: `include` in `pnpm-workspace.yaml`, config
+dependencies (whose own `package.json` names a settings file in `pnpm.config`; the root's `pnpm.config` is not read),
+`updateConfig` hooks in `.pnpmfile.cjs` (honoured by `audit` from 12.6), and the global `config.yaml`.
+
+**Positive control.** 1a's tree (`c94c183a`'s `package.json` with `packageManager` set to 12.18.0, its lockfile and
+`packages:`), whose four highs are known: pnpm 12.18.0, run as the gate runs it, reports 56 advisories (5 low, 47
+moderate, 4 high) over 2,339 dependencies, the same counts 1a measured on 11.22.0, and the gate lists the four.
+
+**Every way to hide them**, each applied to a fresh copy of that tree and checked twice: (a) through the gate; (b)
+with the gate's flags alone, in the copy, without the isolation.
+
+| Vector                                                                                                                                                                 | (a) gate     | (b) flags alone, high / metadata high |
+| ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------ | ------------------------------------- |
+| `pnpm_config_` / `PNPM_CONFIG_` / `npm_config_` variables: `only=prod`, `production`, `dev`, `optional=false`, `audit_level=critical`, `lockfile_dir`, `registry` (10) | 4 unresolved | 4 / 4                                 |
+| `.npmrc` in the project and in `HOME`                                                                                                                                  | 4 unresolved | 4 / 4                                 |
+| `pnpm-workspace.yaml`: `auditLevel`, `audit.level`, `only` / `production` / `optional`, `audit.ignoreUnfixable`, `registry` / `lockfileDir`                            | 4 unresolved | 4 / 4                                 |
+| `package.json`: `pnpm.auditConfig.ignoreGhsas`; `pnpm.config` pointing at a file with an ignore list                                                                   | 4 unresolved | 4 / 4                                 |
+| `pnpm-workspace.yaml`: `fix`                                                                                                                                           | 4 unresolved | pnpm errors, no JSON                  |
+| `pnpm-workspace.yaml`: `auditConfig.ignoreGhsas`; `audit.ignore`; `include: { ./extra.yaml: [audit] }` with the list in `extra.yaml`                                   | 4 unresolved | **0 / 4**                             |
+| `.pnpmfile.cjs` `updateConfig` hook setting an ignore list and `auditLevel`                                                                                            | 4 unresolved | **0 / 4**                             |
+| global `config.yaml` with an ignore list, in `HOME` (`Library/Preferences/pnpm` on macOS) and in `XDG_CONFIG_HOME`                                                     | 4 unresolved | **0 / 4**                             |
+
+The gate held against all 26 (and listed the four in the unchanged baseline). The flags alone no longer do: **on pnpm
+12 no flag clears an ignore list.** `--config.audit-config=`, `--config.audit=`, `--config.audit.ignore=`,
+`--config.audit-config.ignore-ghsas=` and `--config.ignore-ghsas=` each left high at 0 with metadata high at 4. So the
+isolated copy, which carries none of these files and runs under `env -i` with a temporary `HOME`, is what stops an
+ignore list; the metadata check (`metadata.vulnerabilities` still counts what the list hides, in the JSON as on
+11.22.0) catches one that gets through. On pnpm 12 the gate therefore has two lines, not three. Kept as designed, by
+product-owner decision (2026-11-10); the script's comments now say so, and the flag stays, harmless. A /doubt reviewer
+tried ten more vectors that reach the copy itself (`configDependencies`, `pnpm.audit.ignore`, `pnpm.pnpmfile` in
+`package.json`; `settings:` and a config dependency in the lockfile; `devEngines.packageManager`; a duplicated
+lockfile key): each either left the four listed or made the gate stop with an error.
+
+On the first run, `pnpm audit` on pnpm 12 also wrote a second YAML document into the copy's lockfile
+(`packageManagerDependencies`: pnpm 12.18.0). The repo's lockfile already has it since `de660667`, and the gate audits
+a throwaway copy.
+
+**The 15 stub fixtures** from 1a, regenerated from pnpm 12's output, give the results in the table above, case for
+case; a stub that reports 11.22.0 is refused ("pnpm 11.22.0 is running; this gate is written for … 12.18.0"). The real
+tree: `Audit PASSED: 0 high/critical vulnerabilities.` shellcheck clean.
+
+**The Dockerfiles that pin `pnpm@11.9.0`** (backend twice, file-service, credential-service) no longer run it, and
+`apps/web/Dockerfile`'s unversioned `corepack enable pnpm` gets the same: Corepack reads `packageManager` and
+downloads 12.18.0 ("Corepack is about to download …pnpm-12.18.0.tgz" in file-service's build log; `pnpm --version`
+prints 12.18.0 in a bare `node:24-alpine` with that `package.json`). file-service builds and its frozen install
+passes. The pin is now dead text; `packageManager` carries no `+sha512`, so no hash is pinned (see [Open](#open)). CI
+uses `pnpm/action-setup`, which also follows `packageManager`.
+
+```bash
+#!/usr/bin/env bash
+# vectors.sh <base> <gate.sh>: each blinding vector applied to a fresh copy of <base> (1a's tree, 4 known highs).
+# Per vector: (a) the gate's exit and unresolved count; (b) the gate's audit flags run in the copy itself, without the
+# isolation, as high / metadata.high; (c) whether any file in the copy changed.
+set -u
+base=$1 gate=$2 W=$(mktemp -d) GH='["GHSA-c475-qrg2-pj4r","GHSA-mrhx-c7xc-m3w5","GHSA-xcx6-jx8p-x3h5","GHSA-qr28-fpjm-wq7f"]'
+FLAGS=(--json --audit-level info --config.production=false --config.dev=false --config.only=all --config.optional=true
+  --registry=https://registry.npmjs.org/ --config.audit-config= --config.fix=false --lockfile-dir=.)
+run() {
+  local name=$1; shift; local d="$W/$name" h="$W/$name.home"; rm -rf "$d" "$h"; cp -R "$base" "$d"; mkdir -p "$h"
+  ( cd "$d" && eval "$1" ); shift   # mutation, run in the copy
+  local envs=("$@") before after; before=$(cd "$d" && find . -type f -not -path "./node_modules/*" -exec shasum {} + | sort)
+  local g; g=$(cd "$d" && env ${envs[@]+"${envs[@]}"} HOME="$h" GATE_ROOT="$d" bash "$gate" 2>&1); local gx=$?
+  local nu; nu=$(grep -c 'UNRESOLVED/' <<<"$g")
+  local raw; raw=$(cd "$d" && env ${envs[@]+"${envs[@]}"} HOME="$h" pnpm audit "${FLAGS[@]}" 2>/dev/null | python3 -c '
+import json,sys
+try:
+  d=json.load(sys.stdin); a=d.get("advisories",{}); m=d.get("metadata",{}).get("vulnerabilities",{})
+  print(sum(1 for v in a.values() if v.get("severity")=="high"), m.get("high"))
+except Exception as e: print("no-json", type(e).__name__)')
+  after=$(cd "$d" && find . -type f -not -path "./node_modules/*" -exec shasum {} + | sort)
+  local changed; changed=$(diff <(echo "$before") <(echo "$after") | grep "^>" | awk '{print $3}' | tr "\n" " ")
+  printf '%-34s gate_exit=%s unresolved=%s | flags-only high/meta=%s | copy %s\n' "$name" "$gx" "$nu" "$raw" \
+    "$([ "$before" = "$after" ] && echo unchanged || echo "CHANGED: $changed")"
+}
+ign_ws="printf 'auditConfig:\n  ignoreGhsas: %s\n' '$GH' >> pnpm-workspace.yaml"
+run baseline ':'
+run env-only-prod ':' pnpm_config_only=prod
+run env-ONLY-prod-upper ':' PNPM_CONFIG_ONLY=prod
+run env-production ':' pnpm_config_production=true
+run env-dev ':' pnpm_config_dev=true
+run env-optional-false ':' pnpm_config_optional=false
+run env-audit-level ':' pnpm_config_audit_level=critical
+run env-AUDIT-LEVEL-upper ':' PNPM_CONFIG_AUDIT_LEVEL=critical
+run env-npm-audit-level ':' npm_config_audit_level=critical
+run env-lockfile-dir ':' pnpm_config_lockfile_dir=/nonexistent
+run env-registry ':' pnpm_config_registry=http://127.0.0.1:9/
+run npmrc-repo 'printf "only=prod\naudit-level=critical\noptional=false\n" > .npmrc'
+run ws-auditConfig-ignore "$ign_ws"
+run ws-audit-ignore "printf 'audit:\n  ignore: %s\n' '$GH' >> pnpm-workspace.yaml"
+run ws-auditLevel "printf 'auditLevel: critical\n' >> pnpm-workspace.yaml"
+run ws-audit-level-section "printf 'audit:\n  level: critical\n' >> pnpm-workspace.yaml"
+run ws-only-prod "printf 'only: prod\nproduction: true\noptional: false\n' >> pnpm-workspace.yaml"
+run ws-ignoreUnfixable "printf 'audit:\n  ignoreUnfixable: true\n' >> pnpm-workspace.yaml"
+run ws-fix "printf 'audit:\n  fix: override\nfix: override\n' >> pnpm-workspace.yaml"
+run ws-registry-lockfileDir "printf 'registry: http://127.0.0.1:9/\nlockfileDir: /nonexistent\n' >> pnpm-workspace.yaml"
+run ws-include "printf 'audit:\n  ignore: %s\n' '$GH' > extra.yaml; printf 'include:\n  ./extra.yaml: [audit]\n' >> pnpm-workspace.yaml"
+run pkg-pnpm-auditConfig "python3 -c 'import json;p=json.load(open(\"package.json\"));p.setdefault(\"pnpm\",{})[\"auditConfig\"]={\"ignoreGhsas\":$GH};json.dump(p,open(\"package.json\",\"w\"),indent=2)'"
+run pkg-pnpm-config "printf 'audit:\n  ignore: %s\n' '$GH' > audit.yaml; python3 -c 'import json;p=json.load(open(\"package.json\"));p.setdefault(\"pnpm\",{})[\"config\"]=\"audit.yaml\";json.dump(p,open(\"package.json\",\"w\"),indent=2)'"
+run pnpmfile-updateConfig "printf 'module.exports={hooks:{updateConfig(c){c.auditLevel=\"critical\";c.audit={...(c.audit||{}),ignore:$GH};c.auditConfig={ignoreGhsas:$GH};return c}}}\n' > .pnpmfile.cjs"
+run home-npmrc 'printf "only=prod\naudit-level=critical\n" > "$h/.npmrc"'
+run home-global-config-macos "mkdir -p \"\$h/Library/Preferences/pnpm\"; printf 'audit:\n  ignore: %s\n' '$GH' > \"\$h/Library/Preferences/pnpm/config.yaml\""
+run xdg-global-config "mkdir -p '$W/xdg/pnpm'; printf 'audit:\n  ignore: %s\n' '$GH' > '$W/xdg/pnpm/config.yaml'" XDG_CONFIG_HOME="$W/xdg"
+```
+
 ## Open
 
+- **Four Dockerfiles pin `pnpm@11.9.0` that no longer runs.** `backend/Dockerfile` (twice),
+  `services/file-service/Dockerfile` and `services/credential-service/Dockerfile` run `corepack prepare pnpm@11.9.0`,
+  but Corepack reads `packageManager` and downloads 12.18.0 during the build (as for `apps/web/Dockerfile`), with no
+  hash pinned (`packageManager` has no `+sha512`). Pinning the Dockerfiles to 12.18.0, or adding the hash to
+  `packageManager`, is a separate decision.
 - **Re-measure the LCP budget under Lighthouse 13 (D26).** `apps/web/.lighthouserc.json` keeps the LCP
   `maxNumericValue` at 3200, which was set from Lighthouse 12's numbers. Lighthouse 13 reports a much lower simulated
   LCP for /login (see [branch 3](#branch-3--zod-3-second-source-lhcicli-0151--0160)), so the gate has far more

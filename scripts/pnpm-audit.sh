@@ -6,13 +6,18 @@
 # under `env -i` with nothing but PATH and a temporary HOME. That shuts out pnpm_config_* variables, every .npmrc
 # (project and user) and every pnpm-workspace.yaml setting (lockfileDir, registry, auditConfig / audit.ignore,
 # ignoreUnfixable, fix, only, optional, auditLevel, …), each of which was measured to blind or rewrite the audit
-# otherwise. A network that needs a proxy or extra CA certificates is not supported by this isolation.
+# otherwise. pnpm 12 added more places a setting can come from — `include` in pnpm-workspace.yaml, an updateConfig
+# hook in .pnpmfile.cjs, config dependencies, the global config.yaml — and the copy carries none of them. Measured on
+# pnpm 12.18.0: an ignore list in the workspace file, an `include`d file, a hook or the global config hides every high
+# when the flags below run alone, so on pnpm 12 the isolation and the metadata check are the two lines that stop one.
+# A network that needs a proxy or extra CA certificates is not supported by this isolation.
 #
 # Second line, inside the copy, on pnpm VERIFIED_PNPM only (package.json's packageManager must name it; pnpm itself
 # switches to whatever packageManager names, so `pnpm --version` alone cannot pin it):
 #   --audit-level info; production / dev off with only=all and optional=true (only=all is not a documented value; pnpm
 #   falls through to "all"); --registry pinned (pnpm builds its metadata from the same response, so a mirror without
-#   audit data would agree with itself); --config.audit-config= (drops an ignore list); --config.fix=false. The
+#   audit data would agree with itself); --config.audit-config= (dropped an ignore list on pnpm 11; on pnpm 12 no
+#   flag does, measured, so only the isolation and the metadata check below stop one); --config.fix=false. The
 #   advisories are compared with pnpm's metadata.vulnerabilities, severity by severity, and an empty dependency count
 #   fails. Never run `pnpm audit --ignore` in the repo: it writes auditConfig.ignoreGhsas into pnpm-workspace.yaml.
 #
@@ -23,7 +28,7 @@ set -uo pipefail
 # The pnpm version every flag and measurement below was verified against. pnpm hands off to whatever package.json's
 # packageManager names, so a bump there would silently change who interprets the flags; the gate fails until this
 # line is updated, after the flags are re-verified on the new version.
-VERIFIED_PNPM=11.22.0
+VERIFIED_PNPM=12.18.0
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 if ! WORK=$(mktemp -d) || [[ -z "$WORK" || ! -d "$WORK" || "$WORK" == / ]]; then
@@ -143,7 +148,8 @@ for aid, adv in data["advisories"].items():
         unresolved.append(f"  [UNRESOLVED/{severity.upper()}] {adv.get('module_name', 'unknown')}: "
                           f"{adv.get('title', '')}\n    {adv.get('url', '')}")
 
-# A second line behind --config.audit-config=: an ignore list hides advisories but leaves them in the metadata.
+# A second line behind the isolation: an ignore list hides advisories but leaves them in the metadata (pnpm 11.22.0
+# and 12.18.0 alike, measured).
 differ = [f"{s}: metadata {meta[s]}, listed {counts[s]}" for s in SEVERITIES if meta[s] != counts[s]]
 
 if pnpm_stderr:
