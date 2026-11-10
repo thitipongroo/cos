@@ -16,7 +16,7 @@ transitive `expo-*` / `@react-native/*` packages, and pnpm cannot scope hoisting
 inside a workspace.
 
 So `apps/mobile` is its own workspace root with `nodeLinker: hoisted` set in
-**`apps/mobile/pnpm-workspace.yaml`** — pnpm 10/11 reads the linker setting from there, _not_ from
+**`apps/mobile/pnpm-workspace.yaml`** — pnpm 11–12 reads the linker setting from there, _not_ from
 `.npmrc` (the `.npmrc` in that folder only documents it). It consumes `@cos/types` as a `file:`
 dependency.
 

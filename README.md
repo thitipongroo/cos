@@ -67,7 +67,7 @@ separate deployables only for language-boundary services (Python AI, Go workers)
 ### Prerequisites
 
 - [Node.js](https://nodejs.org/) **24.x** (`package.json` → `engines.node >=24.0.0`)
-- [pnpm](https://pnpm.io/) **11.x** (`engines.pnpm >=11.0.0`) — `corepack enable` picks up the exact
+- [pnpm](https://pnpm.io/) **12.x** (`engines.pnpm >=12.0.0`) — `corepack enable` picks up the exact
   build pinned in `packageManager`; only the major line is normative
 - [Docker](https://www.docker.com/) 24.x + Docker Compose v2
 

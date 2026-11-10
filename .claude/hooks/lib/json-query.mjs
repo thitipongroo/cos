@@ -1,7 +1,7 @@
 // JSON access for the .claude/hooks/ scripts.
 //
 // Why this file exists: every hook used to parse its payload with `jq`. `jq` is not a
-// prerequisite of this repository — README.md §Prerequisites requires Node 24.x and pnpm 11.x
+// prerequisite of this repository — README.md §Prerequisites requires Node 24.x and pnpm 12.x
 // and nothing else — so on a machine without it every hook read an empty value and took its
 // "nothing to check here" branch. That is indistinguishable from a clean pass, so all eight
 // gates were open from at least 2026-07-24 with nothing reporting a problem.

@@ -51,6 +51,7 @@ The numbers are the ones used while the work was planned. Decisions about the wi
 | D25 | Branch 2 moves puppeteer within mermaid-cli 11's peer range instead of upgrading mermaid-cli to 12. mermaid-cli 12 needs puppeteer `^25` too and moves no zod by itself; mermaid-cli 12 is a separate, later choice.                                                                      |
 | D26 | Lighthouse 13 lowers /login's simulated LCP far below Lighthouse 12's. The LCP budget stays 3200 in branch 3; it is re-measured on ubuntu-latest under 13 afterwards (Open).                                                                                                              |
 | D27 | msal-node is fixed by moving `@azure/identity` 4.13.1 → 4.14.1 inside `@confluentinc/schemaregistry`'s declared `^4.13.0`, not by removing the unused `@confluentinc/schemaregistry` from backend; removing it is an Open item.                                                           |
+| D28 | pnpm major 12 is the spec's normative major (was 11; the repo has been on 12.18.0 since `de660667`), and `engines.pnpm` is `>=12.0.0`.                                                                                                                                                    |
 
 ## The series
 
@@ -1567,17 +1568,18 @@ pnpm as `pnpm install <target> --no-lockfile`; the upstream changes that strip t
 same way with the dev machine's global pnpm 11.1.3, that spec resolved to 12.18.0. That is evidence, not proof: the
 bundled pnpm is a different version and was not run (running downloaded code was not allowed here). The first CI run of
 this branch's PR is the measurement. Its `conformance-tests` job will fail for another reason, already failing before
-this branch (see [Open](#open)). Whether pnpm's own version switching (the audit gate's isolated run) checks the hash
-was not tested either; it ran 12.18.0 with the hash present.
+this branch (fixed later on `chore/pnpm-12-spec`; see [Open](#open)). Whether pnpm's own version switching (the audit
+gate's isolated run) checks the hash was not tested either; it ran 12.18.0 with the hash present.
 
 ## Open
 
 - **`apps/web/Dockerfile` does not build.** `next build` stops prerendering `/leasing/wizard`: "useSearchParams() should
   be wrapped in a suspense boundary" (`apps/web/src/app/(app)/leasing/wizard/page.tsx`). Found on `chore/pnpm-pin-hash`,
   which does not touch `apps/web`; when it started was not measured.
-- **The conformance test and two docs still say pnpm 11.** `tests/conformance/foundation/02-workspace.spec.ts:96`
-  expects `packageManager` to match `/^pnpm@11\./`, so `conformance-tests` (`ci.yml`) fails since `de660667` moved to
-  12.18.0; `README.md` and `docs/manual/getting-started.md` say "11.x". Updating them is a separate decision.
+- **`apps/mobile` does not get the pinned pnpm on a dev machine.** It is outside the root workspace and its
+  `package.json` has no `packageManager`, so `cd apps/mobile && pnpm install` runs whatever pnpm is on `PATH`: 11.1.3
+  on the machine used here, against 12.18.0 at the root. CI is unaffected (`pnpm/action-setup` puts 12.18.0 on `PATH`
+  before the mobile jobs run). Whether to pin it there too is a separate decision. Found on `chore/pnpm-12-spec`.
 - **Re-measure the LCP budget under Lighthouse 13 (D26).** `apps/web/.lighthouserc.json` keeps the LCP
   `maxNumericValue` at 3200, which was set from Lighthouse 12's numbers. Lighthouse 13 reports a much lower simulated
   LCP for /login (see [branch 3](#branch-3--zod-3-second-source-lhcicli-0151--0160)), so the gate has far more
@@ -1839,6 +1841,17 @@ was not tested either; it ran 12.18.0 with the hash present.
   `chore/pnpm-pin-hash`: `packageManager` carries `+sha512`, and the Dockerfiles run `corepack enable` with no version.
   Corepack refuses a launcher tarball whose hash differs (the native binary it fetches is checked by pnpm against the
   registry, not this hash). See [One pnpm pin, with its hash](#one-pnpm-pin-with-its-hash-chorepnpm-pin-hash).
+- **Closed — the conformance test and two docs still said pnpm 11.** Fixed on `chore/pnpm-12-spec`: the product owner
+  made 12 the spec's major (D28, 2026-11-10). `context/phases/phase-01-foundation-repository.md` § Tooling, the test
+  (`tests/conformance/foundation/02-workspace.spec.ts`), `README.md`, `docs/manual/getting-started.md`,
+  `docs/manual/tech-stack.md` and the two JSON helpers that quote README (`.claude/hooks/lib/json-query.mjs`,
+  `scripts/readiness/jsonpick.mjs`) say 12, and `engines.pnpm` is `>=12.0.0` (`pnpm install`: lockfile unchanged). The
+  foundation conformance specs: 1 failed and 442 passed before (this test), 443 of 443 after. Seven of the eight places
+  that said "pnpm 10/11 reads `nodeLinker` from `pnpm-workspace.yaml`" now say 11–12: on 11.1.3 and on 12.18.0, in a
+  scratch copy of `apps/mobile`, `pnpm config get nodeLinker` and `node-linker` follow the value in
+  `pnpm-workspace.yaml` (`hoisted`, then `isolated` when changed there) and are `undefined` with `node-linker=hoisted`
+  only in `.npmrc`. That is how the setting resolves; no install was run. pnpm 10 was not measured, so it is no longer
+  named; the dated OQ-5 row in the Phase 1 technical design keeps its wording.
 - **`apps/mobile` (D7).**
   - Its own lockfile has expo-router → `query-string@7.1.3` → `decode-uri-component@0.2.2`.
   - react-navigation's `getStateFromPath` calls `queryString.parse` on deep-link input.

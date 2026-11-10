@@ -4,7 +4,7 @@
  *   "root pnpm-workspace.yaml listing every workspace member: apps/*, backend,
  *    services/*, packages/@cos/*"
  *   "apps/mobile is explicitly EXCLUDED via !apps/mobile"
- *   "apps/mobile/pnpm-workspace.yaml sets nodeLinker: hoisted (pnpm 10/11 reads the
+ *   "apps/mobile/pnpm-workspace.yaml sets nodeLinker: hoisted (pnpm 11–12 reads the
  *    linker setting there, NOT apps/mobile/.npmrc)"
  *   "consuming @cos/types as a file: dependency"
  *   "Nothing in turbo/CI references @cos/mobile"
@@ -70,8 +70,8 @@ describe('Phase 1 · mobile workspace exception (master:1676-1683)', () => {
 //
 // The spec fixes a major line for each tool, and the reason it fixes them is that they are not
 // interchangeable: TypeScript 6 is where `moduleResolution: node10` stops working (this repo hit
-// that on 2026-08-26), ESLint 10 is flat-config-only, and pnpm 11 is where the workspace linker
-// setting moved into pnpm-workspace.yaml — which is the whole basis of the apps/mobile exclusion
+// that on 2026-08-26), ESLint 10 is flat-config-only, and pnpm 11 and 12 read the workspace linker
+// setting from pnpm-workspace.yaml (measured; 10 was not) — the whole basis of the apps/mobile exclusion
 // asserted above.
 //
 // None of these was checked anywhere before 2026-08-26. A major-version drift is not something a
@@ -89,11 +89,11 @@ describe('the toolchain sits on the majors the spec names (master:1650-1660)', (
     expect(rootPkg.engines?.['node']).toBe('>=24.0.0');
   });
 
-  it('requires pnpm 11 or newer, and pins an 11.x build (master:1651-1654)', () => {
+  it('requires pnpm 12 or newer, and pins a 12.x build (phase-01 § Tooling)', () => {
     // The spec is explicit that only the MAJOR is normative — "a patch/minor bump is not a spec
     // deviation" — so the pin is matched on its major alone, and the floor on its exact wording.
-    expect(rootPkg.engines?.['pnpm']).toBe('>=11.0.0');
-    expect(rootPkg.packageManager).toMatch(/^pnpm@11\./);
+    expect(rootPkg.engines?.['pnpm']).toBe('>=12.0.0');
+    expect(rootPkg.packageManager).toMatch(/^pnpm@12\./);
   });
 
   it.each([

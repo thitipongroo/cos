@@ -9,16 +9,17 @@ From a clean checkout to a running backend with seeded data.
 
 ## Prerequisites
 
-Read from `package.json` and `context/00_master_construction_os.md` § Tooling on 2026-08-07:
+The Node.js and pnpm rows are read from `package.json` and `context/phases/phase-01-foundation-repository.md` §
+Tooling on 2026-11-10; the Docker and Python rows have no spec source there.
 
 | Tool     | Required                                                             | Where it is pinned                                                                       |
 | -------- | -------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
 | Node.js  | **≥ 24.0.0**                                                         | root `package.json` → `engines.node`; Docker images use `node:24-alpine`                 |
-| pnpm     | **≥ 11.0.0** (11.x line)                                             | root `package.json` → `engines.pnpm`; `packageManager` pins the exact build via Corepack |
+| pnpm     | **≥ 12.0.0** (12.x line)                                             | root `package.json` → `engines.pnpm`; `packageManager` pins the exact build via Corepack |
 | Docker   | 24.x + Compose v2                                                    | `docker-compose.yml`                                                                     |
 | Python 3 | for `apps/mobile/scripts/stitch-fullpage.py` and the Python services | `services/ai-*`                                                                          |
 
-Only the pnpm **major** line (11) is normative — a patch or minor bump is not a spec deviation.
+Only the pnpm **major** line (12) is normative — a patch or minor bump is not a spec deviation.
 
 ## First run
 
@@ -68,7 +69,7 @@ exception is `DIRECT_DATABASE_URL`, which Prisma migrations use to reach Postgre
 `apps/mobile` is **excluded from the root pnpm workspace** (`!apps/mobile` in `pnpm-workspace.yaml`).
 React Native + Expo + Metro + CocoaPods require a flat `node_modules`, which pnpm's isolated linker
 breaks. It is its own workspace root with `nodeLinker: hoisted` in
-`apps/mobile/pnpm-workspace.yaml` — note that pnpm 10/11 reads the linker setting from **that file,
+`apps/mobile/pnpm-workspace.yaml` — note that pnpm 11–12 reads the linker setting from **that file,
 not `.npmrc`**.
 
 ```bash

@@ -1,7 +1,7 @@
 // Reads JSON on stdin, prints the value of a JavaScript expression over it.
 //
 // This replaces `jq` in the Phase 19 readiness checks. `jq` is not a prerequisite of this
-// repository — README.md §Prerequisites requires Node 24.x and pnpm 11.x and nothing else — and
+// repository — README.md §Prerequisites requires Node 24.x and pnpm 12.x and nothing else — and
 // six Phase 19 checks piped through it, so they could not run on a machine that had never
 // installed it. That is the same gap that silently disabled all eight .claude/hooks/ gates from
 // at least 2026-07-24, found and fixed on 2026-09-03.

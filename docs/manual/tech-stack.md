@@ -30,7 +30,7 @@ Kafka is an internal event bus inside the monolith boundary — it is not a sign
 | Tool       | Version                                |
 | ---------- | -------------------------------------- |
 | Node.js    | 24.x                                   |
-| pnpm       | 11.x                                   |
+| pnpm       | 12.x                                   |
 | Turborepo  | 2.x                                    |
 | TypeScript | 6.x (strict, no implicit `any`)        |
 | ESLint     | 10.x flat config (`eslint.config.mjs`) |

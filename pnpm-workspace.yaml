@@ -10,7 +10,7 @@ packages:
   # Do NOT pass `--ignore-workspace`. It hides those settings, and pnpm then fails with
   # ERR_PNPM_LOCKFILE_CONFIG_MISMATCH against the patchedDependencies recorded in that lockfile.
   # This comment used to require that flag and to say the linker lived in `apps/mobile/.npmrc`.
-  # Both were wrong, and `apps/mobile/.npmrc` says so itself: pnpm 10/11 reads `nodeLinker` from
+  # Both were wrong, and `apps/mobile/.npmrc` says so itself: pnpm 11–12 reads `nodeLinker` from
   # pnpm-workspace.yaml, and a directory with its own workspace file needs no flag to be treated as
   # a root. Corrected 2026-08-22 (TDD OQ-5); the lockfile consequence added from origin/develop.
   #

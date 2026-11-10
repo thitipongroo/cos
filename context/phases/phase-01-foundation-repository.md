@@ -115,10 +115,13 @@ scripts/
 Tooling:
 
 - Node.js runtime: 24.x (root `package.json` `engines.node` `>=24.0.0`; Docker images use `node:24-alpine`)
-- Package manager: pnpm — latest stable 11.x with workspace protocol. Do NOT pin a fixed patch
-  version in this spec: root `package.json` `packageManager` carries whatever 11.x release the repo
-  is currently on (Corepack pins the exact build for reproducibility), and `engines.pnpm` stays
-  `>=11.0.0`. Only the major line (11) is normative — a patch/minor bump is not a spec deviation.
+- Package manager: pnpm — latest stable 12.x with workspace protocol. Do NOT pin a fixed patch
+  version in this spec: root `package.json` `packageManager` carries whatever 12.x release the repo
+  is currently on (Corepack pins the exact build and its hash for reproducibility), and
+  `engines.pnpm` stays `>=12.0.0`. Only the major line (12) is normative — a patch/minor bump is not
+  a spec deviation. (Was 11 until 2026-11-10: the repo moved to 12.18.0 in `de660667` and the
+  product owner made 12 the spec's major: D28 in
+  `docs/registers/dependency-advisories-2026-11.md`.)
 - Monorepo orchestration: Turborepo 2.x
 - TypeScript: 6.x (strict mode, no implicit any)
 - Linting: ESLint 10.x flat config (root `eslint.config.mjs`)
@@ -144,7 +147,7 @@ Generate:
   EXCLUDED via `!apps/mobile`. React Native + Expo + Metro + CocoaPods assume a flat (hoisted)
   `node_modules`, which pnpm's isolated linker breaks — Metro cannot resolve transitive
   `expo-*` / `@react-native/*` packages. `apps/mobile` installs standalone as its OWN pnpm workspace:
-  `apps/mobile/pnpm-workspace.yaml` sets `nodeLinker: hoisted` (pnpm 10/11 reads the linker setting
+  `apps/mobile/pnpm-workspace.yaml` sets `nodeLinker: hoisted` (pnpm 11–12 reads the linker setting
   there, NOT `apps/mobile/.npmrc` — which only documents this) — run `cd apps/mobile && pnpm install`,
   consuming `@cos/types` as a `file:` dependency. Nothing in turbo/CI references `@cos/mobile`; mobile lint,
   type-check and tests run as their own CI job. This exclusion is REQUIRED, not a deviation.
