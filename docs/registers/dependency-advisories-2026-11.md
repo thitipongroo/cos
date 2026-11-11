@@ -55,6 +55,7 @@ The numbers are the ones used while the work was planned. Decisions about the wi
 | D29 | Status values the code compares (to pick a colour) keep their code values; only their display goes through `t()`.                                                                                                                                                                         |
 | D30 | Demo sentences written in a page's JSX are translated, their figures and names passed as `{placeholders}`; `SAMPLE_*` / `INITIAL_*` records stay as data.                                                                                                                                 |
 | D31 | `apps/mobile` takes the root's `packageManager` pin (pnpm 12.18.0 + sha512), and its lockfile is regenerated with pnpm 12.                                                                                                                                                                |
+| D32 | OCR scales a 32-bit integer (`I`) or float (`F`) image from its own value range to 8-bit before tesseract; 16-bit images, which read fine, are left alone; no data from tesseract is empty text, confidence 0, and a logged warning.                                                      |
 
 ## The series
 
@@ -1751,10 +1752,6 @@ gate's isolated run) checks the hash was not tested either; it ran 12.18.0 with 
           print(json.dumps(row, ensure_ascii=False), flush=True)
   ```
 
-- **A 32-bit I mode TIFF fails OCR with `KeyError: 'text'`** (`'conf'` since `fix/ocr-thai`, which reads `conf`
-  first), on Pillow 12.3.0 and 13.0.0 alike: pytesseract raises `TesseractError` only on a non-zero exit, so tesseract
-  most likely exited 0 with no data for it (not confirmed from its stderr), and `_ocr_image` indexes the result
-  without checking. This predates the series; found in branch 5.
 - **Pillow outside `services/*` is unpinned and unaudited.** `mlops` (through mlflow → matplotlib) and
   `apps/mobile/scripts/stitch-*.py` pull Pillow in without a pin, and CI's pip-audit covers only `services/*`.
   `docs/runbooks/dependency-upgrade-plan.md:69` still calls Pillow 12.2.0 "current". This predates the series.
@@ -1965,6 +1962,23 @@ prebuild`, native builds, Detox, EAS.
   `Mars/Olympus` case, both DTOs), 10 passed; after: green, and backend `test:cov` 4,219 tests with lines and branches
   at 100 %, `type-check` exit 0. Not changed: rows already stored (no production data was read), and the readers, which
   still throw on a zone they do not know.
+- **Closed — a 32-bit TIFF failed OCR with `KeyError`.** Fixed on `fix/ocr-32bit-images` (D32). Cause, measured in the
+  service image: pytesseract hands the image over in its own format; tesseract's leptonica refuses a signed-integer or
+  float TIFF ("Error in pixReadFromTiffStream: sample format = 2 is not uint", 3 for float), exits 0 and writes a TSV
+  with the header only; pytesseract returns `{}` and `_ocr_image` indexed it. `ocr_pipeline.py` now scales `I` / `F`
+  images from their own min–max to 8-bit `L` (rounded, so the top of the range is 255; a flat image becomes white) and
+  returns `("", 0.0)`, logging a warning with the mode it received, when tesseract gives no data; 16-bit `I;16` was left
+  alone because it already read (the plan had included it; product-owner decision to narrow D32). In the image, on the
+  register's eight inputs regenerated plus three new ones (a Thai page, the same page as 32-bit `I`, a float `F` page):
+  the three `I` / `F` files went from `KeyError: 'conf'` to their drawn text (`imode.tif` and `thai_imode.tif` read
+  exactly as their RGB counterparts, confidence 0.96 and 0.9425; `float.tif` "FLOAT 42"), and the other eight read the
+  same text and confidence before and after. Service tests: 60 passed, coverage 100 %, on Pillow 13.0.0 in an image
+  rebuilt from the final tree (the sources' sha256 inside it equal the working tree's; `requirements-dev.txt`'s pytest
+  pins) and on the local 12.3.0 venv. The scaling goes through mode `F` (float32), which keeps the full 32-bit range
+  (`[-2**31, 0, 2**31-1]` → `[0, 128, 255]`) but cannot tell apart values packed into a narrow band far from zero (2**30
+  and 2**30 + 50); after /doubt, `point` straight on the `I` image was tried and dropped — Pillow 13 does that
+  arithmetic in float32 too, and shifting by the minimum first overflows int32 on a wide range. Not run here: `ruff`
+  (not installed locally; CI runs `ruff check services mlops`).
 - **`apps/mobile` (D7).**
   - Its own lockfile has expo-router → `query-string@7.1.3` → `decode-uri-component@0.2.2`.
   - react-navigation's `getStateFromPath` calls `queryString.parse` on deep-link input.

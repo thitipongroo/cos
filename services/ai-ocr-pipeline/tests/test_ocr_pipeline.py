@@ -163,3 +163,78 @@ class TestJoinWords:
     def test_thai_digits_join_by_the_gap_rule(self):
         data = _geo(["ที่", "๓", "ชั้น"], [0, 36, 80], [30, 12, 40], [1, 1, 1])
         assert _join_words(data) == "ที่๓ ชั้น"
+
+
+class TestThirtyTwoBitImages:
+    """D32: 32-bit integer (I) and float (F) images are scaled to 8-bit before OCR.
+
+    Measured 2026-11-11 in the service image: tesseract refuses such a TIFF ("sample format = 2 is
+    not uint"), exits 0 with no rows, pytesseract returns {} and _ocr_image raised KeyError.
+    """
+
+    @staticmethod
+    def _pixels(image):
+        return list(image.get_flattened_data())
+
+    def test_scales_an_i_image_from_its_own_range(self):
+        from PIL import Image
+        from ocr_pipeline import _to_8bit
+
+        image = Image.new("I", (3, 1))
+        image.putdata([1000, 1400, 2000])  # 400 * 0.255 + 0.5 = 102.5, clear of a rounding boundary
+        result = _to_8bit(image)
+        assert result.mode == "L"
+        assert self._pixels(result) == [0, 102, 255]
+
+    def test_scales_an_f_image(self):
+        from PIL import Image
+        from ocr_pipeline import _to_8bit
+
+        image = Image.new("F", (3, 1))
+        image.putdata([0.0, 0.5, 1.0])
+        assert self._pixels(_to_8bit(image)) == [0, 128, 255]
+
+    def test_a_flat_image_becomes_white(self):
+        from PIL import Image
+        from ocr_pipeline import _to_8bit
+
+        result = _to_8bit(Image.new("I", (2, 2), 7))
+        assert result.mode == "L"
+        assert self._pixels(result) == [255, 255, 255, 255]
+
+    @pytest.mark.parametrize("mode", ["L", "RGB", "1", "I;16"])
+    def test_leaves_other_modes_alone(self, mode):
+        from PIL import Image
+        from ocr_pipeline import _to_8bit
+
+        image = Image.new(mode, (2, 2))
+        assert _to_8bit(image) is image
+
+    @patch("ocr_pipeline.pytesseract.image_to_data")
+    def test_ocr_receives_the_8bit_image(self, mock_ocr):
+        from PIL import Image
+        from ocr_pipeline import _ocr_image
+
+        mock_ocr.return_value = _make_tesseract_data(["Daily"], [90])
+        image = Image.new("I", (4, 4))
+        image.putdata(list(range(16)))
+        text, conf = _ocr_image(image)
+        assert mock_ocr.call_args.args[0].mode == "L"
+        assert (text, conf) == ("Daily", 0.9)
+
+    @patch("ocr_pipeline.pytesseract.image_to_data")
+    @patch("ocr_pipeline.Image.open")
+    def test_no_data_from_tesseract_is_empty_text_not_a_crash(self, mock_open, mock_ocr, caplog):
+        mock_open.return_value = MagicMock()
+        mock_ocr.return_value = {}
+        with caplog.at_level("WARNING", logger="ocr_pipeline"):
+            assert extract_text_from_image(b"unreadable") == ("", 0.0)
+        assert "tesseract returned no data" in caplog.text
+
+    def test_keeps_the_full_32_bit_range(self):
+        from PIL import Image
+        from ocr_pipeline import _to_8bit
+
+        image = Image.new("I", (3, 1))
+        image.putdata([-(2**31), 0, 2**31 - 1])
+        assert self._pixels(_to_8bit(image)) == [0, 128, 255]

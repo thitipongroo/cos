@@ -1,4 +1,5 @@
 import io
+import logging
 import re
 import statistics
 from dataclasses import dataclass
@@ -6,6 +7,8 @@ from dataclasses import dataclass
 import pytesseract
 from pdf2image import convert_from_bytes
 from PIL import Image
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -81,8 +84,48 @@ def _join_words(data: dict) -> str:
     return "".join(parts)
 
 
+# Modes tesseract cannot read. pytesseract hands the image over in its own format, so a 32-bit TIFF
+# reaches leptonica as one, which refuses it ("sample format = 2 is not uint", 3 for float), exits 0
+# and writes no rows — pytesseract then returns {} and indexing it raised KeyError. 16-bit (I;16*)
+# images read fine and are left alone (measured 2026-11-11, D32).
+_UNREADABLE_MODES = ("I", "F")
+
+
+def _to_8bit(image: Image.Image) -> Image.Image:
+    """Scale a 32-bit integer or float image from its own value range to 8-bit grayscale.
+
+    The range is the image's, not the type's: a scan stored in 32 bits rarely uses more than a
+    sliver of it, and a fixed scale would turn it all black. A flat image has no range and becomes
+    white (blank page). Any other mode is returned unchanged.
+    """
+    if image.mode not in _UNREADABLE_MODES:
+        return image
+    low, high = image.getextrema()
+    if high == low:
+        return Image.new("L", image.size, 255)
+    scale = 255.0 / (high - low)
+    # Through F (float32): `point` on an I image is float32 arithmetic in Pillow 13 anyway, and going
+    # through F keeps the full 32-bit range (shifting an I image by `low` first overflows int32 for a
+    # range wider than 2**31). The cost: values packed into a narrow band far from zero (2**30 and
+    # 2**30 + 50) are not told apart — a real scan does not look like that. + 0.5 because
+    # convert("L") truncates, so the top of the range lands on 255 rather than 254.
+    return image.convert("F").point(lambda v: (v - low) * scale + 0.5).convert("L")
+
+
 def _ocr_image(image: Image.Image) -> tuple[str, float]:
+    received_mode = image.mode
+    image = _to_8bit(image)
     data = pytesseract.image_to_data(image, output_type=pytesseract.Output.DICT, lang="tha+eng")
+    if "text" not in data or "conf" not in data:
+        # tesseract read nothing (it exits 0 on an input it cannot decode): no text, no confidence.
+        # Logged, because the result is otherwise indistinguishable from a blank page.
+        logger.warning(
+            "tesseract returned no data for a %s image of %s (sent as %s)",
+            received_mode,
+            image.size,
+            image.mode,
+        )
+        return "", 0.0
     confs = [c for c, w in zip(data["conf"], data["text"]) if w.strip() and c != -1]
 
     text = _join_words(data)
