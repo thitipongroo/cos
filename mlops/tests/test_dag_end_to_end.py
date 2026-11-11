@@ -18,7 +18,7 @@ both are settled below:
   2. With the stub callables replaced by ones that write TEST DATA, the whole graph completes and a
      readable Parquet artefact lands, under the per-tenant data-lake path master:5417 fixes.
 
-SCOPE, STATED PLAINLY: this drives the OPERATORS, not a scheduler-backed DagRun. Airflow 3.2.2 will
+SCOPE, STATED PLAINLY: this drives the OPERATORS, not a scheduler-backed DagRun. Airflow 3.2.2 (measured there; not re-measured on 3.3.2) will
 not create a DagRun for a DAG that has not been through its serialisation pipeline, and that pipeline
 has no public entry point — reaching into it would buy a stronger claim with a test that breaks on
 the next patch release and tells the reader nothing about why. The dependency ORDER is taken from the
@@ -64,7 +64,7 @@ def _airflow_db() -> None:
 
 @pytest.fixture(scope="module")
 def dagbag() -> DagBag:
-    bag = DagBag(dag_folder=DAGS_DIR, include_examples=False)
+    bag = DagBag(dag_folder=DAGS_DIR)  # no `include_examples` since Airflow 3.3 (see test_dag_integration)
     assert bag.import_errors == {}, f"DAGs failed to import: {bag.import_errors}"
     return bag
 

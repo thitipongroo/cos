@@ -284,7 +284,8 @@ jobs:
         with:
           python-version: '3.12'
       # mlops Python deps are split per service because airflow/mlflow/feast cannot co-resolve
-      # in one env (feast needs uvicorn<=0.34.0, airflow-core needs uvicorn>=0.37.0). requirements-dev.txt
+      # in one env (feast 0.64.0 needed uvicorn<=0.34.0, airflow-core needs uvicorn>=0.37.0; feast 0.67.0 dropped
+      # that cap, co-resolution untested — see mlops/requirements-base.txt). requirements-dev.txt
       # = base + airflow + pytest — what mlops/tests/ needs (test_dag_integration loads DAGs via DagBag).
       - name: Install mlops test dependencies
         run: pip install -r mlops/requirements-dev.txt
@@ -940,7 +941,10 @@ jobs:
   dependency-audit:
     name: Dependency Audit (pnpm audit + govulncheck)
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    # 25, not 15, since 2026-11-11 (D34): the pip-audit step now also resolves the four mlops sets
+    # (the airflow set resolves to 140 packages, each set audited in its own temporary venv). Not yet timed
+    # on a runner; locally the four took 92 s with a warm pip cache.
+    timeout-minutes: 25
     needs: [lint, type-check]
     env:
       # Same reason as go-tests, and it bites harder here: `go install …@latest` under
@@ -1003,29 +1007,14 @@ jobs:
           echo "::group::pip-audit — apps/mobile/scripts"
           ( cd apps/mobile/scripts && pip-audit -r requirements.txt ) || status=1
           echo "::endgroup::"
-          exit $status
-      # mlops — report only (D33, 2026-11-11). Nothing in CI or any image installs these sets (the MLflow
-      # server runs the upstream image), and on that date they carried 27 distinct advisories (36 pip-audit
-      # rows) — apache-airflow 3.2.2 (17), mlflow 3.14.0 (6), cryptography 48.0.1 via mlflow (3), feast
-      # 0.64.0 (1) — whose fixes are upgrades of their own. Shown on every run, even after a failed step
-      # above, and raised as a warning so it is not lost in a green job; made blocking once those upgrades
-      # land (register Open item). requirements-dev.txt is covered through requirements-airflow. Its own
-      # timeout: `continue-on-error` does not shield the job from the job-level 15-minute limit.
-      - name: pip-audit — mlops (report only)
-        if: ${{ !cancelled() }}
-        continue-on-error: true
-        timeout-minutes: 8
-        working-directory: mlops
-        run: |
-          status=0
-          for req in requirements-base.txt requirements-mlflow.txt requirements-feast.txt requirements-airflow.txt; do
+          # mlops — blocking since 2026-11-11 (D34). Report-only from D33 until airflow 3.3.2, mlflow 3.17.2
+          # and feast 0.67.0 cleared its 27 advisories. requirements-dev.txt (airflow + base + pytest) stands for
+          # the airflow set. Run from mlops/ so the nested `-r` includes resolve.
+          for req in requirements-base.txt requirements-mlflow.txt requirements-feast.txt requirements-dev.txt; do
             echo "::group::pip-audit — mlops/$req"
-            pip-audit -r "$req" || status=1
+            ( cd mlops && pip-audit -r "$req" ) || status=1
             echo "::endgroup::"
           done
-          if [ "$status" -ne 0 ]; then
-            echo "::warning title=mlops pip-audit::advisories found in mlops requirement sets (report only, D33)"
-          fi
           exit $status
 
   # ─── Step 5b: Secret Scan (gitleaks) ────────────────────────────────────────

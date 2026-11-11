@@ -9,10 +9,14 @@ services:
   mlflow:
     # MLflow 3.x — master §Phase 23 pins the MAJOR ("MLflow 3.x — experiment tracking and model
     # registry", bumped 2.x→3.x by product-owner decision 2026-06-30), and requirements-mlflow.txt
-    # pins the client at 3.14.0. The server image was still v2.14.1: a 3.x client against a 2.x
+    # pins the client at 3.17.2 (3.14.0 until 2026-11-11, D34 — this image moved with it). The server
+    # image was once v2.14.1: a 3.x client against a 2.x
     # tracking server, which is both a version skew across the model-registry API and a silent
     # contradiction of the recorded decision. Tag verified against ghcr.io before pinning.
-    image: ghcr.io/mlflow/mlflow:v3.14.0
+    # UPGRADE NEEDS A MIGRATION: 3.17.2 carries 9 backend-store revisions 3.14.0 does not, and on an
+    # existing DB the server refuses to start ("out-of-date database schema") until
+    # `mlflow db upgrade <backend-store-uri>` has run with this image. Back up the DB first.
+    image: ghcr.io/mlflow/mlflow:v3.17.2
     container_name: cos-mlflow
     ports:
       - '5000:5000'

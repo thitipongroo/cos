@@ -1,5 +1,6 @@
 # Apache Airflow scheduler/worker env — Phase 23 training-pipeline DAGs (dag_*.py).
-# SEPARATE env: airflow cannot co-install with feast (uvicorn conflict). airflow 3.2.2
-# requires_python ">=3.10,!=3.15"; bumped 2.x→3.x per product-owner decision 2026-06-30.
+# SEPARATE env (see requirements-base.txt). airflow 3.3.2 requires_python ">=3.10,!=3.15"; bumped
+# 2.x→3.x per product-owner decision 2026-06-30, 3.2.2→3.3.2 on 2026-11-11 (D34): 3.2.2 carried 17
+# advisories, 3.3.2 none. 3.3 dropped DagBag's `include_examples` argument (mlops/tests updated).
 -r requirements-base.txt
-apache-airflow==3.2.2
+apache-airflow==3.3.2

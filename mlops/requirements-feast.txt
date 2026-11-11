@@ -1,5 +1,6 @@
-# Feast feature-store env (spec §22.6 Feature Store). SEPARATE env: feast cannot co-install with
-# airflow (uvicorn conflict). feast 0.64.0 has a CORE dep `pandas<3,>=1.4.3` — hence base pins
-# pandas 2.x. Versions = latest official on PyPI 2026-06-30.
+# Feast feature-store env (spec §22.6 Feature Store). SEPARATE env (see requirements-base.txt).
+# feast 0.67.0 keeps the CORE dep `pandas<3,>=1.4.3` — hence base pins pandas 2.x. 0.64.0→0.67.0 on
+# 2026-11-11 (D34): 0.64.0 carried CVE-2026-18948. Note: the feature views under feast/features import
+# feast's Postgres offline store, which needs `psycopg[binary,pool]` — not in base (register Open item).
 -r requirements-base.txt
-feast==0.64.0
+feast==0.67.0

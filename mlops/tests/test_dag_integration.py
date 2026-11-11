@@ -13,7 +13,9 @@ DAGS_DIR = "mlops/airflow/dags"
 
 @pytest.fixture(scope="module")
 def dagbag():
-    return DagBag(dag_folder=DAGS_DIR, include_examples=False)
+    # No `include_examples`: Airflow 3.3 removed the argument, and a DagBag pointed at dag_folder
+    # loads only that folder (the same six DAGs as 3.2.2 with include_examples=False, measured).
+    return DagBag(dag_folder=DAGS_DIR)
 
 
 # ─── DAG loading tests ────────────────────────────────────────────────────────

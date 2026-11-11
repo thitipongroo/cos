@@ -57,6 +57,7 @@ The numbers are the ones used while the work was planned. Decisions about the wi
 | D31 | `apps/mobile` takes the root's `packageManager` pin (pnpm 12.18.0 + sha512), and its lockfile is regenerated with pnpm 12.                                                                                                                                                                |
 | D32 | OCR scales a 32-bit integer (`I`) or float (`F`) image from its own value range to 8-bit before tesseract; 16-bit images, which read fine, are left alone; no data from tesseract is empty text, confidence 0, and a logged warning.                                                      |
 | D33 | Pillow is pinned where it is used outside `services/*` (`mlops/requirements-mlflow.txt`, new `apps/mobile/scripts/requirements.txt`); CI audits the mobile scripts (blocking) and `mlops` (report only, until its own advisories are fixed).                                              |
+| D34 | mlops moves to the lowest versions with no advisory — apache-airflow 3.3.2, mlflow 3.17.2 (client and the `ghcr.io/mlflow/mlflow` server image, manifests only), feast 0.67.0 — and CI's mlops audit becomes blocking.                                                                    |
 
 ## The series
 
@@ -1753,15 +1754,19 @@ gate's isolated run) checks the hash was not tested either; it ran 12.18.0 with 
           print(json.dumps(row, ensure_ascii=False), flush=True)
   ```
 
-- **`mlops` requirement sets carry 27 advisories (CI reports them, does not block).** pip-audit 2.10.1,
-  `python:3.12-slim`, 2026-11-11: `requirements-airflow.txt` (and `-dev.txt` through it) 17 on apache-airflow 3.2.2
-  (fixed in 3.3.0–3.3.1); `requirements-mlflow.txt` 9 — mlflow 3.14.0 (6) and cryptography 48.0.1 (3, fixed in 49.0.0 /
-  50.0.0); `requirements-feast.txt` 1 on feast 0.64.0 (fixed in 0.67.0); `requirements-base.txt` none. Distinct IDs;
-  pip-audit prints 36 rows, some IDs twice (its "Found N" lines count rows). Nothing in CI or any image installs them
-  today except `mlops/requirements-dev.txt` for the mlops tests. Each fix is an upgrade with its own testing; the CI
-  step `pip-audit — mlops (report only)` becomes blocking when they land; until then it runs even after a failed step,
-  has its own 8-minute timeout so it cannot time out the 15-minute job, and raises a `::warning` when it finds any.
-  Found on `chore/pillow-outside-services`.
+- **feast's feature views do not import with `mlops/requirements-feast.txt` alone.** `mlops/feast/features/*.py` import
+  feast's Postgres offline store, which needs `psycopg` (v3) with its pool; the set has only `psycopg2-binary` (base).
+  Measured on feast 0.64.0 and 0.67.0 alike: `ModuleNotFoundError: psycopg`, and with `psycopg[binary]` only,
+  `psycopg_pool` (the second printed, not saved); with `psycopg[binary,pool]` added, all three views load on both.
+  Nothing in CI imports them. Found on `chore/mlops-advisories`, not fixed there.
+- **MLflow server image v3.17.2 is in the manifests, not deployed.** `infrastructure/kubernetes/mlflow/deployment.yaml`
+  and `mlops/mlflow/docker-compose.yaml` name `ghcr.io/mlflow/mlflow:v3.17.2` (the tag exists); rolling it out is a
+  deployment step outside this work, and it needs a database migration first: 3.17.2 carries 9 backend-store revisions
+  that 3.14.0 does not (e.g. `17e22815139b_increase_experiment_tag_value_limit`,
+  `a8b9c0d1e2f3_add_mcp_server_registry_tables`), and on an existing store its `SqlAlchemyStore` refuses to start
+  ("Detected out-of-date database schema … run 'mlflow db upgrade'") — read from the two wheels, not run. So: back up
+  the DB, run `mlflow db upgrade <backend-store-uri>` with the new image, then roll out; the manifests' comments say so.
+  Whether to automate it (an initContainer) is a product-owner decision.
 - **The backend image is 5.56 GB, and a build after a lockfile change took more than 17 minutes on a dev machine.**
   Measured in branch 4. `docker image inspect` gave 5.56 GB. The first build (`docker build -q`) had run for 17.5
   minutes by `ps` when it was stopped to get step timings; the rebuild with `--progress=plain` then found every step
@@ -1996,6 +2001,21 @@ prebuild`, native builds, Detox, EAS.
   vulnerabilities), and a new step audits the four `mlops` sets with `continue-on-error` (Open: their 27 advisories —
   none on Pillow). `docs/runbooks/dependency-upgrade-plan.md` shows Pillow 13.0.0. The mlops conformance specs still
   pass (40). Not run here: the changed CI workflow itself (CI is not running, see Open); its YAML parses.
+- **Closed — `mlops` requirement sets carried 27 advisories.** Fixed on `chore/mlops-advisories` (D34). pip-audit on
+  candidate sets first: airflow 3.3.2 / 3.4.0, mlflow 3.17.2 / 3.18.0, feast 0.67.0 / 0.68.0 — all clean, including the
+  two advisories that had no fix version listed; the lowest of each was taken. Measured in `python:3.12-slim` (one
+  container at a time; an earlier parallel attempt failed on PyPI read time-outs): mlops pytest 73 passed on 3.2.2; on
+  3.3.2, 22 errors from one cause — Airflow 3.3 removed `DagBag(include_examples=…)` — and with the two test fixtures no
+  longer passing it, 73 passed; 3.3.2 without the argument loads the same six DAGs as 3.2.2 with
+  `include_examples=False`, no import errors (printed by a probe, not saved). feast 0.64.0 and 0.67.0 both load the
+  three feature views (with `psycopg[binary,pool]`, see Open; without it, `No module named 'psycopg'`); mlflow 3.14.0
+  and 3.17.2 both import `update_gateway` and have `MlflowClient.get_latest_versions`. After the change, pip-audit on
+  base, mlflow, feast and `requirements-dev.txt` (the airflow set plus pytest, which CI now audits in place of
+  `requirements-airflow.txt`): no known vulnerabilities, 62 s with a warm cache (saved in the session's scratch
+  `w4b-summary.txt`). The MLflow server image moved to v3.17.2 with the client. CI's mlops audit joined the blocking
+  loop; the job timeout went 15 → 25 minutes for it (not yet timed on a runner). mlops conformance specs: 40 passed.
+  Comments that named the old versions were updated; `requirements-base.txt` notes that feast 0.67.0 dropped the uvicorn
+  cap, co-resolution untested.
 - **`apps/mobile` (D7).**
   - Its own lockfile has expo-router → `query-string@7.1.3` → `decode-uri-component@0.2.2`.
   - react-navigation's `getStateFromPath` calls `queryString.parse` on deep-link input.
