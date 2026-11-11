@@ -58,6 +58,7 @@ The numbers are the ones used while the work was planned. Decisions about the wi
 | D32 | OCR scales a 32-bit integer (`I`) or float (`F`) image from its own value range to 8-bit before tesseract; 16-bit images, which read fine, are left alone; no data from tesseract is empty text, confidence 0, and a logged warning.                                                      |
 | D33 | Pillow is pinned where it is used outside `services/*` (`mlops/requirements-mlflow.txt`, new `apps/mobile/scripts/requirements.txt`); CI audits the mobile scripts (blocking) and `mlops` (report only, until its own advisories are fixed).                                              |
 | D34 | mlops moves to the lowest versions with no advisory — apache-airflow 3.3.2, mlflow 3.17.2 (client and the `ghcr.io/mlflow/mlflow` server image, manifests only), feast 0.67.0 — and CI's mlops audit becomes blocking.                                                                    |
+| D35 | The MLflow server runs `ghcr.io/mlflow/mlflow:v3.17.2-full` (the plain image lacks psycopg2 and boto3); no migration initContainer (3.17.2 migrates a 3.14 store itself, because it adds tables — checked per version bump); the k8s Deployment uses `strategy: Recreate`.                |
 
 ## The series
 
@@ -1754,14 +1755,11 @@ gate's isolated run) checks the hash was not tested either; it ran 12.18.0 with 
           print(json.dumps(row, ensure_ascii=False), flush=True)
   ```
 
-- **MLflow server image v3.17.2 is in the manifests, not deployed.** `infrastructure/kubernetes/mlflow/deployment.yaml`
-  and `mlops/mlflow/docker-compose.yaml` name `ghcr.io/mlflow/mlflow:v3.17.2` (the tag exists); rolling it out is a
-  deployment step outside this work, and it needs a database migration first: 3.17.2 carries 9 backend-store revisions
-  that 3.14.0 does not (e.g. `17e22815139b_increase_experiment_tag_value_limit`,
-  `a8b9c0d1e2f3_add_mcp_server_registry_tables`), and on an existing store its `SqlAlchemyStore` refuses to start
-  ("Detected out-of-date database schema … run 'mlflow db upgrade'") — read from the two wheels, not run. So: back up
-  the DB, run `mlflow db upgrade <backend-store-uri>` with the new image, then roll out; the manifests' comments say so.
-  Whether to automate it (an initContainer) is a product-owner decision.
+- **MLflow server v3.17.2-full is in the manifests, not deployed.** Rolling it out is a deployment step outside this
+  work. Back up the backend store first; with `Recreate`, MLflow is down from the old pod's exit until the new one is
+  ready, migration included (seconds on the small stores measured; a real-size store was not tried — the `startupProbe`
+  allows ten minutes). The packages the `-full` image adds over the plain one (1.93 GB against 1.33 GB) are not audited:
+  CI's pip-audit covers the client requirement sets only.
 - **The backend image is 5.56 GB, and a build after a lockfile change took more than 17 minutes on a dev machine.**
   Measured in branch 4. `docker image inspect` gave 5.56 GB. The first build (`docker build -q`) had run for 17.5
   minutes by `ps` when it was stopped to get step timings; the rebuild with `--progress=plain` then found every step
@@ -2021,6 +2019,29 @@ prebuild`, native builds, Detox, EAS.
   `x2-summary.txt` with the command). Only the linux/aarch64 cp312 wheel of psycopg-binary 3.3.8 was exercised (Docker
   on an arm64 Mac); x86_64 and macOS wheels were not checked. Still not exercised by CI: no job imports the feature
   views.
+- **Closed — the MLflow manifests could not start or be reached, and the D34 migration note needed a condition.** Fixed
+  on `chore/mlflow-db-upgrade` (D35). Measured with Postgres 16 in Docker: (1) the plain `ghcr.io/mlflow/mlflow` image,
+  v3.14.0 and v3.17.2 alike, has neither psycopg2 nor boto3, and `mlflow server --backend-store-uri postgresql://…`
+  exits with "No module named 'psycopg2'" — neither the k8s Deployment nor the compose file could ever have started; the
+  `-full` variant has psycopg2, psycopg and boto3. (2) Under the pod's own constraints (uid 1001, read-only root,
+  capabilities dropped) the server also exits — "No usable temporary directory found" — and runs with a writable /tmp.
+  (3) A 3.17.2-full server started against a store a 3.14.0-full server had created migrates it itself (alembic
+  `b7e4c1a90f23` → `dc11669786a5`) and answers `/health` and `experiments/search` with 200. The code says why (/doubt,
+  read from the image): the store runs its upgrade when any table it defines is missing — 3.17.2 defines twelve that
+  3.14.0 lacks — and otherwise verifies the schema and refuses an out-of-date one. So the D34 note ("refuses to start
+  until `mlflow db upgrade`") is the general rule and this bump is the exception; the initContainer the plan proposed
+  was dropped (product-owner decision) and both manifests say to check each future bump. (4) With no `--allowed-hosts`,
+  the API answered only localhost / private-IP Host headers: `mlflow.cos.svc.cluster.local:5000` and `mlflow:5000` got
+  403 while `/health` stayed 200 — in-cluster clients (e.g. `mlops/kubeflow/training_pipeline.yaml`) would have failed
+  with the pod showing Ready. `mlflow db upgrade` itself, run as the pod would run it, needs the same writable /tmp, and
+  on an up-to-date or empty store exits 0. Now: both manifests use `v3.17.2-full` with corrected comments and an
+  explicit `--allowed-hosts` (the service names, `localhost`, `127.0.0.1`); the Deployment has `strategy: Recreate` (no
+  old pod serving a migrated schema), an `emptyDir` at /tmp, and a `startupProbe` (up to ten minutes) so a long
+  migration is not killed by the liveness probe. kubeconform: 3 valid, 1 skipped, as at HEAD. Compose, real `up` of
+  postgres and mlflow under a throwaway project (host port remapped to 15000 in a scratch override — 5000 is taken on
+  the test Mac): `/health` after 7 s, `experiments/search` 200, schema at `dc11669786a5`; with the final command,
+  `experiments/search` 200 from the host as `127.0.0.1` and `localhost` and from another container as `mlflow:5000`, 403
+  for a foreign Host header; torn down with its volumes each time.
 - **`apps/mobile` (D7).**
   - Its own lockfile has expo-router → `query-string@7.1.3` → `decode-uri-component@0.2.2`.
   - react-navigation's `getStateFromPath` calls `queryString.parse` on deep-link input.

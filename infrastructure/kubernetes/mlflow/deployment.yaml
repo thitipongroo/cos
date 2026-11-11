@@ -24,6 +24,12 @@ metadata:
     app: mlflow
 spec:
   replicas: 1
+  # Recreate, not RollingUpdate: a new server version can migrate the backend-store schema on start (it did
+  # 3.14.0 → 3.17.2 against Postgres, 2026-11-11), and under a rolling update the old pod would keep serving
+  # on a schema newer than it knows. Recreate stops it first — MLflow is down from the old pod's exit until
+  # the new one is ready (migration included). Back up the store before any version change.
+  strategy:
+    type: Recreate
   selector:
     matchLabels:
       app: mlflow
@@ -47,13 +53,21 @@ spec:
           # MLflow 3.x — master §Phase 23 pins the MAJOR ("MLflow 3.x — experiment tracking and model
           # registry", bumped 2.x→3.x by product-owner decision 2026-06-30), and requirements-mlflow.txt
           # pins the client at 3.17.2 (3.14.0 until 2026-11-11, D34 — this image moved with it). The server
-          # image was once v2.14.1: a 3.x client against a 2.x
-          # tracking server, which is both a version skew across the model-registry API and a silent
-          # contradiction of the recorded decision. Tag verified against ghcr.io before pinning.
-          # UPGRADE NEEDS A MIGRATION: 3.17.2 carries 9 backend-store revisions 3.14.0 does not, and on an
-          # existing DB the server refuses to start ("out-of-date database schema") until
-          # `mlflow db upgrade <backend-store-uri>` has run with this image. Back up the DB first.
-          image: ghcr.io/mlflow/mlflow:v3.17.2
+          # image was once v2.14.1: a 3.x client against a 2.x tracking server, which is both a version skew
+          # across the model-registry API and a silent contradiction of the recorded decision.
+          # The `-full` variant (D35, 2026-11-11): the plain image has neither psycopg2 nor boto3, and against
+          # Postgres it exits with "No module named 'psycopg2'" (measured on v3.14.0 and v3.17.2) — this
+          # deployment could not start; the S3 artifact store needs boto3 as well. Tag verified on ghcr.io.
+          # SCHEMA: 3.17.2 migrated a 3.14.0 store itself on start (alembic b7e4c1a90f23 → dc11669786a5, API 200,
+          # measured) — but only because it adds tables: the store runs its upgrade when a table it defines is
+          # missing, and otherwise verifies the schema and refuses an out-of-date one ("run 'mlflow db upgrade'").
+          # So before each version bump, check whether the new version adds tables; if it does not, run
+          # `mlflow db upgrade <backend-store-uri>` with the new image first. Back up the store either way.
+          # --allowed-hosts: without it the server answers only localhost / private-IP Host headers; a client
+          # calling mlflow.cos.svc.cluster.local:5000 got 403 on the API while /health stayed 200 (measured).
+          # The list replaces the default, so localhost and 127.0.0.1 (kubectl port-forward) are named too, and
+          # a caller using the pod or ClusterIP on an API path (not /health) would now get 403 — none exists today.
+          image: ghcr.io/mlflow/mlflow:v3.17.2-full
           command:
             - mlflow
             - server
@@ -65,6 +79,8 @@ spec:
             - '0.0.0.0'
             - --port
             - '5000'
+            - --allowed-hosts
+            - 'mlflow:*,mlflow.cos:*,mlflow.cos.svc:*,mlflow.cos.svc.cluster.local:*,localhost:*,127.0.0.1:*'
           ports:
             - containerPort: 5000
               name: http
@@ -83,6 +99,14 @@ spec:
             limits:
               cpu: 1000m
               memory: 2Gi
+          # The schema migration runs before the server listens; on a large store it can outlast the liveness
+          # window (30 s + 3 × 15 s). Liveness and readiness wait for this probe — up to 10 minutes here.
+          startupProbe:
+            httpGet:
+              path: /health
+              port: 5000
+            periodSeconds: 10
+            failureThreshold: 60
           livenessProbe:
             httpGet:
               path: /health
@@ -95,6 +119,15 @@ spec:
               port: 5000
             initialDelaySeconds: 10
             periodSeconds: 10
+          # readOnlyRootFilesystem leaves Python no temporary directory, and the server then exits with
+          # "No usable temporary directory found" (measured as uid 1001 with a read-only root). /tmp is an
+          # emptyDir for that.
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir: {}
 
 ---
 apiVersion: v1
