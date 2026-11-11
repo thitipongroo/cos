@@ -56,6 +56,7 @@ The numbers are the ones used while the work was planned. Decisions about the wi
 | D30 | Demo sentences written in a page's JSX are translated, their figures and names passed as `{placeholders}`; `SAMPLE_*` / `INITIAL_*` records stay as data.                                                                                                                                 |
 | D31 | `apps/mobile` takes the root's `packageManager` pin (pnpm 12.18.0 + sha512), and its lockfile is regenerated with pnpm 12.                                                                                                                                                                |
 | D32 | OCR scales a 32-bit integer (`I`) or float (`F`) image from its own value range to 8-bit before tesseract; 16-bit images, which read fine, are left alone; no data from tesseract is empty text, confidence 0, and a logged warning.                                                      |
+| D33 | Pillow is pinned where it is used outside `services/*` (`mlops/requirements-mlflow.txt`, new `apps/mobile/scripts/requirements.txt`); CI audits the mobile scripts (blocking) and `mlops` (report only, until its own advisories are fixed).                                              |
 
 ## The series
 
@@ -1752,9 +1753,15 @@ gate's isolated run) checks the hash was not tested either; it ran 12.18.0 with 
           print(json.dumps(row, ensure_ascii=False), flush=True)
   ```
 
-- **Pillow outside `services/*` is unpinned and unaudited.** `mlops` (through mlflow → matplotlib) and
-  `apps/mobile/scripts/stitch-*.py` pull Pillow in without a pin, and CI's pip-audit covers only `services/*`.
-  `docs/runbooks/dependency-upgrade-plan.md:69` still calls Pillow 12.2.0 "current". This predates the series.
+- **`mlops` requirement sets carry 27 advisories (CI reports them, does not block).** pip-audit 2.10.1,
+  `python:3.12-slim`, 2026-11-11: `requirements-airflow.txt` (and `-dev.txt` through it) 17 on apache-airflow 3.2.2
+  (fixed in 3.3.0–3.3.1); `requirements-mlflow.txt` 9 — mlflow 3.14.0 (6) and cryptography 48.0.1 (3, fixed in 49.0.0 /
+  50.0.0); `requirements-feast.txt` 1 on feast 0.64.0 (fixed in 0.67.0); `requirements-base.txt` none. Distinct IDs;
+  pip-audit prints 36 rows, some IDs twice (its "Found N" lines count rows). Nothing in CI or any image installs them
+  today except `mlops/requirements-dev.txt` for the mlops tests. Each fix is an upgrade with its own testing; the CI
+  step `pip-audit — mlops (report only)` becomes blocking when they land; until then it runs even after a failed step,
+  has its own 8-minute timeout so it cannot time out the 15-minute job, and raises a `::warning` when it finds any.
+  Found on `chore/pillow-outside-services`.
 - **The backend image is 5.56 GB, and a build after a lockfile change took more than 17 minutes on a dev machine.**
   Measured in branch 4. `docker image inspect` gave 5.56 GB. The first build (`docker build -q`) had run for 17.5
   minutes by `ps` when it was stopped to get step timings; the rebuild with `--progress=plain` then found every step
@@ -1979,6 +1986,16 @@ prebuild`, native builds, Detox, EAS.
   and 2**30 + 50); after /doubt, `point` straight on the `I` image was tried and dropped — Pillow 13 does that
   arithmetic in float32 too, and shifting by the minimum first overflows int32 on a wide range. Not run here: `ruff`
   (not installed locally; CI runs `ruff check services mlops`).
+- **Closed — Pillow outside `services/*` was unpinned and unaudited.** Fixed on `chore/pillow-outside-services` (D33). A
+  dry-run resolution of each `mlops` set showed Pillow only in `requirements-mlflow.txt` (13.0.0 through matplotlib
+  3.11.2); airflow, feast and base pull none. That file now pins `Pillow==13.0.0` (resolution with the pin: exit 0, same
+  89 packages). The mobile screenshot tools get `apps/mobile/scripts/requirements.txt` (`Pillow==13.0.0`,
+  `numpy==2.5.4`, both imported by the scripts; their headers say to install it); both scripts import with those
+  versions in `python:3.12-slim`; the file, `docs/manual/getting-started.md` and the two capture scripts' comments name
+  the Python floor, 3.12 (numpy 2.5.4). CI's pip-audit step now also audits that file, blocking (no known
+  vulnerabilities), and a new step audits the four `mlops` sets with `continue-on-error` (Open: their 27 advisories —
+  none on Pillow). `docs/runbooks/dependency-upgrade-plan.md` shows Pillow 13.0.0. The mlops conformance specs still
+  pass (40). Not run here: the changed CI workflow itself (CI is not running, see Open); its YAML parses.
 - **`apps/mobile` (D7).**
   - Its own lockfile has expo-router → `query-string@7.1.3` → `decode-uri-component@0.2.2`.
   - react-navigation's `getStateFromPath` calls `queryString.parse` on deep-link input.

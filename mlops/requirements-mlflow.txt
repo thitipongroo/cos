@@ -2,3 +2,7 @@
 # SEPARATE env. mlflow 3.14.0 requires_python ">=3.10"; bumped 2.x→3.x per decision 2026-06-30.
 # If the artifact store is S3/MinIO, add boto3/botocore (see requirements-base) to the server image.
 mlflow==3.14.0
+# Pillow arrives through mlflow -> matplotlib and was unpinned (D33, 2026-11-11). Pinned to the version a
+# dry-run resolution of this file picks today, so a dev install and pip-audit see the same Pillow. Keep
+# it within matplotlib's range when bumping mlflow.
+Pillow==13.0.0

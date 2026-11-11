@@ -66,7 +66,7 @@ later, and `scripts/pnpm-audit.sh` now suppresses nothing.)_
 
 | Package                          | Pinned                   | Latest  | Risk                                          |
 | -------------------------------- | ------------------------ | ------- | --------------------------------------------- |
-| pytesseract / pdf2image / Pillow | 0.3.13 / 1.17.0 / 12.2.0 | same    | ✅ current                                    |
+| pytesseract / pdf2image / Pillow | 0.3.13 / 1.17.0 / 13.0.0 | same    | ✅ current; also pinned in mlops, mobile      |
 | python-dotenv (ai-gateway)       | 1.2.2                    | 1.2.2   | ✅ current                                    |
 | fastapi                          | 0.111–0.121              | 0.138.2 | 🟡                                            |
 | uvicorn                          | 0.29.0                   | 0.49.0  | 🟡                                            |

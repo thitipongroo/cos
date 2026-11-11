@@ -1,7 +1,7 @@
 // Apps & Services screenshot capture — adb/uiautomator only. Logs in as TENANT-ADMIN, opens Quick
 // Commands → Apps & Services, and captures the module hub (mockup 04_tenant_admin/01_home/
 // 02_quick_action_button) as ONE full-page image: it shoots several scrolling viewports and stitches
-// them into a single tall PNG via scripts/stitch-fullpage.py (Python + Pillow/numpy):
+// them into a single tall PNG via scripts/stitch-fullpage.py (Python ≥ 3.12; pip install -r scripts/requirements.txt):
 //   docs/screens/android/04-tenant-admin/01-Home/08-ta-apps-services.png
 // Prereqs: emulator + Metro (EXPO_PUBLIC_CAPTURE=1) + backend with E2E_AUTH_BYPASS=true + Python.
 

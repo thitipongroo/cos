@@ -2,7 +2,7 @@
 // Commands → New System Integration, and captures the connector picker (mockup 04_tenant_admin/01_home/
 // 02_quick_action_button/03_system_integration/00_tenant_new_integration) as ONE full-page image
 // (PO decision 2026-07-29 — one page, not split): it shoots several scrolling viewports and stitches
-// them into a single tall PNG via scripts/stitch-fullpage.py (Python + Pillow/numpy):
+// them into a single tall PNG via scripts/stitch-fullpage.py (Python ≥ 3.12; pip install -r scripts/requirements.txt):
 //   docs/screens/android/04-tenant-admin/01-Home/07-ta-system-integration.png
 // Prereqs: emulator + Metro (EXPO_PUBLIC_CAPTURE=1) + backend with E2E_AUTH_BYPASS=true + Python.
 

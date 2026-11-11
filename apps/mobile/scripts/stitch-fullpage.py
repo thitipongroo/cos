@@ -25,6 +25,7 @@
 #
 # Usage: python stitch-fullpage.py OUT.png TOP BOT [--fab X0,Y0,X1,Y1] [--sticky N]
 #                                  [--max-scroll N] shot0.png ...
+# Needs Pillow and numpy: pip install -r apps/mobile/scripts/requirements.txt
 import sys
 import numpy as np
 from PIL import Image

@@ -12,12 +12,12 @@ From a clean checkout to a running backend with seeded data.
 The Node.js and pnpm rows are read from `package.json` and `context/phases/phase-01-foundation-repository.md` §
 Tooling on 2026-11-10; the Docker and Python rows have no spec source there.
 
-| Tool     | Required                                                             | Where it is pinned                                                                       |
-| -------- | -------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
-| Node.js  | **≥ 24.0.0**                                                         | root `package.json` → `engines.node`; Docker images use `node:24-alpine`                 |
-| pnpm     | **≥ 12.0.0** (12.x line)                                             | root `package.json` → `engines.pnpm`; `packageManager` pins the exact build via Corepack |
-| Docker   | 24.x + Compose v2                                                    | `docker-compose.yml`                                                                     |
-| Python 3 | for `apps/mobile/scripts/stitch-fullpage.py` and the Python services | `services/ai-*`                                                                          |
+| Tool         | Required                                                                                                       | Where it is pinned                                                                       |
+| ------------ | -------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| Node.js      | **≥ 24.0.0**                                                                                                   | root `package.json` → `engines.node`; Docker images use `node:24-alpine`                 |
+| pnpm         | **≥ 12.0.0** (12.x line)                                                                                       | root `package.json` → `engines.pnpm`; `packageManager` pins the exact build via Corepack |
+| Docker       | 24.x + Compose v2                                                                                              | `docker-compose.yml`                                                                     |
+| Python 3.12+ | for `apps/mobile/scripts/stitch-*.py` (install `apps/mobile/scripts/requirements.txt`) and the Python services | `services/ai-*`, `apps/mobile/scripts/requirements.txt`                                  |
 
 Only the pnpm **major** line (12) is normative — a patch or minor bump is not a spec deviation.
 

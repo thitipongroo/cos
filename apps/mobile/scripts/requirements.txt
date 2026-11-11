@@ -1,0 +1,5 @@
+# Python >= 3.12 (numpy 2.5.4 requires it; Pillow 13.0.0 requires 3.11).
+# For the screenshot tools in this directory (stitch-fullpage.py, stitch-drawer.py): pip install -r requirements.txt
+# Pinned to the versions a dry-run resolution picked on 2026-11-11, and audited by CI's pip-audit step (D33).
+Pillow==13.0.0
+numpy==2.5.4

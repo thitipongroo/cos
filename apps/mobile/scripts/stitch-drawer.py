@@ -21,6 +21,8 @@ interpolated: every output row is a row that was on the screen.
 
 Usage:
     python stitch-drawer.py out.png top.png bottom.png --scroll 412 --region 640 2180
+
+Needs Pillow and numpy: pip install -r apps/mobile/scripts/requirements.txt
 """
 
 import sys
