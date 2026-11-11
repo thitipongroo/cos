@@ -84,7 +84,7 @@ export default function LineTokenGuideScreen(): React.JSX.Element {
       <View style={styles.header}>
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Back"
+          accessibilityLabel={t('common.back')}
           onPress={handleBack}
           style={styles.backButton}
           testID="line-guide-back-btn"

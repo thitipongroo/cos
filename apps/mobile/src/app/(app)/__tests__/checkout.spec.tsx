@@ -2,6 +2,7 @@
 
 import { render, fireEvent, waitFor } from '@testing-library/react-native';
 import { I18nProvider } from '../../../i18n';
+import { useLocaleStore } from '../../../store/localeStore';
 import CheckoutScreen from '../checkout';
 
 const mockBack = jest.fn();
@@ -18,6 +19,7 @@ jest.mock('expo-router', () => ({
 describe('CheckoutScreen', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    useLocaleStore.setState({ locale: 'en' });
   });
 
   async function renderScreen() {
@@ -85,5 +87,15 @@ describe('CheckoutScreen', () => {
     fireEvent.press(backBtn);
 
     expect(mockBack).toHaveBeenCalledTimes(1);
+  });
+
+  it.each([
+    ['en', '← Back'],
+    ['th', '← กลับ'],
+  ] as const)('labels the top back button for a screen reader (%s)', async (locale, label) => {
+    useLocaleStore.setState({ locale });
+    const { getByTestId } = await renderScreen();
+
+    expect(getByTestId('checkout-back-btn').props.accessibilityLabel).toBe(label);
   });
 });

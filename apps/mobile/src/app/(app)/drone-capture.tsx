@@ -40,7 +40,7 @@ export default function DroneRealityCaptureScreen(): React.JSX.Element {
       <View style={styles.header}>
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Back"
+          accessibilityLabel={t('common.back')}
           onPress={handleBack}
           style={styles.backButton}
           testID="drone-back-btn"
@@ -54,13 +54,15 @@ export default function DroneRealityCaptureScreen(): React.JSX.Element {
           </Text>
           <View style={styles.badgeRow}>
             <View style={styles.activeDot} />
-            <Text style={styles.badgeText}>DJI M300 RTK • CONNECTED</Text>
+            <Text style={styles.badgeText}>
+              {t('drone.capture.connected', { drone: 'DJI M300 RTK' })}
+            </Text>
           </View>
         </View>
 
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Mission Details"
+          accessibilityLabel={t('drone.capture.missionDetails')}
           onPress={handleOpenMissionDetail}
           style={styles.actionIconButton}
           testID="drone-detail-nav-btn"
@@ -73,32 +75,34 @@ export default function DroneRealityCaptureScreen(): React.JSX.Element {
         {/* Live Telemetry Grid */}
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>{t('drone.liveTelemetry')}</Text>
-          <Text style={styles.droneModelText}>RTK FIX: 1.2cm</Text>
+          <Text style={styles.droneModelText}>
+            {t('drone.capture.rtkFix', { accuracy: '1.2cm' })}
+          </Text>
         </View>
 
         <View style={styles.telemetryGrid}>
           <View style={styles.telemetryCard}>
             <MaterialIcons name="battery-charging-full" size={20} color={p.success} />
             <Text style={styles.telemetryVal}>84%</Text>
-            <Text style={styles.telemetryLabel}>Power</Text>
+            <Text style={styles.telemetryLabel}>{t('drone.capture.power')}</Text>
           </View>
 
           <View style={styles.telemetryCard}>
             <MaterialIcons name="height" size={20} color={p.accent} />
             <Text style={styles.telemetryVal}>122m</Text>
-            <Text style={styles.telemetryLabel}>Altitude</Text>
+            <Text style={styles.telemetryLabel}>{t('drone.capture.altitude')}</Text>
           </View>
 
           <View style={[styles.telemetryCard, styles.telemetryCardActive]}>
             <MaterialIcons name="satellite-alt" size={20} color={colors.syncing} />
             <Text style={styles.telemetryVal}>18</Text>
-            <Text style={styles.telemetryLabel}>GPS Sat</Text>
+            <Text style={styles.telemetryLabel}>{t('drone.capture.gpsSat')}</Text>
           </View>
 
           <View style={styles.telemetryCard}>
             <MaterialIcons name="signal-cellular-alt" size={20} color={p.primary} />
             <Text style={styles.telemetryVal}>-65dB</Text>
-            <Text style={styles.telemetryLabel}>Signal</Text>
+            <Text style={styles.telemetryLabel}>{t('drone.capture.signal')}</Text>
           </View>
         </View>
 
@@ -110,7 +114,9 @@ export default function DroneRealityCaptureScreen(): React.JSX.Element {
               <View style={styles.recBadge}>
                 <View style={[styles.recDot, isSurveying ? styles.recDotRecording : null]} />
                 <Text style={styles.recText}>
-                  {isSurveying ? 'SURVEYING 00:14:22' : 'STANDBY READY'}
+                  {isSurveying
+                    ? t('drone.capture.surveying', { elapsed: '00:14:22' })
+                    : t('drone.capture.standby')}
                 </Text>
               </View>
 
@@ -144,7 +150,9 @@ export default function DroneRealityCaptureScreen(): React.JSX.Element {
         {/* Capture Controls */}
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={isSurveying ? 'Stop Survey' : 'Start Real-Time Survey'}
+          accessibilityLabel={
+            isSurveying ? t('drone.capture.a11yStop') : t('drone.capture.a11yStart')
+          }
           onPress={handleToggleSurvey}
           style={({ pressed }) => [
             styles.primaryActionButton,
@@ -168,7 +176,7 @@ export default function DroneRealityCaptureScreen(): React.JSX.Element {
         <View style={styles.modeButtonsRow}>
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="Point Cloud"
+            accessibilityLabel={t('drone.capture.pointCloud')}
             onPress={() => setActiveMode('mesh')}
             style={[styles.modeButton, activeMode === 'mesh' && styles.modeButtonActive]}
           >
@@ -181,13 +189,13 @@ export default function DroneRealityCaptureScreen(): React.JSX.Element {
             <Text
               style={[styles.modeButtonText, activeMode === 'mesh' && styles.modeButtonTextActive]}
             >
-              Point Cloud
+              {t('drone.capture.pointCloud')}
             </Text>
           </Pressable>
 
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="Orbit Scan"
+            accessibilityLabel={t('drone.capture.orbitScan')}
             onPress={() => setActiveMode('orbit')}
             style={[styles.modeButton, activeMode === 'orbit' && styles.modeButtonActive]}
           >
@@ -200,7 +208,7 @@ export default function DroneRealityCaptureScreen(): React.JSX.Element {
             <Text
               style={[styles.modeButtonText, activeMode === 'orbit' && styles.modeButtonTextActive]}
             >
-              Orbit Scan
+              {t('drone.capture.orbitScan')}
             </Text>
           </Pressable>
         </View>
@@ -213,18 +221,20 @@ export default function DroneRealityCaptureScreen(): React.JSX.Element {
               <Text style={styles.aiTitle}>{t('drone.aiRealityScan')}</Text>
             </View>
             <View style={styles.liveTag}>
-              <Text style={styles.liveTagText}>AI EDGE</Text>
+              <Text style={styles.liveTagText}>{t('drone.capture.aiEdge')}</Text>
             </View>
           </View>
 
           <View style={styles.aiStatsRow}>
             <View>
-              <Text style={styles.aiSubText}>Edge Confidence</Text>
+              <Text style={styles.aiSubText}>{t('drone.capture.edgeConfidence')}</Text>
               <Text style={styles.aiConfidence}>98.2%</Text>
             </View>
             <View style={{ alignItems: 'flex-end' }}>
-              <Text style={styles.aiSubText}>Detected Elements</Text>
-              <Text style={styles.aiElements}>14 Rebar Columns</Text>
+              <Text style={styles.aiSubText}>{t('drone.capture.detectedElements')}</Text>
+              <Text style={styles.aiElements}>
+                {t('drone.capture.rebarColumns', { count: 14 })}
+              </Text>
             </View>
           </View>
         </View>
@@ -261,8 +271,8 @@ export default function DroneRealityCaptureScreen(): React.JSX.Element {
             <Text style={styles.missionDate}>24 Oct 2026 • 14:20</Text>
             <View style={styles.missionTagsRow}>
               <Text style={styles.missionTag}>4.2 GB</Text>
-              <Text style={styles.missionTag}>12k Polygons</Text>
-              <Text style={styles.missionTag}>Orthomosaic 2D</Text>
+              <Text style={styles.missionTag}>{t('drone.capture.polygons', { count: '12k' })}</Text>
+              <Text style={styles.missionTag}>{t('drone.capture.orthomosaic2d')}</Text>
             </View>
           </View>
         </Pressable>

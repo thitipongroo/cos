@@ -83,7 +83,7 @@ export default function MobilePortfolioLeasingScreen(): React.JSX.Element {
       <View style={styles.header}>
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Back"
+          accessibilityLabel={t('common.back')}
           onPress={handleBack}
           style={styles.backButton}
           testID="portfolio-back-btn"
@@ -108,19 +108,21 @@ export default function MobilePortfolioLeasingScreen(): React.JSX.Element {
           <View style={styles.kpiCard}>
             <Text style={styles.kpiLabel}>{t('leasing.portfolioOccupancy')}</Text>
             <Text style={styles.kpiValue}>94.2%</Text>
-            <Text style={styles.kpiSub}>+1.4% Target</Text>
+            <Text style={styles.kpiSub}>
+              {t('leasing.mobile.kpiOccupancyChange', { change: '+1.4%' })}
+            </Text>
           </View>
 
           <View style={[styles.kpiCard, styles.kpiCardAccent]}>
             <Text style={styles.kpiLabel}>{t('leasing.noiYield')}</Text>
             <Text style={[styles.kpiValue, { color: p.accent }]}>6.8%</Text>
-            <Text style={styles.kpiSub}>Avg Cap Rate</Text>
+            <Text style={styles.kpiSub}>{t('leasing.mobile.avgCapRate')}</Text>
           </View>
 
           <View style={styles.kpiCard}>
             <Text style={styles.kpiLabel}>{t('leasing.unitsAvailable')}</Text>
             <Text style={styles.kpiValue}>14</Text>
-            <Text style={styles.kpiSub}>In Portfolio</Text>
+            <Text style={styles.kpiSub}>{t('leasing.mobile.inPortfolio')}</Text>
           </View>
         </View>
 
@@ -128,34 +130,34 @@ export default function MobilePortfolioLeasingScreen(): React.JSX.Element {
         <View style={styles.tabBar}>
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="All Properties"
+            accessibilityLabel={t('leasing.mobile.a11yAll')}
             onPress={() => setActiveTab('all')}
             style={[styles.tabButton, activeTab === 'all' && styles.tabButtonActive]}
           >
             <Text style={[styles.tabText, activeTab === 'all' && styles.tabTextActive]}>
-              All Assets
+              {t('leasing.mobile.tabAll')}
             </Text>
           </Pressable>
 
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="Office Assets"
+            accessibilityLabel={t('leasing.mobile.a11yOffice')}
             onPress={() => setActiveTab('office')}
             style={[styles.tabButton, activeTab === 'office' && styles.tabButtonActive]}
           >
             <Text style={[styles.tabText, activeTab === 'office' && styles.tabTextActive]}>
-              Commercial
+              {t('leasing.mobile.tabCommercial')}
             </Text>
           </Pressable>
 
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="Logistics Assets"
+            accessibilityLabel={t('leasing.mobile.a11yLogistics')}
             onPress={() => setActiveTab('logistics')}
             style={[styles.tabButton, activeTab === 'logistics' && styles.tabButtonActive]}
           >
             <Text style={[styles.tabText, activeTab === 'logistics' && styles.tabTextActive]}>
-              Logistics
+              {t('leasing.mobile.tabLogistics')}
             </Text>
           </Pressable>
         </View>
@@ -181,16 +183,20 @@ export default function MobilePortfolioLeasingScreen(): React.JSX.Element {
 
               <View style={styles.propertyStatsRow}>
                 <View style={styles.statCol}>
-                  <Text style={styles.statLabel}>Available</Text>
-                  <Text style={styles.statVal}>{prop.availableUnits} Units</Text>
+                  <Text style={styles.statLabel}>{t('leasing.mobile.statAvailable')}</Text>
+                  <Text style={styles.statVal}>
+                    {t('leasing.mobile.unitsValue', { count: prop.availableUnits })}
+                  </Text>
                 </View>
                 <View style={styles.statCol}>
-                  <Text style={styles.statLabel}>Gross Yield</Text>
+                  <Text style={styles.statLabel}>{t('leasing.mobile.statGrossYield')}</Text>
                   <Text style={[styles.statVal, { color: p.accent }]}>{prop.yieldPercent}%</Text>
                 </View>
                 <View style={styles.statCol}>
-                  <Text style={styles.statLabel}>Status</Text>
-                  <Text style={[styles.statVal, { color: p.success }]}>Active</Text>
+                  <Text style={styles.statLabel}>{t('leasing.mobile.statStatus')}</Text>
+                  <Text style={[styles.statVal, { color: p.success }]}>
+                    {t('leasing.mobile.statusActive')}
+                  </Text>
                 </View>
               </View>
             </View>

@@ -77,7 +77,7 @@ export default function CheckoutScreen(): React.JSX.Element {
       <View style={styles.header}>
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Back"
+          accessibilityLabel={t('common.back')}
           onPress={handleCancel}
           style={styles.backButton}
           testID="checkout-back-btn"

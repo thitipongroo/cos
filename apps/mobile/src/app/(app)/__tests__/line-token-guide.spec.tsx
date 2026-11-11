@@ -7,6 +7,7 @@
 import { render, fireEvent, within } from '@testing-library/react-native';
 import { Linking } from 'react-native';
 import { I18nProvider } from '../../../i18n';
+import { useLocaleStore } from '../../../store/localeStore';
 import LineTokenGuideScreen from '../line-token-guide';
 
 const mockPush = jest.fn();
@@ -28,6 +29,7 @@ describe('LineTokenGuideScreen', () => {
   beforeEach(() => {
     mockPush.mockReset();
     mockBack.mockReset();
+    useLocaleStore.setState({ locale: 'en' });
   });
   afterEach(() => jest.restoreAllMocks());
 
@@ -89,5 +91,15 @@ describe('LineTokenGuideScreen', () => {
 
     expect(getByLabelText('Go to System Settings')).toBeTruthy();
     expect(getByLabelText('Open LINE Developers')).toBeTruthy();
+  });
+
+  it.each([
+    ['en', '← Back'],
+    ['th', '← กลับ'],
+  ] as const)('labels the back button for a screen reader (%s)', async (locale, label) => {
+    useLocaleStore.setState({ locale });
+    const { getByTestId } = await renderScreen();
+
+    expect(getByTestId('line-guide-back-btn').props.accessibilityLabel).toBe(label);
   });
 });

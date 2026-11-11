@@ -60,6 +60,7 @@ The numbers are the ones used while the work was planned. Decisions about the wi
 | D34 | mlops moves to the lowest versions with no advisory — apache-airflow 3.3.2, mlflow 3.17.2 (client and the `ghcr.io/mlflow/mlflow` server image, manifests only), feast 0.67.0 — and CI's mlops audit becomes blocking.                                                                    |
 | D35 | The MLflow server runs `ghcr.io/mlflow/mlflow:v3.17.2-full` (the plain image lacks psycopg2 and boto3); no migration initContainer (3.17.2 migrates a 3.14 store itself, because it adds tables — checked per version bump); the k8s Deployment uses `strategy: Recreate`.                |
 | D36 | The drone mission screen's export buttons say, in Thai and English, that report export is not available yet; drone-capture's "Close" link beside Recent Missions becomes a "View all" button.                                                                                             |
+| D37 | The drone mission screen's two export buttons read "Export report (coming soon)" / "ส่งออกรายงาน (เร็วๆ นี้)" — no "Signed", no "PDF" — as text and as accessibility label.                                                                                                               |
 
 ## The series
 
@@ -1591,17 +1592,13 @@ gate's isolated run) checks the hash was not tested either; it ran 12.18.0 with 
   `fix/audit-gate-pnpm12` to `fix/web-factoring-rates` — jobs failed without starting ("The job was not started because
   recent account payments have failed or your spending limit needs to be increased", GitHub billing) or were skipped.
   Nothing since has been checked by CI, including `pnpm/action-setup` with the `+sha512` pin.
-- **Mobile screens from `6a076c6d` hard-code English.** `portfolio-leasing`, `drone-capture` and `drone-mission-detail`
-  hard-code most of their text (tabs, KPI captions, layer names, metadata labels) and their accessibility labels (tab,
-  layer and scan-mode buttons, "Mission Details", "Export / Download Survey Report"); only titles and a few labels go
-  through `t()`. `line-token-guide` translates nearly everything; only its four step hints bypass `t()`. All four
-  hard-code the "Back" accessibility label (as does the older `checkout.tsx`), where siblings use `t('common.back')`.
-  The TH + EN rule is not met. The new render specs query some of these English labels, so they change with the fix.
-  Found on `test/mobile-render-6a076c6d`, not fixed there.
-- **drone-mission-detail's export buttons still promise an export.** Their text and labels — "Download Signed Survey
-  PDF", "Export Survey Report", "Download Survey Report" — are unchanged, though no export exists and nothing is signed;
-  since D36 the alert says so, but only after the tap. Relabel or disable them when the screen is localised. Found on
-  `fix/mobile-drone-honest-ui`.
+- **drone-mission-detail's "LandXML Ready" badge claims a readiness nothing provides.** It sits under the net soil
+  balance, while no export exists (D36); the large export button also keeps its `picture-as-pdf` icon. Translated with
+  its meaning kept ("พร้อม LandXML") on `fix/mobile-6a076c6d-i18n`, not changed there; whether to drop or reword it is a
+  product decision.
+- **`checkout.tsx` still hard-codes English beyond its back label.** "THB (VAT Included)", "Biller ID", "Reference 1
+  (Inv)", "Reference 2 (Project)", "THAI QR PAYMENT" and others bypass `t()`. Only the back label was in scope on
+  `fix/mobile-6a076c6d-i18n`.
 - **The drone-capture scan-mode buttons show no selected state.** "Point Cloud" / "Orbit Scan" change only a style and
   an icon colour — no text, no `accessibilityState.selected` — so neither a screen reader nor a test can tell which is
   active; they are left out of the render specs for that reason.
@@ -2077,6 +2074,24 @@ prebuild`, native builds, Detox, EAS.
   floors; `test:cov` 1,149; the en / th parity spec, `type-check`, `eslint` and the RN a11y gate pass. The rest of these
   screens' English-only text, the export buttons' own wording, and the scan-mode buttons' missing selected state stay
   Open.
+- **Closed — mobile screens from `6a076c6d` hard-coded English, and the export buttons promised an export.** Fixed on
+  `fix/mobile-6a076c6d-i18n` (D29, D30, D37). `portfolio-leasing`, `drone-capture` and `drone-mission-detail` route
+  their text and accessibility labels through `t()` under `leasing.mobile`, `drone.capture` and `drone.mission`: 58 new
+  keys, English word for word, Thai alongside; both files now hold 2,783 keys (2,725 before), and the parity spec
+  passes. Figures and names (`+1.4%`, `00:14:22`, `Sector 7B`, `+5,330 m³`, `0.5m`, the DSM range's two ends, the six
+  GCPs and their RMSE) are `{placeholders}`. Left as data, in English in both languages: the sample properties, the
+  "Real Estate V3" badge (the design screen's name), the recent mission "Sector 7B Mesh Gen" and its date "24 Oct 2026",
+  the sensor and coordinate-system values, coordinates and GSD, and `line-token-guide`'s four step hints (LINE console
+  menus as LINE shows them). The back button on all four screens and on `checkout.tsx` takes `t('common.back')`, as its
+  siblings do, so its English label reads "← Back" instead of "Back" — the one English change besides D37. Both export
+  buttons now read "Export report (coming soon)" / "ส่งออกรายงาน (เร็วๆ นี้)" (D37), and still raise the D36 alert. The
+  five render specs gain 14 tests: Thai text per screen, the filters and the survey toggle working in Thai, both back
+  labels, D37 with no "Signed", "PDF" or "Download" left, and one per translated screen that pins its English text word
+  for word. 11 of them fail against the screens as they were; the 3 English pins pass there by design and fail when an
+  English value in `en.json` is changed. `test:render:cov` 1,797 tests, 90.09 / 83.2 / 85.64 / 90.97 over its 90 / 83 /
+  85 / 90 floors (branches measured 83.14–83.22 across runs of the same tree, so its margin is about 0.15 points);
+  `test:cov` 1,149; `type-check`, `eslint apps/mobile/src` and the RN a11y gate (0 of 131 tappable files without a
+  prop) pass. Found on the way, and Open: the "LandXML Ready" badge, and the rest of `checkout.tsx`.
 - **`apps/mobile` (D7).**
   - Its own lockfile has expo-router → `query-string@7.1.3` → `decode-uri-component@0.2.2`.
   - react-navigation's `getStateFromPath` calls `queryString.parse` on deep-link input.

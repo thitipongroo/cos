@@ -40,7 +40,7 @@ export default function DroneMissionDetailScreen(): React.JSX.Element {
       <View style={styles.header}>
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Back"
+          accessibilityLabel={t('common.back')}
           onPress={handleBack}
           style={styles.backButton}
           testID="mission-back-btn"
@@ -50,17 +50,17 @@ export default function DroneMissionDetailScreen(): React.JSX.Element {
 
         <View style={styles.headerTitleContainer}>
           <Text style={styles.headerTitle} numberOfLines={1}>
-            Sector 7B • Earthwork Survey
+            {t('drone.mission.title', { sector: 'Sector 7B' })}
           </Text>
           <View style={styles.badgeRow}>
             <MaterialIcons name="check-circle" size={13} color={p.success} />
-            <Text style={styles.badgeText}>RTK Processed • High Precision</Text>
+            <Text style={styles.badgeText}>{t('drone.mission.rtkProcessed')}</Text>
           </View>
         </View>
 
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Export Survey Report"
+          accessibilityLabel={t('drone.mission.exportComingSoon')}
           onPress={handleExportReport}
           style={styles.actionIconButton}
           testID="mission-export-btn"
@@ -74,34 +74,34 @@ export default function DroneMissionDetailScreen(): React.JSX.Element {
         <View style={styles.layerBar}>
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="2D Orthophoto"
+            accessibilityLabel={t('drone.mission.a11yOrtho')}
             onPress={() => setActiveLayer('ortho')}
             style={[styles.layerButton, activeLayer === 'ortho' && styles.layerButtonActive]}
           >
             <Text style={[styles.layerText, activeLayer === 'ortho' && styles.layerTextActive]}>
-              2D Ortho
+              {t('drone.mission.layerOrtho')}
             </Text>
           </Pressable>
 
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="Elevation Heatmap"
+            accessibilityLabel={t('drone.mission.a11yHeatmap')}
             onPress={() => setActiveLayer('heatmap')}
             style={[styles.layerButton, activeLayer === 'heatmap' && styles.layerButtonActive]}
           >
             <Text style={[styles.layerText, activeLayer === 'heatmap' && styles.layerTextActive]}>
-              Elevation DSM
+              {t('drone.mission.layerDsm')}
             </Text>
           </Pressable>
 
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="Topo Contours"
+            accessibilityLabel={t('drone.mission.a11yContours')}
             onPress={() => setActiveLayer('contours')}
             style={[styles.layerButton, activeLayer === 'contours' && styles.layerButtonActive]}
           >
             <Text style={[styles.layerText, activeLayer === 'contours' && styles.layerTextActive]}>
-              Contours (0.5m)
+              {t('drone.mission.layerContours', { interval: '0.5m' })}
             </Text>
           </Pressable>
         </View>
@@ -114,7 +114,9 @@ export default function DroneMissionDetailScreen(): React.JSX.Element {
                 <Text style={styles.pillText}>GSD: 1.42 cm/px</Text>
               </View>
               <View style={styles.pillBadge}>
-                <Text style={styles.pillText}>Area: 42,500 m²</Text>
+                <Text style={styles.pillText}>
+                  {t('drone.mission.area', { area: '42,500 m²' })}
+                </Text>
               </View>
             </View>
 
@@ -133,10 +135,10 @@ export default function DroneMissionDetailScreen(): React.JSX.Element {
               />
               <Text style={styles.mapCenterLabel}>
                 {activeLayer === 'ortho'
-                  ? 'High-Resolution 2D Orthomosaic'
+                  ? t('drone.mission.orthoCaption')
                   : activeLayer === 'heatmap'
-                    ? 'Digital Surface Model (-2.4m to +18.2m)'
-                    : 'Interpolated Topo Contours (0.5m Intervals)'}
+                    ? t('drone.mission.dsmCaption', { min: '-2.4m', max: '+18.2m' })
+                    : t('drone.mission.contoursCaption', { interval: '0.5m' })}
               </Text>
             </View>
           </View>
@@ -152,45 +154,49 @@ export default function DroneMissionDetailScreen(): React.JSX.Element {
           <View style={styles.volumeRow}>
             {/* Cut */}
             <View style={styles.volumeCol}>
-              <Text style={styles.volumeLabel}>Excavation (Cut)</Text>
+              <Text style={styles.volumeLabel}>{t('drone.mission.cutLabel')}</Text>
               <Text style={[styles.volumeVal, { color: p.danger }]}>14,250 m³</Text>
-              <Text style={styles.volumeSub}>Bedrock & subgrade</Text>
+              <Text style={styles.volumeSub}>{t('drone.mission.cutSub')}</Text>
             </View>
 
             {/* Fill */}
             <View style={styles.volumeCol}>
-              <Text style={styles.volumeLabel}>Embankment (Fill)</Text>
+              <Text style={styles.volumeLabel}>{t('drone.mission.fillLabel')}</Text>
               <Text style={[styles.volumeVal, { color: p.success }]}>8,920 m³</Text>
-              <Text style={styles.volumeSub}>Compacted fill</Text>
+              <Text style={styles.volumeSub}>{t('drone.mission.fillSub')}</Text>
             </View>
           </View>
 
           {/* Net Balance */}
           <View style={styles.netBalanceRow}>
             <View>
-              <Text style={styles.netLabel}>Net Soil Balance</Text>
-              <Text style={styles.netSurplus}>+5,330 m³ Surplus Cut</Text>
+              <Text style={styles.netLabel}>{t('drone.mission.netBalance')}</Text>
+              <Text style={styles.netSurplus}>
+                {t('drone.mission.surplusCut', { amount: '+5,330 m³' })}
+              </Text>
             </View>
             <View style={styles.exportBadge}>
-              <Text style={styles.exportBadgeText}>LandXML Ready</Text>
+              <Text style={styles.exportBadgeText}>{t('drone.mission.landxmlReady')}</Text>
             </View>
           </View>
         </View>
 
         {/* Metadata Details */}
         <View style={styles.metaCard}>
-          <Text style={styles.metaTitle}>Mission Metadata</Text>
+          <Text style={styles.metaTitle}>{t('drone.mission.metaTitle')}</Text>
           <View style={styles.metaGrid}>
             <View style={styles.metaItem}>
-              <Text style={styles.metaItemLabel}>Sensor Model</Text>
+              <Text style={styles.metaItemLabel}>{t('drone.mission.sensor')}</Text>
               <Text style={styles.metaItemVal}>Zenmuse P1 (45MP Full Frame)</Text>
             </View>
             <View style={styles.metaItem}>
-              <Text style={styles.metaItemLabel}>Ground Control (GCP)</Text>
-              <Text style={styles.metaItemVal}>6 RTK Base Points (RMSE 1.1cm)</Text>
+              <Text style={styles.metaItemLabel}>{t('drone.mission.gcp')}</Text>
+              <Text style={styles.metaItemVal}>
+                {t('drone.mission.gcpValue', { count: 6, rmse: '1.1cm' })}
+              </Text>
             </View>
             <View style={styles.metaItem}>
-              <Text style={styles.metaItemLabel}>Coordinate System</Text>
+              <Text style={styles.metaItemLabel}>{t('drone.mission.crs')}</Text>
               <Text style={styles.metaItemVal}>WGS84 / UTM Zone 47N (EPSG:32647)</Text>
             </View>
           </View>
@@ -199,7 +205,7 @@ export default function DroneMissionDetailScreen(): React.JSX.Element {
         {/* Action Button */}
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Download Survey Report"
+          accessibilityLabel={t('drone.mission.exportComingSoon')}
           onPress={handleExportReport}
           style={({ pressed }) => [styles.downloadButton, pressed && styles.buttonPressed]}
           testID="download-survey-btn"
@@ -210,7 +216,7 @@ export default function DroneMissionDetailScreen(): React.JSX.Element {
             color={p.onPrimary}
             style={{ marginRight: 8 }}
           />
-          <Text style={styles.downloadButtonText}>Download Signed Survey PDF</Text>
+          <Text style={styles.downloadButtonText}>{t('drone.mission.exportComingSoon')}</Text>
         </Pressable>
       </ScrollView>
     </View>

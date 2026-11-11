@@ -12,6 +12,7 @@
 //
 // The link beside "Recent Missions" read "Close" while opening the mission detail, with no role;
 // since D36 (2026-11-12) it reads "View all" in Thai and English and is announced as a button.
+// The rest of the screen's text followed into Thai and English the same day.
 
 import { render, fireEvent } from '@testing-library/react-native';
 import { I18nProvider } from '../../../i18n';
@@ -117,5 +118,51 @@ describe('DroneRealityCaptureScreen', () => {
     await fireEvent.press(getByTestId('drone-back-btn'));
 
     expect(mockBack).toHaveBeenCalledTimes(1);
+  });
+
+  it('labels the back button for a screen reader', async () => {
+    const { getByTestId } = await renderScreen();
+
+    expect(getByTestId('drone-back-btn').props.accessibilityLabel).toBe('← Back');
+  });
+
+  it('reads in Thai, and the survey toggle still keeps its three parts together', async () => {
+    useLocaleStore.setState({ locale: 'th' });
+    const { getByTestId, getByText, getByLabelText, queryByText } = await renderScreen();
+
+    expect(getByTestId('drone-back-btn').props.accessibilityLabel).toBe('← กลับ');
+    expect(getByText('พร้อมทำงาน')).toBeTruthy();
+    expect(getByLabelText('เริ่มสำรวจแบบเรียลไทม์')).toBeTruthy();
+    expect(getByText('เสาเหล็กเสริม 14 ต้น')).toBeTruthy();
+
+    await fireEvent.press(getByTestId('toggle-survey-btn'));
+
+    expect(getByLabelText('หยุดสำรวจ')).toBeTruthy();
+    expect(getByText('กำลังสำรวจ 00:14:22')).toBeTruthy();
+    expect(queryByText('พร้อมทำงาน')).toBeNull();
+  });
+
+  // Pins the screen's English, word for word as it was before the text moved into en.json.
+  it('keeps its English text and labels', async () => {
+    const { getByText, getAllByText, getByLabelText } = await renderScreen();
+
+    for (const text of [
+      'DJI M300 RTK • CONNECTED',
+      'RTK FIX: 1.2cm',
+      'Power',
+      'Altitude',
+      'GPS Sat',
+      'Signal',
+      'AI EDGE',
+      'Edge Confidence',
+      'Detected Elements',
+      '14 Rebar Columns',
+      '12k Polygons',
+      'Orthomosaic 2D',
+    ])
+      expect(getByText(text)).toBeTruthy();
+    for (const text of ['Point Cloud', 'Orbit Scan']) expect(getAllByText(text)).toHaveLength(1);
+    for (const label of ['Mission Details', 'Point Cloud', 'Orbit Scan'])
+      expect(getByLabelText(label)).toBeTruthy();
   });
 });

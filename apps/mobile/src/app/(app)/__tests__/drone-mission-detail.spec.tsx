@@ -7,7 +7,9 @@
 //
 // No export exists behind this screen yet. Both export buttons used to announce a report "generated
 // successfully"; since D36 (2026-11-12) they say, in Thai and English, that export is not available
-// and nothing was generated. The last tests hold them to that.
+// and nothing was generated. The last tests hold them to that. Their own labels said "Download
+// Signed Survey PDF" and "Export Survey Report"; since D37 (2026-11-12) both read "Export report
+// (coming soon)", in Thai and English, like the rest of the screen.
 
 import { render, fireEvent } from '@testing-library/react-native';
 import { Alert } from 'react-native';
@@ -119,5 +121,63 @@ describe('DroneMissionDetailScreen', () => {
       'ระบบยังไม่รองรับการส่งออกรายงานสำรวจ (Civil 3D LandXML และ PDF) ยังไม่มีการสร้างไฟล์ใด ๆ',
       [{ text: 'ตกลง' }],
     );
+  });
+
+  // D37: no "Signed", no "PDF", no "Download" — the buttons say export is coming, nothing more.
+  it('labels both export buttons "coming soon"', async () => {
+    const { getByTestId, getByText, queryByText } = await renderScreen();
+
+    for (const id of ['mission-export-btn', 'download-survey-btn'])
+      expect(getByTestId(id).props.accessibilityLabel).toBe('Export report (coming soon)');
+    expect(getByText('Export report (coming soon)')).toBeTruthy();
+    expect(queryByText(/Signed|PDF|Download/)).toBeNull();
+  });
+
+  it('labels the back button for a screen reader', async () => {
+    const { getByTestId } = await renderScreen();
+
+    expect(getByTestId('mission-back-btn').props.accessibilityLabel).toBe('← Back');
+  });
+
+  it('reads in Thai: layers, volumes and the export buttons', async () => {
+    useLocaleStore.setState({ locale: 'th' });
+    const { getByTestId, getByText, getByLabelText } = await renderScreen();
+
+    expect(getByTestId('mission-back-btn').props.accessibilityLabel).toBe('← กลับ');
+    expect(getByText('Sector 7B • สำรวจงานดิน')).toBeTruthy();
+    expect(getByText('ดินขุดเหลือ +5,330 m³')).toBeTruthy();
+    expect(getByText('จุดฐาน RTK 6 จุด (RMSE 1.1cm)')).toBeTruthy();
+    for (const id of ['mission-export-btn', 'download-survey-btn'])
+      expect(getByTestId(id).props.accessibilityLabel).toBe('ส่งออกรายงาน (เร็วๆ นี้)');
+
+    await fireEvent.press(getByLabelText('เส้นชั้นความสูง'));
+    expect(getByText('เส้นชั้นความสูงจากการประมาณค่า (ช่วง 0.5m)')).toBeTruthy();
+
+    await fireEvent.press(getByLabelText('แผนที่สีระดับความสูง'));
+    expect(getByText('แบบจำลองพื้นผิวเชิงเลข (-2.4m ถึง +18.2m)')).toBeTruthy();
+  });
+
+  // Pins the screen's English, word for word as it was before the text moved into en.json.
+  it('keeps its English text', async () => {
+    const { getByText } = await renderScreen();
+
+    for (const text of [
+      'RTK Processed • High Precision',
+      '2D Ortho',
+      'Elevation DSM',
+      'Contours (0.5m)',
+      'Area: 42,500 m²',
+      'Excavation (Cut)',
+      'Bedrock & subgrade',
+      'Embankment (Fill)',
+      'Compacted fill',
+      'Net Soil Balance',
+      'LandXML Ready',
+      'Mission Metadata',
+      'Sensor Model',
+      'Ground Control (GCP)',
+      'Coordinate System',
+    ])
+      expect(getByText(text)).toBeTruthy();
   });
 });
