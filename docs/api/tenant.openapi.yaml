@@ -205,7 +205,8 @@ components:
           description: |
             Optional. IANA timezone for notification quiet hours + digest schedules (§19.3/§19.6).
             Defaults from data_region when omitted. Must be an `Area/Location` name the runtime knows
-            (`Intl`), at most 40 characters: `Mars/Olympus` is refused with 400, as is `UTC`.
+            (`Intl`), at most 40 characters: `Mars/Olympus` is refused with 400, as is a bare `UTC`
+            (send `Etc/UTC`).
           example: Asia/Bangkok
 
     TenantListRow:
