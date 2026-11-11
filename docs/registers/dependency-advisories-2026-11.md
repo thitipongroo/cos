@@ -1576,6 +1576,11 @@ gate's isolated run) checks the hash was not tested either; it ran 12.18.0 with 
 
 ## Open
 
+- **A tenant's `timezone` is checked for shape, not against the zone list.** `create-tenant.dto.ts` (and the trial DTO,
+  which inherits it) accepts any `Area/Location` matching `/^[A-Za-z_]+(?:\/[A-Za-z0-9_+-]+)+$/` up to 40 characters, so
+  `Mars/Olympus` passes and is stored; the readers pass it to `Intl.DateTimeFormat({ timeZone })`, which throws
+  `RangeError` on it (checked in Node 24) — notification quiet hours, digests and trial-notice dates for that tenant
+  would fail. Found on `docs/schema-tenant-timezone` (documentation only), not fixed there.
 - **Sample records on the `6a076c6d` pages are shown in English.** `SAMPLE_*` / `INITIAL_*` constants in
   `leasing/page.tsx`, `leasing/properties/[id]`, `crm/tenders/[id]`, `finance/factoring` and `safety/ai-vision` hold
   names, asset types, work packages, zones and, on `safety/ai-vision`, alert titles and details ("NO HARD HAT DETECTED",
@@ -1621,7 +1626,10 @@ gate's isolated run) checks the hash was not tested either; it ran 12.18.0 with 
   `tenants_trial_lifecycle_idx`, and a `platform.tenant_trial_notices` section (columns, key, and its RLS, which departs
   from the §11.0 template: one SELECT-only policy, no write policy); a one-off script, not kept, comparing the migration
   with the doc's rows (columns, types, CHECK values, constraint, index and policy names) finds no difference.
-  `platform.tenants`' `timezone` column, which the backend reads, is still not in the doc — it predates this.
+  `platform.tenants`' `timezone` column (migration `20260723000002`) was documented next, on
+  `docs/schema-tenant-timezone`; the same Prisma-vs-doc script then lists 17 columns on both sides. Its row says no
+  endpoint changes it after creation — the code comments' "a tenant may override it afterwards" is not built (nothing in
+  `backend/src` outside tests assigns it).
 - **Closed — the ai-ocr-pipeline image had no Thai OCR data.** Fixed on `fix/ocr-thai`. Without `tha`, tesseract
   printed "Failed loading language 'tha'", carried on with English only and exited 0, so Thai came back as Latin
   noise. The Dockerfile now installs `tesseract-ocr-tha` (Debian 1:4.1.0-2; the image grows 619.0 → 621.0 MB). That
