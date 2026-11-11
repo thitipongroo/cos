@@ -59,6 +59,7 @@ The numbers are the ones used while the work was planned. Decisions about the wi
 | D33 | Pillow is pinned where it is used outside `services/*` (`mlops/requirements-mlflow.txt`, new `apps/mobile/scripts/requirements.txt`); CI audits the mobile scripts (blocking) and `mlops` (report only, until its own advisories are fixed).                                              |
 | D34 | mlops moves to the lowest versions with no advisory — apache-airflow 3.3.2, mlflow 3.17.2 (client and the `ghcr.io/mlflow/mlflow` server image, manifests only), feast 0.67.0 — and CI's mlops audit becomes blocking.                                                                    |
 | D35 | The MLflow server runs `ghcr.io/mlflow/mlflow:v3.17.2-full` (the plain image lacks psycopg2 and boto3); no migration initContainer (3.17.2 migrates a 3.14 store itself, because it adds tables — checked per version bump); the k8s Deployment uses `strategy: Recreate`.                |
+| D36 | The drone mission screen's export buttons say, in Thai and English, that report export is not available yet; drone-capture's "Close" link beside Recent Missions becomes a "View all" button.                                                                                             |
 
 ## The series
 
@@ -1590,11 +1591,6 @@ gate's isolated run) checks the hash was not tested either; it ran 12.18.0 with 
   `fix/audit-gate-pnpm12` to `fix/web-factoring-rates` — jobs failed without starting ("The job was not started because
   recent account payments have failed or your spending limit needs to be increased", GitHub billing) or were skipped.
   Nothing since has been checked by CI, including `pnpm/action-setup` with the `+sha512` pin.
-- **Two mobile screens from `6a076c6d` tell the user something that did not happen.** `drone-mission-detail.tsx`: both
-  export buttons raise "Civil 3D LandXML and PDF Topographical Survey Report generated successfully." and generate
-  nothing. `drone-capture.tsx`: the link beside "Recent Missions" reads "Close" (`common.close`) and opens the mission
-  detail, with no accessibility role. The new render specs pin both as built (named "as built") so a change is
-  deliberate. Found on `test/mobile-render-6a076c6d`; changing the screens is a product decision.
 - **Mobile screens from `6a076c6d` hard-code English.** `portfolio-leasing`, `drone-capture` and `drone-mission-detail`
   hard-code most of their text (tabs, KPI captions, layer names, metadata labels) and their accessibility labels (tab,
   layer and scan-mode buttons, "Mission Details", "Export / Download Survey Report"); only titles and a few labels go
@@ -1602,6 +1598,10 @@ gate's isolated run) checks the hash was not tested either; it ran 12.18.0 with 
   hard-code the "Back" accessibility label (as does the older `checkout.tsx`), where siblings use `t('common.back')`.
   The TH + EN rule is not met. The new render specs query some of these English labels, so they change with the fix.
   Found on `test/mobile-render-6a076c6d`, not fixed there.
+- **drone-mission-detail's export buttons still promise an export.** Their text and labels — "Download Signed Survey
+  PDF", "Export Survey Report", "Download Survey Report" — are unchanged, though no export exists and nothing is signed;
+  since D36 the alert says so, but only after the tap. Relabel or disable them when the screen is localised. Found on
+  `fix/mobile-drone-honest-ui`.
 - **The drone-capture scan-mode buttons show no selected state.** "Point Cloud" / "Orbit Scan" change only a style and
   an icon colour — no text, no `accessibilityState.selected` — so neither a screen reader nor a test can tell which is
   active; they are left out of the render specs for that reason.
@@ -2066,6 +2066,17 @@ prebuild`, native builds, Detox, EAS.
   / 83 / 85 / 90, with a DEPTH PASS 8 entry. After /doubt a scan-mode test was dropped — it could not fail (see Open) —
   and spies are restored in `afterEach`. Mobile `test:cov` (1,149), `type-check`, `eslint apps/mobile/src` and the RN
   a11y gate pass as before. Two things the specs found are Open (below).
+- **Closed — two mobile drone screens told the user something that did not happen.** Fixed on
+  `fix/mobile-drone-honest-ui` (D36). `drone-mission-detail.tsx`: both export buttons raised "Civil 3D LandXML and PDF
+  Topographical Survey Report generated successfully." with nothing behind them; they now say "Report export not
+  available yet" / "ยังส่งออกรายงานไม่ได้" and that nothing was generated (new `drone.exportUnavailable*` keys, en and
+  th). `drone-capture.tsx`: the link beside "Recent Missions" read "Close" (`common.close`) while opening the mission
+  detail, with no role; it now reads `drone.viewAll` ("View all" / "ดูทั้งหมด"), is a button with that accessibility
+  label, and goes to the same place. The two render tests that had pinned the old behaviour "as built" now test the new
+  one in both languages (19 in the two specs). Mobile `test:render:cov` 1,783 tests, coverage unchanged and over its
+  floors; `test:cov` 1,149; the en / th parity spec, `type-check`, `eslint` and the RN a11y gate pass. The rest of these
+  screens' English-only text, the export buttons' own wording, and the scan-mode buttons' missing selected state stay
+  Open.
 - **`apps/mobile` (D7).**
   - Its own lockfile has expo-router → `query-string@7.1.3` → `decode-uri-component@0.2.2`.
   - react-navigation's `getStateFromPath` calls `queryString.parse` on deep-link input.

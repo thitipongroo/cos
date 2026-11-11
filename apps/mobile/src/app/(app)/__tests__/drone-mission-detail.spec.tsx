@@ -5,13 +5,14 @@
 // API behind it yet), so what is checked is that each layer button shows its layer and that the
 // volumes on screen agree with each other: cut − fill must equal the net balance it prints.
 //
-// RECORDED AS IT IS, NOT ENDORSED: both export buttons only raise an alert that says the report was
-// "generated successfully" — nothing is generated or downloaded. The last test pins that down so a
-// change to it is deliberate (register Open item).
+// No export exists behind this screen yet. Both export buttons used to announce a report "generated
+// successfully"; since D36 (2026-11-12) they say, in Thai and English, that export is not available
+// and nothing was generated. The last tests hold them to that.
 
 import { render, fireEvent } from '@testing-library/react-native';
 import { Alert } from 'react-native';
 import { I18nProvider } from '../../../i18n';
+import { useLocaleStore } from '../../../store/localeStore';
 import DroneMissionDetailScreen from '../drone-mission-detail';
 
 const mockBack = jest.fn();
@@ -35,7 +36,10 @@ const LAYERS: [label: string, caption: string][] = [
 ];
 
 describe('DroneMissionDetailScreen', () => {
-  beforeEach(() => mockBack.mockReset());
+  beforeEach(() => {
+    mockBack.mockReset();
+    useLocaleStore.setState({ locale: 'en' });
+  });
   afterEach(() => jest.restoreAllMocks());
 
   it('shows the survey with the orthophoto layer first', async () => {
@@ -86,7 +90,7 @@ describe('DroneMissionDetailScreen', () => {
   });
 
   it.each(['mission-export-btn', 'download-survey-btn'])(
-    '%s only raises a "generated successfully" alert — nothing is exported (as built)',
+    '%s says export is not available yet, and that nothing was generated',
     async (testID) => {
       const alert = jest.spyOn(Alert, 'alert').mockImplementation(() => undefined);
       const { getByTestId } = await renderScreen();
@@ -95,10 +99,25 @@ describe('DroneMissionDetailScreen', () => {
 
       expect(alert).toHaveBeenCalledTimes(1);
       expect(alert).toHaveBeenCalledWith(
-        'Export Survey Report',
-        'Civil 3D LandXML and PDF Topographical Survey Report generated successfully.',
+        'Report export not available yet',
+        'Exporting the survey report (Civil 3D LandXML and PDF) is not available yet. Nothing has been generated.',
         [{ text: 'OK' }],
       );
+      expect(JSON.stringify(alert.mock.calls)).not.toMatch(/success/i);
     },
   );
+
+  it('says the same in Thai', async () => {
+    useLocaleStore.setState({ locale: 'th' });
+    const alert = jest.spyOn(Alert, 'alert').mockImplementation(() => undefined);
+    const { getByTestId } = await renderScreen();
+
+    await fireEvent.press(getByTestId('download-survey-btn'));
+
+    expect(alert).toHaveBeenCalledWith(
+      'ยังส่งออกรายงานไม่ได้',
+      'ระบบยังไม่รองรับการส่งออกรายงานสำรวจ (Civil 3D LandXML และ PDF) ยังไม่มีการสร้างไฟล์ใด ๆ',
+      [{ text: 'ตกลง' }],
+    );
+  });
 });

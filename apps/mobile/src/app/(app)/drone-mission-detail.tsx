@@ -24,13 +24,13 @@ export default function DroneMissionDetailScreen(): React.JSX.Element {
     router.back();
   }, [router]);
 
+  // No export exists behind this screen yet (D36, 2026-11-12). It used to announce "generated
+  // successfully" for a report nobody generated; it now says so plainly.
   const handleExportReport = useCallback(() => {
-    Alert.alert(
-      'Export Survey Report',
-      'Civil 3D LandXML and PDF Topographical Survey Report generated successfully.',
-      [{ text: 'OK' }],
-    );
-  }, []);
+    Alert.alert(t('drone.exportUnavailableTitle'), t('drone.exportUnavailableBody'), [
+      { text: t('drone.exportUnavailableOk') },
+    ]);
+  }, [t]);
 
   const styles = useMemo(() => makeStyles(p, isDark), [p, isDark]);
 

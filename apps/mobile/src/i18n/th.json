@@ -3696,6 +3696,10 @@
     "stopSurvey": "หยุดการบินสำรวจ",
     "aiRealityScan": "การประมวลผลวัตถุด้วย AI",
     "recentMissions": "ภารกิจบินสำรวจล่าสุด",
-    "cutFillCalculation": "คำนวณปริมาตรดินขุด-ดินถม"
+    "cutFillCalculation": "คำนวณปริมาตรดินขุด-ดินถม",
+    "exportUnavailableTitle": "ยังส่งออกรายงานไม่ได้",
+    "exportUnavailableBody": "ระบบยังไม่รองรับการส่งออกรายงานสำรวจ (Civil 3D LandXML และ PDF) ยังไม่มีการสร้างไฟล์ใด ๆ",
+    "exportUnavailableOk": "ตกลง",
+    "viewAll": "ดูทั้งหมด"
   }
 }

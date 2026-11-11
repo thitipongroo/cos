@@ -3696,6 +3696,10 @@
     "stopSurvey": "STOP SURVEY",
     "aiRealityScan": "AI Reality Scan",
     "recentMissions": "Recent Missions",
-    "cutFillCalculation": "Cut & Fill Volumetric Calculation"
+    "cutFillCalculation": "Cut & Fill Volumetric Calculation",
+    "exportUnavailableTitle": "Report export not available yet",
+    "exportUnavailableBody": "Exporting the survey report (Civil 3D LandXML and PDF) is not available yet. Nothing has been generated.",
+    "exportUnavailableOk": "OK",
+    "viewAll": "View all"
   }
 }

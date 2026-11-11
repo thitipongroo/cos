@@ -10,12 +10,12 @@
 // no text, no accessibilityState.selected — so there is nothing a test (or a screen reader) can
 // observe; a test that pressed them could not fail (register Open item).
 //
-// RECORDED AS IT IS, NOT ENDORSED: the link beside "Recent Missions" reads "Close" (common.close)
-// yet opens the mission detail, and has no accessibility role. The test pins the current behaviour so
-// a change is deliberate (register Open item).
+// The link beside "Recent Missions" read "Close" while opening the mission detail, with no role;
+// since D36 (2026-11-12) it reads "View all" in Thai and English and is announced as a button.
 
 import { render, fireEvent } from '@testing-library/react-native';
 import { I18nProvider } from '../../../i18n';
+import { useLocaleStore } from '../../../store/localeStore';
 import DroneRealityCaptureScreen from '../drone-capture';
 
 const mockPush = jest.fn();
@@ -37,6 +37,7 @@ describe('DroneRealityCaptureScreen', () => {
   beforeEach(() => {
     mockPush.mockReset();
     mockBack.mockReset();
+    useLocaleStore.setState({ locale: 'en' });
   });
 
   it('shows the console in standby', async () => {
@@ -89,14 +90,25 @@ describe('DroneRealityCaptureScreen', () => {
     expect(mockPush).toHaveBeenCalledWith('/drone-mission-detail');
   });
 
-  it('the link beside "Recent Missions" reads "Close" yet opens the mission detail (as built)', async () => {
-    const { getByText } = await renderScreen();
+  it('"View all" beside "Recent Missions" is a button that opens the mission detail', async () => {
+    const { getByTestId, getByText, getByRole, queryByText } = await renderScreen();
 
     expect(getByText('Recent Missions')).toBeTruthy();
-    await fireEvent.press(getByText('Close'));
+    const link = getByTestId('recent-missions-view-all');
+    expect(getByRole('button', { name: 'View all' })).toBe(link);
+    expect(queryByText('Close')).toBeNull();
+
+    await fireEvent.press(link);
 
     expect(mockPush).toHaveBeenCalledWith('/drone-mission-detail');
     expect(mockBack).not.toHaveBeenCalled();
+  });
+
+  it('reads "ดูทั้งหมด" in Thai', async () => {
+    useLocaleStore.setState({ locale: 'th' });
+    const { getByRole } = await renderScreen();
+
+    expect(getByRole('button', { name: 'ดูทั้งหมด' })).toBeTruthy();
   });
 
   it('goes back', async () => {

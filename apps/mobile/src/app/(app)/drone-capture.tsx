@@ -232,8 +232,14 @@ export default function DroneRealityCaptureScreen(): React.JSX.Element {
         {/* Recent Missions */}
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>{t('drone.recentMissions')}</Text>
-          <Pressable onPress={handleOpenMissionDetail}>
-            <Text style={styles.viewAllText}>{t('common.close')}</Text>
+          {/* "View all" (D36): it read "Close" while opening the mission detail, with no role. */}
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={t('drone.viewAll')}
+            onPress={handleOpenMissionDetail}
+            testID="recent-missions-view-all"
+          >
+            <Text style={styles.viewAllText}>{t('drone.viewAll')}</Text>
           </Pressable>
         </View>
 
