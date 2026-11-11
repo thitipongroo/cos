@@ -3,6 +3,7 @@ import {
   IsIn,
   IsOptional,
   IsString,
+  IsTimeZone,
   IsUrl,
   Matches,
   MaxLength,
@@ -55,7 +56,8 @@ export class CreateTenantDto extends AdminJustificationDto {
     description:
       'IANA timezone for notification quiet hours + digest schedules (§19.3/§19.6). ' +
       'Defaults from data_region when omitted (ap-southeast-7 -> Asia/Bangkok, ' +
-      'ap-southeast-1 -> Asia/Singapore, eu-west-1 -> Europe/Dublin).',
+      'ap-southeast-1 -> Asia/Singapore, eu-west-1 -> Europe/Dublin). ' +
+      'Must be a zone the runtime knows, not only shaped like one.',
     example: 'Asia/Bangkok',
   })
   @IsOptional()
@@ -63,6 +65,10 @@ export class CreateTenantDto extends AdminJustificationDto {
   @Matches(/^[A-Za-z_]+(?:\/[A-Za-z0-9_+-]+)+$/, {
     message: 'timezone must be an IANA zone name, e.g. Asia/Bangkok',
   })
+  // The shape alone let 'Mars/Olympus' through, and every reader hands the value to
+  // Intl.DateTimeFormat({ timeZone }) — quiet hours, digests, trial-notice dates — which throws
+  // RangeError on a zone it does not know. isTimeZone runs that same Intl check.
+  @IsTimeZone({ message: 'timezone must be an IANA zone that exists, e.g. Asia/Bangkok' })
   @MaxLength(40)
   timezone?: string;
 }

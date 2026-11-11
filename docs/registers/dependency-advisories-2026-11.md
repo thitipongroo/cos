@@ -1576,11 +1576,6 @@ gate's isolated run) checks the hash was not tested either; it ran 12.18.0 with 
 
 ## Open
 
-- **A tenant's `timezone` is checked for shape, not against the zone list.** `create-tenant.dto.ts` (and the trial DTO,
-  which inherits it) accepts any `Area/Location` matching `/^[A-Za-z_]+(?:\/[A-Za-z0-9_+-]+)+$/` up to 40 characters, so
-  `Mars/Olympus` passes and is stored; the readers pass it to `Intl.DateTimeFormat({ timeZone })`, which throws
-  `RangeError` on it (checked in Node 24) — notification quiet hours, digests and trial-notice dates for that tenant
-  would fail. Found on `docs/schema-tenant-timezone` (documentation only), not fixed there.
 - **Sample records on the `6a076c6d` pages are shown in English.** `SAMPLE_*` / `INITIAL_*` constants in
   `leasing/page.tsx`, `leasing/properties/[id]`, `crm/tenders/[id]`, `finance/factoring` and `safety/ai-vision` hold
   names, asset types, work packages, zones and, on `safety/ai-vision`, alert titles and details ("NO HARD HAT DETECTED",
@@ -1961,6 +1956,15 @@ prebuild`, native builds, Detox, EAS.
   root's, whole string (version and hash), next to the existing pnpm-major test; CI's `conformance-tests` job runs it.
   Foundation specs 443 → 444 passed. Negative control: one hash digit changed in the mobile file made it fail, printing
   both strings; the file was restored from a byte copy (`cmp` identical) and the run was green again.
+- **Closed — a tenant's `timezone` was checked for shape only.** Fixed on `fix/tenant-timezone-validation`.
+  `CreateTenantDto.timezone` (inherited by `CreateTrialTenantDto`) keeps the `Area/Location` regex and the 40-character
+  cap and adds class-validator's `@IsTimeZone()`, which runs the same `Intl.DateTimeFormat({ timeZone })` the readers
+  do; `docs/api/tenant.openapi.yaml` says so for both request bodies. New spec
+  `backend/src/modules/tenant/__tests__/tenant-timezone.dto.spec.ts`, for both DTOs: omitted, and the three region
+  defaults, pass; `Mars/Olympus` fails with `isTimeZone`; `UTC` still fails the shape. Before the change: 2 failed (the
+  `Mars/Olympus` case, both DTOs), 10 passed; after: green, and backend `test:cov` 4,219 tests with lines and branches
+  at 100 %, `type-check` exit 0. Not changed: rows already stored (no production data was read), and the readers, which
+  still throw on a zone they do not know.
 - **`apps/mobile` (D7).**
   - Its own lockfile has expo-router → `query-string@7.1.3` → `decode-uri-component@0.2.2`.
   - react-navigation's `getStateFromPath` calls `queryString.parse` on deep-link input.

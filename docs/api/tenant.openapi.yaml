@@ -204,7 +204,8 @@ components:
           default: Asia/Bangkok
           description: |
             Optional. IANA timezone for notification quiet hours + digest schedules (§19.3/§19.6).
-            Defaults from data_region when omitted.
+            Defaults from data_region when omitted. Must be an `Area/Location` name the runtime knows
+            (`Intl`), at most 40 characters: `Mars/Olympus` is refused with 400, as is `UTC`.
           example: Asia/Bangkok
 
     TenantListRow:
@@ -345,7 +346,7 @@ components:
           default: ap-southeast-1
         timezone:
           type: string
-          description: IANA zone. Defaults from `dataRegion`.
+          description: IANA zone. Defaults from `dataRegion`. Same rule as `CreateTenantRequest.timezone`.
           example: Asia/Bangkok
         trialSource:
           type: string
