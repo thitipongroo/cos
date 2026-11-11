@@ -9,11 +9,18 @@
 #   pre-commit hook covers every author and every tool.
 #
 # WHY IT CHECKS FIELDS AND NOT "package.json CHANGED"
-#   2840dd7's edit was `"packageManager": "pnpm@11.18.0"` -> `"11.20.0"` and nothing else. The
-#   lockfile records `lockfileVersion` and dependency resolutions, not the pnpm binary version, so
-#   `pnpm install` produced NO diff — there was nothing to commit. Blocking that commit would have
-#   demanded a file the tool cannot generate. Only these fields can move resolution, so only these
-#   are gated; edits to scripts, description, engines or packageManager pass untouched.
+#   2840dd7's edit was `"packageManager": "pnpm@11.18.0"` -> `"11.20.0"` and nothing else. On pnpm 11
+#   the lockfile recorded `lockfileVersion` and dependency resolutions, not the pnpm binary version,
+#   so `pnpm install` produced NO diff — there was nothing to commit. Blocking that commit would have
+#   demanded a file the tool could not generate. So only the fields that change the lockfile are
+#   gated; edits to scripts, description or engines pass untouched.
+#
+#   `packageManager` joined the gated fields on 2026-11-11. pnpm 12 writes the pinned version into
+#   the lockfile's first YAML document (`packageManagerDependencies`: `pnpm` and `@pnpm/exe`), so a
+#   pin bump DOES change the lockfile now. A bump committed without it does not fail CI — measured
+#   with `pnpm install --frozen-lockfile --lockfile-only`, which exits 0 and quietly rewrites that
+#   document — it leaves the diff in the working tree of whoever installs next. Only the name@version
+#   part is compared, and only in a package.json that has its own lockfile (see the loop below).
 #
 # Escape hatch: SKIP_LOCKFILE_CHECK=1 git commit ... (say why in the commit message).
 #
@@ -79,11 +86,24 @@ while IFS= read -r f; do
   BEFORE="$(git show "HEAD:$f" 2>/dev/null || echo '{}')"
   AFTER="$(git show ":$f" 2>/dev/null || echo '{}')"
 
-  CHANGED="$(BEFORE="$BEFORE" AFTER="$AFTER" FIELDS="$DEP_FIELDS" node -e '
+  LOCK="$(lockfile_for "$f")"
+
+  # `packageManager` counts only where this package.json is the root of its own workspace (its
+  # lockfile sits beside it): pnpm records the pin in that lockfile, and a nested package's pin
+  # moves nothing. And only its name@version: pnpm writes `specifier: 12.18.0` with no hash, so
+  # adding, dropping or changing the `+sha512.…` part alone leaves the lockfile byte-identical —
+  # gating it would demand a file pnpm cannot produce (the 2840dd7 problem again).
+  FIELDS="$DEP_FIELDS"
+  [[ "$(dirname "$LOCK")" == "$(dirname "$f")" ]] && FIELDS="$FIELDS packageManager"
+
+  CHANGED="$(BEFORE="$BEFORE" AFTER="$AFTER" FIELDS="$FIELDS" node -e '
     const pick = (src) => {
       let o; try { o = JSON.parse(src); } catch { return null; }
       const out = {};
-      for (const k of process.env.FIELDS.split(" ")) if (k in o) out[k] = o[k];
+      for (const k of process.env.FIELDS.split(" ")) {
+        if (!(k in o)) continue;
+        out[k] = k === "packageManager" ? String(o[k]).split("+")[0] : o[k];
+      }
       return JSON.stringify(out);
     };
     const a = pick(process.env.BEFORE), b = pick(process.env.AFTER);
@@ -92,8 +112,7 @@ while IFS= read -r f; do
   ' 2>/dev/null)"
 
   if [[ -n "$CHANGED" ]]; then
-    LOCK="$(lockfile_for "$f")"
-    is_staged "$LOCK" || OFFENDERS+=("$f (dependency fields) → stage $LOCK")
+    is_staged "$LOCK" || OFFENDERS+=("$f (dependency fields or packageManager) → stage $LOCK")
   fi
 done <<<"$STAGED"
 
@@ -117,10 +136,11 @@ if [[ ${#OFFENDERS[@]} -eq 0 ]]; then
 fi
 
 echo ""
-echo "Rule 28: dependency resolution changed but its pnpm-lock.yaml is not staged."
+echo "Rule 28: a change that moves pnpm-lock.yaml is staged without it."
 for o in "${OFFENDERS[@]}"; do echo "    $o"; done
 echo ""
-echo "  CI installs with --frozen-lockfile and will fail on a lockfile that does not match."
+echo "  CI installs with --frozen-lockfile: a dependency change fails it; a packageManager bump passes"
+echo "  but leaves the lockfile diff to whoever installs next."
 echo "  Fix:  run pnpm install in the package's own workspace, then stage the lockfile named above."
 echo "        (apps/mobile is its OWN workspace — cd apps/mobile && pnpm install)"
 echo ""

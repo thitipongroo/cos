@@ -1589,12 +1589,9 @@ gate's isolated run) checks the hash was not tested either; it ran 12.18.0 with 
 - **`apps/mobile` render tests miss their coverage ratchet.** `pnpm run test:render:cov`: 1,751 tests pass, then
   statements 88.86 % < 89 %, lines 89.69 % < 90 %, functions 84 % < 85 %, exit 1 — the same before and after
   `fix/mobile-pnpm-pin`, so it predates it.
-- **Rule 28 says a `packageManager` change moves no lockfile; on pnpm 12 it does.**
-  `context/00_master_construction_os.md` (Rule 28) and the comment in `scripts/ci/check-lockfile-staged.sh` say changing
-  `packageManager` leaves the lockfile alone. pnpm 12 records the pinned version in the lockfile's
-  `packageManagerDependencies` document (root since `de660667`, `apps/mobile` since `fix/mobile-pnpm-pin`), so a version
-  bump that edits only `package.json` passes the hook and leaves both lockfiles behind. Whether `--frozen-lockfile` then
-  refuses was not measured. Amending the rule is a spec decision.
+- **Nothing checks that the root and `apps/mobile` carry the same pnpm pin.** D31 puts the same `packageManager` string
+  in both; a bump of one alone passes every check (each `package.json` with its own lockfile satisfies Rule 28). Found
+  on `chore/rule28-packagemanager`, not built.
 - **Re-measure the LCP budget under Lighthouse 13 (D26).** `apps/web/.lighthouserc.json` keeps the LCP
   `maxNumericValue` at 3200, which was set from Lighthouse 12's numbers. Lighthouse 13 reports a much lower simulated
   LCP for /login (see [branch 3](#branch-3--zod-3-second-source-lhcicli-0151--0160)), so the gate has far more
@@ -1934,6 +1931,22 @@ gate's isolated run) checks the hash was not tested either; it ran 12.18.0 with 
   0; `test:render:cov` passes 1,751 tests and misses its coverage ratchet the same way both times (Open).
   `docs/manual/mobile.md` and `getting-started.md` say mobile installs with the pinned pnpm. Not measured: `expo
 prebuild`, native builds, Detox, EAS.
+- **Closed — Rule 28 said a `packageManager` change moves no lockfile; on pnpm 12 it does.** Fixed on
+  `chore/rule28-packagemanager`. Measured first, in a scratch copy of `apps/mobile`: with `packageManagerDependencies`
+  edited to 12.17.0 and `packageManager` at 12.18.0, `pnpm install --frozen-lockfile --lockfile-only` (12.18.0) exits 0
+  and rewrites the document back to 12.18.0 (64 occurrences of 12.17.0 → 0). So a pin bump without its lockfile does not
+  fail CI; it leaves a diff for whoever installs next. `scripts/ci/check-lockfile-staged.sh` now gates `packageManager`
+  with the dependency fields — its name@version only, and only in a `package.json` with its own lockfile beside it,
+  because after /doubt a scratch project showed that adding the `+sha512` part at the same version leaves the lockfile
+  byte-identical (pnpm records `specifier: 12.18.0`), and a nested package's pin moves no lockfile (header comment
+  dated, the 2840dd7 history kept), and Rule 28 in `context/00_master_construction_os.md` and
+  `.claude/rules/rule-26-27-28-dependency-sync.md` lists it, with the amendment dated 2026-11-11. The hook, run in a
+  scratch git repo: a root pin change without `pnpm-lock.yaml` → exit 1 naming it; with it staged → 0; a mobile pin
+  change → exit 1 naming `apps/mobile/pnpm-lock.yaml`, also when only the root lockfile is staged; with the mobile
+  lockfile → 0; a `scripts`-only change → 0; a dependency change without its lockfile → 1; `SKIP_LOCKFILE_CHECK=1` → 0;
+  a hash-only change (root) and a hash added (mobile) → 0; a nested package adding `packageManager` → 0, and with a
+  dependency too → exit 1 naming the root lockfile; a whitespace-only reformat → 0. shellcheck clean. The measurement is
+  of `--frozen-lockfile --lockfile-only`; a full frozen install was not run.
 - **`apps/mobile` (D7).**
   - Its own lockfile has expo-router → `query-string@7.1.3` → `decode-uri-component@0.2.2`.
   - react-navigation's `getStateFromPath` calls `queryString.parse` on deep-link input.

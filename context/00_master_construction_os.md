@@ -780,17 +780,27 @@ ROOT CAUSE PREVENTION RULES (prevent recurring bugs):
     After changing anything that MOVES DEPENDENCY RESOLUTION, run `pnpm install` locally to
     regenerate pnpm-lock.yaml and commit it in the SAME commit. That means:
       - package.json: dependencies, devDependencies, peerDependencies, optionalDependencies,
-        resolutions, or the `pnpm` block
+        resolutions, the `pnpm` block, or `packageManager` (see the 2026-11-11 amendment below)
       - pnpm-workspace.yaml: the `overrides:` block
     pnpm-lock.yaml must exist and be up-to-date before CI `--frozen-lockfile` will pass.
     If pnpm-lock.yaml does not exist: run `pnpm install` immediately before any other work.
 
-    NOT every package.json edit. Scripts, description, engines and `packageManager` do not affect
-    resolution, and `pnpm install` produces no lockfile diff for them — there is nothing to commit.
+    NOT every package.json edit. Scripts, description and engines do not affect the lockfile, and
+    `pnpm install` produces no lockfile diff for them — there is nothing to commit.
     The rule used to say "ANY package.json change", which made commit 2840dd7 (2026-08-07) a
-    violation for bumping `packageManager` 11.18.0 -> 11.20.0 and nothing else: the lockfile records
-    lockfileVersion and resolutions, not the pnpm binary version, so no `pnpm install` could have
-    produced the file that rule demanded. Narrowed 2026-08-08 to the fields that carry the risk.
+    violation for bumping `packageManager` 11.18.0 -> 11.20.0 and nothing else: on pnpm 11 the
+    lockfile recorded lockfileVersion and resolutions, not the pnpm binary version, so no
+    `pnpm install` could have produced the file that rule demanded. Narrowed 2026-08-08 to the
+    fields that carry the risk.
+
+    Amended 2026-11-11: `packageManager` is back on the list. pnpm 12 writes the pinned version into
+    the lockfile's first YAML document (`packageManagerDependencies`), so a pin bump changes the
+    lockfile. Committed without it, the bump does not fail CI — measured with
+    `pnpm install --frozen-lockfile --lockfile-only`, which exits 0 and rewrites that document — but
+    it leaves a lockfile diff in the working tree of the next person who installs. "Bump" means the
+    name@version: pnpm records no hash, so changing only the `+sha512.…` part moves nothing and the
+    hook ignores it. The root and `apps/mobile` each carry the pin (D31), so a bump is two
+    package.json files and two lockfiles.
 
     WHICH lockfile: the nearest one ABOVE the package.json, not always the root. `apps/mobile` is its
     own pnpm workspace (pnpm-workspace.yaml excludes it — Metro needs a hoisted node_modules), so its
