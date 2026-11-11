@@ -1589,9 +1589,6 @@ gate's isolated run) checks the hash was not tested either; it ran 12.18.0 with 
 - **`apps/mobile` render tests miss their coverage ratchet.** `pnpm run test:render:cov`: 1,751 tests pass, then
   statements 88.86 % < 89 %, lines 89.69 % < 90 %, functions 84 % < 85 %, exit 1 — the same before and after
   `fix/mobile-pnpm-pin`, so it predates it.
-- **Nothing checks that the root and `apps/mobile` carry the same pnpm pin.** D31 puts the same `packageManager` string
-  in both; a bump of one alone passes every check (each `package.json` with its own lockfile satisfies Rule 28). Found
-  on `chore/rule28-packagemanager`, not built.
 - **Re-measure the LCP budget under Lighthouse 13 (D26).** `apps/web/.lighthouserc.json` keeps the LCP
   `maxNumericValue` at 3200, which was set from Lighthouse 12's numbers. Lighthouse 13 reports a much lower simulated
   LCP for /login (see [branch 3](#branch-3--zod-3-second-source-lhcicli-0151--0160)), so the gate has far more
@@ -1947,6 +1944,11 @@ prebuild`, native builds, Detox, EAS.
   a hash-only change (root) and a hash added (mobile) → 0; a nested package adding `packageManager` → 0, and with a
   dependency too → exit 1 naming the root lockfile; a whitespace-only reformat → 0. shellcheck clean. The measurement is
   of `--frozen-lockfile --lockfile-only`; a full frozen install was not run.
+- **Closed — nothing checked that the root and `apps/mobile` carry the same pnpm pin.** Fixed on `test/pnpm-pin-sync`:
+  `tests/conformance/foundation/02-workspace.spec.ts` compares `apps/mobile/package.json`'s `packageManager` with the
+  root's, whole string (version and hash), next to the existing pnpm-major test; CI's `conformance-tests` job runs it.
+  Foundation specs 443 → 444 passed. Negative control: one hash digit changed in the mobile file made it fail, printing
+  both strings; the file was restored from a byte copy (`cmp` identical) and the run was green again.
 - **`apps/mobile` (D7).**
   - Its own lockfile has expo-router → `query-string@7.1.3` → `decode-uri-component@0.2.2`.
   - react-navigation's `getStateFromPath` calls `queryString.parse` on deep-link input.

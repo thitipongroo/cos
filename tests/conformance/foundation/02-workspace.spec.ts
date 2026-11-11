@@ -96,6 +96,16 @@ describe('the toolchain sits on the majors the spec names (master:1650-1660)', (
     expect(rootPkg.packageManager).toMatch(/^pnpm@12\./);
   });
 
+  it('pins apps/mobile to the same pnpm as the root, hash included (D31)', () => {
+    // apps/mobile is its own workspace, so without its own pin it installs with whatever pnpm is on
+    // PATH. D31 gives it the root's exact `packageManager`; a version bump is therefore two
+    // package.json files and their two lockfiles (Rule 28), a hash-only change the two package.json
+    // files alone (pnpm records no hash in the lockfile). Compared whole, so a hash left behind fails.
+    const mobilePkg = readJson<{ packageManager?: string }>('apps/mobile/package.json');
+    expect(mobilePkg.packageManager).toBeDefined();
+    expect({ mobile: mobilePkg.packageManager }).toEqual({ mobile: rootPkg.packageManager });
+  });
+
   it.each([
     ['turbo', /^\^?2\./, 'Turborepo 2.x (master:1655)'],
     ['typescript', /^\^?6\./, 'TypeScript 6.x (master:1656)'],
