@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useI18n } from '../../../../i18n';
 import { fill } from '../../../../i18n/fill';
-import { formatMoney } from '../../../../lib/format';
+import { formatMoney, formatPercent } from '../../../../lib/format';
 
 interface FactoringInvoice {
   id: string;
@@ -334,7 +334,7 @@ export default function InvoiceFactoringPage() {
                         {formatMoney(locale, inv.amount.toString(), 'THB')}
                       </td>
                       <td className="py-3.5 px-4 text-blue-400 font-bold">
-                        {inv.advanceRate * 100}%
+                        {formatPercent(locale, inv.advanceRate * 100)}
                       </td>
                       <td className="py-3.5 px-4 font-bold text-emerald-400">
                         {formatMoney(locale, netAdvance.toString(), 'THB')}
@@ -514,7 +514,9 @@ export default function InvoiceFactoringPage() {
               </div>
               <div className="flex justify-between">
                 <span className="text-slate-400">
-                  {fill(t('finance.factoring.advanceCapital'), { percent: '85%' })}
+                  {fill(t('finance.factoring.advanceCapital'), {
+                    percent: formatPercent(locale, factoringModal.advanceRate * 100),
+                  })}
                 </span>
                 <span className="font-bold text-cyan-400">
                   {formatMoney(
@@ -526,7 +528,9 @@ export default function InvoiceFactoringPage() {
               </div>
               <div className="flex justify-between">
                 <span className="text-slate-400">
-                  {fill(t('finance.factoring.factoringFee'), { percent: '1.5%' })}
+                  {fill(t('finance.factoring.factoringFee'), {
+                    percent: formatPercent(locale, factoringModal.feeRate * 100),
+                  })}
                 </span>
                 <span className="font-bold text-amber-400">
                   -{' '}

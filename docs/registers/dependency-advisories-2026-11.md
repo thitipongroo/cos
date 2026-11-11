@@ -1579,9 +1579,7 @@ gate's isolated run) checks the hash was not tested either; it ran 12.18.0 with 
   `leasing/page.tsx`, `leasing/properties/[id]`, `crm/tenders/[id]`, `finance/factoring` and `safety/ai-vision` hold
   names, asset types, work packages, zones and, on `safety/ai-vision`, alert titles and details ("NO HARD HAT DETECTED",
   "Immediate attention required…") that the pages show as they are. Left as data by D30; whether demo records should be
-  translated, or the pages read real data, is a product decision. Also seen: `finance/factoring`'s modal labels say
-  "Advance Capital (85%)" and "(1.5% flat)" for every invoice, while each invoice carries its own rates (0.9 / 0.014 on
-  one) — kept as it was.
+  translated, or the pages read real data, is a product decision.
 - **`apps/mobile` does not get the pinned pnpm on a dev machine.** It is outside the root workspace and its
   `package.json` has no `packageManager`, so `cd apps/mobile && pnpm install` runs whatever pnpm is on `PATH`: 11.1.3
   on the machine used here, against 12.18.0 at the root. CI is unaffected (`pnpm/action-setup` puts 12.18.0 on `PATH`
@@ -1899,6 +1897,15 @@ gate's isolated run) checks the hash was not tested either; it ran 12.18.0 with 
   with "-3.67%", and `leasing.property.aiInsight` said "above 15%" for "15% higher"). A rescan finds only the sample
   records, proper names, figures and HUD labels (`FPS: 30 • 1080p`). Web `type-check`, `lint` and the web build (72 of
   72 pages) exit 0; 422 tests pass with coverage at the gate. Not checked in a browser (Keycloak login).
+- **Closed — the factoring modal stated 85% and 1.5% for every invoice.** Fixed on `fix/web-factoring-rates`. The labels
+  "Advance Capital ({percent}):" and "Fast Factoring Fee ({percent} flat):" now take the open invoice's own
+  `advanceRate` and `feeRate` through `formatPercent` (`src/lib/format.ts`, in the coverage gate), the rates the amounts
+  beside them were always computed from; the table's advance-rate cell uses it too instead of `rate * 100` and a raw
+  `%`. Printed by a throwaway spec with the real `fill` and `formatPercent`, in English and Thai: fac-1, fac-3 and fac-4
+  read as before (85%, 1.5%), fac-2 now reads 90% and 1.4% where it said 85% and 1.5%. `formatPercent` keeps at most one
+  decimal, so a rate such as 0.0125 would read 1.3% beside an amount worked out at 1.25%; none of the sample rates has a
+  second decimal. The page-level KPI "Flat 1.5% discount fee" is not one invoice's figure and was left. Web
+  `type-check`, `lint` and the web build (72 of 72 pages) exit 0; 422 tests pass with coverage at the gate.
 - **`apps/mobile` (D7).**
   - Its own lockfile has expo-router → `query-string@7.1.3` → `decode-uri-component@0.2.2`.
   - react-navigation's `getStateFromPath` calls `queryString.parse` on deep-link input.
