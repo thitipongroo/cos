@@ -1590,9 +1590,21 @@ gate's isolated run) checks the hash was not tested either; it ran 12.18.0 with 
   `fix/audit-gate-pnpm12` to `fix/web-factoring-rates` — jobs failed without starting ("The job was not started because
   recent account payments have failed or your spending limit needs to be increased", GitHub billing) or were skipped.
   Nothing since has been checked by CI, including `pnpm/action-setup` with the `+sha512` pin.
-- **`apps/mobile` render tests miss their coverage ratchet.** `pnpm run test:render:cov`: 1,751 tests pass, then
-  statements 88.86 % < 89 %, lines 89.69 % < 90 %, functions 84 % < 85 %, exit 1 — the same before and after
-  `fix/mobile-pnpm-pin`, so it predates it.
+- **Two mobile screens from `6a076c6d` tell the user something that did not happen.** `drone-mission-detail.tsx`: both
+  export buttons raise "Civil 3D LandXML and PDF Topographical Survey Report generated successfully." and generate
+  nothing. `drone-capture.tsx`: the link beside "Recent Missions" reads "Close" (`common.close`) and opens the mission
+  detail, with no accessibility role. The new render specs pin both as built (named "as built") so a change is
+  deliberate. Found on `test/mobile-render-6a076c6d`; changing the screens is a product decision.
+- **Mobile screens from `6a076c6d` hard-code English.** `portfolio-leasing`, `drone-capture` and `drone-mission-detail`
+  hard-code most of their text (tabs, KPI captions, layer names, metadata labels) and their accessibility labels (tab,
+  layer and scan-mode buttons, "Mission Details", "Export / Download Survey Report"); only titles and a few labels go
+  through `t()`. `line-token-guide` translates nearly everything; only its four step hints bypass `t()`. All four
+  hard-code the "Back" accessibility label (as does the older `checkout.tsx`), where siblings use `t('common.back')`.
+  The TH + EN rule is not met. The new render specs query some of these English labels, so they change with the fix.
+  Found on `test/mobile-render-6a076c6d`, not fixed there.
+- **The drone-capture scan-mode buttons show no selected state.** "Point Cloud" / "Orbit Scan" change only a style and
+  an icon colour — no text, no `accessibilityState.selected` — so neither a screen reader nor a test can tell which is
+  active; they are left out of the render specs for that reason.
 - **Re-measure the LCP budget under Lighthouse 13 (D26).** `apps/web/.lighthouserc.json` keeps the LCP
   `maxNumericValue` at 3200, which was set from Lighthouse 12's numbers. Lighthouse 13 reports a much lower simulated
   LCP for /login (see [branch 3](#branch-3--zod-3-second-source-lhcicli-0151--0160)), so the gate has far more
@@ -2042,6 +2054,18 @@ prebuild`, native builds, Detox, EAS.
   the test Mac): `/health` after 7 s, `experiments/search` 200, schema at `dc11669786a5`; with the final command,
   `experiments/search` 200 from the host as `127.0.0.1` and `localhost` and from another container as `mlflow:5000`, 403
   for a foreign Host header; torn down with its volumes each time.
+- **Closed — `apps/mobile` render tests missed their coverage ratchet.** Fixed on `test/mobile-render-6a076c6d`. The
+  drop came from four screens `6a076c6d` (2026-11-08) added with no render test — `portfolio-leasing`, `drone-capture`,
+  `drone-mission-detail`, `line-token-guide` (80 statements and 40 functions uncovered between them). One spec each in
+  `apps/mobile/src/app/(app)/__tests__/`, 30 tests, written against what a user sees and does: the guide's four steps in
+  order (each title and hint looked up inside its numbered card) and where its two buttons go; the portfolio filters
+  ("Logistics" includes cold storage); the survey layers, and that the printed net balance is cut minus fill; the survey
+  toggle's text, label and viewport state moving together. `test:render:cov`: before 88.86 / 81.78 / 84 / 89.69
+  (statements / branches / functions / lines, exit 1); after 90.09 / 83.20 / 85.64 / 90.97 (exit 0), 1,751 → 1,781
+  tests. The floors in `jest.render.config.ts` went up with it, as that file asks (rounded down): 89 / 81 / 85 / 90 → 90
+  / 83 / 85 / 90, with a DEPTH PASS 8 entry. After /doubt a scan-mode test was dropped — it could not fail (see Open) —
+  and spies are restored in `afterEach`. Mobile `test:cov` (1,149), `type-check`, `eslint apps/mobile/src` and the RN
+  a11y gate pass as before. Two things the specs found are Open (below).
 - **`apps/mobile` (D7).**
   - Its own lockfile has expo-router → `query-string@7.1.3` → `decode-uri-component@0.2.2`.
   - react-navigation's `getStateFromPath` calls `queryString.parse` on deep-link input.

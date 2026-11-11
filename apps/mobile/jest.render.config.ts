@@ -266,6 +266,14 @@ const config: Config = {
   // the very first capture of this screen photographed that for a manager with three:
   //   statements 89.39  branches 81.56  functions 85.26  lines 90.87
   //
+  // DEPTH PASS 8 (2026-11-12) — four screens 6a076c6d added on 2026-11-08 with no render test
+  // (portfolio-leasing, drone-capture, drone-mission-detail, line-token-guide) had pulled the suite to
+  // 88.86 / 81.78 / 84 / 89.69, under these floors. Two things their specs found are pinned "as built"
+  // and kept open in the register: export buttons that announce a report nobody generated, and a link
+  // that reads "Close" but navigates. The drone scan-mode buttons are left untested on purpose — they
+  // change only a colour, so no test could fail on them:
+  //   statements 90.09  branches 83.20  functions 85.64  lines 90.97
+  //
   // Counted separately from the logic suite rather than merged with it: the two instrument
   // differently (ts-jest vs babel-jest) and merging their reports made files the logic suite covers
   // fully report as low as 80%.
@@ -273,8 +281,8 @@ const config: Config = {
   collectCoverageFrom: ['src/components/**/*.tsx', 'src/app/**/*.tsx'],
   coverageThreshold: {
     global: {
-      statements: 89,
-      branches: 81,
+      statements: 90,
+      branches: 83,
       functions: 85,
       lines: 90,
     },
