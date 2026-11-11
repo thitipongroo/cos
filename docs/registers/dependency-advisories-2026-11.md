@@ -1754,11 +1754,6 @@ gate's isolated run) checks the hash was not tested either; it ran 12.18.0 with 
           print(json.dumps(row, ensure_ascii=False), flush=True)
   ```
 
-- **feast's feature views do not import with `mlops/requirements-feast.txt` alone.** `mlops/feast/features/*.py` import
-  feast's Postgres offline store, which needs `psycopg` (v3) with its pool; the set has only `psycopg2-binary` (base).
-  Measured on feast 0.64.0 and 0.67.0 alike: `ModuleNotFoundError: psycopg`, and with `psycopg[binary]` only,
-  `psycopg_pool` (the second printed, not saved); with `psycopg[binary,pool]` added, all three views load on both.
-  Nothing in CI imports them. Found on `chore/mlops-advisories`, not fixed there.
 - **MLflow server image v3.17.2 is in the manifests, not deployed.** `infrastructure/kubernetes/mlflow/deployment.yaml`
   and `mlops/mlflow/docker-compose.yaml` name `ghcr.io/mlflow/mlflow:v3.17.2` (the tag exists); rolling it out is a
   deployment step outside this work, and it needs a database migration first: 3.17.2 carries 9 backend-store revisions
@@ -2008,14 +2003,24 @@ prebuild`, native builds, Detox, EAS.
   3.3.2, 22 errors from one cause — Airflow 3.3 removed `DagBag(include_examples=…)` — and with the two test fixtures no
   longer passing it, 73 passed; 3.3.2 without the argument loads the same six DAGs as 3.2.2 with
   `include_examples=False`, no import errors (printed by a probe, not saved). feast 0.64.0 and 0.67.0 both load the
-  three feature views (with `psycopg[binary,pool]`, see Open; without it, `No module named 'psycopg'`); mlflow 3.14.0
-  and 3.17.2 both import `update_gateway` and have `MlflowClient.get_latest_versions`. After the change, pip-audit on
-  base, mlflow, feast and `requirements-dev.txt` (the airflow set plus pytest, which CI now audits in place of
-  `requirements-airflow.txt`): no known vulnerabilities, 62 s with a warm cache (saved in the session's scratch
-  `w4b-summary.txt`). The MLflow server image moved to v3.17.2 with the client. CI's mlops audit joined the blocking
-  loop; the job timeout went 15 → 25 minutes for it (not yet timed on a runner). mlops conformance specs: 40 passed.
-  Comments that named the old versions were updated; `requirements-base.txt` notes that feast 0.67.0 dropped the uvicorn
-  cap, co-resolution untested.
+  three feature views (with `psycopg[binary,pool]`, since pinned on `fix/feast-psycopg`; without it, `No module named
+'psycopg'`); mlflow 3.14.0 and 3.17.2 both import `update_gateway` and have `MlflowClient.get_latest_versions`. After
+  the change, pip-audit on base, mlflow, feast and `requirements-dev.txt` (the airflow set plus pytest, which CI now
+  audits in place of `requirements-airflow.txt`): no known vulnerabilities, 62 s with a warm cache (saved in the
+  session's scratch `w4b-summary.txt`). The MLflow server image moved to v3.17.2 with the client. CI's mlops audit
+  joined the blocking loop; the job timeout went 15 → 25 minutes for it (not yet timed on a runner). mlops conformance
+  specs: 40 passed. Comments that named the old versions were updated; `requirements-base.txt` notes that feast 0.67.0
+  dropped the uvicorn cap, co-resolution untested.
+- **Closed — feast's feature views did not import with `mlops/requirements-feast.txt` alone.** Fixed on
+  `fix/feast-psycopg`. They import feast's Postgres offline store, which needs psycopg 3 and its pool; the set had only
+  base's `psycopg2-binary`. The file now pins `psycopg[binary,pool]==3.3.8` and `psycopg-pool==3.3.3` (the versions a
+  dry-run resolution of the set picked: exit 0, 73 packages; the same as feast's own `postgres` extra,
+  `psycopg[binary,pool]>=3.2.5`, pinned). In `python:3.12-slim`, installed from the file alone: psycopg 3.3.8,
+  psycopg-binary 3.3.8, psycopg-pool 3.3.3, feast 0.67.0, and all three views load (`procurement_features`,
+  `project_features`, `site_features`); pip-audit on the file: no known vulnerabilities (saved in the session's scratch
+  `x2-summary.txt` with the command). Only the linux/aarch64 cp312 wheel of psycopg-binary 3.3.8 was exercised (Docker
+  on an arm64 Mac); x86_64 and macOS wheels were not checked. Still not exercised by CI: no job imports the feature
+  views.
 - **`apps/mobile` (D7).**
   - Its own lockfile has expo-router → `query-string@7.1.3` → `decode-uri-component@0.2.2`.
   - react-navigation's `getStateFromPath` calls `queryString.parse` on deep-link input.

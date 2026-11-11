@@ -1,6 +1,12 @@
 # Feast feature-store env (spec §22.6 Feature Store). SEPARATE env (see requirements-base.txt).
 # feast 0.67.0 keeps the CORE dep `pandas<3,>=1.4.3` — hence base pins pandas 2.x. 0.64.0→0.67.0 on
-# 2026-11-11 (D34): 0.64.0 carried CVE-2026-18948. Note: the feature views under feast/features import
-# feast's Postgres offline store, which needs `psycopg[binary,pool]` — not in base (register Open item).
+# 2026-11-11 (D34): 0.64.0 carried CVE-2026-18948.
 -r requirements-base.txt
 feast==0.67.0
+# The feature views under feast/features import feast's Postgres offline store (PostgreSQLSource), which
+# needs psycopg 3 with its connection pool (= feast's own `postgres` extra, psycopg[binary,pool]>=3.2.5, pinned
+# here) — base's psycopg2-binary is a different driver. Without these
+# the views fail on `import psycopg`, then `psycopg_pool`. Versions = what a dry-run resolution of this
+# file picked on 2026-11-11.
+psycopg[binary,pool]==3.3.8
+psycopg-pool==3.3.3
