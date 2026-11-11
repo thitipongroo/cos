@@ -52,6 +52,8 @@ The numbers are the ones used while the work was planned. Decisions about the wi
 | D26 | Lighthouse 13 lowers /login's simulated LCP far below Lighthouse 12's. The LCP budget stays 3200 in branch 3; it is re-measured on ubuntu-latest under 13 afterwards (Open).                                                                                                              |
 | D27 | msal-node is fixed by moving `@azure/identity` 4.13.1 → 4.14.1 inside `@confluentinc/schemaregistry`'s declared `^4.13.0`, not by removing the unused `@confluentinc/schemaregistry` from backend; removing it is an Open item.                                                           |
 | D28 | pnpm major 12 is the spec's normative major (was 11; the repo has been on 12.18.0 since `de660667`), and `engines.pnpm` is `>=12.0.0`.                                                                                                                                                    |
+| D29 | Status values the code compares (to pick a colour) keep their code values; only their display goes through `t()`.                                                                                                                                                                         |
+| D30 | Demo sentences written in a page's JSX are translated, their figures and names passed as `{placeholders}`; `SAMPLE_*` / `INITIAL_*` records stay as data.                                                                                                                                 |
 
 ## The series
 
@@ -1573,10 +1575,13 @@ gate's isolated run) checks the hash was not tested either; it ran 12.18.0 with 
 
 ## Open
 
-- **Five more pages from `6a076c6d` have hard-coded English.** `leasing/page.tsx`, `crm/tenders/[id]/page.tsx`,
-  `finance/factoring/page.tsx`, `safety/ai-vision/page.tsx` and `leasing/properties/[id]/page.tsx` (under
-  `apps/web/src/app/(app)/`): a rough pattern count finds 11, 8, 8, 13 and 15 lines of English outside `t()` — a count,
-  not an inventory. The TH + EN rule is not met there. Found on `fix/web-leasing-wizard-i18n`, not fixed there.
+- **Sample records on the `6a076c6d` pages are shown in English.** `SAMPLE_*` / `INITIAL_*` constants in
+  `leasing/page.tsx`, `leasing/properties/[id]`, `crm/tenders/[id]`, `finance/factoring` and `safety/ai-vision` hold
+  names, asset types, work packages, zones and, on `safety/ai-vision`, alert titles and details ("NO HARD HAT DETECTED",
+  "Immediate attention required…") that the pages show as they are. Left as data by D30; whether demo records should be
+  translated, or the pages read real data, is a product decision. Also seen: `finance/factoring`'s modal labels say
+  "Advance Capital (85%)" and "(1.5% flat)" for every invoice, while each invoice carries its own rates (0.9 / 0.014 on
+  one) — kept as it was.
 - **`apps/mobile` does not get the pinned pnpm on a dev machine.** It is outside the root workspace and its
   `package.json` has no `packageManager`, so `cd apps/mobile && pnpm install` runs whatever pnpm is on `PATH`: 11.1.3
   on the machine used here, against 12.18.0 at the root. CI is unaffected (`pnpm/action-setup` puts 12.18.0 on `PATH`
@@ -1880,6 +1885,20 @@ gate's isolated run) checks the hash was not tested either; it ran 12.18.0 with 
   purpose (the actions column header). After: a rescan finds no English outside `t()` but the data defaults; the web
   build exit 0 (72 of 72 pages), web `type-check` and `lint` exit 0, 415 tests pass. Not checked in a browser in either
   language (Keycloak login, as for the Suspense fix).
+- **Closed — five more pages from `6a076c6d` had hard-coded English.** Fixed on `fix/web-6a076c6d-i18n` (D29, D30).
+  `leasing/page.tsx` 15 keys (`leasing.portfolio`), `leasing/properties/[id]` 20 (`leasing.property`),
+  `crm/tenders/[id]` 24 (`crm.tender`), `finance/factoring` 21 (`finance.factoring`), `safety/ai-vision` 21
+  (`safety.aiVision`): 101 keys, English word for word, Thai alongside; both files now hold 1,640 keys. Status values
+  keep their code values and are shown through `t()` (`revStatus`, the payout status; the unit status through the
+  existing `leasing.status*` keys); demo sentences take their figures and names as `{placeholders}`. `fill()` moved from
+  the wizard to `apps/web/src/i18n/fill.ts`, with its own spec (7 cases, including `$&` in a value and a placeholder
+  inside a value) and in `collectCoverageFrom`. Of 50 templated strings, 45 render the old English word for word by
+  script (whitespace collapsed; the spaces around icons were checked by hand); the other 5 were read: the unit name is
+  always `Unit {id}`, `?? ''` renders as `undefined` did, and two `formatMoney` calls are unchanged. After /doubt,
+  eleven Thai strings were reworded (two had changed the meaning: `crm.tender.belowCeiling` read as a double negative
+  with "-3.67%", and `leasing.property.aiInsight` said "above 15%" for "15% higher"). A rescan finds only the sample
+  records, proper names, figures and HUD labels (`FPS: 30 • 1080p`). Web `type-check`, `lint` and the web build (72 of
+  72 pages) exit 0; 422 tests pass with coverage at the gate. Not checked in a browser (Keycloak login).
 - **`apps/mobile` (D7).**
   - Its own lockfile has expo-router → `query-string@7.1.3` → `decode-uri-component@0.2.2`.
   - react-navigation's `getStateFromPath` calls `queryString.parse` on deep-link input.

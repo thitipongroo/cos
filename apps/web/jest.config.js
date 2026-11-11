@@ -68,6 +68,8 @@ module.exports = {
     'src/lib/centralPrices.ts',
     // SYSTEM_ADMIN drawn-figure register (R19, ADR-099): the row cycling and the tenant-code template.
     'src/lib/adminDrawnFigures.ts',
+    // Translated templates: every `{name}` a page shows goes through it, with values the user typed.
+    'src/i18n/fill.ts',
   ],
   coveragePathIgnorePatterns: ['/node_modules/', '\\.spec\\.ts$'],
   coverageThreshold: {

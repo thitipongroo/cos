@@ -4,6 +4,14 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useI18n } from '../../../../../i18n';
+import { fill } from '../../../../../i18n/fill';
+
+const STATUS_KEY: Record<UnitStatus, string> = {
+  leased: 'leasing.statusLeased',
+  reserved: 'leasing.statusReserved',
+  available: 'leasing.statusAvailable',
+  sold: 'leasing.statusSold',
+};
 
 type UnitStatus = 'leased' | 'reserved' | 'available' | 'sold';
 
@@ -97,7 +105,7 @@ export default function PropertyDetailPage() {
           </nav>
           <h1 className="text-xl font-bold tracking-tight text-white flex items-center gap-2">
             <span className="material-symbols-outlined text-blue-500">apartment</span>
-            Vanguard Tower • Stacking Plan
+            {fill(t('leasing.property.stackingPlanTitle'), { property: 'Vanguard Tower' })}
           </h1>
         </div>
 
@@ -136,9 +144,12 @@ export default function PropertyDetailPage() {
             <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
               {t('leasing.colWale')}
             </p>
-            <p className="text-2xl font-extrabold text-white mt-1">6.2 Yrs</p>
+            <p className="text-2xl font-extrabold text-white mt-1">
+              {fill(t('leasing.portfolio.waleValue'), { years: 6.2 })}
+            </p>
             <p className="text-xs text-emerald-400 mt-1 flex items-center gap-1 font-semibold">
-              <span className="material-symbols-outlined text-[14px]">trending_up</span> +0.4 YOY
+              <span className="material-symbols-outlined text-[14px]">trending_up</span>{' '}
+              {fill(t('leasing.property.yoyChange'), { change: '+0.4' })}
             </p>
           </div>
 
@@ -146,18 +157,24 @@ export default function PropertyDetailPage() {
             <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
               {t('leasing.unitsAvailable')}
             </p>
-            <p className="text-2xl font-extrabold text-white mt-1">12 Units</p>
-            <p className="text-xs text-slate-400 mt-1">From ฿1,500,000 / yr</p>
+            <p className="text-2xl font-extrabold text-white mt-1">
+              {fill(t('leasing.property.unitsCount'), { count: 12 })}
+            </p>
+            <p className="text-xs text-slate-400 mt-1">
+              {fill(t('leasing.property.fromPerYear'), { amount: '฿1,500,000' })}
+            </p>
           </div>
 
           <div className="p-4 rounded-xl bg-[#0F172A] border border-white/5">
             <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
               {t('leasing.syncStatus')}
             </p>
-            <p className="text-2xl font-extrabold text-amber-400 mt-1">Live Sync</p>
+            <p className="text-2xl font-extrabold text-amber-400 mt-1">
+              {t('leasing.property.liveSync')}
+            </p>
             <p className="text-xs text-slate-400 mt-1 flex items-center gap-1">
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-              BIM Model Connected
+              {t('leasing.property.bimConnected')}
             </p>
           </div>
         </div>
@@ -236,23 +253,31 @@ export default function PropertyDetailPage() {
               <div className="space-y-6">
                 <div>
                   <span className="text-[11px] font-mono text-cyan-400 uppercase font-semibold">
-                    Floor {selectedUnit.floor}
+                    {fill(t('leasing.property.floorLabel'), { floor: selectedUnit.floor })}
                   </span>
-                  <h4 className="text-xl font-bold text-white mt-0.5">{selectedUnit.name}</h4>
+                  <h4 className="text-xl font-bold text-white mt-0.5">
+                    {fill(t('leasing.property.unitName'), { unit: selectedUnit.id })}
+                  </h4>
                   <p className="text-xs text-slate-400 mt-1">{selectedUnit.type}</p>
                 </div>
 
                 <div className="grid grid-cols-2 gap-3 p-3 rounded-lg bg-slate-900/60 border border-white/5">
                   <div>
-                    <span className="text-[10px] text-slate-400 uppercase font-bold">Size</span>
+                    <span className="text-[10px] text-slate-400 uppercase font-bold">
+                      {t('leasing.property.size')}
+                    </span>
                     <p className="font-mono text-sm font-bold text-white mt-0.5">
-                      {selectedUnit.sizeSqft.toLocaleString()} SQFT
+                      {fill(t('leasing.property.sizeValue'), {
+                        size: selectedUnit.sizeSqft.toLocaleString(),
+                      })}
                     </p>
                   </div>
                   <div>
-                    <span className="text-[10px] text-slate-400 uppercase font-bold">Status</span>
+                    <span className="text-[10px] text-slate-400 uppercase font-bold">
+                      {t('leasing.property.status')}
+                    </span>
                     <p className="font-mono text-xs font-bold text-emerald-400 uppercase mt-0.5">
-                      {selectedUnit.status}
+                      {t(STATUS_KEY[selectedUnit.status])}
                     </p>
                   </div>
                 </div>
@@ -260,7 +285,7 @@ export default function PropertyDetailPage() {
                 {selectedUnit.tenantName && (
                   <div className="p-4 rounded-xl bg-blue-950/30 border border-blue-800/40">
                     <p className="text-[11px] font-bold text-blue-300 uppercase tracking-wider mb-2">
-                      Active Lease
+                      {t('leasing.property.activeLease')}
                     </p>
                     <div className="flex items-center gap-3">
                       <div className="w-8 h-8 rounded-lg bg-blue-600/30 flex items-center justify-center text-blue-400">
@@ -269,7 +294,9 @@ export default function PropertyDetailPage() {
                       <div>
                         <p className="text-xs font-bold text-white">{selectedUnit.tenantName}</p>
                         <p className="text-[11px] text-slate-400">
-                          Expires: {selectedUnit.expiryDate}
+                          {fill(t('leasing.property.expires'), {
+                            date: selectedUnit.expiryDate ?? '',
+                          })}
                         </p>
                       </div>
                     </div>
@@ -278,18 +305,30 @@ export default function PropertyDetailPage() {
 
                 <div>
                   <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-3">
-                    Lease History Timeline
+                    {t('leasing.property.historyTitle')}
                   </p>
                   <div className="space-y-3 relative pl-4 border-l border-white/10 text-xs">
                     <div className="relative">
                       <div className="absolute -left-[21px] top-1 w-2.5 h-2.5 rounded-full bg-emerald-400" />
-                      <p className="font-bold text-white">Lease Renewed (3 Yrs)</p>
-                      <p className="text-[11px] text-slate-400">Aug 2023 • ฿6,850,000 / Yr</p>
+                      <p className="font-bold text-white">
+                        {fill(t('leasing.property.historyRenewed'), { years: 3 })}
+                      </p>
+                      <p className="text-[11px] text-slate-400">
+                        {fill(t('leasing.property.historyEntry'), {
+                          date: 'Aug 2023',
+                          amount: '฿6,850,000',
+                        })}
+                      </p>
                     </div>
                     <div className="relative">
                       <div className="absolute -left-[21px] top-1 w-2.5 h-2.5 rounded-full bg-slate-500" />
-                      <p className="font-bold text-white">Initial Tenancy Contract</p>
-                      <p className="text-[11px] text-slate-400">Jan 2020 • ฿6,200,000 / Yr</p>
+                      <p className="font-bold text-white">{t('leasing.property.historyInitial')}</p>
+                      <p className="text-[11px] text-slate-400">
+                        {fill(t('leasing.property.historyEntry'), {
+                          date: 'Jan 2020',
+                          amount: '฿6,200,000',
+                        })}
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -307,7 +346,7 @@ export default function PropertyDetailPage() {
                 <span className="material-symbols-outlined text-4xl mb-2 text-slate-600">
                   touch_app
                 </span>
-                <p className="text-xs">Select any unit from the stacking grid to inspect details</p>
+                <p className="text-xs">{t('leasing.property.selectPrompt')}</p>
               </div>
             )}
           </div>
@@ -317,10 +356,16 @@ export default function PropertyDetailPage() {
         <div className="p-4 rounded-xl bg-[#0F172A] border-l-4 border-cyan-400 border border-white/5 flex items-center gap-3">
           <span className="material-symbols-outlined text-cyan-400 text-xl">auto_awesome</span>
           <div>
-            <p className="text-xs font-bold text-cyan-400">AI Intelligence Insight</p>
+            <p className="text-xs font-bold text-cyan-400">
+              {t('leasing.property.aiInsightTitle')}
+            </p>
             <p className="text-xs text-slate-300 mt-0.5">
-              Units on Floor 9 & 10 have 15% higher inquiry rate. Recommendation: Adjust asking
-              price for available unit 10.2 by +4%.
+              {fill(t('leasing.property.aiInsight'), {
+                floors: '9 & 10',
+                rate: '15%',
+                unit: '10.2',
+                change: '+4%',
+              })}
             </p>
           </div>
         </div>

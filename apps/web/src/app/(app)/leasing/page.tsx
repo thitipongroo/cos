@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useI18n } from '../../../i18n';
+import { fill } from '../../../i18n/fill';
 
 interface PropertyAsset {
   id: string;
@@ -170,7 +171,9 @@ export default function PropertyLeasingPortfolioPage() {
               <span className="text-3xl font-extrabold text-white">94.2%</span>
               <span className="text-xs font-bold text-emerald-400">+1.4%</span>
             </div>
-            <p className="text-[11px] text-slate-400 mt-1">Target: 92.0% • 42 Assets</p>
+            <p className="text-[11px] text-slate-400 mt-1">
+              {fill(t('leasing.portfolio.occupancyTarget'), { target: '92.0%', count: 42 })}
+            </p>
           </div>
 
           {/* NOI vs Budget KPI */}
@@ -185,7 +188,9 @@ export default function PropertyLeasingPortfolioPage() {
               <span className="text-3xl font-extrabold text-white">฿434.0M</span>
               <span className="text-xs font-bold text-cyan-400">103.1%</span>
             </div>
-            <p className="text-[11px] text-slate-400 mt-1">Variance: +฿13.0M vs Q3 Benchmark</p>
+            <p className="text-[11px] text-slate-400 mt-1">
+              {fill(t('leasing.portfolio.noiVariance'), { amount: '+฿13.0M', quarter: 'Q3' })}
+            </p>
           </div>
 
           {/* Delinquency KPI */}
@@ -201,7 +206,9 @@ export default function PropertyLeasingPortfolioPage() {
               <span className="text-3xl font-extrabold text-white">2.8%</span>
               <span className="text-xs font-bold text-emerald-400">-0.2%</span>
             </div>
-            <p className="text-[11px] text-slate-400 mt-1">Critical Alert Threshold: 3.5%</p>
+            <p className="text-[11px] text-slate-400 mt-1">
+              {fill(t('leasing.portfolio.delinquencyThreshold'), { threshold: '3.5%' })}
+            </p>
           </div>
         </div>
 
@@ -218,17 +225,17 @@ export default function PropertyLeasingPortfolioPage() {
                   {t('leasing.leaseExpiryProfile')}
                 </h3>
                 <p className="text-xs text-slate-400 mt-0.5">
-                  Lease expiries scheduled by upcoming quarters
+                  {t('leasing.portfolio.expirySubtitle')}
                 </p>
               </div>
               <div className="flex items-center gap-4 text-[11px] text-slate-400">
                 <span className="flex items-center gap-1.5">
-                  <span className="w-2.5 h-2.5 rounded-full bg-blue-500 inline-block" /> SQM
-                  Expiring
+                  <span className="w-2.5 h-2.5 rounded-full bg-blue-500 inline-block" />{' '}
+                  {t('leasing.portfolio.legendExpiring')}
                 </span>
                 <span className="flex items-center gap-1.5">
-                  <span className="w-2.5 h-2.5 rounded-full bg-cyan-400 inline-block" /> Active
-                  Units
+                  <span className="w-2.5 h-2.5 rounded-full bg-cyan-400 inline-block" />{' '}
+                  {t('leasing.portfolio.legendActiveUnits')}
                 </span>
               </div>
             </div>
@@ -274,7 +281,7 @@ export default function PropertyLeasingPortfolioPage() {
               <div className="space-y-4">
                 <div>
                   <div className="flex justify-between text-xs font-semibold text-slate-300 mb-1">
-                    <span>Logistics / Last-Mile</span>
+                    <span>{t('leasing.portfolio.sectorLogistics')}</span>
                     <span className="font-mono text-cyan-400">64%</span>
                   </div>
                   <div className="h-2 w-full bg-slate-800 rounded-full overflow-hidden">
@@ -284,7 +291,7 @@ export default function PropertyLeasingPortfolioPage() {
 
                 <div>
                   <div className="flex justify-between text-xs font-semibold text-slate-300 mb-1">
-                    <span>Manufacturing & Tech-Plants</span>
+                    <span>{t('leasing.portfolio.sectorManufacturing')}</span>
                     <span className="font-mono text-cyan-400">22%</span>
                   </div>
                   <div className="h-2 w-full bg-slate-800 rounded-full overflow-hidden">
@@ -294,7 +301,7 @@ export default function PropertyLeasingPortfolioPage() {
 
                 <div>
                   <div className="flex justify-between text-xs font-semibold text-slate-300 mb-1">
-                    <span>Cold Storage Facilities</span>
+                    <span>{t('leasing.portfolio.sectorColdStorage')}</span>
                     <span className="font-mono text-cyan-400">14%</span>
                   </div>
                   <div className="h-2 w-full bg-slate-800 rounded-full overflow-hidden">
@@ -309,7 +316,10 @@ export default function PropertyLeasingPortfolioPage() {
                 info
               </span>
               <p className="text-[11px] text-cyan-200/90 leading-relaxed">
-                Logistics exposure is up +4.2% YoY following the acquisition of the Northport Hub.
+                {fill(t('leasing.portfolio.sectorInsight'), {
+                  change: '+4.2%',
+                  asset: 'Northport Hub',
+                })}
               </p>
             </div>
           </div>
@@ -326,7 +336,7 @@ export default function PropertyLeasingPortfolioPage() {
                 {t('leasing.propertyPerformance')}
               </h3>
               <p className="text-xs text-slate-400 mt-0.5">
-                High-density asset metrics and lease terms
+                {t('leasing.portfolio.performanceSubtitle')}
               </p>
             </div>
 
@@ -408,10 +418,12 @@ export default function PropertyLeasingPortfolioPage() {
                               : 'bg-rose-950/70 text-rose-400 border border-rose-800/40'
                         }`}
                       >
-                        {asset.revStatus}
+                        {t(`leasing.portfolio.revStatus.${asset.revStatus}`)}
                       </span>
                     </td>
-                    <td className="py-3 px-5 font-mono text-slate-300">{asset.waleYears} Yrs</td>
+                    <td className="py-3 px-5 font-mono text-slate-300">
+                      {fill(t('leasing.portfolio.waleValue'), { years: asset.waleYears })}
+                    </td>
                     <td className="py-3 px-5 text-right font-mono font-bold text-cyan-400">
                       {asset.yieldPercent}%
                     </td>

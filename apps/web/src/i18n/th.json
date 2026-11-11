@@ -1143,7 +1143,33 @@
     "createLead": "เพิ่ม Lead",
     "createOpportunity": "สร้างโอกาส",
     "convert": "แปลงเป็นลูกค้า",
-    "selectLead": "เลือก Lead"
+    "selectLead": "เลือก Lead",
+    "tender": {
+      "awardNotice": "เลือกผู้เสนอราคา {contractor} เข้าสู่การเจรจาต่อรองขั้นสุดท้ายที่ {amount}",
+      "title": "ประกวดราคา e-GP #{id}: งานโครงสร้าง",
+      "liveBadge": "ประกวดราคา e-GP ที่เปิดอยู่",
+      "subtitle": "{project} • งานโครงสร้างและโครงชั้นใต้ดิน",
+      "ceilingSource": "เพดานราคาตามกรมบัญชีกลาง",
+      "belowCeiling": "{percent} จากราคากลาง",
+      "contractorsCount": "ผู้รับเหมา {count} ราย",
+      "prequalified": "ผ่านการตรวจคุณสมบัติเบื้องต้น {percent}",
+      "daysLeft": "เหลือ {days} วัน",
+      "closes": "ปิดรับ {datetime}",
+      "rankedBy": "จัดอันดับตามคะแนนถ่วงน้ำหนัก (ราคา {price} + เทคนิค {technical})",
+      "rank": "อันดับ",
+      "recommended": "แนะนำ",
+      "daysValue": "{days} วัน",
+      "selected": "เลือกแล้ว",
+      "boqTitle": "บัญชีแสดงปริมาณวัสดุและราคา (BoQ) และข้อกำหนดงานโครงสร้าง",
+      "specConcreteTitle": "ข้อกำหนดคอนกรีตและเหล็ก",
+      "specConcrete1": "• คอนกรีตผสมเสร็จกำลังสูง เกรด {grade} ({quantity} ลบ.ม.)",
+      "specConcrete2": "• เหล็กข้ออ้อย {grade} เกรดต้านแผ่นดินไหว ({quantity} ตัน)",
+      "specConcrete3": "• ลวดอัดแรงสำหรับระบบโพสต์เทนชัน {size} {standard} ({quantity} ตัน)",
+      "specSubmittalTitle": "ข้อกำหนดการส่งเอกสารและการตรวจสอบ",
+      "specSubmittal1": "• รายงานตรวจสอบการชนกันของแบบ 3D BIM ก่อนเทคอนกรีตทุกครั้ง",
+      "specSubmittal2": "• ทดสอบคอนกรีตด้วยคลื่นอัลตราโซนิกภายใน {days} วัน",
+      "specSubmittal3": "• บันทึกภาพถ่ายรายวันของวิศวกรสนาม ซิงก์เข้าสมุดบันทึกบนคลาวด์ของ COS"
+    }
   },
   "exec": {
     "homeTitle": "ภาพรวมพอร์ตโครงการ",
@@ -1214,7 +1240,32 @@
     "verify": "ตรวจสอบ",
     "release": "เบิกจ่าย",
     "confirmFactoringTitle": "ยืนยันการแปลงใบแจ้งหนี้และเบิกจ่ายเงินสดทันที",
-    "approveDisbursement": "อนุมัติและโอนเงินสด"
+    "approveDisbursement": "อนุมัติและโอนเงินสด",
+    "factoring": {
+      "fundingApproved": "อนุมัติเงินทุน {amount} สำหรับ {invoice}",
+      "batchReleased": "จ่ายเงินแบบรวมรายการให้ผู้รับเหมาช่วงที่ตรวจสอบแล้ว",
+      "allQueued": "ใบแจ้งหนี้ทั้งหมดที่ AI ตรวจสอบแล้วเข้าคิวเพื่อให้ธนาคารจ่ายเร่งด่วน",
+      "creditLine": "วงเงินสินเชื่อ AI: {amount} พร้อมใช้",
+      "auditCleared": "ผ่านการตรวจสอบ {percent}",
+      "speed": "ความเร็ว {factor}",
+      "speedVsNormal": "เฉลี่ย {hours} เทียบกับปกติ {days} วัน",
+      "flatFee": "ค่าธรรมเนียมส่วนลดคงที่ {percent}",
+      "crossMatched": "ตรวจเทียบกับบันทึกหน้างานแล้ว",
+      "invoicesAvailable": "ใบแจ้งหนี้ที่พร้อม {count} รายการ",
+      "milestonesPending": "งวดงานรอชำระ {count} รายการ",
+      "completed": "เสร็จสิ้น",
+      "modalInvoice": "ใบแจ้งหนี้ {invoice} • {subcontractor}",
+      "faceValue": "มูลค่าตามหน้าใบแจ้งหนี้:",
+      "advanceCapital": "เงินทุนล่วงหน้า ({percent}):",
+      "factoringFee": "ค่าธรรมเนียมแฟคเตอริงด่วน (คงที่ {percent}):",
+      "netDisbursed": "ยอดสุทธิที่จ่ายทันที:",
+      "payoutStatus": {
+        "PENDING": "รอดำเนินการ",
+        "VERIFIED": "ตรวจสอบแล้ว",
+        "RELEASED": "จ่ายแล้ว",
+        "FLAGGED": "พบข้อสังเกต"
+      }
+    }
   },
   "checkout": {
     "headerTitle": "ระบบชำระเงินและตั้งถิ่นฐาน",
@@ -1348,6 +1399,47 @@
       "perMonth": "{amount} / เดือน",
       "legalNotice": "ลายมือชื่ออิเล็กทรอนิกส์เป็นไปตามพระราชบัญญัติว่าด้วยธุรกรรมทางอิเล็กทรอนิกส์ พ.ศ. 2544",
       "executing": "กำลังลงนามสัญญา..."
+    },
+    "portfolio": {
+      "occupancyTarget": "เป้าหมาย: {target} • ทรัพย์สิน {count} แห่ง",
+      "noiVariance": "ส่วนต่าง: {amount} เทียบเกณฑ์ {quarter}",
+      "delinquencyThreshold": "เกณฑ์แจ้งเตือนวิกฤต: {threshold}",
+      "expirySubtitle": "สัญญาเช่าที่จะครบกำหนด แยกตามไตรมาสที่จะถึง",
+      "legendExpiring": "ตร.ม. ที่ครบกำหนด",
+      "legendActiveUnits": "ยูนิตที่มีผู้เช่า",
+      "sectorLogistics": "โลจิสติกส์ / ขนส่งระยะสุดท้าย",
+      "sectorManufacturing": "การผลิตและโรงงานเทคโนโลยี",
+      "sectorColdStorage": "คลังสินค้าห้องเย็น",
+      "sectorInsight": "สัดส่วนโลจิสติกส์ {change} เมื่อเทียบปีต่อปี หลังการเข้าซื้อ {asset}",
+      "performanceSubtitle": "ตัวชี้วัดทรัพย์สินและเงื่อนไขสัญญาเช่าโดยละเอียด",
+      "waleValue": "{years} ปี",
+      "revStatus": {
+        "Target": "ตามเป้า",
+        "Variance": "มีส่วนต่าง",
+        "Critical": "วิกฤต"
+      }
+    },
+    "property": {
+      "stackingPlanTitle": "{property} • ผังการเช่ารายชั้น",
+      "yoyChange": "{change} เทียบปีก่อน",
+      "unitsCount": "{count} ยูนิต",
+      "fromPerYear": "เริ่มต้น {amount} / ปี",
+      "liveSync": "ซิงก์แบบเรียลไทม์",
+      "bimConnected": "เชื่อมต่อโมเดล BIM แล้ว",
+      "floorLabel": "ชั้น {floor}",
+      "unitName": "ยูนิต {unit}",
+      "size": "ขนาด",
+      "sizeValue": "{size} ตร.ฟุต",
+      "status": "สถานะ",
+      "activeLease": "สัญญาเช่าปัจจุบัน",
+      "expires": "สิ้นสุด: {date}",
+      "historyTitle": "ประวัติสัญญาเช่า",
+      "historyRenewed": "ต่อสัญญาเช่า ({years} ปี)",
+      "historyInitial": "สัญญาเช่าฉบับแรก",
+      "historyEntry": "{date} • {amount} / ปี",
+      "selectPrompt": "เลือกยูนิตจากผังเพื่อดูรายละเอียด",
+      "aiInsightTitle": "ข้อมูลเชิงลึกจาก AI",
+      "aiInsight": "ยูนิตบนชั้น {floors} มีอัตราการสอบถามสูงกว่าชั้นอื่น {rate} คำแนะนำ: ปรับราคาเสนอเช่าของยูนิตว่าง {unit} {change}"
     }
   },
   "drone": {
@@ -1382,7 +1474,30 @@
     "openIncidents": "เหตุการณ์ที่เปิดอยู่",
     "highCritical": "รุนแรง/วิกฤต (เปิด)",
     "expiredPermits": "ใบอนุญาตหมดอายุ",
-    "revokedPermits": "ใบอนุญาตถูกเพิกถอน"
+    "revokedPermits": "ใบอนุญาตถูกเพิกถอน",
+    "aiVision": {
+      "dispatched": "ส่งเจ้าหน้าที่ความปลอดภัยไปที่ {zones} ทางวิทยุแล้ว",
+      "broadcasting": "กำลังส่งสัญญาณไซเรน...",
+      "liveMonitoring": "กำลังเฝ้าระวังสด",
+      "subtitle": "AI ประมวลผลภาพแบบเรียลไทม์ที่หน้างาน ตรวจการสวมอุปกรณ์ PPE การบุกรุกเขตพื้นที่ และตอบสนองต่ออันตรายอย่างรวดเร็ว",
+      "confidence": "ความมั่นใจ: {value}%",
+      "ppeCompliant": "สวม PPE ครบ {percent}",
+      "streamTypes": "ONVIF / RTSP / สตรีมจากโดรน",
+      "activeCameras": "กล้องที่ทำงาน",
+      "feedsCount": "{active} / {total} ฟีด",
+      "networkLatency": "ความหน่วงเครือข่าย",
+      "inferenceSpeed": "ความเร็วการประมวลผล",
+      "msPerFrame": "{value} มิลลิวินาที/เฟรม",
+      "edgeCluster": "คลัสเตอร์ Edge: {node}",
+      "vs24h": "{change} เทียบ 24 ชม.",
+      "ppeTitle": "การสวม PPE จากทุกกล้อง",
+      "hardHats": "หมวกนิรภัย",
+      "hiVis": "เสื้อสะท้อนแสง",
+      "safetyBoots": "รองเท้านิรภัย",
+      "eyeProtection": "อุปกรณ์ป้องกันดวงตา",
+      "alertFeed": "การแจ้งเตือนอัจฉริยะ",
+      "aiAdvisory": "คำแนะนำจาก AI"
+    }
   },
   "digitalTwin": {
     "title": "ดิจิทัลทวินและแบบจำลอง BIM"

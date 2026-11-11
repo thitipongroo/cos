@@ -1143,7 +1143,33 @@
     "createLead": "Add lead",
     "createOpportunity": "Create opportunity",
     "convert": "Convert to customer",
-    "selectLead": "Select a lead"
+    "selectLead": "Select a lead",
+    "tender": {
+      "awardNotice": "Bidder {contractor} selected for final commercial negotiation at {amount}.",
+      "title": "e-GP Tender #{id}: Structural Package",
+      "liveBadge": "e-GP Live Tender",
+      "subtitle": "{project} • Structural & Sub-Basement Framing",
+      "ceilingSource": "Comptroller General Department Cap",
+      "belowCeiling": "{percent} Below Official Ceiling",
+      "contractorsCount": "{count} Contractors",
+      "prequalified": "{percent} Pre-qualification Verified",
+      "daysLeft": "{days} Days Left",
+      "closes": "Closes {datetime}",
+      "rankedBy": "Ranked by Weighted Score ({price} Price + {technical} Technical)",
+      "rank": "Rank",
+      "recommended": "Recommended",
+      "daysValue": "{days} days",
+      "selected": "Selected",
+      "boqTitle": "Bill of Quantities (BoQ) & Structural Specifications",
+      "specConcreteTitle": "Concrete & Steel Specifications",
+      "specConcrete1": "• High-strength ready-mix concrete Grade {grade} ({quantity} cu.m.)",
+      "specConcrete2": "• Deformed rebar {grade} seismic-resistant grade ({quantity} tons)",
+      "specConcrete3": "• Post-tensioned tendon strand {size} {standard} ({quantity} tons)",
+      "specSubmittalTitle": "Submittal & Verification Requirements",
+      "specSubmittal1": "• 3D BIM clash detection report before each concrete pour",
+      "specSubmittal2": "• Ultrasonic pulse velocity concrete testing within {days} days",
+      "specSubmittal3": "• Daily site engineer photo log synced to COS cloud ledger"
+    }
   },
   "exec": {
     "homeTitle": "Portfolio overview",
@@ -1214,7 +1240,32 @@
     "verify": "Verify",
     "release": "Release",
     "confirmFactoringTitle": "Confirm Invoice Factoring & Immediate Disbursement",
-    "approveDisbursement": "Approve & Disburse Capital"
+    "approveDisbursement": "Approve & Disburse Capital",
+    "factoring": {
+      "fundingApproved": "Funding of {amount} approved for {invoice}",
+      "batchReleased": "Batch payment released to verified subcontractors.",
+      "allQueued": "All AI-verified invoices queued for accelerated bank release.",
+      "creditLine": "AI Credit Line: {amount} Active",
+      "auditCleared": "{percent} Audit Cleared",
+      "speed": "{factor} Speed",
+      "speedVsNormal": "Avg. {hours} vs {days} days normal",
+      "flatFee": "Flat {percent} discount fee",
+      "crossMatched": "Cross-matched with site logs",
+      "invoicesAvailable": "{count} Invoices Available",
+      "milestonesPending": "{count} Milestones Pending Settlement",
+      "completed": "Completed",
+      "modalInvoice": "Invoice {invoice} • {subcontractor}",
+      "faceValue": "Total Invoice Face Value:",
+      "advanceCapital": "Advance Capital ({percent}):",
+      "factoringFee": "Fast Factoring Fee ({percent} flat):",
+      "netDisbursed": "Net Immediate Liquidity Disbursed:",
+      "payoutStatus": {
+        "PENDING": "PENDING",
+        "VERIFIED": "VERIFIED",
+        "RELEASED": "RELEASED",
+        "FLAGGED": "FLAGGED"
+      }
+    }
   },
   "checkout": {
     "headerTitle": "Checkout & Settlement",
@@ -1348,6 +1399,47 @@
       "perMonth": "{amount} / Month",
       "legalNotice": "Electronic signature compliant with Thailand Electronic Transactions Act B.E. 2544 (2001).",
       "executing": "Executing Agreement..."
+    },
+    "portfolio": {
+      "occupancyTarget": "Target: {target} • {count} Assets",
+      "noiVariance": "Variance: {amount} vs {quarter} Benchmark",
+      "delinquencyThreshold": "Critical Alert Threshold: {threshold}",
+      "expirySubtitle": "Lease expiries scheduled by upcoming quarters",
+      "legendExpiring": "SQM Expiring",
+      "legendActiveUnits": "Active Units",
+      "sectorLogistics": "Logistics / Last-Mile",
+      "sectorManufacturing": "Manufacturing & Tech-Plants",
+      "sectorColdStorage": "Cold Storage Facilities",
+      "sectorInsight": "Logistics exposure is up {change} YoY following the acquisition of the {asset}.",
+      "performanceSubtitle": "High-density asset metrics and lease terms",
+      "waleValue": "{years} Yrs",
+      "revStatus": {
+        "Target": "Target",
+        "Variance": "Variance",
+        "Critical": "Critical"
+      }
+    },
+    "property": {
+      "stackingPlanTitle": "{property} • Stacking Plan",
+      "yoyChange": "{change} YOY",
+      "unitsCount": "{count} Units",
+      "fromPerYear": "From {amount} / yr",
+      "liveSync": "Live Sync",
+      "bimConnected": "BIM Model Connected",
+      "floorLabel": "Floor {floor}",
+      "unitName": "Unit {unit}",
+      "size": "Size",
+      "sizeValue": "{size} SQFT",
+      "status": "Status",
+      "activeLease": "Active Lease",
+      "expires": "Expires: {date}",
+      "historyTitle": "Lease History Timeline",
+      "historyRenewed": "Lease Renewed ({years} Yrs)",
+      "historyInitial": "Initial Tenancy Contract",
+      "historyEntry": "{date} • {amount} / Yr",
+      "selectPrompt": "Select any unit from the stacking grid to inspect details",
+      "aiInsightTitle": "AI Intelligence Insight",
+      "aiInsight": "Units on Floor {floors} have {rate} higher inquiry rate. Recommendation: Adjust asking price for available unit {unit} by {change}."
     }
   },
   "drone": {
@@ -1382,7 +1474,30 @@
     "openIncidents": "Open incidents",
     "highCritical": "High/Critical (open)",
     "expiredPermits": "Expired permits",
-    "revokedPermits": "Revoked permits"
+    "revokedPermits": "Revoked permits",
+    "aiVision": {
+      "dispatched": "Site Safety Officer dispatched to {zones} via radio.",
+      "broadcasting": "Broadcasting Siren...",
+      "liveMonitoring": "LIVE MONITORING",
+      "subtitle": "Real-time edge neural inference for PPE compliance, geofence breaches, and rapid hazard response",
+      "confidence": "Confidence: {value}%",
+      "ppeCompliant": "{percent} PPE COMPLIANT",
+      "streamTypes": "ONVIF / RTSP / Drone Stream",
+      "activeCameras": "Active Cameras",
+      "feedsCount": "{active} / {total} Feeds",
+      "networkLatency": "Network Latency",
+      "inferenceSpeed": "Inference Speed",
+      "msPerFrame": "{value} ms/frame",
+      "edgeCluster": "Edge Cluster: {node}",
+      "vs24h": "{change} vs 24h",
+      "ppeTitle": "Multi-Feed PPE Compliance",
+      "hardHats": "Hard Hats",
+      "hiVis": "High-Vis Vests",
+      "safetyBoots": "Safety Boots",
+      "eyeProtection": "Eye Protection",
+      "alertFeed": "Smart Alert Feed",
+      "aiAdvisory": "AI ADVISORY"
+    }
   },
   "digitalTwin": {
     "title": "Digital Twin & BIM Viewer"

@@ -4,6 +4,7 @@ import { Suspense, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useI18n } from '../../../../i18n';
+import { fill } from '../../../../i18n/fill';
 import { formatMoney } from '../../../../lib/format';
 
 /**
@@ -13,16 +14,6 @@ import { formatMoney } from '../../../../lib/format';
  * the whole wizard rather than one small reader (as `login/page.tsx` does). The fallback holds no
  * text, so it has nothing to translate.
  */
-/**
- * Fills every `{name}` in a translated template in one pass. A chain of `.replace('{x}', value)`
- * would read `$&`, `$'` and `` $` `` in a value as replacement patterns and could fill a
- * placeholder that an earlier value brought in — and the values here are typed by the user or come
- * from the URL (`?property=`, `?unit=`). An unknown name is left as written.
- */
-function fill(template: string, values: Record<string, string>): string {
-  return template.replace(/\{(\w+)\}/g, (match, name: string) => values[name] ?? match);
-}
-
 export default function LeaseWizardPage() {
   return (
     <Suspense fallback={<div className="flex flex-col h-full bg-[#020617]" />}>

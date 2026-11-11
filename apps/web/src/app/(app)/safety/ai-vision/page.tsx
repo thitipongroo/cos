@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useI18n } from '../../../../i18n';
+import { fill } from '../../../../i18n/fill';
 
 interface CameraFeed {
   id: string;
@@ -120,7 +121,7 @@ export default function SafetyAiVisionPage() {
 
   const handleDispatchOfficer = () => {
     setDispatchFeedback(
-      'Site Safety Officer dispatched to Zone 4 & Tower Scaffold North via radio.',
+      fill(t('safety.aiVision.dispatched'), { zones: 'Zone 4 & Tower Scaffold North' }),
     );
     setTimeout(() => {
       setDispatchFeedback(null);
@@ -146,13 +147,10 @@ export default function SafetyAiVisionPage() {
             </h1>
             <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-cyan-950/70 text-cyan-400 border border-cyan-800/40 font-mono animate-pulse flex items-center gap-1.5">
               <span className="w-2 h-2 rounded-full bg-cyan-400" />
-              LIVE MONITORING
+              {t('safety.aiVision.liveMonitoring')}
             </span>
           </div>
-          <p className="text-xs text-slate-400 mt-1">
-            Real-time edge neural inference for PPE compliance, geofence breaches, and rapid hazard
-            response
-          </p>
+          <p className="text-xs text-slate-400 mt-1">{t('safety.aiVision.subtitle')}</p>
         </div>
 
         <div className="flex items-center gap-3">
@@ -175,7 +173,7 @@ export default function SafetyAiVisionPage() {
             }`}
           >
             <span className="material-symbols-outlined text-[16px]">volume_up</span>
-            {isBroadcasting ? 'Broadcasting Siren...' : t('safety.broadcastAlert')}
+            {isBroadcasting ? t('safety.aiVision.broadcasting') : t('safety.broadcastAlert')}
           </button>
         </div>
       </div>
@@ -232,7 +230,7 @@ export default function SafetyAiVisionPage() {
                       {feed.activeAlert}
                     </div>
                     <span className="text-[10px] font-mono text-rose-400">
-                      Confidence: {feed.confidence}%
+                      {fill(t('safety.aiVision.confidence'), { value: feed.confidence ?? '' })}
                     </span>
                   </div>
                 ) : (
@@ -240,7 +238,9 @@ export default function SafetyAiVisionPage() {
                     <span className="material-symbols-outlined text-4xl text-cyan-400/40">
                       verified_user
                     </span>
-                    <p className="text-[10px] font-mono text-cyan-300">100% PPE COMPLIANT</p>
+                    <p className="text-[10px] font-mono text-cyan-300">
+                      {fill(t('safety.aiVision.ppeCompliant'), { percent: '100%' })}
+                    </p>
                   </div>
                 )}
 
@@ -263,7 +263,9 @@ export default function SafetyAiVisionPage() {
               <span className="text-xs font-bold uppercase tracking-wider">
                 {t('safety.connectNewCamera')}
               </span>
-              <span className="text-[11px] text-slate-500 mt-1">ONVIF / RTSP / Drone Stream</span>
+              <span className="text-[11px] text-slate-500 mt-1">
+                {t('safety.aiVision.streamTypes')}
+              </span>
             </button>
           </div>
 
@@ -272,28 +274,34 @@ export default function SafetyAiVisionPage() {
             <div className="flex items-center gap-6 text-xs">
               <div>
                 <span className="text-[10px] text-slate-400 uppercase font-bold">
-                  Active Cameras
+                  {t('safety.aiVision.activeCameras')}
                 </span>
-                <p className="font-mono font-bold text-white text-base">14 / 20 Feeds</p>
+                <p className="font-mono font-bold text-white text-base">
+                  {fill(t('safety.aiVision.feedsCount'), { active: 14, total: 20 })}
+                </p>
               </div>
               <div className="h-8 w-px bg-white/10" />
               <div>
                 <span className="text-[10px] text-slate-400 uppercase font-bold">
-                  Network Latency
+                  {t('safety.aiVision.networkLatency')}
                 </span>
                 <p className="font-mono font-bold text-emerald-400 text-base">42 ms</p>
               </div>
               <div className="h-8 w-px bg-white/10" />
               <div>
                 <span className="text-[10px] text-slate-400 uppercase font-bold">
-                  Inference Speed
+                  {t('safety.aiVision.inferenceSpeed')}
                 </span>
-                <p className="font-mono font-bold text-cyan-400 text-base">18.4 ms/frame</p>
+                <p className="font-mono font-bold text-cyan-400 text-base">
+                  {fill(t('safety.aiVision.msPerFrame'), { value: '18.4' })}
+                </p>
               </div>
             </div>
 
             <div className="flex items-center gap-2">
-              <span className="text-xs text-slate-400 font-mono">Edge Cluster: Node-SG4-A</span>
+              <span className="text-xs text-slate-400 font-mono">
+                {fill(t('safety.aiVision.edgeCluster'), { node: 'Node-SG4-A' })}
+              </span>
             </div>
           </div>
         </div>
@@ -309,7 +317,7 @@ export default function SafetyAiVisionPage() {
               <span className="text-5xl font-extrabold text-cyan-400 font-mono">{siteScore}</span>
               <span className="text-xs font-bold text-rose-400 flex items-center gap-1">
                 <span className="material-symbols-outlined text-[14px]">trending_down</span>
-                -4.2% vs 24h
+                {fill(t('safety.aiVision.vs24h'), { change: '-4.2%' })}
               </span>
             </div>
             <div className="w-full bg-slate-800 h-2 rounded-full mt-3 overflow-hidden">
@@ -320,23 +328,31 @@ export default function SafetyAiVisionPage() {
           {/* Multi-Feed PPE Analysis */}
           <div className="p-5 border-b border-white/5 space-y-3">
             <span className="text-[11px] font-bold text-slate-400 uppercase tracking-widest block">
-              Multi-Feed PPE Compliance
+              {t('safety.aiVision.ppeTitle')}
             </span>
             <div className="grid grid-cols-2 gap-2">
               <div className="p-2.5 rounded-lg bg-slate-900 border border-white/5">
-                <span className="text-[10px] text-slate-400 uppercase">Hard Hats</span>
+                <span className="text-[10px] text-slate-400 uppercase">
+                  {t('safety.aiVision.hardHats')}
+                </span>
                 <p className="font-mono text-base font-bold text-cyan-400">94%</p>
               </div>
               <div className="p-2.5 rounded-lg bg-slate-900 border border-white/5">
-                <span className="text-[10px] text-slate-400 uppercase">High-Vis Vests</span>
+                <span className="text-[10px] text-slate-400 uppercase">
+                  {t('safety.aiVision.hiVis')}
+                </span>
                 <p className="font-mono text-base font-bold text-cyan-400">88%</p>
               </div>
               <div className="p-2.5 rounded-lg bg-slate-900 border border-white/5">
-                <span className="text-[10px] text-slate-400 uppercase">Safety Boots</span>
+                <span className="text-[10px] text-slate-400 uppercase">
+                  {t('safety.aiVision.safetyBoots')}
+                </span>
                 <p className="font-mono text-base font-bold text-emerald-400">99%</p>
               </div>
               <div className="p-2.5 rounded-lg bg-slate-900 border border-white/5">
-                <span className="text-[10px] text-slate-400 uppercase">Eye Protection</span>
+                <span className="text-[10px] text-slate-400 uppercase">
+                  {t('safety.aiVision.eyeProtection')}
+                </span>
                 <p className="font-mono text-base font-bold text-amber-400">72%</p>
               </div>
             </div>
@@ -346,10 +362,10 @@ export default function SafetyAiVisionPage() {
           <div className="p-5 flex-1 space-y-3">
             <div className="flex justify-between items-center mb-1">
               <span className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">
-                Smart Alert Feed
+                {t('safety.aiVision.alertFeed')}
               </span>
               <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-cyan-950 text-cyan-400 border border-cyan-800/40">
-                AI ADVISORY
+                {t('safety.aiVision.aiAdvisory')}
               </span>
             </div>
 

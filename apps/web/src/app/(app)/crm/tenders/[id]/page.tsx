@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useI18n } from '../../../../../i18n';
+import { fill } from '../../../../../i18n/fill';
 import { formatMoney } from '../../../../../lib/format';
 
 interface BidderAnalysis {
@@ -76,7 +77,10 @@ export default function TenderPackageDetailPage() {
   const handleSelectBidder = (b: BidderAnalysis) => {
     setSelectedBidder(b);
     setAwardNotice(
-      `Bidder ${b.contractor} selected for final commercial negotiation at ${formatMoney(locale, b.bidPrice.toString(), 'THB')}.`,
+      fill(t('crm.tender.awardNotice'), {
+        contractor: b.contractor,
+        amount: formatMoney(locale, b.bidPrice.toString(), 'THB'),
+      }),
     );
     setTimeout(() => setAwardNotice(null), 4000);
   };
@@ -95,14 +99,16 @@ export default function TenderPackageDetailPage() {
               {t('common.back')}
             </Link>
             <h1 className="text-xl font-bold tracking-tight text-white">
-              e-GP Tender #{tenderId || 'EGP-2026-8819'}: Structural Package
+              {fill(t('crm.tender.title'), { id: tenderId || 'EGP-2026-8819' })}
             </h1>
             <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-950/70 text-emerald-400 border border-emerald-800/40">
-              e-GP Live Tender
+              {t('crm.tender.liveBadge')}
             </span>
           </div>
           <p className="text-xs text-slate-400 mt-1">
-            Bangkok Gateway Smart Logistics Terminal • Structural & Sub-Basement Framing
+            {fill(t('crm.tender.subtitle'), {
+              project: 'Bangkok Gateway Smart Logistics Terminal',
+            })}
           </p>
         </div>
 
@@ -151,9 +157,7 @@ export default function TenderPackageDetailPage() {
           <div className="text-2xl font-extrabold text-white mt-1">
             {formatMoney(locale, centralPrice.toString(), 'THB')}
           </div>
-          <span className="text-[11px] text-slate-400 mt-1">
-            Comptroller General Department Cap
-          </span>
+          <span className="text-[11px] text-slate-400 mt-1">{t('crm.tender.ceilingSource')}</span>
         </div>
 
         <div className="p-4 rounded-xl bg-[#0F172A] border border-white/5">
@@ -164,7 +168,7 @@ export default function TenderPackageDetailPage() {
             {formatMoney(locale, bidders[0].bidPrice.toString(), 'THB')}
           </div>
           <span className="text-[11px] text-emerald-400 font-medium mt-1">
-            -3.67% Below Official Ceiling
+            {fill(t('crm.tender.belowCeiling'), { percent: '-3.67%' })}
           </span>
         </div>
 
@@ -173,17 +177,23 @@ export default function TenderPackageDetailPage() {
             {t('crm.activeBiddersCount')}
           </span>
           <div className="text-2xl font-extrabold text-cyan-400 mt-1">
-            {bidders.length} Contractors
+            {fill(t('crm.tender.contractorsCount'), { count: bidders.length })}
           </div>
-          <span className="text-[11px] text-slate-400 mt-1">100% Pre-qualification Verified</span>
+          <span className="text-[11px] text-slate-400 mt-1">
+            {fill(t('crm.tender.prequalified'), { percent: '100%' })}
+          </span>
         </div>
 
         <div className="p-4 rounded-xl bg-[#0F172A] border border-white/5">
           <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
             {t('crm.submissionDeadline')}
           </span>
-          <div className="text-2xl font-extrabold text-amber-400 mt-1">12 Days Left</div>
-          <span className="text-[11px] text-slate-400 mt-1">Closes 2026-11-20 16:30 ICT</span>
+          <div className="text-2xl font-extrabold text-amber-400 mt-1">
+            {fill(t('crm.tender.daysLeft'), { days: 12 })}
+          </div>
+          <span className="text-[11px] text-slate-400 mt-1">
+            {fill(t('crm.tender.closes'), { datetime: '2026-11-20 16:30 ICT' })}
+          </span>
         </div>
       </div>
 
@@ -199,14 +209,14 @@ export default function TenderPackageDetailPage() {
                 {t('crm.contractorBidVarianceTable')}
               </h3>
               <span className="text-xs text-slate-400 font-medium">
-                Ranked by Weighted Score (70% Price + 30% Technical)
+                {fill(t('crm.tender.rankedBy'), { price: '70%', technical: '30%' })}
               </span>
             </div>
 
             <table className="w-full text-left text-xs text-slate-300">
               <thead className="bg-[#102034]/60 text-[11px] text-slate-400 uppercase tracking-wider border-b border-white/5 font-semibold">
                 <tr>
-                  <th className="py-3 px-4">Rank</th>
+                  <th className="py-3 px-4">{t('crm.tender.rank')}</th>
                   <th className="py-3 px-4">{t('crm.contractorName')}</th>
                   <th className="py-3 px-4">{t('crm.bidPrice')}</th>
                   <th className="py-3 px-4">{t('crm.varianceFromCeiling')}</th>
@@ -228,7 +238,7 @@ export default function TenderPackageDetailPage() {
                       {b.contractor}
                       {b.isRecommended && (
                         <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-emerald-600 text-white">
-                          Recommended
+                          {t('crm.tender.recommended')}
                         </span>
                       )}
                     </td>
@@ -248,7 +258,9 @@ export default function TenderPackageDetailPage() {
                         {b.technicalScore} / 100
                       </span>
                     </td>
-                    <td className="py-3.5 px-4 text-slate-300 font-mono">{b.scheduleDays} days</td>
+                    <td className="py-3.5 px-4 text-slate-300 font-mono">
+                      {fill(t('crm.tender.daysValue'), { days: b.scheduleDays })}
+                    </td>
                     <td className="py-3.5 px-4 text-right">
                       <button
                         type="button"
@@ -260,7 +272,7 @@ export default function TenderPackageDetailPage() {
                         }`}
                       >
                         {selectedBidder?.contractor === b.contractor
-                          ? 'Selected'
+                          ? t('crm.tender.selected')
                           : t('crm.selectForAward')}
                       </button>
                     </td>
@@ -271,21 +283,27 @@ export default function TenderPackageDetailPage() {
           </div>
         ) : (
           <div className="rounded-xl border border-white/5 bg-[#0F172A] p-6 space-y-4">
-            <h3 className="text-base font-bold text-white">
-              Bill of Quantities (BoQ) & Structural Specifications
-            </h3>
+            <h3 className="text-base font-bold text-white">{t('crm.tender.boqTitle')}</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs text-slate-300">
               <div className="p-4 rounded-lg bg-[#111827] border border-slate-800 space-y-2">
-                <h4 className="font-bold text-white">Concrete & Steel Specifications</h4>
-                <p>• High-strength ready-mix concrete Grade C40/50 (48,000 cu.m.)</p>
-                <p>• Deformed rebar SD50T seismic-resistant grade (6,200 tons)</p>
-                <p>• Post-tensioned tendon strand 15.2mm ASTM A416 (850 tons)</p>
+                <h4 className="font-bold text-white">{t('crm.tender.specConcreteTitle')}</h4>
+                <p>
+                  {fill(t('crm.tender.specConcrete1'), { grade: 'C40/50', quantity: '48,000' })}
+                </p>
+                <p>{fill(t('crm.tender.specConcrete2'), { grade: 'SD50T', quantity: '6,200' })}</p>
+                <p>
+                  {fill(t('crm.tender.specConcrete3'), {
+                    size: '15.2mm',
+                    standard: 'ASTM A416',
+                    quantity: '850',
+                  })}
+                </p>
               </div>
               <div className="p-4 rounded-lg bg-[#111827] border border-slate-800 space-y-2">
-                <h4 className="font-bold text-white">Submittal & Verification Requirements</h4>
-                <p>• 3D BIM clash detection report before each concrete pour</p>
-                <p>• Ultrasonic pulse velocity concrete testing within 28 days</p>
-                <p>• Daily site engineer photo log synced to COS cloud ledger</p>
+                <h4 className="font-bold text-white">{t('crm.tender.specSubmittalTitle')}</h4>
+                <p>{t('crm.tender.specSubmittal1')}</p>
+                <p>{fill(t('crm.tender.specSubmittal2'), { days: 28 })}</p>
+                <p>{t('crm.tender.specSubmittal3')}</p>
               </div>
             </div>
           </div>

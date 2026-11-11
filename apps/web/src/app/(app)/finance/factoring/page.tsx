@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useI18n } from '../../../../i18n';
+import { fill } from '../../../../i18n/fill';
 import { formatMoney } from '../../../../lib/format';
 
 interface FactoringInvoice {
@@ -136,7 +137,14 @@ export default function InvoiceFactoringPage() {
       prev.map((i) => (i.id === factoringModal.id ? { ...i, status: 'SETTLED' } : i)),
     );
     setStatusNotification(
-      `Funding of ${formatMoney(locale, (factoringModal.amount * factoringModal.advanceRate).toString(), 'THB')} approved for ${factoringModal.invoiceNumber}`,
+      fill(t('finance.factoring.fundingApproved'), {
+        amount: formatMoney(
+          locale,
+          (factoringModal.amount * factoringModal.advanceRate).toString(),
+          'THB',
+        ),
+        invoice: factoringModal.invoiceNumber,
+      }),
     );
     setFactoringModal(null);
     setTimeout(() => setStatusNotification(null), 4000);
@@ -146,7 +154,7 @@ export default function InvoiceFactoringPage() {
     setPayouts((prev) =>
       prev.map((p) => (p.status === 'VERIFIED' ? { ...p, status: 'RELEASED' } : p)),
     );
-    setStatusNotification('Batch payment released to verified subcontractors.');
+    setStatusNotification(t('finance.factoring.batchReleased'));
     setTimeout(() => setStatusNotification(null), 4000);
   };
 
@@ -160,7 +168,7 @@ export default function InvoiceFactoringPage() {
               {t('finance.factoringTitle')}
             </h1>
             <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-950/60 text-emerald-400 border border-emerald-800/40">
-              AI Credit Line: ฿150M Active
+              {fill(t('finance.factoring.creditLine'), { amount: '฿150M' })}
             </span>
           </div>
           <p className="text-xs text-slate-400 mt-1">{t('finance.factoringSubtitle')}</p>
@@ -198,9 +206,7 @@ export default function InvoiceFactoringPage() {
               type="button"
               onClick={() => {
                 setInvoices((prev) => prev.map((i) => ({ ...i, status: 'SETTLED' })));
-                setStatusNotification(
-                  'All AI-verified invoices queued for accelerated bank release.',
-                );
+                setStatusNotification(t('finance.factoring.allQueued'));
                 setTimeout(() => setStatusNotification(null), 4000);
               }}
               className="px-3.5 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold transition-all shadow-md flex items-center gap-1.5"
@@ -240,7 +246,7 @@ export default function InvoiceFactoringPage() {
           </div>
           <span className="text-[11px] text-emerald-400 font-medium mt-1 flex items-center gap-1">
             <span className="material-symbols-outlined text-[14px]">verified</span>
-            100% Audit Cleared
+            {fill(t('finance.factoring.auditCleared'), { percent: '100%' })}
           </span>
         </div>
 
@@ -248,8 +254,12 @@ export default function InvoiceFactoringPage() {
           <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
             {t('finance.kpiLiquidityVelocity')}
           </span>
-          <div className="text-2xl font-extrabold text-cyan-400 mt-1">+2.8x Speed</div>
-          <span className="text-[11px] text-slate-400 mt-1">Avg. 4.2h vs 45 days normal</span>
+          <div className="text-2xl font-extrabold text-cyan-400 mt-1">
+            {fill(t('finance.factoring.speed'), { factor: '+2.8x' })}
+          </div>
+          <span className="text-[11px] text-slate-400 mt-1">
+            {fill(t('finance.factoring.speedVsNormal'), { hours: '4.2h', days: 45 })}
+          </span>
         </div>
 
         <div className="p-4 rounded-xl bg-[#0F172A] border border-white/5">
@@ -259,7 +269,9 @@ export default function InvoiceFactoringPage() {
           <div className="text-2xl font-extrabold text-white mt-1">
             {formatMoney(locale, '124500000', 'THB')}
           </div>
-          <span className="text-[11px] text-blue-400 mt-1">Flat 1.5% discount fee</span>
+          <span className="text-[11px] text-blue-400 mt-1">
+            {fill(t('finance.factoring.flatFee'), { percent: '1.5%' })}
+          </span>
         </div>
 
         <div className="p-4 rounded-xl bg-[#0F172A] border border-white/5">
@@ -267,7 +279,9 @@ export default function InvoiceFactoringPage() {
             {t('finance.kpiPayoutAccuracy')}
           </span>
           <div className="text-2xl font-extrabold text-emerald-400 mt-1">98.9%</div>
-          <span className="text-[11px] text-slate-400 mt-1">Cross-matched with site logs</span>
+          <span className="text-[11px] text-slate-400 mt-1">
+            {t('finance.factoring.crossMatched')}
+          </span>
         </div>
       </div>
 
@@ -283,7 +297,9 @@ export default function InvoiceFactoringPage() {
                 {t('finance.eligibleInvoices')}
               </h3>
               <span className="text-xs text-slate-400 font-medium">
-                {invoices.filter((i) => i.status === 'ELIGIBLE').length} Invoices Available
+                {fill(t('finance.factoring.invoicesAvailable'), {
+                  count: invoices.filter((i) => i.status === 'ELIGIBLE').length,
+                })}
               </span>
             </div>
 
@@ -360,7 +376,7 @@ export default function InvoiceFactoringPage() {
                 {t('finance.subcontractorPayoutQueue')}
               </h3>
               <span className="text-xs text-slate-400 font-medium">
-                {payouts.length} Milestones Pending Settlement
+                {fill(t('finance.factoring.milestonesPending'), { count: payouts.length })}
               </span>
             </div>
 
@@ -418,7 +434,7 @@ export default function InvoiceFactoringPage() {
                                 : 'bg-slate-800 text-slate-400 border-slate-700'
                         }`}
                       >
-                        {p.status}
+                        {t(`finance.factoring.payoutStatus.${p.status}`)}
                       </span>
                     </td>
                     <td className="py-3.5 px-4 text-right">
@@ -453,7 +469,9 @@ export default function InvoiceFactoringPage() {
                         </button>
                       )}
                       {p.status === 'RELEASED' && (
-                        <span className="text-xs text-slate-500 font-mono">Completed</span>
+                        <span className="text-xs text-slate-500 font-mono">
+                          {t('finance.factoring.completed')}
+                        </span>
                       )}
                     </td>
                   </tr>
@@ -472,7 +490,10 @@ export default function InvoiceFactoringPage() {
               <div>
                 <h3 className="text-lg font-bold">{t('finance.confirmFactoringTitle')}</h3>
                 <p className="text-xs text-slate-400 mt-0.5">
-                  Invoice {factoringModal.invoiceNumber} • {factoringModal.subcontractor}
+                  {fill(t('finance.factoring.modalInvoice'), {
+                    invoice: factoringModal.invoiceNumber,
+                    subcontractor: factoringModal.subcontractor,
+                  })}
                 </p>
               </div>
               <button
@@ -486,13 +507,15 @@ export default function InvoiceFactoringPage() {
 
             <div className="rounded-xl bg-[#111827] border border-slate-800 p-4 space-y-3 text-xs">
               <div className="flex justify-between">
-                <span className="text-slate-400">Total Invoice Face Value:</span>
+                <span className="text-slate-400">{t('finance.factoring.faceValue')}</span>
                 <span className="font-bold text-white">
                   {formatMoney(locale, factoringModal.amount.toString(), 'THB')}
                 </span>
               </div>
               <div className="flex justify-between">
-                <span className="text-slate-400">Advance Capital (85%):</span>
+                <span className="text-slate-400">
+                  {fill(t('finance.factoring.advanceCapital'), { percent: '85%' })}
+                </span>
                 <span className="font-bold text-cyan-400">
                   {formatMoney(
                     locale,
@@ -502,7 +525,9 @@ export default function InvoiceFactoringPage() {
                 </span>
               </div>
               <div className="flex justify-between">
-                <span className="text-slate-400">Fast Factoring Fee (1.5% flat):</span>
+                <span className="text-slate-400">
+                  {fill(t('finance.factoring.factoringFee'), { percent: '1.5%' })}
+                </span>
                 <span className="font-bold text-amber-400">
                   -{' '}
                   {formatMoney(
@@ -517,7 +542,7 @@ export default function InvoiceFactoringPage() {
                 </span>
               </div>
               <div className="pt-2 border-t border-slate-800 flex justify-between text-sm">
-                <span className="font-bold text-white">Net Immediate Liquidity Disbursed:</span>
+                <span className="font-bold text-white">{t('finance.factoring.netDisbursed')}</span>
                 <span className="font-extrabold text-emerald-400">
                   {formatMoney(
                     locale,
