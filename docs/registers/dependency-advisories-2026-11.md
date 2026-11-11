@@ -54,6 +54,7 @@ The numbers are the ones used while the work was planned. Decisions about the wi
 | D28 | pnpm major 12 is the spec's normative major (was 11; the repo has been on 12.18.0 since `de660667`), and `engines.pnpm` is `>=12.0.0`.                                                                                                                                                    |
 | D29 | Status values the code compares (to pick a colour) keep their code values; only their display goes through `t()`.                                                                                                                                                                         |
 | D30 | Demo sentences written in a page's JSX are translated, their figures and names passed as `{placeholders}`; `SAMPLE_*` / `INITIAL_*` records stay as data.                                                                                                                                 |
+| D31 | `apps/mobile` takes the root's `packageManager` pin (pnpm 12.18.0 + sha512), and its lockfile is regenerated with pnpm 12.                                                                                                                                                                |
 
 ## The series
 
@@ -1580,10 +1581,20 @@ gate's isolated run) checks the hash was not tested either; it ran 12.18.0 with 
   names, asset types, work packages, zones and, on `safety/ai-vision`, alert titles and details ("NO HARD HAT DETECTED",
   "Immediate attention required…") that the pages show as they are. Left as data by D30; whether demo records should be
   translated, or the pages read real data, is a product decision.
-- **`apps/mobile` does not get the pinned pnpm on a dev machine.** It is outside the root workspace and its
-  `package.json` has no `packageManager`, so `cd apps/mobile && pnpm install` runs whatever pnpm is on `PATH`: 11.1.3
-  on the machine used here, against 12.18.0 at the root. CI is unaffected (`pnpm/action-setup` puts 12.18.0 on `PATH`
-  before the mobile jobs run). Whether to pin it there too is a separate decision. Found on `chore/pnpm-12-spec`.
+- **CI has not run since 2026-11-08.** The last successful `ci.yml` run is `develop` 42437048167 (2026-11-08 02:05 UTC).
+  From `develop` 42487331144 (2026-11-08 13:56 UTC) on — `develop` again on 11-08 and 11-10, and every branch from
+  `fix/audit-gate-pnpm12` to `fix/web-factoring-rates` — jobs failed without starting ("The job was not started because
+  recent account payments have failed or your spending limit needs to be increased", GitHub billing) or were skipped.
+  Nothing since has been checked by CI, including `pnpm/action-setup` with the `+sha512` pin.
+- **`apps/mobile` render tests miss their coverage ratchet.** `pnpm run test:render:cov`: 1,751 tests pass, then
+  statements 88.86 % < 89 %, lines 89.69 % < 90 %, functions 84 % < 85 %, exit 1 — the same before and after
+  `fix/mobile-pnpm-pin`, so it predates it.
+- **Rule 28 says a `packageManager` change moves no lockfile; on pnpm 12 it does.**
+  `context/00_master_construction_os.md` (Rule 28) and the comment in `scripts/ci/check-lockfile-staged.sh` say changing
+  `packageManager` leaves the lockfile alone. pnpm 12 records the pinned version in the lockfile's
+  `packageManagerDependencies` document (root since `de660667`, `apps/mobile` since `fix/mobile-pnpm-pin`), so a version
+  bump that edits only `package.json` passes the hook and leaves both lockfiles behind. Whether `--frozen-lockfile` then
+  refuses was not measured. Amending the rule is a spec decision.
 - **Re-measure the LCP budget under Lighthouse 13 (D26).** `apps/web/.lighthouserc.json` keeps the LCP
   `maxNumericValue` at 3200, which was set from Lighthouse 12's numbers. Lighthouse 13 reports a much lower simulated
   LCP for /login (see [branch 3](#branch-3--zod-3-second-source-lhcicli-0151--0160)), so the gate has far more
@@ -1906,6 +1917,23 @@ gate's isolated run) checks the hash was not tested either; it ran 12.18.0 with 
   decimal, so a rate such as 0.0125 would read 1.3% beside an amount worked out at 1.25%; none of the sample rates has a
   second decimal. The page-level KPI "Flat 1.5% discount fee" is not one invoice's figure and was left. Web
   `type-check`, `lint` and the web build (72 of 72 pages) exit 0; 422 tests pass with coverage at the gate.
+- **Closed — `apps/mobile` did not get the pinned pnpm, and its lockfile failed a frozen install on pnpm 12.** Fixed on
+  `fix/mobile-pnpm-pin` (D31). With 12.18.0 (as CI's mobile jobs run it), `pnpm install --frozen-lockfile` in
+  `apps/mobile` stopped with `ERR_PNPM_OUTDATED_LOCKFILE`: "local dependency `@cos/schemas` … is outdated" — `5445f97b`
+  (2026-11-08) raised `@cos/schemas`' `zod` to `^4.6.6`, and the mobile lockfile still held `zod` 4.4.3, below that
+  range; pnpm 11.1.3 let it through. `apps/mobile/package.json` now carries the root's exact `packageManager` string,
+  and against HEAD the lockfile has two changes only: a first YAML document with `packageManagerDependencies` (`pnpm`
+  and `@pnpm/exe` 12.18.0) and `zod` 4.4.3 → 4.6.7, the version the root resolves; `pnpm install` (12.18.0) then found
+  it up to date and `--frozen-lockfile` exits 0. The `zod` change was written earlier, by the "before" run itself: with
+  no pin, `pnpm run type-check` in `apps/mobile` ran the machine's pnpm 11.1.3, whose check before a run re-installed
+  and moved `zod` ("Packages: +1 -40"), so the "before" `type-check`, `test:cov` and `test:render:cov` ran with `zod`
+  4.6.7 already, while `eslint` and the a11y gate ran on HEAD. No file in `apps/mobile/src` imports `zod` or
+  `@cos/schemas`, and the hoisted `zod` stays 3.25.76; the change lands only under `node_modules/@cos/schemas`. A
+  scratch `--lockfile-only` run had also added `supports-color` to peer suffixes; the real install did not. Mobile's CI
+  commands, before and after: `eslint apps/mobile/src`, the RN a11y gate, `type-check` and `test:cov` (1,149 tests) exit
+  0; `test:render:cov` passes 1,751 tests and misses its coverage ratchet the same way both times (Open).
+  `docs/manual/mobile.md` and `getting-started.md` say mobile installs with the pinned pnpm. Not measured: `expo
+prebuild`, native builds, Detox, EAS.
 - **`apps/mobile` (D7).**
   - Its own lockfile has expo-router → `query-string@7.1.3` → `decode-uri-component@0.2.2`.
   - react-navigation's `getStateFromPath` calls `queryString.parse` on deep-link input.

@@ -76,6 +76,9 @@ not `.npmrc`**.
 cd apps/mobile && pnpm install
 ```
 
+`apps/mobile/package.json` carries the same `packageManager` pin as the root (pnpm version and sha512), so this
+install runs that pnpm on any machine; without it, mobile would install with whatever pnpm is on `PATH`.
+
 This exclusion is required, not a deviation. See [mobile.md](mobile.md).
 
 ## Verifying the setup
