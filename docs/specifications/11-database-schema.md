@@ -126,10 +126,11 @@ See `07-multi-tenant-architecture §7.1` and `docs/runbooks/dedicated-db-provisi
 
 Trial lifecycle (migration `20261101000001_trial_lifecycle`, ADR-109): CHECK `tenants_trial_dates_consistent`
 holds a tenant to one of two shapes — `subscription_status = 'ACTIVE'` with both trial dates NULL (created as
-paying), or both trial dates set with `trial_ends_at > trial_started_at` (is or was a trial). The partial
-index `tenants_trial_lifecycle_idx` on `(subscription_status, trial_ends_at) WHERE subscription_status <>
-'ACTIVE'` serves the daily trial job, which reads only non-ACTIVE tenants; paying tenants, the bulk of the
-table, are never scanned. Prisma does not model the index.
+paying), or both trial dates set with `trial_ends_at > trial_started_at` (is or was a trial — a converted
+tenant is `ACTIVE` and keeps its trial dates). The partial index `tenants_trial_lifecycle_idx` on
+`(subscription_status, trial_ends_at) WHERE subscription_status <> 'ACTIVE'` serves the daily trial job, which
+reads only non-ACTIVE tenants; paying tenants, the bulk of the table, are never scanned. Prisma does not model
+the index.
 
 ---
 
@@ -144,10 +145,12 @@ or two replicas run it (migration `20261101000001_trial_lifecycle`, §7.10, ADR-
 | `notice` | TEXT | NOT NULL · CHECK IN ('DAY_0','DAY_7','DAY_21','DAY_28','DAY_30','DAY_53','DAY_60_ADMIN') | One value per row of the §7.10 notifications table, plus the deletion-due notice to SYSTEM_ADMIN (`DAY_60_ADMIN`) |
 | `sent_at` | TIMESTAMPTZ | NOT NULL DEFAULT now() | |
 
-Primary key `(tenant_id, notice)`. Tenant-scoped, so RLS like every other tenant-keyed platform table (§7.7):
-enabled and forced, with one policy, `rls_tenant_trial_notices_read` — `SELECT` for `app_user` on rows whose
-`tenant_id` is `app.current_tenant_id`. The daily job writes through the privileged client, as every
-`platform.tenants` reader does.
+Primary key `(tenant_id, notice)`. §11.0's rules are written for domain tables; this `platform` table is
+tenant-keyed, so RLS is enabled and forced on it all the same. It does **not** follow the §11.0
+`rls_tenant_isolation` template: its one policy, `rls_tenant_trial_notices_read`, is `FOR SELECT TO app_user`
+on rows whose `tenant_id` is `NULLIF(current_setting('app.current_tenant_id', TRUE), '')` (unset → no rows),
+and there is no write policy, so `app_user` cannot insert, update or delete. The daily job
+(`TrialLifecycleService`) writes through the privileged client.
 
 ---
 

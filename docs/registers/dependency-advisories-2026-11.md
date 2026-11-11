@@ -1617,10 +1617,11 @@ gate's isolated run) checks the hash was not tested either; it ran 12.18.0 with 
   `docs/architecture/adr/108-platform-settings-store.md` still lists three plans and is left as decided at the time.
   `docs/specifications/11-database-schema.md`'s `platform.tenants` table does not yet show the other columns that
   migration added (`subscription_status`, the `trial_*` columns, `converted_at`) or `tenant_trial_notices`. Documented
-  since, on `docs/schema-trial-lifecycle`: the six columns with their CHECKs, `tenants_trial_dates_consistent`,
-  `tenants_trial_lifecycle_idx`, and a `platform.tenant_trial_notices` section (columns, key, RLS); a script comparing
-  the migration with the doc's rows (columns, types, CHECK values, constraint, index and policy names) finds no
-  difference.
+  since, on `docs/schema-trial-lifecycle`: the six columns (three carry CHECKs), `tenants_trial_dates_consistent`,
+  `tenants_trial_lifecycle_idx`, and a `platform.tenant_trial_notices` section (columns, key, and its RLS, which departs
+  from the §11.0 template: one SELECT-only policy, no write policy); a one-off script, not kept, comparing the migration
+  with the doc's rows (columns, types, CHECK values, constraint, index and policy names) finds no difference.
+  `platform.tenants`' `timezone` column, which the backend reads, is still not in the doc — it predates this.
 - **Closed — the ai-ocr-pipeline image had no Thai OCR data.** Fixed on `fix/ocr-thai`. Without `tha`, tesseract
   printed "Failed loading language 'tha'", carried on with English only and exited 0, so Thai came back as Latin
   noise. The Dockerfile now installs `tesseract-ocr-tha` (Debian 1:4.1.0-2; the image grows 619.0 → 621.0 MB). That
