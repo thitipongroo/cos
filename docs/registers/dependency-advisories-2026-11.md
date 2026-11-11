@@ -1601,23 +1601,26 @@ gate's isolated run) checks the hash was not tested either; it ran 12.18.0 with 
   optional peer (branch 2 removed that link and branch 3 brought it back). This predates the series.
 
 - **Closed — `backend/test/auth-tenant/01-entities-rls.integration.spec.ts` expected three `plan_type` values.** The
-  database has four since `512dc085` added `LITE` (trial lifecycle). Fixed on `fix/rls-spec-lite`: the assertion
-  expects LITE, the spec's shared-realm comment and `docs/specifications/11-database-schema.md` (`plan_type`,
-  `keycloak_realm`) name it too. That spec file alone, against its Testcontainers database: 14 of 15 before, 15 of 15
-  after. `docs/architecture/technical-design/phase-02-authentication-and-tenant-system.md` (the `tenants` row and
-  the realm model) names LITE too, with the commit that added it (product-owner decision). A /doubt review of that
-  branch found LITE missing in one more place that matters: `services/ai-gateway/usage.py` `QUOTA_BY_PLAN` had no
-  `LITE` key, so a LITE tenant's AI usage summary read as uncapped, with no 80 % / 100 % alert, against §26.1's 500K
-  SMB quota. The same branch adds `"LITE": 500_000` with a test (ai-gateway: 651 passed, 2 skipped, coverage 99.39 %),
-  and names LITE in `docs/api/ai.openapi.yaml` (the `/ai/usage` description and the `quota` field),
-  `apps/mobile/src/api/ai.ts`, `docs/specifications/20-ux-flow.md`, `DESIGN.md`,
-  `context/phases/phase-02-authentication-tenant-system.md` (the `plan_type` and `keycloak_realm` lines and the realm
-  model), and the shared-realm comments in `tenant.service.ts`, `schema.prisma`, `@cos/types` `admin-api.ts`,
-  `backend/src/modules/identity/README.md` and `tests/conformance/auth-tenant/01-keycloak-realm.spec.ts`. The RLS spec
-  re-run after the last edit: 15 of 15.
+  database has four since `512dc085` added `LITE` (trial lifecycle). Fixed on `fix/rls-spec-lite`: the assertion expects
+  LITE, the spec's shared-realm comment and `docs/specifications/11-database-schema.md` (`plan_type`, `keycloak_realm`)
+  name it too. That spec file alone, against its Testcontainers database: 14 of 15 before, 15 of 15 after.
+  `docs/architecture/technical-design/phase-02-authentication-and-tenant-system.md` (the `tenants` row and the realm
+  model) names LITE too, with the commit that added it (product-owner decision). A /doubt review of that branch found
+  LITE missing in one more place that matters: `services/ai-gateway/usage.py` `QUOTA_BY_PLAN` had no `LITE` key, so a
+  LITE tenant's AI usage summary read as uncapped, with no 80 % / 100 % alert, against §26.1's 500K SMB quota. The same
+  branch adds `"LITE": 500_000` with a test (ai-gateway: 651 passed, 2 skipped, coverage 99.39 %), and names LITE in
+  `docs/api/ai.openapi.yaml` (the `/ai/usage` description and the `quota` field), `apps/mobile/src/api/ai.ts`,
+  `docs/specifications/20-ux-flow.md`, `DESIGN.md`, `context/phases/phase-02-authentication-tenant-system.md` (the
+  `plan_type` and `keycloak_realm` lines and the realm model), and the shared-realm comments in `tenant.service.ts`,
+  `schema.prisma`, `@cos/types` `admin-api.ts`, `backend/src/modules/identity/README.md` and
+  `tests/conformance/auth-tenant/01-keycloak-realm.spec.ts`. The RLS spec re-run after the last edit: 15 of 15.
   `docs/architecture/adr/108-platform-settings-store.md` still lists three plans and is left as decided at the time.
   `docs/specifications/11-database-schema.md`'s `platform.tenants` table does not yet show the other columns that
-  migration added (`subscription_status`, the `trial_*` columns, `converted_at`) or `tenant_trial_notices`.
+  migration added (`subscription_status`, the `trial_*` columns, `converted_at`) or `tenant_trial_notices`. Documented
+  since, on `docs/schema-trial-lifecycle`: the six columns with their CHECKs, `tenants_trial_dates_consistent`,
+  `tenants_trial_lifecycle_idx`, and a `platform.tenant_trial_notices` section (columns, key, RLS); a script comparing
+  the migration with the doc's rows (columns, types, CHECK values, constraint, index and policy names) finds no
+  difference.
 - **Closed — the ai-ocr-pipeline image had no Thai OCR data.** Fixed on `fix/ocr-thai`. Without `tha`, tesseract
   printed "Failed loading language 'tha'", carried on with English only and exited 0, so Thai came back as Latin
   noise. The Dockerfile now installs `tesseract-ocr-tha` (Debian 1:4.1.0-2; the image grows 619.0 → 621.0 MB). That

@@ -108,6 +108,12 @@ Core :
 | `data_region`      | VARCHAR(20)                                 | NOT NULL DEFAULT 'ap-southeast-1' | AWS region for data residency; assigned at provisioning per `05-security-compliance` §5.6 (Thai → `ap-southeast-7`, EU → `eu-west-1`, default → `ap-southeast-1`); immutable after first data write |
 | `created_at`       | TIMESTAMPTZ                                 | NOT NULL DEFAULT now()            |                                                                                                                                                                                                     |
 | `updated_at`       | TIMESTAMPTZ                                 | NOT NULL DEFAULT now()            |                                                                                                                                                                                                     |
+| `subscription_status` | TEXT | NOT NULL DEFAULT 'ACTIVE' · CHECK IN ('ACTIVE','TRIAL','EXPIRED','PENDING_DELETION') | The commercial state (§7.10, ADR-109). Not `is_active`, which stays the SYSTEM_ADMIN deactivation switch. Existing tenants took 'ACTIVE' from the default. Migration `20261101000001_trial_lifecycle` |
+| `trial_started_at` | TIMESTAMPTZ | NULL | Set for a tenant that is or was a trial; NULL for one created as paying (see `tenants_trial_dates_consistent` below) |
+| `trial_ends_at` | TIMESTAMPTZ | NULL | As `trial_started_at`; when both are set it is later than it. The daily trial job reads it |
+| `trial_source` | TEXT | NULL · CHECK length ≤ 40 | Where the trial came from on construction-os.io (the CTA `source`, e.g. `pricing`), for funnel reporting |
+| `trial_request_ref` | TEXT | NULL · CHECK length ≤ 80 | The construction-os.io trial request this tenant was opened from (`public.trial_requests.id` in the website's Supabase project) — another system's key, free text |
+| `converted_at` | TIMESTAMPTZ | NULL | When a trial tenant became a paying one |
 
 `dedicated_db_url` is set by SYSTEM_ADMIN at one of two points:
 
@@ -117,6 +123,31 @@ Core :
   existing tenant from shared DB to dedicated DB.
 
 See `07-multi-tenant-architecture §7.1` and `docs/runbooks/dedicated-db-provisioning.md`.
+
+Trial lifecycle (migration `20261101000001_trial_lifecycle`, ADR-109): CHECK `tenants_trial_dates_consistent`
+holds a tenant to one of two shapes — `subscription_status = 'ACTIVE'` with both trial dates NULL (created as
+paying), or both trial dates set with `trial_ends_at > trial_started_at` (is or was a trial). The partial
+index `tenants_trial_lifecycle_idx` on `(subscription_status, trial_ends_at) WHERE subscription_status <>
+'ACTIVE'` serves the daily trial job, which reads only non-ACTIVE tenants; paying tenants, the bulk of the
+table, are never scanned. Prisma does not model the index.
+
+---
+
+### platform.tenant_trial_notices
+
+One row per trial notice sent, so the daily job sends each notice at most once per tenant even when it reruns
+or two replicas run it (migration `20261101000001_trial_lifecycle`, §7.10, ADR-109).
+
+| Column | Type | Constraints | Notes |
+| --- | --- | --- | --- |
+| `tenant_id` | UUID | NOT NULL · FK → `platform.tenants` ON DELETE CASCADE | |
+| `notice` | TEXT | NOT NULL · CHECK IN ('DAY_0','DAY_7','DAY_21','DAY_28','DAY_30','DAY_53','DAY_60_ADMIN') | One value per row of the §7.10 notifications table, plus the deletion-due notice to SYSTEM_ADMIN (`DAY_60_ADMIN`) |
+| `sent_at` | TIMESTAMPTZ | NOT NULL DEFAULT now() | |
+
+Primary key `(tenant_id, notice)`. Tenant-scoped, so RLS like every other tenant-keyed platform table (§7.7):
+enabled and forced, with one policy, `rls_tenant_trial_notices_read` — `SELECT` for `app_user` on rows whose
+`tenant_id` is `app.current_tenant_id`. The daily job writes through the privileged client, as every
+`platform.tenants` reader does.
 
 ---
 
