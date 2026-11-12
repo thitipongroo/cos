@@ -56,3 +56,29 @@ patchedDependencies:
   # read-only property 'NONE'", breaking ALL network requests. The patch adds configurable+writable to
   # the 8 Object.defineProperty calls (the fix recommended in the issue). Drop when RN ships a fix.
   react-native@0.85.3: patches/react-native@0.85.3.patch
+
+# Advisories whose patched version is outside the range a parent declares (fix/mobile-audit, 2026-11-12; register
+# docs/registers/dependency-advisories-2026-11.md, D38). Each selector is the advisory's affected range, so a parent
+# that later moves to a patched version on its own leaves the override inert. Kept only while the mobile checks pass
+# with it (D2). Not here: stream-json 1.9.1 → 3.x (moderate) — detox 20.51.4 and bunyamin require
+# `stream-json/jsonl/Parser` and `streamers/StreamArray.js`, which 3.x renamed (register, Open).
+overrides:
+  # GHSA-qr28-fpjm-wq7f (high). Scoped like the root's (branch 1c): 0.5.1 is ESM-only, so query-string's `parse`
+  # throws with it; the app's deep links are parsed by expo-router's own getStateFromPath (URLSearchParams), and
+  # `stringify` never decodes.
+  'query-string@7.1.3>decode-uri-component': '^0.5.1'
+  # GHSA-w2rr-34g9-rvrj and others (high). 0.7.x via @expo/plist 0.1.3 (`~0.7.7`).
+  '@xmldom/xmldom@>=0.7.0 <0.8.15': '^0.8.15'
+  # GHSA-3g3m-2fjr-6pw4 (moderate). jest 30 declares ^10.5.0, @expo/* 56 ^13.0.0.
+  'glob@>=9.0.0 <14.0.2': '^14.0.2'
+  # GHSA-g3hv-75wg-m249 (moderate). Through glob 10 / 13 and @expo/fingerprint.
+  'minimatch@>=7.0.0 <11.0.1': '^11.0.1'
+  # GHSA-5p2g-fcmc-qvqq, GHSA-w3rx-r6r6-pgpr (high). metro 0.84.4 declares ^1.0.2. That metro is
+  # @react-native/community-cli-plugin's, whose Assets.js passes a file path to imageSize(), which 2.x
+  # no longer accepts; nothing here runs it (`react-native bundle` needs @react-native-community/cli,
+  # not installed). Expo's metro 0.84.5 (export, export:embed, start) has its own image-size code.
+  'image-size@>=0.6.3 <2.0.3': '^2.0.3'
+  # GHSA-w5hq-g745-h8pq (moderate). xcode 3.0.1 declares ^7.0.3.
+  'uuid@<11.1.1': '^11.1.1'
+  # GHSA-mrhx-c7xc-m3w5 (high). @expo/cli 56.1.27, the newest for SDK 56, declares ^3.25.76.
+  'zod@<4.6.6': '^4.6.6'

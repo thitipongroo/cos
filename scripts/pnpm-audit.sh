@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
-# Runs pnpm audit and fails on any high or critical advisory. Nothing is suppressed.
+# Runs pnpm audit on each lockfile — the root workspace's and apps/mobile's, which has its own (since 3179aef0) — and
+# fails on any high or critical advisory in either. Nothing is suppressed. apps/mobile was added on 2026-11-12
+# (fix/mobile-audit); until then nothing audited its lockfile.
 #
 # The audit runs in an isolated copy, so no pnpm configuration reaches it and it cannot write into the repo: a
 # temporary directory holding package.json, pnpm-lock.yaml and only the `packages:` list of pnpm-workspace.yaml, run
@@ -35,20 +37,7 @@ if ! WORK=$(mktemp -d) || [[ -z "$WORK" || ! -d "$WORK" || "$WORK" == / ]]; then
   echo "ERROR: could not create a temporary directory"
   exit 1
 fi
-TMPFILE="$WORK/audit.json"
-ERRFILE="$WORK/audit.err"
 trap 'rm -rf "$WORK"' EXIT
-
-mkdir -p "$WORK/copy" "$WORK/home"
-cp "$ROOT/package.json" "$ROOT/pnpm-lock.yaml" "$WORK/copy/" || exit 1
-# Only the importer layout: from `packages:` to the next top-level key.
-awk '/^packages:/{f=1} f&&/^[^[:space:]#-]/&&!/^packages:/{exit} f' "$ROOT/pnpm-workspace.yaml" \
-  > "$WORK/copy/pnpm-workspace.yaml"
-if ! grep -q '^packages:' "$WORK/copy/pnpm-workspace.yaml"; then
-  echo "ERROR: no packages: list in pnpm-workspace.yaml"
-  exit 1
-fi
-isolated() { (cd "$WORK/copy" && env -i PATH="$PATH" HOME="$WORK/home" "$@"); }
 
 # packageManager is "pnpm@<version>", possibly with a "+sha…" integrity suffix.
 read_pm='import json,sys
@@ -56,33 +45,51 @@ pm = json.load(open(sys.argv[1])).get("packageManager")
 if not isinstance(pm, str): sys.exit("package.json has no packageManager")
 name, _, version = pm.split("+")[0].partition("@")
 sys.exit(f"packageManager names {name!r}, not pnpm") if name != "pnpm" or not version else print(version)'
-if ! want=$(python3 -I -c "$read_pm" "$ROOT/package.json" 2>&1); then
-  echo "ERROR: could not read packageManager from package.json:"
-  echo "$want"
-  exit 1
-fi
-if [[ "$want" != "$VERIFIED_PNPM" ]]; then
-  echo "ERROR: package.json's packageManager is pnpm $want, but this gate was verified against pnpm $VERIFIED_PNPM."
-  echo "Re-verify its flags on pnpm $want (docs/registers/dependency-advisories-2026-11.md), then update VERIFIED_PNPM."
-  exit 1
-fi
-if ! have=$(isolated pnpm --version 2>"$ERRFILE"); then
-  echo "ERROR: could not run \`pnpm --version\`:"
-  cat "$ERRFILE"
-  exit 1
-fi
-if [[ "$have" != "$want" ]]; then
-  echo "ERROR: pnpm $have is running; this gate is written for package.json's packageManager pnpm $want."
-  cat "$ERRFILE"
-  exit 1
-fi
 
-echo "Running pnpm audit (pnpm $have, isolated copy)..."
-isolated pnpm audit --json --audit-level info --config.production=false --config.dev=false --config.only=all \
-  --config.optional=true --registry=https://registry.npmjs.org/ --config.audit-config= --config.fix=false \
-  --lockfile-dir=. 2>"$ERRFILE" > "$TMPFILE" || true
+# audit_project <project dir> <label>: the whole gate for one lockfile, in its own isolated copy.
+audit_project() {
+  local dir="$1" label="$2"
+  local copy="$WORK/$label/copy" home="$WORK/$label/home"
+  local TMPFILE="$WORK/$label/audit.json" ERRFILE="$WORK/$label/audit.err" want have
+  echo "== $label =="
+  mkdir -p "$copy" "$home"
+  cp "$dir/package.json" "$dir/pnpm-lock.yaml" "$copy/" || return 1
+  # Only the importer layout: from `packages:` to the next top-level key (apps/mobile's is `packages: []`).
+  awk '/^packages:/{f=1} f&&/^[^[:space:]#-]/&&!/^packages:/{exit} f' "$dir/pnpm-workspace.yaml" \
+    > "$copy/pnpm-workspace.yaml"
+  if ! grep -q '^packages:' "$copy/pnpm-workspace.yaml"; then
+    echo "ERROR: no packages: list in $label's pnpm-workspace.yaml"
+    return 1
+  fi
+  isolated() { (cd "$copy" && env -i PATH="$PATH" HOME="$home" "$@"); }
 
-python3 -I - "$TMPFILE" "$ERRFILE" << 'PYEOF'
+  if ! want=$(python3 -I -c "$read_pm" "$dir/package.json" 2>&1); then
+    echo "ERROR: could not read packageManager from $label's package.json:"
+    echo "$want"
+    return 1
+  fi
+  if [[ "$want" != "$VERIFIED_PNPM" ]]; then
+    echo "ERROR: $label's packageManager is pnpm $want, but this gate was verified against pnpm $VERIFIED_PNPM."
+    echo "Re-verify its flags on pnpm $want (docs/registers/dependency-advisories-2026-11.md), then update VERIFIED_PNPM."
+    return 1
+  fi
+  if ! have=$(isolated pnpm --version 2>"$ERRFILE"); then
+    echo "ERROR: could not run \`pnpm --version\`:"
+    cat "$ERRFILE"
+    return 1
+  fi
+  if [[ "$have" != "$want" ]]; then
+    echo "ERROR: pnpm $have is running; this gate is written for $label's packageManager pnpm $want."
+    cat "$ERRFILE"
+    return 1
+  fi
+
+  echo "Running pnpm audit (pnpm $have, isolated copy)..."
+  isolated pnpm audit --json --audit-level info --config.production=false --config.dev=false --config.only=all \
+    --config.optional=true --registry=https://registry.npmjs.org/ --config.audit-config= --config.fix=false \
+    --lockfile-dir=. 2>"$ERRFILE" > "$TMPFILE" || true
+
+  python3 -I - "$TMPFILE" "$ERRFILE" << 'PYEOF'
 import json
 import sys
 
@@ -95,7 +102,7 @@ sys.stdout.reconfigure(line_buffering=True)
 #   @opentelemetry/sdk-node advisory: resolved by the sdk-node 0.219 upgrade (ADR-044).
 # Then ten more, none reported by `pnpm audit --json` when they were removed:
 #   tar@6 ×6 (via the expo@51 CLI): no longer in the audited tree since apps/mobile left this workspace
-#     (3179aef0, 2026-06-26); apps/mobile has its own lockfile, which is not audited.
+#     (3179aef0, 2026-06-26); apps/mobile has its own lockfile, audited below since 2026-11-12.
 #   undici@5 ×3 (via testcontainers@10.28): resolved by the 'undici@<6.29.1' override; undici 6.29.1 only.
 #   serialize-javascript@4 (via next-pwa@5 / workbox@6): resolved by replacing next-pwa with Serwist (ADR-047).
 # pnpm-workspace.yaml's auditConfig.ignoreCves block went with them (pnpm never read it). It held 8 CVE ids: the 6
@@ -170,3 +177,10 @@ if unresolved or differ:
     sys.exit(1)
 print("\nAudit PASSED: 0 high/critical vulnerabilities.")
 PYEOF
+}
+
+status=0
+audit_project "$ROOT" root || status=1
+echo
+audit_project "$ROOT/apps/mobile" apps-mobile || status=1
+exit "$status"

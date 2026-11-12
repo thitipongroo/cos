@@ -44,9 +44,11 @@ const config: Config = {
   // The preset's own patterns cover react-native and @react-native only. Everything added here
   // publishes untranspiled ESM/flow and is reached from a screen: the expo packages, the Google
   // Fonts packages, and `standard-navigation` — which is not an expo package by name but is what
-  // expo-router's standard-navigation entry point resolves to.
+  // expo-router's standard-navigation entry point resolves to. `decode-uri-component` is ESM-only
+  // from 0.4 and comes in at 0.5.1 by the apps/mobile override (fix/mobile-audit, 2026-11-12):
+  // expo-router → query-string 7.1.3 requires it at load time.
   transformIgnorePatterns: [
-    'node_modules/(?!((jest-)?react-native|@react-native(-community)?|expo|expo-.*|@expo|@expo-google-fonts|standard-navigation|react-clone-referenced-element|@testing-library)/)',
+    'node_modules/(?!((jest-)?react-native|@react-native(-community)?|expo|expo-.*|@expo|@expo-google-fonts|standard-navigation|react-clone-referenced-element|@testing-library|decode-uri-component)/)',
   ],
 
   moduleNameMapper: {
