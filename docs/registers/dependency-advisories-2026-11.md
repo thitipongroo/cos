@@ -2174,7 +2174,7 @@ export` for iOS and Android and `expo export:embed` (what the Gradle and Xcode b
     bundle (HTTP 200); `expo prebuild` in a scratch copy writes `ios/` and `android/` identical, file for file, to the
     same run on a clean install of the old dependencies; detox and bunyamin load; /doubt also exercised zod 4 on
     `@expo/cli`'s schemas, uuid 11 in xcode, xmldom 0.8.15 in `@expo/plist` 0.1.3 and minimatch 11 in
-    `@expo/fingerprint`. Not done: launching the app on a simulator or device (Open, below). Mobile `type-check`,
+    `@expo/fingerprint`. Launched on a simulator later (`docs/mobile-sim-smoke`, Closed below). Mobile `type-check`,
     `eslint`, `test:cov` (1,149), the render suite (1,800, coverage 90.09 / 83.2 / 85.64 / 90.97 over its floors) and
     the RN a11y gate pass.
   - `scripts/pnpm-audit.sh` runs its whole gate — isolated copy, `VERIFIED_PNPM`, metadata cross-check — for each
@@ -2182,6 +2182,19 @@ export` for iOS and Android and `expo export:embed` (what the Gradle and Xcode b
     Negative controls in scratch copies: the old apps/mobile lockfile with the new root, and the old one in the root's
     place with the new apps/mobile, each fail with exit 1 (84 unresolved high/critical). CI and `verify-before-push.sh`
     already call the script. The conformance suite passes (61 suites, 2,343 tests).
+- **Closed — the `fix/mobile-audit` dependencies had not been launched.** Measured on `docs/mobile-sim-smoke` (no code
+  changed). iPhone 17 simulator, Xcode 27.1, `detox build -c ios.sim.release`: native compile and Metro (2,616 modules,
+  `@expo/metro-runtime` 56.0.21, axios 1.21.1) pass; with `EXPO_PUBLIC_E2E=1`, as CI builds it, `main.jsbundle` is
+  8,040,320 bytes (Hermes). The app launches without a crash (no crash, fatal or exception line in its log). With no
+  backend running: with a session left in the keychain it opens on Home (cards, tab bar, action button; System Status
+  "Unavailable", the cards empty), and after a keychain reset on the login screen (country picker +66, phone field, send
+  OTP, email login; the footer shows a red version-check error). The first build failed before that: the cached
+  `ios/Pods/Local Podspecs/hermes-engine.podspec.json` (generated, git-ignored) pointed `hermesc` at the repo's old
+  path; with it removed `pod install` wrote the current one (Open, below: the checksum that follows). Detox
+  `offline-inspection` did not pass, for a reason that holds on the old dependencies too (`9edde5df^`: axios 1.18.1,
+  metro-runtime 3.2.3, built the same way, the same failure at the same line) — Open, below. Not run: the
+  backend-dependent specs (`sync-conflict`; `capture` and `benchmark` generate documentation), a physical device,
+  Android.
 - **Closed — CI's `security-scan` job failed on the repository scan and on all ten images.** Fixed on `fix/ci-trivy`
   (D43). Measured first with the job's thresholds (`CRITICAL,HIGH`, `--ignore-unfixed`; the repository scan with
   `vuln,secret,misconfig`, `.trivyignore.yaml` and the job's skip-dirs), images built from `git archive HEAD` with base
@@ -2313,9 +2326,22 @@ openssl ca-certificates`; `groupadd`/`useradd` uid/gid 1001, as the charts run; 
   (`MODULE_NOT_FOUND`), so it was dropped (D2). Test tooling only (detox logs); the gate fails on high and critical.
 - **apps/mobile: deepmerge 4.3.1 (low, GHSA-gcqx-w48m-w2h4) has no patched version.** Through `@expo/config` and
   jest-config.
-- **The `fix/mobile-audit` dependencies have not been launched on a simulator or device.** They were bundled (`export`,
-  `export:embed`), served (`expo start`) and prebuilt, and the jest suites pass; `@expo/metro-runtime` 56.0.21 (D39) is
-  runtime code in the bundles. A simulator or Detox smoke run before merging is recommended.
+- **apps/mobile's committed `Podfile.lock` carries a checksum tied to one machine's path.** CocoaPods hashes the
+  `hermes-engine` podspec React Native generates, and that podspec holds `hermesc` as an absolute path. The committed
+  checksum (`a3cd8b8…`) is what the podspec hashes to at `…/workspace/github-profile/cos/…`; at this checkout's path
+  `pod install` writes `685001a…`. So `pod install` at any other path rewrites the file (a standing diff), and putting
+  the committed file back without re-running `pod install` makes Xcode's `[CP] Check Pods Manifest.lock` phase fail —
+  the state this checkout was left in on `docs/mobile-sim-smoke` (run `pod install` before the next iOS build).
+- **apps/mobile's `offline-inspection` Detox spec did not pass on this machine's simulator.** Built as CI builds it
+  (`EXPO_PUBLIC_E2E=1`, so the spec's `resetSession()` deep link clears the keychain session `launchApp({ delete: true
+})` leaves), the first test fills the phone form and fails tapping `request-otp-button` — "View is not hittable at its
+  visible point … does not pass visibility percent threshold (100)" at `offline-inspection.spec.ts:63`; the other four
+  need the login and time out waiting for `home-screen`. The same not-hittable failure, at the same line, occurs on the
+  dependencies before `fix/mobile-audit` (`9edde5df^`). Cause not established: the keyboard is up after `typeText`, but
+  the layout had already moved the button up, and Detox reports the view's bounds as visible. The OTP step (which needs
+  a backend with `E2E_AUTH_BYPASS`) was not reached. Built without `EXPO_PUBLIC_E2E` (the checked-in `.env` leaves it
+  empty) `resetSession()` does nothing, and a simulator that ever logged in fails every test at `phone-input`. Found on
+  `docs/mobile-sim-smoke`.
 - **Local apps/mobile `node_modules` installed before `fix/mobile-audit` can shadow the lockfile.** On this machine it
   held 18 nested copies pnpm no longer tracked (zod 3 under `@expo/cli`, xmldom 0.8.13 under `@expo/plist`, an older
   `@expo/prebuild-config`, a leftover `node_modules/.pnpm` with axios 1.18.1, …); `rm -rf node_modules && pnpm install`
