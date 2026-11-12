@@ -586,6 +586,34 @@ describe('Phase 17 · the Trivy misconfiguration baseline only shrinks', () => {
   });
 });
 
+describe('Phase 17 · the Trivy secret allowlist is one path-scoped false positive', () => {
+  const parsed = readYaml<{
+    secrets?: Array<{ id: string; paths?: string[]; statement?: string }>;
+  }>('.trivyignore.yaml');
+  const ci = read('.github/workflows/ci.yml');
+
+  // D44 (2026-11-12): the anthropic SDK's docstrings carry JSON whose type is service_account examples,
+  // which the image scan's secret scanner reports as GCP keys. One entry, for that rule and that
+  // package's directory only. A second entry, a wider path or a bare rule id is a secret check
+  // switched off; this block is where that has to be argued.
+  const KNOWN = [
+    { id: 'gcp-service-account', paths: ['/opt/venv/lib/python3.12/site-packages/anthropic/**'] },
+  ];
+
+  it('allows exactly the one recorded rule and path', () => {
+    expect((parsed.secrets ?? []).map((s) => ({ id: s.id, paths: s.paths }))).toEqual(KNOWN);
+  });
+
+  it('explains it', () => {
+    for (const s of parsed.secrets ?? []) expect(s.statement ?? '').toMatch(/False positive/);
+  });
+
+  it('is read by the image scan, which otherwise reads no ignore file', () => {
+    const step = ci.slice(ci.indexOf('- name: Run Trivy — container image scan'));
+    expect(step.slice(0, step.indexOf('push-ecr:'))).toMatch(/trivyignores: '\.trivyignore\.yaml'/);
+  });
+});
+
 /**
  * The VPC endpoints that let the node egress close (master:4641-4645; Trivy AWS-0104).
  *

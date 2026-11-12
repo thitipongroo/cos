@@ -30,8 +30,12 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 
+# npm and npx come with the Node base image and nothing here runs them; their bundled brace-expansion
+# and undici failed CI's Trivy image scan (HIGH, fixed versions exist), so the runner drops them
+# (2026-11-12, D43).
 RUN addgroup --system --gid 1001 nodejs && \
-    adduser --system --uid 1001 nextjs
+    adduser --system --uid 1001 nextjs && \
+    rm -rf /usr/local/lib/node_modules/npm /usr/local/bin/npm /usr/local/bin/npx
 
 # standalone output includes only the files needed to run the server
 COPY --from=builder --chown=nextjs:nodejs /app/apps/web/.next/standalone ./

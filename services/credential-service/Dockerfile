@@ -42,7 +42,11 @@ RUN --mount=type=bind,from=builder,source=/app,target=/built \
     echo "copied $p package dists and services/credential-service/dist"
 
 FROM node:24-alpine AS runner
-RUN addgroup --system --gid 1001 cosgroup && adduser --system --uid 1001 --ingroup cosgroup cosuser
+# npm and npx come with the Node base image and nothing here runs them; their bundled brace-expansion
+# and undici failed CI's Trivy image scan (HIGH, fixed versions exist), so the runner drops them
+# (2026-11-12, D43).
+RUN addgroup --system --gid 1001 cosgroup && adduser --system --uid 1001 --ingroup cosgroup cosuser \
+ && rm -rf /usr/local/lib/node_modules/npm /usr/local/bin/npm /usr/local/bin/npx
 WORKDIR /app
 # Only what runs, at the paths the builder had (pnpm's @cos/* links are relative): the production
 # node_modules, packages/ (manifests, installed packages' dist and node_modules; sources are small),

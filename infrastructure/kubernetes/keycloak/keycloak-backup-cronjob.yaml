@@ -102,12 +102,43 @@ spec:
           volumes:
             - name: export
               emptyDir: {}
+            # Every container runs with a read-only root filesystem (Trivy KSV-0014, 2026-11-12), so
+            # what Keycloak writes gets an emptyDir. Measured with this image, uid 1000 and a read-only
+            # root against the compose database: `kc.sh export` re-augments Quarkus for KC_DB=postgres
+            # and writes /opt/keycloak/lib/quarkus — an empty dir there fails (the build reads
+            # quarkus-application.dat from it), a copy of the image's own contents works — and it
+            # needs /tmp. /opt/keycloak/data is not written. The AWS CLI wrote nothing with static keys;
+            # it gets a writable HOME anyway (upload-home, below).
+            - name: kc-quarkus
+              emptyDir: {}
+            - name: kc-tmp
+              emptyDir: {}
+            # The upload's HOME. With static keys the AWS CLI wrote nothing (measured against MinIO); with
+            # IRSA (web identity) it may cache credentials under ~/.aws/cli/cache, which was not tested
+            # here, so it gets a writable HOME rather than `/` on the read-only root.
+            - name: upload-home
+              emptyDir: {}
+          # STEP 0 — copy the image's /opt/keycloak/lib/quarkus into the emptyDir that STEP 1 mounts over
+          # it, so the read-only root still has a writable, complete Quarkus build directory.
           # STEP 1 — export every realm to the shared volume. Runs to completion before the upload
           # container starts, which is exactly the ordering guarantee an initContainer gives and a
           # second app container does not.
           initContainers:
+            - name: seed-quarkus
+              image: quay.io/keycloak/keycloak:26.6.4
+              command: ['/bin/sh', '-c', 'cp -R /opt/keycloak/lib/quarkus/. /seed/']
+              securityContext:
+                readOnlyRootFilesystem: true
+              volumeMounts:
+                - name: kc-quarkus
+                  mountPath: /seed
+              resources:
+                requests: { cpu: 50m, memory: 32Mi }
+                limits: { cpu: 200m, memory: 64Mi }
             - name: export
               image: quay.io/keycloak/keycloak:26.6.4
+              securityContext:
+                readOnlyRootFilesystem: true
               command: ['/bin/sh', '-c']
               args:
                 - |
@@ -137,6 +168,10 @@ spec:
               volumeMounts:
                 - name: export
                   mountPath: /export
+                - name: kc-quarkus
+                  mountPath: /opt/keycloak/lib/quarkus
+                - name: kc-tmp
+                  mountPath: /tmp
               resources:
                 requests: { cpu: 200m, memory: 512Mi }
                 limits: { cpu: '1', memory: 1Gi }
@@ -144,6 +179,8 @@ spec:
           containers:
             - name: upload
               image: public.ecr.aws/aws-cli/aws-cli:2.17.0
+              securityContext:
+                readOnlyRootFilesystem: true
               command: ['/bin/sh', '-c']
               args:
                 - |
@@ -160,6 +197,8 @@ spec:
                   done
                   echo "uploaded $(ls -1 /export | wc -l) realm export(s) at ${TIMESTAMP}"
               env:
+                - name: HOME
+                  value: /home/upload
                 - name: BACKUP_BUCKET
                   valueFrom:
                     configMapKeyRef: { name: keycloak-backup-config, key: BACKUP_BUCKET }
@@ -173,6 +212,8 @@ spec:
                 - name: export
                   mountPath: /export
                   readOnly: true
+                - name: upload-home
+                  mountPath: /home/upload
               resources:
                 requests: { cpu: 100m, memory: 128Mi }
                 limits: { cpu: 500m, memory: 256Mi }

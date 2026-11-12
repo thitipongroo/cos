@@ -27,7 +27,12 @@ RUN pip install --no-cache-dir -r requirements.txt
 # ─── Stage 2: runner ─────────────────────────────────────────────────────────
 FROM python:3.12-slim AS runner
 WORKDIR /app
-RUN useradd --system --uid 1001 cosuser
+# zlib1g as python:3.12-slim ships it (1:1.3.dfsg+really1.3.1-1+b1) failed CI's Trivy image scan
+# (HIGH, fixed in -1+deb13u1); upgraded here until the base image carries the fix (2026-11-12, D43).
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends --only-upgrade zlib1g \
+ && rm -rf /var/lib/apt/lists/* \
+ && useradd --system --uid 1001 cosuser
 COPY --from=builder /opt/venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 COPY services/ai-gateway/ .

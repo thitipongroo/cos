@@ -49,3 +49,20 @@ misconfigurations:
       One egress rule remains: TCP/443 to eleven CDN-fronted third-party hosts. A security group
       cannot filter by hostname; AWS Network Firewall enforces the domain allowlist behind it, and
       AWS API traffic moved to VPC endpoints on 2026-08-29.
+
+# Secrets — added 2026-11-12 (fix/ci-trivy, D44), the first and only entry. The image scan runs
+# Trivy's default scanners (vuln and secret); in the ai-gateway image the secret scanner reports 11
+# CRITICAL `gcp-service-account` matches, all inside the anthropic SDK (2.8.0 on that day) under
+# resources/beta/agents and types/beta/*agent*.py and their .pyc: docstring examples containing JSON
+# whose type is service_account, not keys. Scoped to the rule AND to that package's directory in the
+# image: a key-shaped file planted at /app in the same image is still reported (measured). The path
+# names python3.12 on purpose — a Python or layout change makes the entry stop matching and the scan
+# fail, which is the right default. tests/conformance/devops/ pins this list too.
+secrets:
+  - id: gcp-service-account
+    paths:
+      - '/opt/venv/lib/python3.12/site-packages/anthropic/**'
+    statement: >-
+      False positive: docstring examples (JSON whose type is service_account) in the anthropic SDK's beta
+      agents resources and types, in the ai-gateway image. No credential. Path-scoped so a real key
+      anywhere else in any image is still reported.

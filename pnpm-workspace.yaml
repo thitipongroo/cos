@@ -22,6 +22,12 @@ packages:
   - 'services/*'
 
 overrides:
+  # ajv-formats takes ajv as a dependency AND an optional peer. When the lockfile was re-resolved for
+  # Temporal 1.25.0 (fix/ci-trivy, 2026-11-12) the snapshots used by @fastify/ajv-compiler and
+  # fast-json-stringify lost the peer and fell back to the dependency, ajv 8.18.0, while the compilers
+  # themselves run ajv 8.20.0 — mixing two code generators broke formatMinimum/formatMaximum
+  # (TypeError: compare is not a function; measured). Pin the dependency to the one ajv the tree uses.
+  'ajv-formats>ajv': '8.20.0'
   # Single fastify version — file-service imports fastify directly while @nestjs/platform-fastify
   # pulls its own; a duplicate breaks file-service's plugin type augmentation (FastifyTypeProvider
   # mismatch). Pin both to one v5 release (NestJS 11 / ADR-042 requires Fastify 5).

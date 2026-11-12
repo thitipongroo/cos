@@ -66,6 +66,8 @@ The numbers are the ones used while the work was planned. Decisions about the wi
 | D40 | The backend and file-service images move from `node:24-alpine` to `node:24-slim` (glibc), API and worker alike, so their Temporal workers can load `@temporalio/core-bridge` (glibc builds only); not a separate worker image.                                                                                                                                                                                                                                                                    |
 | D41 | The five Temporal workers (backend 3, file-service 2) pass a connection to `TEMPORAL_ADDRESS` / `config.temporal.address` to `Worker.create`, fixed with D40.                                                                                                                                                                                                                                                                                                                                     |
 | D42 | `docker-compose.yml`'s `temporal-worker` joins `cos-network`, fixed with D40.                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| D43 | CI's `security-scan` job is made to pass in full — the repository scan and all ten images it builds — not only the backend and file-service images.                                                                                                                                                                                                                                                                                                                                               |
+| D44 | The image scan reads `.trivyignore.yaml`, which gains a `secrets:` section with one entry: rule `gcp-service-account`, scoped to `/opt/venv/lib/python3.12/site-packages/anthropic/**` (docstring false positives in the anthropic SDK in ai-gateway).                                                                                                                                                                                                                                            |
 
 ## The series
 
@@ -1774,19 +1776,13 @@ gate's isolated run) checks the hash was not tested either; it ran 12.18.0 with 
   ready, migration included (seconds on the small stores measured; a real-size store was not tried — the `startupProbe`
   allows ten minutes). The packages the `-full` image adds over the plain one (1.93 GB against 1.33 GB) are not audited:
   CI's pip-audit covers the client requirement sets only.
-- **The backend and file-service images fail CI's Trivy gate, before and after `fix/temporal-worker-glibc`.** With
-  `security-scan`'s image settings (`CRITICAL,HIGH`, `--ignore-unfixed`; the image step passes no ignore file, and
-  `.trivyignore.yaml` lists none of these anyway), the four images measured (both services, Alpine and slim) report the
-  same 11: `zip` 8.5.1 (CRITICAL, fixed in 9.0.5) and `quinn-proto` 0.11.14 (HIGH), compiled into
-  `@temporalio/core-bridge` (1.19.0 in backend, 1.17.2 in file-service; from its `Cargo.lock`); `brace-expansion` 5.0.9
-  and `undici` 6.28.0 (HIGH), in the npm the Node base image bundles under `/usr/local/lib/node_modules/npm`. CI has not
-  run since 2026-11-08, so nothing reported it.
 - **Enterprise provisioning shells out to tools no backend image has.** `runMigrationsActivity`
   (`backend/src/modules/tenant/workflows/enterprise-provisioning.activities.ts`) runs `npx prisma migrate deploy` from
   `/app`, and `migrateDataActivity` pipes `pg_dump` into `psql`. Neither the old image (no `prisma` bin, no schema or
   `prisma.config.ts` where it runs, no `pg_dump` / `psql`) nor the new one (no prisma CLI, no `backend/prisma`) can run
   them. Since `fix/temporal-worker-glibc` the worker that calls them starts and polls `enterprise-provisioning`, so an
-  enterprise provisioning run would now reach these activities and fail there. Found by /doubt on `perf/backend-image`.
+  enterprise provisioning run would now reach these activities and fail there. Since `fix/ci-trivy` the backend runner
+  has no npm/npx either, so `npx prisma` fails as `npx: not found`. Found by /doubt on `perf/backend-image`.
 - **Closed — the unused `@confluentinc/schemaregistry` removed from backend (D27).** On `chore/remove-schemaregistry`:
   the dependency line goes from `backend/package.json`; backend's production closure loses 89 packages and gains
   none (the lockfile loses 68; the rest are still used elsewhere), and no other importer changes. The Azure SDK
@@ -2186,6 +2182,64 @@ export` for iOS and Android and `expo export:embed` (what the Gradle and Xcode b
     Negative controls in scratch copies: the old apps/mobile lockfile with the new root, and the old one in the root's
     place with the new apps/mobile, each fail with exit 1 (84 unresolved high/critical). CI and `verify-before-push.sh`
     already call the script. The conformance suite passes (61 suites, 2,343 tests).
+- **Closed — CI's `security-scan` job failed on the repository scan and on all ten images.** Fixed on `fix/ci-trivy`
+  (D43). Measured first with the job's thresholds (`CRITICAL,HIGH`, `--ignore-unfixed`; the repository scan with
+  `vuln,secret,misconfig`, `.trivyignore.yaml` and the job's skip-dirs), images built from `git archive HEAD` with base
+  images pulled fresh — the images first with `--scanners vuln` only, which /doubt caught: the job's image step runs
+  Trivy's default scanners, vuln and secret (below); CI has not run since 2026-11-08, so nothing had reported any of it.
+  - Repository: 23 HIGH in indirect Go modules → 0. `golang.org/x/net` 0.53 / 0.60 → 0.62.0 and `google.golang.org/grpc`
+    1.83.1 → 1.83.2 in `libs/go`, analytics- and kg-ingestion-worker; `github.com/moby/go-archive` 0.2.0 → 0.3.0
+    (kg-ingestion); `golang.org/x/crypto` 0.51.0 → 0.58.0 in iot-ingestion (0.55.0 was the advisory's floor, but `x/net`
+    0.62.0 requires 0.58.0); `go mod tidy` moved `x/sync`, `x/sys`, `x/text` and two `moby/sys` modules a patch or
+    minor. Each module's `go build`, `go vet` and `go test` pass before and after (3 packages each).
+  - Repository: 2 HIGH KSV-0014 (Keycloak backup CronJob, no `readOnlyRootFilesystem`) → 0, by repair
+    (`.trivyignore.yaml` may only shrink). Measured with the CronJob's image, uid 1000 and a read-only root against the
+    compose database: `kc.sh export` re-augments Quarkus for `KC_DB=postgres` and writes `/opt/keycloak/lib/quarkus` —
+    an empty mount there fails (rc 1), a copy of the image's own contents exports both realms — and needs `/tmp`;
+    `/opt/keycloak/data` is not written. The AWS CLI uploads to MinIO with a read-only root and no mounts, with static
+    keys; IRSA (web identity) was not tried, and it may cache credentials under `~/.aws/cli/cache`, so the upload gets
+    `HOME=/home/upload` on an emptyDir (re-tested against MinIO). So: every container `readOnlyRootFilesystem: true`, a
+    new `seed-quarkus` initContainer copying that directory into an emptyDir, and emptyDirs at
+    `/opt/keycloak/lib/quarkus` and `/tmp` for the export. Not proven against a real cluster.
+  - backend and file-service: 1 CRITICAL + 10 HIGH each → 0. `zip` 8.5.1 and `quinn-proto` 0.11.14 were compiled into
+    `@temporalio/core-bridge`; its `Cargo.lock` still has `zip` 8.5.1 in 1.23.0 and 1.24.0, and 9.0.5 (fixed) with no
+    `quinn-proto` in 1.25.0. Temporal moves to 1.25.0 (the manifests' floors to `^1.25.0`; 1.25.0 was in range of the
+    old `^1.19.0` / `^1.10.0`). The lockfile update also dropped Temporal's old dependencies and re-resolved unrelated
+    peers, three found: `@zenuml/core` 3.50.1 (via `@mermaid-js/mermaid-cli`) pins `playwright-core` 1.57.0 and now gets
+    the 1.61.1 already in the tree (no document in `docs/` or `context/` has a zenuml diagram);
+    `@sentry/bundler-plugins`, `swc-loader` and `source-map-loader` move from webpack 5.108.2 to the 5.112.2 Temporal
+    brings; and — found by /doubt — the `ajv-formats` snapshots of `@fastify/ajv-compiler`, `fast-json-stringify` and
+    `@angular-devkit/core` lost their `ajv` peer and fell back to its own dependency, ajv 8.18.0, while the compilers
+    run 8.20.0, which broke `formatMinimum` / `formatMaximum` (`TypeError: compare is not a function`, reproduced
+    through fastify's compiler; no tracked schema uses them yet). `pnpm dedupe` did not restore the peer and removed
+    unrelated `@aws-sdk` versions, so it was not kept; an override `'ajv-formats>ajv': '8.20.0'` in
+    `pnpm-workspace.yaml` pins the dependency to the tree's one ajv, after which ajv-formats and the compiler both load
+    8.20.0 and the same schema validates. file-service's jest tooling also moved `@swc/core` 1.15.40 → 1.15.43 (dedupe).
+    backend unit 4,233 tests, backend workflow specs (TestWorkflowEnvironment, 6 suites, 23 tests, run by /doubt) and
+    file-service 291 (coverage 100%) pass on 1.25.0; both images' workers poll all five queues on the compose infra.
+  - backend, file-service, credential-service, web: the npm bundled in the Node base images (`brace-expansion` 5.0.9,
+    `undici` 6.28.0) → removed from each runner with `npx`; nothing runs them.
+  - ai-gateway, ai-embedding-worker, ai-ocr-pipeline, ai-transcription-pipeline: `zlib1g` 1:1.3.dfsg+really1.3.1-1+b1 in
+    `python:3.12-slim` (still so on a fresh pull) → `apt-get install --only-upgrade zlib1g` gives -1+deb13u1. Three
+    Dockerfiles gain hadolint DL3008 (unpinned apt), as the OCR image and backend already had; the version is not pinned
+    because a pinned Debian version disappears from the mirror when superseded.
+  - analytics- and kg-ingestion-worker: `musl` in `alpine:3.19` (past end of support) → runners on `alpine:3.24` (alpine
+    3.22, 3.23 and 3.24 scan clean), plus the Go modules above in the binaries.
+  - ai-gateway: with the image step's default scanners the secret scanner reports 11 CRITICAL `gcp-service-account` in
+    the anthropic SDK (2.8.0; `anthropic>=0.40` floats), on the old image as on the new: docstring examples containing
+    JSON with a `type` of service_account. D44: the image step now reads `.trivyignore.yaml`, whose new `secrets:` entry
+    allows that rule under that package's directory only; a key-shaped file planted at `/app` in the same image is still
+    reported, and a conformance block pins the list to that one entry (it fails with a second one).
+  - After, with the job's exact settings (image step: default scanners and `.trivyignore.yaml`): the repository scan
+    exits 0 (0 vulnerabilities, misconfigurations, secrets) and all ten images exit 0 — measured on arm64 builds; CI
+    builds amd64, whose wheels and core-bridge binary differ. Same behaviour, old (HEAD) against new images: on the
+    compose infra backend, temporal-worker, file-service, credential-service, ai-gateway, ai-embedding-worker,
+    ai-ocr-pipeline, ai-transcription-pipeline, analytics- and kg-ingestion-worker report `healthy` (the last two with
+    only Kafka and Neo4j up; with everything running at once Neo4j timed out kg-ingestion's connection on both images
+    alike), and Temporal lists pollers on the five queues from the new images; web (not in compose) answers `/login` 200
+    on both, and `/api/health` the same on both: with a test-only auth secret it redirects (307) to the sign-in page,
+    which the probe followed to 200; without one it ends at `/api/auth/error`, 500 `NO_SECRET`. The conformance suite
+    passes (61 suites). x86_64 was not built.
 - **Closed — the Temporal workers could not start, and could not have reached Temporal.** Fixed on
   `fix/temporal-worker-glibc` (D40, D41, D42).
   - Measured first: `@temporalio/core-bridge` ships glibc builds only — 1.17.2, 1.19.0 and the newest, 1.25.0. The

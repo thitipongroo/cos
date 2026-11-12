@@ -48,8 +48,12 @@ RUN --mount=type=bind,from=builder,source=/app,target=/built \
 
 FROM node:24-slim AS runner
 # uid/gid 1001: the Helm charts run as 1001.
+# npm and npx come with the Node base image and nothing here runs them; their bundled brace-expansion
+# and undici failed CI's Trivy image scan (HIGH, fixed versions exist), so the runner drops them
+# (2026-11-12, D43).
 RUN groupadd --system --gid 1001 cosgroup \
- && useradd --system --uid 1001 --gid cosgroup --no-create-home --shell /usr/sbin/nologin cosuser
+ && useradd --system --uid 1001 --gid cosgroup --no-create-home --shell /usr/sbin/nologin cosuser \
+ && rm -rf /usr/local/lib/node_modules/npm /usr/local/bin/npm /usr/local/bin/npx
 WORKDIR /app
 # Only what runs, at the paths the builder had (pnpm's @cos/* links are relative): the production
 # node_modules, packages/ (manifests, installed packages' dist and node_modules; sources are small),

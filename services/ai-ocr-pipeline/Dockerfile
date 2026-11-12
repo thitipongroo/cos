@@ -27,8 +27,11 @@ WORKDIR /app
 #                      first-class (spec §22). Without it tesseract prints "Failed loading language
 #                      'tha'", carries on with English only and exits 0, so Thai came back as Latin
 #                      noise (character error rate 0.93 on a Thai test page, measured 2026-11-06).
+# zlib1g as python:3.12-slim ships it (1:1.3.dfsg+really1.3.1-1+b1) failed CI's Trivy image scan
+# (HIGH, fixed in -1+deb13u1); upgraded here until the base image carries the fix (2026-11-12, D43).
 RUN apt-get update && apt-get install -y --no-install-recommends \
       tesseract-ocr tesseract-ocr-tha poppler-utils \
+    && apt-get install -y --no-install-recommends --only-upgrade zlib1g \
     && rm -rf /var/lib/apt/lists/*
 RUN useradd --system --uid 1001 cosuser
 COPY --from=builder /opt/venv /opt/venv

@@ -109,9 +109,13 @@ RUN --mount=type=bind,from=builder,source=/app,target=/built \
 # ─── Stage 5: Runner (production image) ───────────────────────────────────
 FROM node:24-slim AS runner
 # openssl as in the base stage (kept from the Alpine image; see there).
+# npm and npx come with the Node base image and nothing here runs them; their bundled brace-expansion
+# and undici failed CI's Trivy image scan (HIGH, fixed versions exist), so the runner drops them
+# (2026-11-12, D43).
 RUN apt-get update \
  && apt-get install -y --no-install-recommends openssl ca-certificates \
- && rm -rf /var/lib/apt/lists/*
+ && rm -rf /var/lib/apt/lists/* \
+ && rm -rf /usr/local/lib/node_modules/npm /usr/local/bin/npm /usr/local/bin/npx
 
 # Non-root user — QM-4 security hardening. uid/gid 1001: the Helm charts run as 1001.
 RUN groupadd --system --gid 1001 cosgroup \

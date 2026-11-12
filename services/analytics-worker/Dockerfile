@@ -11,7 +11,9 @@ RUN go mod download
 COPY services/analytics-worker ./
 RUN CGO_ENABLED=0 GOOS=linux go build -o worker ./cmd/...
 
-FROM alpine:3.19 AS runner
+# alpine:3.24, not 3.19: 3.19 is past end of support and its musl failed CI's Trivy image scan
+# (HIGH, CVE-2026-40200); 3.22–3.24 scan clean (2026-11-12, D43).
+FROM alpine:3.24 AS runner
 RUN addgroup -S cosgroup && adduser -S cosuser -G cosgroup
 WORKDIR /app
 COPY --from=builder /app/services/analytics-worker/worker .
