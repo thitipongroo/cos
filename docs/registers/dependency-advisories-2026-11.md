@@ -1769,13 +1769,20 @@ gate's isolated run) checks the hash was not tested either; it ran 12.18.0 with 
   ready, migration included (seconds on the small stores measured; a real-size store was not tried — the `startupProbe`
   allows ten minutes). The packages the `-full` image adds over the plain one (1.93 GB against 1.33 GB) are not audited:
   CI's pip-audit covers the client requirement sets only.
-- **The backend image is 5.56 GB, and a build after a lockfile change took more than 17 minutes on a dev machine.**
-  Measured in branch 4. `docker image inspect` gave 5.56 GB. The first build (`docker build -q`) had run for 17.5
-  minutes by `ps` when it was stopped to get step timings; the rebuild with `--progress=plain` then found every step
-  cached and took 104 s, 76.8 s of it unpacking the image. The runner stage copies all of `/app` from the builder
-  (`COPY --from=builder … /app ./`), `node_modules` with devDependencies included, and the workspace packages build
-  one at a time (`--workspace-concurrency=1`). The build context is small (6.07 MB; `.dockerignore` already excludes
-  the mobile build output). This predates the series.
+- **The Temporal worker cannot start on the backend image.** Found on `perf/backend-image`, not caused by it, not fixed
+  there. `cos-temporal-worker` runs the cos-backend image as `node backend/dist/workers/main`; on both the old and the
+  new image it exits 1 at once: `@temporalio/core-bridge` 1.19.0 loads `releases/aarch64-unknown-linux-gnu/index.node`,
+  a glibc build, and Alpine's musl rejects it (`Error relocating …: __register_atfork: symbol not found`,
+  `ERR_DLOPEN_FAILED`). Measured on arm64; the x86_64 build was not tried. A glibc base for the image (or a separate
+  worker image) is a product-owner decision.
+- **Enterprise provisioning shells out to tools no backend image has.** `runMigrationsActivity`
+  (`backend/src/modules/tenant/workflows/enterprise-provisioning.activities.ts`) runs `npx prisma migrate deploy` from
+  `/app`, and `migrateDataActivity` pipes `pg_dump` into `psql`. Neither the old image (no `prisma` bin, no schema or
+  `prisma.config.ts` where it runs, no `pg_dump` / `psql`) nor the new one (no prisma CLI, no `backend/prisma`) can run
+  them; the worker that would call them does not start on musl anyway (above). Found by /doubt on `perf/backend-image`.
+- **The file-service and credential-service images still copy all of `/app`.** Their runners do what backend's did
+  before `perf/backend-image` (`COPY --from=builder … /app ./`): 1.87 GB and 1.45 GB. The shared `.dockerignore` fix
+  took the env files, provider downloads, virtualenvs and pnpm store out of them; their devDependencies are still in.
 - **Closed — the unused `@confluentinc/schemaregistry` removed from backend (D27).** On `chore/remove-schemaregistry`:
   the dependency line goes from `backend/package.json`; backend's production closure loses 89 packages and gains
   none (the lockfile loses 68; the rest are still used elsewhere), and no other importer changes. The Azure SDK
@@ -2092,6 +2099,44 @@ prebuild`, native builds, Detox, EAS.
   85 / 90 floors (branches measured 83.14–83.22 across runs of the same tree, so its margin is about 0.15 points);
   `test:cov` 1,149; `type-check`, `eslint apps/mobile/src` and the RN a11y gate (0 of 131 tappable files without a
   prop) pass. Found on the way, and Open: the "LandXML Ready" badge, and the rest of `checkout.tsx`.
+- **Closed — the backend image was 4.46 GB and baked local secrets in.** Fixed on `perf/backend-image`.
+  - Measured first (Docker 29.9.3, 8 CPUs, arm64): 4,460,823,684 bytes, a cold build of 485 s. The 5.56 GB this item's
+    Open entry gave was measured in branch 4. The build itself took 15.8 s; the time went into moving a 3.1 GB `/app` —
+    the runner copied the builder's whole tree: devDependencies, `infrastructure/terraform/.terraform` (764 MB), the
+    other services with their `.venv` (624 MB), `.pnpm-store`, `.claude`, docs. `--workspace-concurrency=1` was left
+    alone.
+  - **Secrets.** `.dockerignore`'s bare `.env` / `.env.*` matched only the context root, so an image built on a dev
+    machine carried `backend/.env` — 46 secret-named keys (database, Redis, Keycloak, AWS, OpenAI, SendGrid, JWT,
+    encryption keys, Cloudflare and LINE tokens; whether the values are real was not checked, and if they are they
+    warrant rotation) — and `apps/mobile/.env` (`EXPO_PUBLIC_*` only); `services/file-service/.env` and `apps/web/.env`
+    are symlinks to the root `.env` (already excluded) and came in dangling. CI's clean checkout has none. The rules are
+    now `**/.env`, `**/.env.*`, `!**/.env.example`, with `**/.terraform`, `**/.venv`, `**/__pycache__` and other caches,
+    `.pnpm-store` and `.claude`. After: `find` in the backend, file-service and credential-service images finds none of
+    them. **Images built locally before this branch still contain `backend/.env` and must not be pushed** — on this
+    machine also the measurement tags `cos-backend:before`, `cold2-before`, `lock-before`, `warm-before` and the build
+    cache.
+  - `backend/Dockerfile`: a `manifests` stage feeds two installs — `deps` (all, to build) and `prod-deps` (`--prod`,
+    without `@cos/test-utils`, backend's only workspace devDependency, whose testcontainers tree it would otherwise
+    bring). `prod-deps` takes from the builder, by a bind mount, the generated Prisma clients (failing the build if a
+    target path is missing), each `@cos/*` package's `dist` and `backend/dist`; the runner copies that tree alone.
+    `@cos/kafka`'s manifest, missing from the install stage, is added. `backend/prisma` is not copied, unlike the plan
+    said: the API reads nothing from it. Tried and dropped, with the reason in the Dockerfile: `pnpm install --prod`
+    over the builder's tree (removed nothing, re-ran `@prisma/client`'s postinstall) and a shared pnpm-store cache mount
+    (no faster; 63 MB larger, hard links lost).
+  - After: **1,101,568,124 bytes (1.10 GB)**, the runtime layer 3.35 GB → 699 MB. Builds, measured back to back on the
+    same machine: cold (`--no-cache`, build cache mounts pruned) 1,369 s → 733 s; a rebuild after a lockfile-only change
+    1,381 s → 551 s (export and unpack 465 s → 34 s). The network made single runs vary (the same full install took 70
+    to 250 s), so only paired runs are compared.
+  - Same behaviour, for the API on arm64 (x86_64 not built): every bare `require("…")` in `backend/dist` and the
+    `@cos/*` dists resolves in the new image (70 of 70); the generated Prisma clients are byte-identical to the old
+    image's; on the compose infra both images answer `/api/v1/health/live` 200 and `/ready` `ok`, and their startup logs
+    (454 lines, sorted, timestamps and ids stripped) differ only in one `TimeoutNegativeWarning` number — the two errors
+    in both are the dev database's missing `platform.outbox_events`, which also shows Prisma reaching Postgres from
+    musl. The dynamic `import()`s (checked by /doubt: `@keycloak/keycloak-admin-client`, `read-excel-file/node`,
+    `cbor-x`, two `@aws-sdk` clients) load in the new image. The final image's files are content-identical to the one
+    run there, except pnpm's two state files. The worker entry fails the same way on both (Open, above). file-service
+    and credential-service still build. hadolint reports what it reported at HEAD. The conformance suite passes (61
+    suites, 2,343 tests), though none of it reads `backend/Dockerfile` or `.dockerignore`.
 - **`apps/mobile` (D7).**
   - Its own lockfile has expo-router → `query-string@7.1.3` → `decode-uri-component@0.2.2`.
   - react-navigation's `getStateFromPath` calls `queryString.parse` on deep-link input.

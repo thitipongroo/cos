@@ -1,4 +1,5 @@
-# Build context excludes for root-context images (backend, file-service).
+# Build context excludes for every root-context image (backend, file-service, credential-service,
+# web, the Python and Go services that build from `.`).
 # Never copy host node_modules into the image: they were created against the host's
 # pnpm store, so `COPY . .` would leave the image's modules dir inconsistent and pnpm
 # would try to purge+reinstall it (ERR_PNPM_ABORTED_REMOVE_MODULES_DIR_NO_TTY in a
@@ -20,10 +21,28 @@
 .git
 .gitignore
 
-# Local env / secrets — never bake into an image (keep the template only)
-.env
-.env.*
-!.env.example
+# Local env / secrets — never bake into an image (keep the templates only).
+# `**/`, not bare: a bare `.env` matches the context root only, and until 2026-11-12 a local build
+# baked backend/.env (46 secret-named keys: database, Redis, Keycloak, AWS, OpenAI, JWT, encryption
+# keys, …) and apps/mobile/.env (EXPO_PUBLIC_* only) into every root-context image; the
+# services/file-service and apps/web .env are symlinks to the root .env and came in dangling. CI
+# was not affected (a clean checkout has no .env); images built on a dev machine were.
+**/.env
+**/.env.*
+!**/.env.example
+
+# Local tool state and agent config — needed by no image (all git-ignored except .claude/, which
+# is tracked but copied by no Dockerfile). Without these a local build carried
+# infrastructure/terraform's provider downloads (764 MB), the Python services' .venv and caches,
+# the pnpm store and .claude into /app.
+**/.terraform
+**/.venv
+**/__pycache__
+**/.pytest_cache
+**/.ruff_cache
+**/.mypy_cache
+.pnpm-store
+.claude
 
 # Logs / OS cruft
 **/*.log
