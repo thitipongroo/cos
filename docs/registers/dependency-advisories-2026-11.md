@@ -1775,16 +1775,15 @@ gate's isolated run) checks the hash was not tested either; it ran 12.18.0 with 
   there. `cos-temporal-worker` runs the cos-backend image as `node backend/dist/workers/main`; on both the old and the
   new image it exits 1 at once: `@temporalio/core-bridge` 1.19.0 loads `releases/aarch64-unknown-linux-gnu/index.node`,
   a glibc build, and Alpine's musl rejects it (`Error relocating …: __register_atfork: symbol not found`,
-  `ERR_DLOPEN_FAILED`). Measured on arm64; the x86_64 build was not tried. A glibc base for the image (or a separate
-  worker image) is a product-owner decision.
+  `ERR_DLOPEN_FAILED`). The file-service worker (`…/src/workers/main.js`, run by the `cos-file-service` chart's worker
+  Deployment from the same image) fails the same way, with `@temporalio/core-bridge` 1.17.2, on the old and new
+  file-service images alike (found on `perf/service-images`). Measured on arm64; the x86_64 builds were not tried. A
+  glibc base for these images (or separate worker images) is a product-owner decision.
 - **Enterprise provisioning shells out to tools no backend image has.** `runMigrationsActivity`
   (`backend/src/modules/tenant/workflows/enterprise-provisioning.activities.ts`) runs `npx prisma migrate deploy` from
   `/app`, and `migrateDataActivity` pipes `pg_dump` into `psql`. Neither the old image (no `prisma` bin, no schema or
   `prisma.config.ts` where it runs, no `pg_dump` / `psql`) nor the new one (no prisma CLI, no `backend/prisma`) can run
   them; the worker that would call them does not start on musl anyway (above). Found by /doubt on `perf/backend-image`.
-- **The file-service and credential-service images still copy all of `/app`.** Their runners do what backend's did
-  before `perf/backend-image` (`COPY --from=builder … /app ./`): 1.87 GB and 1.45 GB. The shared `.dockerignore` fix
-  took the env files, provider downloads, virtualenvs and pnpm store out of them; their devDependencies are still in.
 - **Closed — the unused `@confluentinc/schemaregistry` removed from backend (D27).** On `chore/remove-schemaregistry`:
   the dependency line goes from `backend/package.json`; backend's production closure loses 89 packages and gains
   none (the lockfile loses 68; the rest are still used elsewhere), and no other importer changes. The Azure SDK
@@ -2184,6 +2183,30 @@ export` for iOS and Android and `expo export:embed` (what the Gradle and Xcode b
     Negative controls in scratch copies: the old apps/mobile lockfile with the new root, and the old one in the root's
     place with the new apps/mobile, each fail with exit 1 (84 unresolved high/critical). CI and `verify-before-push.sh`
     already call the script. The conformance suite passes (61 suites, 2,343 tests).
+- **Closed — the file-service and credential-service images copied all of `/app`.** Fixed on `perf/service-images`.
+  - Each Dockerfile keeps its builder and gains a `prod-deps` stage: a `--prod` install from the same tree and filter,
+    into which a bind mount from the builder copies the `dist` of every `@cos/*` package the builder built (file-service
+    6, credential-service 1) and the service's own `dist`; the build fails if that is missing or if any `@cos/*` link
+    the install made points at a package with no `dist` (checked: removing `@cos/types`'s `dist` fails it). The runner
+    copies that stage's `node_modules`, `package.json`, `packages/` and the service's `package.json`, `node_modules` and
+    `dist` — no repo sources, docs, mockups or other services, no devDependencies.
+  - Old and new built back to back, `--no-cache`, same machine: file-service 1,872,186,515 → 758,938,438 bytes (runtime
+    layers 1.27 GB → about 420 MB), 606 s → 531 s; credential-service 1,452,552,707 → 280,257,775 bytes (942 MB → about
+    37 MB), 439 s → 457 s (the second install costs more than the smaller copy and export save).
+  - Same behaviour: every bare `require("…")` outside `__tests__` resolves the same in old and new file-service images
+    (36 resolved; the same 11 unresolved in both, all in `dist/packages/@cos/*` — copies tsc emits because the service's
+    `rootDir` is the repo root, which nothing requires), and every bare `import` in credential-service's ESM `dist`
+    resolves by ESM rules in both (18 of 18); its one dynamic import (`@digitalbazaar/ed25519-verification-key-2020`)
+    loads in both. On the compose infra (MinIO swapped to `cgr.dev/chainguard/minio` for the run, since the compose
+    image no longer pulls; ClamAV unhealthy in both runs) file-service answers `/health/live` and `/health/ready` and
+    credential-service `/health` with 200 and the same body from both images, and their startup logs (one line and none)
+    match but for timestamps. Those endpoints are static: no request touched the database, MinIO or Kafka. /doubt also
+    ran, in old and new images alike, file-service's Swagger UI (same status and length for every asset), the 69
+    `@cos/kafka` Avro schemas from `dist/avro`, the production requires (clamscan, minio, pg, opensearch,
+    `@temporalio/{client,activity,workflow}`, …), and credential-service issuing and verifying a StatusList2021
+    credential offline. The file-service worker fails identically on both (Open, above). hadolint reports what it
+    reported at HEAD for each file; the conformance suite passes (61 suites, 2,343 tests), though none of it reads these
+    Dockerfiles. x86_64 was not built.
 - **apps/mobile: stream-json 1.9.1 keeps three moderate advisories.** GHSA-528h-pc64-c93x, GHSA-hqr4-qq8f-hg3x,
   GHSA-mjw6-4jj6-33hc (patched in 3.6.0). detox 20.51.4, the newest, declares `^1.7.4`, and it and bunyamin require
   `stream-json/jsonl/Parser` and `streamers/StreamArray.js`, which 3.x renamed: with the override both failed to load
