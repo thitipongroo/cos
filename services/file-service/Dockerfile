@@ -1,4 +1,8 @@
-FROM node:24-alpine AS builder
+# Debian (node:24-slim), not Alpine, since 2026-11-12 (D40): the same image runs the Temporal workers
+# (`…/src/workers/main.js`, the cos-file-service chart's worker Deployment), and @temporalio/core-bridge
+# ships glibc builds only, so on musl they exited at once (`__register_atfork: symbol not found`).
+# Every stage moves: native packages pick their libc build at install time.
+FROM node:24-slim AS builder
 # pnpm comes from package.json's packageManager (version + sha512): Corepack downloads it on first use
 # and refuses a tarball whose hash differs. Do not name a version here: one source keeps CI, Docker and
 # dev machines on the same pnpm.
@@ -22,7 +26,7 @@ RUN pnpm --filter @cos/file-service... --workspace-concurrency=1 build
 # package with no dist. Until
 # 2026-11-12 the runner copied the builder's whole /app — repo sources and devDependencies (jest,
 # typescript, ts-jest, testcontainers, …) — measured in docs/registers/dependency-advisories-2026-11.md.
-FROM node:24-alpine AS prod-deps
+FROM node:24-slim AS prod-deps
 RUN corepack enable
 WORKDIR /app
 ENV CI=true
@@ -42,8 +46,10 @@ RUN --mount=type=bind,from=builder,source=/app,target=/built \
     done; \
     echo "copied $p package dists and services/file-service/dist"
 
-FROM node:24-alpine AS runner
-RUN addgroup --system --gid 1001 cosgroup && adduser --system --uid 1001 --ingroup cosgroup cosuser
+FROM node:24-slim AS runner
+# uid/gid 1001: the Helm charts run as 1001.
+RUN groupadd --system --gid 1001 cosgroup \
+ && useradd --system --uid 1001 --gid cosgroup --no-create-home --shell /usr/sbin/nologin cosuser
 WORKDIR /app
 # Only what runs, at the paths the builder had (pnpm's @cos/* links are relative): the production
 # node_modules, packages/ (manifests, installed packages' dist and node_modules; sources are small),
@@ -58,6 +64,8 @@ COPY --from=prod-deps --chown=cosuser:cosgroup /app/services/file-service/node_m
 COPY --from=prod-deps --chown=cosuser:cosgroup /app/services/file-service/dist ./services/file-service/dist
 USER cosuser
 EXPOSE 3002
-HEALTHCHECK --interval=30s --timeout=10s --retries=3 CMD wget -qO- http://127.0.0.1:3002/health/live || exit 1
+# node:24-slim has no wget or curl; Node's own fetch does the probe (non-2xx or no answer → unhealthy).
+HEALTHCHECK --interval=30s --timeout=10s --retries=3 \
+  CMD ["node", "-e", "fetch('http://127.0.0.1:3002/health/live').then(r => process.exit(r.ok ? 0 : 1), () => process.exit(1))"]
 # tsconfig rootDir is the repo root, so tsc emits under dist/services/file-service/src/.
 CMD ["node", "services/file-service/dist/services/file-service/src/main.js"]

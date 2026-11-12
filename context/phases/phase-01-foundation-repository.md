@@ -114,7 +114,7 @@ scripts/
 
 Tooling:
 
-- Node.js runtime: 24.x (root `package.json` `engines.node` `>=24.0.0`; Docker images use `node:24-alpine`)
+- Node.js runtime: 24.x (root `package.json` `engines.node` `>=24.0.0`; Docker images use `node:24-alpine`, except backend and file-service on `node:24-slim` since 2026-11-12 — D40, Temporal's native bridge is glibc only)
 - Package manager: pnpm — latest stable 12.x with workspace protocol. Do NOT pin a fixed patch
   version in this spec: root `package.json` `packageManager` carries whatever 12.x release the repo
   is currently on (Corepack pins the exact build and its hash for reproducibility), and

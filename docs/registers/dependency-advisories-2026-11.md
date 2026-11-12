@@ -63,6 +63,9 @@ The numbers are the ones used while the work was planned. Decisions about the wi
 | D37 | The drone mission screen's two export buttons read "Export report (coming soon)" / "ส่งออกรายงาน (เร็วๆ นี้)" — no "Signed", no "PDF" — as text and as accessibility label.                                                                                                                                                                                                                                                                                                                       |
 | D38 | apps/mobile's lockfile is cleared in one branch (`fix/mobile-audit`), not one major per PR (for that branch this departs from D10): every high and critical, and the moderates whose override passes the checks.                                                                                                                                                                                                                                                                                  |
 | D39 | Any re-resolution of apps/mobile's lockfile (bumping axios; updating handlebars alone does the same, measured) moves `@expo/metro-runtime` — app runtime code, in the shipped bundles — from a stale 3.2.3 (outside expo-router 56's peer `^56.0.21`) to 56.0.21, adds `react-dom` 19.3.1 / `scheduler` 0.28.0 as its peers (react is 19.2.3: a new unmet peer, not bundled, web is not a target), and gives `@wix-pilot/*` `expect` 29.7.0 (clears an old unmet peer); accepted with the branch. |
+| D40 | The backend and file-service images move from `node:24-alpine` to `node:24-slim` (glibc), API and worker alike, so their Temporal workers can load `@temporalio/core-bridge` (glibc builds only); not a separate worker image.                                                                                                                                                                                                                                                                    |
+| D41 | The five Temporal workers (backend 3, file-service 2) pass a connection to `TEMPORAL_ADDRESS` / `config.temporal.address` to `Worker.create`, fixed with D40.                                                                                                                                                                                                                                                                                                                                     |
+| D42 | `docker-compose.yml`'s `temporal-worker` joins `cos-network`, fixed with D40.                                                                                                                                                                                                                                                                                                                                                                                                                     |
 
 ## The series
 
@@ -1771,19 +1774,19 @@ gate's isolated run) checks the hash was not tested either; it ran 12.18.0 with 
   ready, migration included (seconds on the small stores measured; a real-size store was not tried — the `startupProbe`
   allows ten minutes). The packages the `-full` image adds over the plain one (1.93 GB against 1.33 GB) are not audited:
   CI's pip-audit covers the client requirement sets only.
-- **The Temporal worker cannot start on the backend image.** Found on `perf/backend-image`, not caused by it, not fixed
-  there. `cos-temporal-worker` runs the cos-backend image as `node backend/dist/workers/main`; on both the old and the
-  new image it exits 1 at once: `@temporalio/core-bridge` 1.19.0 loads `releases/aarch64-unknown-linux-gnu/index.node`,
-  a glibc build, and Alpine's musl rejects it (`Error relocating …: __register_atfork: symbol not found`,
-  `ERR_DLOPEN_FAILED`). The file-service worker (`…/src/workers/main.js`, run by the `cos-file-service` chart's worker
-  Deployment from the same image) fails the same way, with `@temporalio/core-bridge` 1.17.2, on the old and new
-  file-service images alike (found on `perf/service-images`). Measured on arm64; the x86_64 builds were not tried. A
-  glibc base for these images (or separate worker images) is a product-owner decision.
+- **The backend and file-service images fail CI's Trivy gate, before and after `fix/temporal-worker-glibc`.** With
+  `security-scan`'s image settings (`CRITICAL,HIGH`, `--ignore-unfixed`; the image step passes no ignore file, and
+  `.trivyignore.yaml` lists none of these anyway), the four images measured (both services, Alpine and slim) report the
+  same 11: `zip` 8.5.1 (CRITICAL, fixed in 9.0.5) and `quinn-proto` 0.11.14 (HIGH), compiled into
+  `@temporalio/core-bridge` (1.19.0 in backend, 1.17.2 in file-service; from its `Cargo.lock`); `brace-expansion` 5.0.9
+  and `undici` 6.28.0 (HIGH), in the npm the Node base image bundles under `/usr/local/lib/node_modules/npm`. CI has not
+  run since 2026-11-08, so nothing reported it.
 - **Enterprise provisioning shells out to tools no backend image has.** `runMigrationsActivity`
   (`backend/src/modules/tenant/workflows/enterprise-provisioning.activities.ts`) runs `npx prisma migrate deploy` from
   `/app`, and `migrateDataActivity` pipes `pg_dump` into `psql`. Neither the old image (no `prisma` bin, no schema or
   `prisma.config.ts` where it runs, no `pg_dump` / `psql`) nor the new one (no prisma CLI, no `backend/prisma`) can run
-  them; the worker that would call them does not start on musl anyway (above). Found by /doubt on `perf/backend-image`.
+  them. Since `fix/temporal-worker-glibc` the worker that calls them starts and polls `enterprise-provisioning`, so an
+  enterprise provisioning run would now reach these activities and fail there. Found by /doubt on `perf/backend-image`.
 - **Closed — the unused `@confluentinc/schemaregistry` removed from backend (D27).** On `chore/remove-schemaregistry`:
   the dependency line goes from `backend/package.json`; backend's production closure loses 89 packages and gains
   none (the lockfile loses 68; the rest are still used elsewhere), and no other importer changes. The Azure SDK
@@ -2183,6 +2186,49 @@ export` for iOS and Android and `expo export:embed` (what the Gradle and Xcode b
     Negative controls in scratch copies: the old apps/mobile lockfile with the new root, and the old one in the root's
     place with the new apps/mobile, each fail with exit 1 (84 unresolved high/critical). CI and `verify-before-push.sh`
     already call the script. The conformance suite passes (61 suites, 2,343 tests).
+- **Closed — the Temporal workers could not start, and could not have reached Temporal.** Fixed on
+  `fix/temporal-worker-glibc` (D40, D41, D42).
+  - Measured first: `@temporalio/core-bridge` ships glibc builds only — 1.17.2, 1.19.0 and the newest, 1.25.0. The
+    aarch64 gnu `index.node`, `require`d directly: `node:24-alpine` fails (`__register_atfork: symbol not found`), the
+    same with `gcompat`, `node:24-slim` (Debian 12) loads it. Both bases: 6 HIGH from Trivy with CI's settings, no OS
+    findings.
+  - D40: backend/Dockerfile and services/file-service/Dockerfile move every stage to `node:24-slim` (`apt-get install
+openssl ca-certificates`; `groupadd`/`useradd` uid/gid 1001, as the charts run; HEALTHCHECK through Node's `fetch`,
+    since slim has no wget). Prisma `binaryTargets` → native + `debian-openssl-3.0.x` + `linux-arm64-openssl-3.0.x`; the
+    client generated here (Prisma 7, pg adapter) runs the wasm query compiler with no native engine on either base, so
+    this changes no engine or binary; only the schema text inlined in the generated client differs. credential-service
+    stays on Alpine.
+  - Then the workers loaded the bridge, bundled their workflows and exited on `TransportError` to 127.0.0.1:7233: all
+    five `Worker.create()` calls passed no `connection`, which defaults to localhost whatever `TEMPORAL_ADDRESS` says.
+    D41: backend's three use `connectTemporalWorker()` (`backend/src/shared/workflows/worker-connection.ts`, the
+    clients' `TEMPORAL_ADDRESS ?? 'localhost:7233'`), file-service's two `config.temporal.address`; each closes its
+    connection when the worker stops. New specs — backend 14 tests, file-service 7 (the address, the connection handed
+    to `Worker.create`, closing it on success, on a failed `run` and on a failed `Worker.create`, activity clients
+    closed first, the schedule error surfacing) — fail against the old worker files (14 of 14, 7 of 7).
+  - Then compose's `temporal-worker` could not resolve `temporal`: it had no `networks`, so it sat alone on the
+    project's default network. D42 puts it on `cos-network`. The compose healthchecks of `backend`, `temporal-worker`
+    and `file-service` used `wget`; they now use Node's `fetch`.
+  - After, on the compose infra: `temporal-worker` (backend image) and the file-service worker run, answer
+    `/health/live` on 8090, and Temporal lists workflow and activity pollers on all five queues (`procurement`,
+    `enterprise-provisioning`, `data-export`, `file-cleanup`, `file-extraction`); the file-service worker created the
+    `file-hard-delete-daily` schedule, which had never existed. `backend`, `temporal-worker` and `file-service` report
+    `healthy` from the compose healthchecks. The API answers `/health/live` as on Alpine (`/ready` was not compared).
+    Its startup logs differ in what the infra did during each run: on Alpine Kafka timed out, so the outbox poller never
+    ran; on slim Kafka connected and every outbox poll failed with `42P01` (the dev database lacks
+    `platform.outbox_events`) — which also shows Prisma reaching Postgres from Debian, with no Alpine run to compare it
+    with. The health endpoints are static: 8090 answering shows a worker process alive, the pollers show it connected.
+    The poller listings, the schedule and the `healthy` states were read in the runs, not saved to files; every bare
+    `require` resolves as before (backend 70 of 70, file-service 36 and the same 11 `dist/packages` copies). Cold
+    builds, Alpine (HEAD, from `git archive`) then slim, same machine — slim built before the last edits, which changed
+    only comments and the schema's `binaryTargets` comment: backend 663 s → 681 s, 1,101,546,887 → 1,225,248,821 bytes;
+    file-service 407 s → 535 s, 758,942,128 → 870,216,039 bytes. The images of the final code (partly cached builds) are
+    backend 1,225,266,850 bytes and file-service 870,251,704 bytes (after the /doubt fix: the cleanup worker ensures its
+    schedule before `Worker.create`, since a created worker blocks `NativeConnection.close()` and a schedule error would
+    have surfaced as that; rerun on compose: both queues polled, schedule present, API `healthy`). Trivy: the same
+    findings on old and new (Open, above). backend unit 4,226 tests (run before /doubt's additions to the new spec,
+    which now has 14, all passing) and file-service 291 (coverage 100%) pass — two health-port specs fail while
+    something on the host holds 8090 (Keycloak in compose) and pass without it; type-check, eslint on the changed files,
+    hadolint (DL3018 → DL3008, DL3025 gone) and the conformance suite (61 suites) pass. x86_64 was not built.
 - **Closed — the file-service and credential-service images copied all of `/app`.** Fixed on `perf/service-images`.
   - Each Dockerfile keeps its builder and gains a `prod-deps` stage: a `--prod` install from the same tree and filter,
     into which a bind mount from the builder copies the `dist` of every `@cos/*` package the builder built (file-service

@@ -546,7 +546,14 @@ services:
     healthcheck:
       # 127.0.0.1 (not localhost): the app listens on IPv4 0.0.0.0; localhost resolves to IPv6 ::1
       # inside the container (/etc/hosts), which is refused.
-      test: ['CMD-SHELL', 'wget -qO- http://127.0.0.1:3000/api/v1/health/live || exit 1']
+      # node, not wget: the image is node:24-slim since D40 (2026-11-12), which has no wget or curl.
+      test:
+        [
+          'CMD',
+          'node',
+          '-e',
+          "fetch('http://127.0.0.1:3000/api/v1/health/live').then(r => process.exit(r.ok ? 0 : 1), () => process.exit(1))",
+        ]
       interval: 15s
       timeout: 10s
       retries: 10
@@ -612,10 +619,22 @@ services:
       kafka: { condition: service_healthy }
       schema-registry: { condition: service_healthy }
       temporal: { condition: service_started }
+    # cos-network, like backend and every service it talks to. It had none, so it sat alone on the
+    # project's default network and could not resolve `temporal` (or postgres, kafka, …): unseen
+    # until 2026-11-12, because on Alpine the worker died before connecting (D40, D41).
+    networks:
+      - cos-network
     healthcheck:
       # 127.0.0.1, not localhost — the health server listens on IPv4 and localhost resolves to ::1
       # inside the container, which is refused. Same reason as the backend service above.
-      test: ['CMD-SHELL', 'wget -qO- http://127.0.0.1:8090/health/live || exit 1']
+      # node, not wget: the image is node:24-slim since D40 (2026-11-12), which has no wget or curl.
+      test:
+        [
+          'CMD',
+          'node',
+          '-e',
+          "fetch('http://127.0.0.1:8090/health/live').then(r => process.exit(r.ok ? 0 : 1), () => process.exit(1))",
+        ]
       interval: 15s
       timeout: 10s
       retries: 10
@@ -664,7 +683,14 @@ services:
       clamav: { condition: service_started }
     healthcheck:
       # 127.0.0.1 (not localhost) — see backend healthcheck note (IPv6 ::1 refused).
-      test: ['CMD-SHELL', 'wget -qO- http://127.0.0.1:3002/health/live || exit 1']
+      # node, not wget: the image is node:24-slim since D40 (2026-11-12), which has no wget or curl.
+      test:
+        [
+          'CMD',
+          'node',
+          '-e',
+          "fetch('http://127.0.0.1:3002/health/live').then(r => process.exit(r.ok ? 0 : 1), () => process.exit(1))",
+        ]
       interval: 15s
       timeout: 10s
       retries: 10

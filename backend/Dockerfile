@@ -1,11 +1,20 @@
 # Construction OS — Backend NestJS Monolith
 # Multi-stage build: manifests → deps → builder; manifests → prod-deps; → runner (non-root, production files only)
+#
+# Debian (node:24-slim), not Alpine, since 2026-11-12 (D40): @temporalio/core-bridge ships glibc builds
+# only (checked up to 1.25.0), so on musl the Temporal worker this image also runs
+# (`node backend/dist/workers/main`, the cos-temporal-worker chart) exited at once with
+# `__register_atfork: symbol not found`; gcompat does not fix it. Every stage moves, because native
+# packages pick their libc build at install time (e.g. @swc/core, used by Temporal's workflow bundler).
 
-FROM node:24-alpine AS base
-# Prisma selects its query-engine by probing `openssl version`. node:*-alpine ships libssl.so.3
-# but NOT the openssl CLI, so Prisma falls back to the openssl-1.1.x engine (→ "libssl.so.1.1: not
-# found" at runtime). Installing the openssl package makes Prisma detect 3.0.x and use that engine.
-RUN apk add --no-cache openssl
+FROM node:24-slim AS base
+# openssl (CLI + libssl.so.3; node:24-slim ships neither) is installed as the Alpine stages installed
+# it, for Prisma's openssl probe. The client generated here (Prisma 7, pg driver adapter) runs the wasm
+# query compiler and carries no native engine on either base (measured 2026-11-12), so the runtime does
+# not depend on it; it is kept rather than removed untested.
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends openssl ca-certificates \
+ && rm -rf /var/lib/apt/lists/*
 # pnpm comes from package.json's packageManager (version + sha512): Corepack downloads it on first use
 # and refuses a tarball whose hash differs. Do not name a version here: one source keeps CI, Docker and
 # dev machines on the same pnpm.
@@ -98,14 +107,15 @@ RUN --mount=type=bind,from=builder,source=/app,target=/built \
     echo "copied $n generated Prisma client(s), $p package dists, backend/dist"
 
 # ─── Stage 5: Runner (production image) ───────────────────────────────────
-FROM node:24-alpine AS runner
-# openssl CLI + libssl.so.3 so Prisma's runtime engine probe resolves to openssl-3.0.x (see base stage).
-RUN apk add --no-cache openssl
-RUN corepack enable
+FROM node:24-slim AS runner
+# openssl as in the base stage (kept from the Alpine image; see there).
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends openssl ca-certificates \
+ && rm -rf /var/lib/apt/lists/*
 
-# Non-root user — QM-4 security hardening
-RUN addgroup --system --gid 1001 cosgroup && \
-    adduser --system --uid 1001 --ingroup cosgroup cosuser
+# Non-root user — QM-4 security hardening. uid/gid 1001: the Helm charts run as 1001.
+RUN groupadd --system --gid 1001 cosgroup \
+ && useradd --system --uid 1001 --gid cosgroup --no-create-home --shell /usr/sbin/nologin cosuser
 
 WORKDIR /app
 # Only what runs: the production install with the built output in it (stage 4), at the paths the
@@ -121,7 +131,8 @@ COPY --from=prod-deps --chown=cosuser:cosgroup /app ./
 USER cosuser
 EXPOSE 3000
 
+# node:24-slim has no wget or curl; Node's own fetch does the probe (non-2xx or no answer → unhealthy).
 HEALTHCHECK --interval=30s --timeout=10s --retries=3 \
-  CMD wget -qO- http://127.0.0.1:3000/api/v1/health/live || exit 1
+  CMD ["node", "-e", "fetch('http://127.0.0.1:3000/api/v1/health/live').then(r => process.exit(r.ok ? 0 : 1), () => process.exit(1))"]
 
 CMD ["node", "backend/dist/main"]

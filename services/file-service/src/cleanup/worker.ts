@@ -2,7 +2,7 @@
 // Runs as a separate process alongside the Fastify HTTP server.
 // Schedule: daily at 00:00 UTC (cron expression: '0 0 * * *').
 
-import { Worker } from '@temporalio/worker';
+import { NativeConnection, Worker } from '@temporalio/worker';
 import { Connection, ScheduleClient, ScheduleOverlapPolicy } from '@temporalio/client';
 import { createLogger } from '@cos/logger';
 import { loadConfig } from '../config';
@@ -23,16 +23,28 @@ export async function runFileCleanupWorker(): Promise<void> {
   const opensearch = new OpenSearchService(config);
   const activities = createFileCleanupActivities(db, minio, opensearch);
 
-  const worker = await Worker.create({
-    taskQueue: TASK_QUEUE,
-    workflowsPath: WORKFLOW_PATH,
-    activities,
-  });
+  // config.temporal.address (TEMPORAL_ADDRESS). Without `connection`, Worker.create dials
+  // localhost:7233 whatever the config says — so this worker could never have reached Temporal in
+  // compose or Kubernetes; it died earlier on Alpine, so nobody saw it (D40, D41, 2026-11-12).
+  const connection = await NativeConnection.connect({ address: config.temporal.address });
+  try {
+    // Before Worker.create, not after: a created worker holds the connection until run() ends, and
+    // NativeConnection.close() throws while it does — so a schedule failure in between would surface
+    // as "Cannot close connection while Workers hold a reference to it" instead of its own error.
+    await ensureSchedule(config.temporal.address);
 
-  await ensureSchedule(config.temporal.address);
+    const worker = await Worker.create({
+      connection,
+      taskQueue: TASK_QUEUE,
+      workflowsPath: WORKFLOW_PATH,
+      activities,
+    });
 
-  logger.info({ taskQueue: TASK_QUEUE }, 'file.cleanup.worker.starting');
-  await worker.run();
+    logger.info({ taskQueue: TASK_QUEUE }, 'file.cleanup.worker.starting');
+    await worker.run();
+  } finally {
+    await connection.close();
+  }
 }
 
 async function ensureSchedule(temporalAddress: string): Promise<void> {
