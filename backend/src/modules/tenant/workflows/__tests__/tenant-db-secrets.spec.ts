@@ -101,8 +101,8 @@ describe('ensureAppUserPassword', () => {
     expect(input.Name).toBe(appUserSecretName('acme'));
     expect(JSON.parse(input.SecretString)).toEqual({ username: 'app_user', password });
 
-    // base64url of 32 random bytes — long, and free of shell metacharacters so the URL it lands in
-    // still satisfies assertShellSafeDbUrl.
+    // base64url of 32 random bytes — long, and URL-safe, so the connection string it lands in needs no
+    // escaping.
     expect(password.length).toBeGreaterThanOrEqual(40);
     expect(password).toMatch(/^[A-Za-z0-9_-]+$/);
   });

@@ -94,7 +94,7 @@ export async function ensureAppUserPassword(tenantCode: string): Promise<string>
     if ((err as { name?: string }).name !== 'ResourceNotFoundException') throw err;
   }
 
-  // 32 random bytes, base64url — no shell metacharacters, so it stays safe for assertShellSafeDbUrl.
+  // 32 random bytes, base64url — URL-safe, so it can sit in a connection string unescaped.
   const password = Buffer.from(globalThis.crypto.getRandomValues(new Uint8Array(32))).toString(
     'base64url',
   );

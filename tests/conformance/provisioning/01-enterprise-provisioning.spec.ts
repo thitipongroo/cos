@@ -323,11 +323,17 @@ describe('Phase 25 · platform tables never move (master:5772)', () => {
   });
 
   it('migrates domain data only, never the platform schema', () => {
+    // Since D46 (2026-11-13) the schemas are TENANT_DATA_SCHEMAS in tenant-data-copy.ts, which the copy
+    // reads every table of; the pg_dump command these assertions used to search is gone.
+    const copy = read('backend/src/modules/tenant/workflows/tenant-data-copy.ts');
+    const list = copy.slice(copy.indexOf('export const TENANT_DATA_SCHEMAS'));
+    const schemas = list.slice(0, list.indexOf('] as const')).match(/'([a-z_]+)'/g) ?? [];
+    expect(schemas.length).toBeGreaterThanOrEqual(10);
+    expect(schemas).not.toContain("'platform'");
     const migrate = activities.slice(
       activities.indexOf('export async function migrateDataActivity'),
     );
-    expect(migrate).not.toMatch(/--schema[= ]platform\b/);
-    expect(migrate).not.toMatch(/pg_dump[^|]*\bplatform\./);
+    expect(migrate).toMatch(/listTenantTables\(src\)/);
   });
 });
 

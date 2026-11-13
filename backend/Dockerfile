@@ -88,6 +88,9 @@ RUN pnpm install --frozen-lockfile --prod --filter @cos/backend... --filter '!@c
 #    its placeholder is copied over an identical one). The build fails if a counterpart is missing
 #    — a mismatched path would ship the placeholder, which throws on the first query — and so also
 #    if the builder ever holds an @prisma/client version that only a devDependency brings;
+#  - backend/prisma/{schema.prisma,migrations} and backend/prisma.config.ts: the enterprise
+#    provisioning workflow runs `prisma migrate deploy` from this image against each new dedicated
+#    database (D45, 2026-11-13); the prisma CLI is a production dependency for that reason;
 #  - each installed @cos/* package's dist (its `main`), and backend/dist. packages/@cos/test-utils
 #    (its manifest is in `manifests` for the build) is removed: nothing in production loads it.
 RUN --mount=type=bind,from=builder,source=/app,target=/built \
@@ -104,7 +107,10 @@ RUN --mount=type=bind,from=builder,source=/app,target=/built \
       cp -a "/built/$pkg/dist" "$pkg/dist"; p=$((p+1)); \
     done; \
     cp -a /built/backend/dist backend/dist; \
-    echo "copied $n generated Prisma client(s), $p package dists, backend/dist"
+    mkdir -p backend/prisma; \
+    cp -a /built/backend/prisma/schema.prisma /built/backend/prisma/migrations backend/prisma/; \
+    cp -a /built/backend/prisma.config.ts backend/prisma.config.ts; \
+    echo "copied $n generated Prisma client(s), $p package dists, backend/dist, the schema and migrations"
 
 # ─── Stage 5: Runner (production image) ───────────────────────────────────
 FROM node:24-slim AS runner
@@ -127,9 +133,9 @@ WORKDIR /app
 # ../../../packages/@cos/*) and the generated Prisma client lives in the root node_modules/.pnpm —
 # moving node_modules to a shallower path breaks both. Until 2026-11-12 this copied the builder's
 # whole /app (repo sources, devDependencies, other services: a 3.35 GB layer). `node
-# backend/dist/main` reads nothing from disk outside this tree. Not in it, and not usable in the
-# old image either: the prisma CLI, backend/prisma and pg_dump / psql, which the enterprise
-# provisioning activities shell out to (register Open item).
+# backend/dist/main` reads nothing from disk outside this tree. Since 2026-11-13 the tree also
+# carries the prisma CLI (a dependency), backend/prisma and backend/prisma.config.ts, which enterprise
+# provisioning's migrate step runs (D45, stage 4). No pg_dump / psql: the data copy is in process (D46).
 COPY --from=prod-deps --chown=cosuser:cosgroup /app ./
 
 USER cosuser

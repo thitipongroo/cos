@@ -68,6 +68,9 @@ The numbers are the ones used while the work was planned. Decisions about the wi
 | D42 | `docker-compose.yml`'s `temporal-worker` joins `cos-network`, fixed with D40.                                                                                                                                                                                                                                                                                                                                                                                                                     |
 | D43 | CI's `security-scan` job is made to pass in full — the repository scan and all ten images it builds — not only the backend and file-service images.                                                                                                                                                                                                                                                                                                                                               |
 | D44 | The image scan reads `.trivyignore.yaml`, which gains a `secrets:` section with one entry: rule `gcp-service-account`, scoped to `/opt/venv/lib/python3.12/site-packages/anthropic/**` (docstring false positives in the anthropic SDK in ai-gateway).                                                                                                                                                                                                                                            |
+| D45 | `runMigrationsActivity` runs the prisma CLI shipped in the backend image (prisma a production dependency; schema, migrations and `prisma.config.ts` in the image), by node without a shell, with `DIRECT_DATABASE_URL` set to the tenant database.                                                                                                                                                                                                                                                |
+| D46 | `migrateDataActivity` copies the tenant's rows in process — COPY per table, parents first, in one target transaction with `session_replication_role = replica`, never deleting rows of the tenant already in the target — instead of `pg_dump \| psql`.                                                                                                                                                                                                                                           |
+| D47 | The copy keeps the ten schemas the activity named; the other five schemas with `tenant_id` are investigated and recorded, with no routing change.                                                                                                                                                                                                                                                                                                                                                 |
 
 ## The series
 
@@ -1776,13 +1779,40 @@ gate's isolated run) checks the hash was not tested either; it ran 12.18.0 with 
   ready, migration included (seconds on the small stores measured; a real-size store was not tried — the `startupProbe`
   allows ten minutes). The packages the `-full` image adds over the plain one (1.93 GB against 1.33 GB) are not audited:
   CI's pip-audit covers the client requirement sets only.
-- **Enterprise provisioning shells out to tools no backend image has.** `runMigrationsActivity`
-  (`backend/src/modules/tenant/workflows/enterprise-provisioning.activities.ts`) runs `npx prisma migrate deploy` from
-  `/app`, and `migrateDataActivity` pipes `pg_dump` into `psql`. Neither the old image (no `prisma` bin, no schema or
-  `prisma.config.ts` where it runs, no `pg_dump` / `psql`) nor the new one (no prisma CLI, no `backend/prisma`) can run
-  them. Since `fix/temporal-worker-glibc` the worker that calls them starts and polls `enterprise-provisioning`, so an
-  enterprise provisioning run would now reach these activities and fail there. Since `fix/ci-trivy` the backend runner
-  has no npm/npx either, so `npx prisma` fails as `npx: not found`. Found by /doubt on `perf/backend-image`.
+- **A dedicated database leaves three tenant schemas behind that the app reads from it.** For an ENTERPRISE tenant the
+  backend's `TenantPrismaService` routes to the dedicated database, and it is what reads and writes `crm`
+  (`crm.repository.ts`, subject requests), `equipment_telemetry` (`equipment.repository.ts`, `sync.service.ts`) and
+  `workforce_telemetry` (`workforce.repository.ts`, `sync.service.ts`, network origin). `migrateDataActivity` copies ten
+  schemas, not these, so after the cutover the tenant's existing leads, contacts and telemetry stay in the shared
+  database where the app no longer looks. `digital_twin` (ai-gateway, `DATABASE_URL`) and `credentials`
+  (credential-service, its own `DATABASE_URL`) are read from the shared database for every tenant and are not affected.
+  `data-export.collector.ts` documents the same ten-schema split. Found on `fix/enterprise-provisioning-db` (D47);
+  whether to move these three, or route them to the shared database, is a product decision.
+- **Two references from tenant tables into `platform` cannot hold in a dedicated database.**
+  `procurement.rfq_invitations.vendor_identity_id` → `platform.vendor_identities` and `boq.boq_items.central_price_id` →
+  `platform.central_price_catalog` are foreign keys, and `platform` never moves (`get-db-url.ts`), so both tables are
+  empty there. The provisioning copy keeps the values (it loads with foreign-key checks off), but the app's own writes
+  to a dedicated database with either column set would fail the foreign key. Found on `fix/enterprise-provisioning-db`.
+- **Enterprise provisioning has not been run against RDS, and three things it needs are unverified there.**
+  `createRdsActivity` creates PostgreSQL 15 on RDS. The migrations call `create_hypertable` without creating the
+  TimescaleDB extension, which RDS does not offer, so `prisma migrate deploy` is expected to stop there.
+  `20260608000004_rls_policies` creates a role with BYPASSRLS, and the copy needs `SET session_replication_role` and a role
+  that bypasses RLS; whether the RDS master user may do each was not checked. The integration spec runs on TimescaleDB
+  pg16 as superuser. Found on `fix/enterprise-provisioning-db`; needs a decision on the dedicated database's engine
+  (or on making those migrations conditional) and a run against a real RDS instance.
+- **Routing switches to the dedicated database before the tenant's data is copied.** The workflow runs
+  `assignDedicatedDbActivity` (which `get-db-url.ts` follows at once), then waits for approval, then
+  `migrateDataActivity`. During the wait the tenant reads an empty database and writes land there; the copy then
+  refuses to run (it never deletes the tenant's rows), so provisioning stops with the data split across two databases.
+  Found on `fix/enterprise-provisioning-db`; the fix is to reorder the workflow (copy, then switch) or block the
+  tenant's writes during the wait, which changes the workflow's behaviour and was left out of this branch.
+- **The data copy has 30 minutes and no heartbeat.** Every provisioning activity shares `startToCloseTimeout: '30m'`
+  and three attempts; `migrateDataActivity` sends no heartbeat. A tenant whose copy takes longer times out on every
+  attempt, and a timed-out attempt is not told to stop, so the next one runs beside it (it blocks on the first one's
+  uncommitted keys, then fails on them once that commits; the third attempt then finds the committed copy and reports
+  it done). How long a real tenant takes was not measured. Found on `fix/enterprise-provisioning-db`; the fix is a
+  heartbeat per table with a `heartbeatTimeout` and a longer limit for this activity — a workflow change left out
+  here.
 - **Closed — the unused `@confluentinc/schemaregistry` removed from backend (D27).** On `chore/remove-schemaregistry`:
   the dependency line goes from `backend/package.json`; backend's production closure loses 89 packages and gains
   none (the lockfile loses 68; the rest are still used elsewhere), and no other importer changes. The Azure SDK
@@ -2182,6 +2212,47 @@ export` for iOS and Android and `expo export:embed` (what the Gradle and Xcode b
     Negative controls in scratch copies: the old apps/mobile lockfile with the new root, and the old one in the root's
     place with the new apps/mobile, each fail with exit 1 (84 unresolved high/critical). CI and `verify-before-push.sh`
     already call the script. The conformance suite passes (61 suites, 2,343 tests).
+- **Closed — enterprise provisioning could neither migrate nor fill a dedicated database.** Fixed on
+  `fix/enterprise-provisioning-db` (D45, D46, D47).
+  - `runMigrationsActivity` ran `npx prisma migrate deploy` with `DATABASE_URL` = the tenant URL. The image had no npx,
+    no prisma CLI, no schema, migrations or `prisma.config.ts` — and Prisma 7 takes the migrate URL from
+    `DIRECT_DATABASE_URL` (`prisma.config.ts`), which in the worker is the shared database: with the tools in place it
+    would have migrated the shared database and left the tenant's empty. D45: `prisma` and `dotenv` are production
+    dependencies, the image carries `backend/prisma/{schema.prisma,migrations}` and `backend/prisma.config.ts`, and
+    `prismaMigrateDeploy` (`prisma-migrate-deploy.ts`) runs the CLI's entry point with node via `execFile` from
+    `backend/` with `DIRECT_DATABASE_URL` and `DATABASE_URL` set to the target. A spec holds it to that and fails
+    against the old activity (with `execSync` mocked so the old command does not run); from inside the built image it
+    applied all 113 migrations to a scratch Postgres.
+  - `migrateDataActivity` ran `pg_dump … --where="tenant_id='…'" | psql …`; `pg_dump` has no `--where` (PostgreSQL 18.6:
+    "unrecognized option"), so it never could have run. D46: `tenant-data-copy.ts` lists every table of the ten schemas
+    from `pg_catalog` (`information_schema` hides tables the role has no privilege on, which would drop them without an
+    error), refusing one without `tenant_id` (all 73 have it), orders them parents first (60 foreign keys between them,
+    no cycle), reads the source in one repeatable-read snapshot, and in one target transaction with
+    `session_replication_role = replica` COPYs them table by table (`pg-copy-streams` 7.0.0 added), comparing counts per
+    table, with DateStyle and IntervalStyle pinned to ISO on both sides. The activity first requires the source role to
+    bypass row-level security, before the skip below (the ten schemas FORCE RLS for `app_user` only; under RLS every
+    lookup finds nothing, which would read as "no data" and succeed with the rows left behind), and the copy requires
+    the same of both roles. Rows of the tenant already in the target are never deleted (they can be the tenant's own
+    writes — Open, above): if every table's count equals the source's, an earlier attempt committed the copy and this
+    one reports it done (`migrate_data.already_complete`, so a Temporal retry after a commit succeeds); otherwise it
+    refuses. A failure rolls the target back and closes the source connection: `ROLLBACK` after a cut-off `COPY TO`
+    never returns (measured), and the activity ends both connections with a time limit and logs their connection errors
+    instead of leaving them unhandled. The specified skip stays (master:5738: nothing to move, nothing done; a
+    conformance test holds it), now checked across every table, not `projects` alone. No shell; the tenant id is still
+    asserted a UUID, as it becomes a COPY literal, and the URL check that guarded the shell command is gone with it. An
+    integration spec on two real Postgres servers (TimescaleDB pg16, both migrated through `prismaMigrateDeploy`, as
+    superuser) copies one tenant out of two across a foreign-key chain and a self-reference, keeps a `platform`
+    reference, lists all 73 tables, refuses an RLS-bound role, refuses (and keeps) rows in the target that differ from
+    the source, reports a repeat after a committed copy as done without writing, and on a failure halfway through
+    100,000 rows rejects in seconds with the target empty and no transaction left open on the source; with the source
+    rolled back instead of closed it hangs until Jest's 120-second limit. A unit spec runs the activity with a source
+    role under RLS and expects a failure, not a skip; with the role check after the skip it resolves instead.
+  - The backend image grows 1,258,708,530 → 1,527,213,081 bytes: the prisma 7 CLI brings 76 packages (218 MB on disk),
+    most of them its own tooling — Prisma Studio (`@prisma/studio-core` 38 MB), `effect` 34 MB, PGlite 23 MB, the schema
+    engine 21 MB, `@prisma/dev` 14 MB, react-dom, chart.js. Trivy with the job's settings still reports 0 for the image
+    and the repository.
+  - D47 found three schemas the app reads from the dedicated database that the copy leaves behind (Open, above).
+  - What is proven is the code path on Postgres with TimescaleDB, as superuser; not on RDS (Open, above).
 - **Closed — the `fix/mobile-audit` dependencies had not been launched.** Measured on `docs/mobile-sim-smoke` (no code
   changed). iPhone 17 simulator, Xcode 27.1, `detox build -c ios.sim.release`: native compile and Metro (2,616 modules,
   `@expo/metro-runtime` 56.0.21, axios 1.21.1) pass; with `EXPO_PUBLIC_E2E=1`, as CI builds it, `main.jsbundle` is

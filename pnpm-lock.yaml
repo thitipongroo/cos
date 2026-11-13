@@ -554,6 +554,9 @@ importers:
       decimal.js:
         specifier: ^10.4.0
         version: 10.6.0
+      dotenv:
+        specifier: ^16.4.7
+        version: 16.4.7
       expo-server-sdk:
         specifier: ^3.3.0
         version: 3.15.0
@@ -593,12 +596,18 @@ importers:
       pg:
         specifier: 8.22.0
         version: 8.22.0
+      pg-copy-streams:
+        specifier: 7.0.0
+        version: 7.0.0
       pino:
         specifier: ^9.1.0
         version: 9.14.0
       pino-http:
         specifier: ^10.0.0
         version: 10.5.0
+      prisma:
+        specifier: ^7.8.0
+        version: 7.8.0(@types/node@20.19.43)(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(typescript@6.0.3)
       read-excel-file:
         specifier: 9.3.10
         version: 9.3.10
@@ -663,6 +672,9 @@ importers:
       '@types/pg':
         specifier: ^8.20.0
         version: 8.20.0
+      '@types/pg-copy-streams':
+        specifier: 1.2.5
+        version: 1.2.5
       '@types/supertest':
         specifier: ^6.0.0
         version: 6.0.3
@@ -672,15 +684,9 @@ importers:
       '@types/yazl':
         specifier: ^2.4.6
         version: 2.4.6
-      dotenv:
-        specifier: ^16.4.7
-        version: 16.4.7
       jest:
         specifier: ^30.4.2
         version: 30.4.2(@types/node@20.19.43)(supports-color@8.1.1)(ts-node@10.9.2(@swc/core@1.15.43(@swc/helpers@0.5.23))(@types/node@20.19.43)(typescript@6.0.3))
-      prisma:
-        specifier: ^7.8.0
-        version: 7.8.0(@types/node@20.19.43)(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(typescript@6.0.3)
       supertest:
         specifier: ^7.0.0
         version: 7.2.2(supports-color@8.1.1)
@@ -5308,6 +5314,9 @@ packages:
   '@types/passport@1.0.17':
     resolution: {integrity: sha512-aciLyx+wDwT2t2/kJGJR2AEeBz0nJU4WuRX04Wu9Dqc5lSUtwu0WERPHYsLhF9PtseiAMPBGNUOtFjxZ56prsg==}
 
+  '@types/pg-copy-streams@1.2.5':
+    resolution: {integrity: sha512-7D6/GYW2uHIaVU6S/5omI+6RZnwlZBpLQDZAH83xX1rjxAOK0f6/deKyyUTewxqts145VIGn6XWYz1YGf50G5g==}
+
   '@types/pg-pool@2.0.7':
     resolution: {integrity: sha512-U4CwmGVQcbEuqpyju8/ptOKg6gEC+Tqsvj2xS9o1g71bUh8twxnC6ZL5rZKCsGN0iyH0CwgUyc9VR5owNQF9Ng==}
 
@@ -9349,6 +9358,9 @@ packages:
 
   pg-connection-string@2.14.0:
     resolution: {integrity: sha512-XwWDGcLRGCXAR8F/AM5bG7Q+A3Wm2s6QeEjlOKZLlH3UYcguiqCWKyWXVag5TLTIjR7oOJUY8kcADaZgWPyLeg==}
+
+  pg-copy-streams@7.0.0:
+    resolution: {integrity: sha512-zBvnY6wtaBRE2ae2xXWOOGMaNVPkXh1vhypAkNSKgMdciJeTyIQAHZaEeRAxUjs/p1El5jgzYmwG5u871Zj3dQ==}
 
   pg-int8@1.0.1:
     resolution: {integrity: sha512-WCtabS6t3c8SkpDBUlb1kjOs7l66xsGdKpIPZsg4wR+B3+u9UAum2odSsF9tnvxg80h4ZxLWMy4pRjOsFIqQpw==}
@@ -15827,6 +15839,11 @@ snapshots:
     dependencies:
       '@types/express': 4.17.25
 
+  '@types/pg-copy-streams@1.2.5':
+    dependencies:
+      '@types/node': 20.19.43
+      '@types/pg': 8.20.0
+
   '@types/pg-pool@2.0.7':
     dependencies:
       '@types/pg': 8.20.0
@@ -20448,6 +20465,8 @@ snapshots:
     optional: true
 
   pg-connection-string@2.14.0: {}
+
+  pg-copy-streams@7.0.0: {}
 
   pg-int8@1.0.1: {}
 

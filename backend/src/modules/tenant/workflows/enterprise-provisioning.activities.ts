@@ -1,4 +1,14 @@
 import { createPrismaClient } from '../../../shared/prisma/create-prisma-client';
+import { prismaMigrateDeploy } from './prisma-migrate-deploy';
+import { Client as PgClient } from 'pg';
+import {
+  assertBypassesRls,
+  copyTenantRows,
+  listForeignKeys,
+  listTenantTables,
+  orderByForeignKeys,
+  tenantHasRows,
+} from './tenant-data-copy';
 import { EventOutboxService } from '../../../shared/events/event-outbox.service';
 import { KafkaTopicProvisioner } from '@cos/kafka';
 import { createLogger } from '@cos/logger';
@@ -95,18 +105,19 @@ export async function createRdsActivity(
 // ── Activity 2: runMigrationsActivity ─────────────────────────────────────
 
 export async function runMigrationsActivity(params: RdsWithEndpointParams): Promise<void> {
-  const { execSync } = await import('child_process');
   const dbUrl = await buildMasterDbUrl(params.rdsEndpoint, params.masterSecretArn);
 
   logger.info(
     { tenantId: params.tenantId, rdsEndpoint: params.rdsEndpoint },
     'migrations.starting',
   );
-  execSync('npx prisma migrate deploy', {
-    env: { ...process.env, DATABASE_URL: dbUrl },
-    stdio: 'inherit',
-  });
-  logger.info({ tenantId: params.tenantId }, 'migrations.complete');
+  // The prisma CLI, with node and no shell, against the TENANT database — see prisma-migrate-deploy.ts
+  // for why `npx prisma migrate deploy` with DATABASE_URL could not have done that (D45).
+  const { stdout } = await prismaMigrateDeploy(dbUrl);
+  logger.info(
+    { tenantId: params.tenantId, output: stdout.trim().split('\n').slice(-3).join(' | ') },
+    'migrations.complete',
+  );
 }
 
 // ── Activity 2b: secureAppUserActivity ────────────────────────────────────
@@ -250,70 +261,80 @@ export function assertUuid(value: string, field: string): void {
   }
 }
 
-// The two connection URLs below are interpolated into a shell command (the `|` between pg_dump and
-// psql means execSync goes through /bin/sh). They come from configuration rather than from a
-// request, but a generated password is not a safe string: Secrets Manager will happily hand back
-// one containing a backtick or `$(`, and that would execute. Postgres URLs have no legitimate use
-// for shell metacharacters, so reject them rather than hope.
-// Found by CodeQL js/indirect-command-line-injection.
-const SHELL_METACHARACTERS = /[`$\\"'|;&<>(){}\s]/;
-
-export function assertShellSafeDbUrl(value: string, field: string): void {
-  if (!value.startsWith('postgres://') && !value.startsWith('postgresql://')) {
-    throw new Error(`${field} must be a postgres:// URL`);
-  }
-  if (SHELL_METACHARACTERS.test(value)) {
-    throw new Error(`${field} contains characters that are unsafe in a shell command`);
-  }
-}
-
 // ── Activity 4: migrateDataActivity ───────────────────────────────────────
 
 export async function migrateDataActivity(params: RdsWithEndpointParams): Promise<void> {
-  // Validate before anything reaches a shell. This activity interpolates tenantId into a `pg_dump
-  // ... --where="tenant_id='...'" | psql ...` command, which runs through /bin/sh because of the
-  // pipe — so a tenantId carrying a quote or `$(...)` was arbitrary command execution with the
-  // database credentials in the same string. Every tenant_id in this system is a UUID, so the
-  // constraint costs nothing. The same pattern already guards app.current_tenant_id in
-  // TenantPrismaService. Found by CodeQL js/indirect-command-line-injection.
+  // A UUID, because the copy puts it into COPY statements as a literal (COPY takes no bind parameters).
+  // Every tenant_id in this system is one, so the constraint costs nothing.
   assertUuid(params.tenantId, 'tenantId');
 
-  const { execSync } = await import('child_process');
-  const sharedDbUrl = DATABASE_URL;
-  // Master URL: pg_dump/psql restore writes across every schema and needs ownership, so this is one of
-  // the few steps that legitimately uses the admin credential (security review F4).
+  // Master URL on the target: the load writes every schema and sets session_replication_role, which
+  // needs the admin credential (security review F4). The source is DATABASE_URL, which must bypass RLS
+  // to read the tenant's rows.
   const dedicatedDbUrl = await buildMasterDbUrl(params.rdsEndpoint, params.masterSecretArn);
-
-  // Check if tenant has existing domain data — skip migration if empty
-  const prisma = createPrismaClient(sharedDbUrl);
-  let hasData = false;
+  const src = connectionFor(DATABASE_URL, 'source');
+  await src.connect();
   try {
-    const [row] = await prisma.$queryRaw<Array<{ cnt: bigint }>>`
-      SELECT COUNT(*) AS cnt FROM projects.projects WHERE tenant_id = ${params.tenantId}::uuid LIMIT 1
-    `;
-    hasData = (row?.cnt ?? 0n) > 0n;
+    // Before the skip below: under RLS every lookup finds nothing, which would read as "no data" and
+    // succeed with the tenant's rows left behind.
+    await assertBypassesRls(src, 'source');
+    const tables = await listTenantTables(src);
+    // Conditional, as specified (master:5738): skipped when the tenant has no existing domain data —
+    // any row of any table that moves, not only a project (39 of the 73 tables carry no project_id).
+    const hasData = await tenantHasRows(src, params.tenantId, tables);
+    if (!hasData) {
+      logger.info({ tenantId: params.tenantId }, 'migrate_data.skipped.no_existing_data');
+      return;
+    }
+
+    const dst = connectionFor(dedicatedDbUrl, 'target');
+    await dst.connect();
+    try {
+      const ordered = orderByForeignKeys(tables, await listForeignKeys(src, tables));
+      logger.info({ tenantId: params.tenantId, tables: ordered.length }, 'migrate_data.starting');
+      const { alreadyCopied, tables: copied } = await copyTenantRows(
+        src,
+        dst,
+        params.tenantId,
+        ordered,
+      );
+      logger.info(
+        {
+          tenantId: params.tenantId,
+          tables: copied.length,
+          rows: copied.reduce((n, c) => n + c.rows, 0),
+          nonEmpty: copied.filter((c) => c.rows > 0).map((c) => `${c.table}=${c.rows}`),
+        },
+        alreadyCopied ? 'migrate_data.already_complete' : 'migrate_data.complete',
+      );
+    } finally {
+      await endQuietly(dst);
+    }
   } finally {
-    await prisma.$disconnect();
+    // copyTenantRows closes src itself on an error (a cut-off COPY TO leaves ROLLBACK hanging); closing
+    // it again must neither throw nor wait forever.
+    await endQuietly(src);
   }
+}
 
-  if (!hasData) {
-    logger.info({ tenantId: params.tenantId }, 'migrate_data.skipped.no_existing_data');
-    return;
-  }
-
-  logger.info({ tenantId: params.tenantId }, 'migrate_data.starting');
-  assertShellSafeDbUrl(sharedDbUrl, 'DATABASE_URL');
-  assertShellSafeDbUrl(dedicatedDbUrl, 'dedicatedDbUrl');
-  // pg_dump tenant-scoped data and restore to dedicated DB
-  execSync(
-    `pg_dump "${sharedDbUrl}" --schema=projects --schema=boq --schema=procurement ` +
-      `--schema=finance --schema=files --schema=notifications --schema=site_ops ` +
-      `--schema=equipment --schema=workforce --schema=ai ` +
-      `--where="tenant_id='${params.tenantId}'" ` +
-      `| psql "${dedicatedDbUrl}"`,
-    { stdio: 'inherit' },
+/**
+ * A pg client whose connection errors are logged, not left unhandled: an idle client's 'error' event with
+ * no listener (the server or a pooler dropping it) would take the whole worker process down.
+ */
+function connectionFor(connectionString: string, side: string): PgClient {
+  const client = new PgClient({ connectionString });
+  client.on('error', (err) =>
+    logger.warn({ side, error: err.message }, 'migrate_data.connection_error'),
   );
-  logger.info({ tenantId: params.tenantId }, 'migrate_data.complete');
+  return client;
+}
+
+/** End a pg client without throwing and without waiting more than a few seconds. */
+async function endQuietly(client: PgClient): Promise<void> {
+  await Promise.race([
+    client.end().catch(() => undefined),
+    new Promise<void>((resolve) => setTimeout(resolve, 5_000).unref()),
+  ]);
 }
 
 // ── Activity 5: verifyRoutingActivity ─────────────────────────────────────
