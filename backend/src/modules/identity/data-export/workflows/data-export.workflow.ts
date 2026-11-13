@@ -7,7 +7,15 @@
 // across every domain schema — it is slow, it can fail halfway, and a lost job is a missed statutory
 // deadline with no trace. Temporal gives the retry, the durability, and a history an auditor can read.
 
-import { proxyActivities, log } from '@temporalio/workflow';
+import {
+  ActivityFailure,
+  ApplicationFailure,
+  log,
+  patched,
+  proxyActivities,
+  sleep,
+} from '@temporalio/workflow';
+import { TENANT_PAUSED_FAILURE } from '../../../../shared/workflows/provisioning-pause';
 import type {
   collectAndUploadActivity,
   markFailedActivity,
@@ -56,25 +64,59 @@ const SUBJECT_SAFE_FAILURE =
   'The export could not be produced. This has been recorded and the team has been notified — ' +
   'you can request a new export at any time.';
 
+// D52 (2026-11-13): a tenant paused by enterprise provisioning (D48) refuses its data until it resumes.
+// The collect and the notice wait that out instead of failing the export: retry every minute while the
+// activity reports TENANT_PAUSED_FAILURE, for at most 24 h — the bound the provisioning copy itself has.
+// A deactivated tenant is not waited for. Runs whose history predates this keep failing as before.
+export const EXPORT_WAITS_OUT_PAUSE_PATCH = 'export-waits-out-pause';
+const PAUSE_POLL = '1 minute';
+const PAUSE_LIMIT_MS = 24 * 60 * 60 * 1000;
+
+function isTenantPaused(err: unknown): boolean {
+  return (
+    err instanceof ActivityFailure &&
+    err.cause instanceof ApplicationFailure &&
+    err.cause.type === TENANT_PAUSED_FAILURE
+  );
+}
+
+async function waitingOutPause<T>(step: string, fn: () => Promise<T>): Promise<T> {
+  if (!patched(EXPORT_WAITS_OUT_PAUSE_PATCH)) return fn();
+  const started = Date.now();
+  for (;;) {
+    try {
+      return await fn();
+    } catch (err) {
+      if (!isTenantPaused(err) || Date.now() - started >= PAUSE_LIMIT_MS) throw err;
+      log.info('data_export.tenant_paused.waiting', { step });
+      await sleep(PAUSE_POLL);
+    }
+  }
+}
+
 export async function dataExportWorkflow(params: DataExportWorkflowParams): Promise<void> {
   await statusActs.markProcessingActivity(params);
 
   let fileId: string;
   try {
-    fileId = await collectActs.collectAndUploadActivity(params);
+    fileId = await waitingOutPause('collect', () => collectActs.collectAndUploadActivity(params));
   } catch (err) {
     // Recorded, then re-thrown. Recording is what stops the subject seeing PROCESSING forever and
     // re-submitting; re-throwing is what makes the workflow show as failed in Temporal rather than
     // as a success that quietly produced nothing.
     log.error('data_export.failed', { export_id: params.export_id, err: String(err) });
     await statusActs.markFailedActivity({ ...params, reason: SUBJECT_SAFE_FAILURE });
-    await statusActs.notifySubjectActivity({ ...params, ready: false });
+    await waitingOutPause('notify', () =>
+      statusActs.notifySubjectActivity({ ...params, ready: false }),
+    );
     throw err;
   }
 
   await statusActs.markReadyActivity({ ...params, file_id: fileId });
   // Notified last, and only after the row says READY — a mail that arrives before the status flips
   // sends the subject to a page that tells them their finished export is still being prepared.
-  await statusActs.notifySubjectActivity({ ...params, ready: true });
+  await waitingOutPause('notify', () =>
+    statusActs.notifySubjectActivity({ ...params, ready: true }),
+  );
   log.info('data_export.ready', { export_id: params.export_id });
 }

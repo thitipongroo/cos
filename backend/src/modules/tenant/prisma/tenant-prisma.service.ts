@@ -14,6 +14,7 @@ import { PrismaClient } from '@prisma/client';
 import { createPrismaClient } from '../../../shared/prisma/create-prisma-client';
 import { appDatabaseUrl } from '../../../shared/prisma/app-database-url';
 import { assertSafeTenantId } from '../../../shared/prisma/assert-safe-tenant-id';
+import { enterTenantTx } from '../../../shared/prisma/tenant-tx';
 import { withRetry } from '@cos/database';
 import { createLogger } from '@cos/logger';
 import { clsTenantId, clsDedicatedDbUrl } from '../../../shared/context/cls-context';
@@ -65,7 +66,8 @@ export class TenantPrismaService implements OnModuleDestroy {
     const prisma = this.getClient(dedicatedDbUrl);
     return withRetry(() =>
       prisma.$transaction(async (tx) => {
-        await tx.$executeRawUnsafe(`SET LOCAL app.current_tenant_id = '${tenantId}'`);
+        // On the shared database: hold the tenant's pause lock and refuse an inactive tenant (D51).
+        await enterTenantTx(tx, tenantId, !dedicatedDbUrl);
         logger.debug({ tenantId }, 'TenantPrismaService: tenant_id set');
         return fn(tx);
       }),

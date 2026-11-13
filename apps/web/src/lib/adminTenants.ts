@@ -47,6 +47,7 @@ export interface TenantProvisioningRow {
  * (2026-11-13) ASSIGNING_DB comes after the gate, between MIGRATING_DATA and VERIFYING, with the tenant paused
  * from PAUSING_TENANT to RESUMING_TENANT; a run begun before D48 still shows ASSIGNING_DB before the gate.
  * RESTORING / RESTORED: a step after the pause failed and the tenant was put back on the shared database (D49).
+ * REPLAYING_EVENTS: the events the pause refused are being republished from the tenant's DLQ (D53).
  */
 export const PROVISIONING_STATES = [
   'CREATING_RDS',
@@ -57,6 +58,7 @@ export const PROVISIONING_STATES = [
   'ASSIGNING_DB',
   'VERIFYING',
   'RESUMING_TENANT',
+  'REPLAYING_EVENTS',
   'PROVISIONING_TOPICS',
   'COMPLETED',
   'ABORTING',

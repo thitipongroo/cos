@@ -108,6 +108,7 @@
         "ABORTED": "ยกเลิกแล้ว",
         "PAUSING_TENANT": "กำลังพักการใช้งาน tenant",
         "RESUMING_TENANT": "กำลังเปิดใช้งาน tenant อีกครั้ง",
+        "REPLAYING_EVENTS": "กำลังส่ง event ที่ค้างกลับเข้าระบบ",
         "RESTORING": "กำลังคืนสภาพ",
         "RESTORED": "ล้มเหลว — คืนสภาพแล้ว"
       },

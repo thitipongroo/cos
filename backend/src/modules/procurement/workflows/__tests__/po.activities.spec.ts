@@ -1,8 +1,9 @@
 ﻿// Unit tests — PO Workflow Activities (Phase 5)
-// getDbUrlForTenant, PrismaClient, and KafkaProducer are all mocked.
+// resolveTenantDb, PrismaClient, and KafkaProducer are all mocked.
 
 jest.mock('../../../../shared/prisma/get-db-url', () => ({
-  getDbUrlForTenant: jest.fn().mockResolvedValue('postgresql://tenant-db/testdb'),
+  // A dedicated url: the D51 pause lock (shared database only) is covered in tenant-tx.spec.ts.
+  resolveTenantDb: () => Promise.resolve({ dedicatedDbUrl: 'postgresql://tenant-db/testdb' }),
 }));
 
 jest.mock('@prisma/client', () => ({

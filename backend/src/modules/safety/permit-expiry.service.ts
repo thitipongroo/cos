@@ -32,6 +32,7 @@ import { createLogger } from '@cos/logger';
 import { EventOutboxService } from '../../shared/events/event-outbox.service';
 import { ScheduledJobLockService } from '../../shared/scheduling/scheduled-job-lock.service';
 import { createPrismaClient } from '../../shared/prisma/create-prisma-client';
+import { tenantLockName } from '../../shared/prisma/tenant-tx';
 
 const logger = createLogger('permit-expiry');
 
@@ -86,15 +87,38 @@ export class PermitExpiryService {
     //
     // `valid_until < CURRENT_DATE`, not `<=`: valid_until is a DATE and the permit is valid THROUGH
     // that day. Using `<=` would expire a permit on its last valid morning.
-    const expired = await this.prisma.$queryRaw<ExpiredPermitRow[]>`
-      UPDATE site_ops.permits
-      SET status = 'EXPIRED'
-      WHERE status = 'ACTIVE'
-        AND valid_until IS NOT NULL
-        AND valid_until < CURRENT_DATE
-      RETURNING permit_id, tenant_id, project_id, permit_type, permit_number,
-                valid_until, linked_task_id
-    `;
+    //
+    // The provisioning pause (D51, 2026-11-13). This superuser UPDATE spans tenants, so it holds the
+    // pause lock of every tenant it is about to touch, shared, in tenant_id order (one order for every
+    // sweep: no deadlock between two), and only then — in a new statement, which sees a pause committed
+    // while it waited — updates the tenants that are active and still on the shared database. A tenant
+    // being copied is skipped, and its permits expire on the next tick after it is resumed; a tenant on
+    // its dedicated database is skipped too, as its rows here are the stale copy (register Open item:
+    // nothing sweeps a dedicated database).
+    const expired = await this.prisma.$transaction(async (tx) => {
+      const tenants = await tx.$queryRaw<Array<{ tenant_id: string }>>`
+        SELECT DISTINCT tenant_id::text FROM site_ops.permits
+        WHERE status = 'ACTIVE' AND valid_until IS NOT NULL AND valid_until < CURRENT_DATE
+        ORDER BY 1
+      `;
+      for (const { tenant_id } of tenants) {
+        await tx.$executeRaw`SELECT pg_advisory_xact_lock_shared(hashtextextended(${tenantLockName(tenant_id)}, 0))`;
+      }
+      return tx.$queryRaw<ExpiredPermitRow[]>`
+        UPDATE site_ops.permits
+        SET status = 'EXPIRED'
+        WHERE status = 'ACTIVE'
+          AND valid_until IS NOT NULL
+          AND valid_until < CURRENT_DATE
+          AND tenant_id IN (
+            SELECT tenant_id FROM platform.tenants
+            WHERE is_active AND dedicated_db_url IS NULL
+              AND tenant_id = ANY(${tenants.map((t) => t.tenant_id)}::uuid[])
+          )
+        RETURNING permit_id, tenant_id, project_id, permit_type, permit_number,
+                  valid_until, linked_task_id
+      `;
+    });
 
     for (const permit of expired) {
       await this.outbox.publish({

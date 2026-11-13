@@ -16,6 +16,7 @@ import { ServiceTokenService } from '../../../../shared/auth/service-token.servi
 import type { PrismaClient } from '@prisma/client';
 import { createLogger } from '@cos/logger';
 
+import { classifyInactiveTenant } from '../../../../shared/workflows/tenant-paused';
 import { withTenantTx } from '../../../../shared/workflows/activity-helpers';
 import { createPrismaClient } from '../../../../shared/prisma/create-prisma-client';
 import { appDatabaseUrl } from '../../../../shared/prisma/app-database-url';
@@ -139,7 +140,7 @@ async function loadJobSpec(params: ExportJobParams): Promise<JobSpec> {
  * SITE_WORKER: it is the least-privileged value File Service's auth plugin accepts, and the upload
  * needs no more than that.
  */
-export async function collectAndUploadActivity(params: ExportJobParams): Promise<string> {
+async function collectAndUpload(params: ExportJobParams): Promise<string> {
   const spec = await loadJobSpec(params);
 
   const data = await withTenantTx(params.tenant_id, (tenantTx) =>
@@ -236,9 +237,7 @@ export async function markFailedActivity(
  * A Temporal activity runs outside the Nest container, so the service is built by hand through
  * createStandaloneNotifier() — the same seam the §19.8 provisioning human gate uses.
  */
-export async function notifySubjectActivity(
-  params: ExportJobParams & { ready: boolean },
-): Promise<void> {
+async function notifySubject(params: ExportJobParams & { ready: boolean }): Promise<void> {
   const rows = await withPlatformTx(
     params.tenant_id,
     (tx) =>
@@ -277,4 +276,27 @@ export async function notifySubjectActivity(
     await notifier.dispose();
   }
   logger.info({ exportId: params.export_id, ready: params.ready }, 'data export subject notified');
+}
+
+// D52 (2026-11-13): both reach the tenant's data (withTenantTx; the notification row through
+// NotificationPrismaService), which refuses an inactive tenant (D50, D51). A tenant paused by enterprise
+// provisioning is not refused for good: classifyInactiveTenant turns that into TENANT_PAUSED_FAILURE, which
+// dataExportWorkflow waits out; a deactivated tenant becomes a non-retryable TENANT_INACTIVE_FAILURE.
+
+export async function collectAndUploadActivity(params: ExportJobParams): Promise<string> {
+  try {
+    return await collectAndUpload(params);
+  } catch (err) {
+    throw await classifyInactiveTenant(err, params.tenant_id);
+  }
+}
+
+export async function notifySubjectActivity(
+  params: ExportJobParams & { ready: boolean },
+): Promise<void> {
+  try {
+    await notifySubject(params);
+  } catch (err) {
+    throw await classifyInactiveTenant(err, params.tenant_id);
+  }
 }

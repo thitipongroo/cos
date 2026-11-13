@@ -1,5 +1,6 @@
 import { createPrismaClient } from '../../../shared/prisma/create-prisma-client';
 import { prismaMigrateDeploy } from './prisma-migrate-deploy';
+import { setTenantActiveDrained } from '../../../shared/prisma/tenant-tx';
 import { Client as PgClient } from 'pg';
 import { ApplicationFailure, asyncLocalStorage as activityContext } from '@temporalio/activity';
 import {
@@ -11,7 +12,7 @@ import {
   tenantHasRows,
 } from './tenant-data-copy';
 import { EventOutboxService } from '../../../shared/events/event-outbox.service';
-import { KafkaTopicProvisioner } from '@cos/kafka';
+import { KafkaTopicProvisioner, replayTenantDlq } from '@cos/kafka';
 import { createLogger } from '@cos/logger';
 import { randomUUID } from 'crypto';
 import { readMasterPassword, ensureAppUserPassword } from './tenant-db-secrets';
@@ -188,20 +189,42 @@ export async function getTenantActiveActivity(params: RdsActivityParams): Promis
 export async function setTenantActiveActivity(
   params: RdsActivityParams & { active: boolean },
 ): Promise<void> {
-  const prisma = createPrismaClient(DATABASE_URL);
+  // Under the tenant's pause lock, exclusive (D51): setting false waits for the tenant's transactions in
+  // flight on the shared database to finish, and refuses every later one — the drain before the copy.
+  const db = connectionFor(DATABASE_URL, 'tenant-active');
+  await db.connect();
   try {
-    const n = await prisma.$executeRaw`
-      UPDATE platform.tenants SET is_active = ${params.active}, updated_at = now()
-      WHERE tenant_id = ${params.tenantId}::uuid
-    `;
+    const n = await setTenantActiveDrained(db, params.tenantId, params.active);
     if (n !== 1) throw tenantNotFound(params.tenantId);
     logger.info(
       { tenantId: params.tenantId, active: params.active },
       params.active ? 'tenant.provisioning.resumed' : 'tenant.provisioning.paused',
     );
   } finally {
-    await prisma.$disconnect();
+    await endQuietly(db);
   }
+}
+
+// ── Replay what the pause refused (D53, 2026-11-13) ─────────────────────────
+//
+// During the pause every consumer refused the tenant's events (TenantInactiveError, D50) and, after its
+// retries, sent them to the tenant's DLQ. Once the tenant is active again — resumed, or put back after a
+// failure — they are republished onto their original topics. The consumer group is the run's, so a
+// retried attempt continues where the last stopped.
+export async function replayPausedEventsActivity(params: {
+  tenantId: string;
+  /** ISO time the workflow paused the tenant. */
+  since: string;
+  runId: string;
+}): Promise<number> {
+  const { replayed, skipped } = await replayTenantDlq({
+    tenantId: params.tenantId,
+    since: new Date(params.since),
+    reasonIncludes: 'TenantInactiveError',
+    groupId: `cos-dlq-replay.${params.tenantId}.${params.runId}`,
+  });
+  logger.info({ tenantId: params.tenantId, replayed, skipped }, 'tenant.provisioning.dlq_replayed');
+  return replayed;
 }
 
 // ── Activity 3: assignDedicatedDbActivity ─────────────────────────────────

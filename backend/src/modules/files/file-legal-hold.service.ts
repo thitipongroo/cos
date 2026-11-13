@@ -13,19 +13,33 @@
 // caller has to ask, and has to say why.
 
 import { Injectable, OnModuleDestroy } from '@nestjs/common';
+import type { PrismaClient } from '@prisma/client';
 import { createPrismaClient } from '../../shared/prisma/create-prisma-client';
 import { appDatabaseUrl } from '../../shared/prisma/app-database-url';
 import { assertSafeTenantId } from '../../shared/prisma/assert-safe-tenant-id';
+import { resolveTenantDb } from '../../shared/prisma/get-db-url';
+import { enterTenantTx } from '../../shared/prisma/tenant-tx';
 
 @Injectable()
 export class FileLegalHoldService implements OnModuleDestroy {
-  // Own client, as AuditInterceptor does: the hold is written as the non-superuser app role so RLS
-  // binds the writer rather than being bypassed by an owner connection.
-  private readonly prisma = createPrismaClient(appDatabaseUrl());
+  // Own clients, as AuditInterceptor does: the hold is written as the non-superuser app role so RLS
+  // binds the writer rather than being bypassed by an owner connection. One per database URL, since
+  // 2026-11-13: an ENTERPRISE tenant's files live in its dedicated database, where the shared-only client
+  // this used to hold matched no row and the hold was never placed.
+  private readonly clients = new Map<string, PrismaClient>();
 
-  /** Close the query-engine socket on shutdown (QM-18 / ADR-034 / Rule 39). */
+  private clientFor(url: string): PrismaClient {
+    let c = this.clients.get(url);
+    if (!c) {
+      c = createPrismaClient(url);
+      this.clients.set(url, c);
+    }
+    return c;
+  }
+
+  /** Close the query-engine sockets on shutdown (QM-18 / ADR-034 / Rule 39). */
   async onModuleDestroy(): Promise<void> {
-    await this.prisma.$disconnect();
+    await Promise.all([...this.clients.values()].map((c) => c.$disconnect()));
   }
 
   /**
@@ -42,10 +56,13 @@ export class FileLegalHoldService implements OnModuleDestroy {
     placedBy: string;
   }): Promise<boolean> {
     assertSafeTenantId(params.tenantId);
-    return this.prisma.$transaction(async (tx) => {
+    const { dedicatedDbUrl } = await resolveTenantDb(params.tenantId);
+    return this.clientFor(dedicatedDbUrl ?? appDatabaseUrl()).$transaction(async (tx) => {
       // RLS on files.files is tenant-scoped, and the GUC is transaction-scoped (SET LOCAL is safe
-      // under PgBouncer transaction pooling — QM-18), so it must be set inside this transaction.
-      await tx.$executeRawUnsafe(`SET LOCAL app.current_tenant_id = '${params.tenantId}'`);
+      // under PgBouncer transaction pooling — QM-18), so it must be set inside this transaction. On the
+      // shared database this also holds the tenant's pause lock (D51): a hold placed while provisioning
+      // copies the tenant would otherwise commit after the copy's snapshot and be lost.
+      await enterTenantTx(tx, params.tenantId, !dedicatedDbUrl);
       const changed = await tx.$executeRaw`
         UPDATE files.files
            SET legal_hold = true,

@@ -46,6 +46,12 @@ jest.mock('../../../notification/public/notification.standalone', () => ({
   }),
 }));
 
+// D52: both tenant-reaching activities hand their errors to classifyInactiveTenant.
+const classify = jest.fn(async (err: unknown, _tenantId: string): Promise<unknown> => err);
+jest.mock('../../../../shared/workflows/tenant-paused', () => ({
+  classifyInactiveTenant: (err: unknown, tenantId: string) => classify(err, tenantId),
+}));
+
 import {
   collectAndUploadActivity,
   disconnectExportClients,
@@ -298,5 +304,23 @@ describe('disconnectExportClients', () => {
     given();
     await expect(markProcessingActivity(JOB)).resolves.toBeUndefined();
     expect(platformSql).toHaveLength(1);
+  });
+});
+
+describe('a tenant paused by provisioning (D52)', () => {
+  it('collect and notify throw what classifyInactiveTenant makes of their error', async () => {
+    const original = new Error('tenant is not active');
+    const classified = new Error('TenantPaused');
+    classify.mockResolvedValue(classified);
+
+    given([[{ categories: ['identity'], format: 'JSON', from_date: null, to_date: null }]]);
+    withTenantTxMock.mockRejectedValueOnce(original);
+    await expect(collectAndUploadActivity(JOB)).rejects.toBe(classified);
+    expect(classify).toHaveBeenLastCalledWith(original, TENANT);
+
+    given([[{ email: 'somchai@example.com' }]]);
+    sendMock.mockRejectedValueOnce(original);
+    await expect(notifySubjectActivity({ ...JOB, ready: true })).rejects.toBe(classified);
+    expect(classify).toHaveBeenLastCalledWith(original, TENANT);
   });
 });

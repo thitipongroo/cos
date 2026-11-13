@@ -7,6 +7,7 @@ import {
   defineQuery,
   log,
   patched,
+  workflowInfo,
 } from '@temporalio/workflow';
 import type {
   createRdsActivity,
@@ -22,6 +23,7 @@ import type {
   emitProvisionedEventActivity,
   getTenantActiveActivity,
   setTenantActiveActivity,
+  replayPausedEventsActivity,
 } from './enterprise-provisioning.activities';
 
 const acts = proxyActivities<{
@@ -65,6 +67,33 @@ const restoreActs = proxyActivities<{
   startToCloseTimeout: '5m',
   retry: { initialInterval: '10s', backoffCoefficient: 2, maximumInterval: '10m' },
 });
+
+// D53 (2026-11-13): republish what the pause refused. Retries until it succeeds — the events are lost
+// otherwise — backing off to one attempt every 10 minutes; a run stuck there shows REPLAYING_EVENTS.
+const replayActs = proxyActivities<{
+  replayPausedEventsActivity: typeof replayPausedEventsActivity;
+}>({
+  startToCloseTimeout: '30m',
+  retry: { initialInterval: '10s', backoffCoefficient: 2, maximumInterval: '10m' },
+});
+export const REPLAY_PAUSED_EVENTS_PATCH = 'replay-paused-events';
+
+/** After the tenant is active again, put back the events its pause refused (D53). */
+async function replayPausedEvents(
+  tenantId: string,
+  since: string,
+  wasActive: boolean,
+  setState: (state: string) => void,
+): Promise<void> {
+  if (!patched(REPLAY_PAUSED_EVENTS_PATCH)) return;
+  // A tenant that was inactive before the run is put back inactive: every replayed event would only be
+  // refused again and land back in the DLQ.
+  if (!wasActive) return;
+  setState('REPLAYING_EVENTS');
+  await CancellationScope.nonCancellable(() =>
+    replayActs.replayPausedEventsActivity({ tenantId, since, runId: workflowInfo().runId }),
+  );
+}
 
 /**
  * D48 (2026-11-13): routing switches after the approval and the copy, with the tenant paused, instead of
@@ -219,6 +248,9 @@ async function pauseCopySwitchVerifyResume(
     setState('RESTORED');
     throw err;
   }
+  // Workflow time (deterministic); the DLQ stamps entries with wall time, and nothing is refused
+  // before the pause below commits.
+  const pausedAt = new Date().toISOString();
   try {
     log.info('enterprise-provisioning: pausing tenant for the copy', { ...tenant, wasActive });
     await acts.setTenantActiveActivity({ ...tenant, active: false });
@@ -248,6 +280,7 @@ async function pauseCopySwitchVerifyResume(
       await restoreActs.compensateAssignDedicatedDbActivity(tenant);
       await restoreActs.setTenantActiveActivity({ ...tenant, active: wasActive });
     });
+    await replayPausedEvents(db.tenantId, pausedAt, wasActive, setState);
     setState('RESTORED');
     throw err;
   }
@@ -256,4 +289,5 @@ async function pauseCopySwitchVerifyResume(
   await CancellationScope.nonCancellable(() =>
     restoreActs.setTenantActiveActivity({ ...tenant, active: wasActive }),
   );
+  await replayPausedEvents(db.tenantId, pausedAt, wasActive, setState);
 }

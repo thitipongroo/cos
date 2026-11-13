@@ -7,12 +7,14 @@
 // the refactor — they are rewritten below to assert the contract the code actually has, and the
 // previously untested onModuleDestroy path is covered.
 //
-// getDbUrlForTenant is mocked to avoid real DB connections.
+// resolveTenantDb is mocked to avoid real DB connections. It answers a DEDICATED url here, where the
+// D51 pause lock does not apply; tenant-tx.spec.ts and the integration spec cover the shared case.
 // run() validates the tenant id and issues SET LOCAL app.current_tenant_id so the notifications-schema
 // RLS policies apply (H1 fix — the path previously ran as superuser with no SET LOCAL).
 
 jest.mock('../../../shared/prisma/get-db-url', () => ({
-  getDbUrlForTenant: jest.fn().mockResolvedValue('postgresql://tenant-db/testdb'),
+  ...jest.requireActual('../../../shared/prisma/get-db-url'),
+  resolveTenantDb: jest.fn().mockResolvedValue({ dedicatedDbUrl: 'postgresql://tenant-db/testdb' }),
 }));
 
 jest.mock('@prisma/client', () => {
@@ -56,7 +58,7 @@ function adapterUrl(nth: number): string | undefined {
   return arg?.options?.connectionString ?? arg?.connectionString;
 }
 
-import { getDbUrlForTenant } from '../../../shared/prisma/get-db-url';
+import { resolveTenantDb } from '../../../shared/prisma/get-db-url';
 import { NotificationPrismaService } from '../notification-prisma.service';
 
 const TENANT_A = 'a1b2c3d4-e5f6-7890-abcd-ef1234567890';
@@ -66,7 +68,9 @@ let svc: NotificationPrismaService;
 
 beforeEach(() => {
   jest.resetAllMocks();
-  (getDbUrlForTenant as jest.Mock).mockResolvedValue('postgresql://tenant-db/testdb');
+  (resolveTenantDb as jest.Mock).mockResolvedValue({
+    dedicatedDbUrl: 'postgresql://tenant-db/testdb',
+  });
   _mocks.$transaction.mockImplementation(async (fn: (tx: typeof _mocks.mockTx) => unknown) =>
     fn(_mocks.mockTx),
   );
@@ -80,10 +84,10 @@ beforeEach(() => {
 });
 
 describe('run', () => {
-  it('resolves DB URL via getDbUrlForTenant and runs fn inside a transaction', async () => {
+  it('resolves the tenant database and runs fn inside a transaction', async () => {
     const fn = jest.fn().mockResolvedValue('result');
     const result = await svc.run(TENANT_A, fn);
-    expect(getDbUrlForTenant).toHaveBeenCalledWith(TENANT_A);
+    expect(resolveTenantDb).toHaveBeenCalledWith(TENANT_A);
     expect(adapterUrl(0)).toBe('postgresql://tenant-db/testdb');
     expect(_mocks.$transaction).toHaveBeenCalledTimes(1);
     expect(fn).toHaveBeenCalledWith(_mocks.mockTx);
@@ -107,7 +111,7 @@ describe('run', () => {
 
   it('rejects a non-UUID tenant id before opening any connection', async () => {
     await expect(svc.run('tenant-abc', jest.fn())).rejects.toThrow(UnauthorizedException);
-    expect(getDbUrlForTenant).not.toHaveBeenCalled();
+    expect(resolveTenantDb).not.toHaveBeenCalled();
     expect(PrismaClient).not.toHaveBeenCalled();
   });
 
@@ -133,9 +137,9 @@ describe('run', () => {
   });
 
   it('creates one client PER DATASOURCE URL, not per call', async () => {
-    (getDbUrlForTenant as jest.Mock)
-      .mockResolvedValueOnce('postgresql://db1')
-      .mockResolvedValueOnce('postgresql://db2');
+    (resolveTenantDb as jest.Mock)
+      .mockResolvedValueOnce({ dedicatedDbUrl: 'postgresql://db1' })
+      .mockResolvedValueOnce({ dedicatedDbUrl: 'postgresql://db2' });
 
     await svc.run(TENANT_A, jest.fn().mockResolvedValue(undefined));
     await svc.run(TENANT_B, jest.fn().mockResolvedValue(undefined));
@@ -143,14 +147,14 @@ describe('run', () => {
     expect(PrismaClient).toHaveBeenCalledTimes(2);
     expect(adapterUrl(0)).toBe('postgresql://db1');
     expect(adapterUrl(1)).toBe('postgresql://db2');
-    expect(getDbUrlForTenant).toHaveBeenNthCalledWith(1, TENANT_A);
-    expect(getDbUrlForTenant).toHaveBeenNthCalledWith(2, TENANT_B);
+    expect(resolveTenantDb).toHaveBeenNthCalledWith(1, TENANT_A);
+    expect(resolveTenantDb).toHaveBeenNthCalledWith(2, TENANT_B);
   });
 
   it('reuses one client for two tenants that share a datasource URL (the point of pooling)', async () => {
     // Shared-DB tenants (STARTER/PROFESSIONAL) all resolve to APP_DATABASE_URL. Building a client
     // each time would defeat the refactor entirely while still passing a per-URL assertion.
-    (getDbUrlForTenant as jest.Mock).mockResolvedValue('postgresql://shared');
+    (resolveTenantDb as jest.Mock).mockResolvedValue({ dedicatedDbUrl: 'postgresql://shared' });
     await svc.run(TENANT_A, jest.fn().mockResolvedValue(undefined));
     await svc.run(TENANT_B, jest.fn().mockResolvedValue(undefined));
     expect(PrismaClient).toHaveBeenCalledTimes(1);
@@ -161,9 +165,9 @@ describe('run', () => {
 // no test at all before: the refactor moved the disconnect here and the suite never followed.
 describe('onModuleDestroy', () => {
   it('disconnects every pooled client', async () => {
-    (getDbUrlForTenant as jest.Mock)
-      .mockResolvedValueOnce('postgresql://db1')
-      .mockResolvedValueOnce('postgresql://db2');
+    (resolveTenantDb as jest.Mock)
+      .mockResolvedValueOnce({ dedicatedDbUrl: 'postgresql://db1' })
+      .mockResolvedValueOnce({ dedicatedDbUrl: 'postgresql://db2' });
     await svc.run(TENANT_A, jest.fn().mockResolvedValue(undefined));
     await svc.run(TENANT_B, jest.fn().mockResolvedValue(undefined));
 
@@ -177,7 +181,7 @@ describe('onModuleDestroy', () => {
   });
 
   it('clears the pool so a later run rebuilds rather than reusing a closed client', async () => {
-    (getDbUrlForTenant as jest.Mock).mockResolvedValue('postgresql://shared');
+    (resolveTenantDb as jest.Mock).mockResolvedValue({ dedicatedDbUrl: 'postgresql://shared' });
     await svc.run(TENANT_A, jest.fn().mockResolvedValue(undefined));
     await svc.onModuleDestroy();
     await svc.run(TENANT_A, jest.fn().mockResolvedValue(undefined));

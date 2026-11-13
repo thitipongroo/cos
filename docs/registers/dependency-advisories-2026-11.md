@@ -74,6 +74,9 @@ The numbers are the ones used while the work was planned. Decisions about the wi
 | D48 | Enterprise provisioning switches routing after the approval and the copy, with the tenant paused (`is_active = false`) from the copy to the verification, instead of before the approval wait; runs begun earlier keep the old order (`patched('copy-before-switch')`).                                                                                                                                                                                                                           |
 | D49 | A failure from the pause to the verification puts `dedicated_db_url` back to NULL and `is_active` back to its value before the pause, then fails the run (RESTORED); the dedicated database and RDS instance stay for SYSTEM_ADMIN.                                                                                                                                                                                                                                                               |
 | D50 | Every path into a tenant's data without the Keycloak JWT — Kafka consumers (`runInTenantContext`), the vendor, contract-signing and data-subject guards, and `getDbUrlForTenant` (`withTenantTx`, notifications) — routes to the tenant's dedicated database and refuses an inactive or unknown tenant as the JWT path does (401, or a thrown error that the consumer retries and then sends to the DLQ).                                                                                         |
+| D51 | The provisioning pause drains the tenant by a Postgres advisory lock: every tenant transaction on the shared database holds the tenant's lock shared and checks `is_active`; the pause takes it exclusive around its UPDATE, so it waits for transactions in flight and every later one is refused.                                                                                                                                                                                               |
+| D52 | A data export, and its notice to the subject, wait out a provisioning pause (the run's state, asked of Temporal) for up to 24 h, retrying every minute; a deactivated tenant is refused at once.                                                                                                                                                                                                                                                                                                  |
+| D53 | After the resume (or the restore) the provisioning workflow republishes the tenant's DLQ entries that failed with `TenantInactiveError` since the pause, onto their original topics with the `tenant_id` header restored.                                                                                                                                                                                                                                                                         |
 
 ## The series
 
@@ -1803,22 +1806,28 @@ gate's isolated run) checks the hash was not tested either; it ran 12.18.0 with 
   that bypasses RLS; whether the RDS master user may do each was not checked. The integration spec runs on TimescaleDB
   pg16 as superuser. Found on `fix/enterprise-provisioning-db`; needs a decision on the dedicated database's engine
   (or on making those migrations conditional) and a run against a real RDS instance.
-- **Provisioning's pause does not stop requests already admitted, and refusing an inactive tenant has costs.** D48
-  pauses a tenant by setting `is_active` to false; since D50 every path into its data refuses it. Still reaching the
-  shared database after the copy's snapshot: requests admitted before the pause and still running (the copy starts at
-  once; there is no drain). How long such requests run was not measured. Also: SYSTEM_ADMIN cannot deactivate a tenant
-  while it is paused (`deactivateTenant` finds it inactive), and the resume would set it active again; the same holds
-  for a deactivation between the workflow reading `is_active` and pausing. What D50's refusal costs: a deactivated or
-  paused tenant's events go to the DLQ after their retries (three attempts within seconds, `@cos/kafka` consumer) —
-  for a paused tenant that means events from requests admitted before the pause or delivered late by the outbox, and
-  nothing replays them when it resumes, so cost transactions, risks, search entries and notifications wait for a
-  manual DLQ replay; a data export running when a pause starts fails (`withTenantTx`, about 90 s of retries) and so
-  does the notice to the subject (`NotificationPrismaService`), where it used to read the shared database and succeed;
-  a deactivated tenant's data subjects cannot verify a request and its data export is refused (PDPA may require
-  serving them after deactivation — product-owner decision 2026-11-13 to refuse); procurement RFQ/PO workflow
-  activities of a paused tenant fail and retry under their own policies, and fail their workflow if the pause outlasts
-  them. Found on `fix/provisioning-copy-before-switch` and `fix/non-jwt-tenant-routing`; closing these needs a drain
-  after the pause, a DLQ replay for the tenant after the resume, and data exports that wait out a pause.
+- **What the provisioning pause and refusing an inactive tenant still cost.** D48 pauses a tenant by setting
+  `is_active` to false; D50 refuses an inactive tenant on every path; D51–D53 drain, wait and replay around the pause.
+  Left: SYSTEM_ADMIN cannot deactivate a tenant while it is paused (`deactivateTenant` finds it inactive), and the
+  resume would set it active again — the same for a deactivation between the workflow reading `is_active` and pausing.
+  A deactivated tenant's events go to its DLQ and stay there (only a pause's window is replayed); its data subjects
+  cannot verify a request and its data export is refused (PDPA may require serving them after deactivation —
+  product-owner decision 2026-11-13 to refuse). Procurement RFQ/PO workflow activities of a paused tenant fail and
+  retry under their own policies, and fail their workflow if the pause outlasts them. The notification escalation
+  sweep (`notification.repository.ts`, superuser, cross-tenant) marks `escalated_at` without the pause lock, so a
+  marker set during a copy is lost and the notice can be escalated again from the dedicated database. Nothing sweeps a
+  dedicated database for permit expiry or escalation at all. A DLQ replay has no timeout of its own: a partition whose
+  remaining entries are never delivered (retention, or an overlapping earlier attempt in the same group) holds it
+  until the 30-minute activity limit, and the run shows REPLAYING_EVENTS meanwhile. Each tenant transaction on the
+  shared database now makes two more round trips (the lock, the read); `resolveTenantDb` still opens and closes a
+  client per call. While the pause waits for a long tenant transaction, new ones queue behind it and fail at Prisma's
+  5 s interactive-transaction limit. A replay re-delivers to every consumer group of the topic; groups that already
+  handled an event skip it only within `@cos/kafka`'s 24 h idempotency window, so a pause longer than that could see
+  an event handled twice; a replayed message has no key, so its partition is not the original's. The export's check
+  asks Temporal through `getClient()`, which the SDK marks experimental over a NativeConnection. A run begun before
+  D48 also passes through MIGRATING_DATA, ASSIGNING_DB and VERIFYING without a pause; a tenant deactivated during such
+  a run would make an export wait up to 24 h for nothing. Found on `fix/provisioning-copy-before-switch`,
+  `fix/non-jwt-tenant-routing` and `fix/provisioning-pause-gaps`.
 - **Closed — the unused `@confluentinc/schemaregistry` removed from backend (D27).** On `chore/remove-schemaregistry`:
   the dependency line goes from `backend/package.json`; backend's production closure loses 89 packages and gains
   none (the lockfile loses 68; the rest are still used elsewhere), and no other importer changes. The Azure SDK
@@ -2218,6 +2227,44 @@ export` for iOS and Android and `expo export:embed` (what the Gradle and Xcode b
     Negative controls in scratch copies: the old apps/mobile lockfile with the new root, and the old one in the root's
     place with the new apps/mobile, each fail with exit 1 (84 unresolved high/critical). CI and `verify-before-push.sh`
     already call the script. The conformance suite passes (61 suites, 2,343 tests).
+- **Closed — the provisioning pause lost what was written or sent while it ran.** Fixed on
+  `fix/provisioning-pause-gaps` (D51, D52, D53).
+  - Drain (D51). Nothing bounds how long a handler runs — Fastify sets no timeout (`main.ts:39`), nothing in
+    `infrastructure/` does, and Node's `requestTimeout` bounds receiving a request, not running it — so waiting "long
+    enough" had nothing to wait for. `enterTenantTx` (`shared/prisma/tenant-tx.ts`), used by
+    `TenantPrismaService.run`, `withTenantTx` and `NotificationPrismaService.run`, takes the tenant's advisory lock
+    shared and then, in a statement of its own, reads `is_active` on the shared database (skipped on a dedicated one,
+    whose `platform.tenants` is empty); `setTenantActiveActivity` takes it exclusive in the transaction that sets
+    `is_active` (`setTenantActiveDrained`, plain `pg`, so it is not cut off by Prisma's 5 s limit). The same read
+    refuses a tenant already switched to its dedicated database (`TenantMovedError`, retryable; 503 through the global
+    filter): a request routed before a pause can outlive the pause, the copy, the switch and the resume. A tenant
+    found inactive mid-request answers 401. Two writers outside those paths take the lock too:
+    `file-legal-hold.service.ts` (which, besides, wrote only to the shared database, so an ENTERPRISE tenant's hold
+    was never placed; it now resolves the tenant's database) and the hourly permit-expiry sweep (each affected
+    tenant's lock, in tenant order, then only tenants active and still on the shared database). The protocol needs
+    READ COMMITTED, which every caller uses (header of `tenant-tx.ts`). On real Postgres, as `app_user`: a transaction
+    open when the pause starts holds it until it commits and its row is kept; one started after it, or queued behind
+    it, is refused; another tenant and a dedicated-database transaction are unaffected. With the lock left out of
+    either side the first of those fails; without the moved check, a transaction for a tenant already switched writes
+    to the shared database. The legal-hold and permit specs fail against the old services.
+  - Export (D52). A tenant paused and one deactivated look the same in `platform.tenants`; the provisioning run tells
+    them apart. `classifyInactiveTenant` (`shared/workflows/tenant-paused.ts`) turns `TenantInactiveError` into a
+    non-retryable `TenantPaused` failure when the run's `workflowState` is between PAUSING_TENANT and RESTORING, a
+    non-retryable `TenantInactive` otherwise, and leaves it as it was if the state cannot be read.
+    `collectAndUploadActivity` and `notifySubjectActivity` go through it; `dataExportWorkflow` (behind
+    `patched('export-waits-out-pause')`) retries on `TenantPaused` every minute for up to 24 h — the copy's own bound,
+    a choice. Specs: the paused export completes after two refusals of the collect and one of the notice (the old
+    workflow fails it); a history written by the old workflow replays on the new.
+  - Replay (D53). `replayTenantDlq` (`@cos/kafka`, `dlq-replay.ts`) reads `{tenant_id}.dlq` up to the end offsets it
+    saw at the start and republishes entries whose reason contains `TenantInactiveError`, failed at or after the pause
+    and belong to the tenant, onto `dlq.original_topic` with the `tenant_id` header the consumer requires; it commits
+    under a group named for the run, so a retried attempt resumes. The provisioning workflow runs it after the resume
+    and after a restore, unless the tenant was inactive before the run (its events would only be refused again)
+    (REPLAYING_EVENTS, retried until it succeeds, behind `patched('replay-paused-events')`). On a real broker, with
+    entries written by `DlqPublisher`: two of four entries come back, with the header and the value as they were; one
+    written after the replay began is left; the same group then finds only that one. Without the header, or without
+    the reason filter, it fails.
+  - Left open: see the Open item above.
 - **Closed — paths without the Keycloak JWT ignored a tenant's dedicated database and its `is_active`.** Fixed on
   `fix/non-jwt-tenant-routing` (D50).
   - `TenantPrismaService` connects to `clsDedicatedDbUrl() ?? appDatabaseUrl()`, and only `jwt-auth.guard.ts` set the

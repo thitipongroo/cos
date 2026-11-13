@@ -32,6 +32,8 @@ const mockEmitProvisionedEvent = jest.fn().mockResolvedValue(undefined);
 // D48: the tenant is paused for the copy and resumed after the switch.
 const mockGetTenantActive = jest.fn().mockResolvedValue(true);
 const mockSetTenantActive = jest.fn().mockResolvedValue(undefined);
+// D53: what the pause refused is replayed from the tenant's DLQ once it is active again.
+const mockReplayPausedEvents = jest.fn().mockResolvedValue(0);
 
 const mockActivities = {
   createRdsActivity: mockCreateRds,
@@ -47,6 +49,7 @@ const mockActivities = {
   emitProvisionedEventActivity: mockEmitProvisionedEvent,
   getTenantActiveActivity: mockGetTenantActive,
   setTenantActiveActivity: mockSetTenantActive,
+  replayPausedEventsActivity: mockReplayPausedEvents,
 };
 
 /** The order the activities ran in, by name ("setTenantActive(false)" for the pause). */
@@ -174,10 +177,18 @@ describe('EnterpriseProvisioningWorkflow', () => {
         'assignDedicatedDb',
         'verifyRouting',
         'setTenantActive(true)',
+        'replayPausedEvents',
         'provisionKafkaTopics',
         'emitProvisionedEvent',
       ]);
       expect(await handle.query(workflowStateQuery)).toBe('COMPLETED');
+      // D53: the replay covers the pause — from the moment before it — under the run's own group.
+      const [replay] = mockReplayPausedEvents.mock.calls[0] as [
+        { tenantId: string; since: string; runId: string },
+      ];
+      expect(replay.tenantId).toBe(baseParams.tenantId);
+      expect(Number.isNaN(Date.parse(replay.since))).toBe(false);
+      expect(replay.runId).toEqual(expect.any(String));
       expect(mockMigrateData).toHaveBeenCalledWith({
         tenantId: baseParams.tenantId,
         rdsEndpoint: 'cos-tenant-acme-prod.xxx.rds.amazonaws.com',
@@ -276,6 +287,7 @@ describe('EnterpriseProvisioningWorkflow', () => {
       'migrateData',
       'compensateAssignDedicatedDb',
       'setTenantActive(true)',
+      'replayPausedEvents',
     ]);
     expect(mockAssignDedicatedDb).not.toHaveBeenCalled();
     expect(mockProvisionKafkaTopics).not.toHaveBeenCalled();
@@ -298,6 +310,7 @@ describe('EnterpriseProvisioningWorkflow', () => {
       'verifyRouting',
       'compensateAssignDedicatedDb',
       'setTenantActive(true)',
+      'replayPausedEvents',
     ]);
   });
 
@@ -317,6 +330,8 @@ describe('EnterpriseProvisioningWorkflow', () => {
       await handle.result();
     });
     expect(activeValuesSet()).toEqual([false, false]);
+    // Put back inactive, so a replay would only send the events back to the DLQ.
+    expect(mockReplayPausedEvents).not.toHaveBeenCalled();
   });
 
   it('a tenant already inactive before the run stays inactive after a restore', async () => {
@@ -325,6 +340,8 @@ describe('EnterpriseProvisioningWorkflow', () => {
     const { state } = await runToFailure('ep-test-inactive-restore');
     expect(state).toBe('RESTORED');
     expect(activeValuesSet()).toEqual([false, false]);
+    // Put back inactive, so a replay would only send the events back to the DLQ.
+    expect(mockReplayPausedEvents).not.toHaveBeenCalled();
   });
 
   it('reading is_active fails → nothing was changed, nothing is put back, RESTORED', async () => {

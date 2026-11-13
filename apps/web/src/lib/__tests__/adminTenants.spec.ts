@@ -89,6 +89,7 @@ describe('provisioningView', () => {
     ['RESTORED', 'stopped'],
     ['PAUSING_TENANT', 'working'],
     ['RESUMING_TENANT', 'working'],
+    ['REPLAYING_EVENTS', 'working'],
     ['CREATING_RDS', 'working'],
     ['PROVISIONING_TOPICS', 'working'],
   ])('%s reads as %s, under its own label key', (state, tone) => {
@@ -99,7 +100,7 @@ describe('provisioningView', () => {
   });
 
   it('knows every §34.3 state plus PROVISIONING_TOPICS', () => {
-    expect(PROVISIONING_STATES).toHaveLength(14);
+    expect(PROVISIONING_STATES).toHaveLength(15);
   });
 });
 
@@ -214,6 +215,7 @@ describe('statusView', () => {
     'ABORTING',
     'PAUSING_TENANT',
     'RESUMING_TENANT',
+    'REPLAYING_EVENTS',
     'RESTORING',
   ])('reads %s, a run in progress, as Pending', (state) => {
     expect(statusView(state, true)).toEqual({ labelKey: 'admin.status.pending', tone: 'pending' });

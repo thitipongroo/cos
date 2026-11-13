@@ -25,6 +25,19 @@ export class TenantInactiveError extends Error {
 }
 
 /**
+ * A transaction about to run on the SHARED database for a tenant that has since been switched to a
+ * dedicated one (D51 round 2, 2026-11-13): the routing it was given (at authentication, or when a consumer
+ * entered the tenant's context) is out of date. Retrying resolves the new routing — the next request's
+ * JWT strategy, a consumer's next attempt, an activity's next attempt — so this is transient by nature.
+ */
+export class TenantMovedError extends Error {
+  constructor(readonly tenantId: string) {
+    super(`tenant ${tenantId} has moved to its dedicated database; retry`);
+    this.name = 'TenantMovedError';
+  }
+}
+
+/**
  * Where a tenant's data lives: its dedicated database's app-role URL, or null for the shared one. Throws
  * TenantInactiveError for an inactive or unknown tenant (D50) — until 2026-11-13 both read as "shared",
  * so writes for a paused enterprise tenant landed in the shared database it was being moved out of.

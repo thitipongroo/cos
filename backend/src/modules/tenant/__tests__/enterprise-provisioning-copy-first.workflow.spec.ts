@@ -41,6 +41,7 @@ const activities = {
   emitProvisionedEventActivity: record('emitProvisionedEvent'),
   getTenantActiveActivity: record('getTenantActive', true),
   setTenantActiveActivity: record('setTenantActive'),
+  replayPausedEventsActivity: record('replayPausedEvents', 0),
 };
 
 const PARAMS = {
@@ -161,6 +162,7 @@ describe('EnterpriseProvisioningWorkflow — routing moved after the copy while 
       'assignDedicatedDb',
       'verifyRouting',
       'setTenantActive(true)',
+      'replayPausedEvents',
       'provisionKafkaTopics',
       'emitProvisionedEvent',
     ]);

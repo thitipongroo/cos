@@ -17,6 +17,8 @@ export { OutboxPublisher } from './outbox';
 
 // Dead letter queue
 export { DlqPublisher } from './dlq';
+export { replayTenantDlq, replayTarget } from './dlq-replay';
+export type { DlqReplayOptions, DlqReplayResult } from './dlq-replay';
 
 // Per-tenant topic model + provisioning (§7.3, §15.6/15.7, §32.4)
 export { KafkaTopicProvisioner, tenantTopicSuffixes } from './topic-provisioner';

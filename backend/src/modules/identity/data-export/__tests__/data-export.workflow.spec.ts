@@ -7,6 +7,7 @@
 //     that tells them their finished export is still being prepared
 //   - the failure text the subject receives must not be the exception string
 
+import { ApplicationFailure } from '@temporalio/activity';
 import { TestWorkflowEnvironment } from '@temporalio/testing';
 import { Worker } from '@temporalio/worker';
 import {
@@ -158,5 +159,81 @@ describe('dataExportWorkflow', () => {
     expect(collectAndUpload).toHaveBeenCalledTimes(2);
     expect(markReady).toHaveBeenCalledWith(expect.objectContaining({ file_id: 'file-9' }));
     expect(markFailed).not.toHaveBeenCalled();
+  });
+
+  // D52 (2026-11-13): a tenant paused by enterprise provisioning refuses its data until it resumes. The
+  // activities report that as TenantPaused (non-retryable); the workflow waits and tries again.
+  const paused = () =>
+    Promise.reject(
+      ApplicationFailure.create({ type: 'TenantPaused', message: 'paused', nonRetryable: true }),
+    );
+
+  it('waits out a provisioning pause, then completes', async () => {
+    collectAndUpload.mockImplementationOnce(paused).mockImplementationOnce(paused);
+    notifySubject.mockImplementationOnce(paused);
+
+    await worker.runUntil(async () => {
+      await testEnv.client.workflow.execute(dataExportWorkflow, {
+        taskQueue: 'test-data-export',
+        workflowId: 'export-paused',
+        args: [PARAMS],
+      });
+    });
+
+    expect(order).toEqual([
+      'processing',
+      'collect',
+      'collect',
+      'collect',
+      'ready',
+      'notify',
+      'notify',
+    ]);
+    expect(markFailed).not.toHaveBeenCalled();
+  });
+
+  it('does not wait for a deactivated tenant: one attempt, FAILED', async () => {
+    collectAndUpload.mockImplementation(() =>
+      Promise.reject(ApplicationFailure.nonRetryable('inactive', 'TenantInactive')),
+    );
+
+    await worker.runUntil(async () => {
+      await expect(
+        testEnv.client.workflow.execute(dataExportWorkflow, {
+          taskQueue: 'test-data-export',
+          workflowId: 'export-deactivated',
+          args: [PARAMS],
+        }),
+      ).rejects.toThrow();
+    });
+
+    expect(order).toEqual(['processing', 'collect', 'failed', 'notify']);
+  });
+
+  it('replays a history written before D52 on the current code', async () => {
+    // This test runs its own worker on the frozen code; shut the per-test one down cleanly.
+    await worker.runUntil(async () => undefined);
+    const old = await Worker.create({
+      connection: testEnv.nativeConnection,
+      taskQueue: 'test-data-export-old',
+      workflowsPath: require.resolve('./fixtures/data-export-pre-pause-wait.workflow'),
+      activities,
+    });
+    const handle = await old.runUntil(async () => {
+      const h = await testEnv.client.workflow.start('dataExportWorkflow', {
+        taskQueue: 'test-data-export-old',
+        workflowId: 'export-old-history',
+        args: [PARAMS],
+      });
+      await h.result();
+      return h;
+    });
+    await expect(
+      Worker.runReplayHistory(
+        { workflowsPath: require.resolve('../workflows/data-export.workflow') },
+        await handle.fetchHistory(),
+        'export-old-history',
+      ),
+    ).resolves.toBeUndefined();
   });
 });

@@ -2,7 +2,16 @@
 // Catches all exceptions; formats to {error: {code, message, messageKey, details, traceId, timestamp}}.
 // Never exposes stack traces or internal paths in API error responses (QM-10).
 
-import { ExceptionFilter, Catch, ArgumentsHost, HttpException, HttpStatus } from '@nestjs/common';
+import {
+  ExceptionFilter,
+  Catch,
+  ArgumentsHost,
+  HttpException,
+  HttpStatus,
+  ServiceUnavailableException,
+  UnauthorizedException,
+} from '@nestjs/common';
+import { TenantInactiveError, TenantMovedError } from '../prisma/get-db-url';
 import { getTraceId } from '@cos/tracing';
 import { createLogger } from '@cos/logger';
 
@@ -84,7 +93,17 @@ function isQm10Body(body: unknown): body is Qm10Body {
 
 @Catch()
 export class GlobalExceptionFilter implements ExceptionFilter {
-  catch(exception: unknown, host: ArgumentsHost): void {
+  catch(thrown: unknown, host: ArgumentsHost): void {
+    // A tenant found inactive after the request was admitted — paused for provisioning mid-request (D51)
+    // — answers as the JWT path answers an inactive tenant, not as a 500.
+    // A tenant moved to its dedicated database while the request ran answers 503: the next attempt is
+    // routed to the new database.
+    const exception =
+      thrown instanceof TenantInactiveError
+        ? new UnauthorizedException('Tenant or user not found or inactive')
+        : thrown instanceof TenantMovedError
+          ? new ServiceUnavailableException('Tenant database moved; retry the request')
+          : thrown;
     const ctx = host.switchToHttp();
     const response = ctx.getResponse<ResponseLike>();
     const request = ctx.getRequest<HttpRequest>();

@@ -15,7 +15,9 @@ import { Injectable, OnModuleDestroy } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
 import { createPrismaClient } from '../../shared/prisma/create-prisma-client';
 import { assertSafeTenantId } from '../../shared/prisma/assert-safe-tenant-id';
-import { getDbUrlForTenant } from '../../shared/prisma/get-db-url';
+import { resolveTenantDb } from '../../shared/prisma/get-db-url';
+import { appDatabaseUrl } from '../../shared/prisma/app-database-url';
+import { enterTenantTx } from '../../shared/prisma/tenant-tx';
 
 @Injectable()
 export class NotificationPrismaService implements OnModuleDestroy {
@@ -41,15 +43,14 @@ export class NotificationPrismaService implements OnModuleDestroy {
   ): Promise<T> {
     // Validate before it is interpolated into SET LOCAL below (QM-4 — RLS now depends on this).
     assertSafeTenantId(tenantId);
-    const dbUrl = await getDbUrlForTenant(tenantId);
-    const prisma = this.getClient(dbUrl);
+    const { dedicatedDbUrl } = await resolveTenantDb(tenantId);
+    const prisma = this.getClient(dedicatedDbUrl ?? appDatabaseUrl());
     return prisma.$transaction(async (tx) => {
       // SET LOCAL is transaction-scoped (reverts on COMMIT/ROLLBACK) — safe under PgBouncer
       // transaction mode (QM-18), and required now that the client outlives the call. The
-      // notifications-schema RLS policies read this GUC.
-      await (tx as PrismaClient).$executeRawUnsafe(
-        `SET LOCAL app.current_tenant_id = '${tenantId}'`,
-      );
+      // notifications-schema RLS policies read this GUC. On the shared database it also holds the
+      // tenant's pause lock and refuses an inactive tenant (D51).
+      await enterTenantTx(tx as PrismaClient, tenantId, !dedicatedDbUrl);
       return fn(tx);
     });
   }

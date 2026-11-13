@@ -15,9 +15,30 @@
 
 import { PermitExpiryService, PERMIT_EXPIRY_JOB } from '../permit-expiry.service';
 
+// mockQueryRaw is the UPDATE … RETURNING. Since D51 (2026-11-13) the sweep runs in a transaction: it
+// first lists the tenants it will touch (mockTenants) and takes each one's pause lock (mockLock).
 const mockQueryRaw = jest.fn();
+const mockTenants = jest.fn();
+const mockLock = jest.fn().mockResolvedValue(1);
+let calls: string[] = [];
 jest.mock('../../../shared/prisma/create-prisma-client', () => ({
-  createPrismaClient: () => ({ $queryRaw: (...a: unknown[]) => mockQueryRaw(...a) }),
+  createPrismaClient: () => ({
+    $transaction: (fn: (tx: unknown) => unknown) =>
+      fn({
+        $queryRaw: (q: string[], ...v: unknown[]) => {
+          if (q.join('?').includes('SELECT DISTINCT tenant_id')) {
+            calls.push('tenants');
+            return mockTenants(q, ...v);
+          }
+          calls.push('update');
+          return mockQueryRaw(q, ...v);
+        },
+        $executeRaw: (q: string[], ...v: unknown[]) => {
+          calls.push(`lock:${String(v[0])}`);
+          return mockLock(q, ...v);
+        },
+      }),
+  }),
 }));
 
 describe('PermitExpiryService', () => {
@@ -40,6 +61,8 @@ describe('PermitExpiryService', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    calls = [];
+    mockTenants.mockResolvedValue([{ tenant_id: 't-1' }]);
     svc = new PermitExpiryService(outbox as never, locks as never);
   });
 
@@ -124,5 +147,32 @@ describe('PermitExpiryService', () => {
       expect.any(Number),
       expect.any(Function),
     );
+  });
+
+  // D51 (2026-11-13): the sweep must not write to a tenant enterprise provisioning is copying.
+  it("holds every affected tenant's pause lock, in order, before the UPDATE", async () => {
+    mockTenants.mockResolvedValue([{ tenant_id: 'a' }, { tenant_id: 'b' }]);
+    mockQueryRaw.mockResolvedValue([]);
+    await svc.sweep();
+    expect(calls).toEqual([
+      'tenants',
+      'lock:cos.tenant-pause:a',
+      'lock:cos.tenant-pause:b',
+      'update',
+    ]);
+    const lockSql = (mockLock.mock.calls[0]![0] as string[]).join('?');
+    expect(lockSql).toContain('pg_advisory_xact_lock_shared');
+    const tenantSql = (mockTenants.mock.calls[0]![0] as string[]).join('?');
+    expect(tenantSql).toContain('ORDER BY');
+  });
+
+  it('updates only tenants that are active and still on the shared database', async () => {
+    mockQueryRaw.mockResolvedValue([]);
+    await svc.sweep();
+    const sql = (mockQueryRaw.mock.calls[0]![0] as string[]).join('?');
+    expect(sql).toContain('FROM platform.tenants');
+    expect(sql).toContain('is_active');
+    expect(sql).toContain('dedicated_db_url IS NULL');
+    expect(mockQueryRaw.mock.calls[0]![1]).toEqual(['t-1']);
   });
 });

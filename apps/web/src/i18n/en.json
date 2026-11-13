@@ -108,6 +108,7 @@
         "ABORTED": "Aborted",
         "PAUSING_TENANT": "Pausing tenant",
         "RESUMING_TENANT": "Resuming tenant",
+        "REPLAYING_EVENTS": "Replaying events",
         "RESTORING": "Restoring",
         "RESTORED": "Failed — restored"
       },

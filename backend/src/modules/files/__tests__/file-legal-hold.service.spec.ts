@@ -15,12 +15,36 @@ const mockExecuteRaw = jest.fn();
 const mockExecuteRawUnsafe = jest.fn();
 const mockDisconnect = jest.fn().mockResolvedValue(undefined);
 
+// Since 2026-11-13 the service resolves the tenant's database (an ENTERPRISE tenant's files are in its
+// dedicated one) and enters the transaction through enterTenantTx (the D51 pause lock on the shared
+// database). Here enterTenantTx keeps only its SET LOCAL, as before, and records its arguments.
+const resolveTenantDb = jest.fn();
+jest.mock('../../../shared/prisma/get-db-url', () => ({
+  resolveTenantDb: (id: string) => resolveTenantDb(id),
+}));
+const enterTenantTx = jest.fn(
+  async (
+    tx: { $executeRawUnsafe: (q: string) => Promise<unknown> },
+    tenantId: string,
+    _s: boolean,
+  ) => {
+    await tx.$executeRawUnsafe(`SET LOCAL app.current_tenant_id = '${tenantId}'`);
+  },
+);
+jest.mock('../../../shared/prisma/tenant-tx', () => ({
+  enterTenantTx: (...a: Parameters<typeof enterTenantTx>) => enterTenantTx(...a),
+}));
+const clientUrls: string[] = [];
+
 jest.mock('../../../shared/prisma/create-prisma-client', () => ({
-  createPrismaClient: () => ({
-    $transaction: (fn: (tx: unknown) => unknown) =>
-      fn({ $executeRaw: mockExecuteRaw, $executeRawUnsafe: mockExecuteRawUnsafe }),
-    $disconnect: mockDisconnect,
-  }),
+  createPrismaClient: (url: string) => (
+    clientUrls.push(url),
+    {
+      $transaction: (fn: (tx: unknown) => unknown) =>
+        fn({ $executeRaw: mockExecuteRaw, $executeRawUnsafe: mockExecuteRawUnsafe }),
+      $disconnect: mockDisconnect,
+    }
+  ),
 }));
 
 import { FileLegalHoldService } from '../file-legal-hold.service';
@@ -34,7 +58,24 @@ describe('FileLegalHoldService', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    clientUrls.length = 0;
+    resolveTenantDb.mockResolvedValue({ dedicatedDbUrl: null });
     service = new FileLegalHoldService();
+  });
+
+  it("writes an ENTERPRISE tenant's hold to its dedicated database, without the shared-only pause lock", async () => {
+    resolveTenantDb.mockResolvedValue({ dedicatedDbUrl: 'postgresql://app_user@tenant-db/cos' });
+    mockExecuteRaw.mockResolvedValue(1);
+    await service.place({ tenantId: TENANT, fileId: FILE, reason: 'r', placedBy: ACTOR });
+    expect(clientUrls).toEqual(['postgresql://app_user@tenant-db/cos']);
+    expect(enterTenantTx).toHaveBeenCalledWith(expect.anything(), TENANT, false);
+  });
+
+  it('on the shared database enters through the pause lock (D51)', async () => {
+    mockExecuteRaw.mockResolvedValue(1);
+    await service.place({ tenantId: TENANT, fileId: FILE, reason: 'r', placedBy: ACTOR });
+    expect(clientUrls).toEqual(['postgresql://app_user@localhost/db']);
+    expect(enterTenantTx).toHaveBeenCalledWith(expect.anything(), TENANT, true);
   });
 
   it('sets the tenant GUC in the same transaction as the UPDATE', async () => {
@@ -75,6 +116,9 @@ describe('FileLegalHoldService', () => {
   });
 
   it('closes its client on shutdown (Rule 39)', async () => {
+    // Clients are opened per database on first use (since 2026-11-13), so open one first.
+    mockExecuteRaw.mockResolvedValue(1);
+    await service.place({ tenantId: TENANT, fileId: FILE, reason: 'r', placedBy: ACTOR });
     await service.onModuleDestroy();
     expect(mockDisconnect).toHaveBeenCalledTimes(1);
   });

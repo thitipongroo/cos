@@ -20,7 +20,9 @@ import type { Logger } from '@cos/logger';
 
 import { createPrismaClient } from '../prisma/create-prisma-client';
 import { assertSafeTenantId } from '../prisma/assert-safe-tenant-id';
-import { getDbUrlForTenant } from '../prisma/get-db-url';
+import { resolveTenantDb } from '../prisma/get-db-url';
+import { appDatabaseUrl } from '../prisma/app-database-url';
+import { enterTenantTx } from '../prisma/tenant-tx';
 import { EventOutboxService } from '../events/event-outbox.service';
 
 // Clients pooled per datasource URL. Building a PrismaClient per activity (and disconnecting it in a
@@ -51,10 +53,11 @@ export async function withTenantTx<T>(
   // Validate before interpolation into SET LOCAL — same guard as TenantPrismaService (QM-4; the file
   // header warns a divergence between the tenant-transaction helpers is a tenant-isolation bug).
   assertSafeTenantId(tenantId);
-  const dbUrl = await getDbUrlForTenant(tenantId);
-  const prisma = clientFor(dbUrl);
+  const { dedicatedDbUrl } = await resolveTenantDb(tenantId);
+  const prisma = clientFor(dedicatedDbUrl ?? appDatabaseUrl());
   return prisma.$transaction(async (tx) => {
-    await (tx as PrismaClient).$executeRawUnsafe(`SET LOCAL app.current_tenant_id = '${tenantId}'`);
+    // On the shared database: hold the tenant's pause lock and refuse an inactive tenant (D51).
+    await enterTenantTx(tx as PrismaClient, tenantId, !dedicatedDbUrl);
     return fn(tx as PrismaClient);
   });
 }

@@ -2,6 +2,18 @@
 // run(), onModuleDestroy. The service is a singleton that reads tenant context from CLS (nestjs-cls),
 // so tests establish context via the real ClsService (ClsServiceManager.getClsService().run()).
 
+// enterTenantTx's lock and is_active check are covered in tenant-tx.spec.ts and on real Postgres; here it
+// keeps only its SET LOCAL, so these tests go on asserting the exact statement, and records its
+// onSharedDatabase argument (D51).
+const enterTenantTx = jest.fn(
+  async (tx: { $executeRawUnsafe: (q: string) => Promise<unknown> }, tenantId: string) => {
+    await tx.$executeRawUnsafe(`SET LOCAL app.current_tenant_id = '${tenantId}'`);
+  },
+);
+jest.mock('../../../shared/prisma/tenant-tx', () => ({
+  enterTenantTx: (...a: Parameters<typeof enterTenantTx>) => enterTenantTx(...a),
+}));
+
 jest.mock('@prisma/client', () => ({
   PrismaClient: jest.fn().mockImplementation(() => ({
     $transaction: jest.fn(),
@@ -124,6 +136,25 @@ describe('TenantPrismaService', () => {
       );
       expect(fn).toHaveBeenCalledWith(txMock);
       expect(result).toBe('result');
+    });
+
+    // D51: the pause lock and is_active check belong to the shared database only — a dedicated one has
+    // no platform.tenants rows, and the copy never reads it.
+    it.each([
+      ['the shared database', {}, true],
+      ['a dedicated database', { dedicatedDbUrl: 'postgresql://app@tenant-db/cos' }, false],
+    ])('enters the transaction for %s with onSharedDatabase=%s', async (_l, extra, shared) => {
+      process.env['APP_DATABASE_URL'] = 'postgresql://app@localhost/db';
+      (PrismaClient as jest.Mock).mockImplementationOnce(() => ({
+        $transaction: jest.fn((cb: (tx: unknown) => Promise<unknown>) =>
+          cb({ $executeRawUnsafe: jest.fn() }),
+        ),
+        $disconnect: jest.fn().mockResolvedValue(undefined),
+      }));
+      enterTenantTx.mockClear();
+      const svc = new TenantPrismaService();
+      await runInCls({ tenantId: VALID_UUID, ...extra }, () => svc.run(noop));
+      expect(enterTenantTx).toHaveBeenCalledWith(expect.anything(), VALID_UUID, shared);
     });
   });
 
