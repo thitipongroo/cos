@@ -188,7 +188,7 @@ describe('collectLocation', () => {
 describe('collectOperational — the category that spans both databases', () => {
   it('reads audit_logs from PLATFORM and files/payments from the TENANT', async () => {
     // The whole reason ExportDb has two fields. For an ENTERPRISE tenant these are different servers:
-    // migrateDataActivity dumps ten domain schemas into the dedicated instance and deliberately not
+    // migrateDataActivity copies the domain schemas (TENANT_DATA_SCHEMAS) into the dedicated instance and not
     // `platform`, while `prisma migrate deploy` creates the platform tables there EMPTY. One handle
     // pointed at the tenant URL returns zero audit rows — no error, just a §30 answer that lies.
     const { db, platformCalls, tenantCalls } = makeSplitDb(

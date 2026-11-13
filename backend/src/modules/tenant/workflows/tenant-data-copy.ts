@@ -9,7 +9,7 @@
 //     is included without editing a list — and each must have a tenant_id column (the copy refuses to run
 //     otherwise, rather than skip one silently). Not information_schema: it hides tables the role holds
 //     no privilege on, which would drop them from the copy without an error;
-//   - both roles must bypass row-level security (superuser or BYPASSRLS): the ten schemas FORCE RLS with
+//   - both roles must bypass row-level security (superuser or BYPASSRLS): these schemas FORCE RLS with
 //     policies for app_user only, so any other role would read and write nothing — and both counts below
 //     would agree on zero;
 //   - the source is read in one REPEATABLE READ, READ ONLY transaction, so every table comes from the same
@@ -46,7 +46,14 @@ import { from as copyFrom, to as copyTo } from 'pg-copy-streams';
 import { Transform } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
 
-/** The schemas that move to a dedicated database. `platform` never does (get-db-url.ts). */
+/**
+ * The schemas that move to a dedicated database. `platform` never does (get-db-url.ts). `crm` and the two
+ * telemetry schemas joined on 2026-11-13 (D55): the app reads them from the dedicated database after the
+ * switch, and they had been left behind. The telemetry tables are TimescaleDB hypertables; the copy lists
+ * their parents (chunks sit in `_timescaledb_internal`), and COPY into a parent lands in chunks even with
+ * `session_replication_role = replica` (measured on TimescaleDB 2.31: 3 rows over 3 days → 3 chunks,
+ * none in the parent; the parent has no insert-blocking trigger in that version).
+ */
 export const TENANT_DATA_SCHEMAS = [
   'projects',
   'boq',
@@ -58,6 +65,9 @@ export const TENANT_DATA_SCHEMAS = [
   'equipment',
   'workforce',
   'ai',
+  'crm',
+  'equipment_telemetry',
+  'workforce_telemetry',
 ] as const;
 
 export interface TenantTable {

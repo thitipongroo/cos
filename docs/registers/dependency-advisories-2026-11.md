@@ -78,6 +78,7 @@ The numbers are the ones used while the work was planned. Decisions about the wi
 | D52 | A data export, and its notice to the subject, wait out a provisioning pause (the run's state, asked of Temporal) for up to 24 h, retrying every minute; a deactivated tenant is refused at once.                                                                                                                                                                                                                                                                                                  |
 | D53 | After the resume (or the restore) the provisioning workflow republishes the tenant's DLQ entries that failed with `TenantInactiveError` since the pause, onto their original topics with the `tenant_id` header restored.                                                                                                                                                                                                                                                                         |
 | D54 | Each tenant sweep (permit expiry, notification escalation, cashflow risk, ledger reconciliation) runs on the shared database only for tenants active and still there (writes under the D51 pause lock) and once per active tenant in its dedicated database (app-role URL, tenant transaction).                                                                                                                                                                                                   |
+| D55 | The provisioning copy also moves `crm`, `equipment_telemetry` and `workforce_telemetry` (added to `TENANT_DATA_SCHEMAS`); routing is unchanged, as the app already reads them from the dedicated database.                                                                                                                                                                                                                                                                                        |
 
 ## The series
 
@@ -1786,15 +1787,6 @@ gate's isolated run) checks the hash was not tested either; it ran 12.18.0 with 
   ready, migration included (seconds on the small stores measured; a real-size store was not tried — the `startupProbe`
   allows ten minutes). The packages the `-full` image adds over the plain one (1.93 GB against 1.33 GB) are not audited:
   CI's pip-audit covers the client requirement sets only.
-- **A dedicated database leaves three tenant schemas behind that the app reads from it.** For an ENTERPRISE tenant the
-  backend's `TenantPrismaService` routes to the dedicated database, and it is what reads and writes `crm`
-  (`crm.repository.ts`, subject requests), `equipment_telemetry` (`equipment.repository.ts`, `sync.service.ts`) and
-  `workforce_telemetry` (`workforce.repository.ts`, `sync.service.ts`, network origin). `migrateDataActivity` copies ten
-  schemas, not these, so after the cutover the tenant's existing leads, contacts and telemetry stay in the shared
-  database where the app no longer looks. `digital_twin` (ai-gateway, `DATABASE_URL`) and `credentials`
-  (credential-service, its own `DATABASE_URL`) are read from the shared database for every tenant and are not affected.
-  `data-export.collector.ts` documents the same ten-schema split. Found on `fix/enterprise-provisioning-db` (D47);
-  whether to move these three, or route them to the shared database, is a product decision.
 - **Two references from tenant tables into `platform` cannot hold in a dedicated database.**
   `procurement.rfq_invitations.vendor_identity_id` → `platform.vendor_identities` and `boq.boq_items.central_price_id` →
   `platform.central_price_catalog` are foreign keys, and `platform` never moves (`get-db-url.ts`), so both tables are
@@ -1807,6 +1799,17 @@ gate's isolated run) checks the hash was not tested either; it ran 12.18.0 with 
   that bypasses RLS; whether the RDS master user may do each was not checked. The integration spec runs on TimescaleDB
   pg16 as superuser. Found on `fix/enterprise-provisioning-db`; needs a decision on the dedicated database's engine
   (or on making those migrations conditional) and a run against a real RDS instance.
+- **Telemetry in the provisioning copy: no tenant index, and runs begun before D48.**
+  `workforce_telemetry.attendance_logs` and `.timesheets` have no index that starts with `tenant_id`
+  (`equipment_utilization` has one, its natural-key unique index), so the copy's `COPY (SELECT … WHERE tenant_id = …)`
+  and per-table counts scan every tenant's chunks on the shared database, inside the copy's long repeatable-read
+  snapshot (vacuum holds back meanwhile). Indexes on `(tenant_id, recorded_at)` and `(tenant_id, period_date)` would
+  bound that; they are a migration this branch does not add. Separately, a provisioning run begun before D48 still
+  switches routing before the approval wait and does not pause the tenant; device sync and CRM writes during that wait
+  go to the dedicated database, and since D55 the copy then finds them there and refuses (the counts differ). No such
+  run is known to exist — provisioning has not run against a real RDS (Open, above). MLOps
+  (`mlops/feast/features/site_features.py`, the Airflow DAG) reads telemetry from the shared database, so for a moved
+  tenant it reads the stale copy — true before D55 as well. Found on `fix/copy-remaining-schemas`.
 - **A moved tenant's rows stay in the shared database.** The provisioning copy (D46) copies a tenant's rows to its
   dedicated database and does not delete them from the shared one. Nothing reads them there any more — routing (D48,
   D50), the drain (D51) and the sweeps (D54) all skip a tenant with a dedicated database — but they are personal and
@@ -2233,6 +2236,21 @@ export` for iOS and Android and `expo export:embed` (what the Gradle and Xcode b
     Negative controls in scratch copies: the old apps/mobile lockfile with the new root, and the old one in the root's
     place with the new apps/mobile, each fail with exit 1 (84 unresolved high/critical). CI and `verify-before-push.sh`
     already call the script. The conformance suite passes (61 suites, 2,343 tests).
+- **Closed — a dedicated database left three tenant schemas behind that the app reads from it.** Fixed on
+  `fix/copy-remaining-schemas` (D55).
+  - After the switch the app reads `crm` (`crm.repository.ts`, `subject-request.repository.ts`), `equipment_telemetry`
+    (`equipment.repository.ts`, `sync.service.ts`) and `workforce_telemetry` (`workforce.repository.ts`,
+    `sync.service.ts`, the data export) from the dedicated database, and the copy did not move them, so a tenant's
+    leads, contacts and telemetry vanished from its view. The three schemas (six tables, each with `tenant_id`;
+    `crm.contacts` and `crm.opportunities` reference `crm.leads`) now join `TENANT_DATA_SCHEMAS`. `digital_twin` and
+    `credentials` stay out: they are read from the shared database for every tenant.
+  - The telemetry tables are TimescaleDB hypertables. Measured on TimescaleDB 2.31 before the change: COPY into a
+    parent under `session_replication_role = replica` (as the copy loads) put 3 rows over 3 days into 3 chunks and
+    none into the parent, which has no insert-blocking trigger in that version. The integration spec now seeds all six
+    tables (telemetry over three days, a crm row of another tenant) and checks the counts, that the hypertable answers
+    with all three rows in the dedicated database while `FROM ONLY` the parent holds none, and that no other tenant's
+    crm row arrives; with the old list three of its tests fail, and the conformance check that the list holds the
+    three fails too.
 - **Closed — tenant sweeps never reached a dedicated database and kept reading a moved tenant's stale rows.** Fixed on
   `fix/dedicated-db-sweeps` (D54).
   - Of eight `@Cron` jobs, four read or write tenant data through one superuser client on the shared database: permit
@@ -2397,7 +2415,8 @@ export` for iOS and Android and `expo export:embed` (what the Gradle and Xcode b
     most of them its own tooling — Prisma Studio (`@prisma/studio-core` 38 MB), `effect` 34 MB, PGlite 23 MB, the schema
     engine 21 MB, `@prisma/dev` 14 MB, react-dom, chart.js. Trivy with the job's settings still reports 0 for the image
     and the repository.
-  - D47 found three schemas the app reads from the dedicated database that the copy leaves behind (Open, above).
+  - D47 found three schemas the app reads from the dedicated database that the copy leaves behind (closed by D55,
+    above).
   - What is proven is the code path on Postgres with TimescaleDB, as superuser; not on RDS (Open, above).
 - **Closed — the `fix/mobile-audit` dependencies had not been launched.** Measured on `docs/mobile-sim-smoke` (no code
   changed). iPhone 17 simulator, Xcode 27.1, `detox build -c ios.sim.release`: native compile and Metro (2,616 modules,

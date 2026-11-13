@@ -348,6 +348,10 @@ describe('Phase 25 · platform tables never move (master:5772)', () => {
     const schemas = list.slice(0, list.indexOf('] as const')).match(/'([a-z_]+)'/g) ?? [];
     expect(schemas.length).toBeGreaterThanOrEqual(10);
     expect(schemas).not.toContain("'platform'");
+    // D55 (2026-11-13): the app reads these from the dedicated database after the switch.
+    for (const schema of ["'crm'", "'equipment_telemetry'", "'workforce_telemetry'"]) {
+      expect(schemas).toContain(schema);
+    }
     const migrate = activities.slice(
       activities.indexOf('export async function migrateDataActivity'),
     );

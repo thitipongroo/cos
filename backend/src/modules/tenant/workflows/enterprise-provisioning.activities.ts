@@ -359,7 +359,7 @@ export async function migrateDataActivity(params: RdsWithEndpointParams): Promis
     await assertBypassesRls(src, 'source');
     const tables = await listTenantTables(src);
     // Conditional, as specified (master:5738): skipped when the tenant has no existing domain data —
-    // any row of any table that moves, not only a project (39 of the 73 tables carry no project_id).
+    // any row of any table that moves, not only a project (many of the tables carry no project_id).
     const hasData = await tenantHasRows(src, params.tenantId, tables);
     if (!hasData) {
       logger.info({ tenantId: params.tenantId }, 'migrate_data.skipped.no_existing_data');

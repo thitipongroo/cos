@@ -53,8 +53,9 @@ export type Tx = Pick<PrismaClient, '$queryRaw' | '$queryRawUnsafe'>;
  * The two databases an export spans. For a shared-DB tenant both are the same client; for an
  * ENTERPRISE tenant they are different servers, and conflating them is a silent, legally wrong answer.
  *
- * `migrateDataActivity` pg_dumps exactly ten schemas into a new dedicated instance — projects, boq,
- * procurement, finance, files, notifications, site_ops, equipment, workforce, ai. `platform` is
+ * `migrateDataActivity` copies the domain schemas into a new dedicated instance — TENANT_DATA_SCHEMAS
+ * in tenant-data-copy.ts: projects, boq, procurement, finance, files, notifications, site_ops,
+ * equipment, workforce, ai, and since 2026-11-13 crm, equipment_telemetry, workforce_telemetry. `platform` is
  * deliberately absent (get-db-url.ts: "platform schema never moves to a dedicated DB"). But
  * `prisma migrate deploy` runs EVERY migration against that instance first, so `platform.users`,
  * `platform.trusted_devices` and `platform.audit_logs` exist there and are EMPTY.

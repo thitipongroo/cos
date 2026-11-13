@@ -43,6 +43,9 @@ const ids = {
   itemA: 'aaaaaaaa-0004-4000-8000-000000000001',
   projectB: 'bbbbbbbb-0001-4000-8000-000000000001',
   staleA: 'aaaaaaaa-0001-4000-8000-0000000000ff',
+  leadA: 'aaaaaaaa-0005-4000-8000-000000000001',
+  leadB: 'bbbbbbbb-0005-4000-8000-000000000001',
+  equipmentA: 'aaaaaaaa-0006-4000-8000-000000000001',
 };
 
 describe('enterprise provisioning: migrate and copy a tenant into a dedicated database', () => {
@@ -120,6 +123,37 @@ describe('enterprise provisioning: migrate and copy a tenant into a dedicated da
                                   estimated_total, currency_code, central_price_id)
        VALUES ($1, $2, $3, $4, 'Cement bag', 'bag', 10, 150, 1500, 'THB', $5)`,
       [ids.itemA, ids.catChildA, ids.versionA, TENANT_A, priceId],
+    );
+
+    // D55: crm and the two telemetry schemas (TimescaleDB hypertables). Telemetry spans three days, so
+    // three chunks on each side; a crm row of tenant B must stay behind.
+    for (const [tenant, lead] of [
+      [TENANT_A, ids.leadA],
+      [TENANT_B, ids.leadB],
+    ]) {
+      await shared.query(
+        `INSERT INTO crm.leads (lead_id, tenant_id, company) VALUES ($1, $2, 'Acme')`,
+        [lead, tenant],
+      );
+    }
+    await shared.query(
+      `INSERT INTO crm.contacts (tenant_id, lead_id, name) VALUES ($1, $2, 'Somchai')`,
+      [TENANT_A, ids.leadA],
+    );
+    await shared.query(
+      `INSERT INTO equipment_telemetry.equipment_utilization (recorded_at, equipment_id, tenant_id)
+       SELECT d, $2, $1 FROM unnest(ARRAY[timestamptz '2026-11-01 08:00Z', '2026-11-02 08:00Z', '2026-11-05 08:00Z']) d`,
+      [TENANT_A, ids.equipmentA],
+    );
+    await shared.query(
+      `INSERT INTO workforce_telemetry.attendance_logs (log_id, recorded_at, worker_id, project_id, tenant_id)
+       VALUES (gen_random_uuid(), '2026-11-01 07:00Z', $2, $3, $1)`,
+      [TENANT_A, USER, ids.projectA],
+    );
+    await shared.query(
+      `INSERT INTO workforce_telemetry.timesheets (timesheet_id, period_date, worker_id, project_id, tenant_id)
+       VALUES (gen_random_uuid(), '2026-11-01', $2, $3, $1)`,
+      [TENANT_A, USER, ids.projectA],
     );
 
     // A row of tenant A already in the target, as a partial earlier run would leave.
@@ -245,7 +279,7 @@ describe('enterprise provisioning: migrate and copy a tenant into a dedicated da
   it("copies tenant A's rows — all of them, only them", async () => {
     const { alreadyCopied, tables: copied } = await copyOnce();
     expect(alreadyCopied).toBe(false);
-    // Every table of the ten schemas was in the list, not only those the role can see in information_schema.
+    // Every table of the schemas was in the list, not only those the role can see in information_schema.
     const all = await shared.query<{ n: string }>(
       `SELECT count(*) AS n FROM information_schema.tables
         WHERE table_type = 'BASE TABLE' AND table_schema = ANY($1::text[])`,
@@ -257,7 +291,13 @@ describe('enterprise provisioning: migrate and copy a tenant into a dedicated da
     expect(count('boq.boq_versions')).toBe(1);
     expect(count('boq.boq_categories')).toBe(2);
     expect(count('boq.boq_items')).toBe(1);
-    expect(copied.reduce((n, c) => n + c.rows, 0)).toBe(5);
+    // D55.
+    expect(count('crm.leads')).toBe(1);
+    expect(count('crm.contacts')).toBe(1);
+    expect(count('equipment_telemetry.equipment_utilization')).toBe(3);
+    expect(count('workforce_telemetry.attendance_logs')).toBe(1);
+    expect(count('workforce_telemetry.timesheets')).toBe(1);
+    expect(copied.reduce((n, c) => n + c.rows, 0)).toBe(12);
 
     const projects = await dedicated.query(
       `SELECT project_id, tenant_id FROM projects.projects ORDER BY project_id`,
@@ -268,6 +308,24 @@ describe('enterprise provisioning: migrate and copy a tenant into a dedicated da
       [ids.catChildA],
     );
     expect(child.rows).toEqual([{ parent_category_id: ids.catParentA }]);
+  });
+
+  it('telemetry lands in hypertable chunks in the dedicated database, not in the parent table (D55)', async () => {
+    const q = async (sql: string) => (await dedicated.query<{ n: number }>(sql)).rows[0]!.n;
+    expect(
+      await q(`SELECT count(*)::int AS n FROM equipment_telemetry.equipment_utilization`),
+    ).toBe(3);
+    expect(
+      await q(`SELECT count(*)::int AS n FROM ONLY equipment_telemetry.equipment_utilization`),
+    ).toBe(0);
+    expect(
+      await q(
+        `SELECT count(*)::int AS n FROM show_chunks('equipment_telemetry.equipment_utilization')`,
+      ),
+    ).toBeGreaterThanOrEqual(3);
+    expect(
+      await q(`SELECT count(*)::int AS n FROM crm.leads WHERE tenant_id <> '${TENANT_A}'`),
+    ).toBe(0);
   });
 
   it('keeps the reference into platform, which is empty in the dedicated database', async () => {
@@ -285,7 +343,7 @@ describe('enterprise provisioning: migrate and copy a tenant into a dedicated da
   it('a retry after a committed copy reports it done, writing nothing', async () => {
     const again = await copyOnce();
     expect(again.alreadyCopied).toBe(true);
-    expect(again.tables.reduce((n, c) => n + c.rows, 0)).toBe(5);
+    expect(again.tables.reduce((n, c) => n + c.rows, 0)).toBe(12);
     const n = await dedicated.query(`SELECT count(*)::int AS n FROM boq.boq_categories`);
     expect(n.rows[0].n).toBe(2);
   });
