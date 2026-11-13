@@ -35,7 +35,13 @@ import {
   type CashflowRiskLevel,
 } from '@cos/financial';
 import { createLogger } from '@cos/logger';
+import type { PrismaClient } from '@prisma/client';
 import { createPrismaClient } from '../../shared/prisma/create-prisma-client';
+import {
+  disconnectDedicatedClients,
+  forEachDedicatedTenant,
+  inDedicatedTenantTx,
+} from '../../shared/prisma/tenant-databases';
 import { EventOutboxService } from '../../shared/events/event-outbox.service';
 import { ScheduledJobLockService } from '../../shared/scheduling/scheduled-job-lock.service';
 import { buildForecast } from './finance.service';
@@ -90,16 +96,62 @@ export class CashflowRiskService implements OnModuleDestroy {
   private async sweep(): Promise<number> {
     // Only projects with a budget: without one there is no currency to denominate a shortfall in,
     // and no one has said what this project is supposed to cost.
-    const projects = await this.prisma.$queryRaw<ProjectRow[]>`
-      SELECT b.project_id::text, b.tenant_id::text, b.total_budget_currency
-        FROM finance.project_budgets b
-        JOIN platform.tenants t ON t.tenant_id = b.tenant_id AND t.is_active = true
-    `;
+    //
+    // D54 (2026-11-13): on the shared database only tenants that are active AND still there — a tenant
+    // moved to a dedicated database left its old rows here, and grading them raised alerts from data it
+    // no longer uses; then each dedicated database, where those tenants' live budgets are (no JOIN on
+    // platform there: it is empty). Each dedicated project is graded in a transaction of its own: one
+    // failed query aborts a Postgres transaction, and the tenant's other projects would all fail after
+    // it. The deadline is the job lease — past it another replica may start the same sweep.
+    const deadline = Date.now() + CASHFLOW_RISK_LEASE_SECONDS * 1000;
+    const shared = await this.gradeAll(
+      (project) => this.gradeProject(this.prisma, project),
+      await this.prisma.$queryRaw<ProjectRow[]>`
+        SELECT b.project_id::text, b.tenant_id::text, b.total_budget_currency
+          FROM finance.project_budgets b
+          JOIN platform.tenants t
+            ON t.tenant_id = b.tenant_id AND t.is_active = true AND t.dedicated_db_url IS NULL
+      `,
+    );
+    const lists = await forEachDedicatedTenant(
+      this.prisma,
+      CASHFLOW_RISK_JOB,
+      (tx) =>
+        tx.$queryRaw<ProjectRow[]>`
+          SELECT b.project_id::text, b.tenant_id::text, b.total_budget_currency
+            FROM finance.project_budgets b
+        `,
+      deadline,
+    );
+    const dedicated: Array<{ projects: number; emitted: number }> = [];
+    for (const { tenant, result } of lists) {
+      dedicated.push(
+        await this.gradeAll(
+          (project) =>
+            inDedicatedTenantTx(
+              tenant,
+              (tx) => this.gradeProject(tx, project),
+              Math.max(deadline - Date.now(), 1),
+            ),
+          result,
+        ),
+      );
+    }
 
+    const projects = shared.projects + dedicated.reduce((n, d) => n + d.projects, 0);
+    const emitted = shared.emitted + dedicated.reduce((n, d) => n + d.emitted, 0);
+    logger.info({ projects, emitted }, 'cashflow.risk.sweep');
+    return emitted;
+  }
+
+  private async gradeAll(
+    grade: (project: ProjectRow) => Promise<boolean>,
+    projects: ProjectRow[],
+  ): Promise<{ projects: number; emitted: number }> {
     let emitted = 0;
     for (const project of projects) {
       try {
-        if (await this.gradeProject(project)) emitted += 1;
+        if (await grade(project)) emitted += 1;
       } catch (err) {
         // One project's failure must not end the sweep — the rest still need grading today.
         logger.error(
@@ -108,21 +160,19 @@ export class CashflowRiskService implements OnModuleDestroy {
         );
       }
     }
-
-    logger.info({ projects: projects.length, emitted }, 'cashflow.risk.sweep');
-    return emitted;
+    return { projects: projects.length, emitted };
   }
 
-  private async gradeProject(project: ProjectRow): Promise<boolean> {
+  private async gradeProject(db: PrismaClient, project: ProjectRow): Promise<boolean> {
     const [inflows, outflows] = await Promise.all([
-      this.prisma.$queryRaw<CashflowDueRow[]>`
+      db.$queryRaw<CashflowDueRow[]>`
         SELECT due_date, amount FROM finance.billings
          WHERE tenant_id = ${project.tenant_id}::uuid
            AND project_id = ${project.project_id}::uuid
            AND status = 'ISSUED'
          ORDER BY due_date ASC
       `,
-      this.prisma.$queryRaw<CashflowDueRow[]>`
+      db.$queryRaw<CashflowDueRow[]>`
         SELECT payment_date AS due_date, amount FROM finance.payments
          WHERE tenant_id = ${project.tenant_id}::uuid
            AND project_id = ${project.project_id}::uuid
@@ -173,6 +223,7 @@ export class CashflowRiskService implements OnModuleDestroy {
   }
 
   async onModuleDestroy(): Promise<void> {
+    await disconnectDedicatedClients();
     await this.prisma.$disconnect();
   }
 }

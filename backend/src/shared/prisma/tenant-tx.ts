@@ -15,8 +15,9 @@
 //
 // So when the pause commits, everything the tenant wrote through these paths is in the shared database,
 // and nothing more will be. Writers outside them take the same lock where they write tenant tables
-// (file-legal-hold.service.ts, permit-expiry.service.ts' cross-tenant sweep); the notification
-// escalation sweep's `escalated_at` marker does not (register Open item). On a tenant's DEDICATED database neither applies: its `platform.tenants` is empty (platform never
+// (file-legal-hold.service.ts, the permit-expiry sweep, the notification escalation marker).
+//
+// On a tenant's DEDICATED database neither applies: its `platform.tenants` is empty (platform never
 // moves), and the copy reads only the shared one. Advisory locks need no privilege; `SELECT … FOR SHARE`
 // on the tenant row would need UPDATE, which app_user lacks. app_user reads its own `platform.tenants` row
 // through rls_tenants_read once `app.current_tenant_id` is set.

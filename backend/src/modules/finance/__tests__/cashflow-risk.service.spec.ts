@@ -11,6 +11,15 @@ jest.mock('@nestjs/schedule', () => ({
   Cron: () => () => undefined,
 }));
 
+// D54: the dedicated side. Default: no tenant has a dedicated database.
+const forEachDedicatedTenant = jest.fn();
+jest.mock('../../../shared/prisma/tenant-databases', () => ({
+  ...jest.requireActual('../../../shared/prisma/tenant-databases'),
+  forEachDedicatedTenant: (...a: unknown[]) => forEachDedicatedTenant(...a),
+  inDedicatedTenantTx: (...a: unknown[]) => inDedicatedTenantTx(...a),
+}));
+const inDedicatedTenantTx = jest.fn();
+
 jest.mock('../../../shared/prisma/create-prisma-client', () => ({
   createPrismaClient: () => ({ $queryRaw: mockQueryRaw, $disconnect: jest.fn() }),
 }));
@@ -109,10 +118,81 @@ describe('CashflowRiskService sweep', () => {
   // values behind, so a test that queues three and consumes one hands the leftovers to the next test.
   // That is exactly what happened — this suite passed in isolation and failed in the file.
   beforeEach(() => {
+    forEachDedicatedTenant.mockReset().mockResolvedValue([]);
+    inDedicatedTenantTx.mockReset();
     mockQueryRaw.mockReset();
     mockInfo.mockReset();
     mockWarn.mockReset();
     mockError.mockReset();
+  });
+
+  // D54 (2026-11-13).
+  it('grades only tenants still on the shared database there', async () => {
+    const { svc } = build();
+    queue([]);
+    await svc.runRiskSweep();
+    const sql = (mockQueryRaw.mock.calls[0]![0] as string[]).join('?');
+    expect(sql).toContain('dedicated_db_url IS NULL');
+  });
+
+  it("grades a dedicated tenant's projects in its own database, one transaction each, and emits", async () => {
+    const { svc, publish } = build();
+    queue([]);
+    const before = Date.now();
+    const listQuery = jest.fn().mockResolvedValue([{ ...PROJECT, tenant_id: 'td' }]);
+    forEachDedicatedTenant.mockImplementation(
+      async (_p: unknown, job: string, fn: (tx: unknown) => Promise<unknown>, deadline: number) => {
+        expect(job).toBe(CASHFLOW_RISK_JOB);
+        // One deadline for the whole sweep: its start plus the lease.
+        expect(deadline).toBeGreaterThanOrEqual(before + CASHFLOW_RISK_LEASE_SECONDS * 1000);
+        return [{ tenant: { tenantId: 'td' }, result: await fn({ $queryRaw: listQuery }) }];
+      },
+    );
+    const gradeQuery = jest
+      .fn()
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([
+        { due_date: new Date(Date.now() + 3 * 86400e3), amount: '100000.0000' },
+      ]);
+    inDedicatedTenantTx.mockImplementation(
+      async (t: { tenantId: string }, fn: (tx: unknown) => Promise<unknown>) => {
+        expect(t.tenantId).toBe('td');
+        return fn({ $queryRaw: gradeQuery });
+      },
+    );
+    await expect(svc.runRiskSweep()).resolves.toBe(1);
+    expect(inDedicatedTenantTx).toHaveBeenCalledTimes(1);
+    expect(publish).toHaveBeenCalledWith(expect.objectContaining({ tenant_id: 'td' }));
+    expect((listQuery.mock.calls[0]![0] as string[]).join('?')).not.toContain('platform.');
+  });
+
+  it("one dedicated project's failure does not fail the tenant's others", async () => {
+    const { svc } = build();
+    queue([]);
+    forEachDedicatedTenant.mockImplementation(
+      async (_p: unknown, _j: string, fn: (tx: unknown) => Promise<unknown>) => [
+        {
+          tenant: { tenantId: 'td' },
+          result: await fn({
+            $queryRaw: jest.fn().mockResolvedValue([
+              { ...PROJECT, project_id: 'a', tenant_id: 'td' },
+              { ...PROJECT, project_id: 'b', tenant_id: 'td' },
+            ]),
+          }),
+        },
+      ],
+    );
+    let calls = 0;
+    inDedicatedTenantTx.mockImplementation(
+      async (_t: unknown, fn: (tx: unknown) => Promise<unknown>) => {
+        calls += 1;
+        if (calls === 1) throw new Error('current transaction is aborted');
+        return fn({ $queryRaw: jest.fn().mockResolvedValue([]) });
+      },
+    );
+    await svc.runRiskSweep();
+    expect(calls).toBe(2);
+    expect(mockError).toHaveBeenCalledTimes(1);
   });
 
   it('emits for a project whose cumulative flow goes negative', async () => {

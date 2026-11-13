@@ -41,7 +41,13 @@ import { Injectable, OnModuleDestroy } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 import { createLogger } from '@cos/logger';
 import { createMetrics } from '@cos/tracing';
+import { Prisma, type PrismaClient } from '@prisma/client';
 import { createPrismaClient } from '../../shared/prisma/create-prisma-client';
+import {
+  disconnectDedicatedClients,
+  forEachDedicatedTenant,
+  sharedTenantFilter,
+} from '../../shared/prisma/tenant-databases';
 import { ScheduledJobLockService } from '../../shared/scheduling/scheduled-job-lock.service';
 
 const logger = createLogger('ledger-reconciliation');
@@ -130,12 +136,25 @@ export class LedgerReconciliationService implements OnModuleDestroy {
       LEDGER_RECONCILIATION_JOB,
       LEDGER_RECONCILIATION_LEASE_SECONDS,
       async () => {
-        const findings = [
-          ...(await this.findMissingPurchaseOrders()),
-          ...(await this.findMissingInvoices()),
-          ...(await this.findDuplicates()),
-          ...(await this.findOrphans()),
-        ].filter((f) => f.count > 0);
+        // D54 (2026-11-13): the shared database for tenants still on it — not the stale copy a moved
+        // tenant left there — and each dedicated database for its tenant, then one report.
+        const all = (db: PrismaClient, scope: (col: Prisma.Sql) => Prisma.Sql) =>
+          Promise.all([
+            this.findMissingPurchaseOrders(db, scope),
+            this.findMissingInvoices(db, scope),
+            this.findDuplicates(db, scope),
+            this.findOrphans(db, scope),
+          ]).then((r) => r.flat());
+        const shared = await all(this.prisma, sharedTenantFilter);
+        const dedicated = await forEachDedicatedTenant(
+          this.prisma,
+          LEDGER_RECONCILIATION_JOB,
+          (tx) => all(tx, () => Prisma.sql`TRUE`),
+          Date.now() + LEDGER_RECONCILIATION_LEASE_SECONDS * 1000,
+        );
+        const findings = mergeFindings([shared, ...dedicated.map((d) => d.result)]).filter(
+          (f) => f.count > 0,
+        );
 
         const counts = new Map<string, number>();
         for (const source of SOURCES) {
@@ -171,8 +190,11 @@ export class LedgerReconciliationService implements OnModuleDestroy {
    * (tenant_id, source_id) — source_id alone would be a cross-tenant join, and this query runs on the
    * RLS-bypassing connection where nothing else would stop it.
    */
-  private async findMissingPurchaseOrders(): Promise<DriftFinding[]> {
-    const rows = await this.prisma.$queryRaw<
+  private async findMissingPurchaseOrders(
+    db: PrismaClient,
+    scope: (col: Prisma.Sql) => Prisma.Sql,
+  ): Promise<DriftFinding[]> {
+    const rows = await db.$queryRaw<
       Array<{ tenant_id: string; po_id: string; po_number: string; total_amount: string }>
     >`
       SELECT po.tenant_id::text, po.po_id::text, po.po_number, po.total_amount::text
@@ -183,6 +205,7 @@ export class LedgerReconciliationService implements OnModuleDestroy {
               AND ct.source_type = 'PURCHASE_ORDER'
        WHERE po.created_at < now() - make_interval(mins => ${RECONCILIATION_GRACE_MINUTES})
          AND ct.transaction_id IS NULL
+         AND ${scope(Prisma.sql`po.tenant_id`)}
        ORDER BY po.created_at
     `;
     return [
@@ -208,8 +231,11 @@ export class LedgerReconciliationService implements OnModuleDestroy {
    * false positives; adding `created_at` to the table would remove both, and is the better fix if
    * this latency ever matters.
    */
-  private async findMissingInvoices(): Promise<DriftFinding[]> {
-    const rows = await this.prisma.$queryRaw<
+  private async findMissingInvoices(
+    db: PrismaClient,
+    scope: (col: Prisma.Sql) => Prisma.Sql,
+  ): Promise<DriftFinding[]> {
+    const rows = await db.$queryRaw<
       Array<{ tenant_id: string; invoice_id: string; invoice_number: string; amount: string }>
     >`
       SELECT i.tenant_id::text, i.invoice_id::text, i.invoice_number, i.amount::text
@@ -220,6 +246,7 @@ export class LedgerReconciliationService implements OnModuleDestroy {
               AND ct.source_type = 'INVOICE'
        WHERE i.invoice_date < current_date
          AND ct.transaction_id IS NULL
+         AND ${scope(Prisma.sql`i.tenant_id`)}
        ORDER BY i.invoice_date
     `;
     return [
@@ -237,14 +264,18 @@ export class LedgerReconciliationService implements OnModuleDestroy {
   }
 
   /** More than one transaction for one source — at-least-once delivery with no unique key behind it. */
-  private async findDuplicates(): Promise<DriftFinding[]> {
-    const rows = await this.prisma.$queryRaw<
+  private async findDuplicates(
+    db: PrismaClient,
+    scope: (col: Prisma.Sql) => Prisma.Sql,
+  ): Promise<DriftFinding[]> {
+    const rows = await db.$queryRaw<
       Array<{ tenant_id: string; source_type: DriftSource; source_id: string; n: bigint }>
     >`
       SELECT ct.tenant_id::text, ct.source_type::text AS source_type, ct.source_id::text,
              count(*) AS n
         FROM finance.cost_transactions ct
        WHERE ct.source_type IN ('PURCHASE_ORDER', 'INVOICE')
+         AND ${scope(Prisma.sql`ct.tenant_id`)}
        GROUP BY ct.tenant_id, ct.source_type, ct.source_id
       HAVING count(*) > 1
        ORDER BY count(*) DESC
@@ -265,8 +296,11 @@ export class LedgerReconciliationService implements OnModuleDestroy {
   }
 
   /** Transactions whose source row no longer exists. */
-  private async findOrphans(): Promise<DriftFinding[]> {
-    const rows = await this.prisma.$queryRaw<
+  private async findOrphans(
+    db: PrismaClient,
+    scope: (col: Prisma.Sql) => Prisma.Sql,
+  ): Promise<DriftFinding[]> {
+    const rows = await db.$queryRaw<
       Array<{ tenant_id: string; source_type: DriftSource; source_id: string; amount: string }>
     >`
       SELECT ct.tenant_id::text, ct.source_type::text AS source_type, ct.source_id::text,
@@ -276,8 +310,9 @@ export class LedgerReconciliationService implements OnModuleDestroy {
                ON po.tenant_id = ct.tenant_id AND po.po_id = ct.source_id
         LEFT JOIN procurement.invoices i
                ON i.tenant_id = ct.tenant_id AND i.invoice_id = ct.source_id
-       WHERE (ct.source_type = 'PURCHASE_ORDER' AND po.po_id IS NULL)
-          OR (ct.source_type = 'INVOICE' AND i.invoice_id IS NULL)
+       WHERE ((ct.source_type = 'PURCHASE_ORDER' AND po.po_id IS NULL)
+          OR (ct.source_type = 'INVOICE' AND i.invoice_id IS NULL))
+         AND ${scope(Prisma.sql`ct.tenant_id`)}
        ORDER BY ct.recorded_at
     `;
     return SOURCES.map((source) => {
@@ -297,5 +332,21 @@ export class LedgerReconciliationService implements OnModuleDestroy {
 
   async onModuleDestroy(): Promise<void> {
     await this.prisma.$disconnect();
+    await disconnectDedicatedClients();
   }
+}
+
+/** One finding per (kind, source) across databases: counts summed, samples kept up to the limit. */
+function mergeFindings(perDatabase: DriftFinding[][]): DriftFinding[] {
+  const merged = new Map<string, DriftFinding>();
+  for (const f of perDatabase.flat()) {
+    const key = `${f.kind}:${f.source}`;
+    const m = merged.get(key);
+    if (!m) merged.set(key, { ...f, sample: [...f.sample] });
+    else {
+      m.count += f.count;
+      m.sample = [...m.sample, ...f.sample].slice(0, RECONCILIATION_SAMPLE_LIMIT);
+    }
+  }
+  return [...merged.values()];
 }

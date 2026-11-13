@@ -21,6 +21,13 @@ jest.mock('@cos/tracing', () => ({
   }),
 }));
 
+// D54: the dedicated side. Default: no tenant has a dedicated database.
+const forEachDedicatedTenant = jest.fn();
+jest.mock('../../../shared/prisma/tenant-databases', () => ({
+  ...jest.requireActual('../../../shared/prisma/tenant-databases'),
+  forEachDedicatedTenant: (...a: unknown[]) => forEachDedicatedTenant(...a),
+}));
+
 jest.mock('../../../shared/prisma/create-prisma-client', () => ({
   createPrismaClient: () => ({ $queryRaw: mockQueryRaw, $disconnect: mockDisconnect }),
 }));
@@ -87,6 +94,7 @@ function build(granted = true) {
 beforeEach(() => {
   jest.clearAllMocks();
   gaugeCallbacks.length = 0;
+  forEachDedicatedTenant.mockReset().mockResolvedValue([]);
 });
 
 describe('LedgerReconciliationService', () => {
@@ -320,6 +328,41 @@ describe('LedgerReconciliationService', () => {
         value: 1,
         attrs: { kind: 'missing', source: 'PURCHASE_ORDER' },
       });
+    });
+  });
+
+  // D54 (2026-11-13): not the stale rows a moved tenant left on the shared database, and its live
+  // rows in its own database.
+  describe('dedicated databases', () => {
+    it('limits every shared-database query to tenants still there', async () => {
+      const { svc } = build();
+      queueQueries([], [], [], []);
+      await svc.reconcile();
+      for (let i = 0; i < 4; i++) {
+        expect(JSON.stringify(mockQueryRaw.mock.calls[i])).toContain('dedicated_db_url IS NULL');
+      }
+    });
+
+    it("adds each dedicated tenant's findings, run on its own database", async () => {
+      const { svc } = build();
+      queueQueries([], [], [], []);
+      const dedicatedQuery = jest
+        .fn()
+        .mockResolvedValueOnce([
+          { tenant_id: 'td', po_id: 'po-d', po_number: 'PO-D', total_amount: '10' },
+        ])
+        .mockResolvedValue([]);
+      forEachDedicatedTenant.mockImplementation(
+        async (_p: unknown, _job: string, fn: (tx: unknown) => Promise<unknown>) => [
+          { tenant: { tenantId: 'td' }, result: await fn({ $queryRaw: dedicatedQuery }) },
+        ],
+      );
+      const report = await svc.reconcile();
+      expect(report?.total).toBe(1);
+      expect(report?.findings[0]).toEqual(
+        expect.objectContaining({ kind: 'missing', source: 'PURCHASE_ORDER', count: 1 }),
+      );
+      expect(JSON.stringify(dedicatedQuery.mock.calls[0])).not.toContain('platform.');
     });
   });
 });

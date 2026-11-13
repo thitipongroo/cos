@@ -13,6 +13,12 @@
 // and the event describe the same rows, so an event can never claim an expiry the table does not
 // show.
 
+// D54: the dedicated side. Default: no tenant has a dedicated database.
+const forEachDedicatedTenant = jest.fn();
+jest.mock('../../../shared/prisma/tenant-databases', () => ({
+  forEachDedicatedTenant: (...a: unknown[]) => forEachDedicatedTenant(...a),
+}));
+
 import { PermitExpiryService, PERMIT_EXPIRY_JOB } from '../permit-expiry.service';
 
 // mockQueryRaw is the UPDATE … RETURNING. Since D51 (2026-11-13) the sweep runs in a transaction: it
@@ -63,6 +69,7 @@ describe('PermitExpiryService', () => {
     jest.clearAllMocks();
     calls = [];
     mockTenants.mockResolvedValue([{ tenant_id: 't-1' }]);
+    forEachDedicatedTenant.mockReset().mockResolvedValue([]);
     svc = new PermitExpiryService(outbox as never, locks as never);
   });
 
@@ -174,5 +181,27 @@ describe('PermitExpiryService', () => {
     expect(sql).toContain('is_active');
     expect(sql).toContain('dedicated_db_url IS NULL');
     expect(mockQueryRaw.mock.calls[0]![1]).toEqual(['t-1']);
+  });
+
+  it("expires a dedicated tenant's permits in its own database, and emits for them (D54)", async () => {
+    mockQueryRaw.mockResolvedValue([]);
+    const dedicatedUpdate = jest
+      .fn()
+      .mockResolvedValue([{ ...permit, permit_id: 'p-d', tenant_id: 'td' }]);
+    forEachDedicatedTenant.mockImplementation(
+      async (_p: unknown, job: string, fn: (tx: unknown, t: unknown) => Promise<unknown>) => {
+        expect(job).toBe(PERMIT_EXPIRY_JOB);
+        return [
+          { tenant: { tenantId: 'td' }, result: await fn({ $queryRaw: dedicatedUpdate }, {}) },
+        ];
+      },
+    );
+    expect(await svc.sweep()).toBe(1);
+    const sql = (dedicatedUpdate.mock.calls[0]![0] as string[]).join('?');
+    expect(sql).toContain('UPDATE site_ops.permits');
+    expect(sql).not.toContain('platform.');
+    expect(outbox.publish).toHaveBeenCalledWith(
+      expect.objectContaining({ tenant_id: 'td', event_type: 'safety.compliance.failed.v1' }),
+    );
   });
 });

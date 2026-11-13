@@ -33,6 +33,7 @@ import { EventOutboxService } from '../../shared/events/event-outbox.service';
 import { ScheduledJobLockService } from '../../shared/scheduling/scheduled-job-lock.service';
 import { createPrismaClient } from '../../shared/prisma/create-prisma-client';
 import { tenantLockName } from '../../shared/prisma/tenant-tx';
+import { forEachDedicatedTenant } from '../../shared/prisma/tenant-databases';
 
 const logger = createLogger('permit-expiry');
 
@@ -81,6 +82,8 @@ export class PermitExpiryService {
   }
 
   async sweep(): Promise<number> {
+    // The whole sweep's deadline for the dedicated side: the job lease (tenant-databases.ts).
+    const deadline = Date.now() + PERMIT_EXPIRY_LEASE_SECONDS * 1000;
     // One statement: transition and capture together. A permit can only leave ACTIVE once, so
     // RETURNING gives exactly the set that changed on this tick — no second read, and no way for two
     // ticks to emit the same violation twice.
@@ -93,8 +96,8 @@ export class PermitExpiryService {
     // sweep: no deadlock between two), and only then — in a new statement, which sees a pause committed
     // while it waited — updates the tenants that are active and still on the shared database. A tenant
     // being copied is skipped, and its permits expire on the next tick after it is resumed; a tenant on
-    // its dedicated database is skipped too, as its rows here are the stale copy (register Open item:
-    // nothing sweeps a dedicated database).
+    // its dedicated database is skipped too, as its rows here are the stale copy; it is swept in its
+    // own database below.
     const expired = await this.prisma.$transaction(async (tx) => {
       const tenants = await tx.$queryRaw<Array<{ tenant_id: string }>>`
         SELECT DISTINCT tenant_id::text FROM site_ops.permits
@@ -119,6 +122,24 @@ export class PermitExpiryService {
                   valid_until, linked_task_id
       `;
     });
+
+    // D54 (2026-11-13): and each dedicated database, where an ENTERPRISE tenant's live permits are.
+    const dedicated = await forEachDedicatedTenant(
+      this.prisma,
+      PERMIT_EXPIRY_JOB,
+      (tx) =>
+        tx.$queryRaw<ExpiredPermitRow[]>`
+        UPDATE site_ops.permits
+        SET status = 'EXPIRED'
+        WHERE status = 'ACTIVE'
+          AND valid_until IS NOT NULL
+          AND valid_until < CURRENT_DATE
+        RETURNING permit_id, tenant_id, project_id, permit_type, permit_number,
+                  valid_until, linked_task_id
+      `,
+      deadline,
+    );
+    expired.push(...dedicated.flatMap((d) => d.result));
 
     for (const permit of expired) {
       await this.outbox.publish({

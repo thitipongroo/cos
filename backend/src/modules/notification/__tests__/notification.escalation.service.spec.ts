@@ -72,7 +72,10 @@ describe('runEscalationSweep', () => {
       expect.stringContaining('Safety incident'),
       expect.stringContaining('escalated'),
     );
-    expect(mockRepo.markEscalated).toHaveBeenCalledWith('n1');
+    // The candidate itself: it carries the database it came from (D54).
+    expect(mockRepo.markEscalated).toHaveBeenCalledWith(
+      expect.objectContaining({ notification_id: 'n1' }),
+    );
   });
 
   it('falls back to the body when the candidate has no subject', async () => {

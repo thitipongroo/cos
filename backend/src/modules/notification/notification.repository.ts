@@ -9,6 +9,16 @@
 import { Injectable, OnModuleDestroy } from '@nestjs/common';
 import { createPrismaClient } from '../../shared/prisma/create-prisma-client';
 import { NotificationPrismaService } from './notification-prisma.service';
+import type { PrismaClient } from '@prisma/client';
+import {
+  disconnectDedicatedClients,
+  forEachDedicatedTenant,
+  inDedicatedTenantTx,
+  sharedTenantFilter,
+  type DedicatedTenant,
+} from '../../shared/prisma/tenant-databases';
+import { enterTenantTx } from '../../shared/prisma/tenant-tx';
+import { Prisma } from '@prisma/client';
 
 // ── Row types ──────────────────────────────────────────────────────────────
 
@@ -61,6 +71,8 @@ export interface EscalationCandidate {
   event_type: string;
   subject: string | null;
   body: string;
+  /** Set when the row came from the tenant's dedicated database (D54); marked there too. */
+  dedicated?: DedicatedTenant;
 }
 
 export interface DeviceTokenRow {
@@ -90,6 +102,7 @@ export class NotificationRepository implements OnModuleDestroy {
 
   /** Close the platform Prisma connection on shutdown so the query-engine socket does not leak. */
   async onModuleDestroy(): Promise<void> {
+    await disconnectDedicatedClients();
     await this.platformPrisma.$disconnect();
   }
 
@@ -471,10 +484,13 @@ export class NotificationRepository implements OnModuleDestroy {
   async findEscalationCandidates(
     eventType: string,
     olderThanSeconds: number,
+    /** Epoch ms the dedicated side must finish by (the sweep's lease; tenant-databases.ts). */
+    deadline?: number,
   ): Promise<EscalationCandidate[]> {
-    return this.platformPrisma.$transaction(
-      (tx) =>
-        tx.$queryRaw<EscalationCandidate[]>`
+    // D54 (2026-11-13): the shared database for tenants still on it — not a moved tenant's stale copy,
+    // which the copy left there — and each dedicated database for its tenant's live rows.
+    const query = (db: PrismaClient, scope: Prisma.Sql) =>
+      db.$queryRaw<EscalationCandidate[]>`
         SELECT notification_id, tenant_id, recipient_id, event_type, subject, body
         FROM notifications.notifications
         WHERE event_type   = ${eventType}
@@ -482,10 +498,21 @@ export class NotificationRepository implements OnModuleDestroy {
           AND read_at      IS NULL
           AND escalated_at IS NULL
           AND created_at   < now() - (${olderThanSeconds}::int * interval '1 second')
+          AND ${scope}
         ORDER BY created_at ASC
         LIMIT ${ESCALATION_BATCH_SIZE}
-      `,
+      `;
+    const shared = await this.platformPrisma.$transaction((tx) =>
+      query(tx as PrismaClient, sharedTenantFilter(Prisma.sql`tenant_id`)),
     );
+    const dedicated = await forEachDedicatedTenant(
+      this.platformPrisma,
+      'notification-escalation',
+      (tx, tenant) =>
+        query(tx, Prisma.sql`TRUE`).then((rows) => rows.map((r) => ({ ...r, dedicated: tenant }))),
+      deadline,
+    );
+    return [...shared, ...dedicated.flatMap((d) => d.result)];
   }
 
   /** All active tenants + their IANA timezone — the digest scheduler gates on tenant-local time. */
@@ -499,14 +526,26 @@ export class NotificationRepository implements OnModuleDestroy {
   }
 
   /** Idempotency marker — the escalation sweep escalates a notification exactly once. */
-  async markEscalated(notificationId: string): Promise<void> {
-    await this.platformPrisma.$transaction(
-      (tx) =>
-        tx.$executeRaw`
+  /**
+   * Mark a candidate escalated in the database it came from (D54). On the shared database under the
+   * tenant's pause lock (D51): a marker written while provisioning copies the tenant would be lost, and
+   * the notice escalated again from the dedicated database. enterTenantTx refuses instead; the notice
+   * may then be escalated once more from wherever the tenant lives (a duplicate, never a lost one).
+   */
+  async markEscalated(candidate: EscalationCandidate): Promise<void> {
+    const mark = (tx: PrismaClient) =>
+      tx.$executeRaw`
         UPDATE notifications.notifications SET escalated_at = now()
-        WHERE notification_id = ${notificationId}::uuid
-      `,
-    );
+        WHERE notification_id = ${candidate.notification_id}::uuid
+      `;
+    if (candidate.dedicated) {
+      await inDedicatedTenantTx(candidate.dedicated, mark);
+      return;
+    }
+    await this.platformPrisma.$transaction(async (tx) => {
+      await enterTenantTx(tx as PrismaClient, candidate.tenant_id, true);
+      await mark(tx as PrismaClient);
+    });
   }
 
   // ── user resolution (platform schema — always shared DB) ───────────────────

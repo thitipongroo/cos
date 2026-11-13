@@ -1,7 +1,9 @@
 // Notification Escalation Sweep — Phase 20 §19.3.
 // An immediate notification that stays unacknowledged (read_at IS NULL) past its timeout is escalated
 // to a higher role, exactly once (escalated_at marker). Runs every 5 minutes as a cross-tenant system
-// job on the shared DB (covers SMB/mid-market; enterprise dedicated-DB sweeps are a Stage-2 follow-up).
+// job: on the shared DB for tenants still there, and in each ENTERPRISE tenant's dedicated DB (D54,
+// 2026-11-13). A shared candidate whose tenant is paused or moved between the send and the marker is
+// not marked; its dedicated copy is then escalated again — a duplicate notice, not a lost one.
 
 import { Injectable } from '@nestjs/common';
 import { ScheduledJobLockService } from '../../shared/scheduling/scheduled-job-lock.service';
@@ -78,10 +80,14 @@ export class NotificationEscalationService {
   /** The sweep itself. Split from the @Cron entry point so the scheduling decision and the work are
    *  separately readable — and separately testable. */
   async sweep(): Promise<void> {
+    // One deadline for the whole sweep, every rule (D54): past the lease another replica may start, and
+    // an escalation sent twice is what the lease prevents.
+    const deadline = Date.now() + ESCALATION_LEASE_SECONDS * 1000;
     for (const rule of ESCALATION_RULES) {
       const candidates = await this.repo.findEscalationCandidates(
         rule.eventType,
         rule.timeoutSeconds,
+        deadline,
       );
       for (const candidate of candidates) {
         await this.escalateOne(candidate, rule);
@@ -96,7 +102,7 @@ export class NotificationEscalationService {
       `Original: ${candidate.subject ?? candidate.body}`;
     try {
       await this.svc.escalate(candidate.tenant_id, rule.escalateToRoles, subject, body);
-      await this.repo.markEscalated(candidate.notification_id);
+      await this.repo.markEscalated(candidate);
       logger.info(
         { notification_id: candidate.notification_id, event_type: rule.eventType },
         'notification.escalated',

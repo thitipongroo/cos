@@ -3,8 +3,22 @@
 
 // PrismaClient is instantiated as a class field at construction time.
 // Mock @prisma/client so the constructor doesn't require a real DATABASE_URL.
+// D54: the dedicated side of the escalation sweep, and the pause lock on the shared side.
+const forEachDedicatedTenant = jest.fn();
+const inDedicatedTenantTx = jest.fn();
+jest.mock('../../../shared/prisma/tenant-databases', () => ({
+  ...jest.requireActual('../../../shared/prisma/tenant-databases'),
+  forEachDedicatedTenant: (...a: unknown[]) => forEachDedicatedTenant(...a),
+  inDedicatedTenantTx: (...a: unknown[]) => inDedicatedTenantTx(...a),
+}));
+const enterTenantTx = jest.fn();
+jest.mock('../../../shared/prisma/tenant-tx', () => ({
+  enterTenantTx: (...a: unknown[]) => enterTenantTx(...a),
+}));
+
 jest.mock('@prisma/client', () => ({
   PrismaClient: jest.fn(),
+  Prisma: jest.requireActual('@prisma/client').Prisma,
 }));
 
 import { PrismaClient } from '@prisma/client';
@@ -530,18 +544,51 @@ describe('getUserQuietHours', () => {
 // ── escalation + digest sweeps (§19.3) ────────────────────────────────────────
 
 describe('findEscalationCandidates', () => {
-  it('returns unacknowledged candidates', async () => {
-    const rows = [{ notification_id: 'n1', tenant_id: 't1' }];
-    mockPlatformQueryRaw.mockResolvedValueOnce(rows);
-    expect(await repo.findEscalationCandidates('safety.incident.created.v1', 1800)).toEqual(rows);
+  const tenantD = { tenantId: 'td', url: 'postgresql://app_user@tenant-db/cos' };
+
+  it('returns unacknowledged candidates from the shared database and each dedicated one (D54)', async () => {
+    const shared = [{ notification_id: 'n1', tenant_id: 't1' }];
+    mockPlatformQueryRaw.mockResolvedValueOnce(shared);
+    const dedicatedQuery = jest
+      .fn()
+      .mockResolvedValue([{ notification_id: 'n2', tenant_id: 'td' }]);
+    forEachDedicatedTenant.mockImplementation(
+      async (_p: unknown, _job: string, fn: (tx: unknown, t: unknown) => Promise<unknown>) => [
+        { tenant: tenantD, result: await fn({ $queryRaw: dedicatedQuery }, tenantD) },
+      ],
+    );
+    expect(await repo.findEscalationCandidates('safety.incident.created.v1', 1800)).toEqual([
+      { notification_id: 'n1', tenant_id: 't1' },
+      { notification_id: 'n2', tenant_id: 'td', dedicated: tenantD },
+    ]);
+    // Shared side: only tenants still there — not a moved tenant's stale copy.
+    const sharedSql = JSON.stringify(mockPlatformQueryRaw.mock.calls[0]);
+    expect(sharedSql).toContain('dedicated_db_url IS NULL');
   });
 });
 
 describe('markEscalated', () => {
-  it('stamps escalated_at via the platform executeRaw', async () => {
+  const candidate = {
+    notification_id: 'n1',
+    tenant_id: 't1',
+    recipient_id: 'u',
+    event_type: 'e',
+    subject: null,
+    body: 'b',
+  };
+
+  it('on the shared database stamps escalated_at under the pause lock (D51)', async () => {
     mockPlatformExecuteRaw.mockResolvedValueOnce(1);
-    await repo.markEscalated('n1');
+    await repo.markEscalated(candidate);
+    expect(enterTenantTx).toHaveBeenCalledWith(expect.anything(), 't1', true);
     expect(mockPlatformExecuteRaw).toHaveBeenCalledTimes(1);
+  });
+
+  it("stamps a dedicated candidate in the tenant's own database (D54)", async () => {
+    const tenantD = { tenantId: 't1', url: 'postgresql://app_user@tenant-db/cos' };
+    await repo.markEscalated({ ...candidate, dedicated: tenantD });
+    expect(inDedicatedTenantTx).toHaveBeenCalledWith(tenantD, expect.any(Function));
+    expect(mockPlatformExecuteRaw).not.toHaveBeenCalled();
   });
 });
 

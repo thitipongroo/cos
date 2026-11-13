@@ -77,6 +77,7 @@ The numbers are the ones used while the work was planned. Decisions about the wi
 | D51 | The provisioning pause drains the tenant by a Postgres advisory lock: every tenant transaction on the shared database holds the tenant's lock shared and checks `is_active`; the pause takes it exclusive around its UPDATE, so it waits for transactions in flight and every later one is refused.                                                                                                                                                                                               |
 | D52 | A data export, and its notice to the subject, wait out a provisioning pause (the run's state, asked of Temporal) for up to 24 h, retrying every minute; a deactivated tenant is refused at once.                                                                                                                                                                                                                                                                                                  |
 | D53 | After the resume (or the restore) the provisioning workflow republishes the tenant's DLQ entries that failed with `TenantInactiveError` since the pause, onto their original topics with the `tenant_id` header restored.                                                                                                                                                                                                                                                                         |
+| D54 | Each tenant sweep (permit expiry, notification escalation, cashflow risk, ledger reconciliation) runs on the shared database only for tenants active and still there (writes under the D51 pause lock) and once per active tenant in its dedicated database (app-role URL, tenant transaction).                                                                                                                                                                                                   |
 
 ## The series
 
@@ -1806,6 +1807,12 @@ gate's isolated run) checks the hash was not tested either; it ran 12.18.0 with 
   that bypasses RLS; whether the RDS master user may do each was not checked. The integration spec runs on TimescaleDB
   pg16 as superuser. Found on `fix/enterprise-provisioning-db`; needs a decision on the dedicated database's engine
   (or on making those migrations conditional) and a run against a real RDS instance.
+- **A moved tenant's rows stay in the shared database.** The provisioning copy (D46) copies a tenant's rows to its
+  dedicated database and does not delete them from the shared one. Nothing reads them there any more — routing (D48,
+  D50), the drain (D51) and the sweeps (D54) all skip a tenant with a dedicated database — but they are personal and
+  commercial data kept twice, in a database the tenant no longer uses, and a data-subject erasure on the dedicated
+  database leaves the old copy. Found on `fix/dedicated-db-sweeps`; deleting them after a verified provisioning (and
+  when) is a product decision.
 - **What the provisioning pause and refusing an inactive tenant still cost.** D48 pauses a tenant by setting
   `is_active` to false; D50 refuses an inactive tenant on every path; D51–D53 drain, wait and replay around the pause.
   Left: SYSTEM_ADMIN cannot deactivate a tenant while it is paused (`deactivateTenant` finds it inactive), and the
@@ -1813,21 +1820,20 @@ gate's isolated run) checks the hash was not tested either; it ran 12.18.0 with 
   A deactivated tenant's events go to its DLQ and stay there (only a pause's window is replayed); its data subjects
   cannot verify a request and its data export is refused (PDPA may require serving them after deactivation —
   product-owner decision 2026-11-13 to refuse). Procurement RFQ/PO workflow activities of a paused tenant fail and
-  retry under their own policies, and fail their workflow if the pause outlasts them. The notification escalation
-  sweep (`notification.repository.ts`, superuser, cross-tenant) marks `escalated_at` without the pause lock, so a
-  marker set during a copy is lost and the notice can be escalated again from the dedicated database. Nothing sweeps a
-  dedicated database for permit expiry or escalation at all. A DLQ replay has no timeout of its own: a partition whose
-  remaining entries are never delivered (retention, or an overlapping earlier attempt in the same group) holds it
-  until the 30-minute activity limit, and the run shows REPLAYING_EVENTS meanwhile. Each tenant transaction on the
-  shared database now makes two more round trips (the lock, the read); `resolveTenantDb` still opens and closes a
-  client per call. While the pause waits for a long tenant transaction, new ones queue behind it and fail at Prisma's
-  5 s interactive-transaction limit. A replay re-delivers to every consumer group of the topic; groups that already
-  handled an event skip it only within `@cos/kafka`'s 24 h idempotency window, so a pause longer than that could see
-  an event handled twice; a replayed message has no key, so its partition is not the original's. The export's check
-  asks Temporal through `getClient()`, which the SDK marks experimental over a NativeConnection. A run begun before
-  D48 also passes through MIGRATING_DATA, ASSIGNING_DB and VERIFYING without a pause; a tenant deactivated during such
-  a run would make an export wait up to 24 h for nothing. Found on `fix/provisioning-copy-before-switch`,
-  `fix/non-jwt-tenant-routing` and `fix/provisioning-pause-gaps`.
+  retry under their own policies, and fail their workflow if the pause outlasts them. A DLQ replay has no timeout of
+  its own: a partition whose remaining entries are never delivered (retention, or an overlapping earlier attempt in
+  the same group) holds it until the 30-minute activity limit, and the run shows REPLAYING_EVENTS meanwhile. Each
+  tenant transaction on the shared database now makes two more round trips (the lock, the read); `resolveTenantDb`
+  still opens and closes a client per call. A shared escalation candidate whose tenant is paused or moved between the
+  send and the marker is not marked, and its dedicated copy is escalated again — a duplicate notice. While the pause
+  waits for a long tenant transaction, new ones queue behind it and fail at Prisma's 5 s interactive-transaction
+  limit. A replay re-delivers to every consumer group of the topic; groups that already handled an event skip it only
+  within `@cos/kafka`'s 24 h idempotency window, so a pause longer than that could see an event handled twice; a
+  replayed message has no key, so its partition is not the original's. The export's check asks Temporal through
+  `getClient()`, which the SDK marks experimental over a NativeConnection. A run begun before D48 also passes through
+  MIGRATING_DATA, ASSIGNING_DB and VERIFYING without a pause; a tenant deactivated during such a run would make an
+  export wait up to 24 h for nothing. Found on `fix/provisioning-copy-before-switch`, `fix/non-jwt-tenant-routing` and
+  `fix/provisioning-pause-gaps`.
 - **Closed — the unused `@confluentinc/schemaregistry` removed from backend (D27).** On `chore/remove-schemaregistry`:
   the dependency line goes from `backend/package.json`; backend's production closure loses 89 packages and gains
   none (the lockfile loses 68; the rest are still used elsewhere), and no other importer changes. The Azure SDK
@@ -2227,6 +2233,33 @@ export` for iOS and Android and `expo export:embed` (what the Gradle and Xcode b
     Negative controls in scratch copies: the old apps/mobile lockfile with the new root, and the old one in the root's
     place with the new apps/mobile, each fail with exit 1 (84 unresolved high/critical). CI and `verify-before-push.sh`
     already call the script. The conformance suite passes (61 suites, 2,343 tests).
+- **Closed — tenant sweeps never reached a dedicated database and kept reading a moved tenant's stale rows.** Fixed on
+  `fix/dedicated-db-sweeps` (D54).
+  - Of eight `@Cron` jobs, four read or write tenant data through one superuser client on the shared database: permit
+    expiry, notification escalation, cashflow risk and ledger reconciliation (the digest already routes per tenant;
+    trial lifecycle, tombstone prune and exchange rates touch `platform` only). An ENTERPRISE tenant's live rows are
+    in its dedicated database, which none of them reached, and the copy left its old rows in the shared one, which
+    escalation, cashflow and ledger kept reading — alerts and drift from data the tenant no longer uses. The
+    escalation marker was also written without the pause lock.
+  - D54: `shared/prisma/tenant-databases.ts` lists active tenants with a dedicated database, keeps one client per URL,
+    and runs a job per tenant in a transaction entered through `enterTenantTx` (no JOIN on `platform` there — it is
+    empty); a tenant whose database fails, whose URL does not decrypt, or a failed list of them, is logged and skipped
+    — the shared side (the permit sweep's committed UPDATE and its events) still finishes. One deadline spans the
+    sweep, its start plus the job lease: each tenant's transaction gets only the time left and none starts after it,
+    since past the lease another replica may run the same sweep (an escalation sent twice is what the lease prevents).
+    Cashflow grades each dedicated project in a transaction of its own, so one failed query does not fail the tenant's
+    other projects. On the shared side every sweep keeps to tenants active and still there (`sharedTenantFilter`);
+    escalation marks a shared candidate through `enterTenantTx` (the pause lock) and a dedicated one in its own
+    database.
+  - Specs: the helper (a URL that does not decrypt, a failed list, the deadline — each fails with the old handling);
+    each sweep's shared filter and dedicated side (each fails against the old service: 1 of 9 for permits, 1 of 42 for
+    the escalation repository per change — without the dedicated side, without the shared filter, without the lock — 2
+    of 20 for cashflow, 2 of 18 for the ledger). On real Postgres, two servers, all four sweeps: the permit sweep
+    expires S on the shared database and E in its own and leaves E's stale copy (the old sweep expired 1, not 2);
+    escalation finds S and E, marks each where it lives, and leaves E's stale notice; cashflow raises for S's and E's
+    live budgets, not E's stale one; the ledger counts S's orphan and E's live one, not E's two stale ones (the old
+    services fail both).
+  - Left open: the stale rows themselves (Open, above).
 - **Closed — the provisioning pause lost what was written or sent while it ran.** Fixed on
   `fix/provisioning-pause-gaps` (D51, D52, D53).
   - Drain (D51). Nothing bounds how long a handler runs — Fastify sets no timeout (`main.ts:39`), nothing in
