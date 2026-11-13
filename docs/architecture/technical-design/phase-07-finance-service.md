@@ -231,7 +231,7 @@ sequenceDiagram
     PM->>API: POST /finance/contracts/:id/sign-links
     API-->>CL: magic link
     CL->>API: POST /finance/contracts/sign/:token
-    Note over API,CL: tenant middleware excluded; token guard authorises
+    Note over API,CL: tenant middleware excluded — token guard authorises
     API->>CS: PKI/VC signature — CLIENT
     alt both signatures verify
         API->>API: status → signed, emit finance.contract.signed.v1

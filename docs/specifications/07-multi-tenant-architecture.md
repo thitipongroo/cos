@@ -630,12 +630,12 @@ At day 60 the job also notifies every SYSTEM_ADMIN, in-app and by email, that th
   under the breadcrumb) read `GET /api/v1/tenant` (`subscription_status`, `trial_ends_at`, `read_only_until`)
   and show the days left while `TRIAL`, the read-only notice while `EXPIRED`, and the deletion notice while
   `PENDING_DELETION`; nothing for `ACTIVE`. The decision is `trialBanner` in `@cos/ui-logic`, shared by both
-- **SYSTEM_ADMIN** — the Tenant List has *Start free trial* (`POST /admin/tenants/trial`) and, for a tenant that is
-  not `ACTIVE`, *Convert to paid plan* (`PATCH /admin/tenants/{id}/convert`), also in Tenant Detail. The plan cell
+- **SYSTEM_ADMIN** — the Tenant List has _Start free trial_ (`POST /admin/tenants/trial`) and, for a tenant that is
+  not `ACTIVE`, _Convert to paid plan_ (`PATCH /admin/tenants/{id}/convert`), also in Tenant Detail. The plan cell
   shows the trial state and its date. `COS-PLAN-002` names the plan limit and the active-project count. A tenant
-  with no administrator — every newly opened trial — offers *Create tenant admin*, and one whose only administrator
-  has not signed in offers *Resend admin invitation* and _Cancel admin invitation_ (§7.6 step 10, ADR-110); until then the notices below reach
-  nobody and are retried daily. The Global Audit Log filters `tenant.create_trial`, `tenant.convert`,
+  with no administrator — every newly opened trial — offers _Create tenant admin_, and one whose only administrator
+  has not signed in offers _Resend admin invitation_ and _Cancel admin invitation_ (§7.6 step 10, ADR-110); until
+  then the notices below reach nobody and are retried daily. The Global Audit Log filters `tenant.create_trial`, `tenant.convert`,
   `tenant.trial_purge`, `tenant.bootstrap_admin`, `tenant.resend_admin_invite` and `tenant.cancel_admin_invite`
 - `LITE` is offered in Create Tenant and in the System Settings tier table
 - **Write actions while read-only** — the web hides create / edit / approve actions through `useReadOnly()` (also the
@@ -650,8 +650,8 @@ At day 60 the job also notifies every SYSTEM_ADMIN, in-app and by email, that th
 Trial data is deleted **manually** by a SYSTEM_ADMIN following `docs/runbooks/trial-tenant-deletion.md` once a
 tenant reaches `PENDING_DELETION`. The PostgreSQL step is `scripts/maintenance/trial-tenant-purge.sql`, audited as
 `tenant.trial_purge`; what is kept (tenant row, audit trail, anonymised users, consent records) is listed in
-`docs/policies/data-retention-policy.md` § Free-trial tenants. Automated tenant purge does not exist yet; backups expire on their normal
-schedule.
+`docs/policies/data-retention-policy.md` § Free-trial tenants. Automated tenant purge does not exist yet; backups
+expire on their normal schedule.
 
 ### Feature flag
 

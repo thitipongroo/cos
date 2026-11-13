@@ -67,6 +67,12 @@ test.describe('Daily Site Report', () => {
     const pmPassword = process.env['E2E_PM_PASSWORD'] || 'E2eTestPass123!';
     await loginViaKeycloak(pmPage, { email: pmEmail, password: pmPassword });
 
+    // Declared here as safety-incident.spec.ts and approval-escalation.spec.ts declare it; this spec used
+    // it without declaring it (TS2552), so it could not compile.
+    const notificationBell = pmPage
+      .getByRole('button', { name: /notification|bell/i })
+      .or(pmPage.getByTestId('notification-bell'));
+
     if (await notificationBell.isVisible({ timeout: 5_000 }).catch(() => false)) {
       await notificationBell.click();
       // Push delivery is asynchronous and best-effort; assert the report notification only when it
