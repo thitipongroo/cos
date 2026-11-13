@@ -1,6 +1,7 @@
 import { createPrismaClient } from '../../../shared/prisma/create-prisma-client';
 import { prismaMigrateDeploy } from './prisma-migrate-deploy';
 import { Client as PgClient } from 'pg';
+import { ApplicationFailure, asyncLocalStorage as activityContext } from '@temporalio/activity';
 import {
   assertBypassesRls,
   copyTenantRows,
@@ -14,7 +15,10 @@ import { KafkaTopicProvisioner } from '@cos/kafka';
 import { createLogger } from '@cos/logger';
 import { randomUUID } from 'crypto';
 import { readMasterPassword, ensureAppUserPassword } from './tenant-db-secrets';
-import { encryptDedicatedDbUrl } from '../../../shared/crypto/dedicated-db-url-cipher';
+import {
+  decryptDedicatedDbUrl,
+  encryptDedicatedDbUrl,
+} from '../../../shared/crypto/dedicated-db-url-cipher';
 import { createStandaloneNotifier } from '../../notification/public/notification.standalone';
 import { PLATFORM_HUMAN_GATE_EVENT_TYPE } from '../../notification/public/event-types';
 
@@ -154,6 +158,52 @@ export async function secureAppUserActivity(params: RdsWithEndpointParams): Prom
   }
 }
 
+// ── Pause / resume the tenant around the copy (D48, 2026-11-13) ──────────────
+//
+// The copy reads one snapshot of the shared database and routing switches after it, so whatever the tenant
+// writes to the shared database in between would be left behind. `is_active = false` turns every request
+// of the tenant away (keycloak-jwt.strategy joins `t.is_active = true` → 401) for the copy's duration.
+// It does NOT stop writers that resolve the database without a request — withTenantTx
+// (shared/workflows/activity-helpers.ts) and notification-prisma.service.ts go through getDbUrlForTenant
+// (register Open item). Read and set are separate activities so a retried set cannot record its own
+// earlier write as "the state before".
+
+const tenantNotFound = (tenantId: string) =>
+  ApplicationFailure.nonRetryable(`tenant ${tenantId} not found`, 'TenantNotFound');
+
+export async function getTenantActiveActivity(params: RdsActivityParams): Promise<boolean> {
+  const prisma = createPrismaClient(DATABASE_URL);
+  try {
+    const rows = await prisma.$queryRaw<Array<{ is_active: boolean }>>`
+      SELECT is_active FROM platform.tenants WHERE tenant_id = ${params.tenantId}::uuid
+    `;
+    // Not retryable: retrying cannot make a missing tenant appear, and the restore path retries forever.
+    if (rows.length === 0) throw tenantNotFound(params.tenantId);
+    return rows[0]!.is_active;
+  } finally {
+    await prisma.$disconnect();
+  }
+}
+
+export async function setTenantActiveActivity(
+  params: RdsActivityParams & { active: boolean },
+): Promise<void> {
+  const prisma = createPrismaClient(DATABASE_URL);
+  try {
+    const n = await prisma.$executeRaw`
+      UPDATE platform.tenants SET is_active = ${params.active}, updated_at = now()
+      WHERE tenant_id = ${params.tenantId}::uuid
+    `;
+    if (n !== 1) throw tenantNotFound(params.tenantId);
+    logger.info(
+      { tenantId: params.tenantId, active: params.active },
+      params.active ? 'tenant.provisioning.resumed' : 'tenant.provisioning.paused',
+    );
+  } finally {
+    await prisma.$disconnect();
+  }
+}
+
 // ── Activity 3: assignDedicatedDbActivity ─────────────────────────────────
 
 export async function assignDedicatedDbActivity(params: RdsWithEndpointParams): Promise<void> {
@@ -272,8 +322,14 @@ export async function migrateDataActivity(params: RdsWithEndpointParams): Promis
   // needs the admin credential (security review F4). The source is DATABASE_URL, which must bypass RLS
   // to read the tenant's rows.
   const dedicatedDbUrl = await buildMasterDbUrl(params.rdsEndpoint, params.masterSecretArn);
+  // Heartbeats on a timer as well as with progress: listing the tables, the has-data check, the per-table
+  // counts and COMMIT report no progress, and one of them can outlast heartbeatTimeout on a large tenant.
+  // The timer keeps a working attempt alive and lets a cancellation through within its period; a worker
+  // that dies stops heartbeating all the same.
+  const ctx = activityContext.getStore();
   const src = connectionFor(DATABASE_URL, 'source');
   await src.connect();
+  const beat = ctx && setInterval(() => ctx.heartbeat({ phase: 'working' }), 30_000).unref();
   try {
     // Before the skip below: under RLS every lookup finds nothing, which would read as "no data" and
     // succeed with the tenant's rows left behind.
@@ -292,11 +348,18 @@ export async function migrateDataActivity(params: RdsWithEndpointParams): Promis
     try {
       const ordered = orderByForeignKeys(tables, await listForeignKeys(src, tables));
       logger.info({ tenantId: params.tenantId, tables: ordered.length }, 'migrate_data.starting');
+      // Heartbeats carry progress and let Temporal tell this attempt to stop (cancellation, or a heartbeat
+      // timeout that has already started the next attempt); the signal aborts the stream and the target
+      // rolls back. Outside an activity (tests) there is neither.
       const { alreadyCopied, tables: copied } = await copyTenantRows(
         src,
         dst,
         params.tenantId,
         ordered,
+        ctx && {
+          onProgress: (table) => ctx.heartbeat({ table }),
+          signal: ctx.cancellationSignal,
+        },
       );
       logger.info(
         {
@@ -313,6 +376,7 @@ export async function migrateDataActivity(params: RdsWithEndpointParams): Promis
   } finally {
     // copyTenantRows closes src itself on an error (a cut-off COPY TO leaves ROLLBACK hanging); closing
     // it again must neither throw nor wait forever.
+    clearInterval(beat);
     await endQuietly(src);
   }
 }
@@ -322,7 +386,14 @@ export async function migrateDataActivity(params: RdsWithEndpointParams): Promis
  * no listener (the server or a pooler dropping it) would take the whole worker process down.
  */
 function connectionFor(connectionString: string, side: string): PgClient {
-  const client = new PgClient({ connectionString });
+  // TCP keepalive: the copy also heartbeats on a timer, so a connection whose peer vanished (a failover,
+  // a dropped idle flow) would otherwise leave a query waiting until the activity's 24 h limit. With it
+  // the OS probes the peer once the connection has been idle this long and fails the query when it is gone.
+  const client = new PgClient({
+    connectionString,
+    keepAlive: true,
+    keepAliveInitialDelayMillis: 30_000,
+  });
   client.on('error', (err) =>
     logger.warn({ side, error: err.message }, 'migrate_data.connection_error'),
   );
@@ -340,15 +411,14 @@ async function endQuietly(client: PgClient): Promise<void> {
 // ── Activity 5: verifyRoutingActivity ─────────────────────────────────────
 
 export async function verifyRoutingActivity(params: RdsWithEndpointParams): Promise<void> {
-  // Master URL, deliberately. This step reads platform.tenants, and after the F5a policy change
-  // app_user only sees the row matching app.current_tenant_id — a GUC no provisioning activity sets.
-  // Verifying as the admin role keeps the check meaningful; the app-role credential is exercised by
-  // the first real request instead.
-  const dbUrl = await buildMasterDbUrl(params.rdsEndpoint, params.masterSecretArn);
-  const prisma = createPrismaClient(dbUrl);
+  // Two databases, two checks (2026-11-13). Routing lives in platform.tenants on the SHARED database —
+  // platform never moves (get-db-url.ts) and the dedicated database's own platform.tenants is empty, so
+  // reading it there (as this did until then) failed for every real tenant. The stored URL must name the
+  // new instance. Then the dedicated database must answer, as the master role: app_user's RLS policies
+  // need app.current_tenant_id, which no provisioning activity sets.
+  const shared = createPrismaClient(DATABASE_URL);
   try {
-    await prisma.$queryRaw`SELECT 1 AS ok`;
-    const [row] = await prisma.$queryRaw<Array<{ dedicated_db_url: string | null }>>`
+    const [row] = await shared.$queryRaw<Array<{ dedicated_db_url: string | null }>>`
       SELECT dedicated_db_url FROM platform.tenants
       WHERE tenant_id = ${params.tenantId}::uuid LIMIT 1
     `;
@@ -357,9 +427,24 @@ export async function verifyRoutingActivity(params: RdsWithEndpointParams): Prom
         `verifyRoutingActivity: dedicated_db_url is NULL for tenant ${params.tenantId} — assignDedicatedDbActivity may have failed`,
       );
     }
+    const routedHost = new URL(decryptDedicatedDbUrl(row.dedicated_db_url)).hostname;
+    if (routedHost !== params.rdsEndpoint) {
+      throw new Error(
+        `verifyRoutingActivity: tenant ${params.tenantId} is routed to ${routedHost}, not ${params.rdsEndpoint}`,
+      );
+    }
+  } finally {
+    await shared.$disconnect();
+  }
+
+  const dedicated = createPrismaClient(
+    await buildMasterDbUrl(params.rdsEndpoint, params.masterSecretArn),
+  );
+  try {
+    await dedicated.$queryRaw`SELECT 1 AS ok`;
     logger.info({ tenantId: params.tenantId, rdsEndpoint: params.rdsEndpoint }, 'routing.verified');
   } finally {
-    await prisma.$disconnect();
+    await dedicated.$disconnect();
   }
 }
 

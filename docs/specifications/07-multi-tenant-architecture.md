@@ -144,6 +144,9 @@ Both paths start the Temporal workflow directly via `TemporalClient.start()` and
 
 ### Workflow state machine
 
+Order since 2026-11-13 (D48, D49): routing switches after the copy, with the tenant paused — §34.3 has the
+detail and what changed.
+
 ```text
 PENDING
   → [createRdsActivity]       AWS SDK CreateDBInstance
@@ -151,20 +154,20 @@ PENDING
       Compensation: DeleteDBInstance
 PENDING
   → [runMigrationsActivity]   prisma migrate deploy against new DB URL
-PENDING
-  → [assignDedicatedDbActivity] SET platform.tenants.dedicated_db_url
-      Compensation: SET dedicated_db_url = NULL
 AWAITING_APPROVAL
   ← notify SYSTEM_ADMIN (in-app + email)
   ← wait for signal: approve | abort  (no timeout — waits indefinitely)
-  → abort signal  → ABORTED  (compensation: assignDedicatedDb)
+  → abort signal  → ABORTED  (compensation: createRds)
   → approve signal
 PENDING
-  → [migrateDataActivity]     pg_dump + psql from shared DB
+  → [setTenantActiveActivity] is_active = false — the tenant's requests are refused while it moves
+  → [migrateDataActivity]     copy the tenant's rows from shared DB (in process)
       Conditional: skipped if tenant has no existing domain data
       No auto-compensation — SYSTEM_ADMIN must coordinate manually
-PENDING
+  → [assignDedicatedDbActivity] SET platform.tenants.dedicated_db_url
   → [verifyRoutingActivity]   test query against dedicated DB; assert non-NULL response
+  → [setTenantActiveActivity] is_active as before
+      Any failure from the pause to the verification: dedicated_db_url = NULL, is_active as before, run fails
 COMPLETED
   → emit platform.enterprise.db_provisioned.v1 { tenant_id, rds_endpoint }
 ```

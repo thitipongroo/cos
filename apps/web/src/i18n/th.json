@@ -105,7 +105,11 @@
         "PROVISIONING_TOPICS": "กำลังจัดสรร topic",
         "COMPLETED": "พร้อมใช้งาน",
         "ABORTING": "กำลังยกเลิก",
-        "ABORTED": "ยกเลิกแล้ว"
+        "ABORTED": "ยกเลิกแล้ว",
+        "PAUSING_TENANT": "กำลังพักการใช้งาน tenant",
+        "RESUMING_TENANT": "กำลังเปิดใช้งาน tenant อีกครั้ง",
+        "RESTORING": "กำลังคืนสภาพ",
+        "RESTORED": "ล้มเหลว — คืนสภาพแล้ว"
       },
       "active": "ใช้งานอยู่"
     },

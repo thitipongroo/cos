@@ -110,26 +110,46 @@ CREATING_RDS ──[createRdsActivity]──────────────
   │                                                     Compensation: DeleteDBInstance
   ▼
 RUNNING_MIGRATIONS ──[runMigrationsActivity]─────────── prisma migrate deploy
-  │
-  ▼
-ASSIGNING_DB ──[assignDedicatedDbActivity]────────────── SET tenants.dedicated_db_url
-  │                                                      Compensation: SET dedicated_db_url = NULL
+  │                   [secureAppUserActivity]
   ▼
 AWAITING_APPROVAL ◄── notify all SYSTEM_ADMIN (in-app + email)
   │                    wait indefinitely for signal
-  ├── abort signal ──► ABORTING ──[compensateAssignDedicatedDb]──► ABORTED
+  ├── abort signal ──► ABORTING ──[compensateCreateRds]──► ABORTED
   │
   └── approve signal
           │
           ▼
-      MIGRATING_DATA ──[migrateDataActivity]──────────── pg_dump + psql (conditional)
+      PAUSING_TENANT ──[getTenantActive, setTenantActive(false)]── tenant's requests refused
+          │
+          ▼
+      MIGRATING_DATA ──[migrateDataActivity]──────────── copy the tenant's rows (conditional)
+          │
+          ▼
+      ASSIGNING_DB ──[assignDedicatedDbActivity]──────── SET tenants.dedicated_db_url
           │
           ▼
       VERIFYING ──[verifyRoutingActivity]─────────────── test query → dedicated DB
           │
           ▼
+      RESUMING_TENANT ──[setTenantActive(as before)]
+          │
+          ▼
       COMPLETED ──[emitProvisionedEventActivity]────────── emit db_provisioned.v1
+
+  any failure from PAUSING_TENANT to VERIFYING
+      ──► RESTORING ──[compensateAssignDedicatedDb, setTenantActive(as before)]──► RESTORED (run fails)
 ```
+
+> **Changed 2026-11-13 (D48, D49; product-owner decision).** Until then ASSIGNING_DB ran before the gate, so the
+> tenant was routed to the new, empty database for the whole wait and wrote there; the copy after the approval then
+> met those rows. Now routing switches only after the copy, and the tenant is paused (`is_active = false`, so requests
+> through the Keycloak JWT get 401) from the copy to the verification. That does not stop every write to the shared
+> database: requests already admitted, the vendor-portal, contract-signing and data-subject guards, the procurement
+> workflow activities, the notification service and the Kafka consumers still write there — an open item in
+> `docs/registers/dependency-advisories-2026-11.md`. A failure after the pause puts routing and `is_active` back as
+> they were (retrying until both succeed) and fails the run; the dedicated database and its RDS instance stay for
+> SYSTEM_ADMIN. A run begun before the change (history without the `copy-before-switch` patch marker) finishes in the
+> old order.
 
 Signals: `approve`, `abort`
 Query: `workflowState` — returns current state string
@@ -148,27 +168,35 @@ Query: `workflowState` — returns current state string
 | #   | Activity                         | State after        | Description                                                                                                       | Compensation                             |
 | --- | -------------------------------- | ------------------ | ----------------------------------------------------------------------------------------------------------------- | ---------------------------------------- |
 | 1   | `createRdsActivity`              | CREATING_RDS       | AWS `CreateDBInstance` — PostgreSQL, db.t3.medium, 100 GB GP3, per-tenant KMS key                                 | `DeleteDBInstance`                       |
-| 2   | `runMigrationsActivity`          | RUNNING_MIGRATIONS | `prisma migrate deploy` against new DB URL via `execSync`                                                         | None                                     |
-| 3   | `assignDedicatedDbActivity`      | ASSIGNING_DB       | `UPDATE platform.tenants SET dedicated_db_url = ?`                                                                | `SET dedicated_db_url = NULL`            |
+| 2   | `runMigrationsActivity`          | RUNNING_MIGRATIONS | `prisma migrate deploy` against new DB URL (the CLI by node, no shell — D45)                                      | None                                     |
 | —   | `notifyAwaitingApprovalActivity` | AWAITING_APPROVAL  | Insert notification rows for all SYSTEM_ADMIN users                                                               | None                                     |
-| 4   | `migrateDataActivity`            | MIGRATING_DATA     | `pg_dump` from shared DB + `psql` to dedicated DB. **Conditional:** skipped if tenant has no existing domain data | None — SYSTEM_ADMIN coordinates manually |
-| 5   | `verifyRoutingActivity`          | VERIFYING          | Run test query against dedicated DB; assert non-NULL response                                                     | None                                     |
+| —   | `getTenantActiveActivity`, `setTenantActiveActivity` | PAUSING_TENANT | Read `is_active`, then set it false for the copy                                            | `is_active` as before (D49)              |
+| 3   | `migrateDataActivity`            | MIGRATING_DATA     | Copy the tenant's rows into the dedicated DB in one transaction (D46). **Conditional:** skipped if tenant has no existing domain data | None — SYSTEM_ADMIN coordinates manually |
+| 4   | `assignDedicatedDbActivity`      | ASSIGNING_DB       | `UPDATE platform.tenants SET dedicated_db_url = ?`                                                                | `SET dedicated_db_url = NULL`            |
+| 5   | `verifyRoutingActivity`          | VERIFYING          | `dedicated_db_url` on the shared DB names the new instance; test query against dedicated DB                      | None                                     |
+| —   | `setTenantActiveActivity`        | RESUMING_TENANT    | `is_active` back to what it was before the pause                                                                  | None                                     |
 | —   | `emitProvisionedEventActivity`   | COMPLETED          | Publish `platform.enterprise.db_provisioned.v1` Kafka event                                                       | None                                     |
 
-Activities 4 and 5 only execute after `approve` signal. On `abort` signal, only compensation
-for Activity 3 runs (`compensateAssignDedicatedDbActivity`).
+Activities 3–5 only execute after `approve` signal. On `abort` signal, only `compensateCreateRdsActivity` runs —
+nothing has been assigned or paused yet. A failure from PAUSING_TENANT to VERIFYING runs
+`compensateAssignDedicatedDbActivity` and restores `is_active` (D49). `migrateDataActivity` has its own limits:
+`heartbeatTimeout` 2 min, `startToCloseTimeout` 24 h (a chosen bound, not a measurement), heartbeats every 30 s as
+well as with progress, and TCP keepalive on its connections — so a hung query is bounded by keepalive and the 24 h,
+not by the heartbeat; the others share 30 min. Putting the tenant back and resuming it retry until they succeed and
+are not cancelled with the run. Before 2026-11-13 Activity 4 ran before the gate and abort also compensated it
+(§34.3 note).
 
 ---
 
 ## 34.5 Human Gate — AWAITING_APPROVAL
 
-After Activity 3 completes:
+After `secureAppUserActivity` completes (since 2026-11-13; before, after `assignDedicatedDbActivity`):
 
 1. `notifyAwaitingApprovalActivity` queries all users with role `SYSTEM_ADMIN` and inserts
    one notification record per user.
 2. Workflow pauses at `await condition(() => approved || aborted)` — **no timeout**.
 3. SYSTEM_ADMIN sends signal via Admin Panel or API:
-   - `approve` → continue to Activities 4-5
+   - `approve` → pause the tenant, then Activities 3-5
    - `abort` → run compensation, reach ABORTED state
 
    API (2026-09-14): `POST /api/v1/admin/tenants/{tenantId}/provisioning/approve` and `…/abort`, body

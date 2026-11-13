@@ -85,6 +85,10 @@ describe('provisioningView', () => {
     ['AWAITING_APPROVAL', 'gate'],
     ['ABORTING', 'stopped'],
     ['ABORTED', 'stopped'],
+    ['RESTORING', 'stopped'],
+    ['RESTORED', 'stopped'],
+    ['PAUSING_TENANT', 'working'],
+    ['RESUMING_TENANT', 'working'],
     ['CREATING_RDS', 'working'],
     ['PROVISIONING_TOPICS', 'working'],
   ])('%s reads as %s, under its own label key', (state, tone) => {
@@ -95,7 +99,7 @@ describe('provisioningView', () => {
   });
 
   it('knows every §34.3 state plus PROVISIONING_TOPICS', () => {
-    expect(PROVISIONING_STATES).toHaveLength(10);
+    expect(PROVISIONING_STATES).toHaveLength(14);
   });
 });
 
@@ -149,6 +153,8 @@ describe('runPreflight', () => {
     ['COMPLETED', true, true],
     ['ABORTING', false, false],
     ['ABORTED', false, false],
+    ['PAUSING_TENANT', true, true],
+    ['RESTORED', true, true],
     ['SOMETHING_NEW', false, false],
   ])('%s → provisioned %s, migrated %s', (state, provisioned, migrated) => {
     expect(runPreflight(state)).toEqual({ provisioned, migrated });
@@ -206,11 +212,14 @@ describe('statusView', () => {
     'VERIFYING',
     'PROVISIONING_TOPICS',
     'ABORTING',
+    'PAUSING_TENANT',
+    'RESUMING_TENANT',
+    'RESTORING',
   ])('reads %s, a run in progress, as Pending', (state) => {
     expect(statusView(state, true)).toEqual({ labelKey: 'admin.status.pending', tone: 'pending' });
   });
 
-  it.each([undefined, null, 'COMPLETED', 'ABORTED', 'SOMETHING_NEW'])(
+  it.each([undefined, null, 'COMPLETED', 'ABORTED', 'RESTORED', 'SOMETHING_NEW'])(
     'falls through to is_active for %s',
     (state) => {
       expect(statusView(state, true)).toEqual({ labelKey: 'admin.status.active', tone: 'active' });

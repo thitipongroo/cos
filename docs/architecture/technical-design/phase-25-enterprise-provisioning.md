@@ -141,13 +141,15 @@ sequenceDiagram
     W->>AWS: createRdsActivity — db.t3.medium, 100 GB gp3, per-tenant KMS
     W->>W: runMigrationsActivity
     W->>W: secureAppUserActivity
-    W->>DB: assignDedicatedDbActivity — SET dedicated_db_url
     W->>SA: notifyAwaitingApprovalActivity
     W->>W: await condition(approved || aborted) — no timeout
+    W->>DB: get/setTenantActiveActivity — is_active = false (pause, D48)
     alt approved and tenant has existing data
-        W->>W: migrateDataActivity (pg_dump + psql)
+        W->>W: migrateDataActivity (in-process COPY, D46)
     end
+    W->>DB: assignDedicatedDbActivity — SET dedicated_db_url
     W->>W: verifyRoutingActivity
+    W->>DB: setTenantActiveActivity — is_active as before (resume)
     W->>W: provisionKafkaTopicsActivity
     W->>W: emitProvisionedEventActivity → platform.enterprise.db_provisioned.v1
 ```
@@ -171,7 +173,7 @@ would move customer data without anyone deciding to.
 | ---------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Second trigger for the same tenant                   | `409 Conflict` — Temporal rejects the duplicate workflow id                                                                                           |
 | RDS creation fails                                   | `compensateCreateRdsActivity` → `DeleteDBInstance`                                                                                                    |
-| Assignment succeeds, later step fails                | `compensateAssignDedicatedDbActivity` → `dedicated_db_url = NULL`                                                                                     |
+| A step from the pause to the verification fails      | `compensateAssignDedicatedDbActivity` → `dedicated_db_url = NULL`, `is_active` restored, run fails in RESTORED (D49, since 2026-11-13)                |
 | Data migration fails                                 | **No auto-rollback** — `SYSTEM_ADMIN` coordinates manually, by design                                                                                 |
 | Tenant has no existing data                          | `migrateDataActivity` skips — `migrate_data.skipped.no_existing_data`                                                                                 |
 | Webhook signature missing or wrong                   | `401`                                                                                                                                                 |

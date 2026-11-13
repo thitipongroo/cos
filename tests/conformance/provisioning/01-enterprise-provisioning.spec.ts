@@ -45,10 +45,28 @@ describe('Phase 25 · workflow shape (master:5731-5744)', () => {
   });
 
   it('runs them in the order the spec lists', () => {
-    const order = ['createRdsActivity', 'runMigrationsActivity', 'assignDedicatedDbActivity'];
+    const order = ['createRdsActivity', 'runMigrationsActivity', 'notifyAwaitingApprovalActivity'];
     const positions = order.map((a) => workflow.indexOf(`acts.${a}`));
     expect(positions.every((p) => p > -1)).toBe(true);
     expect([...positions].sort((a, b) => a - b)).toEqual(positions);
+  });
+
+  it('after the approval: pause, copy, switch routing, verify, resume (§34.3 since D48)', () => {
+    // The tenant's routing must not switch before its rows are in the new database, and nothing the
+    // tenant writes through a request may fall between the copy and the switch.
+    const body = workflow.slice(workflow.indexOf('async function pauseCopySwitchVerifyResume'));
+    const order = [
+      'acts.setTenantActiveActivity({ ...tenant, active: false })',
+      'copyActs.migrateDataActivity(db)',
+      'acts.assignDedicatedDbActivity(db)',
+      'acts.verifyRoutingActivity(db)',
+      "setState('RESUMING_TENANT')",
+    ];
+    const positions = order.map((call) => body.indexOf(call));
+    expect(positions.every((p) => p > -1)).toBe(true);
+    expect([...positions].sort((a, b) => a - b)).toEqual(positions);
+    // Runs begun before D48 keep their old order on replay.
+    expect(workflow).toMatch(/patched\(COPY_BEFORE_SWITCH_PATCH\)/);
   });
 
   it('compensates createRds and assignDedicatedDb, and NOT migrateData', () => {

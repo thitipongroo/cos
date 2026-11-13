@@ -42,18 +42,27 @@ export interface TenantProvisioningRow {
   workflow_state: string | null;
 }
 
-/** §34.3 states, in the order a run passes through them. PROVISIONING_TOPICS is in the code only. */
+/**
+ * §34.3 states, in the order a run passes through them. PROVISIONING_TOPICS is in the code only. Since D48
+ * (2026-11-13) ASSIGNING_DB comes after the gate, between MIGRATING_DATA and VERIFYING, with the tenant paused
+ * from PAUSING_TENANT to RESUMING_TENANT; a run begun before D48 still shows ASSIGNING_DB before the gate.
+ * RESTORING / RESTORED: a step after the pause failed and the tenant was put back on the shared database (D49).
+ */
 export const PROVISIONING_STATES = [
   'CREATING_RDS',
   'RUNNING_MIGRATIONS',
-  'ASSIGNING_DB',
   'AWAITING_APPROVAL',
+  'PAUSING_TENANT',
   'MIGRATING_DATA',
+  'ASSIGNING_DB',
   'VERIFYING',
+  'RESUMING_TENANT',
   'PROVISIONING_TOPICS',
   'COMPLETED',
   'ABORTING',
   'ABORTED',
+  'RESTORING',
+  'RESTORED',
 ] as const;
 
 export const GATE_STATE = 'AWAITING_APPROVAL';
@@ -93,7 +102,14 @@ export function provisioningView(
   const labelKey = `admin.provisioning.state.${state}`;
   if (state === 'COMPLETED') return { labelKey, tone: 'ready' };
   if (state === GATE_STATE) return { labelKey, tone: 'gate' };
-  if (state === 'ABORTING' || state === 'ABORTED') return { labelKey, tone: 'stopped' };
+  if (
+    state === 'ABORTING' ||
+    state === 'ABORTED' ||
+    state === 'RESTORING' ||
+    state === 'RESTORED'
+  ) {
+    return { labelKey, tone: 'stopped' };
+  }
   return { labelKey, tone: 'working' };
 }
 
@@ -108,7 +124,7 @@ export interface StatusView {
 /**
  * The STATUS column (product-owner decision 2026-09-15, R11.4): a run parked at the migration gate reads
  * Transit, a run still in progress — including one compensating an abort — reads Pending, and everything else
- * is the tenant's own `is_active`. No run, an unreadable run, an unrecognised state, COMPLETED and ABORTED all
+ * is the tenant's own `is_active`. No run, an unreadable run, an unrecognised state, COMPLETED, ABORTED and RESTORED all
  * fall through to `is_active`: none of them says the tenant is between databases.
  */
 export function statusView(state: string | null | undefined, isActive: boolean): StatusView {
@@ -117,7 +133,8 @@ export function statusView(state: string | null | undefined, isActive: boolean):
     typeof state === 'string' &&
     (PROVISIONING_STATES as readonly string[]).includes(state) &&
     state !== 'COMPLETED' &&
-    state !== 'ABORTED'
+    state !== 'ABORTED' &&
+    state !== 'RESTORED'
   ) {
     return { labelKey: 'admin.status.pending', tone: 'pending' };
   }
@@ -299,7 +316,7 @@ export function provisioningRuns(
 function runPhase(state: string | null): RunPhase {
   if (state === GATE_STATE) return 'gate';
   if (state === 'COMPLETED') return 'completed';
-  if (state === 'ABORTED') return 'stopped';
+  if (state === 'ABORTED' || state === 'RESTORED') return 'stopped';
   if (state !== null && (PROVISIONING_STATES as readonly string[]).includes(state))
     return 'working';
   return 'unknown';

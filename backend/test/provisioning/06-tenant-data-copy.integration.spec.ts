@@ -8,6 +8,8 @@
 // What has to hold:
 //   - a failure halfway (here: a CHECK the target adds) rejects promptly, leaves the target without any of
 //     the tenant's rows and leaves no transaction open on the source — the first version hung there;
+//   - a cancelled copy (Temporal's cancellation, through the AbortSignal) stops mid-stream and leaves the
+//     target without any of the tenant's rows;
 //   - a target role that does not bypass RLS is refused (it would copy nothing and agree on zero);
 //   - rows of the tenant already in the target are never deleted: the copy refuses instead (routing
 //     switches to the dedicated database before this step, so they can be the tenant's own writes) —
@@ -26,6 +28,7 @@ import {
   listTenantTables,
   orderByForeignKeys,
   TENANT_DATA_SCHEMAS,
+  type CopyOptions,
 } from '../../src/modules/tenant/workflows/tenant-data-copy';
 
 const IMAGE = 'timescale/timescaledb:latest-pg16';
@@ -52,7 +55,7 @@ describe('enterprise provisioning: migrate and copy a tenant into a dedicated da
   const client = (c: StartedPostgreSqlContainer) =>
     new Client({ connectionString: c.getConnectionUri() });
 
-  async function copyOnce(dstUri = dedicatedPg.getConnectionUri()) {
+  async function copyOnce(dstUri = dedicatedPg.getConnectionUri(), options?: CopyOptions) {
     const src = client(sharedPg);
     const dst = new Client({ connectionString: dstUri });
     await src.connect();
@@ -60,7 +63,7 @@ describe('enterprise provisioning: migrate and copy a tenant into a dedicated da
     try {
       const tables = await listTenantTables(src);
       const ordered = orderByForeignKeys(tables, await listForeignKeys(src, tables));
-      return await copyTenantRows(src, dst, TENANT_A, ordered);
+      return await copyTenantRows(src, dst, TENANT_A, ordered, options);
     } finally {
       await Promise.race([
         src.end().catch(() => undefined),
@@ -168,6 +171,47 @@ describe('enterprise provisioning: migrate and copy a tenant into a dedicated da
       expect(open.rows[0].n).toBe(0);
     } finally {
       await dedicated.query(`ALTER TABLE projects.projects DROP CONSTRAINT zz_fail`);
+      await shared.query(`DELETE FROM projects.projects WHERE project_code LIKE 'BULK-%'`);
+    }
+  });
+
+  it('a copy cancelled mid-stream stops promptly and rolls the target back', async () => {
+    await shared.query(
+      `INSERT INTO projects.projects (project_id, tenant_id, project_code, project_name, project_type, status, created_by)
+       SELECT gen_random_uuid(), $1, 'BULK-' || g, 'bulk', 'RESIDENTIAL'::"ProjectType", 'ACTIVE'::"ProjectStatus", $2
+         FROM generate_series(1, 100000) g`,
+      [TENANT_A, USER],
+    );
+    const cancel = new AbortController();
+    const seen: string[] = [];
+    let cancelledAt = -1;
+    try {
+      const started = Date.now();
+      await expect(
+        copyOnce(undefined, {
+          signal: cancel.signal,
+          // Cancel on the first streamed chunk of projects (its table call comes first, then chunks).
+          onProgress: (table) => {
+            seen.push(table);
+            if (seen.filter((t) => t === 'projects.projects').length === 2) {
+              cancelledAt = seen.length;
+              cancel.abort();
+            }
+          },
+        }),
+      ).rejects.toThrow(/abort/i);
+      expect(Date.now() - started).toBeLessThan(30_000);
+      // The stream itself stopped, not only the next table: measured 0 chunks after the cancel, and 529
+      // (the rest of the table) with the signal left off the pipeline.
+      expect(seen.length - cancelledAt).toBeLessThan(10);
+      const left = await dedicated.query(`SELECT count(*)::int AS n FROM projects.projects`);
+      expect(left.rows[0].n).toBe(0);
+      const open = await shared.query(
+        `SELECT count(*)::int AS n FROM pg_stat_activity
+          WHERE datname = current_database() AND state LIKE 'idle in transaction%'`,
+      );
+      expect(open.rows[0].n).toBe(0);
+    } finally {
       await shared.query(`DELETE FROM projects.projects WHERE project_code LIKE 'BULK-%'`);
     }
   });

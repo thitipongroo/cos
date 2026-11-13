@@ -29,6 +29,11 @@
 //   - DateStyle and IntervalStyle are pinned to ISO on both sessions, so text COPY reads back what it wrote
 //     whatever the two servers' defaults are.
 //
+// The caller may pass `onProgress` (called per table and per streamed chunk — the activity heartbeats from
+// it) and an AbortSignal: aborting stops the stream between or within tables, and the error path below
+// applies. Temporal delivers an activity's cancellation that way, including when a heartbeat timeout has
+// already started the next attempt, so two attempts do not copy side by side.
+//
 // On an error the target is rolled back and the SOURCE CONNECTION IS CLOSED rather than rolled back: after a
 // COPY TO is cut off mid-stream, `ROLLBACK` on that client never returns (measured), which would hang the
 // activity and keep a snapshot open on the shared database.
@@ -38,6 +43,7 @@
 
 import type { Client } from 'pg';
 import { from as copyFrom, to as copyTo } from 'pg-copy-streams';
+import { Transform } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
 
 /** The schemas that move to a dedicated database. `platform` never does (get-db-url.ts). */
@@ -71,6 +77,13 @@ export interface ForeignKeyEdge {
 export interface CopiedTable {
   table: string;
   rows: number;
+}
+
+export interface CopyOptions {
+  /** Called with `schema.table` before each table and for each chunk streamed. */
+  onProgress?: (table: string) => void;
+  /** Aborting stops the copy; the target rolls back. */
+  signal?: AbortSignal;
 }
 
 export interface CopyResult {
@@ -215,12 +228,16 @@ export async function copyTenantRows(
   dst: Client,
   tenantId: string,
   tables: readonly TenantTable[],
+  { onProgress, signal }: CopyOptions = {},
 ): Promise<CopyResult> {
+  signal?.throwIfAborted();
   await assertBypassesRls(src, 'source');
   await assertBypassesRls(dst, 'target');
   if (await tenantHasRows(dst, tenantId, tables)) {
     const done: CopiedTable[] = [];
     for (const t of tables) {
+      signal?.throwIfAborted();
+      onProgress?.(key(t));
       const [s, d] = [await countRows(src, tenantId, t), await countRows(dst, tenantId, t)];
       if (s !== d) {
         throw new Error(
@@ -243,13 +260,21 @@ export async function copyTenantRows(
     }
     await dst.query('SET LOCAL session_replication_role = replica');
     for (const t of tables) {
+      signal?.throwIfAborted();
+      onProgress?.(key(t));
       const cols = t.columns.map((c) => src.escapeIdentifier(c)).join(', ');
       const where = `tenant_id = ${src.escapeLiteral(tenantId)}`;
       const reader = src.query(
         copyTo(`COPY (SELECT ${cols} FROM ${ident(src, t)} WHERE ${where}) TO STDOUT`),
       );
       const writer = dst.query(copyFrom(`COPY ${ident(dst, t)} (${cols}) FROM STDIN`));
-      await pipeline(reader, writer);
+      const progress = new Transform({
+        transform(chunk, _encoding, done) {
+          onProgress?.(key(t));
+          done(null, chunk);
+        },
+      });
+      await pipeline(reader, progress, writer, ...(signal ? [{ signal }] : []));
 
       const [s, d] = [await countRows(src, tenantId, t), await countRows(dst, tenantId, t)];
       if (s !== d) throw new Error(`${key(t)}: copied ${d} rows, source has ${s}`);

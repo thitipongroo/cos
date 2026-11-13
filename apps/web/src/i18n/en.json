@@ -105,7 +105,11 @@
         "PROVISIONING_TOPICS": "Provisioning topics",
         "COMPLETED": "Ready",
         "ABORTING": "Aborting",
-        "ABORTED": "Aborted"
+        "ABORTED": "Aborted",
+        "PAUSING_TENANT": "Pausing tenant",
+        "RESUMING_TENANT": "Resuming tenant",
+        "RESTORING": "Restoring",
+        "RESTORED": "Failed — restored"
       },
       "active": "Active"
     },

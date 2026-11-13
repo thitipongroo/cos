@@ -71,6 +71,8 @@ The numbers are the ones used while the work was planned. Decisions about the wi
 | D45 | `runMigrationsActivity` runs the prisma CLI shipped in the backend image (prisma a production dependency; schema, migrations and `prisma.config.ts` in the image), by node without a shell, with `DIRECT_DATABASE_URL` set to the tenant database.                                                                                                                                                                                                                                                |
 | D46 | `migrateDataActivity` copies the tenant's rows in process — COPY per table, parents first, in one target transaction with `session_replication_role = replica`, never deleting rows of the tenant already in the target — instead of `pg_dump \| psql`.                                                                                                                                                                                                                                           |
 | D47 | The copy keeps the ten schemas the activity named; the other five schemas with `tenant_id` are investigated and recorded, with no routing change.                                                                                                                                                                                                                                                                                                                                                 |
+| D48 | Enterprise provisioning switches routing after the approval and the copy, with the tenant paused (`is_active = false`) from the copy to the verification, instead of before the approval wait; runs begun earlier keep the old order (`patched('copy-before-switch')`).                                                                                                                                                                                                                           |
+| D49 | A failure from the pause to the verification puts `dedicated_db_url` back to NULL and `is_active` back to its value before the pause, then fails the run (RESTORED); the dedicated database and RDS instance stay for SYSTEM_ADMIN.                                                                                                                                                                                                                                                               |
 
 ## The series
 
@@ -1800,19 +1802,20 @@ gate's isolated run) checks the hash was not tested either; it ran 12.18.0 with 
   that bypasses RLS; whether the RDS master user may do each was not checked. The integration spec runs on TimescaleDB
   pg16 as superuser. Found on `fix/enterprise-provisioning-db`; needs a decision on the dedicated database's engine
   (or on making those migrations conditional) and a run against a real RDS instance.
-- **Routing switches to the dedicated database before the tenant's data is copied.** The workflow runs
-  `assignDedicatedDbActivity` (which `get-db-url.ts` follows at once), then waits for approval, then
-  `migrateDataActivity`. During the wait the tenant reads an empty database and writes land there; the copy then
-  refuses to run (it never deletes the tenant's rows), so provisioning stops with the data split across two databases.
-  Found on `fix/enterprise-provisioning-db`; the fix is to reorder the workflow (copy, then switch) or block the
-  tenant's writes during the wait, which changes the workflow's behaviour and was left out of this branch.
-- **The data copy has 30 minutes and no heartbeat.** Every provisioning activity shares `startToCloseTimeout: '30m'`
-  and three attempts; `migrateDataActivity` sends no heartbeat. A tenant whose copy takes longer times out on every
-  attempt, and a timed-out attempt is not told to stop, so the next one runs beside it (it blocks on the first one's
-  uncommitted keys, then fails on them once that commits; the third attempt then finds the committed copy and reports
-  it done). How long a real tenant takes was not measured. Found on `fix/enterprise-provisioning-db`; the fix is a
-  heartbeat per table with a `heartbeatTimeout` and a longer limit for this activity — a workflow change left out
-  here.
+- **Provisioning's pause does not stop every write to the shared database.** D48 pauses a tenant by setting
+  `is_active` to false, which turns away requests that pass `keycloak-jwt.strategy.ts` (401). Still writing to the
+  shared database during the copy, after its snapshot — and so left behind when routing switches: requests already
+  admitted when the pause starts (the copy starts at once; there is no drain); requests through guards that do not
+  check `is_active` (`vendor-auth.guard.ts`, `contract-sign-token.guard.ts`, `subject-verify-token.guard.ts`); the
+  procurement RFQ and PO workflow activities (`withTenantTx`, `shared/workflows/activity-helpers.ts`) and
+  `notification-prisma.service.ts`, through `getDbUrlForTenant`, which returns the shared URL for an inactive tenant;
+  and Kafka consumers (`finance.consumer.ts`, `risks.consumer.ts`, the search indexer). Those guards and consumers
+  never set `CLS_DEDICATED_DB_URL`, so for an ENTERPRISE tenant they use the shared database even after provisioning —
+  a gap `finance.consumer.ts:131-135` already names, not recorded here before. Also: SYSTEM_ADMIN cannot deactivate a
+  tenant while it is paused (`deactivateTenant` finds it inactive), and the resume would set it active again; the same
+  holds for a deactivation between the workflow reading `is_active` and pausing. How often any of these writes happen
+  was not measured. Found on `fix/provisioning-copy-before-switch`; closing it needs a drain after the pause and those
+  paths to route, wait for, or refuse a paused tenant.
 - **Closed — the unused `@confluentinc/schemaregistry` removed from backend (D27).** On `chore/remove-schemaregistry`:
   the dependency line goes from `backend/package.json`; backend's production closure loses 89 packages and gains
   none (the lockfile loses 68; the rest are still used elsewhere), and no other importer changes. The Azure SDK
@@ -2212,6 +2215,40 @@ export` for iOS and Android and `expo export:embed` (what the Gradle and Xcode b
     Negative controls in scratch copies: the old apps/mobile lockfile with the new root, and the old one in the root's
     place with the new apps/mobile, each fail with exit 1 (84 unresolved high/critical). CI and `verify-before-push.sh`
     already call the script. The conformance suite passes (61 suites, 2,343 tests).
+- **Closed — provisioning switched routing before the copy, and the copy had 30 minutes and no heartbeat.** Fixed on
+  `fix/provisioning-copy-before-switch` (D48, D49).
+  - The workflow ran `assignDedicatedDbActivity` before the approval wait. Routing is read per request with no cache
+    (`keycloak-jwt.strategy.ts`, `get-db-url.ts`), so for the whole wait the tenant read the new, empty database and
+    wrote there; the copy then refused. D48: after the approval the workflow reads `is_active`, sets it false, copies,
+    switches routing, verifies, and sets `is_active` back; abort at the gate now deletes the RDS instance only, as
+    nothing was assigned. D49: a failure in between unassigns, restores `is_active` and fails the run in RESTORED with
+    the original error; unassigning, restoring and the final resume retry until they succeed (backing off to one
+    attempt per 10 minutes) and run outside the workflow's cancellation scope, so neither a failing activity nor an
+    operator cancelling the run mid-copy leaves the tenant refused; a tenant row that no longer exists fails them for
+    good (non-retryable) rather than retrying forever. Workflow specs check the order of every activity on the
+    approve, abort, copy-failure and verify-failure paths, that a tenant inactive before the run stays inactive, that
+    a failed read of `is_active` changes nothing, that the restore and the resume outlast four failures (with three
+    attempts, as before, those two fail), and that a run cancelled mid-copy ends RESTORED with the tenant active
+    (without the non-cancellable scope it stays RESTORING); against the old workflow the first six fail.
+  - A run parked at AWAITING_APPROVAL on the old code (routing already switched) must finish after a deploy. The new
+    order is behind `patched('copy-before-switch')`; a spec parks a run on a frozen copy of the old workflow, approves
+    it on the new one, sees it finish the old way, and replays its whole history on the new code. Without the patch
+    the new worker fails it with `TMPRL1100 Nondeterminism error`.
+  - `migrateDataActivity` runs on its own options — `heartbeatTimeout` 2 min, `startToCloseTimeout` 24 h (chosen
+    bounds, not measured) — and heartbeats per table, per streamed chunk and every 30 s (the listing, the counts and
+    COMMIT report no progress). Because of the timer, `heartbeatTimeout` catches a dead or blocked worker but not a
+    hung query; both connections use TCP keepalive (30 s idle before probing) against a vanished peer, and the 24 h
+    limit bounds the rest; Temporal's cancellation reaches the copy as an AbortSignal (`@temporalio/activity` 1.25.0
+    added; it was already in the lockfile). On real Postgres a copy cancelled on its first chunk of 100,000 rows
+    rejects with the target empty: 0 chunks arrived after the cancel, and 529 (the rest of the table) with the signal
+    left off the stream.
+  - The Admin UI knows the four new states (PAUSING_TENANT, RESUMING_TENANT, RESTORING, RESTORED; TH and EN), and spec
+    §34.3/§34.4, §7 and the phase-25 design and test-design docs show the new order with a dated note.
+  - `verifyRoutingActivity` read `platform.tenants` on the dedicated database, which the migrations create empty
+    (`platform` never moves), so it failed for every real tenant — with D49 every run would have ended RESTORED. It
+    now reads routing on the shared database, requires it to name the new instance, and only pings the dedicated one;
+    its unit spec fails against the old activity. No spec had run it against a database.
+  - Left open: not every write to the shared database stops during the pause (Open, above).
 - **Closed — enterprise provisioning could neither migrate nor fill a dedicated database.** Fixed on
   `fix/enterprise-provisioning-db` (D45, D46, D47).
   - `runMigrationsActivity` ran `npx prisma migrate deploy` with `DATABASE_URL` = the tenant URL. The image had no npx,
