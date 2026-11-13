@@ -2625,9 +2625,23 @@ openssl ca-certificates`; `groupadd`/`useradd` uid/gid 1001, as the charts run; 
 - **`openapi freshness`.**
   - It reports `auth` and `ai` stale since commit `10be1567`.
   - `requirements.txt` counts as source for `ai`, so branch 5 hits this again.
-- **`tests/e2e/specs/daily-report.spec.ts:70-71`.** It uses an undeclared `notificationBell` (TS2552). This predates
-  the series.
-- **`docs/architecture/technical-design/phase-07-finance-service.md`.** Its mermaid block has a parse error on line 13.
-  This predates the series.
-- **The `docs/README.md` assessments row.** Its entry point is `registers/data-flow-map.md`, which commit `fe35fff7`
-  reclassified as a register. This predates the series.
+- **Closed — `tests/e2e/specs/daily-report.spec.ts:70-71` used an undeclared `notificationBell` (TS2552).** Fixed on
+  `fix/small-test-docs`: the spec declares it as `approval-escalation.spec.ts:112-114` does — a button named
+  `/notification|bell/i`, or the test id `notification-bell`, the locator `safety-incident.spec.ts:80-82` calls `bell`.
+  `tsc --noEmit --strict` (bundler resolution, node types) on the spec: TS2552 twice before, clean after. The spec was
+  compiled, not run.
+- **Closed — `docs/architecture/technical-design/phase-07-finance-service.md` had a mermaid parse error.** Fixed on
+  `fix/small-test-docs`. Line 13 of the second block, the Note `tenant middleware excluded; token guard authorises`,
+  held a `;`, which separates statements in a sequence diagram (mermaid 11.16.1's sequence lexer has `;` as a token of
+  its own, and note text is `[^#\n;]*`); it is now `—`, and neither mermaid block holds a `;` or `#`. **Not
+  rendered:** running `mmdc` was not permitted in the session that made the fix, so the parse error's absence is
+  reasoned from the grammar, not measured.
+- **Closed — the `docs/README.md` assessments row pointed into `registers/`.** Fixed on `fix/small-test-docs`: its entry
+  point is `assessments/thai-eta-signature-briefing.md`, the first assessment the row names (`docs/assessments/` has no
+  README), instead of `registers/data-flow-map.md`, which `fe35fff7` reclassified as a register.
+- **Closed — `docs/specifications/07-multi-tenant-architecture.md` failed markdownlint.** Not listed before; found
+  alongside the three above. markdownlint on `2b8dc5f8`: 10 errors — MD013 at 637 (142 characters) and 653 (136), and
+  MD049 eight times on 633, 634, 636 and 637 (four asterisk emphases, each reported at both delimiters; the file uses
+  underscores). Fixed on `fix/small-test-docs`, formatting only (`git diff --word-diff` changes no word): the two lines
+  rewrapped, and the four UI labels use `_…_`. 0 issues after. Line 638 is still 130 characters; it passes because
+  MD013 (not strict) skips a line with no whitespace past column 120, and its overflow is inside a code span.
