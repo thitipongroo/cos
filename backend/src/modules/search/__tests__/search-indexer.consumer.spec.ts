@@ -14,7 +14,16 @@ jest.mock('@cos/logger', () => ({
 }));
 
 import type { BaseEventEnvelope } from '@cos/types';
+// D50 (2026-11-13): runInTenantContext resolves the tenant's database (and refuses an inactive one).
+const resolveTenantDb = jest.fn();
+jest.mock('../../../shared/prisma/get-db-url', () => ({
+  ...jest.requireActual('../../../shared/prisma/get-db-url'),
+  resolveTenantDb: (id: string) => resolveTenantDb(id),
+}));
+beforeEach(() => resolveTenantDb.mockReset().mockResolvedValue({ dedicatedDbUrl: null }));
+
 import { SearchIndexerConsumer } from '../search-indexer.consumer';
+import { TenantInactiveError } from '../../../shared/prisma/get-db-url';
 import type { SearchIndexRepository, ProjectIndexRow } from '../search-index.repository';
 import type { SearchIndexerService } from '../search-indexer.service';
 import { clsTenantId, clsUserId } from '../../../shared/context/cls-context';
@@ -77,6 +86,14 @@ describe('SearchIndexerConsumer', () => {
   // is no request here to inherit a context from, and the consumer's own tests cannot notice the
   // difference unless they assert on the context the repository actually sees.
   describe('tenant context', () => {
+    it('refuses an inactive tenant before reading its row', async () => {
+      resolveTenantDb.mockRejectedValueOnce(new TenantInactiveError(TENANT, 'inactive'));
+      const findProject = jest.fn();
+      const { consumer } = build({ findProject });
+      await expect(consumer.handleProject(event())).rejects.toBeInstanceOf(TenantInactiveError);
+      expect(findProject).not.toHaveBeenCalled();
+    });
+
     it('runs the repository read inside the EVENT tenant CLS context', async () => {
       let seenTenant: string | undefined;
       let seenUser: string | undefined;

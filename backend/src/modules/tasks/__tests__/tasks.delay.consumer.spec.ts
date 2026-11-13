@@ -32,7 +32,16 @@ jest.mock('@nestjs/core', () => {
   };
 });
 
+// D50: the handler runs in runInTenantContext, which resolves the tenant's database.
+const resolveTenantDb = jest.fn();
+jest.mock('../../../shared/prisma/get-db-url', () => ({
+  ...jest.requireActual('../../../shared/prisma/get-db-url'),
+  resolveTenantDb: (id: string) => resolveTenantDb(id),
+}));
+
 import { TasksDelayConsumer } from '../tasks.delay.consumer';
+import { TenantInactiveError } from '../../../shared/prisma/get-db-url';
+import { clsDedicatedDbUrl, clsTenantId } from '../../../shared/context/cls-context';
 import type { TasksService } from '../tasks.service';
 
 const EVENT_TYPE = 'construction.delay.detected.v1';
@@ -70,6 +79,7 @@ let consumer: TasksDelayConsumer;
 
 beforeEach(() => {
   jest.clearAllMocks();
+  resolveTenantDb.mockReset().mockResolvedValue({ dedicatedDbUrl: null });
   mockGetTask.mockResolvedValue({ task_id: TASK_ID, status: 'IN_PROGRESS' });
   mockUpdateTask.mockResolvedValue({ task_id: TASK_ID, status: 'BLOCKED' });
   mockResolve.mockResolvedValue(mockSvc);
@@ -179,5 +189,29 @@ describe('tenant context', () => {
 
     expect(mockRegisterRequest).toHaveBeenCalledWith({ tenantId: 'tenant-001' }, { id: 1 });
     expect(mockResolve).toHaveBeenCalledWith(expect.anything(), { id: 1 }, { strict: false });
+  });
+});
+
+// Until 2026-11-13 the handler never entered CLS, so TenantPrismaService's first query threw "Tenant
+// context missing" — inside getTask, whose catch read it as "task not found". No delay event ever
+// blocked a task. The service mocks above cannot see that; these assert on the context getTask runs in.
+describe('tenant context (OQ-45, D50)', () => {
+  it("reads the task inside the event tenant's context, routed to its database", async () => {
+    const url = 'postgresql://app_user:pw@tenant-db.internal:5432/cos';
+    resolveTenantDb.mockResolvedValue({ dedicatedDbUrl: url });
+    let seen: Array<string | undefined> = [];
+    mockGetTask.mockImplementation(async () => {
+      seen = [clsTenantId(), clsDedicatedDbUrl()];
+      return { task_id: TASK_ID, status: 'IN_PROGRESS' };
+    });
+    await consumer.handle(delayEvent());
+    expect(seen).toEqual(['tenant-001', url]);
+    expect(mockUpdateTask).toHaveBeenCalledWith(TASK_ID, { status: 'BLOCKED' });
+  });
+
+  it('refuses an inactive tenant (the consumer retries, then DLQs it)', async () => {
+    resolveTenantDb.mockRejectedValue(new TenantInactiveError('tenant-001', 'inactive'));
+    await expect(consumer.handle(delayEvent())).rejects.toBeInstanceOf(TenantInactiveError);
+    expect(mockGetTask).not.toHaveBeenCalled();
   });
 });

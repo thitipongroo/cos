@@ -73,6 +73,7 @@ The numbers are the ones used while the work was planned. Decisions about the wi
 | D47 | The copy keeps the ten schemas the activity named; the other five schemas with `tenant_id` are investigated and recorded, with no routing change.                                                                                                                                                                                                                                                                                                                                                 |
 | D48 | Enterprise provisioning switches routing after the approval and the copy, with the tenant paused (`is_active = false`) from the copy to the verification, instead of before the approval wait; runs begun earlier keep the old order (`patched('copy-before-switch')`).                                                                                                                                                                                                                           |
 | D49 | A failure from the pause to the verification puts `dedicated_db_url` back to NULL and `is_active` back to its value before the pause, then fails the run (RESTORED); the dedicated database and RDS instance stay for SYSTEM_ADMIN.                                                                                                                                                                                                                                                               |
+| D50 | Every path into a tenant's data without the Keycloak JWT — Kafka consumers (`runInTenantContext`), the vendor, contract-signing and data-subject guards, and `getDbUrlForTenant` (`withTenantTx`, notifications) — routes to the tenant's dedicated database and refuses an inactive or unknown tenant as the JWT path does (401, or a thrown error that the consumer retries and then sends to the DLQ).                                                                                         |
 
 ## The series
 
@@ -1802,20 +1803,22 @@ gate's isolated run) checks the hash was not tested either; it ran 12.18.0 with 
   that bypasses RLS; whether the RDS master user may do each was not checked. The integration spec runs on TimescaleDB
   pg16 as superuser. Found on `fix/enterprise-provisioning-db`; needs a decision on the dedicated database's engine
   (or on making those migrations conditional) and a run against a real RDS instance.
-- **Provisioning's pause does not stop every write to the shared database.** D48 pauses a tenant by setting
-  `is_active` to false, which turns away requests that pass `keycloak-jwt.strategy.ts` (401). Still writing to the
-  shared database during the copy, after its snapshot — and so left behind when routing switches: requests already
-  admitted when the pause starts (the copy starts at once; there is no drain); requests through guards that do not
-  check `is_active` (`vendor-auth.guard.ts`, `contract-sign-token.guard.ts`, `subject-verify-token.guard.ts`); the
-  procurement RFQ and PO workflow activities (`withTenantTx`, `shared/workflows/activity-helpers.ts`) and
-  `notification-prisma.service.ts`, through `getDbUrlForTenant`, which returns the shared URL for an inactive tenant;
-  and Kafka consumers (`finance.consumer.ts`, `risks.consumer.ts`, the search indexer). Those guards and consumers
-  never set `CLS_DEDICATED_DB_URL`, so for an ENTERPRISE tenant they use the shared database even after provisioning —
-  a gap `finance.consumer.ts:131-135` already names, not recorded here before. Also: SYSTEM_ADMIN cannot deactivate a
-  tenant while it is paused (`deactivateTenant` finds it inactive), and the resume would set it active again; the same
-  holds for a deactivation between the workflow reading `is_active` and pausing. How often any of these writes happen
-  was not measured. Found on `fix/provisioning-copy-before-switch`; closing it needs a drain after the pause and those
-  paths to route, wait for, or refuse a paused tenant.
+- **Provisioning's pause does not stop requests already admitted, and refusing an inactive tenant has costs.** D48
+  pauses a tenant by setting `is_active` to false; since D50 every path into its data refuses it. Still reaching the
+  shared database after the copy's snapshot: requests admitted before the pause and still running (the copy starts at
+  once; there is no drain). How long such requests run was not measured. Also: SYSTEM_ADMIN cannot deactivate a tenant
+  while it is paused (`deactivateTenant` finds it inactive), and the resume would set it active again; the same holds
+  for a deactivation between the workflow reading `is_active` and pausing. What D50's refusal costs: a deactivated or
+  paused tenant's events go to the DLQ after their retries (three attempts within seconds, `@cos/kafka` consumer) —
+  for a paused tenant that means events from requests admitted before the pause or delivered late by the outbox, and
+  nothing replays them when it resumes, so cost transactions, risks, search entries and notifications wait for a
+  manual DLQ replay; a data export running when a pause starts fails (`withTenantTx`, about 90 s of retries) and so
+  does the notice to the subject (`NotificationPrismaService`), where it used to read the shared database and succeed;
+  a deactivated tenant's data subjects cannot verify a request and its data export is refused (PDPA may require
+  serving them after deactivation — product-owner decision 2026-11-13 to refuse); procurement RFQ/PO workflow
+  activities of a paused tenant fail and retry under their own policies, and fail their workflow if the pause outlasts
+  them. Found on `fix/provisioning-copy-before-switch` and `fix/non-jwt-tenant-routing`; closing these needs a drain
+  after the pause, a DLQ replay for the tenant after the resume, and data exports that wait out a pause.
 - **Closed — the unused `@confluentinc/schemaregistry` removed from backend (D27).** On `chore/remove-schemaregistry`:
   the dependency line goes from `backend/package.json`; backend's production closure loses 89 packages and gains
   none (the lockfile loses 68; the rest are still used elsewhere), and no other importer changes. The Azure SDK
@@ -2215,6 +2218,32 @@ export` for iOS and Android and `expo export:embed` (what the Gradle and Xcode b
     Negative controls in scratch copies: the old apps/mobile lockfile with the new root, and the old one in the root's
     place with the new apps/mobile, each fail with exit 1 (84 unresolved high/critical). CI and `verify-before-push.sh`
     already call the script. The conformance suite passes (61 suites, 2,343 tests).
+- **Closed — paths without the Keycloak JWT ignored a tenant's dedicated database and its `is_active`.** Fixed on
+  `fix/non-jwt-tenant-routing` (D50).
+  - `TenantPrismaService` connects to `clsDedicatedDbUrl() ?? appDatabaseUrl()`, and only `jwt-auth.guard.ts` set the
+    dedicated URL. Five paths set only the tenant — `runInTenantContext` (search indexer, risks),
+    `finance.consumer.ts`'s own `cls.run`, `vendor-auth.guard.ts`, `contract-sign-token.guard.ts`,
+    `subject-verify-token.guard.ts` — and `tasks.delay.consumer.ts` never entered CLS at all (its `getTask` threw
+    "Tenant context missing", which its catch read as "task not found", so no delay event ever blocked a task); the
+    first five sent an ENTERPRISE tenant's events, vendor, contract-signing and data-subject requests read and wrote
+    the shared database, and none of them checked `is_active`. `getDbUrlForTenant` returned the shared URL for an
+    inactive or unknown tenant.
+  - D50: `resolveTenantDb` (`get-db-url.ts`) reads `is_active` and `dedicated_db_url` per call and throws
+    `TenantInactiveError` for an inactive or unknown tenant; `getDbUrlForTenant` is built on it. `runInTenantContext`
+    resolves before entering CLS and sets `CLS_DEDICATED_DB_URL`; `finance.consumer.ts` and `tasks.delay.consumer.ts`
+    use it; it always writes the dedicated key (undefined for a shared tenant), as `cls.run` copies an enclosing
+    context and a nested one must not inherit another tenant's database. The other two consumers need nothing:
+    notifications go through `getDbUrlForTenant`, analytics only drops cache entries. The three guards call
+    `tenantDbForRequest` after verifying their token: the dedicated URL into CLS, or 401 with the JWT path's wording
+    before any tenant context is published. A database outage is not turned into a 401.
+  - Specs for the resolver, `runInTenantContext`, the finance, risks and search consumers, the three guards and the
+    helper; each changed behaviour fails against the old code (2 of 6 for `getDbUrlForTenant`, 2 of 7 for
+    `runInTenantContext`, 2 of 12 for the finance consumer, 2 of 24 for the risks and search consumers, 2 of 16 for
+    the tasks-delay consumer, 1 of 8 for the nested context, 6 for the guards). The integration specs that cross these
+    paths on real Postgres (notification delivery, search, contract signing and sign links, budget aggregation) pass:
+    63 tests.
+  - Left open: requests already admitted when a pause starts, and what refusing an inactive tenant costs (Open,
+    above).
 - **Closed — provisioning switched routing before the copy, and the copy had 30 minutes and no heartbeat.** Fixed on
   `fix/provisioning-copy-before-switch` (D48, D49).
   - The workflow ran `assignDedicatedDbActivity` before the approval wait. Routing is read per request with no cache

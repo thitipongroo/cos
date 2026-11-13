@@ -1,6 +1,19 @@
+// D50 (2026-11-13): the guard asks for the tenant's database after verifying its token.
+const tenantDbForRequest = jest.fn();
+jest.mock('../../../shared/context/tenant-db-for-request', () => ({
+  tenantDbForRequest: (id: string) => tenantDbForRequest(id),
+}));
+beforeEach(() => tenantDbForRequest.mockReset().mockResolvedValue(null));
+const DEDICATED = 'postgresql://app_user:pw@tenant-db.internal:5432/cos';
+
 import { UnauthorizedException, type ExecutionContext } from '@nestjs/common';
 import { ContractSignTokenGuard } from '../contract-sign-token.guard';
-import { CLS_TENANT_ID, CLS_USER_ID, CLS_USER_ROLE } from '../../../shared/context/cls-context';
+import {
+  CLS_DEDICATED_DB_URL,
+  CLS_TENANT_ID,
+  CLS_USER_ID,
+  CLS_USER_ROLE,
+} from '../../../shared/context/cls-context';
 
 function ctxWith(req: Record<string, unknown>): ExecutionContext {
   return {
@@ -52,5 +65,30 @@ describe('ContractSignTokenGuard (ADR-058 CT-5)', () => {
     await expect(guard.canActivate(ctxWith(req))).resolves.toBe(true);
     expect(set).not.toHaveBeenCalled();
     expect(req.tenantId).toBe('tenant-1');
+  });
+
+  it("routes to the tenant's dedicated database (D50)", async () => {
+    (signLink.verify as jest.Mock).mockResolvedValue(claims);
+    tenantDbForRequest.mockResolvedValue(DEDICATED);
+    const set = jest.fn();
+    const cls = { isActive: () => true, set } as unknown as import('nestjs-cls').ClsService;
+    await new ContractSignTokenGuard(cls, signLink).canActivate(
+      ctxWith({ params: { token: 't' } }),
+    );
+    expect(tenantDbForRequest).toHaveBeenCalledWith('tenant-1');
+    expect(set).toHaveBeenCalledWith(CLS_DEDICATED_DB_URL, DEDICATED);
+  });
+
+  it('401 for an inactive tenant, before any tenant context is published (D50)', async () => {
+    (signLink.verify as jest.Mock).mockResolvedValue(claims);
+    tenantDbForRequest.mockRejectedValue(new UnauthorizedException('inactive'));
+    const set = jest.fn();
+    const cls = { isActive: () => true, set } as unknown as import('nestjs-cls').ClsService;
+    const req: Record<string, unknown> = { params: { token: 't' } };
+    await expect(
+      new ContractSignTokenGuard(cls, signLink).canActivate(ctxWith(req)),
+    ).rejects.toBeInstanceOf(UnauthorizedException);
+    expect(set).not.toHaveBeenCalled();
+    expect(req.tenantId).toBeUndefined();
   });
 });

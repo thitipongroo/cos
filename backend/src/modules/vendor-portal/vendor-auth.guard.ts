@@ -40,11 +40,13 @@ import {
 } from '@nestjs/common';
 import { ClsService } from 'nestjs-cls';
 import {
+  CLS_DEDICATED_DB_URL,
   CLS_TENANT_ID,
   CLS_VENDOR_ID,
   CLS_VENDOR_IDENTITY_ID,
   CLS_VENDOR_INVITATION_ID,
 } from '../../shared/context/cls-context';
+import { tenantDbForRequest } from '../../shared/context/tenant-db-for-request';
 import { assertSafeTenantId } from '../../shared/prisma/assert-safe-tenant-id';
 import { FeatureFlagService } from '../../shared/feature-flags/feature-flag.service';
 import {
@@ -88,7 +90,7 @@ export class VendorAuthGuard implements CanActivate {
       // edge rather than deeper in TenantPrismaService (QM-4 — same guard, applied earlier).
       assertSafeTenantId(claims.tenantId);
       await this.assertWritable(req, claims.tenantId);
-      this.publish(req, { tenantId: claims.tenantId, invitationId: claims.invitationId });
+      await this.publish(req, { tenantId: claims.tenantId, invitationId: claims.invitationId });
       return true;
     }
 
@@ -113,7 +115,7 @@ export class VendorAuthGuard implements CanActivate {
     }
 
     await this.assertWritable(req, tenantId);
-    this.publish(req, {
+    await this.publish(req, {
       tenantId,
       vendorIdentityId,
       vendorId: relationship.vendor_id,
@@ -133,7 +135,7 @@ export class VendorAuthGuard implements CanActivate {
    * Write the resolved context to CLS (authoritative — survives Fastify's request cloning) and mirror
    * it onto the request object for handlers that read it via @Req().
    */
-  private publish(
+  private async publish(
     req: VendorRequest,
     ctx: {
       tenantId: string;
@@ -141,9 +143,12 @@ export class VendorAuthGuard implements CanActivate {
       vendorIdentityId?: string;
       invitationId?: string;
     },
-  ): void {
+  ): Promise<void> {
+    // D50: the tenant's dedicated database, if any; 401 for an inactive tenant, as the JWT path.
+    const dedicatedDbUrl = await tenantDbForRequest(ctx.tenantId);
     if (this.cls.isActive()) {
       this.cls.set(CLS_TENANT_ID, ctx.tenantId);
+      if (dedicatedDbUrl) this.cls.set(CLS_DEDICATED_DB_URL, dedicatedDbUrl);
       if (ctx.vendorId) this.cls.set(CLS_VENDOR_ID, ctx.vendorId);
       if (ctx.vendorIdentityId) this.cls.set(CLS_VENDOR_IDENTITY_ID, ctx.vendorIdentityId);
       if (ctx.invitationId) this.cls.set(CLS_VENDOR_INVITATION_ID, ctx.invitationId);

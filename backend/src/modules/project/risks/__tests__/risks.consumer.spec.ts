@@ -24,7 +24,16 @@ jest.mock('@nestjs/core', () => {
   };
 });
 
+// D50 (2026-11-13): runInTenantContext resolves the tenant's database (and refuses an inactive one).
+const resolveTenantDb = jest.fn();
+jest.mock('../../../../shared/prisma/get-db-url', () => ({
+  ...jest.requireActual('../../../../shared/prisma/get-db-url'),
+  resolveTenantDb: (id: string) => resolveTenantDb(id),
+}));
+beforeEach(() => resolveTenantDb.mockReset().mockResolvedValue({ dedicatedDbUrl: null }));
+
 import { RisksConsumer } from '../risks.consumer';
+import { TenantInactiveError } from '../../../../shared/prisma/get-db-url';
 import { clsTenantId, clsUserId } from '../../../../shared/context/cls-context';
 import type { RisksService } from '../risks.service';
 
@@ -82,6 +91,12 @@ describe('onModuleInit', () => {
 });
 
 describe('handle()', () => {
+  it('refuses an inactive tenant before creating anything (the consumer retries, then DLQs it)', async () => {
+    resolveTenantDb.mockRejectedValueOnce(new TenantInactiveError('tenant-001', 'inactive'));
+    await expect(consumer.handle(forecastEvent())).rejects.toBeInstanceOf(TenantInactiveError);
+    expect(mockCreateSuggested).not.toHaveBeenCalled();
+  });
+
   it('maps a DELAY_FORECAST to an AI-suggested risk under the event tenant', async () => {
     await consumer.handle(forecastEvent());
     expect(mockRegisterRequest).toHaveBeenCalledWith(

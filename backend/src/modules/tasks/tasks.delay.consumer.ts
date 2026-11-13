@@ -8,7 +8,8 @@
 // the event observable in the product rather than only in the Knowledge Graph.
 //
 // TasksService is REQUEST-scoped, so it is resolved per event through ModuleRef with a synthetic
-// request carrying the event's tenant_id — the same pattern RisksConsumer and FinanceConsumer use.
+// request carrying the event's tenant_id — the same pattern RisksConsumer and FinanceConsumer use —
+// inside runInTenantContext, which TenantPrismaService needs (OQ-45; added 2026-11-13, D50).
 
 import { Injectable, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
 import { ModuleRef, ContextIdFactory } from '@nestjs/core';
@@ -16,6 +17,7 @@ import { KafkaConsumer } from '@cos/kafka';
 import { createLogger } from '@cos/logger';
 import type { BaseEventEnvelope } from '@cos/types';
 import { TasksService } from './tasks.service';
+import { runInTenantContext } from '../../shared/context/run-in-tenant-context';
 
 const logger = createLogger('tasks-delay-consumer');
 
@@ -70,34 +72,40 @@ export class TasksDelayConsumer implements OnModuleInit, OnModuleDestroy {
       return;
     }
 
-    const svc = await this.resolveSvc(event.tenant_id);
+    // CLS, not just the synthetic request: TenantPrismaService reads the tenant (and, since D50, the
+    // dedicated database) from CLS alone. Without it getTask threw "Tenant context missing", which the
+    // catch below read as "task not found" — so no delay event ever blocked a task. runInTenantContext
+    // also refuses an inactive tenant (the consumer retries, then sends the event to the DLQ).
+    await runInTenantContext({ tenantId: event.tenant_id, userId: event.actor_id }, async () => {
+      const svc = await this.resolveSvc(event.tenant_id);
 
-    let current: { status: string };
-    try {
-      current = (await svc.getTask(taskId)) as unknown as { status: string };
-    } catch {
-      logger.info({ tenant_id: event.tenant_id, task_id: taskId }, 'delay event: task not found');
-      return;
-    }
+      let current: { status: string };
+      try {
+        current = (await svc.getTask(taskId)) as unknown as { status: string };
+      } catch {
+        logger.info({ tenant_id: event.tenant_id, task_id: taskId }, 'delay event: task not found');
+        return;
+      }
 
-    if (!BLOCKABLE_STATUSES.has(current.status)) {
+      if (!BLOCKABLE_STATUSES.has(current.status)) {
+        logger.info(
+          { tenant_id: event.tenant_id, task_id: taskId, status: current.status },
+          'delay event: task not in a blockable status, leaving it alone',
+        );
+        return;
+      }
+
+      await svc.updateTask(taskId, { status: 'BLOCKED' } as never);
       logger.info(
-        { tenant_id: event.tenant_id, task_id: taskId, status: current.status },
-        'delay event: task not in a blockable status, leaving it alone',
+        {
+          tenant_id: event.tenant_id,
+          task_id: taskId,
+          delay_days: event.payload['delay_days'],
+          severity: event.payload['severity'],
+        },
+        'delay event: task set to BLOCKED',
       );
-      return;
-    }
-
-    await svc.updateTask(taskId, { status: 'BLOCKED' } as never);
-    logger.info(
-      {
-        tenant_id: event.tenant_id,
-        task_id: taskId,
-        delay_days: event.payload['delay_days'],
-        severity: event.payload['severity'],
-      },
-      'delay event: task set to BLOCKED',
-    );
+    });
   }
 
   /** Resolve a per-event TasksService instance with the event's tenant context. */

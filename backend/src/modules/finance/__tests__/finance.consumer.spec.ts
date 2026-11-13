@@ -31,8 +31,16 @@ jest.mock('@nestjs/core', () => {
   };
 });
 
+// D50: the context resolves the tenant's database (and refuses an inactive tenant) before the handler.
+const resolveTenantDb = jest.fn();
+jest.mock('../../../shared/prisma/get-db-url', () => ({
+  ...jest.requireActual('../../../shared/prisma/get-db-url'),
+  resolveTenantDb: (id: string) => resolveTenantDb(id),
+}));
+
 import { FinanceConsumer } from '../finance.consumer';
-import { clsTenantId, clsUserId } from '../../../shared/context/cls-context';
+import { TenantInactiveError } from '../../../shared/prisma/get-db-url';
+import { clsDedicatedDbUrl, clsTenantId, clsUserId } from '../../../shared/context/cls-context';
 import { FinanceService } from '../finance.service';
 
 // ── Mock FinanceService ─────────────────────────────────────────────────────
@@ -69,6 +77,7 @@ let consumer: FinanceConsumer;
 
 beforeEach(() => {
   jest.clearAllMocks();
+  resolveTenantDb.mockReset().mockResolvedValue({ dedicatedDbUrl: null });
   consumer = new FinanceConsumer(mockModuleRef as never);
 });
 
@@ -258,6 +267,45 @@ describe('onModuleInit', () => {
     expect(seenUser).toBe('actor-001');
     // Scoped to the callback: the next event, from another tenant, must not inherit this one.
     expect(clsTenantId()).toBe('');
+  });
+
+  const poCreated = () => {
+    const call = (mockOn.mock.calls as unknown[]).find(
+      (c) => (c as unknown[])[0] === 'procurement.po.created.v1',
+    ) as unknown[];
+    const handler = call[1] as (e: unknown) => Promise<void>;
+    return handler({
+      event_type: 'procurement.po.created.v1',
+      tenant_id: 'tenant-xyz',
+      actor_id: 'actor-001',
+      payload: {
+        po_id: 'po-001',
+        project_id: 'proj-001',
+        total_amount: { amount: '100', currency_code: 'THB' },
+      },
+    });
+  };
+
+  // D50 (2026-11-13): until then this consumer never set the dedicated database, so an enterprise
+  // tenant's cost transactions were written to the shared one.
+  it("routes the handler to the tenant's dedicated database", async () => {
+    const url = 'postgresql://app_user:pw@tenant-db.internal:5432/cos';
+    resolveTenantDb.mockResolvedValueOnce({ dedicatedDbUrl: url });
+    let seen: string | undefined;
+    mockHandlePoCreated.mockImplementationOnce(async () => {
+      seen = clsDedicatedDbUrl();
+    });
+    await consumer.onModuleInit();
+    await poCreated();
+    expect(resolveTenantDb).toHaveBeenCalledWith('tenant-xyz');
+    expect(seen).toBe(url);
+  });
+
+  it('refuses an inactive tenant before the handler runs (the consumer then retries and DLQs it)', async () => {
+    resolveTenantDb.mockRejectedValueOnce(new TenantInactiveError('tenant-xyz', 'inactive'));
+    await consumer.onModuleInit();
+    await expect(poCreated()).rejects.toBeInstanceOf(TenantInactiveError);
+    expect(mockHandlePoCreated).not.toHaveBeenCalled();
   });
 });
 

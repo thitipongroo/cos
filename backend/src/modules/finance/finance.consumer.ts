@@ -5,11 +5,10 @@
 
 import { Injectable, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
 import { ModuleRef, ContextIdFactory } from '@nestjs/core';
-import { ClsServiceManager } from 'nestjs-cls';
 import { KafkaConsumer } from '@cos/kafka';
 import { createLogger } from '@cos/logger';
 import type { BaseEventEnvelope } from '@cos/types';
-import { CLS_TENANT_ID, CLS_USER_ID } from '../../shared/context/cls-context';
+import { runInTenantContext } from '../../shared/context/run-in-tenant-context';
 import { FinanceService } from './finance.service';
 import type { BoqSnapshotItem } from './finance.repository';
 
@@ -128,20 +127,16 @@ export class FinanceConsumer implements OnModuleInit, OnModuleDestroy {
    * master:2938-2940 describes could not complete a single event. The consumer's own unit spec mocks
    * Kafka and the service, so it never reached a database to find out.
    *
-   * `cls.run` + `cls.set` is the pattern the other non-HTTP entry point already uses (see
-   * data-export.activities.ts, a Temporal activity). Like that one, this does not set
-   * CLS_DEDICATED_DB_URL: only the HTTP path knows it, from the JWT. Enterprise tenants on a
-   * dedicated database therefore still resolve to the shared client here — a pre-existing gap in
-   * every non-HTTP path, not one this handler introduces, and not one to settle silently.
+   * runInTenantContext enters CLS as the other consumers do and, since D50 (2026-11-13), routes to the
+   * tenant's dedicated database and refuses an inactive tenant (the handler throws, the consumer retries
+   * and then sends the event to the DLQ). Until then this had its own `cls.run` with no
+   * CLS_DEDICATED_DB_URL, so an enterprise tenant's rows went to the shared database.
    */
   private async withTenantContext(
     event: BaseEventEnvelope<Record<string, unknown>>,
     handle: (svc: FinanceService) => Promise<void>,
   ): Promise<void> {
-    const cls = ClsServiceManager.getClsService();
-    await cls.run(async () => {
-      cls.set(CLS_TENANT_ID, event.tenant_id);
-      cls.set(CLS_USER_ID, event.actor_id);
+    await runInTenantContext({ tenantId: event.tenant_id, userId: event.actor_id }, async () => {
       const contextId = ContextIdFactory.create();
       // The REQUEST-scoped service reads its own tenantId/userId off this synthetic request.
       // actor_id is what master:2910 wants recorded as `recorded_by` on the cost transaction.

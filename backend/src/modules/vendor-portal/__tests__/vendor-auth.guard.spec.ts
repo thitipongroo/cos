@@ -1,6 +1,15 @@
+// D50 (2026-11-13): the guard asks for the tenant's database after verifying its token.
+const tenantDbForRequest = jest.fn();
+jest.mock('../../../shared/context/tenant-db-for-request', () => ({
+  tenantDbForRequest: (id: string) => tenantDbForRequest(id),
+}));
+beforeEach(() => tenantDbForRequest.mockReset().mockResolvedValue(null));
+const DEDICATED = 'postgresql://app_user:pw@tenant-db.internal:5432/cos';
+
 import { UnauthorizedException, ForbiddenException, ExecutionContext } from '@nestjs/common';
 import { VendorAuthGuard, VendorRequest } from '../vendor-auth.guard';
 import {
+  CLS_DEDICATED_DB_URL,
   CLS_TENANT_ID,
   CLS_VENDOR_ID,
   CLS_VENDOR_IDENTITY_ID,
@@ -209,5 +218,34 @@ describe('VendorAuthGuard — read-only trials (§7.10, ADR-109)', () => {
       identities as never,
     );
     await expect(guard.canActivate(ctxFor(tier1('POST')))).resolves.toBe(true);
+  });
+
+  describe('VendorAuthGuard — routing (D50)', () => {
+    it("routes both tiers to the tenant's dedicated database", async () => {
+      tenantDbForRequest.mockResolvedValue(DEDICATED);
+      const invitation = build();
+      await invitation.guard.canActivate(
+        ctxFor({ params: { token: 'T' }, headers: {} } as unknown as VendorRequest),
+      );
+      expect(invitation.store.get(CLS_DEDICATED_DB_URL)).toBe(DEDICATED);
+
+      const session = build();
+      await session.guard.canActivate(
+        ctxFor({
+          headers: { authorization: 'Bearer S', 'x-vendor-tenant-id': TENANT },
+        } as unknown as VendorRequest),
+      );
+      expect(session.store.get(CLS_DEDICATED_DB_URL)).toBe(DEDICATED);
+      expect(tenantDbForRequest).toHaveBeenCalledWith(TENANT);
+    });
+
+    it('401 for an inactive tenant, before any tenant context is published', async () => {
+      tenantDbForRequest.mockRejectedValue(new UnauthorizedException('inactive'));
+      const { guard, store } = build();
+      const req = { params: { token: 'T' }, headers: {} } as unknown as VendorRequest;
+      await expect(guard.canActivate(ctxFor(req))).rejects.toBeInstanceOf(UnauthorizedException);
+      expect(store.size).toBe(0);
+      expect(req.tenantId).toBeUndefined();
+    });
   });
 });

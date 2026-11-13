@@ -6,7 +6,13 @@
 
 import { CanActivate, ExecutionContext, Injectable, UnauthorizedException } from '@nestjs/common';
 import { ClsService } from 'nestjs-cls';
-import { CLS_TENANT_ID, CLS_USER_ID, CLS_USER_ROLE } from '../../shared/context/cls-context';
+import {
+  CLS_DEDICATED_DB_URL,
+  CLS_TENANT_ID,
+  CLS_USER_ID,
+  CLS_USER_ROLE,
+} from '../../shared/context/cls-context';
+import { tenantDbForRequest } from '../../shared/context/tenant-db-for-request';
 import { ContractSignLinkService } from './contract-sign-link.service';
 
 interface SignRequest {
@@ -29,9 +35,12 @@ export class ContractSignTokenGuard implements CanActivate {
       throw new UnauthorizedException('Missing sign token');
     }
     const claims = await this.signLink.verify(token); // throws on bad signature / expiry
+    // D50: the tenant's dedicated database, if any; 401 for an inactive tenant, as the JWT path.
+    const dedicatedDbUrl = await tenantDbForRequest(claims.tenantId);
 
     if (this.cls.isActive()) {
       this.cls.set(CLS_TENANT_ID, claims.tenantId);
+      if (dedicatedDbUrl) this.cls.set(CLS_DEDICATED_DB_URL, dedicatedDbUrl);
       // The client is not a platform user; attribute VC issuance to a contract-scoped client URN.
       this.cls.set(CLS_USER_ID, `urn:cos:contract-client:${claims.contractId}`);
       this.cls.set(CLS_USER_ROLE, 'CONTRACT_CLIENT');

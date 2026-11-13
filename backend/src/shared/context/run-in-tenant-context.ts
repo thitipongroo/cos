@@ -26,7 +26,8 @@
 // list of keys someone will forget one of.
 
 import { ClsServiceManager } from 'nestjs-cls';
-import { CLS_TENANT_ID, CLS_USER_ID, CLS_USER_ROLE } from './cls-context';
+import { CLS_DEDICATED_DB_URL, CLS_TENANT_ID, CLS_USER_ID, CLS_USER_ROLE } from './cls-context';
+import { resolveTenantDb } from '../prisma/get-db-url';
 
 export interface TenantContext {
   tenantId: string;
@@ -47,9 +48,17 @@ export interface TenantContext {
  * distinction is load-bearing.
  */
 export async function runInTenantContext<T>(ctx: TenantContext, fn: () => Promise<T>): Promise<T> {
+  // D50 (2026-11-13): route as the JWT path does — the tenant's dedicated database when it has one
+  // (TenantPrismaService reads CLS_DEDICATED_DB_URL and otherwise uses the shared database), and refuse
+  // an inactive or unknown tenant (TenantInactiveError) before `fn` runs. Until then every consumer
+  // wrote an enterprise tenant's rows to the shared database, and kept writing while it was paused.
+  const { dedicatedDbUrl } = await resolveTenantDb(ctx.tenantId);
   const cls = ClsServiceManager.getClsService();
   return cls.run(async () => {
     cls.set(CLS_TENANT_ID, ctx.tenantId);
+    // Always written, undefined for a shared tenant: cls.run copies the enclosing context, and a context
+    // entered inside another tenant's must not inherit that tenant's dedicated database.
+    cls.set(CLS_DEDICATED_DB_URL, dedicatedDbUrl ?? undefined);
     if (ctx.userId) cls.set(CLS_USER_ID, ctx.userId);
     if (ctx.userRole) cls.set(CLS_USER_ROLE, ctx.userRole);
     return fn();

@@ -8,7 +8,7 @@ jest.mock('@prisma/client', () => ({
   PrismaClient: jest.fn(),
 }));
 
-import { getDbUrlForTenant } from '../get-db-url';
+import { getDbUrlForTenant, TenantInactiveError } from '../get-db-url';
 import { PrismaClient } from '@prisma/client';
 
 const LOOKUP_DB = 'postgresql://cos:pass@pgbouncer:6432/cos';
@@ -36,30 +36,42 @@ afterEach(() => {
 describe('getDbUrlForTenant', () => {
   it('returns dedicated_db_url when tenant has one (enterprise)', async () => {
     const dedicatedUrl = 'postgresql://app_user:pass@dedicated-rds:5432/tenantdb';
-    mockQueryRaw.mockResolvedValueOnce([{ dedicated_db_url: dedicatedUrl }]);
+    mockQueryRaw.mockResolvedValueOnce([{ is_active: true, dedicated_db_url: dedicatedUrl }]);
     const result = await getDbUrlForTenant('tenant-uuid-001');
     expect(result).toBe(dedicatedUrl);
     expect(mockDisconnect).toHaveBeenCalledTimes(1);
   });
 
   it('returns APP_DATABASE_URL (not DATABASE_URL) when dedicated_db_url is null (shared tenant)', async () => {
-    mockQueryRaw.mockResolvedValueOnce([{ dedicated_db_url: null }]);
+    mockQueryRaw.mockResolvedValueOnce([{ is_active: true, dedicated_db_url: null }]);
     const result = await getDbUrlForTenant('tenant-uuid-002');
     expect(result).toBe(APP_DB);
     expect(result).not.toBe(LOOKUP_DB);
     expect(mockDisconnect).toHaveBeenCalledTimes(1);
   });
 
-  it('returns APP_DATABASE_URL when the tenant row is not found (shared fallback)', async () => {
+  // D50 (2026-11-13): an unknown or inactive tenant is refused, as the JWT path refuses it. Until then
+  // both fell back to the shared database — where a paused enterprise tenant's writes were lost.
+  it('throws TenantInactiveError when the tenant row is not found', async () => {
     mockQueryRaw.mockResolvedValueOnce([]);
-    const result = await getDbUrlForTenant('nonexistent-uuid');
-    expect(result).toBe(APP_DB);
+    const err = await getDbUrlForTenant('nonexistent-uuid').catch((e: unknown) => e);
+    expect(err).toBeInstanceOf(TenantInactiveError);
+    expect((err as TenantInactiveError).reason).toBe('unknown');
     expect(mockDisconnect).toHaveBeenCalledTimes(1);
+  });
+
+  it('throws TenantInactiveError for an inactive tenant, dedicated database or not', async () => {
+    for (const dedicated of [null, 'postgresql://app_user:pass@dedicated-rds:5432/tenantdb']) {
+      mockQueryRaw.mockResolvedValueOnce([{ is_active: false, dedicated_db_url: dedicated }]);
+      const err = await getDbUrlForTenant('tenant-uuid-003').catch((e: unknown) => e);
+      expect(err).toBeInstanceOf(TenantInactiveError);
+      expect((err as TenantInactiveError).reason).toBe('inactive');
+    }
   });
 
   it('throws when a shared tenant needs a connection but APP_DATABASE_URL is unset', async () => {
     delete process.env['APP_DATABASE_URL'];
-    mockQueryRaw.mockResolvedValueOnce([{ dedicated_db_url: null }]);
+    mockQueryRaw.mockResolvedValueOnce([{ is_active: true, dedicated_db_url: null }]);
     await expect(getDbUrlForTenant('tenant-uuid-002')).rejects.toThrow(
       /APP_DATABASE_URL is not set/,
     );

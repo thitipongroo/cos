@@ -10,7 +10,13 @@
 
 import { CanActivate, ExecutionContext, Injectable, UnauthorizedException } from '@nestjs/common';
 import { ClsService } from 'nestjs-cls';
-import { CLS_TENANT_ID, CLS_USER_ID, CLS_USER_ROLE } from '../../../shared/context/cls-context';
+import {
+  CLS_DEDICATED_DB_URL,
+  CLS_TENANT_ID,
+  CLS_USER_ID,
+  CLS_USER_ROLE,
+} from '../../../shared/context/cls-context';
+import { tenantDbForRequest } from '../../../shared/context/tenant-db-for-request';
 import { SubjectVerificationService } from './subject-verification.service';
 
 interface VerifyRequest {
@@ -33,9 +39,13 @@ export class SubjectVerifyTokenGuard implements CanActivate {
       throw new UnauthorizedException('Missing verification token');
     }
     const claims = await this.verification.verify(token); // throws on bad signature / expiry
+    // D50: the tenant's dedicated database, if any; 401 for an inactive tenant, as the JWT path. A
+    // deactivated tenant's data subjects are refused too (product-owner decision, 2026-11-13).
+    const dedicatedDbUrl = await tenantDbForRequest(claims.tenantId);
 
     if (this.cls.isActive()) {
       this.cls.set(CLS_TENANT_ID, claims.tenantId);
+      if (dedicatedDbUrl) this.cls.set(CLS_DEDICATED_DB_URL, dedicatedDbUrl);
       // The subject is not a platform user and must never be attributed as one. A request-scoped URN
       // keeps the audit trail honest about who acted: the person the request is about, not an admin.
       this.cls.set(CLS_USER_ID, `urn:cos:data-subject:${claims.requestId}`);
