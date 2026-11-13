@@ -298,4 +298,47 @@ describe('tenant sweeps cover dedicated databases (D54)', () => {
       await dedicatedApp.$disconnect();
     }
   });
+
+  // D57 (2026-11-13): reads by tenant alone — the provisioning copy's, and the RLS predicate — use a
+  // tenant-leading index on the workforce telemetry hypertables instead of scanning every chunk.
+  it('a read of one tenant’s workforce telemetry uses the tenant index (D57)', async () => {
+    await shared.query(
+      `INSERT INTO workforce_telemetry.attendance_logs (log_id, recorded_at, worker_id, project_id, tenant_id)
+       SELECT gen_random_uuid(), d, $2, $3, $1
+         FROM unnest(ARRAY[timestamptz '2026-11-01 07:00Z', '2026-11-02 07:00Z']) d`,
+      [S, USER, PROJECT],
+    );
+    await shared.query(
+      `INSERT INTO workforce_telemetry.timesheets (timesheet_id, period_date, worker_id, project_id, tenant_id)
+       VALUES (gen_random_uuid(), '2026-11-01', $2, $3, $1)`,
+      [S, USER, PROJECT],
+    );
+    // Tiny tables: with sequential scans allowed the planner may rightly prefer them, so they are switched
+    // off — what is asserted is that the index exists for the planner to use.
+    const plan = async (sql: string) => {
+      await shared.query('BEGIN');
+      try {
+        await shared.query('SET LOCAL enable_seqscan = off');
+        const { rows } = await shared.query<{ 'QUERY PLAN': string }>(`EXPLAIN ${sql}`, [S]);
+        return rows.map((r) => r['QUERY PLAN']).join('\n');
+      } finally {
+        await shared.query('ROLLBACK');
+      }
+    };
+    expect(
+      await plan(`SELECT count(*) FROM workforce_telemetry.attendance_logs WHERE tenant_id = $1`),
+    ).toContain('idx_attendance_tenant_time');
+    expect(
+      await plan(`SELECT count(*) FROM workforce_telemetry.timesheets WHERE tenant_id = $1`),
+    ).toContain('idx_timesheet_tenant_period');
+    // And both are valid — an index left invalid would still appear in a plan for the chunks it covers.
+    const { rows } = await shared.query<{ name: string; valid: boolean }>(
+      `SELECT c.relname AS name, i.indisvalid AS valid FROM pg_index i JOIN pg_class c ON c.oid = i.indexrelid
+        WHERE c.relname IN ('idx_attendance_tenant_time', 'idx_timesheet_tenant_period') ORDER BY 1`,
+    );
+    expect(rows).toEqual([
+      { name: 'idx_attendance_tenant_time', valid: true },
+      { name: 'idx_timesheet_tenant_period', valid: true },
+    ]);
+  });
 });

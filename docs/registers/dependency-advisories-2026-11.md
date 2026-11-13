@@ -80,6 +80,7 @@ The numbers are the ones used while the work was planned. Decisions about the wi
 | D54 | Each tenant sweep (permit expiry, notification escalation, cashflow risk, ledger reconciliation) runs on the shared database only for tenants active and still there (writes under the D51 pause lock) and once per active tenant in its dedicated database (app-role URL, tenant transaction).                                                                                                                                                                                                   |
 | D55 | The provisioning copy also moves `crm`, `equipment_telemetry` and `workforce_telemetry` (added to `TENANT_DATA_SCHEMAS`); routing is unchanged, as the app already reads them from the dedicated database.                                                                                                                                                                                                                                                                                        |
 | D56 | No foreign key crosses between `platform` and the tenant schemas: the three that did are dropped on every database (one migration), and the reference that only the key checked (a trading relationship's vendor) is checked in code.                                                                                                                                                                                                                                                             |
+| D57 | `workforce_telemetry.attendance_logs` and `.timesheets` get tenant-leading indexes (`(tenant_id, recorded_at DESC)`, `(tenant_id, period_date DESC)`).                                                                                                                                                                                                                                                                                                                                            |
 
 ## The series
 
@@ -1802,15 +1803,10 @@ status = 'ACTIVE'` and leaves `vendor_id` as it was. Inviting the same e-mail ad
   (`resolveVendorId`). Since D56 the new vendor id is checked to be the tenant's, and then ignored on conflict. Found
   by review on `fix/cross-boundary-fks`; whether one person may act for two vendors of a tenant (and so whether to
   update the vendor or refuse the second invitation) is a product decision.
-- **Telemetry in the provisioning copy: no tenant index, and runs begun before D48.**
-  `workforce_telemetry.attendance_logs` and `.timesheets` have no index that starts with `tenant_id`
-  (`equipment_utilization` has one, its natural-key unique index), so the copy's `COPY (SELECT … WHERE tenant_id = …)`
-  and per-table counts scan every tenant's chunks on the shared database, inside the copy's long repeatable-read
-  snapshot (vacuum holds back meanwhile). Indexes on `(tenant_id, recorded_at)` and `(tenant_id, period_date)` would
-  bound that; they are a migration this branch does not add. Separately, a provisioning run begun before D48 still
-  switches routing before the approval wait and does not pause the tenant; device sync and CRM writes during that wait
-  go to the dedicated database, and since D55 the copy then finds them there and refuses (the counts differ). No such
-  run is known to exist — provisioning has not run against a real RDS (Open, above). MLOps
+- **Telemetry and provisioning: runs begun before D48, and MLOps reading the shared database.** A provisioning run
+  begun before D48 still switches routing before the approval wait and does not pause the tenant; device sync and CRM
+  writes during that wait go to the dedicated database, and since D55 the copy then finds them there and refuses (the
+  counts differ). No such run is known to exist — provisioning has not run against a real RDS (Open, above). MLOps
   (`mlops/feast/features/site_features.py`, the Airflow DAG) reads telemetry from the shared database, so for a moved
   tenant it reads the stale copy — true before D55 as well. Found on `fix/copy-remaining-schemas`.
 - **A moved tenant's rows stay in the shared database.** The provisioning copy (D46) copies a tenant's rows to its
@@ -2239,6 +2235,21 @@ export` for iOS and Android and `expo export:embed` (what the Gradle and Xcode b
     Negative controls in scratch copies: the old apps/mobile lockfile with the new root, and the old one in the root's
     place with the new apps/mobile, each fail with exit 1 (84 unresolved high/critical). CI and `verify-before-push.sh`
     already call the script. The conformance suite passes (61 suites, 2,343 tests).
+- **Closed — reads of one tenant's workforce telemetry scanned every tenant's chunks.** Fixed on
+  `perf/telemetry-tenant-index` (D57).
+  - `attendance_logs` and `timesheets` had no index leading with `tenant_id`, so the provisioning copy (and anything
+    filtering by tenant alone, as the RLS predicate does) scanned every chunk. Measured on TimescaleDB 2.31 with
+    generated data — 200,000 attendance rows in 60 daily chunks, 120,000 timesheets in 24 monthly chunks, 50 tenants;
+    not production figures — one tenant's count went from a sequential scan of all 84 chunks (2,700 and 1,608 buffers)
+    to index scans only (390 and 852). Migration `20261113000002_telemetry_tenant_indexes` adds the two (built in 170
+    ms and 80 ms on that data); its header says that on a hypertable the build blocks writes for its length, and how
+    to build them beforehand one chunk per transaction on a large table. A prebuild cut off part-way leaves an invalid
+    index that `IF NOT EXISTS` would skip (found in review, reproduced: 20 of 60 chunks indexed); the migration
+    refuses to run over an invalid one instead (reproduced: it raises, and after `DROP INDEX` it builds both valid).
+    Each insert maintains one more index — check-ins and periods, not sensor readings.
+  - On real Postgres the plan of a one-tenant read uses each new index, and both are valid; without the migration it
+    does not; the rollback runs twice cleanly and the migration re-applies twice (2 → 0 → 2 indexes); the rollback
+    pairing check counts 115 of 115.
 - **Closed — foreign keys between `platform` and tenant data could not hold for a tenant in a dedicated database.**
   Fixed on `fix/cross-boundary-fks` (D56).
   - Measured on a fully migrated database: three foreign keys crossed the line, not two —
