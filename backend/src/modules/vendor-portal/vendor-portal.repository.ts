@@ -133,6 +133,22 @@ export class VendorPortalRepository {
 
   // ── RFQ + quotation (Tier-1 capability) ─────────────────────────────────────
 
+  /**
+   * Whether `vendorId` is one of this tenant's vendors, in the tenant's own database (RLS scopes the read).
+   * Exists, active or not — the check the foreign key from platform.vendor_trading_relationships made until
+   * D56 dropped it (2026-11-13): that key could not hold once a tenant's vendors live in its dedicated
+   * database.
+   */
+  async vendorExists(vendorId: string): Promise<boolean> {
+    const rows = await this.db.run(
+      (tx) =>
+        tx.$queryRaw<Array<{ found: boolean }>>`
+        SELECT EXISTS (SELECT 1 FROM procurement.vendors WHERE vendor_id = ${vendorId}::uuid) AS found
+      `,
+    );
+    return rows[0]?.found === true;
+  }
+
   async findRfq(rfqId: string): Promise<RfqRow | null> {
     const rows = await this.db.run(
       (tx) =>

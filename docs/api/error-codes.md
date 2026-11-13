@@ -222,3 +222,18 @@ Full-CRUD backing entities under the project domain (§10.2 / §11.2). `-001` = 
 | COS-UNIT-002 | 404  | Parent building not found | create under a building absent for the tenant |
 | COS-ASST-001 | 404  | Asset not found           | assetId not found for tenant                  |
 | COS-ASST-002 | 404  | Parent project not found  | create under a project absent for the tenant  |
+
+---
+
+## COS-VND — Vendor Portal
+
+Recorded 2026-11-13 from `vendor-portal.service.ts`, where they were thrown but not listed here.
+
+| Code        | HTTP | Message                                                                   | Trigger                                                                                                                             |
+| ----------- | ---- | ------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| COS-VND-001 | 404  | RFQ not found / Invitation not found                                      | `issueInvitation` or `openRfq` for an RFQ, or an invitation, absent for the tenant                                                  |
+| COS-VND-002 | 401  | Invitation token mismatch                                                 | The magic-link token does not hash to the invitation's stored hash                                                                  |
+| COS-VND-003 | 422  | Invitation already used                                                   | The invitation is no longer PENDING (answered, or marked expired)                                                                   |
+| COS-VND-004 | 401  | Invitation expired                                                        | The invitation's `expires_at` has passed                                                                                            |
+| COS-VND-005 | 403  | Invitation has no linked vendor identity / No active trading relationship | A quotation submitted through an invitation whose vendor identity is missing, or has no active trading relationship with the tenant |
+| COS-VND-006 | 404  | Vendor not found                                                          | `issueInvitation` for a `vendorId` that is not one of the tenant's vendors (D56: no foreign key checks it any more)                 |

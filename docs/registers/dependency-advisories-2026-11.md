@@ -79,6 +79,7 @@ The numbers are the ones used while the work was planned. Decisions about the wi
 | D53 | After the resume (or the restore) the provisioning workflow republishes the tenant's DLQ entries that failed with `TenantInactiveError` since the pause, onto their original topics with the `tenant_id` header restored.                                                                                                                                                                                                                                                                         |
 | D54 | Each tenant sweep (permit expiry, notification escalation, cashflow risk, ledger reconciliation) runs on the shared database only for tenants active and still there (writes under the D51 pause lock) and once per active tenant in its dedicated database (app-role URL, tenant transaction).                                                                                                                                                                                                   |
 | D55 | The provisioning copy also moves `crm`, `equipment_telemetry` and `workforce_telemetry` (added to `TENANT_DATA_SCHEMAS`); routing is unchanged, as the app already reads them from the dedicated database.                                                                                                                                                                                                                                                                                        |
+| D56 | No foreign key crosses between `platform` and the tenant schemas: the three that did are dropped on every database (one migration), and the reference that only the key checked (a trading relationship's vendor) is checked in code.                                                                                                                                                                                                                                                             |
 
 ## The series
 
@@ -1787,11 +1788,6 @@ gate's isolated run) checks the hash was not tested either; it ran 12.18.0 with 
   ready, migration included (seconds on the small stores measured; a real-size store was not tried — the `startupProbe`
   allows ten minutes). The packages the `-full` image adds over the plain one (1.93 GB against 1.33 GB) are not audited:
   CI's pip-audit covers the client requirement sets only.
-- **Two references from tenant tables into `platform` cannot hold in a dedicated database.**
-  `procurement.rfq_invitations.vendor_identity_id` → `platform.vendor_identities` and `boq.boq_items.central_price_id` →
-  `platform.central_price_catalog` are foreign keys, and `platform` never moves (`get-db-url.ts`), so both tables are
-  empty there. The provisioning copy keeps the values (it loads with foreign-key checks off), but the app's own writes
-  to a dedicated database with either column set would fail the foreign key. Found on `fix/enterprise-provisioning-db`.
 - **Enterprise provisioning has not been run against RDS, and three things it needs are unverified there.**
   `createRdsActivity` creates PostgreSQL 15 on RDS. The migrations call `create_hypertable` without creating the
   TimescaleDB extension, which RDS does not offer, so `prisma migrate deploy` is expected to stop there.
@@ -1799,6 +1795,13 @@ gate's isolated run) checks the hash was not tested either; it ran 12.18.0 with 
   that bypasses RLS; whether the RDS master user may do each was not checked. The integration spec runs on TimescaleDB
   pg16 as superuser. Found on `fix/enterprise-provisioning-db`; needs a decision on the dedicated database's engine
   (or on making those migrations conditional) and a run against a real RDS instance.
+- **Re-inviting a vendor identity for another vendor keeps the old vendor.**
+  `VendorIdentityRepository.createRelationship` inserts `ON CONFLICT (tenant_id, vendor_identity_id) DO UPDATE SET
+status = 'ACTIVE'` and leaves `vendor_id` as it was. Inviting the same e-mail address for a different vendor of the
+  tenant therefore keeps the relationship on the first vendor, and that person's quotations are filed under it
+  (`resolveVendorId`). Since D56 the new vendor id is checked to be the tenant's, and then ignored on conflict. Found
+  by review on `fix/cross-boundary-fks`; whether one person may act for two vendors of a tenant (and so whether to
+  update the vendor or refuse the second invitation) is a product decision.
 - **Telemetry in the provisioning copy: no tenant index, and runs begun before D48.**
   `workforce_telemetry.attendance_logs` and `.timesheets` have no index that starts with `tenant_id`
   (`equipment_utilization` has one, its natural-key unique index), so the copy's `COPY (SELECT … WHERE tenant_id = …)`
@@ -2236,6 +2239,26 @@ export` for iOS and Android and `expo export:embed` (what the Gradle and Xcode b
     Negative controls in scratch copies: the old apps/mobile lockfile with the new root, and the old one in the root's
     place with the new apps/mobile, each fail with exit 1 (84 unresolved high/critical). CI and `verify-before-push.sh`
     already call the script. The conformance suite passes (61 suites, 2,343 tests).
+- **Closed — foreign keys between `platform` and tenant data could not hold for a tenant in a dedicated database.**
+  Fixed on `fix/cross-boundary-fks` (D56).
+  - Measured on a fully migrated database: three foreign keys crossed the line, not two —
+    `boq.boq_items.central_price_id` → `platform.central_price_catalog`,
+    `procurement.rfq_invitations.vendor_identity_id` → `platform.vendor_identities`, and the other way,
+    `platform.vendor_trading_relationships.vendor_id` → `procurement.vendors`. In a dedicated database `platform` is
+    empty, so an ENTERPRISE tenant could neither link a BOQ line to a central price nor invite a vendor; and a vendor
+    created in a dedicated database could not get a trading relationship on the shared one.
+  - Migration `20261113000001_drop_cross_boundary_fks` drops the three on every database (the schemas stay one); its
+    rollback re-adds them `NOT VALID` (run twice on a scratch database: clean, and the migration drops them again
+    after). `central_price_id` only ever comes from a read of the shared catalog and `vendor_identity_id` from
+    `upsertIdentity` in the same request; `vendor_id` came from the request body and only the key checked it, so
+    `issueInvitation` now refuses a vendor that is not the tenant's (`COS-VND-006`, 404) before writing anything. No
+    code deletes the referenced rows, so `ON DELETE RESTRICT` guarded nothing the app did.
+  - Specs: the service refuses an unknown vendor and writes nothing (the old service fails it); the repository's check
+    reads `procurement.vendors`. On real Postgres (two servers): no foreign key crosses the boundary on either
+    database, and a trading relationship names a vendor that lives only in the dedicated database — both fail without
+    the migration; and, as `app_user` through the transaction entry the app uses, `vendorExists` sees the tenant's own
+    vendor and not another tenant's, in the shared database and in a dedicated one (RLS decides; there is no older
+    code to fail it against). `COS-VND-001`…`006` are now listed in `docs/api/error-codes.md`, where none of them was.
 - **Closed — a dedicated database left three tenant schemas behind that the app reads from it.** Fixed on
   `fix/copy-remaining-schemas` (D55).
   - After the switch the app reads `crm` (`crm.repository.ts`, `subject-request.repository.ts`), `equipment_telemetry`

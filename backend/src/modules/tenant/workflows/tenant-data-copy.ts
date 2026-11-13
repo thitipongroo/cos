@@ -15,11 +15,11 @@
 //   - the source is read in one REPEATABLE READ, READ ONLY transaction, so every table comes from the same
 //     snapshot;
 //   - the target is written in one transaction with `session_replication_role = replica`: no foreign-key
-//     or trigger firing while loading. Two nullable references point into platform
-//     (procurement.rfq_invitations.vendor_identity_id, boq.boq_items.central_price_id), and platform never
-//     moves to a dedicated database (get-db-url.ts), so those tables are empty there; replica mode keeps
-//     the values, which name rows of the shared catalogs. Parents still go before children (no cycle in
-//     the 60 foreign keys between these schemas, measured), so the order reads naturally;
+//     or trigger firing while loading. Two columns name rows of platform's shared catalogs
+//     (procurement.rfq_invitations.vendor_identity_id, boq.boq_items.central_price_id); platform never moves
+//     to a dedicated database (get-db-url.ts), and since D56 (2026-11-13) no foreign key ties them to it,
+//     so the values are kept as they are. Parents still go before children (no cycle among the foreign keys
+//     between these schemas, measured), so the order reads naturally;
 //   - if the target already holds rows of the tenant it never deletes them: routing switches to the
 //     dedicated database before this step runs (assignDedicatedDbActivity, then the approval wait), so they
 //     can be the tenant's own writes. When every table's count equals the source's, an earlier attempt

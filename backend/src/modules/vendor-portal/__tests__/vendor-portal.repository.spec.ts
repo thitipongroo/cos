@@ -40,6 +40,18 @@ describe('VendorPortalRepository', () => {
     expect(executeRaw).toHaveBeenCalled();
   });
 
+  it("vendorExists asks the tenant's own vendors (D56) and answers a boolean", async () => {
+    queryRaw.mockResolvedValueOnce([{ found: true }]);
+    expect(await repo.vendorExists('ven-1')).toBe(true);
+    expect((queryRaw.mock.calls[0]![0] as string[]).join('?')).toContain(
+      'FROM procurement.vendors',
+    );
+    queryRaw.mockResolvedValueOnce([{ found: false }]);
+    expect(await repo.vendorExists('ven-2')).toBe(false);
+    queryRaw.mockResolvedValueOnce([]);
+    expect(await repo.vendorExists('ven-3')).toBe(false);
+  });
+
   it('findRfq returns the row or null', async () => {
     queryRaw.mockResolvedValueOnce([{ rfq_id: 'rfq-1' }]);
     expect(await repo.findRfq('rfq-1')).toEqual({ rfq_id: 'rfq-1' });

@@ -14,6 +14,11 @@ import { PostgreSqlContainer, StartedPostgreSqlContainer } from '@testcontainers
 import { Client } from 'pg';
 import { prismaMigrateDeploy } from '../../src/modules/tenant/workflows/prisma-migrate-deploy';
 import { disconnectDedicatedClients } from '../../src/shared/prisma/tenant-databases';
+import { TENANT_DATA_SCHEMAS } from '../../src/modules/tenant/workflows/tenant-data-copy';
+import { VendorPortalRepository } from '../../src/modules/vendor-portal/vendor-portal.repository';
+import { createPrismaClient } from '../../src/shared/prisma/create-prisma-client';
+import { enterTenantTx } from '../../src/shared/prisma/tenant-tx';
+import type { PrismaClient } from '@prisma/client';
 // Both read DATABASE_URL when CONSTRUCTED (their superuser client is a field), after beforeAll sets it.
 import { PermitExpiryService } from '../../src/modules/safety/permit-expiry.service';
 import { NotificationRepository } from '../../src/modules/notification/notification.repository';
@@ -203,6 +208,94 @@ describe('tenant sweeps cover dedicated databases (D54)', () => {
       expect(orphans?.sample.map((x) => x.tenant_id).sort()).toEqual([S, E].sort());
     } finally {
       await svc.onModuleDestroy();
+    }
+  });
+
+  // D56 (2026-11-13): no foreign key crosses between platform and the tenant schemas, on either database —
+  // in a dedicated one platform is empty, and the shared one cannot name a tenant row that moved.
+  const crossing = async (db: Client) =>
+    (
+      await db.query<{ n: number }>(
+        `
+        WITH s(n) AS (SELECT unnest($1::text[]))
+        SELECT count(*)::int AS n
+          FROM pg_constraint c
+          JOIN pg_class cl ON cl.oid = c.conrelid JOIN pg_namespace cn ON cn.oid = cl.relnamespace
+          JOIN pg_class fc ON fc.oid = c.confrelid JOIN pg_namespace fn ON fn.oid = fc.relnamespace
+         WHERE c.contype = 'f'
+           AND ((cn.nspname IN (SELECT n FROM s)) <> (fn.nspname IN (SELECT n FROM s)))`,
+        [[...TENANT_DATA_SCHEMAS]],
+      )
+    ).rows[0]!.n;
+
+  it('no foreign key crosses between platform and the tenant schemas, on either database (D56)', async () => {
+    expect(await crossing(shared)).toBe(0);
+    expect(await crossing(dedicated)).toBe(0);
+  });
+
+  it('a trading relationship can name a vendor that lives only in the tenant’s dedicated database (D56)', async () => {
+    const vendorD = 'eeeeeeee-3333-4000-8000-000000000001';
+    const { rows } = await shared.query<{ id: string }>(
+      `INSERT INTO platform.vendor_identities (email, display_name)
+       VALUES ('vendor@example.com', 'Vendor') RETURNING vendor_identity_id AS id`,
+    );
+    await expect(
+      shared.query(
+        `INSERT INTO platform.vendor_trading_relationships (vendor_identity_id, tenant_id, vendor_id)
+         VALUES ($1, $2, $3)`,
+        [rows[0]!.id, E, vendorD],
+      ),
+    ).resolves.toBeDefined();
+  });
+
+  // D56: with the foreign key gone, VendorPortalService checks the vendor through the tenant's own database.
+  // Run as app_user through the same transaction entry TenantPrismaService uses, so RLS decides.
+  it("vendorExists sees the tenant's own vendors only — in the shared database and in a dedicated one (D56)", async () => {
+    const T2 = 'aaaaaaaa-0000-4000-8000-0000000000a2';
+    await shared.query(
+      `INSERT INTO platform.tenants (tenant_id, tenant_code, tenant_name, keycloak_realm, plan_type)
+       VALUES ($1, 't2', 't2', 'cos-t2', 'STARTER')`,
+      [T2],
+    );
+    const vendor = async (db: Client, tenant: string, code: string) =>
+      (
+        await db.query<{ id: string }>(
+          `INSERT INTO procurement.vendors (tenant_id, vendor_code, vendor_name)
+           VALUES ($1, $2, $2) RETURNING vendor_id::text AS id`,
+          [tenant, code],
+        )
+      ).rows[0]!.id;
+    const vS = await vendor(shared, S, 'V-S');
+    const vT2 = await vendor(shared, T2, 'V-T2');
+    const vE = await vendor(dedicated, E, 'V-E');
+
+    const asApp = (pg: StartedPostgreSqlContainer) =>
+      createPrismaClient(
+        pg.getConnectionUri().replace(/\/\/[^@]+@/, `//app_user:${APP_USER_PASSWORD}@`),
+      );
+    const sharedApp = asApp(sharedPg);
+    const dedicatedApp = asApp(dedicatedPg);
+    const repoFor = (client: PrismaClient, tenant: string, onShared: boolean) =>
+      new VendorPortalRepository(
+        {
+          run: (fn: (tx: PrismaClient) => Promise<unknown>) =>
+            client.$transaction(async (tx) => {
+              await enterTenantTx(tx as PrismaClient, tenant, onShared);
+              return fn(tx as PrismaClient);
+            }),
+        } as never,
+        { tenantId: tenant },
+      );
+    try {
+      const sRepo = repoFor(sharedApp, S, true);
+      expect(await sRepo.vendorExists(vS)).toBe(true);
+      expect(await sRepo.vendorExists(vT2)).toBe(false); // another tenant's vendor
+      const eRepo = repoFor(dedicatedApp, E, false);
+      expect(await eRepo.vendorExists(vE)).toBe(true);
+      expect(await eRepo.vendorExists(vS)).toBe(false);
+    } finally {
+      await sharedApp.$disconnect();
+      await dedicatedApp.$disconnect();
     }
   });
 });

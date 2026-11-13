@@ -55,6 +55,12 @@ export class VendorPortalService {
     if (!rfq) {
       throw new NotFoundException('COS-VND-001: RFQ not found');
     }
+    // The trading relationship below is a platform row naming one of the tenant's vendors. Since D56 no
+    // foreign key checks that name (it could not, for a tenant in a dedicated database), so it is checked
+    // here, before anything is written.
+    if (!(await this.repo.vendorExists(params.vendorId))) {
+      throw new NotFoundException('COS-VND-006: Vendor not found');
+    }
 
     const identity = await this.identities.upsertIdentity(params.email, params.displayName);
     await this.identities.createRelationship(

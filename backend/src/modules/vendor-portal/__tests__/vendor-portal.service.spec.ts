@@ -23,6 +23,7 @@ function build(
     rfq?: unknown;
     hash?: string;
     relationship?: unknown;
+    vendorExists?: boolean;
   } = {},
 ) {
   const repo = {
@@ -35,6 +36,7 @@ function build(
         'rfq' in overrides ? overrides.rfq : { rfq_id: 'rfq-1', rfq_number: 'RFQ-1' },
       ),
     createInvitation: jest.fn().mockResolvedValue({ invitation_id: 'inv-1' }),
+    vendorExists: jest.fn().mockResolvedValue(overrides.vendorExists ?? true),
     createQuotation: jest.fn().mockResolvedValue({ quotation_id: 'q-1' }),
     markInvitationResponded: jest.fn().mockResolvedValue(undefined),
     listPurchaseOrdersByVendor: jest.fn().mockResolvedValue([{ po_id: 'po-1' }]),
@@ -78,6 +80,24 @@ describe('VendorPortalService', () => {
           displayName: 'ACME',
         }),
       ).rejects.toThrow(NotFoundException);
+    });
+
+    // D56 (2026-11-13): no foreign key checks the trading relationship's vendor any more — it could not hold
+    // once a tenant's vendors live in its dedicated database — so the service does, first.
+    it('404 when the vendor is not one of the tenant’s, and nothing is written', async () => {
+      const { service, repo, identities } = build({ vendorExists: false });
+      await expect(
+        service.issueInvitation({
+          rfqId: 'rfq-1',
+          vendorId: 'someone-elses',
+          email: 'a@b.co',
+          displayName: 'ACME',
+        }),
+      ).rejects.toThrow('COS-VND-006: Vendor not found');
+      expect(repo.vendorExists).toHaveBeenCalledWith('someone-elses');
+      expect(identities.upsertIdentity).not.toHaveBeenCalled();
+      expect(identities.createRelationship).not.toHaveBeenCalled();
+      expect(repo.createInvitation).not.toHaveBeenCalled();
     });
 
     it('issues identity, relationship, token and invitation', async () => {
