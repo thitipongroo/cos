@@ -310,4 +310,84 @@ describe('Site-report events name the written report (real database)', () => {
 
     expect(await detailsOn(day)).toEqual([expect.objectContaining({ manpower_count: 9 })]);
   });
+
+  // ── /sync/push: the app's own route keeps blocker_category, shift and the per-trade lines ──────
+
+  const push = (day: string, payload: Record<string, unknown>) =>
+    http()
+      .post('/api/v1/sync/push')
+      .send({
+        entity_type: 'site_report',
+        entity_id: randomUUID(),
+        operation: 'CREATE',
+        payload: { project_id: projectId, report_date: day, ...payload },
+      });
+
+  const linesOf = (
+    reportId: string,
+  ): Promise<Array<{ trade_type: string; worker_count: number }>> =>
+    infra.prisma.$queryRawUnsafe(
+      `SELECT trade_type, worker_count FROM site_ops.manpower_logs
+        WHERE report_id = $1::uuid ORDER BY trade_type`,
+      reportId,
+    );
+
+  it('push: the first save stores category, shift and lines; a later save replaces them', async () => {
+    const day = '2019-03-07';
+    const first = await push(day, {
+      blocker_category: 'WEATHER',
+      shift: 'NIGHT',
+      manpower_count: 8,
+      manpower_lines: [
+        { trade_type: 'CIVIL', worker_count: 6 },
+        { trade_type: 'ELECTRICAL', worker_count: 2 },
+      ],
+      client_submitted_at: '2019-03-07T02:00:00.000Z',
+    });
+    expect(first.status).toBeLessThan(400);
+    expect((first.body as { status: string }).status).toBe('ACCEPTED');
+
+    const [row] = await detailsOn(day);
+    expect(row).toEqual(
+      expect.objectContaining({ blocker_category: 'WEATHER', shift: 'NIGHT', manpower_count: 8 }),
+    );
+    expect(await linesOf(row!.report_id)).toEqual([
+      { trade_type: 'CIVIL', worker_count: 6 },
+      { trade_type: 'ELECTRICAL', worker_count: 2 },
+    ]);
+
+    // The app's next save of the day: a new id, so the natural-key edit.
+    const second = await push(day, {
+      blocker_category: 'POWER',
+      shift: 'DAY',
+      manpower_count: 3,
+      manpower_lines: [{ trade_type: 'PLUMBING', worker_count: 3 }],
+      client_submitted_at: '2019-03-07T09:00:00.000Z',
+    });
+    expect((second.body as { status: string }).status).toBe('ACCEPTED');
+    expect(await detailsOn(day)).toEqual([
+      expect.objectContaining({
+        report_id: row!.report_id,
+        blocker_category: 'POWER',
+        shift: 'DAY',
+        manpower_count: 3,
+      }),
+    ]);
+    expect(await linesOf(row!.report_id)).toEqual([{ trade_type: 'PLUMBING', worker_count: 3 }]);
+  });
+
+  it('push: an invalid category is ignored and the report is still stored', async () => {
+    const day = '2019-03-08';
+    const res = await push(day, {
+      blocker_category: 'BOGUS',
+      shift: 'NIGHT',
+      manpower_count: 4,
+      client_submitted_at: '2019-03-08T02:00:00.000Z',
+    });
+    expect(res.status).toBeLessThan(400);
+    expect((res.body as { status: string }).status).toBe('ACCEPTED');
+    expect(await detailsOn(day)).toEqual([
+      expect.objectContaining({ blocker_category: null, shift: 'NIGHT', manpower_count: 4 }),
+    ]);
+  });
 });

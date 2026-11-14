@@ -279,6 +279,39 @@ describe('SiteOpsRepository', () => {
       expect(mockPrisma.$queryRaw).toHaveBeenCalledTimes(1);
     });
 
+    // A sync edit that did not send blocker_category / shift must leave them alone: the SET is a CASE
+    // on a flag, so an absent param is (false, null) and the column keeps its value.
+    it('writes blocker_category / shift only when given', async () => {
+      mockPrisma.$queryRaw.mockResolvedValue([reportRow]);
+      const base = {
+        summary: null,
+        blockers: null,
+        weather: null,
+        manpower_count: null,
+        client_submitted_at: null,
+      };
+
+      await repo.updateSiteReport('report-uuid-001', base);
+      const sqlOf = (call: unknown[]) => (call[0] as TemplateStringsArray).join('?');
+      const [absent] = mockPrisma.$queryRaw.mock.calls as unknown[][];
+      expect(sqlOf(absent!)).toMatch(
+        /blocker_category\s+= CASE WHEN \? THEN \?\s+ELSE blocker_category END/,
+      );
+      expect(sqlOf(absent!)).toMatch(/shift\s+= CASE WHEN \? THEN \? ELSE shift END/);
+      expect(absent!.slice(1)).toEqual(expect.arrayContaining([false]));
+      expect(absent!.slice(1).filter((v) => v === true)).toHaveLength(0);
+
+      mockPrisma.$queryRaw.mockClear();
+      await repo.updateSiteReport('report-uuid-001', {
+        ...base,
+        blocker_category: 'POWER',
+        shift: 'DAY',
+      });
+      const given = (mockPrisma.$queryRaw.mock.calls[0] as unknown[]).slice(1);
+      expect(given.filter((v) => v === true)).toHaveLength(2);
+      expect(given).toEqual(expect.arrayContaining(['POWER', 'DAY']));
+    });
+
     it('returns null when the report belongs to another tenant', async () => {
       // The UPDATE carries `AND tenant_id = ...`, so a cross-tenant id simply matches no row. Null
       // lets the caller answer 404 rather than reporting a successful write that never happened.

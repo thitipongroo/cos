@@ -2073,3 +2073,159 @@ describe('syncSiteReports — natural-key hit', () => {
     expect(mockRepo.createSiteReport).toHaveBeenCalledTimes(1);
   });
 });
+
+// ── syncSiteReports — blocker category, shift and per-trade lines ──────────────
+//
+// The app sends all three with every save (report.tsx); the sync service used to drop them on every
+// path. /sync/push does not validate its payload, so a value the DTO would reject is ignored rather
+// than failing the write — a failed write is retried and then discards the whole report (§17.2).
+
+describe('syncSiteReports — category, shift and lines', () => {
+  const PROJECT = '11111111-1111-4111-8111-111111111111';
+  const DAY = '2026-06-04';
+  const LINES = [
+    { trade_type: 'CIVIL', worker_count: 6 },
+    { trade_type: 'ELECTRICAL', worker_count: 2, hours_worked: 4 },
+  ];
+  const STORED_LINES = [
+    { trade_type: 'CIVIL', worker_count: 6, hours_worked: 8 },
+    { trade_type: 'ELECTRICAL', worker_count: 2, hours_worked: 4 },
+  ];
+  const item = (clientId: string, extra: Record<string, unknown> = {}) => ({
+    client_id: clientId,
+    project_id: PROJECT,
+    report_date: DAY,
+    client_submitted_at: '2026-06-04T11:00:00Z',
+    ...extra,
+  });
+  const sync = (items: Array<Record<string, unknown>>) =>
+    service.syncSiteReports({ items } as never);
+
+  beforeEach(() => {
+    mockRepo.findReportsByIds.mockResolvedValue(new Map());
+    mockRepo.findReportsByNaturalKeys.mockResolvedValue(new Map());
+  });
+
+  it('create: stores the category and shift, and the lines against the written row', async () => {
+    mockRepo.createSiteReport.mockResolvedValueOnce(makeReport({ report_id: 'row-id' }));
+
+    await sync([
+      item('device-id', { blocker_category: 'WEATHER', shift: 'NIGHT', manpower_lines: LINES }),
+    ]);
+
+    expect(mockRepo.createSiteReport).toHaveBeenCalledWith(
+      expect.objectContaining({ blocker_category: 'WEATHER', shift: 'NIGHT' }),
+      expect.any(Function),
+    );
+    expect(mockRepo.replaceManpowerLogs).toHaveBeenCalledWith('row-id', STORED_LINES);
+  });
+
+  it('create without them: NULL category and shift, no lines written', async () => {
+    mockRepo.createSiteReport.mockResolvedValueOnce(makeReport({ report_id: 'row-id' }));
+
+    await sync([item('device-id')]);
+
+    expect(mockRepo.createSiteReport).toHaveBeenCalledWith(
+      expect.objectContaining({ blocker_category: null, shift: null }),
+      expect.any(Function),
+    );
+    expect(mockRepo.replaceManpowerLogs).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ['blocker_category', { blocker_category: 'BOGUS' }],
+    ['shift', { shift: 'EVENING' }],
+    ['manpower_lines (not an array)', { manpower_lines: 'CIVIL:6' }],
+    ['manpower_lines (bad count)', { manpower_lines: [{ trade_type: 'CIVIL', worker_count: -1 }] }],
+    ['manpower_lines (empty trade)', { manpower_lines: [{ trade_type: ' ', worker_count: 1 }] }],
+    [
+      'manpower_lines (hours > 24)',
+      { manpower_lines: [{ trade_type: 'CIVIL', worker_count: 1, hours_worked: 25 }] },
+    ],
+    [
+      'manpower_lines (21 lines)',
+      {
+        manpower_lines: Array.from({ length: 21 }, () => ({
+          trade_type: 'CIVIL',
+          worker_count: 1,
+        })),
+      },
+    ],
+  ])('an invalid %s is ignored and the report is still ACCEPTED', async (_name, bad) => {
+    mockRepo.createSiteReport.mockResolvedValueOnce(makeReport({ report_id: 'row-id' }));
+
+    const results = await sync([item('device-id', bad)]);
+
+    expect(results[0]?.conflict_status).toBe('ACCEPTED');
+    const params = mockRepo.createSiteReport.mock.calls[0]![0] as Record<string, unknown>;
+    expect(params['blocker_category']).toBeNull();
+    expect(params['shift']).toBeNull();
+    expect(mockRepo.replaceManpowerLogs).not.toHaveBeenCalled();
+  });
+
+  it('natural-key edit, newer save: writes them; older save: writes nothing', async () => {
+    const row = makeReport({
+      report_id: 'server-report',
+      project_id: PROJECT,
+      report_date: new Date(`${DAY}T00:00:00.000Z`),
+      client_submitted_at: new Date('2026-06-04T10:00:00Z'),
+    });
+    mockRepo.findReportsByNaturalKeys.mockResolvedValueOnce(new Map([[`${PROJECT}|${DAY}`, row]]));
+    mockRepo.updateSiteReport.mockResolvedValueOnce(row);
+
+    await sync([item('newer', { blocker_category: 'POWER', shift: 'DAY', manpower_lines: LINES })]);
+
+    expect(mockRepo.updateSiteReport).toHaveBeenCalledWith(
+      'server-report',
+      expect.objectContaining({ blocker_category: 'POWER', shift: 'DAY' }),
+    );
+    expect(mockRepo.replaceManpowerLogs).toHaveBeenCalledWith('server-report', STORED_LINES);
+
+    jest.clearAllMocks();
+    mockRepo.findReportsByIds.mockResolvedValue(new Map());
+    mockRepo.findReportsByNaturalKeys.mockResolvedValueOnce(new Map([[`${PROJECT}|${DAY}`, row]]));
+    await sync([
+      item('older', {
+        client_submitted_at: '2026-06-04T09:00:00Z',
+        blocker_category: 'OTHER',
+        manpower_lines: LINES,
+      }),
+    ]);
+    expect(mockRepo.updateSiteReport).not.toHaveBeenCalled();
+    expect(mockRepo.replaceManpowerLogs).not.toHaveBeenCalled();
+  });
+
+  it('natural-key edit that does not send them leaves them alone (undefined → column unchanged)', async () => {
+    const row = makeReport({
+      report_id: 'server-report',
+      project_id: PROJECT,
+      report_date: new Date(`${DAY}T00:00:00.000Z`),
+      client_submitted_at: new Date('2026-06-04T10:00:00Z'),
+    });
+    mockRepo.findReportsByNaturalKeys.mockResolvedValueOnce(new Map([[`${PROJECT}|${DAY}`, row]]));
+    mockRepo.updateSiteReport.mockResolvedValueOnce(row);
+
+    await sync([item('newer')]);
+
+    const params = mockRepo.updateSiteReport.mock.calls[0]![1] as Record<string, unknown>;
+    expect(params['blocker_category']).toBeUndefined();
+    expect(params['shift']).toBeUndefined();
+    expect(mockRepo.replaceManpowerLogs).not.toHaveBeenCalled();
+  });
+
+  it('id-hit edit: writes them when sent, against the edited row', async () => {
+    const row = makeReport({ report_id: '88888888-8888-4888-8888-888888888888' });
+    mockRepo.findReportsByIds.mockResolvedValueOnce(new Map([[row.report_id, row]]));
+    mockRepo.updateSiteReport.mockResolvedValueOnce(row);
+
+    await sync([
+      item(row.report_id, { blocker_category: 'MATERIAL', shift: 'NIGHT', manpower_lines: LINES }),
+    ]);
+
+    expect(mockRepo.updateSiteReport).toHaveBeenCalledWith(
+      row.report_id,
+      expect.objectContaining({ blocker_category: 'MATERIAL', shift: 'NIGHT' }),
+    );
+    expect(mockRepo.replaceManpowerLogs).toHaveBeenCalledWith(row.report_id, STORED_LINES);
+  });
+});

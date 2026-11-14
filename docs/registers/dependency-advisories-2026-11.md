@@ -2791,10 +2791,37 @@ openssl ca-certificates`; `groupadd`/`useradd` uid/gid 1001, as the charts run; 
   existing report never learns that report's id. Its later saves still reach the right row (the natural-key lookup
   above), but its local row, and photos keyed by that id, name no server report. Needs the push response to carry the
   kept `report_id` and the app to remap. Not fixed.
-- **Sync drops the report's `blocker_category`, `shift` and per-trade breakdown.** `SyncItemDto` extends
-  `CreateSiteReportDto` and the app sends all three (`report.tsx`), but `syncSiteReports` passes none of them to the
-  create or the edit, so a report filed from the app never stores its blocker category, shift or `manpower_lines`.
-  Found by /doubt on `fix/site-report-sync-natural-key`. Not fixed.
+- **Closed — sync dropped the report's `blocker_category`, `shift` and per-trade breakdown.** Fixed on
+  `fix/site-report-sync-fields`. The app sends all three with every save (`report.tsx`, through `/sync/push`) and
+  `SyncItemDto` extends `CreateSiteReportDto`, but `syncSiteReports` passed none of them on: a report filed from the app
+  never stored its blocker category, shift or `manpower_lines`, and the create path's upsert set the first two to NULL.
+  - Change: a sanitiser (`syncReportExtras`) keeps each value only when it passes the DTO's rules plus two of its own
+    (the two enums; up to 20 lines, trade 1–100 chars and not blank, `worker_count` a non-negative integer within
+    INTEGER, `hours_worked` 0–24, default 8). The DTO accepts a whitespace-only trade, which the sanitiser drops (with
+    the whole `manpower_lines` array). `/sync/push`
+    does not validate its payload and the columns carry CHECKs, so a bad value is ignored and logged rather than failing
+    the write — a failed write is retried and, after five attempts, the whole report is discarded (§17.2). The create
+    path stores them, with the lines against the written row's id; both edit paths store them when sent and the edit
+    is applied. `updateSiteReport` takes `blocker_category` / `shift` as optional, written through
+    `CASE WHEN <given> …`, so an edit that does not send them leaves the stored values.
+  - Evidence: unit — create stores them (lines with the 8 h default, against the row's id) or NULL / no lines; seven
+    invalid shapes are each ignored with the report still ACCEPTED; natural-key edit writes them when newer, nothing
+    when older, and leaves them when not sent; the id-hit edit writes them when sent; `updateSiteReport` passes the
+    flags false when absent. Integration `test/site-ops/08-site-report-event-id.integration.spec.ts` through
+    `/sync/push`: a first save stores WEATHER / NIGHT / two lines; the next save of the day replaces them with POWER /
+    DAY / one line on the same report; `blocker_category: 'BOGUS'` → ACCEPTED, report stored, category NULL, shift kept.
+    Negative controls, each applied alone and reverted: the three fields dropped → both push tests fail; the category
+    passed unchecked → the BOGUS push returns HTTP 500; the CASE flags always on → the AU web-report test fails (an edit
+    without them NULLs WEATHER / NIGHT).
+- **The app cannot clear a report's per-trade lines or headcount on a later save.** `report.tsx` sends
+  `manpower_lines` and `manpower_count` as `undefined` when empty, and JSON drops them, so a save with every trade
+  removed reads as "not sent" and the earlier save's lines and headcount stay. The server clears lines when it gets
+  `[]`. Found by /doubt on `fix/site-report-sync-fields`; fix on the app (always send the array). Not fixed.
+- **The id-hit sync edit of a site report has no last-write-wins check without `last_known_modified_at`.** The app
+  never sends it, so `resolveReportConflict` always persists: a save replayed by id after a later save of the same
+  day landed would overwrite it (category, shift and lines included since `fix/site-report-sync-fields`). Unlikely
+  with the device's first-in-first-out queue. Possible fix: compare `client_submitted_at` as the natural-key edit does.
+  Not fixed.
 - **The mobile app dates a report by the UTC day.** `todayIso()` in `report.tsx` is
   `new Date().toISOString().slice(0, 10)`, so in Thailand (UTC+7) a report saved before 07:00 is dated the day
   before, and now edits that day's report. Not fixed.

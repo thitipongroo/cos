@@ -33,7 +33,11 @@ import {
   resolveIssueConflict,
 } from '../../shared/sync/conflict-handler';
 import type { ConflictStatus } from '../../shared/sync/conflict-handler';
-import type { CreateSiteReportDto } from './dto/create-site-report.dto';
+import {
+  BlockerCategory,
+  ReportShift,
+  type CreateSiteReportDto,
+} from './dto/create-site-report.dto';
 import type { SyncItemDto, SyncSiteReportsDto } from './dto/sync-site-reports.dto';
 import type { CreateIssueDto } from './dto/create-issue.dto';
 import type { UpdateIssueDto } from './dto/update-issue.dto';
@@ -68,6 +72,74 @@ const OS_ISSUES_INDEX = 'site-issues';
  * today"; a caller that knows better (a timesheet import) sends the real figure and overrides it.
  */
 const DEFAULT_SHIFT_HOURS = 8;
+
+const BLOCKER_CATEGORIES: ReadonlySet<string> = new Set(Object.values(BlockerCategory));
+const REPORT_SHIFTS: ReadonlySet<string> = new Set(Object.values(ReportShift));
+/** CreateSiteReportDto's bounds for `manpower_lines`, and manpower_logs' column widths. */
+const MAX_MANPOWER_LINES = 20;
+const MAX_TRADE_TYPE_LENGTH = 100;
+const MAX_WORKER_COUNT = 2_147_483_647; // INTEGER
+
+/** A sync item's blocker category, shift and per-trade lines, each present only when valid. */
+interface SyncReportExtras {
+  blocker_category?: string;
+  shift?: string;
+  manpower_lines?: Array<{ trade_type: string; worker_count: number; hours_worked: number }>;
+}
+
+/**
+ * The three report fields the app sends and the sync service used to drop, checked here because
+ * `/sync/push` hands its payload over without DTO validation. A value the DTO would reject is left
+ * out (and logged) rather than failing the item: the columns carry CHECKs, a failed write is
+ * retried by the device and, after five attempts, its whole report is discarded (§17.2). Losing one
+ * bad field is the lesser loss.
+ */
+function syncReportExtras(
+  item: Record<string, unknown>,
+  onInvalid: (field: string) => void,
+): SyncReportExtras {
+  const extras: SyncReportExtras = {};
+  const category = item['blocker_category'];
+  if (category !== undefined && category !== null) {
+    if (typeof category === 'string' && BLOCKER_CATEGORIES.has(category)) {
+      extras.blocker_category = category;
+    } else onInvalid('blocker_category');
+  }
+  const shift = item['shift'];
+  if (shift !== undefined && shift !== null) {
+    if (typeof shift === 'string' && REPORT_SHIFTS.has(shift)) extras.shift = shift;
+    else onInvalid('shift');
+  }
+  const lines = item['manpower_lines'];
+  if (lines !== undefined && lines !== null) {
+    const valid =
+      Array.isArray(lines) &&
+      lines.length <= MAX_MANPOWER_LINES &&
+      lines.every((line: unknown) => {
+        if (typeof line !== 'object' || line === null) return false;
+        const l = line as Record<string, unknown>;
+        const hours = l['hours_worked'];
+        return (
+          typeof l['trade_type'] === 'string' &&
+          l['trade_type'].trim() !== '' &&
+          l['trade_type'].length <= MAX_TRADE_TYPE_LENGTH &&
+          Number.isInteger(l['worker_count']) &&
+          (l['worker_count'] as number) >= 0 &&
+          (l['worker_count'] as number) <= MAX_WORKER_COUNT &&
+          (hours === undefined ||
+            (typeof hours === 'number' && Number.isFinite(hours) && hours >= 0 && hours <= 24))
+        );
+      });
+    if (valid) {
+      extras.manpower_lines = (lines as Array<Record<string, unknown>>).map((l) => ({
+        trade_type: l['trade_type'] as string,
+        worker_count: l['worker_count'] as number,
+        hours_worked: (l['hours_worked'] as number | undefined) ?? DEFAULT_SHIFT_HOURS,
+      }));
+    } else onInvalid('manpower_lines');
+  }
+  return extras;
+}
 
 @Injectable({ scope: Scope.REQUEST })
 export class SiteOpsService {
@@ -274,6 +346,12 @@ export class SiteOpsService {
     for (const row of found.values()) existingByKey.set(rowKey(row), row);
 
     for (const item of dto.items) {
+      const extras = syncReportExtras(item as unknown as Record<string, unknown>, (field) =>
+        logger.warn(
+          { event: 'sync.site_report.invalid_field', field, tenant_id: this.tenantId },
+          'site-report sync item carried an invalid value — field ignored, report kept',
+        ),
+      );
       const existing = existingById.get(item.client_id) ?? null;
       const itemDay = dayOf(item.report_date);
       const sameDay =
@@ -282,7 +360,7 @@ export class SiteOpsService {
           : null;
 
       if (sameDay) {
-        const kept = await this.applyNaturalKeyEdit(item, sameDay);
+        const kept = await this.applyNaturalKeyEdit(item, sameDay, extras);
         existingByKey.set(rowKey(kept), kept);
         results.push({
           client_id: item.client_id,
@@ -307,6 +385,8 @@ export class SiteOpsService {
             client_submitted_at: item.client_submitted_at ?? null,
             latitude: item.latitude ?? null,
             longitude: item.longitude ?? null,
+            blocker_category: extras.blocker_category ?? null,
+            shift: extras.shift ?? null,
           },
           // From the written row: an item with a new client_id for a (project, day, submitter) that
           // already has a report upserts onto that report, which keeps its own report_id.
@@ -318,6 +398,11 @@ export class SiteOpsService {
               submitted_by: this.userId,
             }),
         );
+
+        // Against the row's own id: a create that upserted onto another report writes its lines there.
+        if (extras.manpower_lines) {
+          await this.repo.replaceManpowerLogs(report.report_id, extras.manpower_lines);
+        }
 
         // A later item of this batch for the same day, or with the same client_id, finds this row.
         existingByKey.set(rowKey(report), report);
@@ -377,6 +462,9 @@ export class SiteOpsService {
           client_submitted_at: (resolved['client_submitted_at'] as string | undefined) ?? null,
           latitude: (resolved['latitude'] as number | undefined) ?? null,
           longitude: (resolved['longitude'] as number | undefined) ?? null,
+          // Only when the item sent them: absent leaves the stored values (see syncReportExtras).
+          blocker_category: extras.blocker_category,
+          shift: extras.shift,
         });
         // The row was read a moment ago under the same tenant context; a null here means it was
         // deleted in between. Never report ACCEPTED for a write that did not land — that is the
@@ -388,6 +476,9 @@ export class SiteOpsService {
             conflict_status: 'CONFLICT_REJECTED',
           });
           continue;
+        }
+        if (extras.manpower_lines) {
+          await this.repo.replaceManpowerLogs(updated.report_id, extras.manpower_lines);
         }
         // Later items of this batch compare against the row as it now is — keyed by the row's own
         // project and day, which an edit never changes.
@@ -442,7 +533,11 @@ export class SiteOpsService {
    * summary or weather, and an edit that set them to NULL would erase what was entered on the web.
    * Returns the row as it now is (unchanged when the stored version is newer).
    */
-  private async applyNaturalKeyEdit(item: SyncItemDto, row: SiteReportRow): Promise<SiteReportRow> {
+  private async applyNaturalKeyEdit(
+    item: SyncItemDto,
+    row: SiteReportRow,
+    extras: SyncReportExtras,
+  ): Promise<SiteReportRow> {
     const { ts: itemTs, clamped } = clampClientTimestamp(
       item.client_submitted_at ?? new Date().toISOString(),
     );
@@ -474,7 +569,12 @@ export class SiteOpsService {
       client_submitted_at: new Date(itemTs).toISOString(),
       latitude: pick<number>('latitude'),
       longitude: pick<number>('longitude'),
+      blocker_category: extras.blocker_category,
+      shift: extras.shift,
     });
+    if (updated && extras.manpower_lines) {
+      await this.repo.replaceManpowerLogs(updated.report_id, extras.manpower_lines);
+    }
     return updated ?? row;
   }
 

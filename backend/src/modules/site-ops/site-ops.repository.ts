@@ -279,8 +279,14 @@ export class SiteOpsRepository {
       client_submitted_at: string | null;
       latitude?: number | null;
       longitude?: number | null;
+      /** Written only when given: absent leaves the column as it is (a sync edit that did not send it). */
+      blocker_category?: string | null;
+      /** Same rule as blocker_category. */
+      shift?: string | null;
     },
   ): Promise<SiteReportRow | null> {
+    const setCategory = params.blocker_category !== undefined;
+    const setShift = params.shift !== undefined;
     const rows = await this.db.run(
       (tx) =>
         tx.$queryRaw<SiteReportRow[]>`
@@ -292,6 +298,9 @@ export class SiteOpsRepository {
             client_submitted_at = ${params.client_submitted_at}::timestamptz,
             latitude            = ${params.latitude ?? null}::numeric,
             longitude           = ${params.longitude ?? null}::numeric,
+            blocker_category    = CASE WHEN ${setCategory} THEN ${params.blocker_category ?? null}
+                                       ELSE blocker_category END,
+            shift               = CASE WHEN ${setShift} THEN ${params.shift ?? null} ELSE shift END,
             modified_at         = now()
         WHERE report_id = ${reportId}::uuid
           AND tenant_id = ${this.tenantId}::uuid
