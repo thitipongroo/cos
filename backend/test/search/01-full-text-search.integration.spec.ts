@@ -17,6 +17,7 @@
 jest.unmock('@opensearch-project/opensearch');
 
 import { GenericContainer, type StartedTestContainer, Wait } from 'testcontainers';
+import { Client } from '@opensearch-project/opensearch';
 
 import { ProjectService } from '../../src/modules/project/project.service';
 import type { ProjectRepository, ProjectRow } from '../../src/modules/project/project.repository';
@@ -25,6 +26,7 @@ import { SiteOpsService } from '../../src/modules/site-ops/site-ops.service';
 // outbox, and SearchIndexerConsumer drives this service. The services below still own the READ
 // half, which is what these tests query.
 import { SearchIndexerService } from '../../src/modules/search/search-indexer.service';
+import { ensureSearchIndexTemplates } from '../../src/modules/search/search-index-mapping';
 import type {
   SiteOpsRepository,
   SiteReportRow,
@@ -77,6 +79,12 @@ describe('Full-text search (Testcontainers — OpenSearch)', () => {
     node = `http://${container.getHost()}:${container.getMappedPort(9200)}`;
     // The services read this at construction time.
     process.env['OPENSEARCH_URL'] = node;
+    // What SearchIndexerService.onModuleInit does in the app: the Thai-aware templates, so every case
+    // below — partial names, codes, the `.keyword` tenant filters — runs against the mapping the
+    // indexes are created with now, not the dynamic one they used to get.
+    await ensureSearchIndexTemplates(
+      new Client({ node }) as unknown as Parameters<typeof ensureSearchIndexTemplates>[0],
+    );
   }, 300_000);
 
   afterAll(async () => {

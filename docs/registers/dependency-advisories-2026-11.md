@@ -2873,15 +2873,48 @@ openssl ca-certificates`; `groupadd`/`useradd` uid/gid 1001, as the charts run; 
     from the latest offset; and a replay could not rebuild them anyway — topics keep the broker's default retention.
     (The indexer's header said a replay rebuilds the index; it now says what a replay can and cannot do.) A
     database-driven reindex is the fix; see Open below.
-- **No reindex of site reports from the database.** The only rebuild path is replaying the outbox topics, bounded by
-  retention, so reports filed through sync before `fix/site-report-search-sync` — and any document older than the
-  retention — cannot be put into OpenSearch, and existing documents do not gain `blockers`. Needs a job or script that
-  reads `site_ops.site_reports` per tenant and calls `SearchIndexerService.indexSiteReport`. Not fixed.
-- **Thai text is not word-segmented in OpenSearch.** No index mapping or analyzer is defined, so `summary`, `weather`
-  and `blockers` use the `standard` analyzer. Measured on `opensearchproject/opensearch:2.17.1` (2026-11-14): it
-  tokenises "ปูนมาช้า เครนเสีย" as two tokens, `ปูนมาช้า` and `เครนเสีย`, so a search for `ปูน` cannot match it; the
-  built-in `thai` analyzer gives `ปูน`, `ช้า`, `เครน`, `เสีย`. The app is Thai-first. Fix: an index template with
-  the `thai` analyzer (or ICU) for the text fields, then a reindex. Not fixed.
+- **Closed — search could not find Thai words, and had no way to rebuild from the database.** Fixed on
+  `feat/search-thai-reindex` (all three indexes: `cos_projects`, `site-reports`, `site-issues`). The dynamic mapping
+  gave every string the `standard` analyzer, which leaves a run of Thai as one token (measured: "ปูนมาช้า เครนเสีย" →
+  `ปูนมาช้า`, `เครนเสีย`; `thai` gives `ปูน`, `ช้า`, `เครน`, `เสีย`), and the only rebuild path was a topic replay,
+  bounded by retention, so reports filed through sync before `fix/site-report-search-sync` could not be indexed.
+  - Mapping: `backend/src/modules/search/search-index-mapping.ts` — one index template per index (`<name>*`) with a
+    custom analyzer `cos_thai` (the `thai` tokenizer, `lowercase`, `decimal_digit`, and no stop filter: the built-in
+    `thai` analyzer's stopwords include ส่ง, รับ, ออก, เปิด, วัน, ลง, ไม่, so a one-word search for them found nothing)
+    applied to every string, plus a `keyword` sub-field (`ignore_above: 256`) that keeps the `.keyword` filters every
+    read path uses. The indexer puts the templates at startup and again before a write if that failed, so a write
+    cannot auto-create an index with the standard analyzer. Every write — the indexer's and the reindex's — carries
+    the row's change time (`updated_at` / `modified_at`) as an `external_gte` version, so an older snapshot never
+    replaces a newer document; the indexer treats a 409 as already-newer, not as a failure.
+  - Reindex: `pnpm --filter backend run reindex:search` (`src/modules/search/maintenance/reindex-search.script.ts`,
+    runbook in its header). Dry run by default. A full rebuild (`--apply`) reads every tenant, inactive ones included
+    (a tenant paused by D48 is temporary and nothing would re-add its documents), from its dedicated database when
+    `platform.tenants.dedicated_db_url` is set, in a read-only transaction with the RLS GUC set LOCAL (safe through
+    PgBouncer transaction pooling); fills `<name>-v<timestamp>`; refuses to swap if it holds fewer documents than the
+    current `<name>` (unless `--allow-shrink`) or if there are no tenants at all; swaps `<name>` onto it in one
+    `_aliases` request (deleting `<name>` if it is still the old concrete index); then re-reads rows changed since
+    each tenant's fill, on that database's clock. `--tenant <uuid> --apply` repairs one tenant in place — it never
+    builds an index or moves the alias. Not run against any deployed environment.
+  - Evidence: unit — templates, versions and the 409 skip, template retry before the first write, argument parsing,
+    the alias actions per starting state, the apply order and the catch-up window on the database clock, the
+    read-only transaction with a LOCAL GUC and its rollback, the no-tenant and shrink refusals, tenant repair writing
+    in place, a version conflict in a bulk not failing the run, any other bulk error stopping before the swap.
+    Integration `test/search/02-thai-reindex.integration.spec.ts` (real PostgreSQL with rows written through the
+    app's routes; real OpenSearch, run on 2.17.1 and on 3.7.0, the version docker-compose deploys): the app puts the
+    templates at startup; tenant A's Thai report indexed by the app into the pre-existing concrete `site-reports`
+    (standard analyzer) is there but `ปูน` does not find it; the dry run counts 3 projects / 5 reports / 1 issue
+    across three tenants (one inactive) and changes nothing; `--apply` makes each name an alias of its new index,
+    drops the stale document, keeps the inactive tenant's report, the `.keyword` term filter separates the tenants
+    exactly, and through the app `ปูน` and `เครน` find the Thai report, `ส่ง` the stopword one, `crane` the English
+    one, `ผนัง` the Thai issue and `ริมน้ำ` the Thai project; a second run moves the aliases on; `--tenant` restores a
+    deleted document of one tenant without touching the others or the alias. The existing
+    `test/search/01-full-text-search.integration.spec.ts` now runs with the templates and passes. Negative controls:
+    `cos_thai` with the `standard` tokenizer → both Thai-search tests fail; the built-in `thai` analyzer (with its
+    stopwords) instead of `cos_thai` → the search test fails.
+  - Not done / not checked: earlier `<name>-v…` indexes are left for an operator to delete; a tenant's rows of one
+    index are held in memory at once (no paging); no test writes during a reindex or reads through an RLS-enforced
+    role or a dedicated database (both covered by unit tests only); a text field whose first document looks like a
+    date would still be mapped `date` (date detection is left on).
 - **Site-report search drops older hits and, on failure, ignores the query.** `searchSiteReports` keeps only the hits
   that are among the first 50 rows of the database list, so a match on an older report is dropped; and when
   OpenSearch fails it returns the database list unfiltered by `q`. Found by /doubt on `fix/site-report-search-sync`.

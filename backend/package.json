@@ -21,7 +21,8 @@
     "migrate:dev": "prisma migrate dev",
     "seed": "ts-node prisma/seed.ts",
     "studio": "prisma studio",
-    "reconcile:contracts": "ts-node src/modules/graph/maintenance/reconcile-contracts.script.ts"
+    "reconcile:contracts": "ts-node src/modules/graph/maintenance/reconcile-contracts.script.ts",
+    "reindex:search": "ts-node src/modules/search/maintenance/reindex-search.script.ts"
   },
   "dependencies": {
     "@aws-sdk/client-rds": "^3.600.0",

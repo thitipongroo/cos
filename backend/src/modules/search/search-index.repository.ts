@@ -36,6 +36,8 @@ export interface SiteReportIndexRow {
   blockers: string | null;
   submitted_by: string;
   status: string;
+  /** The document's external version (search-index-mapping.ts `versionOf`). */
+  modified_at: Date;
 }
 
 export interface IssueIndexRow {
@@ -46,6 +48,8 @@ export interface IssueIndexRow {
   description: string | null;
   severity: string;
   status: string;
+  /** The document's external version (search-index-mapping.ts `versionOf`). */
+  modified_at: Date;
 }
 
 @Injectable()
@@ -76,7 +80,7 @@ export class SearchIndexRepository {
     const rows = await this.db.run(async (prisma) => {
       return prisma.$queryRaw<SiteReportIndexRow[]>`
         SELECT report_id, project_id, tenant_id, report_date, summary, weather, blockers, submitted_by,
-               status
+               status, modified_at
         FROM site_ops.site_reports
         WHERE report_id = ${reportId}::uuid
           AND tenant_id = ${this.tenantId}::uuid
@@ -88,7 +92,7 @@ export class SearchIndexRepository {
   async findIssue(issueId: string): Promise<IssueIndexRow | null> {
     const rows = await this.db.run(async (prisma) => {
       return prisma.$queryRaw<IssueIndexRow[]>`
-        SELECT issue_id, project_id, tenant_id, title, description, severity, status
+        SELECT issue_id, project_id, tenant_id, title, description, severity, status, modified_at
         FROM site_ops.issues
         WHERE issue_id = ${issueId}::uuid
           AND tenant_id = ${this.tenantId}::uuid
