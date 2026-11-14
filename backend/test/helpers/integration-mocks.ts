@@ -42,3 +42,52 @@ jest.mock('@opensearch-project/opensearch', () => ({
     update: jest.fn().mockResolvedValue({}),
   })),
 }));
+
+// ── Every app under test listens on 127.0.0.1 ─────────────────────────────────────────────────────
+// Suites call `request(app.getHttpServer())` on an app that was init()ed but never listened. supertest
+// then calls `server.listen(0)` for EACH request and sends it to `http://127.0.0.1:<port>` — but
+// `listen(0)` with no host binds the IPv6 wildcard (`::`), and macOS lets that bind succeed on a port
+// another process already holds on 127.0.0.1. The request then reaches that other process: measured
+// 4 wrong answers in 12,000 (an Autodesk licensing page, a browser-control page, an Express 404), and
+// in full runs a 404, an empty body, and a 200 where a SITE_WORKER must get 403. Listening on
+// 127.0.0.1 once, after init(), makes supertest use that address and never call listen(0) (0 wrong in
+// 12,000). A suite that calls app.listen() itself — before or after init() — still can: listen()
+// before init() skips this, and listen() after it first closes the listen made here.
+{
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { NestApplication } = require('@nestjs/core') as typeof import('@nestjs/core');
+  type Patched = InstanceType<typeof NestApplication> & {
+    __explicitListen?: boolean;
+    __loopbackListened?: boolean;
+  };
+  const proto = NestApplication.prototype as Patched;
+  const originalInit = proto.init;
+  const originalListen = proto.listen;
+  proto.listen = async function (this: Patched, ...args: Parameters<typeof originalListen>) {
+    this.__explicitListen = true;
+    const server = this.getHttpServer() as import('http').Server | undefined;
+    if (this.__loopbackListened && server?.listening) {
+      // init() already listened on 127.0.0.1 here; the suite's own listen() takes over.
+      await new Promise<void>((resolve, reject) =>
+        server.close((err) => (err ? reject(err) : resolve())),
+      );
+      this.__loopbackListened = false;
+    }
+    return originalListen.apply(this, args);
+  } as typeof originalListen;
+  proto.init = async function (this: Patched) {
+    const app = await originalInit.call(this);
+    const server = this.getHttpServer() as import('http').Server | undefined;
+    if (!this.__explicitListen && server && !server.listening) {
+      await new Promise<void>((resolve, reject) => {
+        server.once('error', reject);
+        server.listen(0, '127.0.0.1', () => {
+          server.off('error', reject);
+          this.__loopbackListened = true;
+          resolve();
+        });
+      });
+    }
+    return app;
+  } as typeof originalInit;
+}

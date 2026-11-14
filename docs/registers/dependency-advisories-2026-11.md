@@ -2964,18 +2964,33 @@ openssl ca-certificates`; `groupadd`/`useradd` uid/gid 1001, as the charts run; 
   - Not covered (pre-existing, as for reports and projects): `modified_at = now()` is the transaction's start, so two
     edits committing out of order can leave the later content with the smaller version, which the index then rejects
     as older until the next edit or a reindex.
-- **Backend integration runs intermittently get a response that belongs to another request.** Seen three times on
-  2026-11-14, each time in a run of several suites together and never when the suite ran alone, each in a different
-  test: `test/search/02` got 404 for `GET /site/reports?q=เครน`; `test/site-ops/05` got a body with no `items` for
-  `?minimal=false`; `test/site-ops/02` got 200 where a SITE_WORKER pushing `attendance` must get 403 — a security
-  assertion. Nothing was logged for any of them. Each suite builds its own app and authenticates through a test
-  middleware that sets the role from `x-test-role` (with a different default per suite); a 200 for SITE_WORKER is what
-  another suite's middleware would answer. Hypothesis, not proven: supertest calls `listen(0)` on the app's server for
-  every request and closes it after, while Node 24's global HTTP agent keeps sockets alive by default
-  (`http.globalAgent.keepAlive` is `true` here, Node v24.22.2), so a pooled socket to a reused ephemeral port can
-  reach a different, still-open server. Not caused by the branches it appeared on (the failing tests touch none of
-  their code); each failing test passed when rerun. Not fixed — the next step is to reproduce it, then disable
-  keep-alive in the integration setup (or give each suite a listening server) and show the flake gone.
+- **Closed — backend integration requests sometimes reached another program on the machine.** Fixed on
+  `test/supertest-loopback`. Seen three times on 2026-11-14, only in runs of several suites: `test/search/02` got 404
+  for `GET /site/reports?q=เครน`; `test/site-ops/05` got a body with no `items`; `test/site-ops/02` got 200 where a
+  SITE_WORKER pushing `attendance` must get 403. The registered hypothesis (Node 24 keep-alive) was wrong.
+  - Cause, reproduced: every integration suite (38 files) calls `request(app.getHttpServer())` on an app that was
+    `init()`ed but never listened, so supertest 7.2.2 calls `server.listen(0)` for each request and sends it to
+    `127.0.0.1:<port>` (`supertest/lib/test.js:60-63`). `listen(0)` with no host binds `::` (Node v24.22.2), and macOS
+    lets that bind succeed on a port another process already holds on `127.0.0.1` — the request then reaches that
+    process. Three plain servers hit alternately through supertest, 12,000 requests per mode (scripts in the session
+    scratchpad, `bb/repro2.js`, `repro3.js`): as used today 4 wrong answers; keep-alive off 8; servers listening on
+    `127.0.0.1` first 0. The wrong answers came from other programs on the machine (a licensing page, a browser-control
+    page, an Express "Cannot GET /"). This is a macOS behaviour (confirmed here: binding `::` on a port held on
+    `127.0.0.1` succeeds). On Linux that bind fails with `EADDRINUSE` and the `listen(0)` port picker skips used
+    ports, so the `ubuntu-latest` CI runner is not believed affected — reasoned, not run. The three failures above are
+    consistent with this mechanism but were not each traced to it; the SITE_WORKER 200 in particular is not explained by
+    any program seen answering in the repro. If such a failure recurs with the patch in place, this entry is wrong.
+  - Change: `backend/test/helpers/integration-mocks.ts` (the integration `setupFilesAfterEnv`) makes every
+    `NestApplication.init()` end with the HTTP server listening on `127.0.0.1` port 0, so supertest uses that address
+    and never calls `listen(0)`. A suite that calls `app.listen()` itself still can: before `init()` (as
+    `auth-tenant/06` does) the setup's listen is skipped; after it, the setup's listen is closed first. Test-only.
+  - Evidence: `test/infra/01-loopback-listen.integration.spec.ts` — after `init()` the server is bound to
+    `127.0.0.1` and 50 requests reuse that one port; `app.listen()` before and after `init()` both work; a Fastify app
+    is bound the same way; `close()` releases the server. With the patch switched off its first test fails. The four
+    Fastify suites and `auth-tenant/06` (its own `app.listen()`) pass with the patch (58 tests). The site-ops, mobile,
+    search and infra integration suites run together three times: 14 suites, 189 tests, all passed each time (before
+    the listen-after-init handling and the Fastify case were added). Three clean runs cannot prove a rare flake gone;
+    the repro's 0 in 12,000 is the stronger evidence.
 - **`GET /site/issues` takes no `q`, so issue search cannot be reached over HTTP.** The controller passes only
   `project_id`, `severity`, `status`, `page`, `limit`; `SiteOpsService.listIssues` has a `q` branch nothing can
   call — reports were the same until 2026-08-12. No client searches issues today. Found on
