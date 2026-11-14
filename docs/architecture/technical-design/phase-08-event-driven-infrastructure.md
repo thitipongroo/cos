@@ -95,10 +95,13 @@ per domain multiplied every tenant's topic count by ten for a separation the spe
 **Why RecordNameStrategy and not TopicNameStrategy.** Topic names carry a `{tenant_id}.` prefix, so
 TopicNameStrategy would register a duplicate schema per tenant (§32.4).
 
-Shared consumers subscribe with a per-tenant topic RegExp under a `{service}.shared` group, so a
-single group also picks up tenants onboarded after the consumer started; the `tenant_id` header is
-validated against the decoded envelope before processing, and a missing or mismatched header routes
-the message to the DLQ (§7.3).
+Shared consumers match every tenant's `{tenant_id}.{event_type}` topics under a `{service}.shared`
+group. Topics are created on first publish, and KafkaJS resolves a RegExp subscription only once, so
+`KafkaConsumer` subscribes by name: the matching topics at startup, then every
+`KAFKA_TOPIC_REFRESH_MS` (default 30 s) the new ones, read from the beginning. That is how one group
+picks up tenants onboarded, and event types first published, after the consumer started. The
+`tenant_id` header is validated against the decoded envelope before processing, and a missing or
+mismatched header routes the message to the DLQ (§7.3).
 
 ---
 

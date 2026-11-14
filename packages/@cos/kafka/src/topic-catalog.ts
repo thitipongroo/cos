@@ -155,8 +155,9 @@ export function subjectForEvent(eventType: string): string {
  * Used for the shared platform topic. Subscribing to it by LITERAL name throws when the topic does
  * not exist yet — the same hazard tenantTopicPattern below exists to avoid — and nothing creates
  * `platform.events` ahead of the first publish (master:3093-3100 gives that job to the producer).
- * A RegExp subscription simply matches nothing until the topic appears, and KafkaJS picks it up
- * once it does.
+ * A RegExp subscription simply matches nothing until the topic appears. KafkaJS does NOT pick it up
+ * once it does — it resolves the RegExp once, at subscribe() — so KafkaConsumer re-lists topics on
+ * an interval and subscribes the new matches itself (KafkaConsumer.refreshTopics).
  */
 /**
  * Entity state topics — the topics master:3104 says are log-compacted.

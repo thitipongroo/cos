@@ -33,6 +33,14 @@ jest.mock('kafkajs', () => ({
       connect: jest.fn(),
       subscribe: jest.fn(),
       run: jest.fn(),
+      stop: jest.fn(),
+      disconnect: jest.fn(),
+      on: jest.fn(),
+      events: { CRASH: 'consumer.crash' },
+    }),
+    admin: jest.fn().mockReturnValue({
+      connect: jest.fn(),
+      listTopics: jest.fn().mockResolvedValue([]),
       disconnect: jest.fn(),
     }),
   })),
@@ -45,9 +53,23 @@ jest.mock('../schema-registry.client', () => ({
 
 import { KafkaConsumer, RETRY_DELAYS_MS } from '../consumer';
 import { decodeAvro } from '../schema-registry.client';
-import { tenantTopicPattern, PLATFORM_EVENTS_TOPIC, exactTopicPattern } from '../topic-catalog';
+import { PLATFORM_EVENTS_TOPIC } from '../topic-catalog';
 
 type HandleMessage = (p: unknown) => Promise<void>;
+
+// connect() registers a CRASH listener (consumer.ts onCrash).
+function withEvents<T extends object>(consumerMock: T) {
+  return { stop: jest.fn(), on: jest.fn(), events: { CRASH: 'consumer.crash' }, ...consumerMock };
+}
+
+// connect() lists topics through an admin client and subscribes the matching ones by name.
+function makeAdminMock(topics: string[] = []) {
+  return {
+    connect: jest.fn().mockResolvedValue(undefined),
+    listTopics: jest.fn().mockResolvedValue(topics),
+    disconnect: jest.fn().mockResolvedValue(undefined),
+  };
+}
 
 // Default messages carry a tenant_id header matching the decoded event (tenant_id 't1'),
 // satisfying the §7.3 tenant-isolation guard. Pass overrides to merge/replace headers.
@@ -91,14 +113,25 @@ describe('KafkaConsumer connect/disconnect (lines 54-72)', () => {
       run: jest.fn().mockResolvedValue(undefined),
       disconnect: jest.fn().mockResolvedValue(undefined),
     };
-    Kafka.mockImplementationOnce(() => ({ consumer: jest.fn().mockReturnValue(consumerMock) }));
+    Kafka.mockImplementationOnce(() => ({
+      consumer: jest.fn().mockReturnValue(withEvents(consumerMock)),
+      admin: jest
+        .fn()
+        .mockReturnValue(makeAdminMock(['t1.topic-a', 't2.topic-b', 't1.topic-c', 't1.dlq'])),
+    }));
 
     const consumer = new KafkaConsumer();
     await consumer.connect({ groupId: 'g1', eventTypes: ['topic-a', 'topic-b'] });
 
     expect(consumerMock.connect).toHaveBeenCalledTimes(1);
-    expect(consumerMock.subscribe).toHaveBeenCalledTimes(2);
+    // One subscribe, by name, with the existing topics that match an event type.
+    expect(consumerMock.subscribe).toHaveBeenCalledTimes(1);
+    expect(consumerMock.subscribe).toHaveBeenCalledWith({
+      topics: ['t1.topic-a', 't2.topic-b'],
+      fromBeginning: false,
+    });
     expect(consumerMock.run).toHaveBeenCalledTimes(1);
+    await consumer.disconnect();
   });
 
   it('connect() passes fromBeginning=true when specified (covers ?? left branch)', async () => {
@@ -109,16 +142,20 @@ describe('KafkaConsumer connect/disconnect (lines 54-72)', () => {
       run: jest.fn().mockResolvedValue(undefined),
       disconnect: jest.fn().mockResolvedValue(undefined),
     };
-    Kafka.mockImplementationOnce(() => ({ consumer: jest.fn().mockReturnValue(consumerMock) }));
+    Kafka.mockImplementationOnce(() => ({
+      consumer: jest.fn().mockReturnValue(withEvents(consumerMock)),
+      admin: jest.fn().mockReturnValue(makeAdminMock(['t1.topic-a'])),
+    }));
 
     const consumer = new KafkaConsumer();
     await consumer.connect({ groupId: 'g1', eventTypes: ['topic-a'], fromBeginning: true });
 
-    // Domain event types subscribe via a per-tenant topic RegExp (§7.3).
+    // Domain event types match per-tenant topics, `{tenant_id}.{event_type}` (§7.3).
     expect(consumerMock.subscribe).toHaveBeenCalledWith({
-      topic: tenantTopicPattern('topic-a'),
+      topics: ['t1.topic-a'],
       fromBeginning: true,
     });
+    await consumer.disconnect();
   });
 
   it('connect() subscribes platform.* events to the shared platform topic (covers ternary platform branch)', async () => {
@@ -129,7 +166,18 @@ describe('KafkaConsumer connect/disconnect (lines 54-72)', () => {
       run: jest.fn().mockResolvedValue(undefined),
       disconnect: jest.fn().mockResolvedValue(undefined),
     };
-    Kafka.mockImplementationOnce(() => ({ consumer: jest.fn().mockReturnValue(consumerMock) }));
+    Kafka.mockImplementationOnce(() => ({
+      consumer: jest.fn().mockReturnValue(withEvents(consumerMock)),
+      admin: jest
+        .fn()
+        .mockReturnValue(
+          makeAdminMock([
+            PLATFORM_EVENTS_TOPIC,
+            `tenant-abc.${PLATFORM_EVENTS_TOPIC}`,
+            'tenant-abc.platform.enterprise.contract_signed.v1',
+          ]),
+        ),
+    }));
 
     const consumer = new KafkaConsumer();
     await consumer.connect({
@@ -137,20 +185,16 @@ describe('KafkaConsumer connect/disconnect (lines 54-72)', () => {
       eventTypes: ['platform.enterprise.contract_signed.v1'],
     });
 
-    // Platform events live on the ONE shared platform.events topic, not a per-tenant topic (§7.3) —
-    // but subscribed by an exact-match pattern rather than the literal name. A literal subscription
-    // throws when the topic does not exist yet, and nothing creates platform.events ahead of the
-    // first publish (master:3093-3100 gives topic creation to the producer). Now that no broker
-    // auto-creates topics, a consumer that starts before any platform event has ever been published
-    // would have failed to connect at all.
+    // Platform events live on the ONE shared platform.events topic, not a per-tenant topic (§7.3).
+    // Only a topic that exists is subscribed by name: a literal subscription to a missing topic
+    // throws, and nothing creates platform.events ahead of the first publish (master:3093-3100
+    // gives topic creation to the producer) — the refresh subscribes it once it appears.
+    expect(consumerMock.subscribe).toHaveBeenCalledTimes(1);
     expect(consumerMock.subscribe).toHaveBeenCalledWith({
-      topic: exactTopicPattern(PLATFORM_EVENTS_TOPIC),
+      topics: [PLATFORM_EVENTS_TOPIC],
       fromBeginning: false,
     });
-    // Still exactly the one topic, and still not a per-tenant pattern.
-    const [{ topic }] = consumerMock.subscribe.mock.calls[0] as [{ topic: RegExp }];
-    expect(topic.test(PLATFORM_EVENTS_TOPIC)).toBe(true);
-    expect(topic.test(`tenant-abc.${PLATFORM_EVENTS_TOPIC}`)).toBe(false);
+    await consumer.disconnect();
   });
 
   it('disconnect() disconnects the underlying consumer', async () => {
@@ -161,7 +205,10 @@ describe('KafkaConsumer connect/disconnect (lines 54-72)', () => {
       run: jest.fn().mockResolvedValue(undefined),
       disconnect: jest.fn().mockResolvedValue(undefined),
     };
-    Kafka.mockImplementationOnce(() => ({ consumer: jest.fn().mockReturnValue(consumerMock) }));
+    Kafka.mockImplementationOnce(() => ({
+      consumer: jest.fn().mockReturnValue(withEvents(consumerMock)),
+      admin: jest.fn().mockReturnValue(makeAdminMock()),
+    }));
 
     const consumer = new KafkaConsumer();
     await consumer.connect({ groupId: 'g1', eventTypes: ['t'] });
@@ -191,7 +238,10 @@ describe('KafkaConsumer connect/disconnect (lines 54-72)', () => {
         ),
       disconnect: jest.fn().mockResolvedValue(undefined),
     };
-    Kafka.mockImplementationOnce(() => ({ consumer: jest.fn().mockReturnValue(consumerMock) }));
+    Kafka.mockImplementationOnce(() => ({
+      consumer: jest.fn().mockReturnValue(withEvents(consumerMock)),
+      admin: jest.fn().mockReturnValue(makeAdminMock()),
+    }));
 
     const consumer = new KafkaConsumer();
     await consumer.connect({ groupId: 'g1', eventTypes: ['topic-a'] });

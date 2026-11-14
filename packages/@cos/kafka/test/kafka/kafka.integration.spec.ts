@@ -136,6 +136,54 @@ describe('Kafka integration — full publish/consume cycle', () => {
     expect((received[0]!.payload as Record<string, unknown>)['project_id']).toBe('proj-int-1');
   }, 30_000);
 
+  it('consumer started before a topic exists receives the event that creates it', async () => {
+    // The production order: consumers start with the backend, and a tenant's topic is created by
+    // its first publish (KafkaProducer.ensureTopic). KafkaJS resolves the RegExp subscription only
+    // at subscribe(), so before the topic refresh this event was never consumed — and, starting
+    // from the latest offset once it was, never would be. Default fromBeginning (false), as the
+    // backend consumers use it.
+    process.env['KAFKA_TOPIC_REFRESH_MS'] = '1000';
+    producer = new KafkaProducer();
+    await producer.connect();
+    consumer = new KafkaConsumer();
+
+    const received: Array<BaseEventEnvelope<unknown>> = [];
+    consumer.on('safety.incident.created.v1', async (event) => {
+      received.push(event);
+    });
+
+    const admin = new Kafka({ brokers: [bootstrapBroker] }).admin();
+    await admin.connect();
+    const lateTopic = 'tenant-int-late.safety.incident.created.v1';
+    expect(await admin.listTopics()).not.toContain(lateTopic);
+
+    try {
+      await consumer.connect({
+        groupId: 'cos-int-test-late-topic-group',
+        eventTypes: ['safety.incident.created.v1'],
+      });
+
+      await producer.publish({
+        event_type: 'safety.incident.created.v1',
+        event_version: '1.0',
+        tenant_id: 'tenant-int-late',
+        actor_id: 'user-int-late',
+        occurred_at: new Date().toISOString(),
+        correlation_id: 'corr-int-late',
+        payload: { incident_id: 'inc-int-late-1' },
+      });
+      expect(await admin.listTopics()).toContain(lateTopic);
+
+      await waitFor(() => received.length > 0, 30_000);
+      expect(received).toHaveLength(1);
+      expect(received[0]!.tenant_id).toBe('tenant-int-late');
+      expect(received[0]!.correlation_id).toBe('corr-int-late');
+    } finally {
+      await admin.disconnect();
+      delete process.env['KAFKA_TOPIC_REFRESH_MS'];
+    }
+  }, 60_000);
+
   it('consumer processes same event_id exactly once (idempotency)', async () => {
     producer = new KafkaProducer();
     await producer.connect();

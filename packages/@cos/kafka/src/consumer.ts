@@ -4,7 +4,7 @@
 //   - OTel trace context extraction from Kafka headers
 //   - DLQ forwarding after max retries (3 attempts, exponential backoff)
 
-import { Kafka, Consumer, EachMessagePayload, logLevel } from 'kafkajs';
+import { Kafka, Admin, Consumer, EachMessagePayload, logLevel } from 'kafkajs';
 import { Redis } from 'ioredis';
 import { decodeAvro } from './schema-registry.client';
 import { DlqPublisher } from './dlq';
@@ -36,6 +36,16 @@ const MAX_RETRIES = 3;
  */
 export const RETRY_DELAYS_MS = [1000, 5000, 30000]; // exponential backoff
 
+/** How often a running consumer looks for new topics matching its subscriptions — see refreshTopics(). */
+export const DEFAULT_TOPIC_REFRESH_MS = 30_000;
+
+/** `KAFKA_TOPIC_REFRESH_MS` as a positive whole number of milliseconds; anything else gives the default. */
+export function topicRefreshIntervalMs(raw = process.env['KAFKA_TOPIC_REFRESH_MS']): number {
+  if (raw === undefined || !/^\d+$/.test(raw.trim())) return DEFAULT_TOPIC_REFRESH_MS;
+  const ms = Number(raw.trim());
+  return Number.isSafeInteger(ms) && ms > 0 ? ms : DEFAULT_TOPIC_REFRESH_MS;
+}
+
 export type MessageHandler<T = unknown> = (
   event: BaseEventEnvelope<T>,
   traceContext: { traceId?: string; spanId?: string },
@@ -62,6 +72,21 @@ export class KafkaConsumer {
   private readonly redis: Redis;
   private readonly dlqPublisher: DlqPublisher;
   private readonly handlers = new Map<string, MessageHandler>();
+  /** One pattern per subscribed event type; re-applied to the topic list by refreshTopics(). */
+  private patterns: RegExp[] = [];
+  /** The topics this consumer has subscribed — by name, so this is exactly what KafkaJS holds. */
+  private readonly subscribedTopics = new Set<string>();
+  private admin: Admin | null = null;
+  private refreshTimer: NodeJS.Timeout | null = null;
+  private restartTimer: NodeJS.Timeout | null = null;
+  /** Every stop() / subscribe() / run() after connect() runs on this chain, one at a time. */
+  private lane: Promise<void> = Promise.resolve();
+  private refreshQueued = false;
+  /** Set by the restartOnFailure hook, which KafkaJS calls only for a retriable crash. */
+  private restartAfterCrash = false;
+  /** A crash KafkaJS would not have restarted from: the refresh leaves the consumer down too. */
+  private crashedForGood = false;
+  private closing = false;
 
   constructor() {
     this.kafka = new Kafka({
@@ -79,37 +104,194 @@ export class KafkaConsumer {
   }
 
   async connect(options: ConsumerOptions): Promise<void> {
+    if (this.consumer) throw new Error('KafkaConsumer is already connected');
+    this.closing = false;
+    this.crashedForGood = false;
     await this.dlqPublisher.connect();
     this.groupId = options.groupId;
-    this.consumer = this.kafka.consumer({ groupId: options.groupId });
-    await this.consumer.connect();
+    const consumer = this.kafka.consumer({
+      groupId: options.groupId,
+      // KafkaJS restarts a crashed consumer from a timer of its own, armed only after its crash
+      // handler has disconnected, and its start() does not check whether something else ran the
+      // consumer in the meantime (kafkajs/src/consumer/index.js:246-300). A refresh landing in that
+      // window would leave two runners, one of them unreachable by stop() or disconnect(). So KafkaJS
+      // is told not to restart, and the restart goes through the same lane as the refresh. KafkaJS
+      // calls restartOnFailure only for a retriable error (index.js:266-268), the same condition its
+      // own restart uses. `retries: 5` is KafkaJS's default, which passing `retry` would replace.
+      retry: {
+        retries: 5,
+        restartOnFailure: async () => {
+          this.restartAfterCrash = true;
+          return false;
+        },
+      },
+    });
+    consumer.on(consumer.events.CRASH, (event) => this.onCrash(event.payload.error));
+    this.consumer = consumer;
 
-    const fromBeginning = options.fromBeginning ?? false;
-    for (const eventType of options.eventTypes) {
-      // Platform events live on the shared platform.events topic; all other events
-      // are per-tenant, matched across tenants by RegExp (§7.3). RegExp subscription
-      // also picks up topics provisioned for tenants onboarded after startup, and
-      // never throws when no topic exists yet (unlike a literal-name subscription).
-      const topic = isPlatformEvent(eventType)
-        ? exactTopicPattern(PLATFORM_EVENTS_TOPIC)
-        : tenantTopicPattern(eventType);
-      await this.consumer.subscribe({ topic, fromBeginning });
+    try {
+      await consumer.connect();
+
+      // Platform events live on the shared platform.events topic; all other events are per-tenant,
+      // matched across tenants by pattern (§7.3). KafkaJS 2.2.4 resolves a RegExp subscription ONCE,
+      // inside subscribe(), against the topics that exist then (consumer/index.js:157-185), and
+      // nothing re-evaluates it. Topics are created on first publish (KafkaProducer.ensureTopic), so
+      // most of a tenant's topics appear after this runs — refreshTopics() is what picks them up.
+      this.patterns = options.eventTypes.map((eventType) =>
+        isPlatformEvent(eventType)
+          ? exactTopicPattern(PLATFORM_EVENTS_TOPIC)
+          : tenantTopicPattern(eventType),
+      );
+
+      // Subscribe by NAME, from the same listing the refresh compares against. Subscribing by RegExp
+      // would have KafkaJS resolve it against its own metadata request, possibly to another broker
+      // with a different view; a topic in one listing and not the other would then be recorded here
+      // without being subscribed, and never consumed. With nothing to subscribe yet, run() joins the
+      // group with no topics — what a RegExp matching nothing did.
+      this.admin = this.kafka.admin();
+      await this.admin.connect();
+      const existing = this.matching(await this.admin.listTopics());
+      if (existing.length > 0) {
+        await consumer.subscribe({
+          topics: existing,
+          fromBeginning: options.fromBeginning ?? false,
+        });
+      }
+      for (const topic of existing) this.subscribedTopics.add(topic);
+
+      await this.startRunning(consumer);
+    } catch (err) {
+      await this.disconnect().catch(() => undefined);
+      throw err;
     }
 
-    await this.consumer.run({
-      eachMessage: (payload) => this.handleMessage(payload),
-    });
+    const intervalMs = topicRefreshIntervalMs();
+    this.refreshTimer = setInterval(() => void this.refreshTopicsOnce(), intervalMs);
+    this.refreshTimer.unref();
 
     logger.info(
-      { groupId: options.groupId, eventTypes: options.eventTypes },
+      { groupId: options.groupId, eventTypes: options.eventTypes, topicRefreshMs: intervalMs },
       'KafkaConsumer connected',
     );
   }
 
+  /**
+   * Does not wait for a refresh or restart in progress: each of those checks `closing` after every
+   * await and never calls run() once it is set, and disconnecting the clients ends the call it is in.
+   * Waiting would hold shutdown for as long as an admin retry or a group rejoin takes.
+   */
   async disconnect(): Promise<void> {
-    await this.consumer?.disconnect();
-    await this.dlqPublisher.disconnect();
+    this.closing = true;
+    if (this.refreshTimer) clearInterval(this.refreshTimer);
+    if (this.restartTimer) clearTimeout(this.restartTimer);
+    this.refreshTimer = null;
+    this.restartTimer = null;
+    const { admin, consumer } = this;
+    this.admin = null;
     this.consumer = null;
+    this.subscribedTopics.clear();
+    try {
+      await admin?.disconnect();
+    } catch (err) {
+      logger.warn({ err, groupId: this.groupId }, 'Kafka admin disconnect failed');
+    }
+    try {
+      await consumer?.disconnect();
+    } finally {
+      await this.dlqPublisher.disconnect();
+    }
+  }
+
+  private startRunning(consumer: Consumer): Promise<void> {
+    return consumer.run({
+      eachMessage: (payload) => this.handleMessage(payload),
+    });
+  }
+
+  private matching(topics: string[]): string[] {
+    return topics.filter((topic) => this.patterns.some((pattern) => pattern.test(topic)));
+  }
+
+  private inLane(op: () => Promise<void>): Promise<void> {
+    const next = this.lane.then(op);
+    this.lane = next.catch(() => undefined);
+    return next;
+  }
+
+  /** At most one refresh waiting behind the one running; a failure is logged, the next tick retries. */
+  private refreshTopicsOnce(): Promise<void> {
+    if (this.refreshQueued) return this.lane;
+    this.refreshQueued = true;
+    return this.inLane(async () => {
+      this.refreshQueued = false;
+      await this.refreshTopics();
+    }).catch((err: unknown) => {
+      if (!this.closing) logger.error({ err, groupId: this.groupId }, 'Kafka topic refresh failed');
+    });
+  }
+
+  /**
+   * Subscribe to topics that match a pattern and appeared since the last look.
+   *
+   * KafkaJS refuses subscribe() while running (consumer/index.js:136), so the consumer is stopped,
+   * subscribed to the new topics and run again — a group rebalance, which happens only when a topic
+   * is new, i.e. on a tenant's first event of a type. Each replica does this on its own timer.
+   *
+   * New topics are read FROM THE BEGINNING. Everything in them was written after this consumer
+   * started, and none of it has been read: the group has no committed offset there, so the
+   * caller's `fromBeginning: false` would start at the latest offset and skip exactly the events
+   * that created the topic. KafkaJS uses `fromBeginning` where the group has no committed offset,
+   * and when a committed offset is out of range (a recreated topic) — a replay, not a skip.
+   */
+  private async refreshTopics(): Promise<void> {
+    const { consumer, admin } = this;
+    if (!consumer || !admin || this.closing || this.crashedForGood) return;
+
+    const fresh = this.matching(await admin.listTopics()).filter(
+      (topic) => !this.subscribedTopics.has(topic),
+    );
+    if (fresh.length === 0 || this.closing) return;
+
+    await consumer.stop();
+    if (this.closing) return;
+    try {
+      await consumer.subscribe({ topics: fresh, fromBeginning: true });
+      for (const topic of fresh) this.subscribedTopics.add(topic);
+      logger.info({ groupId: this.groupId, topics: fresh }, 'Subscribed to new Kafka topics');
+    } finally {
+      // Resume the topics already held even if the subscribe failed; the new ones stay missing from
+      // subscribedTopics, so the next tick tries them again.
+      if (!this.closing) await this.startRunning(consumer);
+    }
+  }
+
+  /**
+   * KafkaJS has crashed the consumer and disconnected it. Restart it after KafkaJS's own delay
+   * (`e.retryTime || initialRetryTime`, 300 ms; index.js:293) when the error is retriable — on the
+   * lane, so it cannot overlap a refresh. A refresh that ran it during the crash is stopped first.
+   */
+  private onCrash(error: Error & { retryTime?: number }): void {
+    const restart = this.restartAfterCrash;
+    this.restartAfterCrash = false;
+    if (this.closing) return;
+    if (!restart) {
+      this.crashedForGood = true;
+      logger.error({ err: error, groupId: this.groupId }, 'Kafka consumer crashed; not restarting');
+      return;
+    }
+    this.restartTimer = setTimeout(() => {
+      this.restartTimer = null;
+      void this.inLane(async () => {
+        const consumer = this.consumer;
+        if (!consumer || this.closing) return;
+        await consumer.stop();
+        if (this.closing) return;
+        await this.startRunning(consumer);
+        logger.info({ groupId: this.groupId }, 'Kafka consumer restarted after a crash');
+      }).catch((err: unknown) => {
+        logger.error({ err, groupId: this.groupId }, 'Kafka consumer restart failed');
+      });
+    }, error.retryTime || 300);
   }
 
   private async handleMessage(payload: EachMessagePayload): Promise<void> {

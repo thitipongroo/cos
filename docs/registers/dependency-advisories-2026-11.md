@@ -2680,14 +2680,54 @@ openssl ca-certificates`; `groupadd`/`useradd` uid/gid 1001, as the charts run; 
   it; with the optional peer the local `nest build` again has 0 such files (not booted again).
   `pnpm install --frozen-lockfile`, `scripts/pnpm-audit.sh` (PASS) and backend `tsc --noEmit` pass; `pnpm peers check`
   lists no swagger or typescript peer.
-- **A tenant's events are not consumed until the backend restarts if its topics appear after startup.** Consumers
-  subscribe per event type with a RegExp over `{tenant_id}.{event_type}` (`packages/@cos/kafka/src/consumer.ts:87-97`),
-  and its comment says this "also picks up topics provisioned for tenants onboarded after startup". KafkaJS 2.2.4
-  resolves a RegExp once, inside `subscribe()`, against the metadata it fetches then
-  (`kafkajs/src/consumer/index.js:157-185`). Measured: on a fresh local stack the first `site.report.created.v1` and
-  `safety.incident.created.v1` created their topics on first publish and were published (`outbox_events.published`),
-  and the PM received nothing; after `docker restart cos-backend` new events were delivered. Not fixed; whether
-  production pre-creates every tenant's topics before the backend starts was not checked.
+- **Closed — a tenant's events were not consumed until the backend restarted if its topics appeared after startup.**
+  Fixed on `fix/kafka-late-topics`. Consumers subscribe per event type with a RegExp over `{tenant_id}.{event_type}`
+  (`packages/@cos/kafka/src/consumer.ts`), and two comments said KafkaJS picks up matching topics created later. KafkaJS
+  2.2.4 resolves a RegExp once, inside `subscribe()` (`kafkajs/src/consumer/index.js:157-185`), and nothing re-evaluates
+  it. Standard tenants' topics are created by their first publish (`KafkaProducer.ensureTopic`; the brokers do not
+  auto-create), and enterprise provisioning creates them while the backend runs, so all six backend consumers
+  (notification, tasks.delay, search-indexer, risks, finance, analytics-invalidation) missed every topic newer than the
+  process. Worse than late: a topic first subscribed after messages were written has no committed offset for the group,
+  and with `fromBeginning: false` the group starts at the latest offset, so those messages were never read, restart or
+  not. Measured on 2026-11-13 (local stack): the first `site.report.created.v1` and `safety.incident.created.v1` were
+  published and the PM received nothing until `docker restart cos-backend`.
+  - Change: `KafkaConsumer` lists topics through an admin client and subscribes the matching ones by name, from that
+    one listing (a RegExp would be resolved against KafkaJS's own metadata request, possibly another broker's view).
+    Then every `KAFKA_TOPIC_REFRESH_MS` (default 30 000; anything but a positive whole number gives the default) it
+    lists again and subscribes the new matches with `fromBeginning: true`. `subscribe()` throws while running, so it
+    stops, subscribes and runs again: a group rebalance, only when a topic is new. KafkaJS applies `fromBeginning` where
+    the group has no committed offset, and when a committed offset is out of range (a recreated topic), which replays
+    rather than skips. A failed refresh is logged and the next tick retries; a failed subscribe still resumes the
+    consumer. Crash restarts moved off KafkaJS's own timer: it arms that timer after its crash handler disconnects, and
+    its `start()` does not check whether something ran the consumer meanwhile (`consumer/index.js:246-300`), so a
+    refresh in that window would have left two runners. KafkaJS is told not to restart (`restartOnFailure` → false,
+    which it calls only for retriable errors; `retries: 5` kept), and the consumer restarts itself after KafkaJS's delay
+    (`retryTime`, else 300 ms) on the same serial lane as the refresh. After a non-retriable crash it stays down, as
+    before, and the refresh does not revive it. `disconnect()` no longer waits for a refresh in progress; that refresh
+    checks a closing flag after each await and never runs the consumer again. A second `connect()` is refused, and a
+    failed `connect()` closes what it opened. The two code comments and
+    `docs/architecture/technical-design/phase-08-event-driven-infrastructure.md` now say what KafkaJS does.
+  - Evidence: unit `consumer.topic-refresh.spec.ts` (29 tests) and the updated connect tests in
+    `consumer.idempotency.spec.ts`; integration `test/kafka/kafka.integration.spec.ts` "consumer started before a topic
+    exists receives the event that creates it" (testcontainers Kafka, default `fromBeginning`, refresh 1 s): the topic
+    is absent at connect, the first publish creates it, the handler receives that event (subscribed about 5 s after the
+    publish; KafkaJS's `stop()` waits for the in-flight fetch, up to `maxWaitTimeInMs`, 5 s). Negative controls, each
+    applied alone and reverted: refresh disabled, 9 of the 29 unit tests fail and the integration test times out after
+    30 s; the consumer's own crash restart removed, 5 fail; the serial lane bypassed, 1 fails; the closing check before
+    `run()` removed, 1 fails. `@cos/kafka` unit 179 and integration 3 pass; backend `tsc` 0 and the six consumers'
+    specs (233 tests) pass; eslint, prettier and markdownlint clean. `TimeoutNegativeWarning` from KafkaJS in the
+    integration run appears on HEAD too.
+  - Not checked: a multi-replica deployment. Each replica refreshes on its own timer and leaves and rejoins the group
+    for each new topic (about two rebalances per replica per group, every member pausing for each); KafkaJS's leader
+    assigns only topics it has itself subscribed (`consumerGroup.js:220`), so a new topic waits until the leader and
+    the assignee have both refreshed — later by up to an interval plus the skew between replicas, not lost. Nor the
+    cost of `listTopics` on MSK: each call is a full-cluster metadata request, six per replica every 30 s, and the topic
+    count grows with tenants × event types. One shared lister per process, or jitter, are the options if either shows.
+- **Messages written while no consumer runs, to a topic it never subscribed, are still skipped.** After the fix above,
+  a topic created between a consumer's last refresh and its shutdown (or while every replica is down) exists at the
+  next startup; `connect()` subscribes it with the caller's `fromBeginning` (false for the backend), so its messages
+  are read from the latest offset. Not fixed: using `fromBeginning: true` at startup would also make a new consumer
+  group read every existing topic's full retention.
 - **`site.report.created.v1` names a report id that does not exist after a same-day resubmission.**
   `site-ops.service.ts:126` builds the event with the freshly generated `reportId` before the upsert; on conflict the
   row keeps its old `report_id` (`site-ops.repository.ts:94-106`), so the event — and the PM's notification body —
