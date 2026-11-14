@@ -55,6 +55,19 @@ function dayOf(reportDate: unknown): string | null {
   return m ? m[1]! : null;
 }
 
+/**
+ * A save time as it is stored: never later than the server's clock (a device clock running fast
+ * would otherwise store a future time, and every later save of that day would lose to it), NULL when
+ * absent or unparseable (rather than the epoch the ordering helper uses). Unlike the ordering clamp,
+ * no tolerance: a stored time ahead of the server, even by a minute, outranks genuinely later saves.
+ */
+function storedSaveTime(raw: string | undefined | null): string | null {
+  if (raw === undefined || raw === null) return null;
+  const ms = new Date(raw).getTime();
+  if (Number.isNaN(ms)) return null;
+  return new Date(Math.min(ms, Date.now())).toISOString();
+}
+
 /** A report row's day as `YYYY-MM-DD` (Prisma returns a DATE as UTC midnight). */
 function reportDayOf(row: SiteReportRow): string {
   return row.report_date instanceof Date
@@ -213,7 +226,7 @@ export class SiteOpsService {
         weather: dto.weather ?? null,
         manpower_count: dto.manpower_count ?? null,
         shift: dto.shift ?? null,
-        client_submitted_at: dto.client_submitted_at ?? null,
+        client_submitted_at: storedSaveTime(dto.client_submitted_at),
         latitude: dto.latitude ?? null,
         longitude: dto.longitude ?? null,
       },
@@ -393,7 +406,7 @@ export class SiteOpsService {
             blockers: item.blockers ?? null,
             weather: item.weather ?? null,
             manpower_count: item.manpower_count ?? null,
-            client_submitted_at: item.client_submitted_at ?? null,
+            client_submitted_at: storedSaveTime(item.client_submitted_at),
             latitude: item.latitude ?? null,
             longitude: item.longitude ?? null,
             blocker_category: extras.blocker_category ?? null,
@@ -653,10 +666,34 @@ export class SiteOpsService {
         longitude: pick<number>('longitude'),
         blocker_category: extras.blocker_category,
         shift: extras.shift,
+        // The comparison above used the row as read at the start of the batch; the UPDATE repeats it,
+        // so a newer save that landed in between is not overwritten.
+        notNewerThan: new Date(itemTs).toISOString(),
       },
       (updatedRow) => this.reportUpdatedEvent(updatedRow),
     );
-    if (updated && extras.manpower_lines) {
+    if (!updated) {
+      // Nothing matched: either a newer save landed since the read (the row is there — this one is
+      // stale, ACCEPTED without a write) or the row is gone (null → CONFLICT_REJECTED).
+      const current = await this.repo.findReportById(row.report_id);
+      if (current) {
+        logger.info(
+          {
+            event: 'sync.site_report.stale_skipped',
+            report_id: row.report_id,
+            item_saved_at: new Date(itemTs).toISOString(),
+            row_saved_at: new Date(
+              current.client_submitted_at ?? current.modified_at,
+            ).toISOString(),
+            tenant_id: this.tenantId,
+          },
+          'site-report sync item overtaken by a newer save before its write — not written',
+        );
+        return current;
+      }
+      return null;
+    }
+    if (extras.manpower_lines) {
       await this.repo.replaceManpowerLogs(updated.report_id, extras.manpower_lines);
     }
     return updated;

@@ -285,7 +285,16 @@ export class SyncService {
         return this.pushTask(dto);
 
       case 'site_report': {
-        const items = [{ ...dto.payload, client_id: dto.entity_id }];
+        // The envelope's client_submitted_at when the payload has none: the web queues its save time
+        // on the envelope only (lib/pwa/sync-service.ts), and dropping it ordered web saves by replay
+        // time instead of by when they were made. The payload's own value wins (the app sends both).
+        const items = [
+          {
+            client_submitted_at: dto.client_submitted_at,
+            ...dto.payload,
+            client_id: dto.entity_id,
+          },
+        ];
         const results = await this.siteOps.syncSiteReports({
           items,
         } as unknown as ArgOf<SiteOpsService['syncSiteReports'], 0>);

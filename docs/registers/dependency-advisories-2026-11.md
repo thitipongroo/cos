@@ -2865,14 +2865,32 @@ openssl ca-certificates`; `groupadd`/`useradd` uid/gid 1001, as the charts run; 
     `summary` keeps it. Against HEAD's service that integration test fails, and so do the unit tests "a replayed OLDER
     save does not overwrite", "a newer save writes only the fields it sent" and the older-spec edit test whose
     expected timestamp is now normalised (`…:00.000Z`).
-- **Site-report sync ordering has three loose ends.** (1) Web-queued reports carry no `client_submitted_at`, and
-  `/sync/push` drops the envelope's own (`sync.service.ts` passes `{ ...dto.payload, client_id }`), so they are
-  ordered by replay time, not by when they were saved — "newest save wins" holds for the app only. (2) The sync
-  create stores `client_submitted_at` unclamped, so a device clock running ahead makes every later save that day lose
-  until real time passes it. (3) `applyOwnEdit` compares with the row read at the start of the batch and the UPDATE has
-  no ordering guard, so a newer write landing in between can be overwritten. Also the app's
-  `ConflictHandler.ts` comment ("the local payload … is what the server stored") is untrue after a skipped older save
-  (cosmetic: the newer local row still exists). Found by /doubt on `fix/site-report-sync-id-lww`. Not fixed.
+- **Closed — site-report sync ordered web saves by replay time, kept a fast clock's future time, and could overwrite a
+  newer save.** Fixed on `fix/site-report-sync-ordering`.
+  - The web queues its save time on the `/sync/push` envelope only (`apps/web/src/lib/pwa/sync-service.ts`), and the
+    push handler passed only the payload on, so web saves were ordered by when they were replayed. The envelope's
+    `client_submitted_at` is now used when the payload has none (the payload's own value wins; the app sends both).
+  - Both creates — the sync create and the web `POST /site/reports` — stored the save time as sent, so a clock running
+    ahead stored a future time and every later save of that day lost to it (`stale_skipped`). Both now store it
+    never later than the server's clock (no tolerance: the ordering clamp's 5-minute tolerance would still let a time
+    4 minutes ahead outrank later saves), and NULL rather than an unparseable value.
+  - The own-edit compared with the row read at the start of the batch, and its UPDATE had no ordering condition.
+    `updateSiteReport` takes `notNewerThan` (`AND date_trunc('milliseconds', COALESCE(client_submitted_at,
+modified_at)) <= $t`, milliseconds like the caller's comparison — `modified_at` carries microseconds); when that
+    matches no row the row is re-read — still there means a newer save landed (ACCEPTED, logged with both save times,
+    not written, no lines replaced), gone means CONFLICT_REJECTED.
+  - Evidence: unit — push uses the envelope time when the payload has none and the payload's when both are present;
+    the create stores a capped future time, NULL for garbage, and a past time as sent; an UPDATE that matches nothing
+    because a newer save landed is ACCEPTED without a write, a vanished row CONFLICT_REJECTED. Integration
+    `test/site-ops/08-site-report-event-id.integration.spec.ts`: a push with the time only on the envelope stores it;
+    a create dated 2099 stores about now and the next save that day wins; `updateSiteReport` with `notNewerThan`
+    before the stored save writes nothing on a real row. Negative controls, each alone: HEAD's push handler → the
+    envelope test fails; the create storing the raw time → the fast-clock test fails; the SQL condition disabled →
+    the `notNewerThan` test fails.
+  - Not changed: the sync create's own upsert (`ON CONFLICT (project, day, submitter) DO UPDATE`) still overwrites
+    without an ordering check; it is reached only when the natural-key lookup missed (a non-UUID project, a failed
+    lookup, or two pushes racing for a new day). The app's `ConflictHandler.ts` comment ("the local payload … is what
+    the server stored") is untrue after a skipped older save; cosmetic, the newer local row still exists.
 - **Closed — site reports written through sync were never indexed, nor findable by search.** Fixed on
   `fix/site-report-search-sync`. The search indexer subscribed `site.report.created.v1` only; a sync create emits
   `site.report.submitted.v1` and a sync edit emitted nothing, so a report filed from the app (the main path) never

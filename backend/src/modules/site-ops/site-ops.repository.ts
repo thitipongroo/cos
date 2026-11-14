@@ -315,6 +315,12 @@ export class SiteOpsRepository {
       blocker_category?: string | null;
       /** Same rule as blocker_category. */
       shift?: string | null;
+      /**
+       * Write only if the row's saved time (client_submitted_at, else modified_at) is not newer than
+       * this — so a save that landed after the row was read is never overwritten by an older one.
+       * Null / absent: no ordering condition.
+       */
+      notNewerThan?: string | null;
     },
     /** Builder over the UPDATEd row, written in the same transaction — skipped when nothing matched. */
     buildOutboxEvent?: (row: SiteReportRow) => OutboxEventInput,
@@ -337,6 +343,11 @@ export class SiteOpsRepository {
             modified_at         = now()
         WHERE report_id = ${reportId}::uuid
           AND tenant_id = ${this.tenantId}::uuid
+          AND (${params.notNewerThan ?? null}::timestamptz IS NULL
+               -- Milliseconds, as the caller compared: modified_at carries microseconds, and an
+               -- equal-millisecond save must not read as newer here when it did not in JS.
+               OR date_trunc('milliseconds', COALESCE(client_submitted_at, modified_at))
+                    <= ${params.notNewerThan ?? null}::timestamptz)
         RETURNING *
       `;
       if (buildOutboxEvent && written[0]) {

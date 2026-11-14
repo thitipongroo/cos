@@ -2117,6 +2117,7 @@ describe('syncSiteReports — natural-key hit', () => {
         client_submitted_at: '2026-06-04T11:00:00.000Z',
         latitude: null,
         longitude: null,
+        notNewerThan: '2026-06-04T11:00:00.000Z',
       },
       expect.any(Function),
     );
@@ -2592,6 +2593,7 @@ describe('syncSiteReports — id hit without last_known_modified_at', () => {
   it('a newer save whose row vanished before the write is CONFLICT_REJECTED, not ACCEPTED', async () => {
     mockRepo.findReportsByIds.mockResolvedValueOnce(new Map([[ID, stored()]]));
     mockRepo.updateSiteReport.mockResolvedValueOnce(null);
+    mockRepo.findReportById.mockResolvedValueOnce(null); // gone, not overtaken
     const results = await service.syncSiteReports({
       items: [
         {
@@ -2643,6 +2645,7 @@ describe('syncSiteReports — id hit without last_known_modified_at', () => {
       ]),
     );
     mockRepo.updateSiteReport.mockResolvedValueOnce(null);
+    mockRepo.findReportById.mockResolvedValueOnce(null); // gone, not overtaken
     const results = await service.syncSiteReports({
       items: [
         {
@@ -2685,5 +2688,140 @@ describe('syncSiteReports — id hit without last_known_modified_at', () => {
       expect.objectContaining({ summary: 'older text' }),
       expect.any(Function),
     );
+  });
+});
+
+// ── syncSiteReports — ordering (fix/site-report-sync-ordering) ───────────────────────────────────
+
+describe('syncSiteReports — ordering', () => {
+  const ID = '34343434-3434-4434-8434-343434343434';
+  const stored = () =>
+    makeReport({
+      report_id: ID,
+      client_submitted_at: new Date('2026-06-04T10:00:00Z'),
+      modified_at: new Date('2026-06-04T10:00:00Z'),
+    });
+
+  beforeEach(() => {
+    mockRepo.findReportsByNaturalKeys.mockResolvedValue(new Map());
+  });
+
+  // The UPDATE repeats the comparison: a newer save that landed after the read matches no row, and
+  // the re-read tells "overtaken" (ACCEPTED, no write) from "gone" (CONFLICT_REJECTED).
+  it('a write overtaken by a newer save after the read is ACCEPTED without overwriting it', async () => {
+    mockRepo.findReportsByIds.mockResolvedValueOnce(new Map([[ID, stored()]]));
+    mockRepo.updateSiteReport.mockResolvedValueOnce(null);
+    mockRepo.findReportById.mockResolvedValueOnce(
+      makeReport({ report_id: ID, client_submitted_at: new Date('2026-06-04T12:00:00Z') }),
+    );
+    const results = await service.syncSiteReports({
+      items: [
+        {
+          client_id: ID,
+          project_id: 'project-1',
+          report_date: '2026-06-04',
+          summary: 'from 11:00',
+          client_submitted_at: '2026-06-04T11:00:00Z',
+        },
+      ],
+    });
+    expect(results[0]?.conflict_status).toBe('ACCEPTED');
+    expect(mockRepo.updateSiteReport).toHaveBeenCalledWith(
+      ID,
+      expect.objectContaining({ notNewerThan: '2026-06-04T11:00:00.000Z' }),
+      expect.any(Function),
+    );
+  });
+
+  // A device clock running ahead must not store a future save time — every later save that day would
+  // lose to it. Capped at the server's clock; garbage stored as NULL, not the epoch.
+  it('the sync create stores a clamped save time', async () => {
+    mockRepo.findReportsByIds.mockResolvedValue(new Map());
+    mockRepo.createSiteReport.mockResolvedValue(makeReport({ report_id: 'x' }));
+    const before = Date.now();
+    await service.syncSiteReports({
+      items: [
+        {
+          client_id: 'future',
+          project_id: 'project-1',
+          report_date: '2026-06-04',
+          client_submitted_at: '2099-01-01T00:00:00Z',
+        },
+        {
+          client_id: 'garbage',
+          project_id: 'project-1',
+          report_date: '2026-06-05',
+          client_submitted_at: 'not a time',
+        },
+        {
+          client_id: 'past',
+          project_id: 'project-1',
+          report_date: '2026-06-06',
+          client_submitted_at: '2026-06-06T08:00:00Z',
+        },
+      ],
+    });
+    const savedAt = mockRepo.createSiteReport.mock.calls.map(
+      (c) => (c[0] as { client_submitted_at: string | null }).client_submitted_at,
+    );
+    expect(Date.parse(savedAt[0]!)).toBeGreaterThanOrEqual(before - 1000);
+    expect(Date.parse(savedAt[0]!)).toBeLessThanOrEqual(Date.now() + 1000);
+    expect(savedAt[1]).toBeNull();
+    expect(savedAt[2]).toBe('2026-06-06T08:00:00.000Z');
+  });
+
+  // Stored times are never ahead of the server, not even within the ordering tolerance: a time 4
+  // minutes ahead would still outrank every genuinely later save for those 4 minutes.
+  it('a save time a few minutes ahead is stored as now, not as sent', async () => {
+    mockRepo.findReportsByIds.mockResolvedValue(new Map());
+    mockRepo.createSiteReport.mockResolvedValue(makeReport({ report_id: 'x' }));
+    const ahead = new Date(Date.now() + 4 * 60_000).toISOString();
+    await service.syncSiteReports({
+      items: [
+        {
+          client_id: 'ahead',
+          project_id: 'project-1',
+          report_date: '2026-06-07',
+          client_submitted_at: ahead,
+        },
+      ],
+    });
+    const stored = (
+      mockRepo.createSiteReport.mock.calls.at(-1)![0] as { client_submitted_at: string }
+    ).client_submitted_at;
+    expect(Date.parse(stored)).toBeLessThanOrEqual(Date.now());
+  });
+
+  it('the web POST stores a capped save time too', async () => {
+    mockRepo.createSiteReport.mockResolvedValueOnce(makeReport());
+    await service.createSiteReport({
+      project_id: 'project-1',
+      report_date: '2026-06-04',
+      client_submitted_at: '2099-01-01T00:00:00Z',
+    } as never);
+    const stored = (
+      mockRepo.createSiteReport.mock.calls.at(-1)![0] as { client_submitted_at: string }
+    ).client_submitted_at;
+    expect(Date.parse(stored)).toBeLessThanOrEqual(Date.now());
+  });
+
+  it('an overtaken write replaces no manpower lines', async () => {
+    mockRepo.findReportsByIds.mockResolvedValueOnce(new Map([[ID, stored()]]));
+    mockRepo.updateSiteReport.mockResolvedValueOnce(null);
+    mockRepo.findReportById.mockResolvedValueOnce(
+      makeReport({ report_id: ID, client_submitted_at: new Date('2026-06-04T12:00:00Z') }),
+    );
+    await service.syncSiteReports({
+      items: [
+        {
+          client_id: ID,
+          project_id: 'project-1',
+          report_date: '2026-06-04',
+          manpower_lines: [{ trade_type: 'CIVIL', worker_count: 2 }],
+          client_submitted_at: '2026-06-04T11:00:00Z',
+        },
+      ] as never,
+    });
+    expect(mockRepo.replaceManpowerLogs).not.toHaveBeenCalled();
   });
 });

@@ -117,7 +117,36 @@ describe('SyncService', () => {
       );
       expect(res.status).toBe('CONFLICT_FLAGGED');
       expect(siteOps.syncSiteReports).toHaveBeenCalledWith({
-        items: [{ summary: 's', client_id: 'r1' }],
+        items: [expect.objectContaining({ summary: 's', client_id: 'r1' })],
+      });
+    });
+
+    // The web queues its save time on the envelope only; dropping it ordered web saves by replay time.
+    it('site_report takes the envelope client_submitted_at when the payload has none', async () => {
+      const { svc, siteOps } = harness();
+      siteOps.syncSiteReports.mockResolvedValue([{ conflict_status: 'ACCEPTED' }]);
+      await svc.push({
+        ...push({ entity_type: 'site_report', entity_id: 'r1', payload: { summary: 's' } }),
+        client_submitted_at: '2026-06-04T08:00:00.000Z',
+      });
+      expect(siteOps.syncSiteReports).toHaveBeenLastCalledWith({
+        items: [{ client_submitted_at: '2026-06-04T08:00:00.000Z', summary: 's', client_id: 'r1' }],
+      });
+    });
+
+    it("site_report keeps the payload's own client_submitted_at over the envelope's", async () => {
+      const { svc, siteOps } = harness();
+      siteOps.syncSiteReports.mockResolvedValue([{ conflict_status: 'ACCEPTED' }]);
+      await svc.push({
+        ...push({
+          entity_type: 'site_report',
+          entity_id: 'r1',
+          payload: { client_submitted_at: '2026-06-04T07:00:00.000Z' },
+        }),
+        client_submitted_at: '2026-06-04T09:00:00.000Z',
+      });
+      expect(siteOps.syncSiteReports).toHaveBeenLastCalledWith({
+        items: [expect.objectContaining({ client_submitted_at: '2026-06-04T07:00:00.000Z' })],
       });
     });
 

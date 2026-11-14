@@ -31,6 +31,8 @@ import { AppModule } from '../../src/app.module';
 import { JwtAuthGuard } from '../../src/shared/guards/jwt-auth.guard';
 import { SearchIndexRepository } from '../../src/modules/search/search-index.repository';
 import { runInTenantContext } from '../../src/shared/context/run-in-tenant-context';
+import { ContextIdFactory } from '@nestjs/core';
+import { SiteOpsRepository } from '../../src/modules/site-ops/site-ops.repository';
 
 const TENANT_ID = 'bbbb1111-1111-4000-8000-000000000068';
 const USER_ID = 'bbbb2222-2222-4000-8000-000000000068';
@@ -536,5 +538,75 @@ describe('Site-report events name the written report (real database)', () => {
     expect(await detailsOn(day)).toEqual([
       expect.objectContaining({ summary: 'second', manpower_count: 4 }),
     ]);
+  });
+
+  // ── Ordering (fix/site-report-sync-ordering) ─────────────────────────────────────────────────
+
+  const savedAtOn = async (day: string): Promise<Date | null> => {
+    const rows = await infra.prisma.$queryRawUnsafe<Array<{ client_submitted_at: Date | null }>>(
+      `SELECT client_submitted_at FROM site_ops.site_reports
+        WHERE project_id = $1::uuid AND report_date = $2::date AND submitted_by = $3::uuid`,
+      projectId,
+      day,
+      USER_ID,
+    );
+    return rows[0]?.client_submitted_at ?? null;
+  };
+
+  it('push: the envelope client_submitted_at is stored when the payload has none (the web)', async () => {
+    const day = '2019-03-13';
+    const res = await http()
+      .post('/api/v1/sync/push')
+      .send({
+        entity_type: 'site_report',
+        entity_id: randomUUID(),
+        operation: 'CREATE',
+        payload: { project_id: projectId, report_date: day, summary: 'from the web' },
+        client_submitted_at: '2019-03-13T03:00:00.000Z',
+      });
+    expect((res.body as { status: string }).status).toBe('ACCEPTED');
+    expect((await savedAtOn(day))?.toISOString()).toBe('2019-03-13T03:00:00.000Z');
+  });
+
+  it('a create from a clock running ahead stores ~now, and a later save that day still wins', async () => {
+    const day = '2019-03-14';
+    const before = Date.now();
+    await push(day, { summary: 'fast clock', client_submitted_at: '2099-01-01T00:00:00.000Z' });
+    const saved = (await savedAtOn(day))!.getTime();
+    expect(saved).toBeGreaterThanOrEqual(before - 5_000);
+    expect(saved).toBeLessThanOrEqual(Date.now() + 5_000);
+
+    await push(day, {
+      summary: 'next save',
+      client_submitted_at: new Date(Date.now() + 1_000).toISOString(),
+    });
+    expect(await detailsOn(day)).toEqual([expect.objectContaining({ summary: 'next save' })]);
+  });
+
+  // The own-edit UPDATE repeats the ordering check in SQL, so a save that landed after the row was
+  // read is not overwritten by an older one.
+  it('updateSiteReport with notNewerThan older than the stored save writes nothing', async () => {
+    const day = '2019-03-15';
+    await push(day, {
+      summary: 'stored at 10:00',
+      client_submitted_at: '2019-03-15T10:00:00.000Z',
+    });
+    const [row] = await detailsOn(day);
+
+    const contextId = ContextIdFactory.create();
+    app.registerRequestByContextId({ tenantId: TENANT_ID }, contextId);
+    const repo = await app.resolve(SiteOpsRepository, contextId, { strict: false });
+    const result = await runInTenantContext({ tenantId: TENANT_ID, userId: USER_ID }, () =>
+      repo.updateSiteReport(row!.report_id, {
+        summary: 'older, from 09:00',
+        blockers: null,
+        weather: null,
+        manpower_count: null,
+        client_submitted_at: '2019-03-15T09:00:00.000Z',
+        notNewerThan: '2019-03-15T09:00:00.000Z',
+      }),
+    );
+    expect(result).toBeNull();
+    expect(await detailsOn(day)).toEqual([expect.objectContaining({ summary: 'stored at 10:00' })]);
   });
 });
