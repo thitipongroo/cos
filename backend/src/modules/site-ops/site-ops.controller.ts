@@ -95,7 +95,8 @@ export class SiteOpsController {
     required: false,
     type: String,
     description:
-      'Full-text search over summary, weather and blockers (OpenSearch). Unpaged, capped at 50 hits.',
+      'Full-text search over summary, weather and blockers (OpenSearch; a database search if it fails). ' +
+      'Trimmed; blank is no search. Unpaged: the 50 top hits in the project, then the dates filter them.',
   })
   // `q` FULL-TEXT SEARCH — exposed 2026-08-12, not newly built. `SiteOpsService.listSiteReports`
   // has taken a `q` and routed it to `searchSiteReports` (OpenSearch over summary + weather, and
@@ -124,7 +125,8 @@ export class SiteOpsController {
       minimal: minimal === 'true',
       // Blank and whitespace-only are NOT a search: the service treats any truthy `q` as one, and an
       // empty box on the client must return the normal paged list, not an OpenSearch round trip.
-      q: q?.trim() === '' ? undefined : q,
+      // Trimmed otherwise: the database fallback is a substring match, where an edge space is not.
+      q: q?.trim() || undefined,
     });
   }
 
@@ -241,12 +243,25 @@ export class SiteOpsController {
   })
   @ApiQuery({ name: 'page', required: false, type: Number })
   @ApiQuery({ name: 'limit', required: false, type: Number })
+  @ApiQuery({
+    name: 'q',
+    required: false,
+    type: String,
+    description:
+      'Full-text search over title and description (OpenSearch; a database search if it fails). ' +
+      'Trimmed; blank is no search. Unpaged: the 50 top hits in the project, then severity and ' +
+      'status filter them.',
+  })
+  // `q` — exposed 2026-11-14 (fix/site-issues-search-route), as reports' was on 2026-08-12:
+  // `SiteOpsService.listIssues` has always had the branch, but no parameter reached it. Same
+  // contract as reports: the search path is unpaged (`total` = hit count, page/limit ignored).
   listIssues(
     @Query('project_id') project_id?: string,
     @Query('severity') severity?: string,
     @Query('status') status?: string,
     @Query('page') page = '1',
     @Query('limit') limit = '20',
+    @Query('q') q?: string,
   ) {
     return this.svc.listIssues({
       project_id,
@@ -254,6 +269,8 @@ export class SiteOpsController {
       status,
       page: Math.max(1, parseInt(page, 10) || 1),
       limit: Math.min(100, Math.max(1, parseInt(limit, 10) || 20)),
+      // Trimmed; blank and whitespace-only are not a search (as for reports): the normal paged list.
+      q: q?.trim() || undefined,
     });
   }
 

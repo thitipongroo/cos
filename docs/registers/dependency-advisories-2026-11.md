@@ -2967,7 +2967,9 @@ modified_at)) <= $t`, milliseconds like the caller's comparison — `modified_at
     across three tenants (one inactive) and changes nothing; `--apply` makes each name an alias of its new index,
     drops the stale document, keeps the inactive tenant's report, the `.keyword` term filter separates the tenants
     exactly, and through the app `ปูน` and `เครน` find the Thai report, `ส่ง` the stopword one, `crane` the English
-    one, `ผนัง` the Thai issue and `ริมน้ำ` the Thai project; a second run moves the aliases on; `--tenant` restores a
+    one, `ผนัง` the Thai issue (correction 2026-11-14: not shown — `GET /site/issues` ignored `q` until
+    `fix/site-issues-search-route` and tenant A had one issue, so the plain list passed; see that entry) and `ริมน้ำ` the
+    Thai project; a second run moves the aliases on; `--tenant` restores a
     deleted document of one tenant without touching the others or the alias. The existing
     `test/search/01-full-text-search.integration.spec.ts` now runs with the templates and passes. Negative controls:
     `cos_thai` with the `standard` tokenizer → both Thai-search tests fail; the built-in `thai` analyzer (with its
@@ -3052,10 +3054,26 @@ modified_at)) <= $t`, milliseconds like the caller's comparison — `modified_at
     search and infra integration suites run together three times: 14 suites, 189 tests, all passed each time (before
     the listen-after-init handling and the Fastify case were added). Three clean runs cannot prove a rare flake gone;
     the repro's 0 in 12,000 is the stronger evidence.
-- **`GET /site/issues` takes no `q`, so issue search cannot be reached over HTTP.** The controller passes only
-  `project_id`, `severity`, `status`, `page`, `limit`; `SiteOpsService.listIssues` has a `q` branch nothing can
-  call — reports were the same until 2026-08-12. No client searches issues today. Found on
-  `fix/search-results-fallback`. Not fixed.
+- **Closed — `GET /site/issues` took no `q`, so issue search could not be reached over HTTP.** Fixed on
+  `fix/site-issues-search-route`. The controller passed only `project_id`, `severity`, `status`, `page`, `limit`;
+  `SiteOpsService.listIssues` had a `q` branch nothing could call. It now takes `q` as `GET /site/reports` has since
+  2026-08-12: blank or whitespace-only is no search (the normal paged list); a search is unpaged. On both routes `q`
+  is now also trimmed (the database fallback is a substring match, so `?q=%20ผนัง` missed titles starting with the
+  word). `docs/api/site-ops.openapi.yaml` documents `q` on both list routes (reports' had been served undocumented),
+  including that OpenSearch's 50 top hits in the project are filtered afterwards (severity/status; reports: the date
+  range), so a match ranked below 50 is not returned, while the database fallback filters first. Verified:
+  controller unit tests (four mutations — issues: `q` dropped, blank not normalised, not trimmed; reports: not
+  trimmed — each caught); `test/search/03` searches issues through the route with OpenSearch down, `test/search/02`
+  with OpenSearch up, now with a second, non-matching issue for tenant A — 13/13 pass; with HEAD's controller the
+  issue case of each fails. Until this change 02's issue check could not
+  fail: the route ignored `q` and tenant A's only issue was the expected one (the reindex entry above is corrected).
+  No client searches issues yet; nothing in web or mobile changed.
+- **Search `q` has no length cap, and the OpenSearch-failure log writes it raw.** Found by /doubt on
+  `fix/site-issues-search-route`; true of reports since 2026-08-12, and now of issues. Nothing bounds `q` but Node's
+  header limit. A long many-word `q` may exceed OpenSearch's clause limit (not tested); the `catch` treats any error
+  as OpenSearch being down and runs the database substring search, which has no supporting index. The
+  `opensearch.search.failed` warning logs `{ q, err }`, and `q` is user-typed text that may hold personal data (PDPA).
+  Not fixed (a cap is a product limit; logging `q.length` instead is a one-line change).
 - **Closed — the site-report notification said "0 issue(s), 0 photo(s)" on every submission.** Fixed on
   `fix/site-report-notification-counts`. `createSiteReport` put the constants 0 into `site.report.created.v1`, and the
   IN_APP template (`20260824000002`, English only) printed them. The event comes from the web `POST /site/reports`

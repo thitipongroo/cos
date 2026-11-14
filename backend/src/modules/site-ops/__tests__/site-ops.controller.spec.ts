@@ -138,6 +138,30 @@ describe('SiteOpsController', () => {
     expect(mockSvc.listIssues).toHaveBeenCalledWith(expect.objectContaining({ page: 1 }));
   });
 
+  // Issue search: the service branch existed; before 2026-11-14 no controller parameter reached it.
+  it('listIssues passes a search term through', () => {
+    ctrl.listIssues(undefined, 'HIGH', undefined, '1', '20', 'ผนัง');
+    expect(mockSvc.listIssues).toHaveBeenCalledWith(
+      expect.objectContaining({ q: 'ผนัง', severity: 'HIGH' }),
+    );
+  });
+
+  it('listIssues and listSiteReports trim the search term', () => {
+    ctrl.listIssues(undefined, undefined, undefined, '1', '20', '  ผนัง ');
+    expect(mockSvc.listIssues).toHaveBeenLastCalledWith(expect.objectContaining({ q: 'ผนัง' }));
+    ctrl.listSiteReports(undefined, undefined, undefined, '1', '20', undefined, ' ปูน  ');
+    expect(mockSvc.listSiteReports).toHaveBeenLastCalledWith(expect.objectContaining({ q: 'ปูน' }));
+  });
+
+  it('listIssues treats a blank or absent search term as no search', () => {
+    ctrl.listIssues(undefined, undefined, undefined, '1', '20', '   ');
+    expect(mockSvc.listIssues).toHaveBeenLastCalledWith(expect.objectContaining({ q: undefined }));
+    ctrl.listIssues(undefined, undefined, undefined, '1', '20', '');
+    expect(mockSvc.listIssues).toHaveBeenLastCalledWith(expect.objectContaining({ q: undefined }));
+    ctrl.listIssues();
+    expect(mockSvc.listIssues).toHaveBeenLastCalledWith(expect.objectContaining({ q: undefined }));
+  });
+
   it('listIssues clamps limit to 100 max (covers Math.min branch)', () => {
     ctrl.listIssues(undefined, undefined, undefined, '1', '500');
     expect(mockSvc.listIssues).toHaveBeenCalledWith(expect.objectContaining({ limit: 100 }));

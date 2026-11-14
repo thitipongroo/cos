@@ -178,6 +178,12 @@ describe('Thai-aware search indexes, rebuilt from the database (real PostgreSQL 
       .post('/api/v1/site/issues')
       .send({ project_id: projectOf['A'], title: 'ผนังร้าวชั้นสอง', severity: 'HIGH' });
     expect([200, 201]).toContain(issue.status);
+    // Matches nothing searched below. Without it the issue check could not tell a search from the
+    // plain list — and until fix/site-issues-search-route the route ignored `q` and returned that.
+    const other = await http('A')
+      .post('/api/v1/site/issues')
+      .send({ project_id: projectOf['A'], title: 'Scaffold missing guardrail', severity: 'HIGH' });
+    expect([200, 201]).toContain(other.status);
 
     // Tenant C is paused (inactive) when the reindex runs — e.g. mid enterprise provisioning (D48).
     await infra.prisma.$executeRawUnsafe(
@@ -261,7 +267,7 @@ describe('Thai-aware search indexes, rebuilt from the database (real PostgreSQL 
     expect(reports.map((r) => [r.index, r.documents, r.before.kind])).toEqual([
       ['cos_projects', 3, 'none'],
       ['site-reports', 5, 'concrete'],
-      ['site-issues', 1, 'none'],
+      ['site-issues', 2, 'none'],
     ]);
     const aliases = await os('/_alias/site-reports');
     expect(aliases.status).toBe(404);

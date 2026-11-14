@@ -26,9 +26,6 @@ import {
 } from '../helpers/integration-infra';
 import { AppModule } from '../../src/app.module';
 import { JwtAuthGuard } from '../../src/shared/guards/jwt-auth.guard';
-import { ContextIdFactory } from '@nestjs/core';
-import { SiteOpsRepository } from '../../src/modules/site-ops/site-ops.repository';
-import { runInTenantContext } from '../../src/shared/context/run-in-tenant-context';
 
 const TENANT = 'bbbb1111-1111-4000-8000-000000000070';
 const USER = 'bbbb2222-1111-4000-8000-000000000070';
@@ -158,23 +155,28 @@ describe('Search falls back to the database when OpenSearch is down (real Postgr
     expect((res.body as { items: unknown[] }).items).toEqual([]);
   });
 
-  // GET /site/issues takes no `q` (no client searches issues — register), so the issue search is
-  // driven through the repository the service's fallback calls, against the same real rows.
-  it('issues: the database search finds a Thai substring, with the severity filter applied', async () => {
-    const contextId = ContextIdFactory.create();
-    app.registerRequestByContextId({ tenantId: TENANT }, contextId);
-    const repo = await app.resolve(SiteOpsRepository, contextId, { strict: false });
-    const titles = (rows: Array<{ title: string }>) => rows.map((r) => r.title).sort();
+  // Through `GET /site/issues?q=` since fix/site-issues-search-route (the route took no `q` before,
+  // so this case drove the repository directly).
+  it('issues: a Thai substring finds its issues, with the severity filter applied', async () => {
+    const titles = (body: unknown) =>
+      (body as { items: Array<{ title: string }> }).items.map((r) => r.title).sort();
 
-    await runInTenantContext({ tenantId: TENANT, userId: USER }, async () => {
-      expect(titles(await repo.searchIssuesText('ผนัง', {}, 50))).toEqual(
-        ['ผนังร้าวชั้นสอง', 'ผนังสีลอก'].sort(),
-      );
-      expect(titles(await repo.searchIssuesText('ผนัง', { severity: 'HIGH' }, 50))).toEqual([
-        'ผนังร้าวชั้นสอง',
-      ]);
-      expect(await repo.searchIssuesText('zzzznomatch', {}, 50)).toEqual([]);
-    });
+    const all = await get(`/api/v1/site/issues?q=${q('ผนัง')}`);
+    expect(all.status).toBe(200);
+    expect(titles(all.body)).toEqual(['ผนังร้าวชั้นสอง', 'ผนังสีลอก'].sort());
+
+    const high = await get(`/api/v1/site/issues?q=${q('ผนัง')}&severity=HIGH`);
+    expect(titles(high.body)).toEqual(['ผนังร้าวชั้นสอง']);
+
+    const none = await get(`/api/v1/site/issues?q=${q('zzzznomatch')}`);
+    expect(none.status).toBe(200);
+    expect((none.body as { items: unknown[] }).items).toEqual([]);
+  });
+
+  it('issues: a blank q is the normal list, not a search', async () => {
+    const res = await get(`/api/v1/site/issues?q=${q('   ')}`);
+    expect(res.status).toBe(200);
+    expect((res.body as { items: unknown[] }).items).toHaveLength(3);
   });
 
   it('projects: by a Thai substring of the name and by code', async () => {

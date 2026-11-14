@@ -522,6 +522,17 @@ paths:
           schema:
             type: boolean
             default: false
+        - name: q
+          in: query
+          description: |
+            Full-text search over summary, weather and blockers. Trimmed; blank or whitespace-only is
+            no search. While searching, the result is unpaged: `total` is the hit count, page and limit
+            are ignored. OpenSearch answers with its 50 top hits in the project (relevance order),
+            which the date range then filters, so a match ranked below 50 is not returned. If OpenSearch
+            fails, a database substring search applies the filters first and returns up to 50 rows,
+            newest first.
+          schema:
+            type: string
       responses:
         '200':
           description: Paginated site reports
@@ -687,6 +698,17 @@ paths:
             type: integer
             default: 20
             maximum: 100
+        - name: q
+          in: query
+          description: |
+            Full-text search over title and description. Trimmed; blank or whitespace-only is no
+            search. While searching, the result is unpaged: `total` is the hit count, page and limit
+            are ignored. OpenSearch answers with its 50 top hits in the project (relevance order),
+            which severity and status then filter, so a match ranked below 50 is not returned. If
+            OpenSearch fails, a database substring search applies the filters first and returns up
+            to 50 rows, newest first.
+          schema:
+            type: string
       responses:
         '200':
           description: Paginated issues
