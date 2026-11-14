@@ -440,7 +440,8 @@ describe('ProjectService', () => {
       expect(result.items.map((p) => p.project_id)).toEqual(['proj-uuid-001']);
     });
 
-    it('falls back to repo.list when OpenSearch throws', async () => {
+    // OpenSearch down: search the database, never hand back the plain list as if it were results.
+    it('searches the database when OpenSearch throws — not the plain list', async () => {
       const { Client } = jest.requireMock('@opensearch-project/opensearch') as {
         Client: jest.Mock;
       };
@@ -448,9 +449,13 @@ describe('ProjectService', () => {
         index: jest.fn().mockResolvedValue({}),
         search: jest.fn().mockRejectedValue(new Error('opensearch down')),
       }));
-      const service = await buildService(makeRepo());
-      const result = await service.list({ q: 'Test', limit: 10 } as never);
-      expect(Array.isArray(result.items)).toBe(true);
+      const searchText = jest.fn().mockResolvedValue([baseProject]);
+      const list = jest.fn();
+      const service = await buildService(makeRepo({ searchText, list } as never));
+      const result = await service.list({ q: 'ริมน้ำ', status: 'ACTIVE', limit: 10 } as never);
+      expect(result).toEqual({ items: [baseProject], nextCursor: null });
+      expect(searchText).toHaveBeenCalledWith('ริมน้ำ', { status: 'ACTIVE', type: undefined }, 10);
+      expect(list).not.toHaveBeenCalled();
     });
   });
 

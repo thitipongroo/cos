@@ -14,12 +14,12 @@
 //   Rebuild.  Replaying a topic from the beginning re-indexes what it still holds, because each
 //             handler reads the CURRENT row rather than trusting the event's payload. Only what it
 //             still holds: a topic keeps the broker's default retention, so a replay cannot rebuild
-//             rows older than that — those need a reindex from the database (none exists yet).
+//             rows older than that — those need the reindex from the database
+//             (maintenance/reindex-search.script.ts).
 //
 // The cost is that a document appears a moment after the write commits instead of during it. The
-// read paths already tolerate that: ProjectService.searchProjects falls back to the paged database
-// list when OpenSearch errors or returns nothing useful, and search is a filter over records the
-// list endpoints serve from PostgreSQL regardless.
+// read paths load their hits' rows from PostgreSQL, so what they show is always current; when
+// OpenSearch errors they run a database search (ILIKE) instead.
 //
 // NOT subscribed: `construction.project.archived.v1` and the deletion of anything. Neither service
 // deletes rows — a finished project reaches COMPLETED through status_changed, which IS subscribed —

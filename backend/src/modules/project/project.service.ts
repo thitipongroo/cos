@@ -372,8 +372,11 @@ export class ProjectService {
       const items = ids.map((id) => byId.get(id)).filter((r): r is ProjectRow => r !== undefined);
       return { items, nextCursor: null }; // cursor not supported for search results
     } catch (err) {
-      logger.warn({ q, err }, 'opensearch.search.failed — falling back to DB list');
-      return this.repo.list({ status: dto.status, type: dto.type, cursor: dto.cursor, limit });
+      // Search in the database instead — never the plain list, which the caller would show as the
+      // results of a search it did not run.
+      logger.warn({ q, err }, 'opensearch.search.failed — falling back to a database search');
+      const items = await this.repo.searchText(q, { status: dto.status, type: dto.type }, limit);
+      return { items, nextCursor: null };
     }
   }
 }

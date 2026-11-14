@@ -2,6 +2,7 @@
 // All DB access via TenantPrismaService (SET LOCAL app.current_tenant_id per request — ADR-008).
 // Uses $queryRaw (parameterized tagged template) — never raw string interpolation.
 
+import { containsPattern } from '../../shared/prisma/like-pattern';
 import { Injectable, Scope, Inject } from '@nestjs/common';
 import { REQUEST } from '@nestjs/core';
 import type { Request } from 'express';
@@ -220,6 +221,37 @@ export class SiteOpsRepository {
     return new Map(rows.map(({ natural_key, ...row }) => [natural_key, row as SiteReportRow]));
   }
 
+  /**
+   * Text search in the database: OpenSearch's stand-in when it is unreachable. Matches the fields
+   * OpenSearch searches (summary, weather, blockers) as a literal substring — which also finds a Thai
+   * word inside an unsegmented run, with the list's filters. Newest first, like the list. No index
+   * backs the ILIKE and none leads with tenant_id, so without a project it scans site_reports (or
+   * walks the report_date index) — accepted for a degraded mode; pg_trgm would be the fix.
+   */
+  async searchSiteReportsText(
+    q: string,
+    params: { project_id?: string; from_date?: string; to_date?: string },
+    limit: number,
+  ): Promise<SiteReportRow[]> {
+    const pattern = containsPattern(q);
+    return this.db.run(
+      (tx) =>
+        tx.$queryRaw<SiteReportRow[]>`
+        SELECT * FROM site_ops.site_reports
+        WHERE tenant_id = ${this.tenantId}::uuid
+          AND (${params.project_id ?? null}::uuid IS NULL
+               OR project_id = ${params.project_id ?? null}::uuid)
+          AND (${params.from_date ?? null}::date IS NULL
+               OR report_date >= ${params.from_date ?? null}::date)
+          AND (${params.to_date ?? null}::date IS NULL
+               OR report_date <= ${params.to_date ?? null}::date)
+          AND (summary ILIKE ${pattern} OR weather ILIKE ${pattern} OR blockers ILIKE ${pattern})
+        ORDER BY report_date DESC, report_id
+        LIMIT ${limit}
+      `,
+    );
+  }
+
   async listSiteReports(params: {
     project_id?: string;
     from_date?: string;
@@ -425,6 +457,44 @@ export class SiteOpsRepository {
       `,
     );
     return rows[0] ?? null;
+  }
+
+  async findIssuesByIds(issueIds: string[]): Promise<Map<string, IssueRow>> {
+    if (issueIds.length === 0) return new Map();
+    const rows = await this.db.run(
+      (tx) =>
+        tx.$queryRaw<IssueRow[]>`
+        SELECT * FROM site_ops.issues
+        WHERE issue_id = ANY(${issueIds}::uuid[])
+          AND tenant_id = ${this.tenantId}::uuid
+      `,
+    );
+    return new Map(rows.map((r) => [r.issue_id, r]));
+  }
+
+  /** Issue text search in the database (title, description) — see searchSiteReportsText. */
+  async searchIssuesText(
+    q: string,
+    params: { project_id?: string; severity?: string; status?: string },
+    limit: number,
+  ): Promise<IssueRow[]> {
+    const pattern = containsPattern(q);
+    return this.db.run(
+      (tx) =>
+        tx.$queryRaw<IssueRow[]>`
+        SELECT * FROM site_ops.issues
+        WHERE tenant_id = ${this.tenantId}::uuid
+          AND (${params.project_id ?? null}::uuid IS NULL
+               OR project_id = ${params.project_id ?? null}::uuid)
+          AND (${params.severity ?? null}::text IS NULL
+               OR severity = ${params.severity ?? null}::text)
+          AND (${params.status ?? null}::text IS NULL
+               OR status = ${params.status ?? null}::text)
+          AND (title ILIKE ${pattern} OR description ILIKE ${pattern})
+        ORDER BY created_at DESC, issue_id
+        LIMIT ${limit}
+      `,
+    );
   }
 
   async listIssues(params: {

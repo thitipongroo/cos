@@ -109,7 +109,9 @@ describe('Full-text search (Testcontainers — OpenSearch)', () => {
       }) as unknown as ProjectRow;
 
     let service: ProjectService;
-    let repo: jest.Mocked<Pick<ProjectRepository, 'findById' | 'findByIds' | 'list'>>;
+    let repo: jest.Mocked<
+      Pick<ProjectRepository, 'findById' | 'findByIds' | 'list' | 'searchText'>
+    >;
 
     beforeAll(async () => {
       rows['p1'] = makeProject(PROJECT_ID, 'PROJ-BKK-001', 'Bangkok Riverside Tower');
@@ -147,7 +149,10 @@ describe('Full-text search (Testcontainers — OpenSearch)', () => {
           ids.map((id) => byId.get(id)).filter((r): r is ProjectRow => r !== undefined),
         ),
         list: jest.fn(async () => ({ items: [], nextCursor: null })),
-      } as unknown as jest.Mocked<Pick<ProjectRepository, 'findById' | 'findByIds' | 'list'>>;
+        searchText: jest.fn(async () => []),
+      } as unknown as jest.Mocked<
+        Pick<ProjectRepository, 'findById' | 'findByIds' | 'list' | 'searchText'>
+      >;
 
       service = new ProjectService(
         repo as unknown as ProjectRepository,
@@ -201,8 +206,9 @@ describe('Full-text search (Testcontainers — OpenSearch)', () => {
       expect(repo.list).not.toHaveBeenCalled();
     });
 
-    it('falls back to the DB list when the search backend is unreachable', async () => {
-      // The documented degradation: search is best-effort, the list endpoint must still answer.
+    it('falls back to a database search when the search backend is unreachable', async () => {
+      // The documented degradation: search is best-effort, the endpoint must still answer — with a
+      // database search for the query (fix/search-results-fallback), not the unfiltered list.
       const broken = new ProjectService(
         repo as unknown as ProjectRepository,
         {
@@ -215,8 +221,14 @@ describe('Full-text search (Testcontainers — OpenSearch)', () => {
         },
       } as never;
 
+      repo.list.mockClear();
       await broken.list({ q: 'Riverside' } as never);
-      expect(repo.list).toHaveBeenCalled();
+      expect(repo.searchText).toHaveBeenCalledWith(
+        'Riverside',
+        expect.anything(),
+        expect.any(Number),
+      );
+      expect(repo.list).not.toHaveBeenCalled();
     });
   });
 
@@ -224,7 +236,12 @@ describe('Full-text search (Testcontainers — OpenSearch)', () => {
 
   describe('TC-P06-INT-002 — site reports and issues are indexed for full-text search', () => {
     let service: SiteOpsService;
-    let repo: { listSiteReports: jest.Mock; listIssues: jest.Mock };
+    let repo: {
+      listSiteReports: jest.Mock;
+      listIssues: jest.Mock;
+      findReportsByIds: jest.Mock;
+      findIssuesByIds: jest.Mock;
+    };
 
     const report = (
       id: string,
@@ -284,6 +301,15 @@ describe('Full-text search (Testcontainers — OpenSearch)', () => {
       repo = {
         listSiteReports: jest.fn(async () => ({ rows: reports, total: reports.length })),
         listIssues: jest.fn(async () => ({ rows: issues, total: issues.length })),
+        // The search loads its hits by id (fix/search-results-fallback).
+        findReportsByIds: jest.fn(
+          async (ids: string[]) =>
+            new Map(reports.filter((r) => ids.includes(r.report_id)).map((r) => [r.report_id, r])),
+        ),
+        findIssuesByIds: jest.fn(
+          async (ids: string[]) =>
+            new Map(issues.filter((i) => ids.includes(i.issue_id)).map((i) => [i.issue_id, i])),
+        ),
       };
 
       service = new SiteOpsService(

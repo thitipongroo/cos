@@ -49,6 +49,9 @@ const mockRepo = {
   createSiteReport: jest.fn(),
   findReportById: jest.fn(),
   findReportsByIds: jest.fn().mockResolvedValue(new Map()),
+  findIssuesByIds: jest.fn().mockResolvedValue(new Map()),
+  searchSiteReportsText: jest.fn().mockResolvedValue([]),
+  searchIssuesText: jest.fn().mockResolvedValue([]),
   findReportsByNaturalKeys: jest.fn().mockResolvedValue(new Map()),
   replaceManpowerLogs: jest.fn(),
   // Default to "no breakdown recorded" — the shape getSiteReport must tolerate on every pre-existing
@@ -1469,7 +1472,7 @@ describe('OpenSearch indexing error handling', () => {
     Client.mock.results[0]?.value.search.mockResolvedValueOnce({
       body: { hits: { hits: [{ _source: { report_id: 'report-1' } }] } },
     });
-    mockRepo.listSiteReports.mockResolvedValue({ rows: [makeReport()], total: 1 });
+    mockRepo.findReportsByIds.mockResolvedValueOnce(new Map([['report-1', makeReport()]]));
     const result = await service.listSiteReports({ page: 1, limit: 10, q: 'crack', minimal: true });
     expect(result.items[0]).not.toHaveProperty('summary');
   });
@@ -1481,7 +1484,7 @@ describe('OpenSearch indexing error handling', () => {
     // moment it can least afford it.
     const { Client } = jest.requireMock('@opensearch-project/opensearch') as { Client: jest.Mock };
     Client.mock.results[0]?.value.search.mockRejectedValueOnce(new Error('opensearch unreachable'));
-    mockRepo.listSiteReports.mockResolvedValue({ rows: [makeReport()], total: 1 });
+    mockRepo.searchSiteReportsText.mockResolvedValueOnce([makeReport()]);
 
     const result = await service.listSiteReports({ page: 1, limit: 10, q: 'crack', minimal: true });
 
@@ -1493,7 +1496,7 @@ describe('OpenSearch indexing error handling', () => {
     // CONTROL: the reduction above must come from `minimal`, not from the fallback path itself.
     const { Client } = jest.requireMock('@opensearch-project/opensearch') as { Client: jest.Mock };
     Client.mock.results[0]?.value.search.mockRejectedValueOnce(new Error('opensearch unreachable'));
-    mockRepo.listSiteReports.mockResolvedValue({ rows: [makeReport()], total: 1 });
+    mockRepo.searchSiteReportsText.mockResolvedValueOnce([makeReport()]);
 
     const result = await service.listSiteReports({ page: 1, limit: 10, q: 'crack' });
 
@@ -1505,14 +1508,14 @@ describe('OpenSearch indexing error handling', () => {
     Client.mock.results[0]?.value.search.mockResolvedValueOnce({
       body: { hits: { hits: [{ _source: { issue_id: 'issue-1' } }] } },
     });
-    mockRepo.listIssues.mockResolvedValue({ rows: [makeIssue()], total: 1 });
+    mockRepo.findIssuesByIds.mockResolvedValueOnce(new Map([['issue-1', makeIssue()]]));
     const result = await service.listIssues({
       page: 1,
       limit: 10,
       q: 'crack',
       project_id: 'project-1',
     });
-    expect(result).toBeDefined();
+    expect(result.items).toHaveLength(1);
   });
 
   it('listSiteReports returns empty array when OpenSearch returns no hits (covers ids.length===0 branch)', async () => {
@@ -1538,7 +1541,7 @@ describe('OpenSearch indexing error handling', () => {
     Client.mock.results[0]?.value.search.mockResolvedValueOnce({
       body: { hits: { hits: [{ _source: { report_id: 'report-1' } }] } },
     });
-    mockRepo.listSiteReports.mockResolvedValue({ rows: [makeReport()], total: 1 });
+    mockRepo.findReportsByIds.mockResolvedValueOnce(new Map([['report-1', makeReport()]]));
     const result = await service.listSiteReports({ page: 1, limit: 10, q: 'summary' });
     expect(result.items).toHaveLength(1);
   });
@@ -1548,25 +1551,152 @@ describe('OpenSearch indexing error handling', () => {
     Client.mock.results[0]?.value.search.mockResolvedValueOnce({
       body: { hits: { hits: [{ _source: { issue_id: 'issue-1' } }] } },
     });
-    mockRepo.listIssues.mockResolvedValue({ rows: [makeIssue()], total: 1 });
+    mockRepo.findIssuesByIds.mockResolvedValueOnce(new Map([['issue-1', makeIssue()]]));
     const result = await service.listIssues({ page: 1, limit: 10, q: 'crack' });
     expect(result.items).toHaveLength(1);
   });
 
-  it('listSiteReports falls back to DB when OpenSearch search fails', async () => {
+  // OpenSearch down: search the database, never hand back the plain list as if it were results.
+  it('listSiteReports searches the database when OpenSearch fails — not the plain list', async () => {
     const { Client } = jest.requireMock('@opensearch-project/opensearch') as { Client: jest.Mock };
     Client.mock.results[0]?.value.search.mockRejectedValueOnce(new Error('OS down'));
-    mockRepo.listSiteReports.mockResolvedValue({ rows: [makeReport()], total: 1 });
-    const result = await service.listSiteReports({ page: 1, limit: 10, q: 'test' });
+    mockRepo.listSiteReports.mockClear();
+    mockRepo.searchSiteReportsText.mockResolvedValueOnce([makeReport()]);
+    const result = await service.listSiteReports({
+      page: 1,
+      limit: 10,
+      q: 'ปูน',
+      project_id: 'project-1',
+    });
     expect(result.items).toHaveLength(1);
+    expect(mockRepo.searchSiteReportsText).toHaveBeenCalledWith(
+      'ปูน',
+      expect.objectContaining({ project_id: 'project-1' }),
+      50,
+    );
+    expect(mockRepo.listSiteReports).not.toHaveBeenCalled();
   });
 
-  it('listIssues falls back to DB when OpenSearch search fails', async () => {
+  it('listIssues searches the database when OpenSearch fails, with the filters', async () => {
     const { Client } = jest.requireMock('@opensearch-project/opensearch') as { Client: jest.Mock };
     Client.mock.results[0]?.value.search.mockRejectedValueOnce(new Error('OS down'));
-    mockRepo.listIssues.mockResolvedValue({ rows: [makeIssue()], total: 1 });
-    const result = await service.listIssues({ page: 1, limit: 10, q: 'test' });
+    mockRepo.listIssues.mockClear();
+    mockRepo.searchIssuesText.mockResolvedValueOnce([makeIssue()]);
+    const result = await service.listIssues({
+      page: 1,
+      limit: 10,
+      q: 'crack',
+      severity: 'HIGH',
+      status: 'OPEN',
+    });
     expect(result.items).toHaveLength(1);
+    expect(mockRepo.searchIssuesText).toHaveBeenCalledWith(
+      'crack',
+      expect.objectContaining({ severity: 'HIGH', status: 'OPEN' }),
+      50,
+    );
+    expect(mockRepo.listIssues).not.toHaveBeenCalled();
+  });
+
+  // The hits themselves, in relevance order — not only those among the 50 newest rows.
+  it('listSiteReports returns every hit in OpenSearch order, loaded by id', async () => {
+    const { Client } = jest.requireMock('@opensearch-project/opensearch') as { Client: jest.Mock };
+    Client.mock.results[0]?.value.search.mockResolvedValueOnce({
+      body: {
+        hits: {
+          hits: [{ _source: { report_id: 'old-best' } }, { _source: { report_id: 'newer' } }],
+        },
+      },
+    });
+    mockRepo.listSiteReports.mockClear();
+    mockRepo.findReportsByIds.mockResolvedValueOnce(
+      new Map([
+        ['newer', makeReport({ report_id: 'newer' })],
+        ['old-best', makeReport({ report_id: 'old-best' })],
+      ]),
+    );
+    const result = await service.listSiteReports({ page: 1, limit: 10, q: 'crack' });
+    expect(result.items.map((r) => (r as { report_id: string }).report_id)).toEqual([
+      'old-best',
+      'newer',
+    ]);
+    expect(mockRepo.findReportsByIds).toHaveBeenCalledWith(['old-best', 'newer']);
+    expect(mockRepo.listSiteReports).not.toHaveBeenCalled();
+  });
+
+  // The issue index is written at creation only and never learns a status change or sync edit, so
+  // severity / status must not be asked of it — they are applied to the rows, the source of truth.
+  it('listIssues filters severity / status on the rows, not in the index query', async () => {
+    const { Client } = jest.requireMock('@opensearch-project/opensearch') as { Client: jest.Mock };
+    const search = Client.mock.results[0]?.value.search as jest.Mock;
+    search.mockClear();
+    search.mockResolvedValueOnce({
+      body: { hits: { hits: [{ _source: { issue_id: 'a' } }, { _source: { issue_id: 'b' } }] } },
+    });
+    mockRepo.findIssuesByIds.mockResolvedValueOnce(
+      new Map([
+        // Indexed as OPEN at creation, RESOLVED since: a term on status.keyword would never find it.
+        ['a', makeIssue({ issue_id: 'a', severity: 'HIGH', status: 'RESOLVED' })],
+        ['b', makeIssue({ issue_id: 'b', severity: 'HIGH', status: 'OPEN' })],
+      ]),
+    );
+    const result = await service.listIssues({
+      page: 1,
+      limit: 10,
+      q: 'crack',
+      severity: 'HIGH',
+      status: 'RESOLVED',
+    });
+    const must = (search.mock.calls[0]![0] as { body: { query: { bool: { must: unknown[] } } } })
+      .body.query.bool.must;
+    expect(JSON.stringify(must)).not.toMatch(/severity|status/);
+    expect(result.items.map((i) => i.issue_id)).toEqual(['a']);
+  });
+
+  // `?q=…&from_date=…` used to be honoured through the list it intersected with; it still is.
+  it('listSiteReports applies from_date / to_date to the hits and to the database fallback', async () => {
+    const { Client } = jest.requireMock('@opensearch-project/opensearch') as { Client: jest.Mock };
+    Client.mock.results[0]?.value.search.mockResolvedValueOnce({
+      body: {
+        hits: {
+          hits: [
+            { _source: { report_id: 'may' } },
+            { _source: { report_id: 'june' } },
+            { _source: { report_id: 'july' } },
+          ],
+        },
+      },
+    });
+    mockRepo.findReportsByIds.mockResolvedValueOnce(
+      new Map([
+        ['may', makeReport({ report_id: 'may', report_date: new Date('2026-05-31T00:00:00Z') })],
+        ['june', makeReport({ report_id: 'june', report_date: new Date('2026-06-15T00:00:00Z') })],
+        ['july', makeReport({ report_id: 'july', report_date: new Date('2026-07-01T00:00:00Z') })],
+      ]),
+    );
+    const result = await service.listSiteReports({
+      page: 1,
+      limit: 10,
+      q: 'crack',
+      from_date: '2026-06-01',
+      to_date: '2026-06-30',
+    });
+    expect(result.items.map((r) => (r as { report_id: string }).report_id)).toEqual(['june']);
+
+    Client.mock.results[0]?.value.search.mockRejectedValueOnce(new Error('OS down'));
+    mockRepo.searchSiteReportsText.mockResolvedValueOnce([]);
+    await service.listSiteReports({
+      page: 1,
+      limit: 10,
+      q: 'crack',
+      from_date: '2026-06-01',
+      to_date: '2026-06-30',
+    });
+    expect(mockRepo.searchSiteReportsText).toHaveBeenLastCalledWith(
+      'crack',
+      expect.objectContaining({ from_date: '2026-06-01', to_date: '2026-06-30' }),
+      50,
+    );
   });
 });
 

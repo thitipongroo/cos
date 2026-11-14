@@ -1253,12 +1253,17 @@ export class SiteOpsService {
 
   private async searchSiteReports(
     q: string,
-    params: { project_id?: string; minimal?: boolean },
+    params: { project_id?: string; from_date?: string; to_date?: string; minimal?: boolean },
   ): Promise<SiteReportRow[]> {
+    const reduce = (rows: SiteReportRow[]) =>
+      // `minimal` is the CALLER's contract (master:2797), not a property of the search backend: a
+      // client asks for the reduced payload because of the link it is on, also when OpenSearch is down.
+      params.minimal ? (rows.map(this.toMinimalReport) as unknown as SiteReportRow[]) : rows;
+
+    let ids: string[];
     try {
-      // §35.13 ESC-32: .keyword, not the bare field — dynamic mapping stores these strings as
-      // analyzed `text` with a `.keyword` sub-field, and a `term` on the analyzed field never
-      // matches a UUID. See the fuller note in project.service.ts.
+      // §35.13 ESC-32: .keyword, not the bare field — a `term` on the analyzed field never matches a
+      // UUID. See the fuller note in project.service.ts.
       const must: Record<string, unknown>[] = [
         // `blockers` is the app's only free text — its form has no summary or weather.
         { multi_match: { query: q, fields: ['summary', 'weather', 'blockers'] } },
@@ -1270,55 +1275,74 @@ export class SiteOpsService {
         index: OS_REPORTS_INDEX,
         body: { query: { bool: { must } }, size: 50 },
       });
-
-      const ids: string[] = (
-        response.body.hits.hits as Array<{ _source: { report_id: string } }>
-      ).map((h) => h._source.report_id);
-
-      if (ids.length === 0) return [];
-      const { rows } = await this.repo.listSiteReports({ ...params, page: 1, limit: 50 });
-      const matched = rows.filter((r) => ids.includes(r.report_id));
-      return params.minimal
-        ? (matched.map(this.toMinimalReport) as unknown as SiteReportRow[])
-        : matched;
+      ids = (response.body.hits.hits as Array<{ _source: { report_id: string } }>).map(
+        (h) => h._source.report_id,
+      );
     } catch (err) {
-      logger.warn({ q, err }, 'opensearch.search.failed — falling back to DB list');
-      const { rows } = await this.repo.listSiteReports({ ...params, page: 1, limit: 50 });
-      // `minimal` is the CALLER's contract (master:2797), not a property of the search backend. A
-      // client asks for the reduced payload because of the link it is on; handing it the full one
-      // because a server-side dependency was unavailable is the opposite of what it asked for, at
-      // the moment it can least afford it. The two branches above already apply it.
-      return params.minimal ? (rows.map(this.toMinimalReport) as unknown as SiteReportRow[]) : rows;
+      // Search in the database instead — never the plain list, which the caller would show as the
+      // results of a search it did not run.
+      logger.warn({ q, err }, 'opensearch.search.failed — falling back to a database search');
+      return reduce(await this.repo.searchSiteReportsText(q, params, 50));
     }
+
+    if (ids.length === 0) return [];
+    // The hits themselves, in OpenSearch's relevance order. This used to keep only the hits found
+    // among the tenant's 50 newest reports (and in date order), so a match on an older report was
+    // dropped. Ids with no row (filtered out by RLS) drop out. The date range is applied to the
+    // rows, as the list applied it before; the index is not asked, so an old index's mapping of
+    // report_date does not matter. Outside the try: a database error here is not an OpenSearch one.
+    const byId = await this.repo.findReportsByIds(ids);
+    const inRange = (row: SiteReportRow): boolean => {
+      const day = reportDayOf(row);
+      return (
+        (!params.from_date || day >= params.from_date.slice(0, 10)) &&
+        (!params.to_date || day <= params.to_date.slice(0, 10))
+      );
+    };
+    return reduce(
+      ids
+        .map((id) => byId.get(id))
+        .filter((r): r is SiteReportRow => r !== undefined && inRange(r)),
+    );
   }
 
   private async searchIssues(
     q: string,
     params: { project_id?: string; severity?: string; status?: string },
   ): Promise<IssueRow[]> {
+    let ids: string[];
     try {
       const must: Record<string, unknown>[] = [
         { multi_match: { query: q, fields: ['title', 'description'] } },
         { term: { 'tenant_id.keyword': this.tenantId } },
       ];
       if (params.project_id) must.push({ term: { 'project_id.keyword': params.project_id } });
+      // severity / status are NOT asked of the index: it is written at creation only
+      // (site.issue.created.v1) and never learns a later status change or sync edit, so a term on
+      // them would miss every issue whose status moved. They are applied to the rows below.
 
       const response = await this.openSearch.search({
         index: OS_ISSUES_INDEX,
         body: { query: { bool: { must } }, size: 50 },
       });
-
-      const ids: string[] = (
-        response.body.hits.hits as Array<{ _source: { issue_id: string } }>
-      ).map((h) => h._source.issue_id);
-
-      if (ids.length === 0) return [];
-      const { rows } = await this.repo.listIssues({ ...params, page: 1, limit: 50 });
-      return rows.filter((r) => ids.includes(r.issue_id));
+      ids = (response.body.hits.hits as Array<{ _source: { issue_id: string } }>).map(
+        (h) => h._source.issue_id,
+      );
     } catch (err) {
-      logger.warn({ q, err }, 'opensearch.search.failed — falling back to DB list');
-      const { rows } = await this.repo.listIssues({ ...params, page: 1, limit: 50 });
-      return rows;
+      logger.warn({ q, err }, 'opensearch.search.failed — falling back to a database search');
+      return this.repo.searchIssuesText(q, params, 50);
     }
+
+    if (ids.length === 0) return [];
+    // As for reports: the hits themselves, in relevance order, filtered on the rows.
+    const byId = await this.repo.findIssuesByIds(ids);
+    return ids
+      .map((id) => byId.get(id))
+      .filter(
+        (r): r is IssueRow =>
+          r !== undefined &&
+          (!params.severity || r.severity === params.severity) &&
+          (!params.status || r.status === params.status),
+      );
   }
 }

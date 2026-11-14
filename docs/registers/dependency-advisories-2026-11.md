@@ -2915,10 +2915,43 @@ openssl ca-certificates`; `groupadd`/`useradd` uid/gid 1001, as the charts run; 
     index are held in memory at once (no paging); no test writes during a reindex or reads through an RLS-enforced
     role or a dedicated database (both covered by unit tests only); a text field whose first document looks like a
     date would still be mapped `date` (date detection is left on).
-- **Site-report search drops older hits and, on failure, ignores the query.** `searchSiteReports` keeps only the hits
-  that are among the first 50 rows of the database list, so a match on an older report is dropped; and when
-  OpenSearch fails it returns the database list unfiltered by `q`. Found by /doubt on `fix/site-report-search-sync`.
-  Not fixed.
+- **Closed — search dropped older hits, ignored relevance, and answered an OpenSearch failure with the whole list.**
+  Fixed on `fix/search-results-fallback`. `searchSiteReports` and `searchIssues` kept only the hits found among the
+  tenant's 50 newest rows (a match on an older one was dropped) and returned them in date order. On any OpenSearch
+  error all three searches — reports, issues and projects (`ProjectService.searchProjects`) — returned the plain list,
+  unfiltered by `q`, which the caller shows as results.
+  - Change: reports and issues load their hits by id (`findReportsByIds`, new `findIssuesByIds`) in OpenSearch's
+    order, as projects already did, outside the OpenSearch `try` (a database error is not logged as an OpenSearch
+    one). Filters are applied to the loaded rows: the report date range (`from_date` / `to_date`, which the old path
+    honoured through the list it intersected with) and the issue `severity` / `status` — not asked of the index, which
+    is written at creation only and never learns a status change. On an OpenSearch error each search runs a database
+    search instead (`searchSiteReportsText`, `searchIssuesText`, `ProjectRepository.searchText`): `ILIKE` over the
+    fields OpenSearch searches (reports: summary, weather, blockers; issues: title, description; projects:
+    project_name, project_code), with the list's filters, newest first, at most 50 (projects: the requested limit),
+    the text matched literally (`shared/prisma/like-pattern.ts` escapes `%`, `_`, `\`). A substring match also finds a
+    Thai word inside an unsegmented run. No index backs the `ILIKE` and none leads with `tenant_id`, so without a
+    project it scans `site_reports` / `issues` (or walks the `report_date` index); no statement timeout bounds it
+    beyond Prisma's transaction timeout. Accepted for a degraded mode; `pg_trgm` would be the fix.
+  - Evidence: unit — every hit returned in OpenSearch order, loaded by id, never the list; the date range applied to
+    the hits and passed to the database search; issue filters applied on the rows and absent from the index query (an
+    issue indexed OPEN and since RESOLVED is found by `status=RESOLVED`); each fallback calls its database search with
+    the query and filters, not the list; the escaping. Integration `test/search/03-db-search-fallback.integration.spec.ts`
+    (real PostgreSQL, rows written through the app's routes, OpenSearch pointed at a closed port): `ปูน` finds only
+    the Thai report; `CRANE` matches case-insensitively; `50%` finds "cement 50% delivered" and not "cement 500 bags";
+    `cement` with `from_date` finds only the later report; no match is an empty result; `ริมน้ำ` and `p70-oth` find
+    their projects; the issue database search finds `ผนัง` with and without the severity filter. Against HEAD's
+    services the four original HTTP tests fail. The real-OpenSearch suites (`01`, `02`) pass with the new success
+    path. Once, in a combined run of the three suites, a `02` request returned 404 with nothing logged; it did not
+    recur alone or in two further combined runs, and its cause was not found.
+- **The issue search index never learns a status or severity change.** The search indexer subscribes
+  `site.issue.created.v1` only; `changeIssueStatus` emits `site.issue.status_changed.v1`, which nothing indexes, and a
+  sync `updateIssue` emits nothing. Searches filter on the rows, so results are right, but the indexed `status` /
+  `severity` (and an edited title or description) stay as at creation. Found by /doubt on
+  `fix/search-results-fallback`. Not fixed.
+- **`GET /site/issues` takes no `q`, so issue search cannot be reached over HTTP.** The controller passes only
+  `project_id`, `severity`, `status`, `page`, `limit`; `SiteOpsService.listIssues` has a `q` branch nothing can
+  call — reports were the same until 2026-08-12. No client searches issues today. Found on
+  `fix/search-results-fallback`. Not fixed.
 - **The site-report notification says "0 issue(s), 0 photo(s)" on every submission.** `issue_count` and `photo_count`
   are the constants 0 in `site.report.created.v1` (`site-ops.service.ts`, `createSiteReport`), also when a resubmitted
   report already has issues or photos. Not fixed.

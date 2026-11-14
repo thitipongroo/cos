@@ -26,6 +26,7 @@ import { decodeCursor, encodeCursor } from '../../shared/pagination/cursor';
 import { createLogger } from '@cos/logger';
 import { countActiveProjects } from './public/active-projects';
 import { lockTenantPlan, PLAN_ERROR, PLAN_PROJECT_LIMIT } from '../tenant/public/plan-limits';
+import { containsPattern } from '../../shared/prisma/like-pattern';
 
 const logger = createLogger('project-repository');
 
@@ -217,6 +218,32 @@ export class ProjectRepository {
         SELECT * FROM projects.projects
         WHERE project_id = ANY(${projectIds}::uuid[])
           AND tenant_id  = ${this.tenantId}::uuid
+      `,
+    );
+  }
+
+  /**
+   * Text search in the database: OpenSearch's stand-in when it is unreachable. Matches the fields
+   * OpenSearch searches (project_name, project_code) as a literal substring, with the same status /
+   * type filters; newest first. No cursor — search results are not paged (as on the OpenSearch path).
+   */
+  async searchText(
+    q: string,
+    opts: { status?: string; type?: string },
+    limit: number,
+  ): Promise<ProjectRow[]> {
+    const pattern = containsPattern(q);
+    return this.tenantPrisma.run(
+      async (tx) =>
+        await tx.$queryRaw<ProjectRow[]>`
+        SELECT * FROM projects.projects
+        WHERE tenant_id = ${this.tenantId}::uuid
+          AND (${opts.status ?? null}::text IS NULL OR status::text = ${opts.status ?? null}::text)
+          AND (${opts.type ?? null}::text IS NULL
+               OR project_type::text = ${opts.type ?? null}::text)
+          AND (project_name ILIKE ${pattern} OR project_code ILIKE ${pattern})
+        ORDER BY created_at DESC, project_id DESC
+        LIMIT ${Math.min(limit, 100)}
       `,
     );
   }
