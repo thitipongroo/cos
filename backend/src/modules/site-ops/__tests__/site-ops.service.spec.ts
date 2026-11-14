@@ -93,7 +93,7 @@ const outboxArg = (
   row?: unknown,
 ): { event_type?: string; payload?: Record<string, unknown> } | undefined => {
   const arg = fn.mock.calls[0]?.[argIndex];
-  return typeof arg === 'function' ? arg(row) : arg;
+  return typeof arg === 'function' ? arg(row, { issue_count: 0, photo_count: 0 }) : arg;
 };
 
 const MOCK_REQUEST = {
@@ -244,6 +244,7 @@ describe('createSiteReport', () => {
     expect(mockRepo.createSiteReport).toHaveBeenCalledWith(
       expect.objectContaining({ blockers: 'crane down; concrete delivery late' }),
       expect.anything(),
+      { attachmentCounts: true },
     );
     expect(result.report_id).toBe('report-1');
   });
@@ -265,6 +266,7 @@ describe('createSiteReport', () => {
     expect(mockRepo.createSiteReport).toHaveBeenCalledWith(
       expect.objectContaining({ shift: 'NIGHT', blocker_category: 'WEATHER' }),
       expect.anything(),
+      { attachmentCounts: true },
     );
   });
 
@@ -302,6 +304,20 @@ describe('createSiteReport', () => {
     await service.createSiteReport({ project_id: 'project-1', report_date: '2026-06-04' });
 
     expect(mockRepo.replaceManpowerLogs).not.toHaveBeenCalled();
+  });
+
+  // The counts are taken in the write's transaction; a resubmission can already have some.
+  it('site.report.created.v1 carries the attachment counts the repository passes', async () => {
+    mockRepo.createSiteReport.mockResolvedValue(makeReport());
+    await service.createSiteReport({ project_id: 'project-1', report_date: '2026-06-04' });
+    const builder = mockRepo.createSiteReport.mock.calls.at(-1)![1] as (
+      r: SiteReportRow,
+      c: { issue_count: number; photo_count: number },
+    ) => { payload: Record<string, unknown> };
+    expect(builder(makeReport(), { issue_count: 2, photo_count: 5 }).payload).toEqual(
+      expect.objectContaining({ issue_count: 2, photo_count: 5 }),
+    );
+    expect(mockRepo.createSiteReport.mock.calls.at(-1)![2]).toEqual({ attachmentCounts: true });
   });
 
   it('writes site.report.created.v1 to the outbox with the report INSERT', async () => {

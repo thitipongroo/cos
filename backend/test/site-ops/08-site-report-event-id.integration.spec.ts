@@ -609,4 +609,78 @@ describe('Site-report events name the written report (real database)', () => {
     expect(result).toBeNull();
     expect(await detailsOn(day)).toEqual([expect.objectContaining({ summary: 'stored at 10:00' })]);
   });
+
+  // ── The notification stops stating counts it cannot know (20261114000001) ───────────────────
+
+  const templateRow = async () =>
+    (
+      await infra.prisma.$queryRawUnsafe<
+        Array<{ subject_template: string; body_template: string }>
+      >(
+        `SELECT subject_template, body_template FROM notifications.notification_templates
+          WHERE tenant_id IS NULL AND event_type = 'site.report.created.v1' AND channel = 'IN_APP'`,
+      )
+    )[0]!;
+
+  it('the IN_APP template is Thai then English, with no issue / photo counts', async () => {
+    const t = await templateRow();
+    expect(t.subject_template).toBe('ส่งรายงานหน้างานประจำวันแล้ว / Daily site report submitted');
+    expect(t.body_template).toContain('รายงานหน้างานวันที่ {{report_date}}');
+    expect(t.body_template).toContain('A site report for {{report_date}}');
+    expect(t.body_template).not.toMatch(/issue_count|photo_count/);
+  });
+
+  it('the rollback restores the previous text (applied in a transaction, then undone)', async () => {
+    const fs = await import('node:fs');
+    const path = await import('node:path');
+    const sql = fs.readFileSync(
+      path.join(
+        __dirname,
+        '../../prisma/rollbacks/20261114000001_site_report_notification_text.rollback.sql',
+      ),
+      'utf8',
+    );
+    const restored = await infra.prisma
+      .$transaction(async (tx) => {
+        await tx.$executeRawUnsafe(sql);
+        const [row] = await tx.$queryRawUnsafe<Array<{ body_template: string }>>(
+          `SELECT body_template FROM notifications.notification_templates
+            WHERE tenant_id IS NULL AND event_type = 'site.report.created.v1' AND channel = 'IN_APP'`,
+        );
+        throw Object.assign(new Error('undo'), { body: row!.body_template });
+      })
+      .catch((e: { body?: string }) => e.body);
+    expect(restored).toContain('{{issue_count}} issue(s), {{photo_count}} photo(s)');
+    expect((await templateRow()).body_template).not.toMatch(/issue_count/); // undone
+  });
+
+  it('site.report.created.v1 carries the counts at the write: a resubmission after an issue is linked', async () => {
+    const day = '2019-03-16';
+    const first = await http()
+      .post('/api/v1/site/reports')
+      .send({ project_id: projectId, report_date: day, summary: 'first' });
+    const reportId = (first.body as { report_id: string }).report_id;
+    const issue = await http()
+      .post('/api/v1/site/issues')
+      .send({ project_id: projectId, report_id: reportId, title: 'crack', severity: 'LOW' });
+    expect([200, 201]).toContain(issue.status);
+    await http()
+      .post('/api/v1/site/reports')
+      .send({ project_id: projectId, report_date: day, summary: 'again' });
+
+    const counts = await infra.prisma.$queryRawUnsafe<
+      Array<{ issue_count: number; photo_count: number }>
+    >(
+      `SELECT (payload->'payload'->>'issue_count')::int AS issue_count,
+              (payload->'payload'->>'photo_count')::int AS photo_count
+         FROM platform.outbox_events
+        WHERE event_type = 'site.report.created.v1' AND payload->'payload'->>'report_id' = $1
+        ORDER BY created_at`,
+      reportId,
+    );
+    expect(counts).toEqual([
+      { issue_count: 0, photo_count: 0 },
+      { issue_count: 1, photo_count: 0 },
+    ]);
+  });
 });

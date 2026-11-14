@@ -2786,6 +2786,18 @@ openssl ca-certificates`; `groupadd`/`useradd` uid/gid 1001, as the charts run; 
   - Not covered: two pushes for one new day racing each other (neither sees the other's row), and a failed
     natural-key lookup, both of which still take the create path and its upsert as before. The id-hit edit path still
     writes NULL for fields an item omits (unchanged here).
+- **An id-hit site-report sync once came back ACCEPTED where CONFLICT_FLAGGED was due, and nothing logged why.** In a
+  combined run of the site-ops, mobile and notification integration suites on 2026-11-14 (with
+  `test/supertest-loopback` in place), `test/site-ops/03` "persists a ConflictRecord when the server was modified since
+  the client last looked" got ACCEPTED; alone it passed twice. With `last_known_modified_at` set, the resolver flags
+  this case unconditionally, so ACCEPTED means the item did not reach it — the likeliest way is the batch id lookup
+  (`findReportsByIds`) failing, whose `.catch(() => new Map())` logs nothing, sending the item down the natural-key
+  path. Not reproduced and not fixed; the first step is to log that swallowed error.
+- **Reports filed from the app notify no project manager.** The PM notification is routed for `site.report.created.v1`
+  only (`notification.consumer.ts`, `EVENT_ROLE_MAP`), which the web `POST /site/reports` emits; the app's reports go
+  through `/sync/push` and emit `site.report.submitted.v1`, which no notification route covers. Found by /doubt on
+  `fix/site-report-notification-counts`. Not fixed (routing it is a product decision: one notification per day's
+  report, not per save, given the app saves a draft and a submit separately).
 - **The device keeps a report under an id the server does not have.** `/sync/push` with `site_report`
   (`backend/src/modules/sync/sync.service.ts:287-294`) returns only `{ status }`, so a device whose save landed on an
   existing report never learns that report's id. Its later saves still reach the right row (the natural-key lookup
@@ -3040,9 +3052,28 @@ modified_at)) <= $t`, milliseconds like the caller's comparison — `modified_at
   `project_id`, `severity`, `status`, `page`, `limit`; `SiteOpsService.listIssues` has a `q` branch nothing can
   call — reports were the same until 2026-08-12. No client searches issues today. Found on
   `fix/search-results-fallback`. Not fixed.
-- **The site-report notification says "0 issue(s), 0 photo(s)" on every submission.** `issue_count` and `photo_count`
-  are the constants 0 in `site.report.created.v1` (`site-ops.service.ts`, `createSiteReport`), also when a resubmitted
-  report already has issues or photos. Not fixed.
+- **Closed — the site-report notification said "0 issue(s), 0 photo(s)" on every submission.** Fixed on
+  `fix/site-report-notification-counts`. `createSiteReport` put the constants 0 into `site.report.created.v1`, and the
+  IN_APP template (`20260824000002`, English only) printed them. The event comes from the web `POST /site/reports`
+  only, and a new report has no linked issues or photos at that moment — they come afterwards (or are already there
+  only on a same-day resubmission) — so the counts were wrong as soon as anything was attached. Decision (product
+  owner, 2026-11-14): take the counts out of the text.
+  - Change: migration `20261114000001_site_report_notification_text` (with its rollback) sets the system IN_APP
+    template to Thai, a blank line, then English (QM-3, as the trial notices), naming date, project, submitter,
+    summary and report id — no counts; a tenant's own template is left alone. The event keeps `issue_count` /
+    `photo_count` (schema unchanged; nothing else reads them) but they are now counted in the write's transaction —
+    issues linked by `report_id`, and distinct live files whose metadata names `site_report` and that id — so they
+    stop asserting a constant. Limits: `photo_count` counts any live linked file (not only images, and including files
+    still awaiting a scan); it reads `files.*`, which the file service writes to the shared database only, so it is
+    always 0 for a tenant with a dedicated database; and a photo filed under a device id that is not the report's id
+    does not count. The web bell now keeps the body's line breaks (`whitespace-pre-line`); the app's notification list
+    shows three lines, so the English half of the Thai-first body is usually cut there.
+  - Evidence: unit — the event carries the counts the repository passes, the repository counts in the same
+    transaction only when asked (issues, file metadata, `deleted_at IS NULL`), zeros otherwise. Integration
+    `test/site-ops/08-site-report-event-id.integration.spec.ts`: after migrations the template is the new Thai + English
+    text with no count placeholders; the rollback SQL, applied in a transaction and undone, restores the old body; a
+    resubmission after an issue is linked writes `issue_count` 1 (the first submission 0). Negative controls: without
+    the migration the two template tests fail; with HEAD's service the count test fails.
 - **`approval-escalation.spec.ts` "approval item shows pending status" still cannot fail.** Its only row assertion sits
   in `if (await pendingRow.isVisible(…).catch(() => false))`. "purchase order approval state is inspectable" needs
   `E2E_ADMIN_EMAIL`, a TENANT_ADMIN, whose login requires a second factor; locally it timed out at login.

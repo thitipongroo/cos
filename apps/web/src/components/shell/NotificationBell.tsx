@@ -169,7 +169,8 @@ export function NotificationBell({
                   className={`px-3 py-2 text-sm ${n.status !== 'READ' ? 'bg-blue-50' : ''}`}
                 >
                   {n.subject && <p className="font-medium text-gray-800">{n.subject}</p>}
-                  <p className="text-gray-600">{n.body}</p>
+                  {/* pre-line: bilingual bodies are Thai, a blank line, then English (QM-3). */}
+                  <p className="whitespace-pre-line text-gray-600">{n.body}</p>
                 </li>
               ))
             )}

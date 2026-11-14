@@ -94,7 +94,9 @@ had no callers anywhere in the repository, and promised an activation "in Phase 
 built" that never came — because photo linkage was built the other way round. **This module does not
 call the File Service at all.** The mobile app queues a photo with an `entity_type` / `entity_id`,
 uploads it to the File Service directly, and the link lands in `files.file_metadata`. Nothing in
-site-ops sits in that path.
+site-ops sits in that path. Site-ops only READS that table, once: `createSiteReport` counts the files
+linked to a report for `site.report.created.v1`'s `photo_count` (20261114000001) — any live file type,
+and only in the shared database, so it is 0 for a tenant with a dedicated one.
 
 A stub that describes an integration the system does not have is the shape that has twice been
 mistaken here for a control that exists — see OQ-37, where a README advertised a `BiometricCheckIn`

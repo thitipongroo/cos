@@ -234,16 +234,19 @@ export class SiteOpsService {
       // Built from the written row: a same-day resubmission upserts onto the existing report, which
       // keeps its own report_id, so `reportId` would name a report that does not exist — shown to the
       // PM in the notification body and looked up (and not found) by the search indexer.
-      (row) =>
+      (row, counts) =>
         this.outboxEvent('site.report.created.v1', {
           report_id: row.report_id,
           project_id: dto.project_id,
           report_date: dto.report_date,
           submitted_by: this.userId,
           summary: dto.summary ?? '',
-          issue_count: 0,
-          photo_count: 0,
+          // Counted at the write (a resubmission can already have some); the notification no longer
+          // prints them (20261114000001), since a new report's issues and photos arrive afterwards.
+          issue_count: counts.issue_count,
+          photo_count: counts.photo_count,
         }),
+      { attachmentCounts: true },
     );
 
     // Per-trade breakdown → site_ops.manpower_logs. Written against the row's OWN report_id, not

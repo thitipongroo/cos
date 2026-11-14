@@ -30,6 +30,12 @@ export type * from './site-ops.rows';
 
 // ── Repository ─────────────────────────────────────────────────────────────
 
+/** A report's linked issues and photos, counted when its created event is written. */
+export interface ReportAttachmentCounts {
+  issue_count: number;
+  photo_count: number;
+}
+
 @Injectable({ scope: Scope.REQUEST })
 export class SiteOpsRepository {
   constructor(
@@ -76,7 +82,8 @@ export class SiteOpsRepository {
       latitude?: number | null;
       longitude?: number | null;
     },
-    buildOutboxEvent?: (row: SiteReportRow) => OutboxEventInput,
+    buildOutboxEvent?: (row: SiteReportRow, counts: ReportAttachmentCounts) => OutboxEventInput,
+    options: { attachmentCounts?: boolean } = {},
   ): Promise<SiteReportRow> {
     const rows = await this.db.run(async (tx) => {
       const written = await tx.$queryRaw<SiteReportRow[]>`
@@ -109,7 +116,24 @@ export class SiteOpsRepository {
       // Built from the RETURNING row, not from params: on conflict the row keeps its first
       // report_id, so `params.report_id` names a report that does not exist.
       if (buildOutboxEvent && written[0]) {
-        await OutboxPublisher.write(tx, buildOutboxEvent(written[0]));
+        // Counted in the same transaction as the write, only when the event carries them
+        // (site.report.created.v1). Photos are the distinct live files whose metadata names this
+        // report; a photo filed under a device id that is not this report's id does not count.
+        let counts: ReportAttachmentCounts = { issue_count: 0, photo_count: 0 };
+        if (options.attachmentCounts) {
+          const reportId = written[0].report_id;
+          const [row] = await tx.$queryRaw<ReportAttachmentCounts[]>`
+            SELECT
+              (SELECT count(*)::int FROM site_ops.issues
+                WHERE report_id = ${reportId}::uuid AND tenant_id = ${this.tenantId}::uuid) AS issue_count,
+              (SELECT count(DISTINCT f.file_id)::int
+                 FROM files.file_metadata m JOIN files.files f ON f.file_id = m.file_id
+                WHERE m.entity_type = 'site_report' AND m.entity_id = ${reportId}::uuid
+                  AND m.tenant_id = ${this.tenantId}::uuid AND f.deleted_at IS NULL) AS photo_count
+          `;
+          if (row) counts = row;
+        }
+        await OutboxPublisher.write(tx, buildOutboxEvent(written[0], counts));
       }
       return written;
     });

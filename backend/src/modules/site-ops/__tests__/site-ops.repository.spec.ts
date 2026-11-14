@@ -848,6 +848,35 @@ describe('SiteOpsRepository', () => {
       expect(mockPrisma.$executeRaw).not.toHaveBeenCalled();
     });
 
+    it('createSiteReport counts issues and photos in the same transaction when asked', async () => {
+      const row = { ...reportRow, report_id: 'r-9' };
+      mockPrisma.$queryRaw
+        .mockResolvedValueOnce([row])
+        .mockResolvedValueOnce([{ issue_count: 1, photo_count: 3 }]);
+      const builder = jest.fn(() => envelope);
+
+      await repo.createSiteReport(
+        {
+          report_id: 'r-9',
+          project_id: 'p-1',
+          submitted_by: 'u-1',
+          report_date: '2026-06-04',
+          summary: null,
+          weather: null,
+          manpower_count: null,
+          client_submitted_at: null,
+        },
+        builder as never,
+        { attachmentCounts: true },
+      );
+
+      expect(builder).toHaveBeenCalledWith(row, { issue_count: 1, photo_count: 3 });
+      const countSql = (mockPrisma.$queryRaw.mock.calls[1]![0] as TemplateStringsArray).join('?');
+      expect(countSql).toMatch(/site_ops\.issues/);
+      expect(countSql).toMatch(/files\.file_metadata/);
+      expect(countSql).toMatch(/deleted_at IS NULL/);
+    });
+
     // ON CONFLICT (project_id, report_date, submitted_by) keeps the existing row's report_id, so the
     // event must come from RETURNING, not from the id the caller generated.
     it('createSiteReport builds the event from the RETURNING row, not the id it was given', async () => {
@@ -870,7 +899,8 @@ describe('SiteOpsRepository', () => {
       );
 
       expect(builder).toHaveBeenCalledTimes(1);
-      expect(builder).toHaveBeenCalledWith(row);
+      // Without the option no count query runs, and the builder gets zeros.
+      expect(builder).toHaveBeenCalledWith(row, { issue_count: 0, photo_count: 0 });
       expect(mockPrisma.$executeRaw).toHaveBeenCalledTimes(1);
     });
 
