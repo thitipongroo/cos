@@ -218,7 +218,12 @@ describe('Full-text search (Testcontainers — OpenSearch)', () => {
     let service: SiteOpsService;
     let repo: { listSiteReports: jest.Mock; listIssues: jest.Mock };
 
-    const report = (id: string, summary: string, weather: string): SiteReportRow =>
+    const report = (
+      id: string,
+      summary: string | null,
+      weather: string | null,
+      blockers: string | null = null,
+    ): SiteReportRow =>
       ({
         report_id: id,
         project_id: PROJECT_ID,
@@ -228,6 +233,7 @@ describe('Full-text search (Testcontainers — OpenSearch)', () => {
         status: 'DRAFT',
         summary,
         weather,
+        blockers,
         manpower_count: 10,
         client_submitted_at: null,
         server_received_at: new Date(),
@@ -252,12 +258,15 @@ describe('Full-text search (Testcontainers — OpenSearch)', () => {
       }) as unknown as IssueRow;
 
     const REPORT_A = 'dddddddd-0001-4000-8000-000000000001';
+    const REPORT_APP = 'dddddddd-0003-4000-8000-000000000001';
     const ISSUE_A = 'eeeeeeee-0001-4000-8000-000000000001';
 
     beforeAll(async () => {
       const reports = [
         report(REPORT_A, 'Concrete pour completed on level 3', 'sunny'),
         report('dddddddd-0002-4000-8000-000000000001', 'Rebar delivery delayed', 'rainy'),
+        // What the mobile app files: no summary, no weather — its only free text is blockers.
+        report(REPORT_APP, null, null, 'Tower crane breakdown at gate 2'),
       ];
       const issues = [
         issue(ISSUE_A, 'Crack in foundation wall', 'Hairline crack observed near column C4'),
@@ -293,7 +302,7 @@ describe('Full-text search (Testcontainers — OpenSearch)', () => {
       for (const i of issues) await indexer.indexIssue(i as never);
       await refresh('site-reports', node);
       await refresh('site-issues', node);
-      await assertIndexed('site-reports', node, 2);
+      await assertIndexed('site-reports', node, 3);
       await assertIndexed('site-issues', node, 2);
     }, 120_000);
 
@@ -307,6 +316,13 @@ describe('Full-text search (Testcontainers — OpenSearch)', () => {
       expect(result.items.map((r) => r.report_id)).toEqual([
         'dddddddd-0002-4000-8000-000000000001',
       ]);
+    });
+
+    // fix/site-report-search-sync: the app's reports were unfindable — search covered summary and
+    // weather only, and the app fills neither.
+    it('finds a report filed from the app by a word in its blockers', async () => {
+      const result = await service.listSiteReports({ q: 'crane', page: 1, limit: 20 });
+      expect(result.items.map((r) => r.report_id)).toEqual([REPORT_APP]);
     });
 
     it('finds an issue by a word in its title', async () => {

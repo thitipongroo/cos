@@ -51,6 +51,7 @@ export class SearchIndexerService {
       report_date: row.report_date,
       summary: row.summary,
       weather: row.weather,
+      blockers: row.blockers,
       submitted_by: row.submitted_by,
       status: row.status,
     });

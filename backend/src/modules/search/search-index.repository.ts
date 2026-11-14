@@ -32,6 +32,8 @@ export interface SiteReportIndexRow {
   report_date: string;
   summary: string | null;
   weather: string | null;
+  /** The app's only free text (its form has no summary or weather), so it is what search can find. */
+  blockers: string | null;
   submitted_by: string;
   status: string;
 }
@@ -73,7 +75,8 @@ export class SearchIndexRepository {
   async findSiteReport(reportId: string): Promise<SiteReportIndexRow | null> {
     const rows = await this.db.run(async (prisma) => {
       return prisma.$queryRaw<SiteReportIndexRow[]>`
-        SELECT report_id, project_id, tenant_id, report_date, summary, weather, submitted_by, status
+        SELECT report_id, project_id, tenant_id, report_date, summary, weather, blockers, submitted_by,
+               status
         FROM site_ops.site_reports
         WHERE report_id = ${reportId}::uuid
           AND tenant_id = ${this.tenantId}::uuid

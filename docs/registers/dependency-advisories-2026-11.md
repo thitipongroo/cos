@@ -2846,9 +2846,46 @@ openssl ca-certificates`; `groupadd`/`useradd` uid/gid 1001, as the charts run; 
   day landed would overwrite it (category, shift and lines included since `fix/site-report-sync-fields`). Unlikely
   with the device's first-in-first-out queue. Possible fix: compare `client_submitted_at` as the natural-key edit does.
   Not fixed.
-- **Reports written through sync are not indexed for search.** The search indexer subscribes
-  `site.report.created.v1` only (`search-indexer.consumer.ts:42-46`), which sync never emits; sync emits
-  `site.report.submitted.v1`. Not fixed.
+- **Closed — site reports written through sync were never indexed, nor findable by search.** Fixed on
+  `fix/site-report-search-sync`. The search indexer subscribed `site.report.created.v1` only; a sync create emits
+  `site.report.submitted.v1` and a sync edit emitted nothing, so a report filed from the app (the main path) never
+  reached OpenSearch. And had it, search could not have matched it: it searched `summary` and `weather`, and the app's
+  form has neither (its free text is `blockers`), while the SE reports screen in the app searches with `q`.
+  - Change: a new canonical event, `site.report.updated.v1` (avsc, TS interface, catalog; documented in
+    `docs/architecture/technical-design/phase-06-site-operations.md`), emitted by both sync edit paths from the updated
+    row, in the same transaction (`updateSiteReport` takes an outbox builder, as `updateIssueStatus` does). `created`
+    would notify the project manager on every save and `submitted` is counted once per report by the analytics worker,
+    so neither could mark an edit; the new event is not routed to notifications. The indexer handles `created`,
+    `submitted` and `updated` the same way (load the current row, index it), and `blockers` is now in the indexed
+    document and in the searched fields.
+  - Evidence: unit — the indexer subscribes and routes all three; the document carries `blockers`; the query searches
+    `summary`, `weather`, `blockers`; both edit paths build `site.report.updated.v1` from the row, and an older save
+    that loses builds none; `updateSiteReport` writes the outbox row only when a row was updated. Integration
+    `test/site-ops/08-site-report-event-id.integration.spec.ts`: a sync create then a natural-key edit then a losing
+    older save → one `submitted` and one `updated`, both naming the report; an id-hit edit → one `updated`;
+    `SearchIndexRepository.findSiteReport` (what the indexer indexes) returns the edited `blockers`. Against a real
+    OpenSearch (`test/search/01-full-text-search.integration.spec.ts`, TC-P06-INT-002): a report with no summary or
+    weather and blockers "Tower crane breakdown at gate 2" is found by `q=crane`. Negative controls:
+    the event disabled → 2 unit and 2 integration tests fail; the index query without `blockers` → the integration
+    test fails; the indexer back to `created` only → 2 unit tests fail.
+  - Not done (found by /doubt): reports synced before the deploy stay out of the index until their next edit. The
+    indexer group subscribes the existing `submitted` topics at startup, with `fromBeginning: false`, so it reads them
+    from the latest offset; and a replay could not rebuild them anyway — topics keep the broker's default retention.
+    (The indexer's header said a replay rebuilds the index; it now says what a replay can and cannot do.) A
+    database-driven reindex is the fix; see Open below.
+- **No reindex of site reports from the database.** The only rebuild path is replaying the outbox topics, bounded by
+  retention, so reports filed through sync before `fix/site-report-search-sync` — and any document older than the
+  retention — cannot be put into OpenSearch, and existing documents do not gain `blockers`. Needs a job or script that
+  reads `site_ops.site_reports` per tenant and calls `SearchIndexerService.indexSiteReport`. Not fixed.
+- **Thai text is not word-segmented in OpenSearch.** No index mapping or analyzer is defined, so `summary`, `weather`
+  and `blockers` use the `standard` analyzer. Measured on `opensearchproject/opensearch:2.17.1` (2026-11-14): it
+  tokenises "ปูนมาช้า เครนเสีย" as two tokens, `ปูนมาช้า` and `เครนเสีย`, so a search for `ปูน` cannot match it; the
+  built-in `thai` analyzer gives `ปูน`, `ช้า`, `เครน`, `เสีย`. The app is Thai-first. Fix: an index template with
+  the `thai` analyzer (or ICU) for the text fields, then a reindex. Not fixed.
+- **Site-report search drops older hits and, on failure, ignores the query.** `searchSiteReports` keeps only the hits
+  that are among the first 50 rows of the database list, so a match on an older report is dropped; and when
+  OpenSearch fails it returns the database list unfiltered by `q`. Found by /doubt on `fix/site-report-search-sync`.
+  Not fixed.
 - **The site-report notification says "0 issue(s), 0 photo(s)" on every submission.** `issue_count` and `photo_count`
   are the constants 0 in `site.report.created.v1` (`site-ops.service.ts`, `createSiteReport`), also when a resubmitted
   report already has issues or photos. Not fixed.

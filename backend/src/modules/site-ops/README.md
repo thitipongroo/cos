@@ -61,6 +61,7 @@ conflict_status ∈ { ACCEPTED | CONFLICT_FLAGGED | CONFLICT_REJECTED }
 | ------------------------------ | --------------------------------------- |
 | `site.report.created.v1`       | Report created                          |
 | `site.report.submitted.v1`     | Report synced from offline              |
+| `site.report.updated.v1`       | Report edited through offline sync      |
 | `site.issue.created.v1`        | Issue created                           |
 | `site.issue.status_changed.v1` | Issue status transitions                |
 | `site.inspection.passed.v1`    | Inspection submitted with PASSED status |

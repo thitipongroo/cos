@@ -95,10 +95,11 @@ export class SiteOpsController {
     required: false,
     type: String,
     description:
-      'Full-text search over summary + weather (OpenSearch). Unpaged, capped at 50 hits.',
+      'Full-text search over summary, weather and blockers (OpenSearch). Unpaged, capped at 50 hits.',
   })
   // `q` FULL-TEXT SEARCH — exposed 2026-08-12, not newly built. `SiteOpsService.listSiteReports`
-  // has taken a `q` and routed it to `searchSiteReports` (OpenSearch over summary + weather) since
+  // has taken a `q` and routed it to `searchSiteReports` (OpenSearch over summary + weather, and
+  // blockers since 2026-11-14) since
   // the module was written, but no controller parameter ever passed one, so the branch was
   // unreachable over HTTP. The Site Engineer reports screen draws a search field
   // (mockup 03_site_engineer/04_reports/04_se_reports) and this is what serves it.

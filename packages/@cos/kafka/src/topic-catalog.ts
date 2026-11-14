@@ -47,6 +47,7 @@ export const EVENT_AVSC_MAP: Record<string, string> = {
   // Site Ops
   'site.report.created.v1': 'site.report.created.v1.avsc',
   'site.report.submitted.v1': 'site.report.submitted.v1.avsc',
+  'site.report.updated.v1': 'site.report.updated.v1.avsc',
   'site.inspection.failed.v1': 'site.inspection.failed.v1.avsc',
   'site.inspection.passed.v1': 'site.inspection.passed.v1.avsc',
   'site.issue.created.v1': 'site.issue.created.v1.avsc',

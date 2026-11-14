@@ -11,8 +11,10 @@
 //   Recover.  What it still cannot deliver goes to the DLQ, so a lost document is a message someone
 //             can replay, not a warning in yesterday's logs. Before this there was no reindex path
 //             of any kind — no job, no script, no runbook.
-//   Rebuild.  Replaying a topic from the beginning rebuilds the index, because each handler reads
-//             the CURRENT row rather than trusting the event's payload.
+//   Rebuild.  Replaying a topic from the beginning re-indexes what it still holds, because each
+//             handler reads the CURRENT row rather than trusting the event's payload. Only what it
+//             still holds: a topic keeps the broker's default retention, so a replay cannot rebuild
+//             rows older than that — those need a reindex from the database (none exists yet).
 //
 // The cost is that a document appears a moment after the write commits instead of during it. The
 // read paths already tolerate that: ProjectService.searchProjects falls back to the paged database
@@ -39,11 +41,15 @@ const PROJECT_EVENTS = [
   'construction.project.status_changed.v1',
 ] as const;
 
-const SUBSCRIBED_EVENT_TYPES = [
-  ...PROJECT_EVENTS,
+// Every event that writes a site report: created (web), submitted (a sync create — the app's path),
+// updated (a sync edit). Each handler reads the current row, so all three index the same way.
+const SITE_REPORT_EVENTS = [
   'site.report.created.v1',
-  'site.issue.created.v1',
-];
+  'site.report.submitted.v1',
+  'site.report.updated.v1',
+] as const;
+
+const SUBSCRIBED_EVENT_TYPES = [...PROJECT_EVENTS, ...SITE_REPORT_EVENTS, 'site.issue.created.v1'];
 
 type Envelope = BaseEventEnvelope<Record<string, unknown>>;
 
@@ -60,9 +66,9 @@ export class SearchIndexerConsumer implements OnModuleInit, OnModuleDestroy {
     for (const eventType of PROJECT_EVENTS) {
       this.kafka.on<Record<string, unknown>>(eventType, (event) => this.handleProject(event));
     }
-    this.kafka.on<Record<string, unknown>>('site.report.created.v1', (event) =>
-      this.handleSiteReport(event),
-    );
+    for (const eventType of SITE_REPORT_EVENTS) {
+      this.kafka.on<Record<string, unknown>>(eventType, (event) => this.handleSiteReport(event));
+    }
     this.kafka.on<Record<string, unknown>>('site.issue.created.v1', (event) =>
       this.handleIssue(event),
     );

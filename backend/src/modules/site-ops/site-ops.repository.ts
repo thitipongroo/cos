@@ -284,12 +284,13 @@ export class SiteOpsRepository {
       /** Same rule as blocker_category. */
       shift?: string | null;
     },
+    /** Builder over the UPDATEd row, written in the same transaction — skipped when nothing matched. */
+    buildOutboxEvent?: (row: SiteReportRow) => OutboxEventInput,
   ): Promise<SiteReportRow | null> {
     const setCategory = params.blocker_category !== undefined;
     const setShift = params.shift !== undefined;
-    const rows = await this.db.run(
-      (tx) =>
-        tx.$queryRaw<SiteReportRow[]>`
+    const rows = await this.db.run(async (tx) => {
+      const written = await tx.$queryRaw<SiteReportRow[]>`
         UPDATE site_ops.site_reports
         SET summary             = ${params.summary},
             blockers            = ${params.blockers},
@@ -305,8 +306,12 @@ export class SiteOpsRepository {
         WHERE report_id = ${reportId}::uuid
           AND tenant_id = ${this.tenantId}::uuid
         RETURNING *
-      `,
-    );
+      `;
+      if (buildOutboxEvent && written[0]) {
+        await OutboxPublisher.write(tx, buildOutboxEvent(written[0]));
+      }
+      return written;
+    });
     return rows[0] ?? null;
   }
 

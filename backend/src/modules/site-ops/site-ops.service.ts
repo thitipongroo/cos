@@ -55,13 +55,16 @@ function dayOf(reportDate: unknown): string | null {
   return m ? m[1]! : null;
 }
 
+/** A report row's day as `YYYY-MM-DD` (Prisma returns a DATE as UTC midnight). */
+function reportDayOf(row: SiteReportRow): string {
+  return row.report_date instanceof Date
+    ? row.report_date.toISOString().slice(0, 10)
+    : String(row.report_date).slice(0, 10);
+}
+
 /** A report's natural key within one submitter's sync batch: its own project and day. */
 function rowKey(row: SiteReportRow): string {
-  const day =
-    row.report_date instanceof Date
-      ? row.report_date.toISOString().slice(0, 10)
-      : String(row.report_date).slice(0, 10);
-  return `${row.project_id}|${day}`;
+  return `${row.project_id}|${reportDayOf(row)}`;
 }
 const OS_REPORTS_INDEX = 'site-reports';
 const OS_ISSUES_INDEX = 'site-issues';
@@ -458,18 +461,22 @@ export class SiteOpsService {
       // stays in one place: false means resolved_payload IS the untouched server row.
       if (resolution.should_persist) {
         const resolved = resolution.resolved_payload;
-        const updated = await this.repo.updateSiteReport(existing.report_id, {
-          summary: (resolved['summary'] as string | undefined) ?? null,
-          blockers: (resolved['blockers'] as string | undefined) ?? null,
-          weather: (resolved['weather'] as string | undefined) ?? null,
-          manpower_count: (resolved['manpower_count'] as number | undefined) ?? null,
-          client_submitted_at: (resolved['client_submitted_at'] as string | undefined) ?? null,
-          latitude: (resolved['latitude'] as number | undefined) ?? null,
-          longitude: (resolved['longitude'] as number | undefined) ?? null,
-          // Only when the item sent them: absent leaves the stored values (see syncReportExtras).
-          blocker_category: extras.blocker_category,
-          shift: extras.shift,
-        });
+        const updated = await this.repo.updateSiteReport(
+          existing.report_id,
+          {
+            summary: (resolved['summary'] as string | undefined) ?? null,
+            blockers: (resolved['blockers'] as string | undefined) ?? null,
+            weather: (resolved['weather'] as string | undefined) ?? null,
+            manpower_count: (resolved['manpower_count'] as number | undefined) ?? null,
+            client_submitted_at: (resolved['client_submitted_at'] as string | undefined) ?? null,
+            latitude: (resolved['latitude'] as number | undefined) ?? null,
+            longitude: (resolved['longitude'] as number | undefined) ?? null,
+            // Only when the item sent them: absent leaves the stored values (see syncReportExtras).
+            blocker_category: extras.blocker_category,
+            shift: extras.shift,
+          },
+          (row) => this.reportUpdatedEvent(row),
+        );
         // The row was read a moment ago under the same tenant context; a null here means it was
         // deleted in between. Never report ACCEPTED for a write that did not land — that is the
         // exact failure mode this branch used to have.
@@ -521,6 +528,21 @@ export class SiteOpsService {
   }
 
   /**
+   * site.report.updated.v1 for a sync edit, from the updated row. Its own event because the existing
+   * two cannot mark an edit: site.report.created.v1 notifies the project manager, and
+   * site.report.submitted.v1 is counted once per report by the analytics worker. The search indexer
+   * re-indexes on it.
+   */
+  private reportUpdatedEvent(row: SiteReportRow) {
+    return this.outboxEvent('site.report.updated.v1', {
+      report_id: row.report_id,
+      project_id: row.project_id,
+      report_date: reportDayOf(row),
+      submitted_by: row.submitted_by,
+    });
+  }
+
+  /**
    * A sync item that is a new id for a (project, day) the submitter already has a report for: an
    * edit of the submitter's own report, not a conflict. Product owner, 2026-11-14 — the first
    * version of this flagged every such item, but the matched row always belongs to the same person
@@ -565,17 +587,21 @@ export class SiteOpsService {
       const sent = (item as unknown as Record<string, unknown>)[field];
       return (sent !== undefined ? sent : (stored[field] ?? null)) as T | null;
     };
-    const updated = await this.repo.updateSiteReport(row.report_id, {
-      summary: pick<string>('summary'),
-      blockers: pick<string>('blockers'),
-      weather: pick<string>('weather'),
-      manpower_count: pick<number>('manpower_count'),
-      client_submitted_at: new Date(itemTs).toISOString(),
-      latitude: pick<number>('latitude'),
-      longitude: pick<number>('longitude'),
-      blocker_category: extras.blocker_category,
-      shift: extras.shift,
-    });
+    const updated = await this.repo.updateSiteReport(
+      row.report_id,
+      {
+        summary: pick<string>('summary'),
+        blockers: pick<string>('blockers'),
+        weather: pick<string>('weather'),
+        manpower_count: pick<number>('manpower_count'),
+        client_submitted_at: new Date(itemTs).toISOString(),
+        latitude: pick<number>('latitude'),
+        longitude: pick<number>('longitude'),
+        blocker_category: extras.blocker_category,
+        shift: extras.shift,
+      },
+      (updatedRow) => this.reportUpdatedEvent(updatedRow),
+    );
     if (updated && extras.manpower_lines) {
       await this.repo.replaceManpowerLogs(updated.report_id, extras.manpower_lines);
     }
@@ -1234,7 +1260,8 @@ export class SiteOpsService {
       // analyzed `text` with a `.keyword` sub-field, and a `term` on the analyzed field never
       // matches a UUID. See the fuller note in project.service.ts.
       const must: Record<string, unknown>[] = [
-        { multi_match: { query: q, fields: ['summary', 'weather'] } },
+        // `blockers` is the app's only free text — its form has no summary or weather.
+        { multi_match: { query: q, fields: ['summary', 'weather', 'blockers'] } },
         { term: { 'tenant_id.keyword': this.tenantId } },
       ];
       if (params.project_id) must.push({ term: { 'project_id.keyword': params.project_id } });

@@ -29,6 +29,8 @@ import {
 } from '../helpers/integration-infra';
 import { AppModule } from '../../src/app.module';
 import { JwtAuthGuard } from '../../src/shared/guards/jwt-auth.guard';
+import { SearchIndexRepository } from '../../src/modules/search/search-index.repository';
+import { runInTenantContext } from '../../src/shared/context/run-in-tenant-context';
 
 const TENANT_ID = 'bbbb1111-1111-4000-8000-000000000068';
 const USER_ID = 'bbbb2222-2222-4000-8000-000000000068';
@@ -424,5 +426,67 @@ describe('Site-report events name the written report (real database)', () => {
       expect.objectContaining({ report_id: row!.report_id, manpower_count: null }),
     ]);
     expect(await linesOf(row!.report_id)).toEqual([]);
+  });
+
+  // ── Search: every sync write leaves an event the indexer consumes, and the index reads blockers ──
+
+  it('sync edits emit site.report.updated.v1 naming the row; the indexer row carries blockers', async () => {
+    const day = '2019-03-10';
+    const first = await push(day, {
+      blockers: 'crane down',
+      manpower_count: 4,
+      client_submitted_at: '2019-03-10T02:00:00.000Z',
+    });
+    expect((first.body as { status: string }).status).toBe('ACCEPTED');
+    const [row] = await detailsOn(day);
+    const reportId = row!.report_id;
+
+    // The app's next save of the day: a new id, so the natural-key edit.
+    const second = await push(day, {
+      blockers: 'crane fixed, rebar late',
+      client_submitted_at: '2019-03-10T09:00:00.000Z',
+    });
+    expect((second.body as { status: string }).status).toBe('ACCEPTED');
+    // An older save that loses writes nothing and emits nothing.
+    const stale = await push(day, {
+      blockers: 'stale',
+      client_submitted_at: '2019-03-10T01:00:00.000Z',
+    });
+    expect((stale.body as { status: string }).status).toBe('ACCEPTED');
+
+    expect(await eventReportIds('site.report.submitted.v1', day)).toEqual([reportId]);
+    expect(await eventReportIds('site.report.updated.v1', day)).toEqual([reportId]);
+
+    // What the search indexer loads for that event (it indexes the current row).
+    const indexed = await runInTenantContext({ tenantId: TENANT_ID, userId: USER_ID }, () =>
+      app.get(SearchIndexRepository).findSiteReport(reportId),
+    );
+    expect(indexed).toEqual(
+      expect.objectContaining({ report_id: reportId, blockers: 'crane fixed, rebar late' }),
+    );
+  });
+
+  it('an id-hit sync edit emits site.report.updated.v1 too', async () => {
+    const day = '2019-03-11';
+    const clientId = randomUUID();
+    const sync = (summary: string, at: string) =>
+      http()
+        .post('/api/v1/site/reports/sync')
+        .send({
+          items: [
+            {
+              client_id: clientId,
+              project_id: projectId,
+              report_date: day,
+              summary,
+              client_submitted_at: at,
+            },
+          ],
+        });
+    expect((await sync('first', '2019-03-11T02:00:00.000Z')).status).toBeLessThan(400);
+    expect((await sync('replayed edit', '2019-03-11T03:00:00.000Z')).status).toBeLessThan(400);
+
+    expect(await eventReportIds('site.report.submitted.v1', day)).toEqual([clientId]);
+    expect(await eventReportIds('site.report.updated.v1', day)).toEqual([clientId]);
   });
 });

@@ -23,6 +23,7 @@ export type * from './events/procurement.purchase_order.created.v1';
 export type * from './events/procurement.vendor_invoice.received.v1';
 export type * from './events/site.report.created.v1';
 export type * from './events/site.report.submitted.v1';
+export type * from './events/site.report.updated.v1';
 export type * from './events/site.inspection.failed.v1';
 export type * from './events/site.inspection.passed.v1';
 export type * from './events/site.issue.created.v1';

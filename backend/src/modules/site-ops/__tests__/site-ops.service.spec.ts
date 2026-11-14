@@ -605,6 +605,7 @@ describe('syncSiteReports', () => {
         manpower_count: 12,
         client_submitted_at: '2026-06-04T09:00:00Z',
       }),
+      expect.any(Function),
     );
   });
 
@@ -631,6 +632,7 @@ describe('syncSiteReports', () => {
     expect(mockRepo.updateSiteReport).toHaveBeenCalledWith(
       'report-1',
       expect.objectContaining({ summary: 'client wins but flagged' }),
+      expect.any(Function),
     );
   });
 
@@ -1445,6 +1447,23 @@ describe('OpenSearch indexing error handling', () => {
     expect(result).toBeDefined();
   });
 
+  // The app's report form has no summary or weather; its free text is blockers. Searching only the
+  // first two could never find a report filed from the app.
+  it('searches site reports over summary, weather and blockers', async () => {
+    const { Client } = jest.requireMock('@opensearch-project/opensearch') as { Client: jest.Mock };
+    const search = Client.mock.results[0]?.value.search as jest.Mock;
+    search.mockClear();
+    search.mockResolvedValueOnce({ body: { hits: { hits: [] } } });
+
+    await service.listSiteReports({ page: 1, limit: 10, q: 'cement' });
+
+    const body = (search.mock.calls[0]![0] as { body: { query: { bool: { must: unknown[] } } } })
+      .body;
+    expect(body.query.bool.must[0]).toEqual({
+      multi_match: { query: 'cement', fields: ['summary', 'weather', 'blockers'] },
+    });
+  });
+
   it('listSiteReports with minimal=true and OpenSearch results (covers minimal ternary true branch)', async () => {
     const { Client } = jest.requireMock('@opensearch-project/opensearch') as { Client: jest.Mock };
     Client.mock.results[0]?.value.search.mockResolvedValueOnce({
@@ -1928,15 +1947,19 @@ describe('syncSiteReports — natural-key hit', () => {
     });
     expect(mockRepo.createSiteReport).not.toHaveBeenCalled();
     expect(mockRepo.createConflictRecord).not.toHaveBeenCalled();
-    expect(mockRepo.updateSiteReport).toHaveBeenCalledWith('server-report', {
-      summary: 'web summary', // not sent → kept
-      weather: 'sunny', // not sent → kept
-      blockers: 'rain',
-      manpower_count: 12,
-      client_submitted_at: '2026-06-04T11:00:00.000Z',
-      latitude: null,
-      longitude: null,
-    });
+    expect(mockRepo.updateSiteReport).toHaveBeenCalledWith(
+      'server-report',
+      {
+        summary: 'web summary', // not sent → kept
+        weather: 'sunny', // not sent → kept
+        blockers: 'rain',
+        manpower_count: 12,
+        client_submitted_at: '2026-06-04T11:00:00.000Z',
+        latitude: null,
+        longitude: null,
+      },
+      expect.any(Function),
+    );
   });
 
   it('an older save leaves the row as it is — ACCEPTED, unflagged', async () => {
@@ -1971,6 +1994,7 @@ describe('syncSiteReports — natural-key hit', () => {
     expect(mockRepo.updateSiteReport).toHaveBeenCalledWith(
       'server-report',
       expect.objectContaining({ summary: 'submitted' }),
+      expect.any(Function),
     );
   });
 
@@ -2036,6 +2060,7 @@ describe('syncSiteReports — natural-key hit', () => {
     expect(mockRepo.updateSiteReport).toHaveBeenCalledWith(
       'draft-id',
       expect.objectContaining({ summary: 'submitted' }),
+      expect.any(Function),
     );
     expect(mockRepo.createConflictRecord).not.toHaveBeenCalled();
   });
@@ -2189,6 +2214,7 @@ describe('syncSiteReports — category, shift and lines', () => {
     expect(mockRepo.updateSiteReport).toHaveBeenCalledWith(
       'server-report',
       expect.objectContaining({ blocker_category: 'POWER', shift: 'DAY' }),
+      expect.any(Function),
     );
     expect(mockRepo.replaceManpowerLogs).toHaveBeenCalledWith('server-report', STORED_LINES);
 
@@ -2236,7 +2262,106 @@ describe('syncSiteReports — category, shift and lines', () => {
     expect(mockRepo.updateSiteReport).toHaveBeenCalledWith(
       row.report_id,
       expect.objectContaining({ blocker_category: 'MATERIAL', shift: 'NIGHT' }),
+      expect.any(Function),
     );
     expect(mockRepo.replaceManpowerLogs).toHaveBeenCalledWith(row.report_id, STORED_LINES);
+  });
+});
+
+// ── syncSiteReports — edits emit site.report.updated.v1 ─────────────────────────
+//
+// A sync edit wrote the row and emitted nothing, so the search index never followed it. Its own event:
+// site.report.created.v1 notifies the project manager and site.report.submitted.v1 is counted once per
+// report by the analytics worker.
+
+describe('syncSiteReports — edits emit site.report.updated.v1', () => {
+  const PROJECT = '11111111-1111-4111-8111-111111111111';
+  const DAY = '2026-06-04';
+  const row = (overrides: Partial<SiteReportRow> = {}) =>
+    makeReport({
+      report_id: 'server-report',
+      project_id: PROJECT,
+      report_date: new Date(`${DAY}T00:00:00.000Z`),
+      submitted_by: 'user-uuid-1',
+      client_submitted_at: new Date('2026-06-04T10:00:00Z'),
+      ...overrides,
+    });
+  const builderOf = (call = 0) =>
+    mockRepo.updateSiteReport.mock.calls[call]![2] as (r: SiteReportRow) => {
+      event_type: string;
+      payload: Record<string, unknown>;
+    };
+
+  beforeEach(() => {
+    mockRepo.findReportsByIds.mockResolvedValue(new Map());
+    mockRepo.findReportsByNaturalKeys.mockResolvedValue(new Map());
+  });
+
+  it('natural-key edit: the event names the updated row', async () => {
+    mockRepo.findReportsByNaturalKeys.mockResolvedValueOnce(
+      new Map([[`${PROJECT}|${DAY}`, row()]]),
+    );
+    mockRepo.updateSiteReport.mockResolvedValueOnce(row());
+
+    await service.syncSiteReports({
+      items: [
+        {
+          client_id: 'device-id',
+          project_id: PROJECT,
+          report_date: DAY,
+          client_submitted_at: '2026-06-04T11:00:00Z',
+        },
+      ],
+    } as never);
+
+    const event = builderOf()(row());
+    expect(event.event_type).toBe('site.report.updated.v1');
+    expect(event.payload).toEqual({
+      report_id: 'server-report',
+      project_id: PROJECT,
+      report_date: DAY,
+      submitted_by: 'user-uuid-1',
+    });
+    expect(mockRepo.createSiteReport).not.toHaveBeenCalled();
+  });
+
+  it('id-hit edit: the event names the updated row', async () => {
+    const existing = row({ report_id: '99999999-9999-4999-8999-999999999999' });
+    mockRepo.findReportsByIds.mockResolvedValueOnce(new Map([[existing.report_id, existing]]));
+    mockRepo.updateSiteReport.mockResolvedValueOnce(existing);
+
+    await service.syncSiteReports({
+      items: [
+        {
+          client_id: existing.report_id,
+          project_id: PROJECT,
+          report_date: DAY,
+          client_submitted_at: '2026-06-04T11:00:00Z',
+        },
+      ],
+    } as never);
+
+    const event = builderOf()(existing);
+    expect(event.event_type).toBe('site.report.updated.v1');
+    expect(event.payload['report_id']).toBe(existing.report_id);
+  });
+
+  it('an older save that loses writes nothing, so emits nothing', async () => {
+    mockRepo.findReportsByNaturalKeys.mockResolvedValueOnce(
+      new Map([[`${PROJECT}|${DAY}`, row()]]),
+    );
+
+    await service.syncSiteReports({
+      items: [
+        {
+          client_id: 'device-id',
+          project_id: PROJECT,
+          report_date: DAY,
+          client_submitted_at: '2026-06-04T09:00:00Z',
+        },
+      ],
+    } as never);
+
+    expect(mockRepo.updateSiteReport).not.toHaveBeenCalled();
   });
 });

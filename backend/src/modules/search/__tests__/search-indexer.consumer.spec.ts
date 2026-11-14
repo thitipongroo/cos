@@ -211,7 +211,10 @@ describe('SearchIndexerConsumer', () => {
         'construction.project.created.v1',
         'construction.project.updated.v1',
         'construction.project.status_changed.v1',
+        // created (web), submitted (a sync create — the app's path), updated (a sync edit)
         'site.report.created.v1',
+        'site.report.submitted.v1',
+        'site.report.updated.v1',
         'site.issue.created.v1',
       ]);
       // A group of its own: sharing finance.shared would make one consumer's offset commits hide
@@ -237,6 +240,10 @@ describe('SearchIndexerConsumer', () => {
 
       await routed['site.report.created.v1']!(event({ payload: { report_id: 'r-1' } }));
       expect(repo.findSiteReport).toHaveBeenCalledWith('r-1');
+      await routed['site.report.submitted.v1']!(event({ payload: { report_id: 'r-2' } }));
+      expect(repo.findSiteReport).toHaveBeenCalledWith('r-2');
+      await routed['site.report.updated.v1']!(event({ payload: { report_id: 'r-3' } }));
+      expect(repo.findSiteReport).toHaveBeenCalledWith('r-3');
 
       await routed['site.issue.created.v1']!(event({ payload: { issue_id: 'i-1' } }));
       expect(repo.findIssue).toHaveBeenCalledWith('i-1');

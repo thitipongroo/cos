@@ -60,6 +60,7 @@ describe('SearchIndexerService', () => {
       report_date: '2026-06-01',
       summary: 'Slab poured',
       weather: 'CLEAR',
+      blockers: 'cement late',
       submitted_by: 'u-1',
       status: 'SUBMITTED',
     } as never);
@@ -70,6 +71,8 @@ describe('SearchIndexerService', () => {
     expect((index.mock.calls[0]![0] as { body: Record<string, unknown> }).body).toMatchObject({
       summary: 'Slab poured',
       weather: 'CLEAR',
+      // The app's only free text: without it a report filed from the app has nothing to match.
+      blockers: 'cement late',
     });
   });
 
