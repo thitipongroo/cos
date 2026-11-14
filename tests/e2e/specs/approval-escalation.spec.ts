@@ -97,35 +97,15 @@ test.describe('Approval Escalation', () => {
     }
   });
 
-  // BLOCKED: not by a route — by itself. The only expect sits inside two nested visibility guards
-  // that swallow their own failure, so this test passes whether or not the notification is ever
-  // delivered. Unskip once it asserts the escalation notification unconditionally.
-  test.skip('escalated notification appears for next approver', async ({
-    page: _page,
-    browser,
-  }) => {
-    const nextApproverContext = await browser.newContext();
-    const nextApproverPage = await nextApproverContext.newPage();
-
-    await loginAs(nextApproverPage, ADMIN_EMAIL, ADMIN_PASSWORD);
-
-    const notificationBell = nextApproverPage
-      .getByRole('button', { name: /notification|bell/i })
-      .or(nextApproverPage.getByTestId('notification-bell'));
-
-    if (await notificationBell.isVisible({ timeout: 5_000 }).catch(() => false)) {
-      await notificationBell.click();
-
-      const escalationNotification = nextApproverPage.getByText(
-        /escalat|approval.*required|pending.*approval/i,
-      );
-      if (await escalationNotification.isVisible({ timeout: 5_000 }).catch(() => false)) {
-        await expect(escalationNotification).toBeVisible();
-      }
-    }
-
-    await nextApproverContext.close();
-  });
+  // BLOCKED: no E2E run can reach the escalation. The PO workflow waits `sleep(APPROVAL_TIMEOUT_MS)`,
+  // a constant 48 hours (backend/src/modules/procurement/workflows/po.workflow.ts:49), before it
+  // notifies the next approver, and nothing shortens it in a deployed environment. The behaviour is
+  // covered where time can be skipped: po.workflow.spec.ts "48h timeout escalates to TENANT_ADMIN"
+  // (Temporal TestWorkflowEnvironment.createTimeSkipping). The body this test used to carry was
+  // removed (2026-11-13): it nested its only expect inside two `if (…isVisible().catch(() => false))`
+  // guards, so it could not fail. Unskip only with a configurable timeout, and then assert the
+  // escalation notification in the bell's `notification-panel` unconditionally.
+  test.skip('escalated notification appears for next approver', () => {});
 
   // BLOCKED on both counts: /admin/settings does not exist, and the single expect is inside a
   // visibility guard that catches its own failure.

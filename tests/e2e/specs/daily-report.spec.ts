@@ -30,8 +30,8 @@ test.describe('Daily Site Report', () => {
     await page.goto('/site/reports/new');
     await page.locator('select').first().selectOption({ index: 1 });
     await page.locator('input[type="date"]').fill(REPORT_DATE);
-    await page.getByPlaceholder(/manpower/i).fill(MANPOWER_COUNT);
-    await page.getByPlaceholder(/summary/i).fill(BLOCKER_TEXT);
+    await page.getByLabel(/manpower/i).fill(MANPOWER_COUNT);
+    await page.getByLabel(/summary/i).fill(BLOCKER_TEXT);
     await page.getByRole('button', { name: /^submit$/i }).click();
     await expect(page.getByText(/submitted/i)).toBeVisible({ timeout: 15_000 });
   });
@@ -42,18 +42,24 @@ test.describe('Daily Site Report', () => {
   });
 
   test('PM receives notification after site engineer submits report', async ({ page, browser }) => {
+    // Two Keycloak logins, the submission and up to 45 s of retries do not fit the suite's 60 s.
+    test.setTimeout(120_000);
     // Submit a real daily report via the inline /site/reports/new form (same as the passing submit
-    // test above), then check the PM's notification surface in a second browser context.
+    // test above), then check the PM's notification panel in a second browser context.
+    //
+    // The summary is made unique per run: site.report.created.v1 carries it into the PM's in-app
+    // notification body (template 20260824000002), and with the constant BLOCKER_TEXT a notification
+    // left by an earlier run would satisfy the assertion. Every submission writes the event, a
+    // same-day resubmission included (the repository upserts and writes the outbox row either way).
+    const summary = `${BLOCKER_TEXT} ${Date.now()}`;
     await page.goto('/site/reports/new');
     await page.locator('select').first().selectOption({ index: 1 });
     await page.locator('input[type="date"]').fill(REPORT_DATE);
-    await page.getByPlaceholder(/manpower/i).fill(MANPOWER_COUNT);
-    await page.getByPlaceholder(/summary/i).fill(BLOCKER_TEXT);
+    await page.getByLabel(/manpower/i).fill(MANPOWER_COUNT);
+    await page.getByLabel(/summary/i).fill(summary);
     await page.getByRole('button', { name: /^submit$/i }).click();
     await expect(page.getByText(/submitted/i)).toBeVisible({ timeout: 15_000 });
 
-    // PM checks the notification bell — best-effort, the notification is delivered
-    // asynchronously via Kafka so its arrival within the test window is not guaranteed.
     const pmContext = await browser.newContext();
     const pmPage = await pmContext.newPage();
     await pmPage.addInitScript(() => {
@@ -67,22 +73,25 @@ test.describe('Daily Site Report', () => {
     const pmPassword = process.env['E2E_PM_PASSWORD'] || 'E2eTestPass123!';
     await loginViaKeycloak(pmPage, { email: pmEmail, password: pmPassword });
 
-    // Declared here as safety-incident.spec.ts and approval-escalation.spec.ts declare it; this spec used
-    // it without declaring it (TS2552), so it could not compile.
+    // The same locator approval-escalation.spec.ts names notificationBell (safety-incident.spec.ts
+    // calls it `bell`). Both steps are unconditional: this test used to wrap them in
+    // `if (await …isVisible().catch(() => false))`, and matched /report|daily|site/i anywhere on the
+    // page, so it passed whether or not a notification was delivered.
     const notificationBell = pmPage
       .getByRole('button', { name: /notification|bell/i })
       .or(pmPage.getByTestId('notification-bell'));
-
-    if (await notificationBell.isVisible({ timeout: 5_000 }).catch(() => false)) {
+    await expect(notificationBell).toBeVisible({ timeout: 10_000 });
+    // Delivery is asynchronous (outbox → Kafka → notification consumer), and the bell cannot be relied
+    // on to receive it live: it loads /notifications once per session, and its SSE stream is
+    // process-local (notification.sse.service.ts) while staging runs two or more backend replicas, so
+    // a notification written after that load may reach a replica the PM is not streaming from.
+    // Reloading re-runs the load from the shared database; retry until the run's own text is listed.
+    const panel = pmPage.getByTestId('notification-panel');
+    await expect(async () => {
+      await pmPage.reload();
       await notificationBell.click();
-      // Push delivery is asynchronous and best-effort; assert the report notification only when it
-      // has arrived rather than failing the flow on delivery timing (mirrors the safety-incident PM
-      // notification test). The bell opening is the checkpoint this test guarantees.
-      const reportNotification = pmPage.getByText(/report|daily|site/i).first();
-      if (await reportNotification.isVisible({ timeout: 10_000 }).catch(() => false)) {
-        await expect(reportNotification).toBeVisible();
-      }
-    }
+      await expect(panel.getByText(summary)).toBeVisible({ timeout: 5_000 });
+    }).toPass({ timeout: 45_000 });
     await pmContext.close();
   });
 });

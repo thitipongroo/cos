@@ -217,6 +217,22 @@ overrides:
   # '@azure/identity@>=4.0.0 <4.14.1': '^4.14.1' (branch 4, GHSA-xcx6-jx8p-x3h5) removed 2026-11-06 with its
   # only consumer, the unused @confluentinc/schemaregistry (docs/registers/dependency-advisories-2026-11.md).
 
+packageExtensions:
+  # @nestjs/swagger's CLI plugin does `require('typescript')` without declaring it, so it got the hoisted
+  # copy — 5.9.3, a direct dependency of @nestjs/cli — while `nest build` compiles with the TypeScript
+  # it resolves from backend/ upwards (the root's 6.0.3; backend/package.json declares none). A plugin reading one compiler's AST
+  # with another's enums emitted `enum: string` / `type: () => Object` in 97 files of backend/dist, and
+  # the backend failed to boot locally (`ReferenceError: string is not defined`). Declaring the peer
+  # makes pnpm link the consumer's TypeScript into the plugin (2026-11-13; the record has the run).
+  # OPTIONAL, because @nestjs/swagger is a production dependency: a required peer put TypeScript
+  # (24 MB) into the backend image, which builds before it prunes and never runs the plugin.
+  '@nestjs/swagger':
+    peerDependencies:
+      typescript: '*'
+    peerDependenciesMeta:
+      typescript:
+        optional: true
+
 allowBuilds:
   '@nestjs/core': true
   '@prisma/client': true

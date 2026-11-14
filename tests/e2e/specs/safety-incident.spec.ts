@@ -22,7 +22,7 @@ async function reportIncident(page: Page): Promise<string> {
   const incidentType = `E2E-INC-${Date.now()}`;
   await page.goto('/safety/incidents');
   await page.locator('select').nth(0).selectOption({ index: 1 }); // project (required)
-  await page.getByPlaceholder('Incident type').fill(incidentType);
+  await page.getByLabel(/incident type/i).fill(incidentType);
   await page.locator('select').nth(1).selectOption('HIGH'); // severity
   await page.getByRole('button', { name: /^report$/i }).click();
   return incidentType;
@@ -54,7 +54,7 @@ test.describe('Safety Incident Reporting', () => {
     // unique marker and assert it shows in the incidents list. Fill + verify the value stuck before
     // submitting (the Report button is disabled until project + type are both set).
     const incidentType = `E2E slip near scaffold ${Date.now().toString().slice(-6)}`;
-    const typeInput = page.getByPlaceholder(/incident type/i);
+    const typeInput = page.getByLabel(/incident type/i);
     await typeInput.fill(incidentType);
     await expect(typeInput).toHaveValue(incidentType);
     await page.getByRole('button', { name: /^report$/i }).click();
@@ -62,11 +62,13 @@ test.describe('Safety Incident Reporting', () => {
   });
 
   test('PM receives notification after safety incident is reported', async ({ page, browser }) => {
+    // Two Keycloak logins, the submission and up to 45 s of retries do not fit the suite's 60 s.
+    test.setTimeout(120_000);
     await loginAs(page, SAFETY_EMAIL, SAFETY_PASSWORD);
     const incidentType = await reportIncident(page);
     await expect(page.getByText(incidentType)).toBeVisible({ timeout: 15_000 });
 
-    // PM checks the notification bell — best-effort (async Kafka delivery).
+    // PM checks the notification bell.
     const pmContext = await browser.newContext();
     const pmPage = await pmContext.newPage();
     await pmPage.addInitScript(() => {
@@ -80,9 +82,21 @@ test.describe('Safety Incident Reporting', () => {
     const bell = pmPage
       .getByRole('button', { name: /notification|bell/i })
       .or(pmPage.getByTestId('notification-bell'));
-    if (await bell.isVisible({ timeout: 5_000 }).catch(() => false)) {
+    // Unconditional: this used to open the bell only if it was visible and then assert nothing, so it
+    // passed whether or not the PM was notified. safety.incident.created.v1 routes to PROJECT_MANAGER
+    // and its in-app template (20260824000001) carries {{incident_type}}, which is unique per run.
+    await expect(bell).toBeVisible({ timeout: 10_000 });
+    // Delivery is asynchronous (outbox → Kafka → notification consumer), and the bell cannot be relied
+    // on to receive it live: it loads /notifications once per session, and its SSE stream is
+    // process-local (notification.sse.service.ts) while staging runs two or more backend replicas, so
+    // a notification written after that load may reach a replica the PM is not streaming from.
+    // Reloading re-runs the load from the shared database; retry until the run's own text is listed.
+    const panel = pmPage.getByTestId('notification-panel');
+    await expect(async () => {
+      await pmPage.reload();
       await bell.click();
-    }
+      await expect(panel.getByText(incidentType)).toBeVisible({ timeout: 5_000 });
+    }).toPass({ timeout: 45_000 });
     await pmContext.close();
   });
 

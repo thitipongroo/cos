@@ -2645,3 +2645,60 @@ openssl ca-certificates`; `groupadd`/`useradd` uid/gid 1001, as the charts run; 
   underscores). Fixed on `fix/small-test-docs`, formatting only (`git diff --word-diff` changes no word): the two lines
   rewrapped, and the four UI labels use `_…_`. 0 issues after. Line 638 is still 130 characters; it passes because
   MD013 (not strict) skips a line with no whitespace past column 120, and its overflow is inside a code span.
+- **Closed — three web E2E notification checks could not fail.** Found by /doubt on `fix/small-test-docs`; fixed on
+  `test/e2e-notification-asserts`.
+  - `daily-report.spec.ts` and `safety-incident.spec.ts`: the PM's bell and the notification text were looked up inside
+    `if (await …isVisible().catch(() => false))`, and daily-report matched `/report|daily|site/i` anywhere on the page.
+    Both now assert the bell unconditionally and require the run's own text — a per-run summary, and the incident type
+    that was already unique — inside the bell's panel (`data-testid="notification-panel"`, added to
+    `NotificationBell.tsx`), reloading the PM's page and reopening the bell until it appears (`toPass`, 45 s; test
+    timeout 120 s). Reload, because the bell loads `/notifications` once and its SSE stream is process-local
+    (`notification.sse.service.ts:2-3`) while staging runs two or more backend replicas (`values-staging.yaml`); the
+    local runs below had one backend, so the multi-replica case is reasoned, not run.
+  - `approval-escalation.spec.ts` "escalated notification appears for next approver" stays skipped, its body removed:
+    the PO workflow waits a constant 48 h (`po.workflow.ts:49`) before escalating, which no E2E run reaches;
+    `po.workflow.spec.ts` "48h timeout escalates to TENANT_ADMIN" covers it with Temporal time-skipping.
+  - Both specs' form steps had not run since `598c8b11` (2026-08-03) moved the forms from placeholders to labels; they
+    use `getByLabel` now. `budget-exceeded`, `procurement`, `project` and `report` specs still use `getByPlaceholder`
+    and were not checked.
+  - Run on a local stack (2026-11-13; the recipe is the Open item below): daily-report 4/4 and safety-incident 5/5
+    pass, the escalation test is skipped. Negative control: with the two IN_APP templates set `is_active=false` in the
+    local database, both new tests fail at the panel assertion (`daily-report.spec.ts:94`, `safety-incident.spec.ts:99`)
+    while copies keeping the old checks pass; templates restored, both pass again.
+- **Closed — the backend did not boot from a local build.** Fixed on `test/e2e-notification-asserts`. `nest build`
+  compiles with the TypeScript it resolves from `backend/` upwards (the root's 6.0.3, `@nestjs/cli/lib/compiler/typescript-loader.js:10`),
+  while `@nestjs/swagger`'s plugin `require`s an undeclared `typescript` and got the hoisted 5.9.3 (a direct
+  dependency of `@nestjs/cli`). It emitted `enum: string` / `type: () => Object` in 97 files of
+  `backend/dist`, and loading `update-preferences.dto.js` threw `ReferenceError: string is not defined`. The backend
+  Docker image was not affected (its build emitted `type: () => String`, 0 such files). `pnpm-workspace.yaml`
+  `packageExtensions` now gives the plugin an optional `typescript` peer; the lockfile changes by the checksum and that
+  one peer (resolved to 6.0.3, listed under the snapshot's `optionalDependencies`). Optional because the plugin's
+  package is a production dependency: a required peer put `typescript@6.0.3` (24 MB) into the backend image
+  (1,556,938,386 bytes); with the optional peer the image has no TypeScript (1,527,499,814 bytes), its `dist` has no
+  `enum: string`, and it starts healthy on the compose infra. Locally, with the required peer: 0 such files,
+  `dist/app.module.js` loads, `node dist/main` answers `/health/live` 200 and the two notification tests pass against
+  it; with the optional peer the local `nest build` again has 0 such files (not booted again).
+  `pnpm install --frozen-lockfile`, `scripts/pnpm-audit.sh` (PASS) and backend `tsc --noEmit` pass; `pnpm peers check`
+  lists no swagger or typescript peer.
+- **A tenant's events are not consumed until the backend restarts if its topics appear after startup.** Consumers
+  subscribe per event type with a RegExp over `{tenant_id}.{event_type}` (`packages/@cos/kafka/src/consumer.ts:87-97`),
+  and its comment says this "also picks up topics provisioned for tenants onboarded after startup". KafkaJS 2.2.4
+  resolves a RegExp once, inside `subscribe()`, against the metadata it fetches then
+  (`kafkajs/src/consumer/index.js:157-185`). Measured: on a fresh local stack the first `site.report.created.v1` and
+  `safety.incident.created.v1` created their topics on first publish and were published (`outbox_events.published`),
+  and the PM received nothing; after `docker restart cos-backend` new events were delivered. Not fixed; whether
+  production pre-creates every tenant's topics before the backend starts was not checked.
+- **`site.report.created.v1` names a report id that does not exist after a same-day resubmission.**
+  `site-ops.service.ts:126` builds the event with the freshly generated `reportId` before the upsert; on conflict the
+  row keeps its old `report_id` (`site-ops.repository.ts:94-106`), so the event — and the PM's notification body —
+  carries the discarded id. Not fixed.
+- **`approval-escalation.spec.ts` "approval item shows pending status" still cannot fail.** Its only row assertion sits
+  in `if (await pendingRow.isVisible(…).catch(() => false))`. "purchase order approval state is inspectable" needs
+  `E2E_ADMIN_EMAIL`, a TENANT_ADMIN, whose login requires a second factor; locally it timed out at login.
+- **The web E2E suite has no working local recipe.** `scripts/dev/seed-e2e-users.sh` creates its users in realm
+  `construction-os`, which the local Keycloak does not have (404; `construction-os-dev` is 200), and on a fresh
+  database `prisma/seed.ts` stops at its inspection fixture (`inspections_project_id_fkey`: project
+  `00000000-0000-4000-8000-000000000061` does not exist). What ran on 2026-11-13: infra `postgres pgbouncer redis kafka
+schema-registry keycloak temporal` (minio's image does not pull, above), migrations, `prisma/seed-realistic.ts`,
+  `prisma/provision-keycloak-demo.ts`, web on 3001, and the specs with `BASE_URL=http://localhost:3001` and
+  `E2E_SE_*` / `E2E_PM_*` / `E2E_SAFETY_*` set to the EKC demo accounts.
