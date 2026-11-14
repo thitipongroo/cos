@@ -75,7 +75,7 @@ export class SiteOpsRepository {
       latitude?: number | null;
       longitude?: number | null;
     },
-    outboxEvent?: OutboxEventInput,
+    buildOutboxEvent?: (row: SiteReportRow) => OutboxEventInput,
   ): Promise<SiteReportRow> {
     const rows = await this.db.run(async (tx) => {
       const written = await tx.$queryRaw<SiteReportRow[]>`
@@ -105,7 +105,11 @@ export class SiteOpsRepository {
             modified_at         = now()
         RETURNING *
       `;
-      if (outboxEvent) await OutboxPublisher.write(tx, outboxEvent);
+      // Built from the RETURNING row, not from params: on conflict the row keeps its first
+      // report_id, so `params.report_id` names a report that does not exist.
+      if (buildOutboxEvent && written[0]) {
+        await OutboxPublisher.write(tx, buildOutboxEvent(written[0]));
+      }
       return written;
     });
     return rows[0]!;

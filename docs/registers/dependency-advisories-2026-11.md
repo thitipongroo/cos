@@ -2728,10 +2728,46 @@ openssl ca-certificates`; `groupadd`/`useradd` uid/gid 1001, as the charts run; 
   next startup; `connect()` subscribes it with the caller's `fromBeginning` (false for the backend), so its messages
   are read from the latest offset. Not fixed: using `fromBeginning: true` at startup would also make a new consumer
   group read every existing topic's full retention.
-- **`site.report.created.v1` names a report id that does not exist after a same-day resubmission.**
-  `site-ops.service.ts:126` builds the event with the freshly generated `reportId` before the upsert; on conflict the
-  row keeps its old `report_id` (`site-ops.repository.ts:94-106`), so the event — and the PM's notification body —
-  carries the discarded id. Not fixed.
+- **Closed — site-report events named a report id that did not exist after an upsert.** Fixed on
+  `fix/site-report-event-id`. A site report is unique per (project, day, submitter), and
+  `SiteOpsRepository.createSiteReport` upserts on that key, keeping the existing row's `report_id`. Both callers built
+  their event before the write: `createSiteReport` put the UUID it had just generated into `site.report.created.v1`, and
+  the sync create path put the device's `client_id` into `site.report.submitted.v1`. On a same-day resubmission, or a
+  second device id for the same day, the event named a report that does not exist. Who read it: the PM's in-app
+  notification ends "report {{report_id}}" (`20260824000002_routed_event_notification_templates/migration.sql:49`),
+  and the search indexer loads the row by that id (`search-indexer.consumer.ts:92-98`), found nothing, and never
+  indexed the resubmitted summary, so search kept the first version's text. `site.report.submitted.v1` is also read by
+  `analytics-invalidation` (project only) and the Go analytics-worker (`report_count`); neither reads the id.
+  - Change: `createSiteReport` takes a builder over the RETURNING row, `(row) => OutboxEventInput`, called in the same
+    transaction, as `updateIssueStatus` already did; both callers build from `row.report_id`. The event type of a
+    resubmission is still `site.report.created.v1`: whether a resubmission should emit a different event is a contract
+    decision, not made here.
+  - Evidence: unit — the repository passes the RETURNING row to the builder; the service's created and sync-submitted
+    events name the row's id when it differs from the generated / client id (site-ops units 193 pass). Integration
+    `test/site-ops/08-site-report-event-id.integration.spec.ts` (testcontainers TimescaleDB): two same-day POSTs give
+    one row with the second summary and two `site.report.created.v1` outbox rows naming that row; two syncs with
+    different `client_id`s for one day give one row (the first id) and two `site.report.submitted.v1` rows naming it.
+    Negative control: with the events built from the generated id and `client_id` again, the two new unit tests fail,
+    and both integration tests fail on the second outbox row (the first submission's was right); restored, all pass.
+    All eight `test/site-ops/` integration suites pass (140 tests). The integration database URL is the container's
+    own user, so RLS on the upsert's RETURNING is not exercised there.
+- **Mobile sync never learns the report id the server kept.** `/sync/push` with `site_report`
+  (`backend/src/modules/sync/sync.service.ts:287-294`) returns only `{ status }`, and the device keeps the report under
+  its own `client_id`. When that id lands on an existing (project, day, submitter) report, the device's id names no
+  server row; its next edit misses `findReportsByIds`, takes the create path and upserts again. That create path
+  (`site-ops.service.ts:222-259`) also skips the last-write-wins check and conflict record of the edit path, and the
+  sync item carries no `blocker_category` or `shift`, so the upsert sets both to NULL over values entered on the web.
+  Found by /doubt on `fix/site-report-event-id`; not fixed. Options: return the kept `report_id` from push and remap on
+  the device, or treat an id miss with a natural-key hit as the edit path.
+- **One report can count twice in `site_activity_daily`.** The Go analytics-worker adds one to `report_count` per
+  `site.report.submitted.v1` (`services/analytics-worker/internal/metrics/consumer.go:279-293`); two device ids for
+  one (project, day, submitter) are one report and two events. Not fixed.
+- **Reports written through sync are not indexed for search.** The search indexer subscribes
+  `site.report.created.v1` only (`search-indexer.consumer.ts:42-46`), which sync never emits; sync emits
+  `site.report.submitted.v1`. Not fixed.
+- **The site-report notification says "0 issue(s), 0 photo(s)" on every submission.** `issue_count` and `photo_count`
+  are the constants 0 in `site.report.created.v1` (`site-ops.service.ts`, `createSiteReport`), also when a resubmitted
+  report already has issues or photos. Not fixed.
 - **`approval-escalation.spec.ts` "approval item shows pending status" still cannot fail.** Its only row assertion sits
   in `if (await pendingRow.isVisible(…).catch(() => false))`. "purchase order approval state is inspectable" needs
   `E2E_ADMIN_EMAIL`, a TENANT_ADMIN, whose login requires a second factor; locally it timed out at login.

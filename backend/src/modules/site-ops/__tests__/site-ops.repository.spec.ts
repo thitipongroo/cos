@@ -740,6 +740,32 @@ describe('SiteOpsRepository', () => {
       expect(mockPrisma.$executeRaw).not.toHaveBeenCalled();
     });
 
+    // ON CONFLICT (project_id, report_date, submitted_by) keeps the existing row's report_id, so the
+    // event must come from RETURNING, not from the id the caller generated.
+    it('createSiteReport builds the event from the RETURNING row, not the id it was given', async () => {
+      const row = { ...reportRow, report_id: 'existing-report' };
+      mockPrisma.$queryRaw.mockResolvedValue([row]);
+      const builder = jest.fn(() => envelope);
+
+      await repo.createSiteReport(
+        {
+          report_id: 'generated-id',
+          project_id: 'p-1',
+          submitted_by: 'u-1',
+          report_date: '2026-06-04',
+          summary: null,
+          weather: null,
+          manpower_count: null,
+          client_submitted_at: null,
+        },
+        builder as never,
+      );
+
+      expect(builder).toHaveBeenCalledTimes(1);
+      expect(builder).toHaveBeenCalledWith(row);
+      expect(mockPrisma.$executeRaw).toHaveBeenCalledTimes(1);
+    });
+
     // The true branch of every optional-outbox write: the outbox INSERT rides the SAME tx handle.
     it('every optional-outbox write emits one outbox row through the business tx', async () => {
       mockPrisma.$queryRaw.mockResolvedValue([{ id: 'x' }]);
@@ -756,7 +782,7 @@ describe('SiteOpsRepository', () => {
           manpower_count: null,
           client_submitted_at: null,
         },
-        e,
+        (() => envelope) as never,
       );
       await repo.createIssue(
         {

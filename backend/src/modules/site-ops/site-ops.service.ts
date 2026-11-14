@@ -123,15 +123,19 @@ export class SiteOpsService {
         longitude: dto.longitude ?? null,
       },
       // site.report.created.v1 rides the INSERT (§35.13 ESC-13), so it is not published again below.
-      this.outboxEvent('site.report.created.v1', {
-        report_id: reportId,
-        project_id: dto.project_id,
-        report_date: dto.report_date,
-        submitted_by: this.userId,
-        summary: dto.summary ?? '',
-        issue_count: 0,
-        photo_count: 0,
-      }),
+      // Built from the written row: a same-day resubmission upserts onto the existing report, which
+      // keeps its own report_id, so `reportId` would name a report that does not exist — shown to the
+      // PM in the notification body and looked up (and not found) by the search indexer.
+      (row) =>
+        this.outboxEvent('site.report.created.v1', {
+          report_id: row.report_id,
+          project_id: dto.project_id,
+          report_date: dto.report_date,
+          submitted_by: this.userId,
+          summary: dto.summary ?? '',
+          issue_count: 0,
+          photo_count: 0,
+        }),
     );
 
     // Per-trade breakdown → site_ops.manpower_logs. Written against the row's OWN report_id, not
@@ -233,12 +237,15 @@ export class SiteOpsService {
             latitude: item.latitude ?? null,
             longitude: item.longitude ?? null,
           },
-          this.outboxEvent('site.report.submitted.v1', {
-            report_id: item.client_id,
-            project_id: item.project_id,
-            report_date: item.report_date,
-            submitted_by: this.userId,
-          }),
+          // From the written row: an item with a new client_id for a (project, day, submitter) that
+          // already has a report upserts onto that report, which keeps its own report_id.
+          (row) =>
+            this.outboxEvent('site.report.submitted.v1', {
+              report_id: row.report_id,
+              project_id: item.project_id,
+              report_date: item.report_date,
+              submitted_by: this.userId,
+            }),
         );
 
         results.push({

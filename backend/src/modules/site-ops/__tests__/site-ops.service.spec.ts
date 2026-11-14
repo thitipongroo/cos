@@ -304,12 +304,33 @@ describe('createSiteReport', () => {
     mockRepo.createSiteReport.mockResolvedValue(makeReport());
     await service.createSiteReport({ project_id: 'project-1', report_date: '2026-06-04' });
     // Same repository call as the INSERT ⇒ the event cannot survive a rollback.
-    expect(outboxArg(mockRepo.createSiteReport, 1)).toEqual(
+    expect(outboxArg(mockRepo.createSiteReport, 1, makeReport())).toEqual(
       expect.objectContaining({
         event_type: 'site.report.created.v1',
         tenant_id: 'tenant-uuid-1',
         actor_id: 'user-uuid-1',
       }),
+    );
+  });
+
+  // A same-day resubmission upserts onto the existing report, which keeps its own report_id; the
+  // UUID the service generated is discarded. The event is built from the written row, so it names
+  // the report that exists — the PM's notification shows it and the search indexer loads it.
+  it('site.report.created.v1 names the written row, not the generated id (same-day resubmission)', async () => {
+    const existing = makeReport({ report_id: 'existing-report' });
+    mockRepo.createSiteReport.mockResolvedValue(existing);
+    await service.createSiteReport({
+      project_id: 'project-1',
+      report_date: '2026-06-04',
+      summary: 'second version',
+    });
+
+    const generated = (mockRepo.createSiteReport.mock.calls[0]![0] as { report_id: string })
+      .report_id;
+    expect(generated).not.toBe('existing-report');
+    const event = outboxArg(mockRepo.createSiteReport, 1, existing);
+    expect(event?.payload).toEqual(
+      expect.objectContaining({ report_id: 'existing-report', summary: 'second version' }),
     );
   });
 });
@@ -369,6 +390,30 @@ describe('syncSiteReports', () => {
 
     expect(results[0]?.conflict_status).toBe('ACCEPTED');
     expect(results[0]?.report_id).toBe('new-id');
+  });
+
+  // A second device id for a (project, day, submitter) that already has a report takes the create
+  // path and upserts onto that report. site.report.submitted.v1 must name the row, not client_id.
+  it('site.report.submitted.v1 names the written row when a new client_id upserts onto a report', async () => {
+    mockRepo.findReportsByIds.mockResolvedValue(new Map());
+    const existing = makeReport({ report_id: 'existing-report' });
+    mockRepo.createSiteReport.mockResolvedValue(existing);
+
+    const results = await service.syncSiteReports({
+      items: [
+        {
+          client_id: 'second-device-id',
+          project_id: 'project-1',
+          report_date: '2026-06-04',
+          client_submitted_at: '2026-06-04T09:00:00Z',
+        },
+      ],
+    });
+
+    expect(results[0]?.report_id).toBe('existing-report');
+    const event = outboxArg(mockRepo.createSiteReport, 1, existing);
+    expect(event?.event_type).toBe('site.report.submitted.v1');
+    expect(event?.payload).toEqual(expect.objectContaining({ report_id: 'existing-report' }));
   });
 
   it('logs a warning when the device clock was ahead, and still accepts the edit', async () => {
