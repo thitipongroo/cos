@@ -23,6 +23,38 @@ processors:
     limit_percentage: 75
     spike_limit_percentage: 20
 
+  # PDPA: no URL query strings, client IPs or Redis keys in spans. The HTTP auto-instrumentation of
+  # every service (Node `@cos/tracing` — instrumentation-http/undici; Python ai-gateway —
+  # FastAPI/httpx) records the full URL, query string included (`?q=` is what a user typed into a
+  # search), and the caller's IP. Redacted here, once, for every service: URLs keep their path, the
+  # query and IP attributes are dropped. Runs BEFORE tail_sampling, which holds traces in memory and
+  # keeps every error trace. fix/otel-span-redaction (2026-11-15).
+  # - `(?s)`: RE2's `.` stops at a newline, and the ASGI instrumentation unquotes the query, so a
+  #   `%0A` in it (a multi-line question) made `\?.*$` match nothing and kept the whole URL.
+  # - Exception events quote URLs too (httpx: "... for url 'https://…?appid=<key>'"): their query
+  #   strings are cut the same way.
+  # - Redis spans carry the command's arguments in `db.statement` (ioredis' default serializer);
+  #   OTP keys are `otp:*:<phone number>`. Only the command name is kept.
+  transform/redact:
+    error_mode: ignore
+    trace_statements:
+      - context: span
+        statements:
+          - replace_pattern(attributes["http.url"], "(?s)\\?.*", "")
+          - replace_pattern(attributes["http.target"], "(?s)\\?.*", "")
+          - replace_pattern(attributes["url.full"], "(?s)\\?.*", "")
+          - delete_key(attributes, "url.query")
+          - delete_key(attributes, "http.client_ip")
+          - delete_key(attributes, "client.address")
+          - delete_key(attributes, "net.peer.ip")
+          - delete_key(attributes, "net.sock.peer.addr")
+          - delete_key(attributes, "network.peer.address")
+          - replace_pattern(attributes["db.statement"], "(?s)^(\\S+).*", "$$1") where attributes["db.system"] == "redis"
+      - context: spanevent
+        statements:
+          - replace_pattern(attributes["exception.message"], "(https?://[^?\\s'\"]*)\\?[^\\s'\"]*", "$$1")
+          - replace_pattern(attributes["exception.stacktrace"], "(https?://[^?\\s'\"]*)\\?[^\\s'\"]*", "$$1")
+
   # Tail-based sampling: 1% of normal traces, 100% of error traces
   # Source: spec §31.5 — production 1% baseline, 100% errors
   tail_sampling:
@@ -143,7 +175,7 @@ service:
   pipelines:
     traces:
       receivers: [otlp]
-      processors: [memory_limiter, tail_sampling, resource, batch]
+      processors: [memory_limiter, transform/redact, tail_sampling, resource, batch]
       exporters: [otlp/jaeger]
     metrics:
       receivers: [otlp]

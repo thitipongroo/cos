@@ -159,6 +159,38 @@ describe('Phase 15 · sampling happens only at the Collector (master:4400-4407; 
     expect(collector).toMatch(/processors:.*tail_sampling/);
   });
 
+  // PDPA (fix/otel-span-redaction): the HTTP instrumentation of every service records the full URL
+  // with its query string (a search `q`) and the caller's IP. The Collector strips them before the
+  // tail sampler holds the trace — verified against the real 0.103.0 image when this was added.
+  it('redacts URL query strings, client IPs and Redis keys from spans, before tail sampling', () => {
+    const code = codeOnly(collector);
+    expect(code).toMatch(/processors:\s*\[[^\]]*transform\/redact[^\]]*tail_sampling/);
+    // The block, from its context line to the next processor: statements must sit under the span /
+    // spanevent contexts of trace_statements, not elsewhere in the file.
+    const block = code.slice(code.indexOf('transform/redact:'), code.indexOf('tail_sampling:'));
+    expect(block).toMatch(/trace_statements:\s*\n\s*- context: span\n/);
+    // `(?s)`: without it RE2's `.` stops at a newline, and a `%0A` in a query (the ASGI
+    // instrumentation unquotes it) kept the whole URL — measured on the 0.103.0 image.
+    for (const attr of ['http.url', 'http.target', 'url.full']) {
+      expect(block).toContain(`replace_pattern(attributes["${attr}"], "(?s)\\\\?.*", "")`);
+    }
+    for (const attr of [
+      'url.query',
+      'http.client_ip',
+      'client.address',
+      'net.peer.ip',
+      'net.sock.peer.addr',
+      'network.peer.address',
+    ]) {
+      expect(block).toContain(`delete_key(attributes, "${attr}")`);
+    }
+    expect(block).toContain(
+      `replace_pattern(attributes["db.statement"], "(?s)^(\\\\S+).*", "$$1") where attributes["db.system"] == "redis"`,
+    );
+    expect(block).toMatch(/- context: spanevent\n[\s\S]*attributes\["exception\.message"\]/);
+    expect(block).toContain('attributes["exception.stacktrace"]');
+  });
+
   it('reads its baseline from OTEL_SAMPLING_PERCENTAGE', () => {
     expect(collector).toMatch(/sampling_percentage:\s*\$\{env:OTEL_SAMPLING_PERCENTAGE\}/);
   });

@@ -1607,11 +1607,6 @@ gate's isolated run) checks the hash was not tested either; it ran 12.18.0 with 
   names, asset types, work packages, zones and, on `safety/ai-vision`, alert titles and details ("NO HARD HAT DETECTED",
   "Immediate attention required…") that the pages show as they are. Left as data by D30; whether demo records should be
   translated, or the pages read real data, is a product decision.
-- **CI has not run since 2026-11-08.** The last successful `ci.yml` run is `develop` 42437048167 (2026-11-08 02:05 UTC).
-  From `develop` 42487331144 (2026-11-08 13:56 UTC) on — `develop` again on 11-08 and 11-10, and every branch from
-  `fix/audit-gate-pnpm12` to `fix/web-factoring-rates` — jobs failed without starting ("The job was not started because
-  recent account payments have failed or your spending limit needs to be increased", GitHub billing) or were skipped.
-  Nothing since has been checked by CI, including `pnpm/action-setup` with the `+sha512` pin.
 - **drone-mission-detail's "LandXML Ready" badge claims a readiness nothing provides.** It sits under the net soil
   balance, while no export exists (D36); the large export button also keeps its `picture-as-pdf` icon. Translated with
   its meaning kept ("พร้อม LandXML") on `fix/mobile-6a076c6d-i18n`, not changed there; whether to drop or reword it is a
@@ -1622,11 +1617,6 @@ gate's isolated run) checks the hash was not tested either; it ran 12.18.0 with 
 - **The drone-capture scan-mode buttons show no selected state.** "Point Cloud" / "Orbit Scan" change only a style and
   an icon colour — no text, no `accessibilityState.selected` — so neither a screen reader nor a test can tell which is
   active; they are left out of the render specs for that reason.
-- **Re-measure the LCP budget under Lighthouse 13 (D26).** `apps/web/.lighthouserc.json` keeps the LCP
-  `maxNumericValue` at 3200, which was set from Lighthouse 12's numbers. Lighthouse 13 reports a much lower simulated
-  LCP for /login (see [branch 3](#branch-3--zod-3-second-source-lhcicli-0151--0160)), so the gate has far more
-  headroom than when it was ratified. A new budget needs ubuntu-latest runs of `lighthouse.yml` under 13, as that
-  workflow requires; it is a product-owner decision.
 - **The `allowBuilds` comment in `pnpm-workspace.yaml`** says puppeteer's postinstall never runs on a CI runner. But
   the 12 CI jobs that install, and `apps/web/Dockerfile`, run an unfiltered `pnpm install --frozen-lockfile` that
   includes root devDependencies, so it does run there. Its "~150 MB" is also low: Chrome and chrome-headless-shell
@@ -1784,58 +1774,6 @@ gate's isolated run) checks the hash was not tested either; it ran 12.18.0 with 
           print(json.dumps(row, ensure_ascii=False), flush=True)
   ```
 
-- **MLflow server v3.17.2-full is in the manifests, not deployed.** Rolling it out is a deployment step outside this
-  work. Back up the backend store first; with `Recreate`, MLflow is down from the old pod's exit until the new one is
-  ready, migration included (seconds on the small stores measured; a real-size store was not tried — the `startupProbe`
-  allows ten minutes). The packages the `-full` image adds over the plain one (1.93 GB against 1.33 GB) are not audited:
-  CI's pip-audit covers the client requirement sets only.
-- **Enterprise provisioning has not been run against RDS, and three things it needs are unverified there.**
-  `createRdsActivity` creates PostgreSQL 15 on RDS. The migrations call `create_hypertable` without creating the
-  TimescaleDB extension, which RDS does not offer, so `prisma migrate deploy` is expected to stop there.
-  `20260608000004_rls_policies` creates a role with BYPASSRLS, and the copy needs `SET session_replication_role` and a role
-  that bypasses RLS; whether the RDS master user may do each was not checked. The integration spec runs on TimescaleDB
-  pg16 as superuser. Found on `fix/enterprise-provisioning-db`; needs a decision on the dedicated database's engine
-  (or on making those migrations conditional) and a run against a real RDS instance.
-- **Re-inviting a vendor identity for another vendor keeps the old vendor.**
-  `VendorIdentityRepository.createRelationship` inserts `ON CONFLICT (tenant_id, vendor_identity_id) DO UPDATE SET
-status = 'ACTIVE'` and leaves `vendor_id` as it was. Inviting the same e-mail address for a different vendor of the
-  tenant therefore keeps the relationship on the first vendor, and that person's quotations are filed under it
-  (`resolveVendorId`). Since D56 the new vendor id is checked to be the tenant's, and then ignored on conflict. Found
-  by review on `fix/cross-boundary-fks`; whether one person may act for two vendors of a tenant (and so whether to
-  update the vendor or refuse the second invitation) is a product decision.
-- **Telemetry and provisioning: runs begun before D48, and MLOps reading the shared database.** A provisioning run
-  begun before D48 still switches routing before the approval wait and does not pause the tenant; device sync and CRM
-  writes during that wait go to the dedicated database, and since D55 the copy then finds them there and refuses (the
-  counts differ). No such run is known to exist — provisioning has not run against a real RDS (Open, above). MLOps
-  (`mlops/feast/features/site_features.py`, the Airflow DAG) reads telemetry from the shared database, so for a moved
-  tenant it reads the stale copy — true before D55 as well. Found on `fix/copy-remaining-schemas`.
-- **A moved tenant's rows stay in the shared database.** The provisioning copy (D46) copies a tenant's rows to its
-  dedicated database and does not delete them from the shared one. Nothing reads them there any more — routing (D48,
-  D50), the drain (D51) and the sweeps (D54) all skip a tenant with a dedicated database — but they are personal and
-  commercial data kept twice, in a database the tenant no longer uses, and a data-subject erasure on the dedicated
-  database leaves the old copy. Found on `fix/dedicated-db-sweeps`; deleting them after a verified provisioning (and
-  when) is a product decision.
-- **What the provisioning pause and refusing an inactive tenant still cost.** D48 pauses a tenant by setting
-  `is_active` to false; D50 refuses an inactive tenant on every path; D51–D53 drain, wait and replay around the pause.
-  Left: SYSTEM_ADMIN cannot deactivate a tenant while it is paused (`deactivateTenant` finds it inactive), and the
-  resume would set it active again — the same for a deactivation between the workflow reading `is_active` and pausing.
-  A deactivated tenant's events go to its DLQ and stay there (only a pause's window is replayed); its data subjects
-  cannot verify a request and its data export is refused (PDPA may require serving them after deactivation —
-  product-owner decision 2026-11-13 to refuse). Procurement RFQ/PO workflow activities of a paused tenant fail and
-  retry under their own policies, and fail their workflow if the pause outlasts them. A DLQ replay has no timeout of
-  its own: a partition whose remaining entries are never delivered (retention, or an overlapping earlier attempt in
-  the same group) holds it until the 30-minute activity limit, and the run shows REPLAYING_EVENTS meanwhile. Each
-  tenant transaction on the shared database now makes two more round trips (the lock, the read); `resolveTenantDb`
-  still opens and closes a client per call. A shared escalation candidate whose tenant is paused or moved between the
-  send and the marker is not marked, and its dedicated copy is escalated again — a duplicate notice. While the pause
-  waits for a long tenant transaction, new ones queue behind it and fail at Prisma's 5 s interactive-transaction
-  limit. A replay re-delivers to every consumer group of the topic; groups that already handled an event skip it only
-  within `@cos/kafka`'s 24 h idempotency window, so a pause longer than that could see an event handled twice; a
-  replayed message has no key, so its partition is not the original's. The export's check asks Temporal through
-  `getClient()`, which the SDK marks experimental over a NativeConnection. A run begun before D48 also passes through
-  MIGRATING_DATA, ASSIGNING_DB and VERIFYING without a pause; a tenant deactivated during such a run would make an
-  export wait up to 24 h for nothing. Found on `fix/provisioning-copy-before-switch`, `fix/non-jwt-tenant-routing` and
-  `fix/provisioning-pause-gaps`.
 - **Closed — the unused `@confluentinc/schemaregistry` removed from backend (D27).** On `chore/remove-schemaregistry`:
   the dependency line goes from `backend/package.json`; backend's production closure loses 89 packages and gains
   none (the lockfile loses 68; the rest are still used elsewhere), and no other importer changes. The Azure SDK
@@ -2590,38 +2528,6 @@ openssl ca-certificates`; `groupadd`/`useradd` uid/gid 1001, as the charts run; 
     credential offline. The file-service worker fails identically on both (Open, above). hadolint reports what it
     reported at HEAD for each file; the conformance suite passes (61 suites, 2,343 tests), though none of it reads these
     Dockerfiles. x86_64 was not built.
-- **apps/mobile: stream-json 1.9.1 keeps three moderate advisories.** GHSA-528h-pc64-c93x, GHSA-hqr4-qq8f-hg3x,
-  GHSA-mjw6-4jj6-33hc (patched in 3.6.0). detox 20.51.4, the newest, declares `^1.7.4`, and it and bunyamin require
-  `stream-json/jsonl/Parser` and `streamers/StreamArray.js`, which 3.x renamed: with the override both failed to load
-  (`MODULE_NOT_FOUND`), so it was dropped (D2). Test tooling only (detox logs); the gate fails on high and critical.
-- **apps/mobile: deepmerge 4.3.1 (low, GHSA-gcqx-w48m-w2h4) has no patched version.** Through `@expo/config` and
-  jest-config.
-- **apps/mobile's committed `Podfile.lock` carries a checksum tied to one machine's path.** CocoaPods hashes the
-  `hermes-engine` podspec React Native generates, and that podspec holds `hermesc` as an absolute path. The committed
-  checksum (`a3cd8b8…`) is what the podspec hashes to at `…/workspace/github-profile/cos/…`; at this checkout's path
-  `pod install` writes `685001a…`. So `pod install` at any other path rewrites the file (a standing diff), and putting
-  the committed file back without re-running `pod install` makes Xcode's `[CP] Check Pods Manifest.lock` phase fail —
-  the state this checkout was left in on `docs/mobile-sim-smoke` (run `pod install` before the next iOS build).
-- **apps/mobile's `offline-inspection` Detox spec did not pass on this machine's simulator.** Built as CI builds it
-  (`EXPO_PUBLIC_E2E=1`, so the spec's `resetSession()` deep link clears the keychain session `launchApp({ delete: true
-})` leaves), the first test fills the phone form and fails tapping `request-otp-button` — "View is not hittable at its
-  visible point … does not pass visibility percent threshold (100)" at `offline-inspection.spec.ts:63`; the other four
-  need the login and time out waiting for `home-screen`. The same not-hittable failure, at the same line, occurs on the
-  dependencies before `fix/mobile-audit` (`9edde5df^`). Cause not established: the keyboard is up after `typeText`, but
-  the layout had already moved the button up, and Detox reports the view's bounds as visible. The OTP step (which needs
-  a backend with `E2E_AUTH_BYPASS`) was not reached. Built without `EXPO_PUBLIC_E2E` (the checked-in `.env` leaves it
-  empty) `resetSession()` does nothing, and a simulator that ever logged in fails every test at `phone-input`. Found on
-  `docs/mobile-sim-smoke`.
-- **Local apps/mobile `node_modules` installed before `fix/mobile-audit` can shadow the lockfile.** On this machine it
-  held 18 nested copies pnpm no longer tracked (zod 3 under `@expo/cli`, xmldom 0.8.13 under `@expo/plist`, an older
-  `@expo/prebuild-config`, a leftover `node_modules/.pnpm` with axios 1.18.1, …); `rm -rf node_modules && pnpm install`
-  clears them. CI installs fresh and is not affected.
-- **file-service MinIO integration suite.**
-  - Its image `quay.io/minio/minio:RELEASE.2024-09-13T20-26-02Z` can no longer be pulled. quay.io returned 401, and on
-    2026-11-05 "no such manifest". docker.io's `minio/minio` needs authentication.
-  - `cgr.dev/chainguard/minio` can be pulled, and the suite passes 8/8 on it with its data directory moved to
-    `/tmp/data` (branch 1c). Switching the suite's image is a separate decision.
-  - The series did not cause this.
 - **`openapi freshness`.**
   - It reports `auth` and `ai` stale since commit `10be1567`.
   - `requirements.txt` counts as source for `ai`, so branch 5 hits this again.
@@ -2786,22 +2692,6 @@ openssl ca-certificates`; `groupadd`/`useradd` uid/gid 1001, as the charts run; 
   - Not covered: two pushes for one new day racing each other (neither sees the other's row), and a failed
     natural-key lookup, both of which still take the create path and its upsert as before. The id-hit edit path still
     writes NULL for fields an item omits (unchanged here).
-- **An id-hit site-report sync once came back ACCEPTED where CONFLICT_FLAGGED was due, and nothing logged why.** In a
-  combined run of the site-ops, mobile and notification integration suites on 2026-11-14 (with
-  `test/supertest-loopback` in place), `test/site-ops/03` "persists a ConflictRecord when the server was modified since
-  the client last looked" got ACCEPTED; alone it passed twice. With `last_known_modified_at` set, the resolver flags
-  this case unconditionally, so ACCEPTED means the item did not reach it — the likeliest way is the batch id lookup
-  (`findReportsByIds`) failing, whose `.catch(() => new Map())` logs nothing, sending the item down the natural-key
-  path. Not reproduced. Since `fix/site-report-sync-lookup-log` that failure is logged as a warning
-  (`site-report id lookup failed — items take the no-id path`, with the error and the batch size; the fallback itself
-  is unchanged). A recurrence with that warning confirms this path; one without it does not clear the lookup — it may
-  have succeeded but missed the row (removed by another suite's cleanup, or read under a different tenant than RLS),
-  which the log does not cover. The item stays open until a recurrence is diagnosed.
-- **Reports filed from the app notify no project manager.** The PM notification is routed for `site.report.created.v1`
-  only (`notification.consumer.ts`, `EVENT_ROLE_MAP`), which the web `POST /site/reports` emits; the app's reports go
-  through `/sync/push` and emit `site.report.submitted.v1`, which no notification route covers. Found by /doubt on
-  `fix/site-report-notification-counts`. Not fixed (routing it is a product decision: one notification per day's
-  report, not per save, given the app saves a draft and a submit separately).
 - **The device keeps a report under an id the server does not have.** `/sync/push` with `site_report`
   (`backend/src/modules/sync/sync.service.ts:287-294`) returns only `{ status }`, so a device whose save landed on an
   existing report never learns that report's id. Its later saves still reach the right row (the natural-key lookup
@@ -3108,15 +2998,30 @@ modified_at)) <= $t`, milliseconds like the caller's comparison — `modified_at
     WAF and ai-proxy specs read what is logged. With HEAD's files the three adapter tests and the four log tests
     fail. The hand-fed metrics spec now feeds `routeOptions`, not the removed `routerPath`.
   - Not closed here: the OpenTelemetry trace spans (next entry).
-- **OpenTelemetry trace spans carry the full URL, query string included, and the client IP.** Found by /doubt on
-  `fix/url-query-in-telemetry`; not changed there. `packages/@cos/tracing/src/otel.ts` starts
-  `getNodeAutoInstrumentations()` with no options, and the collector
-  (`infrastructure/monitoring/otel-collector/otel-collector-config.yml`) has no processor that edits span attributes.
-  Per /doubt's reading of the installed instrumentation (not run here): incoming server spans record `http.url` and
-  `http.target` with the query (`?q=<user text>` on every search), and `http.client_ip` / `net.peer.ip`; ai-proxy's
-  outbound `fetch` span records `url.full` / `url.query` (a RAG question). Error traces are always kept by the
-  tail sampler. Not fixed — options: instrumentation-http hooks that overwrite the attributes with the path, or a
-  collector `attributes`/`transform` processor that strips them for every service.
+- **Closed — OpenTelemetry trace spans carried URL query strings, client IPs, Redis keys with phone numbers, and
+  URLs with keys in exception events.** Fixed on `fix/otel-span-redaction`.
+  - Sources: `@cos/tracing` (backend, file-service) runs `getNodeAutoInstrumentations()` with no options;
+    instrumentation-http 0.219.0 sets `http.url`, `http.target` (with the query), `http.client_ip` and `net.peer.ip`
+    (`build/src/utils.js:671-736`), `url.query` / `client.address` in the stable mode; ai-proxy's outbound span has
+    `url.full`; ai-gateway (Python) instruments FastAPI and httpx, and the ASGI instrumentation unquotes the query
+    into `http.url`. Found by /doubt on this branch: ioredis' default serializer puts the arguments in
+    `db.statement` — the OTP keys are `otp:*:<phone number>`; httpx exceptions quote the URL in the span's exception
+    event, and the weather provider sends its API key as `appid=` in the query. Nothing edited span attributes, and
+    error traces are always kept.
+  - Redacted once, in the Collector, for every service (product-owner choice): `transform/redact`, before
+    `tail_sampling`, strips the query from `http.url`, `http.target`, `url.full` with `(?s)\?.*` (without `(?s)`,
+    a newline in the query — a `%0A` the ASGI instrumentation unquotes — kept the whole URL); deletes `url.query`,
+    `http.client_ip`, `client.address`, `net.peer.ip`, `net.sock.peer.addr`, `network.peer.address`; keeps only the
+    command name of a Redis `db.statement`; and cuts the query from URLs in `exception.message` /
+    `exception.stacktrace` of span events.
+  - Verified on the real `otel/opentelemetry-collector-contrib:0.103.0` with this file and a file exporter: spans
+    carrying a Thai `q`, IPs, multi-line queries, an exception quoting `…?appid=SECRETKEY`, and `get
+    otp:value:+66…` come out with path-only URLs, no query or IP attributes, `get`, and the exception URL without its
+    query; `http.route`, `http.method` and a Postgres `db.statement` are untouched. Through HEAD's file all of it
+    passes; with the pattern lacking `(?s)` the multi-line URLs pass. The deployed file passes `validate`; the
+    conformance test (`tests/conformance/observability/01`) pins the statements and fails on both.
+  - Not covered: an attribute a service adds itself under another name; user text in an exception message that is
+    not a URL; the OTLP logs pipeline (whether any service sends OTLP logs was not checked).
 - **COS-SITE-001 to -007 and -409 are thrown but not in `docs/api/error-codes.md`.** The section was opened with
   `-008` on `fix/search-q-log-and-cap`. Some of them are also thrown without the `{ error: { … } }` wrapper
   (`site-ops.service.ts:850`, `:876`). Not fixed.
@@ -3152,3 +3057,120 @@ modified_at)) <= $t`, milliseconds like the caller's comparison — `modified_at
 schema-registry keycloak temporal` (minio's image does not pull, above), migrations, `prisma/seed-realistic.ts`,
   `prisma/provision-keycloak-demo.ts`, web on 3001, and the specs with `BASE_URL=http://localhost:3001` and
   `E2E_SE_*` / `E2E_PM_*` / `E2E_SAFETY_*` set to the EKC demo accounts.
+
+## Parked
+
+Not code work in this repository, so not in the Open queue (product owner, 2026-11-15). Each waits on something
+else: a product-owner decision, a deploy or a live environment, one machine's setup, an upstream release, or a
+recurrence to diagnose. The text is as it was under Open.
+
+- **CI has not run since 2026-11-08.** The last successful `ci.yml` run is `develop` 42437048167 (2026-11-08 02:05 UTC).
+  From `develop` 42487331144 (2026-11-08 13:56 UTC) on — `develop` again on 11-08 and 11-10, and every branch from
+  `fix/audit-gate-pnpm12` to `fix/web-factoring-rates` — jobs failed without starting ("The job was not started because
+  recent account payments have failed or your spending limit needs to be increased", GitHub billing) or were skipped.
+  Nothing since has been checked by CI, including `pnpm/action-setup` with the `+sha512` pin.
+- **Re-measure the LCP budget under Lighthouse 13 (D26).** `apps/web/.lighthouserc.json` keeps the LCP
+  `maxNumericValue` at 3200, which was set from Lighthouse 12's numbers. Lighthouse 13 reports a much lower simulated
+  LCP for /login (see [branch 3](#branch-3--zod-3-second-source-lhcicli-0151--0160)), so the gate has far more
+  headroom than when it was ratified. A new budget needs ubuntu-latest runs of `lighthouse.yml` under 13, as that
+  workflow requires; it is a product-owner decision.
+- **MLflow server v3.17.2-full is in the manifests, not deployed.** Rolling it out is a deployment step outside this
+  work. Back up the backend store first; with `Recreate`, MLflow is down from the old pod's exit until the new one is
+  ready, migration included (seconds on the small stores measured; a real-size store was not tried — the `startupProbe`
+  allows ten minutes). The packages the `-full` image adds over the plain one (1.93 GB against 1.33 GB) are not audited:
+  CI's pip-audit covers the client requirement sets only.
+- **Enterprise provisioning has not been run against RDS, and three things it needs are unverified there.**
+  `createRdsActivity` creates PostgreSQL 15 on RDS. The migrations call `create_hypertable` without creating the
+  TimescaleDB extension, which RDS does not offer, so `prisma migrate deploy` is expected to stop there.
+  `20260608000004_rls_policies` creates a role with BYPASSRLS, and the copy needs `SET session_replication_role` and a role
+  that bypasses RLS; whether the RDS master user may do each was not checked. The integration spec runs on TimescaleDB
+  pg16 as superuser. Found on `fix/enterprise-provisioning-db`; needs a decision on the dedicated database's engine
+  (or on making those migrations conditional) and a run against a real RDS instance.
+- **Re-inviting a vendor identity for another vendor keeps the old vendor.**
+  `VendorIdentityRepository.createRelationship` inserts `ON CONFLICT (tenant_id, vendor_identity_id) DO UPDATE SET
+status = 'ACTIVE'` and leaves `vendor_id` as it was. Inviting the same e-mail address for a different vendor of the
+  tenant therefore keeps the relationship on the first vendor, and that person's quotations are filed under it
+  (`resolveVendorId`). Since D56 the new vendor id is checked to be the tenant's, and then ignored on conflict. Found
+  by review on `fix/cross-boundary-fks`; whether one person may act for two vendors of a tenant (and so whether to
+  update the vendor or refuse the second invitation) is a product decision.
+- **Telemetry and provisioning: runs begun before D48, and MLOps reading the shared database.** A provisioning run
+  begun before D48 still switches routing before the approval wait and does not pause the tenant; device sync and CRM
+  writes during that wait go to the dedicated database, and since D55 the copy then finds them there and refuses (the
+  counts differ). No such run is known to exist — provisioning has not run against a real RDS (Open, above). MLOps
+  (`mlops/feast/features/site_features.py`, the Airflow DAG) reads telemetry from the shared database, so for a moved
+  tenant it reads the stale copy — true before D55 as well. Found on `fix/copy-remaining-schemas`.
+- **A moved tenant's rows stay in the shared database.** The provisioning copy (D46) copies a tenant's rows to its
+  dedicated database and does not delete them from the shared one. Nothing reads them there any more — routing (D48,
+  D50), the drain (D51) and the sweeps (D54) all skip a tenant with a dedicated database — but they are personal and
+  commercial data kept twice, in a database the tenant no longer uses, and a data-subject erasure on the dedicated
+  database leaves the old copy. Found on `fix/dedicated-db-sweeps`; deleting them after a verified provisioning (and
+  when) is a product decision.
+- **What the provisioning pause and refusing an inactive tenant still cost.** D48 pauses a tenant by setting
+  `is_active` to false; D50 refuses an inactive tenant on every path; D51–D53 drain, wait and replay around the pause.
+  Left: SYSTEM_ADMIN cannot deactivate a tenant while it is paused (`deactivateTenant` finds it inactive), and the
+  resume would set it active again — the same for a deactivation between the workflow reading `is_active` and pausing.
+  A deactivated tenant's events go to its DLQ and stay there (only a pause's window is replayed); its data subjects
+  cannot verify a request and its data export is refused (PDPA may require serving them after deactivation —
+  product-owner decision 2026-11-13 to refuse). Procurement RFQ/PO workflow activities of a paused tenant fail and
+  retry under their own policies, and fail their workflow if the pause outlasts them. A DLQ replay has no timeout of
+  its own: a partition whose remaining entries are never delivered (retention, or an overlapping earlier attempt in
+  the same group) holds it until the 30-minute activity limit, and the run shows REPLAYING_EVENTS meanwhile. Each
+  tenant transaction on the shared database now makes two more round trips (the lock, the read); `resolveTenantDb`
+  still opens and closes a client per call. A shared escalation candidate whose tenant is paused or moved between the
+  send and the marker is not marked, and its dedicated copy is escalated again — a duplicate notice. While the pause
+  waits for a long tenant transaction, new ones queue behind it and fail at Prisma's 5 s interactive-transaction
+  limit. A replay re-delivers to every consumer group of the topic; groups that already handled an event skip it only
+  within `@cos/kafka`'s 24 h idempotency window, so a pause longer than that could see an event handled twice; a
+  replayed message has no key, so its partition is not the original's. The export's check asks Temporal through
+  `getClient()`, which the SDK marks experimental over a NativeConnection. A run begun before D48 also passes through
+  MIGRATING_DATA, ASSIGNING_DB and VERIFYING without a pause; a tenant deactivated during such a run would make an
+  export wait up to 24 h for nothing. Found on `fix/provisioning-copy-before-switch`, `fix/non-jwt-tenant-routing` and
+  `fix/provisioning-pause-gaps`.
+- **apps/mobile: stream-json 1.9.1 keeps three moderate advisories.** GHSA-528h-pc64-c93x, GHSA-hqr4-qq8f-hg3x,
+  GHSA-mjw6-4jj6-33hc (patched in 3.6.0). detox 20.51.4, the newest, declares `^1.7.4`, and it and bunyamin require
+  `stream-json/jsonl/Parser` and `streamers/StreamArray.js`, which 3.x renamed: with the override both failed to load
+  (`MODULE_NOT_FOUND`), so it was dropped (D2). Test tooling only (detox logs); the gate fails on high and critical.
+- **apps/mobile: deepmerge 4.3.1 (low, GHSA-gcqx-w48m-w2h4) has no patched version.** Through `@expo/config` and
+  jest-config.
+- **apps/mobile's committed `Podfile.lock` carries a checksum tied to one machine's path.** CocoaPods hashes the
+  `hermes-engine` podspec React Native generates, and that podspec holds `hermesc` as an absolute path. The committed
+  checksum (`a3cd8b8…`) is what the podspec hashes to at `…/workspace/github-profile/cos/…`; at this checkout's path
+  `pod install` writes `685001a…`. So `pod install` at any other path rewrites the file (a standing diff), and putting
+  the committed file back without re-running `pod install` makes Xcode's `[CP] Check Pods Manifest.lock` phase fail —
+  the state this checkout was left in on `docs/mobile-sim-smoke` (run `pod install` before the next iOS build).
+- **apps/mobile's `offline-inspection` Detox spec did not pass on this machine's simulator.** Built as CI builds it
+  (`EXPO_PUBLIC_E2E=1`, so the spec's `resetSession()` deep link clears the keychain session `launchApp({ delete: true
+})` leaves), the first test fills the phone form and fails tapping `request-otp-button` — "View is not hittable at its
+  visible point … does not pass visibility percent threshold (100)" at `offline-inspection.spec.ts:63`; the other four
+  need the login and time out waiting for `home-screen`. The same not-hittable failure, at the same line, occurs on the
+  dependencies before `fix/mobile-audit` (`9edde5df^`). Cause not established: the keyboard is up after `typeText`, but
+  the layout had already moved the button up, and Detox reports the view's bounds as visible. The OTP step (which needs
+  a backend with `E2E_AUTH_BYPASS`) was not reached. Built without `EXPO_PUBLIC_E2E` (the checked-in `.env` leaves it
+  empty) `resetSession()` does nothing, and a simulator that ever logged in fails every test at `phone-input`. Found on
+  `docs/mobile-sim-smoke`.
+- **Local apps/mobile `node_modules` installed before `fix/mobile-audit` can shadow the lockfile.** On this machine it
+  held 18 nested copies pnpm no longer tracked (zod 3 under `@expo/cli`, xmldom 0.8.13 under `@expo/plist`, an older
+  `@expo/prebuild-config`, a leftover `node_modules/.pnpm` with axios 1.18.1, …); `rm -rf node_modules && pnpm install`
+  clears them. CI installs fresh and is not affected.
+- **file-service MinIO integration suite.**
+  - Its image `quay.io/minio/minio:RELEASE.2024-09-13T20-26-02Z` can no longer be pulled. quay.io returned 401, and on
+    2026-11-05 "no such manifest". docker.io's `minio/minio` needs authentication.
+  - `cgr.dev/chainguard/minio` can be pulled, and the suite passes 8/8 on it with its data directory moved to
+    `/tmp/data` (branch 1c). Switching the suite's image is a separate decision.
+  - The series did not cause this.
+- **An id-hit site-report sync once came back ACCEPTED where CONFLICT_FLAGGED was due, and nothing logged why.** In a
+  combined run of the site-ops, mobile and notification integration suites on 2026-11-14 (with
+  `test/supertest-loopback` in place), `test/site-ops/03` "persists a ConflictRecord when the server was modified since
+  the client last looked" got ACCEPTED; alone it passed twice. With `last_known_modified_at` set, the resolver flags
+  this case unconditionally, so ACCEPTED means the item did not reach it — the likeliest way is the batch id lookup
+  (`findReportsByIds`) failing, whose `.catch(() => new Map())` logs nothing, sending the item down the natural-key
+  path. Not reproduced. Since `fix/site-report-sync-lookup-log` that failure is logged as a warning
+  (`site-report id lookup failed — items take the no-id path`, with the error and the batch size; the fallback itself
+  is unchanged). A recurrence with that warning confirms this path; one without it does not clear the lookup — it may
+  have succeeded but missed the row (removed by another suite's cleanup, or read under a different tenant than RLS),
+  which the log does not cover. The item stays open until a recurrence is diagnosed.
+- **Reports filed from the app notify no project manager.** The PM notification is routed for `site.report.created.v1`
+  only (`notification.consumer.ts`, `EVENT_ROLE_MAP`), which the web `POST /site/reports` emits; the app's reports go
+  through `/sync/push` and emit `site.report.submitted.v1`, which no notification route covers. Found by /doubt on
+  `fix/site-report-notification-counts`. Not fixed (routing it is a product decision: one notification per day's
+  report, not per save, given the app saves a draft and a submit separately).
