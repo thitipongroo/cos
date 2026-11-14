@@ -2841,11 +2841,38 @@ openssl ca-certificates`; `groupadd`/`useradd` uid/gid 1001, as the charts run; 
   (the finance tile) and `siteEngineerHome.ts` (`taskStartUrgency`) take today from the UTC calendar, so before 07:00
   in Thailand lateness reads a day short and windows shift. Display only; none writes a date. Found by /doubt on
   `fix/mobile-report-date-clear`. Not fixed.
-- **The id-hit sync edit of a site report has no last-write-wins check without `last_known_modified_at`.** The app
-  never sends it, so `resolveReportConflict` always persists: a save replayed by id after a later save of the same
-  day landed would overwrite it (category, shift and lines included since `fix/site-report-sync-fields`). Unlikely
-  with the device's first-in-first-out queue. Possible fix: compare `client_submitted_at` as the natural-key edit does.
-  Not fixed.
+- **Closed — a site-report sync by the report's own id overwrote the row whatever its age.** Fixed on
+  `fix/site-report-sync-id-lww`. `resolveReportConflict` flags only when the item carries `last_known_modified_at`,
+  and no client sends it for reports (web and app alike), so every id hit — in practice a save replayed by its own
+  `client_id` after a lost response — persisted the item over the row, older or not, and wrote NULL for every field
+  the item left out (since `fix/mobile-report-date-clear` the app leaves out what the user did not touch).
+  - Change: an id hit on the caller's own report (`submitted_by` is the caller — `findReportsByIds` is scoped to the
+    tenant, not the submitter) with no `last_known_modified_at` takes the same path as a natural-key hit
+    (`applyOwnEdit`, renamed from `applyNaturalKeyEdit`): the newer save wins on the saved time
+    (`client_submitted_at`, else `modified_at`), only the fields sent are written, category / shift / lines when sent,
+    `site.report.updated.v1` from the row, ACCEPTED. An older save is not written and is logged
+    (`sync.site_report.stale_skipped`), so a dropped edit — a device clock running behind a web-written row, or a
+    caller editing by id without `last_known_modified_at` — is visible. An id naming a colleague's report, or an item
+    with `last_known_modified_at`, keeps the resolver path. Both own-edit callers now report CONFLICT_REJECTED, not
+    ACCEPTED, when the update matched no row (deleted since it was read), as the resolver path already did; the
+    natural key is only remembered for the caller's own rows within a batch.
+  - Evidence: unit — a replayed older save writes nothing and is ACCEPTED; a newer one writes only what it sent
+    (`summary` / `weather` kept) and builds `site.report.updated.v1`; a vanished row is CONFLICT_REJECTED on the id
+    path and, with the matched row's id, on the natural-key path; with `last_known_modified_at` a server change is
+    still CONFLICT_FLAGGED; an id naming a colleague's report takes the resolver path (fails with the owner check
+    removed). Integration `test/site-ops/08-site-report-event-id.integration.spec.ts`: three syncs by one id — first
+    (02:00), second (09:00), the first replayed — leave the second's summary and headcount; a later save without
+    `summary` keeps it. Against HEAD's service that integration test fails, and so do the unit tests "a replayed OLDER
+    save does not overwrite", "a newer save writes only the fields it sent" and the older-spec edit test whose
+    expected timestamp is now normalised (`…:00.000Z`).
+- **Site-report sync ordering has three loose ends.** (1) Web-queued reports carry no `client_submitted_at`, and
+  `/sync/push` drops the envelope's own (`sync.service.ts` passes `{ ...dto.payload, client_id }`), so they are
+  ordered by replay time, not by when they were saved — "newest save wins" holds for the app only. (2) The sync
+  create stores `client_submitted_at` unclamped, so a device clock running ahead makes every later save that day lose
+  until real time passes it. (3) `applyOwnEdit` compares with the row read at the start of the batch and the UPDATE has
+  no ordering guard, so a newer write landing in between can be overwritten. Also the app's
+  `ConflictHandler.ts` comment ("the local payload … is what the server stored") is untrue after a skipped older save
+  (cosmetic: the newer local row still exists). Found by /doubt on `fix/site-report-sync-id-lww`. Not fixed.
 - **Closed — site reports written through sync were never indexed, nor findable by search.** Fixed on
   `fix/site-report-search-sync`. The search indexer subscribed `site.report.created.v1` only; a sync create emits
   `site.report.submitted.v1` and a sync edit emitted nothing, so a report filed from the app (the main path) never

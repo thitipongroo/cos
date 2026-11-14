@@ -489,4 +489,52 @@ describe('Site-report events name the written report (real database)', () => {
     expect(await eventReportIds('site.report.submitted.v1', day)).toEqual([clientId]);
     expect(await eventReportIds('site.report.updated.v1', day)).toEqual([clientId]);
   });
+
+  // An id hit with no last_known_modified_at (no client sends it) is the submitter's own save:
+  // a replayed older payload must not overwrite a newer one, and a field left out is kept.
+  it('sync by the same id: a replayed older save loses, and an omitted field is kept', async () => {
+    const day = '2019-03-12';
+    const id = randomUUID();
+    const sync = (fields: Record<string, unknown>) =>
+      http()
+        .post('/api/v1/site/reports/sync')
+        .send({ items: [{ client_id: id, project_id: projectId, report_date: day, ...fields }] });
+
+    expect(
+      (
+        await sync({
+          summary: 'first',
+          manpower_count: 3,
+          client_submitted_at: '2019-03-12T02:00:00.000Z',
+        })
+      ).status,
+    ).toBeLessThan(400);
+    expect(
+      (
+        await sync({
+          summary: 'second',
+          manpower_count: 9,
+          client_submitted_at: '2019-03-12T09:00:00.000Z',
+        })
+      ).status,
+    ).toBeLessThan(400);
+    // The first save, replayed (a retry after a lost response): older, so it must not win.
+    const replay = await sync({
+      summary: 'first',
+      manpower_count: 3,
+      client_submitted_at: '2019-03-12T02:00:00.000Z',
+    });
+    expect((replay.body as Array<{ conflict_status: string }>)[0]?.conflict_status).toBe(
+      'ACCEPTED',
+    );
+    expect(await detailsOn(day)).toEqual([
+      expect.objectContaining({ report_id: id, summary: 'second', manpower_count: 9 }),
+    ]);
+
+    // A later save that leaves summary out keeps it.
+    await sync({ manpower_count: 4, client_submitted_at: '2019-03-12T10:00:00.000Z' });
+    expect(await detailsOn(day)).toEqual([
+      expect.objectContaining({ summary: 'second', manpower_count: 4 }),
+    ]);
+  });
 });

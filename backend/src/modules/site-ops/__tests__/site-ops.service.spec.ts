@@ -606,7 +606,7 @@ describe('syncSiteReports', () => {
         summary: 'edited offline',
         weather: 'rain',
         manpower_count: 12,
-        client_submitted_at: '2026-06-04T09:00:00Z',
+        client_submitted_at: '2026-06-04T09:00:00.000Z',
       }),
       expect.any(Function),
     );
@@ -2523,5 +2523,167 @@ describe('syncSiteReports — edits emit site.report.updated.v1', () => {
     } as never);
 
     expect(mockRepo.updateSiteReport).not.toHaveBeenCalled();
+  });
+});
+
+// ── syncSiteReports — an id hit with no last_known_modified_at is the submitter's own edit ──────────
+//
+// No client sends last_known_modified_at for reports. The resolver flags only when it is present, so
+// every replay by the report's own id overwrote the row whatever its age, and wrote NULL for every
+// field it left out. It now takes the own-edit path: newest save wins, only the fields sent.
+
+describe('syncSiteReports — id hit without last_known_modified_at', () => {
+  const ID = '12121212-1212-4212-8212-121212121212';
+  const stored = () =>
+    makeReport({
+      report_id: ID,
+      summary: 'kept summary',
+      weather: 'sunny',
+      client_submitted_at: new Date('2026-06-04T10:00:00Z'),
+      modified_at: new Date('2026-06-04T10:00:00Z'),
+    });
+
+  beforeEach(() => {
+    mockRepo.findReportsByNaturalKeys.mockResolvedValue(new Map());
+  });
+
+  it('a replayed OLDER save does not overwrite the newer row', async () => {
+    mockRepo.findReportsByIds.mockResolvedValueOnce(new Map([[ID, stored()]]));
+    const results = await service.syncSiteReports({
+      items: [
+        {
+          client_id: ID,
+          project_id: 'project-1',
+          report_date: '2026-06-04',
+          summary: 'older text',
+          client_submitted_at: '2026-06-04T09:00:00Z',
+        },
+      ],
+    });
+    expect(results[0]).toEqual({ client_id: ID, report_id: ID, conflict_status: 'ACCEPTED' });
+    expect(mockRepo.updateSiteReport).not.toHaveBeenCalled();
+    expect(mockRepo.createConflictRecord).not.toHaveBeenCalled();
+  });
+
+  it('a newer save writes only the fields it sent, and announces the edit', async () => {
+    mockRepo.findReportsByIds.mockResolvedValueOnce(new Map([[ID, stored()]]));
+    mockRepo.updateSiteReport.mockResolvedValueOnce(stored());
+    await service.syncSiteReports({
+      items: [
+        {
+          client_id: ID,
+          project_id: 'project-1',
+          report_date: '2026-06-04',
+          manpower_count: 7,
+          client_submitted_at: '2026-06-04T11:00:00Z',
+        },
+      ],
+    });
+    const [id, params, builder] = mockRepo.updateSiteReport.mock.calls.at(-1)!;
+    expect(id).toBe(ID);
+    expect(params).toEqual(
+      expect.objectContaining({ summary: 'kept summary', weather: 'sunny', manpower_count: 7 }),
+    );
+    expect((builder as (r: SiteReportRow) => { event_type: string })(stored()).event_type).toBe(
+      'site.report.updated.v1',
+    );
+  });
+
+  it('a newer save whose row vanished before the write is CONFLICT_REJECTED, not ACCEPTED', async () => {
+    mockRepo.findReportsByIds.mockResolvedValueOnce(new Map([[ID, stored()]]));
+    mockRepo.updateSiteReport.mockResolvedValueOnce(null);
+    const results = await service.syncSiteReports({
+      items: [
+        {
+          client_id: ID,
+          project_id: 'project-1',
+          report_date: '2026-06-04',
+          summary: 'cannot land',
+          client_submitted_at: '2026-06-04T11:00:00Z',
+        },
+      ],
+    });
+    expect(results[0]?.conflict_status).toBe('CONFLICT_REJECTED');
+  });
+
+  // CONTROL: with the state the client worked from, the resolver path (conflict detection) is kept.
+  it('with last_known_modified_at, the conflict path still flags a server change', async () => {
+    mockRepo.findReportsByIds.mockResolvedValueOnce(new Map([[ID, stored()]]));
+    mockRepo.updateSiteReport.mockResolvedValueOnce(stored());
+    mockRepo.createConflictRecord.mockResolvedValueOnce({});
+    const results = await service.syncSiteReports({
+      items: [
+        {
+          client_id: ID,
+          project_id: 'project-1',
+          report_date: '2026-06-04',
+          summary: 'edited',
+          client_submitted_at: '2026-06-04T11:00:00Z',
+          last_known_modified_at: '2026-06-04T08:00:00Z',
+        },
+      ],
+    });
+    expect(results[0]?.conflict_status).toBe('CONFLICT_FLAGGED');
+  });
+
+  it('a natural-key edit whose row vanished before the write is CONFLICT_REJECTED with the row id', async () => {
+    const PROJECT = '11111111-1111-4111-8111-111111111111';
+    mockRepo.findReportsByIds.mockResolvedValueOnce(new Map());
+    mockRepo.findReportsByNaturalKeys.mockResolvedValueOnce(
+      new Map([
+        [
+          `${PROJECT}|2026-06-04`,
+          makeReport({
+            report_id: 'day-row',
+            project_id: PROJECT,
+            report_date: new Date('2026-06-04T00:00:00Z'),
+            client_submitted_at: new Date('2026-06-04T10:00:00Z'),
+          }),
+        ],
+      ]),
+    );
+    mockRepo.updateSiteReport.mockResolvedValueOnce(null);
+    const results = await service.syncSiteReports({
+      items: [
+        {
+          client_id: 'new-device-id',
+          project_id: PROJECT,
+          report_date: '2026-06-04',
+          client_submitted_at: '2026-06-04T11:00:00Z',
+        },
+      ],
+    });
+    expect(results[0]).toEqual({
+      client_id: 'new-device-id',
+      report_id: 'day-row',
+      conflict_status: 'CONFLICT_REJECTED',
+    });
+  });
+
+  // findReportsByIds is tenant-scoped, not submitter-scoped: an id naming a colleague's report is
+  // not "my own edit" — it takes the resolver path, as before this change.
+  it("an id naming a colleague's report takes the resolver path, not the own-edit one", async () => {
+    mockRepo.findReportsByIds.mockResolvedValueOnce(
+      new Map([[ID, makeReport({ ...stored(), submitted_by: 'someone-else' })]]),
+    );
+    mockRepo.updateSiteReport.mockResolvedValueOnce(stored());
+    await service.syncSiteReports({
+      items: [
+        {
+          client_id: ID,
+          project_id: 'project-1',
+          report_date: '2026-06-04',
+          summary: 'older text',
+          client_submitted_at: '2026-06-04T09:00:00Z',
+        },
+      ],
+    });
+    // The resolver persists with no last_known (as before) — the own-edit path would have skipped
+    // this older save without writing.
+    expect(mockRepo.updateSiteReport).toHaveBeenCalledWith(
+      ID,
+      expect.objectContaining({ summary: 'older text' }),
+      expect.any(Function),
+    );
   });
 });

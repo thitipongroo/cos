@@ -324,7 +324,7 @@ export class SiteOpsService {
     // twice by the analytics worker. The mobile app makes this the normal case — it generates a new
     // id for every save ("a further save is a NEW report", report.tsx), so a draft and then a submit
     // on one day are two ids for one report. Such an item is an edit of the submitter's own report:
-    // see applyNaturalKeyEdit.
+    // see applyOwnEdit.
     //
     // Only items with a plain `YYYY-MM-DD` day (optionally followed by a time) and a UUID project
     // are looked up: /sync/push hands items over without DTO validation, and one value the ::date[]
@@ -363,7 +363,15 @@ export class SiteOpsService {
           : null;
 
       if (sameDay) {
-        const kept = await this.applyNaturalKeyEdit(item, sameDay, extras);
+        const kept = await this.applyOwnEdit(item, sameDay, extras);
+        if (!kept) {
+          results.push({
+            client_id: item.client_id,
+            report_id: sameDay.report_id,
+            conflict_status: 'CONFLICT_REJECTED',
+          });
+          continue;
+        }
         existingByKey.set(rowKey(kept), kept);
         results.push({
           client_id: item.client_id,
@@ -423,7 +431,34 @@ export class SiteOpsService {
         continue;
       }
 
-      // Existing — apply conflict resolution
+      // An id hit with no last_known_modified_at is the submitter's own save replayed or edited — no
+      // client sends that field today (web and app alike). The resolver flags only when it is present,
+      // so without it every such item overwrote the row whatever its age, and wrote NULL for every
+      // field it left out (the app leaves out what the user did not touch). It is the same case as a
+      // natural-key hit: newest save wins, only the fields sent are written (applyOwnEdit).
+      // Own means own: findReportsByIds is scoped to the tenant, not the submitter, so a client_id
+      // naming a colleague's report takes the resolver path below, as before.
+      if (!item.last_known_modified_at && existing.submitted_by === this.userId) {
+        const kept = await this.applyOwnEdit(item, existing, extras);
+        if (!kept) {
+          results.push({
+            client_id: item.client_id,
+            report_id: existing.report_id,
+            conflict_status: 'CONFLICT_REJECTED',
+          });
+          continue;
+        }
+        existingByKey.set(rowKey(kept), kept);
+        existingById.set(item.client_id, kept);
+        results.push({
+          client_id: item.client_id,
+          report_id: kept.report_id,
+          conflict_status: 'ACCEPTED',
+        });
+        continue;
+      }
+
+      // Existing, with the state the client worked from — apply conflict resolution
       const clientPayload: Record<string, unknown> = {
         ...item,
         last_known_modified_at: item.last_known_modified_at,
@@ -492,8 +527,9 @@ export class SiteOpsService {
           await this.repo.replaceManpowerLogs(updated.report_id, extras.manpower_lines);
         }
         // Later items of this batch compare against the row as it now is — keyed by the row's own
-        // project and day, which an edit never changes.
-        existingByKey.set(rowKey(updated), updated);
+        // project and day, which an edit never changes. The natural key is the caller's alone: a
+        // colleague's report must not become the target of the caller's next item for that day.
+        if (updated.submitted_by === this.userId) existingByKey.set(rowKey(updated), updated);
         existingById.set(item.client_id, updated);
       }
 
@@ -543,8 +579,9 @@ export class SiteOpsService {
   }
 
   /**
-   * A sync item that is a new id for a (project, day) the submitter already has a report for: an
-   * edit of the submitter's own report, not a conflict. Product owner, 2026-11-14 — the first
+   * A sync item that edits the submitter's own report without saying which state it worked from:
+   * a new id for a (project, day) that already has a report (natural-key hit), or the report's own
+   * id with no `last_known_modified_at` (a replayed or later save). Not a conflict. Product owner, 2026-11-14 — the first
    * version of this flagged every such item, but the matched row always belongs to the same person
    * and is usually their own earlier save from the same device, so every draft-then-submit paged
    * SITE_ENGINEER / PROJECT_MANAGER / TENANT_ADMIN tenant-wide and left the device's row in
@@ -557,13 +594,15 @@ export class SiteOpsService {
    *
    * Only the fields the item carries are written; the rest keep the row's values. The app sends no
    * summary or weather, and an edit that set them to NULL would erase what was entered on the web.
-   * Returns the row as it now is (unchanged when the stored version is newer).
+   * Returns the row as it now is (unchanged when the stored version is newer), or null when the
+   * update matched no row — deleted since it was read — so the caller never reports ACCEPTED for a
+   * write that did not land.
    */
-  private async applyNaturalKeyEdit(
+  private async applyOwnEdit(
     item: SyncItemDto,
     row: SiteReportRow,
     extras: SyncReportExtras,
-  ): Promise<SiteReportRow> {
+  ): Promise<SiteReportRow | null> {
     const { ts: itemTs, clamped } = clampClientTimestamp(
       item.client_submitted_at ?? new Date().toISOString(),
     );
@@ -580,7 +619,22 @@ export class SiteOpsService {
       );
     }
     const rowTs = new Date(row.client_submitted_at ?? row.modified_at).getTime();
-    if (itemTs < rowTs) return row;
+    if (itemTs < rowTs) {
+      // ACCEPTED without a write: an older save of the same report. Logged so a dropped edit — a
+      // device clock running behind, or a caller editing by id without last_known_modified_at — is
+      // visible rather than silent.
+      logger.info(
+        {
+          event: 'sync.site_report.stale_skipped',
+          report_id: row.report_id,
+          item_saved_at: new Date(itemTs).toISOString(),
+          row_saved_at: new Date(rowTs).toISOString(),
+          tenant_id: this.tenantId,
+        },
+        'site-report sync item older than the stored save — not written',
+      );
+      return row;
+    }
 
     const stored = row as unknown as Record<string, unknown>;
     const pick = <T>(field: keyof SyncItemDto | 'latitude' | 'longitude'): T | null => {
@@ -605,7 +659,7 @@ export class SiteOpsService {
     if (updated && extras.manpower_lines) {
       await this.repo.replaceManpowerLogs(updated.report_id, extras.manpower_lines);
     }
-    return updated ?? row;
+    return updated;
   }
 
   // ── Issues ────────────────────────────────────────────────────────────────
