@@ -390,4 +390,39 @@ describe('Site-report events name the written report (real database)', () => {
       expect.objectContaining({ blocker_category: null, shift: 'NIGHT', manpower_count: 4 }),
     ]);
   });
+
+  // The app's later save with every trade removed, no headcount and no blockers sends [] / null
+  // (report.tsx, fix/mobile-report-date-clear). Those must clear what the earlier save stored.
+  it('push: a later save with [] lines and null headcount / blockers clears them', async () => {
+    const day = '2019-03-09';
+    const first = await push(day, {
+      blocker_category: 'MATERIAL',
+      blockers: 'cement late',
+      manpower_count: 5,
+      manpower_lines: [{ trade_type: 'CIVIL', worker_count: 5 }],
+      client_submitted_at: '2019-03-09T02:00:00.000Z',
+    });
+    expect((first.body as { status: string }).status).toBe('ACCEPTED');
+    const [row] = await detailsOn(day);
+    expect(await linesOf(row!.report_id)).toHaveLength(1);
+
+    const second = await push(day, {
+      blocker_category: 'OTHER',
+      blockers: null,
+      manpower_count: null,
+      manpower_lines: [],
+      client_submitted_at: '2019-03-09T09:00:00.000Z',
+    });
+    expect((second.body as { status: string }).status).toBe('ACCEPTED');
+
+    const blockers = await infra.prisma.$queryRawUnsafe<Array<{ blockers: string | null }>>(
+      `SELECT blockers FROM site_ops.site_reports WHERE report_id = $1::uuid`,
+      row!.report_id,
+    );
+    expect(blockers).toEqual([{ blockers: null }]);
+    expect(await detailsOn(day)).toEqual([
+      expect.objectContaining({ report_id: row!.report_id, manpower_count: null }),
+    ]);
+    expect(await linesOf(row!.report_id)).toEqual([]);
+  });
 });

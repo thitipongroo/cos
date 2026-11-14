@@ -28,6 +28,7 @@ import * as Crypto from 'expo-crypto';
 import { db, newLocalId } from '../../db/database';
 import { localSiteReports } from '../../db/schema';
 import { enqueue } from '../../db/sync-queue';
+import { toIsoDate } from '../../lib/isoDate';
 import { PhotoCapture } from '../../components/PhotoCapture';
 import { ProjectContextBar } from '../../components/ProjectContextBar';
 import { useProjectStore } from '../../store/projectStore';
@@ -65,10 +66,6 @@ function clampCount(text: string): number {
   return digits === '' ? 0 : Math.min(9999, Number(digits));
 }
 
-function todayIso(): string {
-  return new Date().toISOString().slice(0, 10);
-}
-
 export default function ReportScreen() {
   // The site comes from the store, not from a picker on this screen (PO decision 2026-08-11). The
   // Site Worker chooses it once in `00_sw_project_selection` and every screen after it works on that
@@ -78,6 +75,13 @@ export default function ReportScreen() {
   const [shift, setShift] = useState<Shift>('DAY');
   const [trades, setTrades] = useState<Partial<Record<Trade, number>>>({});
   const [blockers, setBlockers] = useState('');
+  // Which of the clearable fields the user has edited on this screen. The form always opens blank —
+  // it does not load the day's report — so a blank field is not evidence that the user wants it
+  // cleared. Only an edited field that ends up empty is sent as null / []; an untouched one is left
+  // out, and the server keeps what an earlier save (or the web) stored.
+  const [touched, setTouched] = useState<{ blockers?: true; manpower?: true; trades?: true }>({});
+  const touch = (field: 'blockers' | 'manpower' | 'trades'): void =>
+    setTouched((current) => (current[field] ? current : { ...current, [field]: true }));
   const [blockerCategory, setBlockerCategory] = useState<BlockerCategory | null>(null);
   const [saved, setSaved] = useState<'DRAFT' | 'SUBMITTED' | null>(null);
   const [draftId, setDraftId] = useState(() => Crypto.randomUUID()); // report id + photo scope
@@ -107,22 +111,47 @@ export default function ReportScreen() {
   // separately and a bar that could exceed its track would be a lie about the data.
   const tradeTotal = Object.values(trades).reduce<number>((sum, n) => sum + (n ?? 0), 0);
 
-  const bumpTrade = (trade: Trade, delta: number): void =>
+  const bumpTrade = (trade: Trade, delta: number): void => {
+    touch('trades');
     setTrades((current) => ({ ...current, [trade]: Math.max(0, (current[trade] ?? 0) + delta) }));
+  };
 
-  const setTradeCount = (trade: Trade, count: number): void =>
+  const setTradeCount = (trade: Trade, count: number): void => {
+    touch('trades');
     setTrades((current) => ({ ...current, [trade]: count }));
+  };
+
+  const editManpower = (next: (current: number) => number): void => {
+    touch('manpower');
+    setManpower(next);
+  };
 
   // Nothing to break down until a headcount exists — see the panel below.
   const breakdownEnabled = manpower > 0;
 
   const onSave = async (status: 'DRAFT' | 'SUBMITTED'): Promise<void> => {
     const clientId = draftId; // server idempotency key / report_id (ADR-051)
-    const reportDate = todayIso();
+    // The LOCAL day (lib/isoDate.ts): `toISOString()` is UTC, so in Bangkok a save before 07:00 was
+    // dated the day before — and, since a report is one per (project, day, submitter), edited that day.
+    const reportDate = toIsoDate(new Date());
     const manpowerLines = TRADES.filter((trade) => (trades[trade] ?? 0) > 0).map((trade) => ({
       trade_type: trade,
       worker_count: trades[trade] as number,
     }));
+    // A cleared field goes as null / [] (JSON drops undefined, and the server reads an absent field
+    // as "not sent" and keeps the earlier value); an untouched blank one stays out (see `touched`).
+    // With no headcount the breakdown panel is disabled, so its lines go out with the headcount.
+    const trimmedBlockers = blockers.trim();
+    const sentBlockers = trimmedBlockers || (touched.blockers ? null : undefined);
+    const sentManpower = manpower > 0 ? manpower : touched.manpower ? null : undefined;
+    const sentLines =
+      manpower > 0
+        ? manpowerLines.length > 0 || touched.trades
+          ? manpowerLines
+          : undefined
+        : touched.manpower || touched.trades
+          ? []
+          : undefined;
 
     await db.insert(localSiteReports).values({
       id: newLocalId(),
@@ -141,11 +170,11 @@ export default function ReportScreen() {
     enqueue('site_report', clientId, 'CREATE', {
       project_id: projectId.trim(),
       report_date: reportDate,
-      blockers: blockers.trim() || undefined,
+      blockers: sentBlockers,
       blocker_category: blockerCategory ?? undefined,
-      manpower_count: manpower > 0 ? manpower : undefined,
+      manpower_count: sentManpower,
       shift,
-      manpower_lines: manpowerLines.length > 0 ? manpowerLines : undefined,
+      manpower_lines: sentLines,
       client_submitted_at: new Date().toISOString(),
     });
 
@@ -194,14 +223,14 @@ export default function ReportScreen() {
               keyboardType="number-pad"
               maxLength={4}
               value={String(manpower)}
-              onChangeText={(text) => setManpower(clampCount(text))}
+              onChangeText={(text) => editManpower(() => clampCount(text))}
               accessibilityLabel={t('site.report.manpowerTotal')}
             />
             <View style={styles.stepperButtons}>
               <TouchableOpacity
                 testID="manpower-increment"
                 accessibilityLabel={t('site.report.manpowerIncrement')}
-                onPress={() => setManpower((n) => n + 1)}
+                onPress={() => editManpower((n) => n + 1)}
                 style={styles.stepButton}
               >
                 <MaterialIcons name="add-circle-outline" size={24} color={p.muted} />
@@ -209,7 +238,7 @@ export default function ReportScreen() {
               <TouchableOpacity
                 testID="manpower-decrement"
                 accessibilityLabel={t('site.report.manpowerDecrement')}
-                onPress={() => setManpower((n) => Math.max(0, n - 1))}
+                onPress={() => editManpower((n) => Math.max(0, n - 1))}
                 style={styles.stepButton}
               >
                 <MaterialIcons name="remove-circle-outline" size={24} color={p.muted} />
@@ -356,7 +385,10 @@ export default function ReportScreen() {
         placeholderTextColor={p.muted}
         multiline
         value={blockers}
-        onChangeText={setBlockers}
+        onChangeText={(text) => {
+          touch('blockers');
+          setBlockers(text);
+        }}
       />
 
       {/* ── Photos ───────────────────────────────────────────────────────── */}

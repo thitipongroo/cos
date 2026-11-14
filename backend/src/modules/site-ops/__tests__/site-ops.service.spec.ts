@@ -2132,6 +2132,17 @@ describe('syncSiteReports — category, shift and lines', () => {
     expect(mockRepo.replaceManpowerLogs).not.toHaveBeenCalled();
   });
 
+  it('create with an empty breakdown: nothing to clear on a new row; clears on an upserted one', async () => {
+    mockRepo.createSiteReport.mockResolvedValueOnce(makeReport({ report_id: 'device-id' }));
+    await sync([item('device-id', { manpower_lines: [] })]);
+    expect(mockRepo.replaceManpowerLogs).not.toHaveBeenCalled();
+
+    // The insert landed on another report (the natural-key lookup missed): its lines are replaced.
+    mockRepo.createSiteReport.mockResolvedValueOnce(makeReport({ report_id: 'existing-row' }));
+    await sync([item('device-id-2', { manpower_lines: [] })]);
+    expect(mockRepo.replaceManpowerLogs).toHaveBeenCalledWith('existing-row', []);
+  });
+
   it.each([
     ['blocker_category', { blocker_category: 'BOGUS' }],
     ['shift', { shift: 'EVENING' }],

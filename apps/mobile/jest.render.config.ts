@@ -25,6 +25,12 @@ const rnPreset = require_('@react-native/jest-preset') as {
   setupFiles: string[];
 };
 
+// The app's users are in Thailand (UTC+7), and a date taken from the UTC calendar instead of the local
+// one is wrong there only before 07:00 — invisible to a suite running in UTC, which is what a CI runner
+// is. Pinning the zone here makes the "local day, not UTC day" tests able to fail (report.spec.tsx).
+// Set before any test file loads; worker processes inherit it.
+process.env['TZ'] = 'Asia/Bangkok';
+
 const config: Config = {
   displayName: 'render',
   preset: '@react-native/jest-preset',

@@ -143,14 +143,102 @@ describe('ReportScreen', () => {
     expect(payload.manpower_lines).toEqual([{ trade_type: 'STRUCTURAL', worker_count: 1 }]);
   });
 
-  it('leaves the breakdown out when no trade has workers', async () => {
+  // The form always opens blank — it does not load the day's report — so a blank field the user never
+  // touched is left out, and the server keeps what an earlier save (or the web) stored for the day.
+  it('leaves untouched blank fields out, so a later save does not erase them', async () => {
     const { getByTestId } = await renderScreen();
 
     await fireEvent.press(getByTestId('blocker-category-OTHER'));
     await fireEvent.press(getByTestId('save-report-button'));
 
     await waitFor(() => expect(queue.enqueue).toHaveBeenCalledTimes(1));
-    expect(queue.enqueue.mock.calls[0][3].manpower_lines).toBeUndefined();
+    const sent = JSON.parse(JSON.stringify(queue.enqueue.mock.calls[0][3])) as Record<
+      string,
+      unknown
+    >;
+    expect(sent).not.toHaveProperty('manpower_count');
+    expect(sent).not.toHaveProperty('manpower_lines');
+    expect(sent).not.toHaveProperty('blockers');
+  });
+
+  // A field the user emptied is sent as null / [] — JSON keeps those, and the server writes them, so
+  // the earlier save's value is cleared. (Left out, it was kept: emptying a field never reached it.)
+  it('sends fields the user cleared as null / [], surviving JSON', async () => {
+    const { getByTestId } = await renderScreen();
+
+    await fireEvent.press(getByTestId('blocker-category-OTHER'));
+    await fireEvent.press(getByTestId('manpower-increment'));
+    await fireEvent.press(getByTestId('trade-STRUCTURAL-increment'));
+    await fireEvent.press(getByTestId('trade-STRUCTURAL-decrement'));
+    await fireEvent.press(getByTestId('manpower-decrement'));
+    await fireEvent.changeText(getByTestId('report-blockers-input'), 'rain');
+    await fireEvent.changeText(getByTestId('report-blockers-input'), '  ');
+    await fireEvent.press(getByTestId('save-report-button'));
+
+    await waitFor(() => expect(queue.enqueue).toHaveBeenCalledTimes(1));
+    const sent = JSON.parse(JSON.stringify(queue.enqueue.mock.calls[0][3])) as Record<
+      string,
+      unknown
+    >;
+    expect(sent).toEqual(
+      expect.objectContaining({ manpower_count: null, blockers: null, manpower_lines: [] }),
+    );
+  });
+
+  // With the headcount back at 0 the breakdown panel is disabled; lines still held in its state must
+  // not be written next to a cleared headcount.
+  it('sends no lines when the headcount was taken back to 0', async () => {
+    const { getByTestId } = await renderScreen();
+
+    await fireEvent.press(getByTestId('blocker-category-OTHER'));
+    await fireEvent.press(getByTestId('manpower-increment'));
+    await fireEvent.press(getByTestId('trade-STRUCTURAL-increment'));
+    await fireEvent.press(getByTestId('manpower-decrement'));
+    await fireEvent.press(getByTestId('save-report-button'));
+
+    await waitFor(() => expect(queue.enqueue).toHaveBeenCalledTimes(1));
+    const payload = queue.enqueue.mock.calls[0][3] as Record<string, unknown>;
+    expect(payload['manpower_count']).toBeNull();
+    expect(payload['manpower_lines']).toEqual([]);
+  });
+
+  // The report is dated by the LOCAL calendar. At 00:30 local the UTC date is the previous day
+  // anywhere east of Greenwich (Bangkok is UTC+7, so until 07:00); `toISOString()` dated the report
+  // the day before, and since a report is one per (project, day, submitter) it edited that day's.
+  // Only Date is faked: the render needs real timers. It can only FAIL against a UTC date east of
+  // Greenwich, which is why jest.render.config.ts pins TZ to Asia/Bangkok.
+  it('dates the report by the local day, not the UTC day', async () => {
+    jest.useFakeTimers({
+      now: new Date(2026, 7, 13, 0, 30),
+      doNotFake: [
+        'hrtime',
+        'nextTick',
+        'performance',
+        'queueMicrotask',
+        'requestAnimationFrame',
+        'cancelAnimationFrame',
+        'requestIdleCallback',
+        'cancelIdleCallback',
+        'setImmediate',
+        'clearImmediate',
+        'setInterval',
+        'clearInterval',
+        'setTimeout',
+        'clearTimeout',
+      ],
+    });
+    try {
+      const { getByTestId } = await renderScreen();
+
+      await fireEvent.press(getByTestId('blocker-category-OTHER'));
+      await fireEvent.press(getByTestId('save-report-button'));
+
+      await waitFor(() => expect(queue.enqueue).toHaveBeenCalledTimes(1));
+      expect(queue.enqueue.mock.calls[0][3].report_date).toBe('2026-08-13');
+      expect(mockInsert.mock.calls[0][0].reportDate).toBe('2026-08-13');
+    } finally {
+      jest.useRealTimers();
+    }
   });
 
   it('says the report was saved', async () => {

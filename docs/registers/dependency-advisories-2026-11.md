@@ -2813,18 +2813,39 @@ openssl ca-certificates`; `groupadd`/`useradd` uid/gid 1001, as the charts run; 
     Negative controls, each applied alone and reverted: the three fields dropped → both push tests fail; the category
     passed unchecked → the BOGUS push returns HTTP 500; the CASE flags always on → the AU web-report test fails (an edit
     without them NULLs WEATHER / NIGHT).
-- **The app cannot clear a report's per-trade lines or headcount on a later save.** `report.tsx` sends
-  `manpower_lines` and `manpower_count` as `undefined` when empty, and JSON drops them, so a save with every trade
-  removed reads as "not sent" and the earlier save's lines and headcount stay. The server clears lines when it gets
-  `[]`. Found by /doubt on `fix/site-report-sync-fields`; fix on the app (always send the array). Not fixed.
+- **Closed — the app dated a report by the UTC day, and could not clear fields on a later save.** Fixed on
+  `fix/mobile-report-date-clear` (`apps/mobile/src/app/(app)/report.tsx`).
+  - The date: `todayIso()` was `new Date().toISOString().slice(0, 10)`, the UTC day, so in Thailand a report saved
+    before 07:00 was dated the day before — and, one report per (project, day, submitter), edited that day's report.
+    It now uses `toIsoDate()` from `src/lib/isoDate.ts`, the local-calendar helper the app's other date fields use.
+    Both mobile jest configs pin `TZ` to `Asia/Bangkok`, so a UTC-day bug can fail a test on a UTC CI runner.
+  - Clearing: the payload sent `blockers`, `manpower_count` and `manpower_lines` as `undefined` when empty, and JSON
+    drops `undefined`, so a later save that emptied one read as "not sent" and the server kept the earlier value. The
+    form always opens blank (it does not load the day's report), so "blank" is not "cleared": the screen now records
+    which of the three the user edited, sends an edited-and-empty one as `null` / `[]` (which the server writes; `[]`
+    clears the lines), and leaves an untouched one out as before, so a later save does not erase what an earlier save
+    or the web stored. With the headcount taken back to 0 the breakdown goes as `[]` too (its panel is disabled then).
+    The server skips clearing lines for an empty list on a row its insert just created.
+  - First version and /doubt: it sent `null` / `[]` for every empty field, which would have erased a day's headcount,
+    lines and blockers on any later save from a freshly opened screen; replaced by the edited-field rule above.
+  - Evidence: render `report.spec.tsx` — untouched blank fields are left out; fields edited back to empty go as `null`
+    / `[]`, surviving JSON; headcount back to 0 sends `[]`; a save at local 00:30 on 13 Aug is dated `2026-08-13` in the
+    queue item and the local row. Against HEAD's `report.tsx` the cleared, headcount-0 and date tests fail (3), also
+    with `TZ=UTC` in the environment since the configs pin the zone; against the first, always-`null` version the
+    untouched and headcount-0 tests fail (2). Mobile logic 1,149 and render 1,803 tests pass. Backend: integration
+    `test/site-ops/08-site-report-event-id.integration.spec.ts` through `/sync/push` — a second save of the day with
+    `manpower_lines: []`, `manpower_count: null`, `blockers: null` leaves no lines and both columns NULL, and the same
+    save with the three left out fails that test; unit — an empty list is not cleared on a newly created row and is on
+    an upserted one.
+- **Other "today" values in the app are the UTC day.** `src/lib/delaySeverity.ts` (the overdue chip), `spendTrend.ts`
+  (the finance tile) and `siteEngineerHome.ts` (`taskStartUrgency`) take today from the UTC calendar, so before 07:00
+  in Thailand lateness reads a day short and windows shift. Display only; none writes a date. Found by /doubt on
+  `fix/mobile-report-date-clear`. Not fixed.
 - **The id-hit sync edit of a site report has no last-write-wins check without `last_known_modified_at`.** The app
   never sends it, so `resolveReportConflict` always persists: a save replayed by id after a later save of the same
   day landed would overwrite it (category, shift and lines included since `fix/site-report-sync-fields`). Unlikely
   with the device's first-in-first-out queue. Possible fix: compare `client_submitted_at` as the natural-key edit does.
   Not fixed.
-- **The mobile app dates a report by the UTC day.** `todayIso()` in `report.tsx` is
-  `new Date().toISOString().slice(0, 10)`, so in Thailand (UTC+7) a report saved before 07:00 is dated the day
-  before, and now edits that day's report. Not fixed.
 - **Reports written through sync are not indexed for search.** The search indexer subscribes
   `site.report.created.v1` only (`search-indexer.consumer.ts:42-46`), which sync never emits; sync emits
   `site.report.submitted.v1`. Not fixed.

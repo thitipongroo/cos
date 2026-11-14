@@ -400,7 +400,11 @@ export class SiteOpsService {
         );
 
         // Against the row's own id: a create that upserted onto another report writes its lines there.
-        if (extras.manpower_lines) {
+        // An empty list on a row this insert created has nothing to clear.
+        if (
+          extras.manpower_lines &&
+          (extras.manpower_lines.length > 0 || report.report_id !== item.client_id)
+        ) {
           await this.repo.replaceManpowerLogs(report.report_id, extras.manpower_lines);
         }
 
