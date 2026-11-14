@@ -530,9 +530,11 @@ paths:
             are ignored. OpenSearch answers with its 50 top hits in the project (relevance order),
             which the date range then filters, so a match ranked below 50 is not returned. If OpenSearch
             fails, a database substring search applies the filters first and returns up to 50 rows,
-            newest first.
+            newest first. Over 100 characters (after trimming) is 400
+            `COS-SITE-008`.
           schema:
             type: string
+            maxLength: 100
       responses:
         '200':
           description: Paginated site reports
@@ -540,6 +542,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PaginatedSiteReports'
+        '400':
+          $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
 
@@ -706,9 +710,11 @@ paths:
             are ignored. OpenSearch answers with its 50 top hits in the project (relevance order),
             which severity and status then filter, so a match ranked below 50 is not returned. If
             OpenSearch fails, a database substring search applies the filters first and returns up
-            to 50 rows, newest first.
+            to 50 rows, newest first. Over 100 characters (after trimming) is 400
+            `COS-SITE-008`.
           schema:
             type: string
+            maxLength: 100
       responses:
         '200':
           description: Paginated issues
@@ -716,6 +722,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PaginatedIssues'
+        '400':
+          $ref: '#/components/responses/BadRequest'
         '401':
           description: Unauthenticated — missing or invalid bearer token
 

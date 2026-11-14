@@ -1565,9 +1565,20 @@ describe('OpenSearch indexing error handling', () => {
     Client.mock.results[0]?.value.search.mockRejectedValueOnce(new Error('opensearch unreachable'));
     mockRepo.searchSiteReportsText.mockResolvedValueOnce([makeReport()]);
 
+    const warn = jest.requireMock('@cos/logger').createLogger().warn as jest.Mock;
+    warn.mockClear();
+
     const result = await service.listSiteReports({ page: 1, limit: 10, q: 'crack' });
 
     expect(result.items[0]).toHaveProperty('summary');
+    // The length, never the user-typed text (PDPA).
+    expect(warn).toHaveBeenCalledWith(
+      expect.objectContaining({ q_length: 5, err_name: 'Error' }),
+      'opensearch.search.failed — falling back to a database search',
+    );
+    expect(warn.mock.calls[0]?.[0]).not.toHaveProperty('q');
+    // Nor the error: the client's errors carry the query body (search-failure-log.spec.ts).
+    expect(warn.mock.calls[0]?.[0]).not.toHaveProperty('err');
   });
 
   it('listIssues with project_id filter in OpenSearch query (covers if project_id branch)', async () => {
@@ -1649,6 +1660,8 @@ describe('OpenSearch indexing error handling', () => {
     Client.mock.results[0]?.value.search.mockRejectedValueOnce(new Error('OS down'));
     mockRepo.listIssues.mockClear();
     mockRepo.searchIssuesText.mockResolvedValueOnce([makeIssue()]);
+    const warn = jest.requireMock('@cos/logger').createLogger().warn as jest.Mock;
+    warn.mockClear();
     const result = await service.listIssues({
       page: 1,
       limit: 10,
@@ -1657,6 +1670,14 @@ describe('OpenSearch indexing error handling', () => {
       status: 'OPEN',
     });
     expect(result.items).toHaveLength(1);
+    // The length, never the user-typed text (PDPA).
+    expect(warn).toHaveBeenCalledWith(
+      expect.objectContaining({ q_length: 5, err_name: 'Error' }),
+      'opensearch.search.failed — falling back to a database search',
+    );
+    expect(warn.mock.calls[0]?.[0]).not.toHaveProperty('q');
+    // Nor the error: the client's errors carry the query body (search-failure-log.spec.ts).
+    expect(warn.mock.calls[0]?.[0]).not.toHaveProperty('err');
     expect(mockRepo.searchIssuesText).toHaveBeenCalledWith(
       'crack',
       expect.objectContaining({ severity: 'HIGH', status: 'OPEN' }),

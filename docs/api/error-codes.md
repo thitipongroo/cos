@@ -225,6 +225,17 @@ Full-CRUD backing entities under the project domain (§10.2 / §11.2). `-001` = 
 
 ---
 
+## COS-SITE — Site operations: reports, issues, inspections
+
+Section opened 2026-11-14 with `-008`. Codes `-001` to `-007` and `-409` are thrown by
+`site-ops.service.ts` and are not yet registered here (see the dependency-advisories register).
+
+| Code         | HTTP | Message                                                      | Trigger                                                                                                                                                                              |
+| ------------ | ---- | ------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| COS-SITE-008 | 400  | q must be at most 100 characters / q must be a single string | `GET /site/reports` or `GET /site/issues` with a `q` longer than 100 characters after trimming, or a `q` that is not a string. `GET /projects` caps at 100 too, as `COS-GENERAL-400` |
+
+---
+
 ## COS-VND — Vendor Portal
 
 Recorded 2026-11-13 from `vendor-portal.service.ts`, where they were thrown but not listed here.

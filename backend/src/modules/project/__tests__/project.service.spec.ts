@@ -20,6 +20,12 @@ jest.mock('@opensearch-project/opensearch', () => ({
   })),
 }));
 
+// One shared logger object, so a test can read what the service logged.
+jest.mock('@cos/logger', () => {
+  const log = { info: jest.fn(), warn: jest.fn(), error: jest.fn(), debug: jest.fn() };
+  return { createLogger: jest.fn(() => log) };
+});
+
 jest.mock('@cos/kafka', () => ({
   KafkaProducer: jest.fn().mockImplementation(() => ({
     connect: jest.fn().mockResolvedValue(undefined),
@@ -452,8 +458,18 @@ describe('ProjectService', () => {
       const searchText = jest.fn().mockResolvedValue([baseProject]);
       const list = jest.fn();
       const service = await buildService(makeRepo({ searchText, list } as never));
+      const warn = jest.requireMock('@cos/logger').createLogger().warn as jest.Mock;
+      warn.mockClear();
       const result = await service.list({ q: 'ริมน้ำ', status: 'ACTIVE', limit: 10 } as never);
       expect(result).toEqual({ items: [baseProject], nextCursor: null });
+      // The length, never the user-typed text (PDPA).
+      expect(warn).toHaveBeenCalledWith(
+        expect.objectContaining({ q_length: 6, err_name: 'Error' }),
+        'opensearch.search.failed — falling back to a database search',
+      );
+      expect(warn.mock.calls[0]?.[0]).not.toHaveProperty('q');
+      // Nor the error: the client's errors carry the query body (search-failure-log.spec.ts).
+      expect(warn.mock.calls[0]?.[0]).not.toHaveProperty('err');
       expect(searchText).toHaveBeenCalledWith('ริมน้ำ', { status: 'ACTIVE', type: undefined }, 10);
       expect(list).not.toHaveBeenCalled();
     });

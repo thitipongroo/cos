@@ -314,6 +314,16 @@ describe('ReportsScreen', () => {
     expect(String(client.get.mock.calls[2][0])).not.toContain('q=');
   });
 
+  // GET /site/reports answers 400 COS-SITE-008 to a `q` over 100 characters; the box cannot hold one.
+  it('limits the search box to the server cap of 100 characters', async () => {
+    client.get.mockResolvedValue({ items: [], total: 0 });
+
+    const { getByTestId } = await renderScreen();
+
+    await waitFor(() => expect(getByTestId('reports-screen')).toBeTruthy());
+    expect(getByTestId('reports-search').props.maxLength).toBe(100);
+  });
+
   it('offers no clear control while the box is empty', async () => {
     client.get.mockResolvedValue({ items: [], total: 0 });
 

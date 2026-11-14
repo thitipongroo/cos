@@ -20,6 +20,7 @@ import {
   HttpCode,
   HttpStatus,
   UseGuards,
+  BadRequestException,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiParam, ApiQuery } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../shared/guards/jwt-auth.guard';
@@ -37,6 +38,31 @@ import { SubmitInspectionDto } from './public/submit-inspection.dto';
 import { UpdateInspectionDto } from './dto/update-inspection.dto';
 import { ResolveConflictDto } from './dto/resolve-conflict.dto';
 import { CreateMaterialConsumptionDto } from './dto/create-material-consumption.dto';
+
+// The search term as the service takes it: one string, trimmed, blank is no search, at most 100
+// characters — the number GET /projects caps `q` at (`list-projects.dto.ts`, @MaxLength(100)), though
+// that one counts before trimming and answers COS-GENERAL-400. Unbounded, a long `q` was a heavy
+// OpenSearch query and, on its failure, an unindexed substring scan. Counted in code points (Thai
+// counts the same either way; validator.js differs only for emoji variation selectors).
+// A repeated `?q=a&q=b` is an array to Fastify; the global ValidationPipe (transform) makes it the
+// string "a,b" for this `string` parameter. Without that pipe it would reach `.trim()` as an array,
+// so a non-string is refused here rather than thrown on.
+const SEARCH_Q_MAX = 100;
+function searchTerm(q: unknown): string | undefined {
+  if (q !== undefined && typeof q !== 'string') {
+    throw new BadRequestException({
+      error: { code: 'COS-SITE-008', message: 'q must be a single string' },
+    });
+  }
+  const t = q?.trim();
+  if (!t) return undefined;
+  if ([...t].length > SEARCH_Q_MAX) {
+    throw new BadRequestException({
+      error: { code: 'COS-SITE-008', message: `q must be at most ${SEARCH_Q_MAX} characters` },
+    });
+  }
+  return t;
+}
 
 const INSPECTION_READ_ROLES = [
   CosRole.EXECUTIVE,
@@ -96,7 +122,8 @@ export class SiteOpsController {
     type: String,
     description:
       'Full-text search over summary, weather and blockers (OpenSearch; a database search if it fails). ' +
-      'Trimmed; blank is no search. Unpaged: the 50 top hits in the project, then the dates filter them.',
+      'Trimmed; blank is no search; over 100 characters is 400 COS-SITE-008. Unpaged: the 50 top hits ' +
+      'in the project, then the dates filter them.',
   })
   // `q` FULL-TEXT SEARCH — exposed 2026-08-12, not newly built. `SiteOpsService.listSiteReports`
   // has taken a `q` and routed it to `searchSiteReports` (OpenSearch over summary + weather, and
@@ -126,7 +153,7 @@ export class SiteOpsController {
       // Blank and whitespace-only are NOT a search: the service treats any truthy `q` as one, and an
       // empty box on the client must return the normal paged list, not an OpenSearch round trip.
       // Trimmed otherwise: the database fallback is a substring match, where an edge space is not.
-      q: q?.trim() || undefined,
+      q: searchTerm(q),
     });
   }
 
@@ -249,8 +276,8 @@ export class SiteOpsController {
     type: String,
     description:
       'Full-text search over title and description (OpenSearch; a database search if it fails). ' +
-      'Trimmed; blank is no search. Unpaged: the 50 top hits in the project, then severity and ' +
-      'status filter them.',
+      'Trimmed; blank is no search; over 100 characters is 400 COS-SITE-008. Unpaged: the 50 top ' +
+      'hits in the project, then severity and status filter them.',
   })
   // `q` — exposed 2026-11-14 (fix/site-issues-search-route), as reports' was on 2026-08-12:
   // `SiteOpsService.listIssues` has always had the branch, but no parameter reached it. Same
@@ -270,7 +297,7 @@ export class SiteOpsController {
       page: Math.max(1, parseInt(page, 10) || 1),
       limit: Math.min(100, Math.max(1, parseInt(limit, 10) || 20)),
       // Trimmed; blank and whitespace-only are not a search (as for reports): the normal paged list.
-      q: q?.trim() || undefined,
+      q: searchTerm(q),
     });
   }
 

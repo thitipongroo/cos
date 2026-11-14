@@ -24,6 +24,7 @@ import { Client as OpenSearchClient } from '@opensearch-project/opensearch';
 import { buildOutboxEvent } from '../../shared/outbox/outbox.types';
 import type { OutboxEventInput } from '../../shared/outbox/outbox.types';
 import { createLogger } from '@cos/logger';
+import { searchFailureLog } from '../../shared/search/search-failure-log';
 import type { CosRole } from '@cos/types';
 import { ProjectRepository } from './project.repository';
 import { FeatureFlagService } from '../../shared/feature-flags/feature-flag.service';
@@ -374,7 +375,11 @@ export class ProjectService {
     } catch (err) {
       // Search in the database instead — never the plain list, which the caller would show as the
       // results of a search it did not run.
-      logger.warn({ q, err }, 'opensearch.search.failed — falling back to a database search');
+      logger.warn(
+        // Not `q`, nor `err` — the client's error carries the query body (see searchFailureLog).
+        searchFailureLog(q, err),
+        'opensearch.search.failed — falling back to a database search',
+      );
       const items = await this.repo.searchText(q, { status: dto.status, type: dto.type }, limit);
       return { items, nextCursor: null };
     }

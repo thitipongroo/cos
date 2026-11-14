@@ -3068,12 +3068,36 @@ modified_at)) <= $t`, milliseconds like the caller's comparison — `modified_at
   issue case of each fails. Until this change 02's issue check could not
   fail: the route ignored `q` and tenant A's only issue was the expected one (the reindex entry above is corrected).
   No client searches issues yet; nothing in web or mobile changed.
-- **Search `q` has no length cap, and the OpenSearch-failure log writes it raw.** Found by /doubt on
-  `fix/site-issues-search-route`; true of reports since 2026-08-12, and now of issues. Nothing bounds `q` but Node's
-  header limit. A long many-word `q` may exceed OpenSearch's clause limit (not tested); the `catch` treats any error
-  as OpenSearch being down and runs the database substring search, which has no supporting index. The
-  `opensearch.search.failed` warning logs `{ q, err }`, and `q` is user-typed text that may hold personal data (PDPA).
-  Not fixed (a cap is a product limit; logging `q.length` instead is a one-line change).
+- **Closed — search `q` had no length cap on the site-ops routes, and the OpenSearch-failure log wrote it raw.**
+  Fixed on `fix/search-q-log-and-cap`. Found by /doubt on `fix/site-issues-search-route`.
+  - The three `opensearch.search.failed` warnings (site reports, issues, projects) logged `{ q, err }`. Removing `q`
+    alone was not enough (found by /doubt on this branch): the OpenSearch client's ConnectionError / TimeoutError /
+    ResponseError carry the request on `err.meta` — `meta.meta.request.params.body` is the serialized query — and
+    pino's `err` serializer copies it, so the search text was in the log on every OpenSearch outage. They now log
+    `searchFailureLog(q, err)` (`backend/src/shared/search/search-failure-log.ts`): `q_length`, the error class, and
+    OpenSearch's status and error type — not `err`, not its message (a ResponseError's can quote the query).
+  - `GET /site/reports` and `GET /site/issues` refuse a `q` over 100 characters after trimming (code points) with 400
+    `COS-SITE-008`; the product owner chose 100 on 2026-11-14, the number `GET /projects` uses (`@MaxLength(100)`,
+    counted before trimming, answered `COS-GENERAL-400`). A non-string `q` is refused too — reachable only without the
+    global ValidationPipe, which turns a repeated `q` into `"a,b"`. The OpenAPI document and
+    `docs/api/error-codes.md` (new COS-SITE section) state it.
+  - The app's report search box is capped at 100 (`maxLength`): its `load()` swallows errors and keeps the previous
+    list, so a 400 would have shown that list under the new term. The web sends no `q` to these routes.
+  - The OpenSearch clause-limit concern is not tested; a capped `q` has at most 100 characters.
+  - Verified: `search-failure-log.spec.ts` builds the client's own error classes with the query in `meta` and checks
+    the pino line has no trace of it (control: logging `err` does); service specs assert neither `q` nor `err` is
+    logged; controller specs for the cap (100 padded accepted, 101 rejected, non-string refused); app render test
+    for `maxLength`; `test/search/03` 8/8 with OpenSearch down (101 characters → 400, 100 → a search). With HEAD's
+    code, the new service, controller, render and integration assertions fail.
+- **Search text still reaches telemetry and two WAF warnings through the URL.** Found by /doubt on
+  `fix/search-q-log-and-cap`; not changed there. `http-metrics.interceptor.ts:16` labels `http_requests_total` and
+  the duration metric with `req.routerPath ?? req.url`; under Fastify 5 `routerPath` is gone, so the label is the URL
+  with its query string — `?q=<user text>` on every search (PDPA), and an unbounded label set.
+  `cloudflare-waf.middleware.ts:66` and `:81` warn with `{ url: req.url }` (and `:99` at debug), query included;
+  `audit.interceptor.ts` already strips it with `.split('?')[0]`. Not fixed.
+- **COS-SITE-001 to -007 and -409 are thrown but not in `docs/api/error-codes.md`.** The section was opened with
+  `-008` on `fix/search-q-log-and-cap`. Some of them are also thrown without the `{ error: { … } }` wrapper
+  (`site-ops.service.ts:850`, `:876`). Not fixed.
 - **Closed — the site-report notification said "0 issue(s), 0 photo(s)" on every submission.** Fixed on
   `fix/site-report-notification-counts`. `createSiteReport` put the constants 0 into `site.report.created.v1`, and the
   IN_APP template (`20260824000002`, English only) printed them. The event comes from the web `POST /site/reports`

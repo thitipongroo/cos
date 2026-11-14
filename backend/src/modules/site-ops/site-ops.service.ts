@@ -18,6 +18,7 @@ import { randomUUID } from 'crypto';
 import { Client as OpenSearchClient } from '@opensearch-project/opensearch';
 import { EventOutboxService } from '../../shared/events/event-outbox.service';
 import { createLogger } from '@cos/logger';
+import { searchFailureLog } from '../../shared/search/search-failure-log';
 import { buildOutboxEvent } from '../../shared/outbox/outbox.types';
 import { SiteOpsRepository } from './site-ops.repository';
 import type {
@@ -1397,7 +1398,11 @@ export class SiteOpsService {
     } catch (err) {
       // Search in the database instead — never the plain list, which the caller would show as the
       // results of a search it did not run.
-      logger.warn({ q, err }, 'opensearch.search.failed — falling back to a database search');
+      logger.warn(
+        // Not `q`, nor `err` — the client's error carries the query body (see searchFailureLog).
+        searchFailureLog(q, err),
+        'opensearch.search.failed — falling back to a database search',
+      );
       return reduce(await this.repo.searchSiteReportsText(q, params, 50));
     }
 
@@ -1446,7 +1451,11 @@ export class SiteOpsService {
         (h) => h._source.issue_id,
       );
     } catch (err) {
-      logger.warn({ q, err }, 'opensearch.search.failed — falling back to a database search');
+      logger.warn(
+        // Not `q`, nor `err` — the client's error carries the query body (see searchFailureLog).
+        searchFailureLog(q, err),
+        'opensearch.search.failed — falling back to a database search',
+      );
       return this.repo.searchIssuesText(q, params, 50);
     }
 

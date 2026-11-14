@@ -414,6 +414,9 @@ function SiteEngineerReports() {
             // Searched on SUBMIT, not per keystroke: every character would otherwise be an OpenSearch
             // round trip from a phone on site data.
             returnKeyType="search"
+            // The server's cap on `q` (400 COS-SITE-008 above it). Longer, the 400 would land in
+            // load()'s catch and leave the previous list under the new term, as if it were results.
+            maxLength={100}
             onSubmitEditing={() => void load(1, query)}
           />
           {query !== '' ? (

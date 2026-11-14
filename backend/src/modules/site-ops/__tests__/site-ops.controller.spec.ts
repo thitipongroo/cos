@@ -5,6 +5,7 @@ jest.mock('@cos/logger', () => ({
   createLogger: () => ({ info: jest.fn(), warn: jest.fn(), error: jest.fn(), debug: jest.fn() }),
 }));
 
+import { BadRequestException } from '@nestjs/common';
 import { SiteOpsController } from '../site-ops.controller';
 
 const mockSvc = {
@@ -151,6 +152,52 @@ describe('SiteOpsController', () => {
     expect(mockSvc.listIssues).toHaveBeenLastCalledWith(expect.objectContaining({ q: 'ผนัง' }));
     ctrl.listSiteReports(undefined, undefined, undefined, '1', '20', undefined, ' ปูน  ');
     expect(mockSvc.listSiteReports).toHaveBeenLastCalledWith(expect.objectContaining({ q: 'ปูน' }));
+  });
+
+  // At most 100 characters (as GET /projects), counted after trimming.
+  it('listIssues and listSiteReports accept a 100-character search term, padded or not', () => {
+    const hundred = 'ผ'.repeat(100);
+    ctrl.listIssues(undefined, undefined, undefined, '1', '20', `  ${hundred}  `);
+    expect(mockSvc.listIssues).toHaveBeenLastCalledWith(expect.objectContaining({ q: hundred }));
+    ctrl.listSiteReports(undefined, undefined, undefined, '1', '20', undefined, hundred);
+    expect(mockSvc.listSiteReports).toHaveBeenLastCalledWith(
+      expect.objectContaining({ q: hundred }),
+    );
+  });
+
+  it('listIssues and listSiteReports reject a 101-character search term with COS-SITE-008', () => {
+    const tooLong = 'a'.repeat(101);
+    const code = (fn: () => unknown): unknown => {
+      try {
+        fn();
+      } catch (err) {
+        return ((err as BadRequestException).getResponse() as { error: { code: string } }).error
+          .code;
+      }
+      return 'no error';
+    };
+    mockSvc.listIssues.mockClear();
+    mockSvc.listSiteReports.mockClear();
+    expect(code(() => ctrl.listIssues(undefined, undefined, undefined, '1', '20', tooLong))).toBe(
+      'COS-SITE-008',
+    );
+    expect(
+      code(() =>
+        ctrl.listSiteReports(undefined, undefined, undefined, '1', '20', undefined, tooLong),
+      ),
+    ).toBe('COS-SITE-008');
+    expect(mockSvc.listIssues).not.toHaveBeenCalled();
+    expect(mockSvc.listSiteReports).not.toHaveBeenCalled();
+  });
+
+  it('listIssues and listSiteReports refuse a non-string q (an array, without the transforming pipe) with 400', () => {
+    const twice = ['a', 'b'] as unknown as string;
+    expect(() => ctrl.listIssues(undefined, undefined, undefined, '1', '20', twice)).toThrow(
+      BadRequestException,
+    );
+    expect(() =>
+      ctrl.listSiteReports(undefined, undefined, undefined, '1', '20', undefined, twice),
+    ).toThrow(BadRequestException);
   });
 
   it('listIssues treats a blank or absent search term as no search', () => {

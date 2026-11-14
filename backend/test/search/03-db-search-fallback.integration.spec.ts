@@ -179,6 +179,19 @@ describe('Search falls back to the database when OpenSearch is down (real Postgr
     expect((res.body as { items: unknown[] }).items).toHaveLength(3);
   });
 
+  // OpenSearch is down here, so without the cap a long `q` would run the database search (200, []).
+  it('a q over 100 characters is 400 COS-SITE-008 on both routes; 100 is a search', async () => {
+    for (const route of ['site/issues', 'site/reports']) {
+      const tooLong = await get(`/api/v1/${route}?q=${q('ผ'.repeat(101))}`);
+      expect(tooLong.status).toBe(400);
+      expect((tooLong.body as { error?: { code?: string } }).error?.code).toBe('COS-SITE-008');
+
+      const atCap = await get(`/api/v1/${route}?q=${q('ผ'.repeat(100))}`);
+      expect(atCap.status).toBe(200);
+      expect((atCap.body as { items: unknown[] }).items).toEqual([]);
+    }
+  });
+
   it('projects: by a Thai substring of the name and by code', async () => {
     const byName = await get(`/api/v1/projects?q=${q('ริมน้ำ')}`);
     expect(byName.status).toBe(200);
