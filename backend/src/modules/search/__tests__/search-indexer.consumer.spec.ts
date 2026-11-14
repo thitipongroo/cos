@@ -215,7 +215,10 @@ describe('SearchIndexerConsumer', () => {
         'site.report.created.v1',
         'site.report.submitted.v1',
         'site.report.updated.v1',
+        // created, a status move, any edit
         'site.issue.created.v1',
+        'site.issue.status_changed.v1',
+        'site.issue.updated.v1',
       ]);
       // A group of its own: sharing finance.shared would make one consumer's offset commits hide
       // events from the other.
@@ -247,6 +250,10 @@ describe('SearchIndexerConsumer', () => {
 
       await routed['site.issue.created.v1']!(event({ payload: { issue_id: 'i-1' } }));
       expect(repo.findIssue).toHaveBeenCalledWith('i-1');
+      await routed['site.issue.status_changed.v1']!(event({ payload: { issue_id: 'i-2' } }));
+      expect(repo.findIssue).toHaveBeenCalledWith('i-2');
+      await routed['site.issue.updated.v1']!(event({ payload: { issue_id: 'i-3' } }));
+      expect(repo.findIssue).toHaveBeenCalledWith('i-3');
     });
 
     it('disconnects on shutdown, and a failing disconnect does not throw out of it', async () => {

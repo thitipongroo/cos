@@ -28,6 +28,7 @@ export type * from './events/site.inspection.failed.v1';
 export type * from './events/site.inspection.passed.v1';
 export type * from './events/site.issue.created.v1';
 export type * from './events/site.issue.status_changed.v1';
+export type * from './events/site.issue.updated.v1';
 export type * from './events/site.conflict.flagged.v1';
 export type * from './events/construction.task.completed.v1';
 export type * from './events/construction.delay.detected.v1';

@@ -156,6 +156,7 @@ list rather than making an OpenSearch round trip.
 | `safety.incident.created.v1`   | —         | ✅    |
 | `carbon.record.created.v1`     | —         | ✅    |
 | `site.report.updated.v1`       | —         | ✅    |
+| `site.issue.updated.v1`        | —         | ✅    |
 
 All eight specified events exist. The command writes four of them without a domain prefix
 (`inspection.passed`, `issue.created`); the wire names carry `site.` per §32.4's
@@ -166,6 +167,11 @@ new save of a day that already has a report. The search indexer re-indexes on it
 `site.report.created.v1` (web) and `site.report.submitted.v1` (a sync create). It is not routed to notifications, and the
 analytics worker does not read it: `created` would notify the project manager on every save, and `submitted` is counted
 once per report.
+
+`site.issue.updated.v1` (added 2026-11-14) is emitted by every applied edit through `PATCH /site/issues/:id`, in the
+same transaction, so the search index follows description and severity edits as well as status moves (which
+`site.issue.status_changed.v1` announces). The indexer handles `site.issue.created.v1`,
+`site.issue.status_changed.v1` and `site.issue.updated.v1` alike. Not routed to notifications.
 
 `site.conflict.flagged.v1` is what satisfies the "ConflictRecord persistence **and** notification"
 Generate item — `NotificationConsumer` routes it to `SITE_ENGINEER`, `PROJECT_MANAGER` and

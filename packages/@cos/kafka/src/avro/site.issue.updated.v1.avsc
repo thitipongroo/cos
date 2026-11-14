@@ -1,0 +1,24 @@
+{
+  "type": "record",
+  "name": "SiteIssueUpdatedEvent",
+  "namespace": "com.constructionos.events.site",
+  "doc": "site.issue.updated.v1 — an issue was edited through PATCH /site/issues/:id (re-index trigger)",
+  "fields": [
+    { "name": "event_id",       "type": "string" },
+    { "name": "event_type",     "type": "string" },
+    { "name": "event_version",  "type": "string" },
+    { "name": "tenant_id",      "type": "string" },
+    { "name": "actor_id",       "type": "string" },
+    { "name": "occurred_at",    "type": "string" },
+    { "name": "correlation_id", "type": "string" },
+    { "name": "trace_id",       "type": ["null", "string"], "default": null },
+    { "name": "span_id",        "type": ["null", "string"], "default": null },
+    { "name": "payload", "type": {
+      "type": "record", "name": "SiteIssueUpdatedPayload",
+      "fields": [
+        { "name": "issue_id",   "type": "string" },
+        { "name": "project_id", "type": "string" }
+      ]
+    }}
+  ]
+}

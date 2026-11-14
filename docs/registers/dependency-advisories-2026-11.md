@@ -2943,11 +2943,39 @@ openssl ca-certificates`; `groupadd`/`useradd` uid/gid 1001, as the charts run; 
     services the four original HTTP tests fail. The real-OpenSearch suites (`01`, `02`) pass with the new success
     path. Once, in a combined run of the three suites, a `02` request returned 404 with nothing logged; it did not
     recur alone or in two further combined runs, and its cause was not found.
-- **The issue search index never learns a status or severity change.** The search indexer subscribes
-  `site.issue.created.v1` only; `changeIssueStatus` emits `site.issue.status_changed.v1`, which nothing indexes, and a
-  sync `updateIssue` emits nothing. Searches filter on the rows, so results are right, but the indexed `status` /
-  `severity` (and an edited title or description) stay as at creation. Found by /doubt on
-  `fix/search-results-fallback`. Not fixed.
+- **Closed — the issue search index never learned a status change or an edit.** Fixed on `fix/issue-index-updates`.
+  The indexer handled `site.issue.created.v1` only. `PATCH /site/issues/:id/status` announced a status move
+  (`site.issue.status_changed.v1`) that nothing consumed, and `PATCH /site/issues/:id` announced nothing for a
+  description or severity edit (it emitted `status_changed` only when the status moved, after the write).
+  - Change: a new canonical event, `site.issue.updated.v1` (avsc, TS interface, catalog; phase-06 design doc and the
+    site-ops README), written by every applied `PATCH /site/issues/:id` from the updated row in the same transaction
+    (`SiteOpsRepository.updateIssue` takes an outbox builder, as `updateIssueStatus` does); not routed to
+    notifications. The indexer handles `site.issue.created.v1`, `site.issue.status_changed.v1` and
+    `site.issue.updated.v1` alike (load the row, index it; external versions keep the newest). Issues indexed before
+    this keep their old values until their next change or a run of `reindex:search`.
+  - Evidence: unit — the indexer subscribes and routes the three issue events; `updateIssue` builds
+    `site.issue.updated.v1` from the updated row; the repository writes it in the same transaction and not when no row
+    matched. Integration `test/site-ops/09-issue-update-events.integration.spec.ts` (real PostgreSQL, through the app's
+    routes): a description / severity edit leaves `created` then `updated` in the outbox; a status change leaves
+    `created` then `status_changed` (that path already emitted it — the new part, its consumption by the indexer, is
+    unit-tested). Both also read the row the indexer would load (`SearchIndexRepository.findIssue`, a database read;
+    the consumer and OpenSearch are not run there). Negative controls: HEAD's service → the edit test fails (no
+    `updated` event); HEAD's consumer → the two subscription unit tests fail.
+  - Not covered (pre-existing, as for reports and projects): `modified_at = now()` is the transaction's start, so two
+    edits committing out of order can leave the later content with the smaller version, which the index then rejects
+    as older until the next edit or a reindex.
+- **Backend integration runs intermittently get a response that belongs to another request.** Seen three times on
+  2026-11-14, each time in a run of several suites together and never when the suite ran alone, each in a different
+  test: `test/search/02` got 404 for `GET /site/reports?q=เครน`; `test/site-ops/05` got a body with no `items` for
+  `?minimal=false`; `test/site-ops/02` got 200 where a SITE_WORKER pushing `attendance` must get 403 — a security
+  assertion. Nothing was logged for any of them. Each suite builds its own app and authenticates through a test
+  middleware that sets the role from `x-test-role` (with a different default per suite); a 200 for SITE_WORKER is what
+  another suite's middleware would answer. Hypothesis, not proven: supertest calls `listen(0)` on the app's server for
+  every request and closes it after, while Node 24's global HTTP agent keeps sockets alive by default
+  (`http.globalAgent.keepAlive` is `true` here, Node v24.22.2), so a pooled socket to a reused ephemeral port can
+  reach a different, still-open server. Not caused by the branches it appeared on (the failing tests touch none of
+  their code); each failing test passed when rerun. Not fixed — the next step is to reproduce it, then disable
+  keep-alive in the integration setup (or give each suite a listening server) and show the flake gone.
 - **`GET /site/issues` takes no `q`, so issue search cannot be reached over HTTP.** The controller passes only
   `project_id`, `severity`, `status`, `page`, `limit`; `SiteOpsService.listIssues` has a `q` branch nothing can
   call — reports were the same until 2026-08-12. No client searches issues today. Found on

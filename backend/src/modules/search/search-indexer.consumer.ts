@@ -49,7 +49,15 @@ const SITE_REPORT_EVENTS = [
   'site.report.updated.v1',
 ] as const;
 
-const SUBSCRIBED_EVENT_TYPES = [...PROJECT_EVENTS, ...SITE_REPORT_EVENTS, 'site.issue.created.v1'];
+// Every event that changes an issue's indexed fields: created, status_changed (PATCH …/status, or a
+// status move in an edit), updated (any edit through PATCH /site/issues/:id).
+const ISSUE_EVENTS = [
+  'site.issue.created.v1',
+  'site.issue.status_changed.v1',
+  'site.issue.updated.v1',
+] as const;
+
+const SUBSCRIBED_EVENT_TYPES = [...PROJECT_EVENTS, ...SITE_REPORT_EVENTS, ...ISSUE_EVENTS];
 
 type Envelope = BaseEventEnvelope<Record<string, unknown>>;
 
@@ -69,9 +77,9 @@ export class SearchIndexerConsumer implements OnModuleInit, OnModuleDestroy {
     for (const eventType of SITE_REPORT_EVENTS) {
       this.kafka.on<Record<string, unknown>>(eventType, (event) => this.handleSiteReport(event));
     }
-    this.kafka.on<Record<string, unknown>>('site.issue.created.v1', (event) =>
-      this.handleIssue(event),
-    );
+    for (const eventType of ISSUE_EVENTS) {
+      this.kafka.on<Record<string, unknown>>(eventType, (event) => this.handleIssue(event));
+    }
 
     await this.kafka.connect({
       groupId: 'search-indexer.shared',

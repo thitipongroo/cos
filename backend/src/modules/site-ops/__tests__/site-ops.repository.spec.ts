@@ -310,6 +310,30 @@ describe('SiteOpsRepository', () => {
       expect(mockPrisma.$executeRaw).not.toHaveBeenCalled();
     });
 
+    it('updateIssue writes its outbox row from the UPDATEd row, and none when nothing matched', async () => {
+      const event = {
+        event_type: 'site.issue.updated.v1',
+        event_version: '1.0',
+        tenant_id: 'tenant-uuid-001',
+        actor_id: 'user-uuid-001',
+        correlation_id: 'corr-1',
+        payload: { issue_id: 'i-1' },
+      };
+      const updated = { issue_id: 'i-1', project_id: 'p-1' };
+      mockPrisma.$queryRaw.mockResolvedValueOnce([updated]);
+      const builder = jest.fn(() => event);
+      await repo.updateIssue('i-1', { description: 'x' }, builder as never);
+      expect(builder).toHaveBeenCalledWith(updated);
+      expect(mockPrisma.$executeRaw).toHaveBeenCalledTimes(1);
+
+      mockPrisma.$executeRaw.mockClear();
+      mockPrisma.$queryRaw.mockResolvedValueOnce([]);
+      const unused = jest.fn();
+      await repo.updateIssue('missing', { description: 'x' }, unused as never);
+      expect(unused).not.toHaveBeenCalled();
+      expect(mockPrisma.$executeRaw).not.toHaveBeenCalled();
+    });
+
     // A sync edit that did not send blocker_category / shift must leave them alone: the SET is a CASE
     // on a flag, so an absent param is (false, null) and the column keeps its value.
     it('writes blocker_category / shift only when given', async () => {

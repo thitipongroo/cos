@@ -546,10 +546,11 @@ export class SiteOpsRepository {
       resolution_note: string | null;
       client_submitted_at: string | null;
     }>,
+    /** Builder over the UPDATEd row, written in the same transaction — skipped when nothing matched. */
+    buildOutboxEvent?: (row: IssueRow) => OutboxEventInput,
   ): Promise<IssueRow | null> {
-    const rows = await this.db.run(
-      (tx) =>
-        tx.$queryRaw<IssueRow[]>`
+    const rows = await this.db.run(async (tx) => {
+      const written = await tx.$queryRaw<IssueRow[]>`
         UPDATE site_ops.issues SET
           description         = COALESCE(${patch.description ?? null},    description),
           severity            = COALESCE(${patch.severity ?? null},        severity),
@@ -561,8 +562,12 @@ export class SiteOpsRepository {
         WHERE issue_id  = ${issueId}::uuid
           AND tenant_id = ${this.tenantId}::uuid
         RETURNING *
-      `,
-    );
+      `;
+      if (buildOutboxEvent && written[0]) {
+        await OutboxPublisher.write(tx, buildOutboxEvent(written[0]));
+      }
+      return written;
+    });
     return rows[0] ?? null;
   }
 

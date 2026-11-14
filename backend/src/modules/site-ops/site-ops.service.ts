@@ -818,22 +818,33 @@ export class SiteOpsService {
     // server authoritative only in a genuine conflict; with none, the resolver applies the client's
     // status (`clientStatus ?? serverRow.status`), so `resolved.status` can differ from
     // `existing.status`. changeIssueStatus() below remains the explicit route (§35.13 ESC-21).
-    const updated = await this.repo.updateIssue(issueId, {
-      description: resolved['description'] as string | null,
-      // severity is NOT one of the fields master:2583-2589 merges, so nothing makes the server
-      // authoritative over it. Taking it off `resolved` — which is built from the server row —
-      // fed the stored value straight back, and the repository's COALESCE turned every severity
-      // change into a no-op. It comes from the client, like any ordinary update field.
-      severity: dto.severity,
-      status: resolved['status'] as string,
-      // Passed through UNTOUCHED. The repository distinguishes "not mentioned" (keep) from an
-      // explicit value via `patch.assigned_to !== undefined`, and `?? null` here made that test
-      // permanently true — so any edit that did not name an assignee silently un-assigned the
-      // issue, with nobody told the work now had no owner.
-      assigned_to: dto.assigned_to,
-      resolution_note: resolved['resolution_note'] as string | null,
-      client_submitted_at: dto.client_submitted_at ?? null,
-    });
+    const updated = await this.repo.updateIssue(
+      issueId,
+      {
+        description: resolved['description'] as string | null,
+        // severity is NOT one of the fields master:2583-2589 merges, so nothing makes the server
+        // authoritative over it. Taking it off `resolved` — which is built from the server row —
+        // fed the stored value straight back, and the repository's COALESCE turned every severity
+        // change into a no-op. It comes from the client, like any ordinary update field.
+        severity: dto.severity,
+        status: resolved['status'] as string,
+        // Passed through UNTOUCHED. The repository distinguishes "not mentioned" (keep) from an
+        // explicit value via `patch.assigned_to !== undefined`, and `?? null` here made that test
+        // permanently true — so any edit that did not name an assignee silently un-assigned the
+        // issue, with nobody told the work now had no owner.
+        assigned_to: dto.assigned_to,
+        resolution_note: resolved['resolution_note'] as string | null,
+        client_submitted_at: dto.client_submitted_at ?? null,
+      },
+      // Every applied edit is announced, so the search index follows it: status_changed (below)
+      // covers a status move only, and description / severity edits announced nothing. Same
+      // transaction as the write.
+      (row) =>
+        this.outboxEvent('site.issue.updated.v1', {
+          issue_id: row.issue_id,
+          project_id: row.project_id,
+        }),
+    );
 
     if (resolution.conflict_status === 'CONFLICT_FLAGGED') {
       const conflictId = randomUUID();
@@ -1317,9 +1328,10 @@ export class SiteOpsService {
         { term: { 'tenant_id.keyword': this.tenantId } },
       ];
       if (params.project_id) must.push({ term: { 'project_id.keyword': params.project_id } });
-      // severity / status are NOT asked of the index: it is written at creation only
-      // (site.issue.created.v1) and never learns a later status change or sync edit, so a term on
-      // them would miss every issue whose status moved. They are applied to the rows below.
+      // severity / status are NOT asked of the index: the rows are the source of truth. The index
+      // follows status changes and edits (site.issue.status_changed.v1 / .updated.v1) only after the
+      // consumer catches up, and issues indexed before those events existed keep their creation-time
+      // values until reindex:search. A term on them would miss such issues. Applied to the rows below.
 
       const response = await this.openSearch.search({
         index: OS_ISSUES_INDEX,

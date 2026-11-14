@@ -749,8 +749,9 @@ paths:
       description: |
         Separate from `PATCH /site/issues/{issueId}` on purpose (§35.13 ESC-21). That endpoint is the
         offline-sync path and applies FIELD_LEVEL_MERGE, under which the server's status always wins
-        — a status sent there is discarded by design. This one carries no conflict fields and is the
-        only way a client changes an issue's status. It emits `site.issue.status_changed.v1`.
+        — a status sent there is discarded in a genuine conflict (with none, the client's status is
+        applied). This one carries no conflict fields and is the direct way a client changes an
+        issue's status. It emits `site.issue.status_changed.v1`.
       operationId: changeIssueStatus
       tags: [issues]
       parameters:

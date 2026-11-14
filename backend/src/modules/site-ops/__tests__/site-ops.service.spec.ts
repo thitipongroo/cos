@@ -869,6 +869,7 @@ describe('updateIssue', () => {
     expect(mockRepo.updateIssue).toHaveBeenCalledWith(
       'issue-1',
       expect.objectContaining({ status: 'IN_PROGRESS' }),
+      expect.any(Function),
     );
   });
 
@@ -924,7 +925,11 @@ describe('updateIssue', () => {
     await service.updateIssue('issue-1', { status: IssueStatus.OPEN });
     // updateIssue never carries a status event — FIELD_LEVEL_MERGE makes the server status win,
     // so nothing can transition here (§35.13 ESC-21). Transitions go through changeIssueStatus.
-    expect(mockRepo.updateIssue).toHaveBeenCalledWith('issue-1', expect.any(Object));
+    expect(mockRepo.updateIssue).toHaveBeenCalledWith(
+      'issue-1',
+      expect.any(Object),
+      expect.any(Function),
+    );
   });
 });
 
@@ -1363,6 +1368,25 @@ describe('listConflictRecords', () => {
   });
 });
 
+// Every applied edit announces site.issue.updated.v1 from the updated row (same transaction), so the
+// search index follows description / severity edits, which announced nothing before.
+describe('updateIssue — site.issue.updated.v1', () => {
+  it('builds the event from the updated row', async () => {
+    mockRepo.findIssueById.mockResolvedValue(makeIssue());
+    mockRepo.updateIssue.mockResolvedValue(makeIssue({ description: 'new text' }));
+
+    await service.updateIssue('issue-1', { description: 'new text' } as never);
+
+    const builder = mockRepo.updateIssue.mock.calls.at(-1)![2] as (r: IssueRow) => {
+      event_type: string;
+      payload: Record<string, unknown>;
+    };
+    const event = builder(makeIssue({ issue_id: 'issue-1', project_id: 'project-9' }));
+    expect(event.event_type).toBe('site.issue.updated.v1');
+    expect(event.payload).toEqual({ issue_id: 'issue-1', project_id: 'project-9' });
+  });
+});
+
 describe('updateIssue — status_changed event emission', () => {
   it('does NOT emit status_changed when the status did not move', async () => {
     // The client sends the status the server already holds, so resolved === fromStatus and there is
@@ -1374,7 +1398,11 @@ describe('updateIssue — status_changed event emission', () => {
     mockRepo.updateIssue.mockResolvedValue({ ...serverIssue, status: 'OPEN' });
 
     await service.updateIssue('issue-1', { status: IssueStatus.OPEN, description: 'update' });
-    expect(mockRepo.updateIssue).toHaveBeenCalledWith('issue-1', expect.any(Object));
+    expect(mockRepo.updateIssue).toHaveBeenCalledWith(
+      'issue-1',
+      expect.any(Object),
+      expect.any(Function),
+    );
   });
 });
 
@@ -1402,6 +1430,7 @@ describe('updateIssue — an ordinary status change', () => {
     expect(mockRepo.updateIssue).toHaveBeenCalledWith(
       'issue-1',
       expect.objectContaining({ status: 'IN_PROGRESS' }),
+      expect.any(Function),
     );
     // No conflict: the caller is editing the state it is looking at.
     expect(mockRepo.createConflictRecord).not.toHaveBeenCalled();
@@ -1624,8 +1653,9 @@ describe('OpenSearch indexing error handling', () => {
     expect(mockRepo.listSiteReports).not.toHaveBeenCalled();
   });
 
-  // The issue index is written at creation only and never learns a status change or sync edit, so
-  // severity / status must not be asked of it — they are applied to the rows, the source of truth.
+  // The index lags the rows (the consumer catches up after the write; issues indexed before
+  // site.issue.updated.v1 existed keep creation-time values until reindex:search), so severity /
+  // status are not asked of it — they are applied to the rows, the source of truth.
   it('listIssues filters severity / status on the rows, not in the index query', async () => {
     const { Client } = jest.requireMock('@opensearch-project/opensearch') as { Client: jest.Mock };
     const search = Client.mock.results[0]?.value.search as jest.Mock;
