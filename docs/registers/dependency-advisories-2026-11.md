@@ -2751,17 +2751,53 @@ openssl ca-certificates`; `groupadd`/`useradd` uid/gid 1001, as the charts run; 
     and both integration tests fail on the second outbox row (the first submission's was right); restored, all pass.
     All eight `test/site-ops/` integration suites pass (140 tests). The integration database URL is the container's
     own user, so RLS on the upsert's RETURNING is not exercised there.
-- **Mobile sync never learns the report id the server kept.** `/sync/push` with `site_report`
-  (`backend/src/modules/sync/sync.service.ts:287-294`) returns only `{ status }`, and the device keeps the report under
-  its own `client_id`. When that id lands on an existing (project, day, submitter) report, the device's id names no
-  server row; its next edit misses `findReportsByIds`, takes the create path and upserts again. That create path
-  (`site-ops.service.ts:222-259`) also skips the last-write-wins check and conflict record of the edit path, and the
-  sync item carries no `blocker_category` or `shift`, so the upsert sets both to NULL over values entered on the web.
-  Found by /doubt on `fix/site-report-event-id`; not fixed. Options: return the kept `report_id` from push and remap on
-  the device, or treat an id miss with a natural-key hit as the edit path.
-- **One report can count twice in `site_activity_daily`.** The Go analytics-worker adds one to `report_count` per
-  `site.report.submitted.v1` (`services/analytics-worker/internal/metrics/consumer.go:279-293`); two device ids for
-  one (project, day, submitter) are one report and two events. Not fixed.
+- **Closed — a synced report for a day that already had one overwrote it unchecked.** Fixed on
+  `fix/site-report-sync-natural-key`. A report is unique per (project, day, submitter), and the mobile app generates a
+  new id for every save (`apps/mobile/src/app/(app)/report.tsx`: "a further save is a NEW report"), so a draft and a
+  submit on one day are two ids for one report. `syncSiteReports` looked items up by `client_id` only; a miss took the
+  create path, whose upsert overwrote the row whatever the age of either version, set `blocker_category` and `shift`
+  to NULL (the sync service does not pass them on, although the app sends them), and emitted a second
+  `site.report.submitted.v1` for one report — the Go analytics-worker adds one to `report_count` per event
+  (`services/analytics-worker/internal/metrics/consumer.go:279-293`), so that day counted two.
+  - Change: the batch's id misses are also looked up by (project, day) for the submitter, in one query
+    (`findReportsByNaturalKeys`); only items with a UUID project and a `YYYY-MM-DD` day (optionally followed by a time)
+    are looked up, so one malformed value from `/sync/push` (which skips DTO validation) cannot fail the lookup for the
+    batch. A hit is a plain edit of the submitter's own report (`applyNaturalKeyEdit`): the newest SAVE wins, compared
+    on `client_submitted_at` (the stored row's, falling back to its `modified_at`; the item's clamped as on the edit
+    path), only the fields the item carries are written, the result is ACCEPTED, and no conflict record or event is
+    written. Rows written earlier in the batch are found by later items, keyed by each row's own project and day.
+  - Decision: the product owner first chose "decide by time and always flag for review"; /doubt showed that, with an
+    id per save, every draft-then-submit would page SITE_ENGINEER / PROJECT_MANAGER / TENANT_ADMIN tenant-wide
+    (`notification.service.ts:164`) and leave the device's row in CONFLICT with no way to resolve it, and that comparing
+    with `modified_at` made an offline submit lose to its own earlier draft when both synced together. The product
+    owner then chose a plain, unflagged edit (2026-11-14).
+  - Evidence: unit — newer save → update with only the sent fields (summary / weather kept), ACCEPTED, no conflict
+    record; older save → no write; comparison on the stored save time, falling back to `modified_at`; lookup only for
+    id misses with a UUID project and a `YYYY-MM-DD` day (`2026-06-05T08:00:00+07:00` → `2026-06-05`; `20260606` and a
+    non-UUID project skipped); draft then submit in one batch → create then edit, both ACCEPTED; an id-hit edit keyed by
+    the row's own day; lookup failure → create path. Integration `test/site-ops/08-site-report-event-id.integration.spec.ts`
+    (testcontainers TimescaleDB): web report (WEATHER / NIGHT) then a newer device save with a headcount → one row,
+    web summary and WEATHER / NIGHT kept, headcount written, no conflict record, no `site.conflict.flagged.v1`, no
+    `site.report.submitted.v1`; an older device save → row unchanged; an offline draft (02:00 UTC) and submit (10:00)
+    synced together, and one at a time → the submit's headcount, one report, one `submitted` event. Negative controls,
+    each applied alone and reverted: natural-key routing off → 4 integration tests fail; comparing with `modified_at`
+    → both draft-then-submit tests fail; writing NULL for unsent fields → the web-report test fails. All
+    `test/site-ops/` and `test/mobile/` integration suites pass.
+  - Not covered: two pushes for one new day racing each other (neither sees the other's row), and a failed
+    natural-key lookup, both of which still take the create path and its upsert as before. The id-hit edit path still
+    writes NULL for fields an item omits (unchanged here).
+- **The device keeps a report under an id the server does not have.** `/sync/push` with `site_report`
+  (`backend/src/modules/sync/sync.service.ts:287-294`) returns only `{ status }`, so a device whose save landed on an
+  existing report never learns that report's id. Its later saves still reach the right row (the natural-key lookup
+  above), but its local row, and photos keyed by that id, name no server report. Needs the push response to carry the
+  kept `report_id` and the app to remap. Not fixed.
+- **Sync drops the report's `blocker_category`, `shift` and per-trade breakdown.** `SyncItemDto` extends
+  `CreateSiteReportDto` and the app sends all three (`report.tsx`), but `syncSiteReports` passes none of them to the
+  create or the edit, so a report filed from the app never stores its blocker category, shift or `manpower_lines`.
+  Found by /doubt on `fix/site-report-sync-natural-key`. Not fixed.
+- **The mobile app dates a report by the UTC day.** `todayIso()` in `report.tsx` is
+  `new Date().toISOString().slice(0, 10)`, so in Thailand (UTC+7) a report saved before 07:00 is dated the day
+  before, and now edits that day's report. Not fixed.
 - **Reports written through sync are not indexed for search.** The search indexer subscribes
   `site.report.created.v1` only (`search-indexer.consumer.ts:42-46`), which sync never emits; sync emits
   `site.report.submitted.v1`. Not fixed.

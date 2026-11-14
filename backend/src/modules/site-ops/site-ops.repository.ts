@@ -194,6 +194,32 @@ export class SiteOpsRepository {
     return new Map(rows.map((r) => [r.report_id, r]));
   }
 
+  /**
+   * `submittedBy`'s reports for the given (project_id, report_date) pairs — the natural key a site
+   * report is unique on — keyed `${project_id}|${YYYY-MM-DD}`. Sync uses it for items whose
+   * client_id is not a report: a new id for a day that already has one.
+   */
+  async findReportsByNaturalKeys(
+    submittedBy: string,
+    keys: Array<{ project_id: string; report_date: string }>,
+  ): Promise<Map<string, SiteReportRow>> {
+    if (keys.length === 0) return new Map();
+    const projectIds = keys.map((k) => k.project_id);
+    const reportDates = keys.map((k) => k.report_date);
+    const rows = await this.db.run(
+      (tx) =>
+        tx.$queryRaw<Array<SiteReportRow & { natural_key: string }>>`
+        SELECT r.*, r.project_id::text || '|' || to_char(r.report_date, 'YYYY-MM-DD') AS natural_key
+        FROM site_ops.site_reports r
+        JOIN unnest(${projectIds}::uuid[], ${reportDates}::date[]) AS k(project_id, report_date)
+          ON r.project_id = k.project_id AND r.report_date = k.report_date
+        WHERE r.tenant_id = ${this.tenantId}::uuid
+          AND r.submitted_by = ${submittedBy}::uuid
+      `,
+    );
+    return new Map(rows.map(({ natural_key, ...row }) => [natural_key, row as SiteReportRow]));
+  }
+
   async listSiteReports(params: {
     project_id?: string;
     from_date?: string;

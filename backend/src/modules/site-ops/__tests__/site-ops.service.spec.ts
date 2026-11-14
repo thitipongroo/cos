@@ -49,6 +49,7 @@ const mockRepo = {
   createSiteReport: jest.fn(),
   findReportById: jest.fn(),
   findReportsByIds: jest.fn().mockResolvedValue(new Map()),
+  findReportsByNaturalKeys: jest.fn().mockResolvedValue(new Map()),
   replaceManpowerLogs: jest.fn(),
   // Default to "no breakdown recorded" — the shape getSiteReport must tolerate on every pre-existing
   // report. Tests that care override it per case.
@@ -392,8 +393,10 @@ describe('syncSiteReports', () => {
     expect(results[0]?.report_id).toBe('new-id');
   });
 
-  // A second device id for a (project, day, submitter) that already has a report takes the create
-  // path and upserts onto that report. site.report.submitted.v1 must name the row, not client_id.
+  // A second device id for a (project, day, submitter) that already has a report normally takes the
+  // edit path (see "natural-key hit" below). When the lookup misses it — the row was written after
+  // it, or it failed — the create path upserts onto that report, and site.report.submitted.v1 must
+  // still name the row, not client_id.
   it('site.report.submitted.v1 names the written row when a new client_id upserts onto a report', async () => {
     mockRepo.findReportsByIds.mockResolvedValue(new Map());
     const existing = makeReport({ report_id: 'existing-report' });
@@ -1864,5 +1867,209 @@ describe('rejects a write whose project does not exist', () => {
 
     await expect(service.createSiteReport(reportDto as never)).resolves.toBeDefined();
     expect(mockRepo.createSiteReport).toHaveBeenCalled();
+  });
+});
+
+// ── syncSiteReports — a new client_id for a day that already has a report ────
+//
+// A report is unique per (project, day, submitter), and the mobile app generates a new id for every
+// save, so a draft and then a submit on one day are two ids for one report. Such an item used to take
+// the create path, whose upsert overwrote the row whatever its age, NULLed blocker_category / shift and
+// emitted a second site.report.submitted.v1. It is now a plain edit of the submitter's own report:
+// newest SAVE wins (client_submitted_at on both sides), only the fields sent are written, ACCEPTED,
+// no conflict record (product owner, 2026-11-14).
+
+describe('syncSiteReports — natural-key hit', () => {
+  const PROJECT = '11111111-1111-4111-8111-111111111111';
+  const DAY = '2026-06-04';
+  const serverRow = (overrides: Partial<SiteReportRow> = {}) =>
+    makeReport({
+      report_id: 'server-report',
+      project_id: PROJECT,
+      report_date: new Date(`${DAY}T00:00:00.000Z`),
+      summary: 'web summary',
+      weather: 'sunny',
+      client_submitted_at: new Date('2026-06-04T10:00:00Z'),
+      modified_at: new Date('2026-06-04T10:00:00Z'),
+      ...overrides,
+    });
+  const item = (
+    clientId: string,
+    clientSubmittedAt: string,
+    extra: Record<string, unknown> = {},
+  ) => ({
+    client_id: clientId,
+    project_id: PROJECT,
+    report_date: DAY,
+    client_submitted_at: clientSubmittedAt,
+    ...extra,
+  });
+  const lookupReturns = (...rows: SiteReportRow[]) =>
+    mockRepo.findReportsByNaturalKeys.mockResolvedValueOnce(
+      new Map(rows.map((r) => [`${r.project_id}|${DAY}`, r])),
+    );
+
+  beforeEach(() => {
+    mockRepo.findReportsByIds.mockResolvedValue(new Map());
+  });
+
+  it('a newer save updates the existing row with only the fields it sent — ACCEPTED, unflagged', async () => {
+    lookupReturns(serverRow());
+    mockRepo.updateSiteReport.mockResolvedValueOnce(serverRow({ manpower_count: 12 }));
+
+    const results = await service.syncSiteReports({
+      items: [item('device-id', '2026-06-04T11:00:00Z', { manpower_count: 12, blockers: 'rain' })],
+    });
+
+    expect(results[0]).toEqual({
+      client_id: 'device-id',
+      report_id: 'server-report',
+      conflict_status: 'ACCEPTED',
+    });
+    expect(mockRepo.createSiteReport).not.toHaveBeenCalled();
+    expect(mockRepo.createConflictRecord).not.toHaveBeenCalled();
+    expect(mockRepo.updateSiteReport).toHaveBeenCalledWith('server-report', {
+      summary: 'web summary', // not sent → kept
+      weather: 'sunny', // not sent → kept
+      blockers: 'rain',
+      manpower_count: 12,
+      client_submitted_at: '2026-06-04T11:00:00.000Z',
+      latitude: null,
+      longitude: null,
+    });
+  });
+
+  it('an older save leaves the row as it is — ACCEPTED, unflagged', async () => {
+    lookupReturns(serverRow());
+
+    const results = await service.syncSiteReports({
+      items: [item('device-id', '2026-06-04T09:00:00Z', { summary: 'older' })],
+    });
+
+    expect(results[0]?.conflict_status).toBe('ACCEPTED');
+    expect(results[0]?.report_id).toBe('server-report');
+    expect(mockRepo.updateSiteReport).not.toHaveBeenCalled();
+    expect(mockRepo.createSiteReport).not.toHaveBeenCalled();
+    expect(mockRepo.createConflictRecord).not.toHaveBeenCalled();
+  });
+
+  // Draft at 09:00, submit at 17:00, both synced at 18:00: the draft's row has modified_at 18:00. The
+  // submit is compared with the draft's SAVE time (client_submitted_at), so it wins.
+  it('compares with the stored save time, not with when the row was written', async () => {
+    lookupReturns(
+      serverRow({
+        client_submitted_at: new Date('2026-06-04T09:00:00Z'),
+        modified_at: new Date('2026-06-04T18:00:00Z'),
+      }),
+    );
+    mockRepo.updateSiteReport.mockResolvedValueOnce(serverRow());
+
+    await service.syncSiteReports({
+      items: [item('submit-id', '2026-06-04T17:00:00Z', { summary: 'submitted' })],
+    });
+
+    expect(mockRepo.updateSiteReport).toHaveBeenCalledWith(
+      'server-report',
+      expect.objectContaining({ summary: 'submitted' }),
+    );
+  });
+
+  it('falls back to modified_at when the stored row has no save time', async () => {
+    lookupReturns(
+      serverRow({ client_submitted_at: null, modified_at: new Date('2026-06-04T12:00:00Z') }),
+    );
+
+    await service.syncSiteReports({ items: [item('device-id', '2026-06-04T11:00:00Z')] });
+
+    expect(mockRepo.updateSiteReport).not.toHaveBeenCalled();
+  });
+
+  it('looks up only id misses with a UUID project and a YYYY-MM-DD day, for the current user', async () => {
+    mockRepo.findReportsByIds.mockResolvedValueOnce(
+      new Map([['33333333-3333-4333-8333-333333333333', serverRow()]]),
+    );
+    mockRepo.createSiteReport.mockResolvedValue(makeReport({ report_id: 'x' }));
+    mockRepo.updateSiteReport.mockResolvedValueOnce(serverRow());
+
+    await service.syncSiteReports({
+      items: [
+        item('33333333-3333-4333-8333-333333333333', '2026-06-04T11:00:00Z'), // id hit
+        item('22222222-2222-4222-8222-222222222222', '2026-06-04T11:00:00Z', {
+          report_date: '2026-06-05T08:00:00+07:00',
+        }), // id miss, full ISO day
+        item('44444444-4444-4444-8444-444444444444', '2026-06-04T11:00:00Z', { project_id: 'p' }),
+        item('55555555-5555-4555-8555-555555555555', '2026-06-04T11:00:00Z', {
+          report_date: '20260606',
+        }),
+      ],
+    });
+
+    expect(mockRepo.findReportsByNaturalKeys).toHaveBeenCalledWith('user-uuid-1', [
+      { project_id: PROJECT, report_date: '2026-06-05' },
+    ]);
+  });
+
+  it('draft then submit in one batch: the first creates, the second edits it (both ACCEPTED)', async () => {
+    mockRepo.findReportsByNaturalKeys.mockResolvedValueOnce(new Map());
+    // What the database returns for the created draft: written now, saved at 09:00.
+    const created = serverRow({
+      report_id: 'draft-id',
+      summary: 'draft',
+      client_submitted_at: new Date('2026-06-04T09:00:00Z'),
+      modified_at: new Date(),
+    });
+    mockRepo.createSiteReport.mockResolvedValueOnce(created);
+    mockRepo.updateSiteReport.mockResolvedValueOnce(created);
+
+    const results = await service.syncSiteReports({
+      items: [
+        item('draft-id', '2026-06-04T09:00:00Z', { summary: 'draft' }),
+        item('submit-id', '2026-06-04T17:00:00Z', { summary: 'submitted' }),
+      ],
+    });
+
+    expect(mockRepo.createSiteReport).toHaveBeenCalledTimes(1);
+    expect(results.map((r) => [r.report_id, r.conflict_status])).toEqual([
+      ['draft-id', 'ACCEPTED'],
+      ['draft-id', 'ACCEPTED'],
+    ]);
+    expect(mockRepo.updateSiteReport).toHaveBeenCalledWith(
+      'draft-id',
+      expect.objectContaining({ summary: 'submitted' }),
+    );
+    expect(mockRepo.createConflictRecord).not.toHaveBeenCalled();
+  });
+
+  it('keys an id-hit edit by the row’s own day, not the item’s', async () => {
+    // An unvalidated /sync/push item can name a report by id and carry another day. A later item for
+    // that other day must not be routed to this report.
+    const row = serverRow({ report_id: '66666666-6666-4666-8666-666666666666' });
+    mockRepo.findReportsByIds.mockResolvedValueOnce(new Map([[row.report_id, row]]));
+    mockRepo.findReportsByNaturalKeys.mockResolvedValueOnce(new Map());
+    mockRepo.updateSiteReport.mockResolvedValueOnce(row);
+    mockRepo.createSiteReport.mockResolvedValueOnce(makeReport({ report_id: 'other-day' }));
+
+    await service.syncSiteReports({
+      items: [
+        item(row.report_id, '2026-06-04T11:00:00Z', { report_date: '2026-06-07' }),
+        item('77777777-7777-4777-8777-777777777777', '2026-06-04T11:00:00Z', {
+          report_date: '2026-06-07',
+        }),
+      ],
+    });
+
+    expect(mockRepo.createSiteReport).toHaveBeenCalledTimes(1);
+  });
+
+  it('a failed natural-key lookup falls back to the create path', async () => {
+    mockRepo.findReportsByNaturalKeys.mockRejectedValueOnce(new Error('db down'));
+    mockRepo.createSiteReport.mockResolvedValueOnce(makeReport({ report_id: 'device-id' }));
+
+    const results = await service.syncSiteReports({
+      items: [item('device-id', '2026-06-04T11:00:00Z')],
+    });
+
+    expect(results[0]?.conflict_status).toBe('ACCEPTED');
+    expect(mockRepo.createSiteReport).toHaveBeenCalledTimes(1);
   });
 });

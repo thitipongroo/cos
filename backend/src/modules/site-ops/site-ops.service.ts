@@ -27,10 +27,14 @@ import type {
   MaterialConsumptionRow,
 } from './site-ops.repository';
 import { UUID_PATTERN } from '../../shared/prisma/assert-safe-tenant-id';
-import { resolveReportConflict, resolveIssueConflict } from '../../shared/sync/conflict-handler';
+import {
+  clampClientTimestamp,
+  resolveReportConflict,
+  resolveIssueConflict,
+} from '../../shared/sync/conflict-handler';
 import type { ConflictStatus } from '../../shared/sync/conflict-handler';
 import type { CreateSiteReportDto } from './dto/create-site-report.dto';
-import type { SyncSiteReportsDto } from './dto/sync-site-reports.dto';
+import type { SyncItemDto, SyncSiteReportsDto } from './dto/sync-site-reports.dto';
 import type { CreateIssueDto } from './dto/create-issue.dto';
 import type { UpdateIssueDto } from './dto/update-issue.dto';
 import type { ChangeIssueStatusDto } from './dto/change-issue-status.dto';
@@ -39,6 +43,22 @@ import type { UpdateInspectionDto } from './dto/update-inspection.dto';
 import type { CreateMaterialConsumptionDto } from './dto/create-material-consumption.dto';
 
 const logger = createLogger('site-ops-service');
+
+/** The `YYYY-MM-DD` day of a sync item's report_date, or null when it is not in that form. */
+function dayOf(reportDate: unknown): string | null {
+  if (typeof reportDate !== 'string') return null;
+  const m = /^(\d{4}-\d{2}-\d{2})(?:T.*)?$/.exec(reportDate);
+  return m ? m[1]! : null;
+}
+
+/** A report's natural key within one submitter's sync batch: its own project and day. */
+function rowKey(row: SiteReportRow): string {
+  const day =
+    row.report_date instanceof Date
+      ? row.report_date.toISOString().slice(0, 10)
+      : String(row.report_date).slice(0, 10);
+  return `${row.project_id}|${day}`;
+}
 const OS_REPORTS_INDEX = 'site-reports';
 const OS_ISSUES_INDEX = 'site-issues';
 /**
@@ -214,12 +234,63 @@ export class SiteOpsService {
     // Only well-formed UUIDs are sent: client_id comes from the device, and one malformed value
     // would break the `::uuid[]` cast for the entire batch. A non-UUID simply misses the map and
     // takes the create path, which is exactly what the old per-item `.catch(() => null)` did.
-    const existingById = await this.repo
-      .findReportsByIds(dto.items.map((i) => i.client_id).filter((id) => UUID_PATTERN.test(id)))
-      .catch(() => new Map<string, SiteReportRow>());
+    // Both lookups are copied: the loop below adds the rows it writes, so later items of the batch
+    // see them, and must not mutate a map it did not create.
+    const existingById = new Map(
+      await this.repo
+        .findReportsByIds(dto.items.map((i) => i.client_id).filter((id) => UUID_PATTERN.test(id)))
+        .catch(() => new Map<string, SiteReportRow>()),
+    );
+
+    // A report is unique per (project, day, submitter). An item whose client_id is not a report can
+    // still name a day that already has one, and must not take the create path: its upsert
+    // overwrote that row whatever its age, set blocker_category and shift to NULL (the sync service
+    // does not pass them on), and emitted a second site.report.submitted.v1 for one report, counted
+    // twice by the analytics worker. The mobile app makes this the normal case — it generates a new
+    // id for every save ("a further save is a NEW report", report.tsx), so a draft and then a submit
+    // on one day are two ids for one report. Such an item is an edit of the submitter's own report:
+    // see applyNaturalKeyEdit.
+    //
+    // Only items with a plain `YYYY-MM-DD` day (optionally followed by a time) and a UUID project
+    // are looked up: /sync/push hands items over without DTO validation, and one value the ::date[]
+    // or ::uuid[] cast rejects would fail the lookup for the whole batch. A miss or a failed lookup
+    // takes the create path, as before.
+    const existingByKey = new Map<string, SiteReportRow>();
+    const lookups = dto.items.filter(
+      (i) =>
+        !existingById.has(i.client_id) &&
+        UUID_PATTERN.test(i.project_id) &&
+        dayOf(i.report_date) !== null,
+    );
+    const found = await this.repo
+      .findReportsByNaturalKeys(
+        this.userId,
+        lookups.map((i) => ({ project_id: i.project_id, report_date: dayOf(i.report_date)! })),
+      )
+      .catch((err: unknown) => {
+        logger.warn({ err, tenant_id: this.tenantId }, 'site-report natural-key lookup failed');
+        return new Map<string, SiteReportRow>();
+      });
+    for (const row of found.values()) existingByKey.set(rowKey(row), row);
 
     for (const item of dto.items) {
       const existing = existingById.get(item.client_id) ?? null;
+      const itemDay = dayOf(item.report_date);
+      const sameDay =
+        !existing && itemDay !== null
+          ? (existingByKey.get(`${item.project_id}|${itemDay}`) ?? null)
+          : null;
+
+      if (sameDay) {
+        const kept = await this.applyNaturalKeyEdit(item, sameDay);
+        existingByKey.set(rowKey(kept), kept);
+        results.push({
+          client_id: item.client_id,
+          report_id: kept.report_id,
+          conflict_status: 'ACCEPTED',
+        });
+        continue;
+      }
 
       if (!existing) {
         // New report — accept directly
@@ -247,6 +318,10 @@ export class SiteOpsService {
               submitted_by: this.userId,
             }),
         );
+
+        // A later item of this batch for the same day, or with the same client_id, finds this row.
+        existingByKey.set(rowKey(report), report);
+        if (report.report_id === item.client_id) existingById.set(item.client_id, report);
 
         results.push({
           client_id: item.client_id,
@@ -314,6 +389,10 @@ export class SiteOpsService {
           });
           continue;
         }
+        // Later items of this batch compare against the row as it now is — keyed by the row's own
+        // project and day, which an edit never changes.
+        existingByKey.set(rowKey(updated), updated);
+        existingById.set(item.client_id, updated);
       }
 
       if (resolution.conflict_status === 'CONFLICT_FLAGGED') {
@@ -344,6 +423,59 @@ export class SiteOpsService {
     }
 
     return results;
+  }
+
+  /**
+   * A sync item that is a new id for a (project, day) the submitter already has a report for: an
+   * edit of the submitter's own report, not a conflict. Product owner, 2026-11-14 — the first
+   * version of this flagged every such item, but the matched row always belongs to the same person
+   * and is usually their own earlier save from the same device, so every draft-then-submit paged
+   * SITE_ENGINEER / PROJECT_MANAGER / TENANT_ADMIN tenant-wide and left the device's row in
+   * CONFLICT with no way to resolve it.
+   *
+   * Last write wins by the time each version was SAVED: the row's `client_submitted_at` when it has
+   * one, not its `modified_at`. A device that saves a draft at 09:00 and submits at 17:00 offline
+   * syncs both at 18:00; against `modified_at` (18:00, when the draft landed) the 17:00 submit would
+   * lose to the draft. The item's time is clamped as on the edit path (a clock ahead is capped).
+   *
+   * Only the fields the item carries are written; the rest keep the row's values. The app sends no
+   * summary or weather, and an edit that set them to NULL would erase what was entered on the web.
+   * Returns the row as it now is (unchanged when the stored version is newer).
+   */
+  private async applyNaturalKeyEdit(item: SyncItemDto, row: SiteReportRow): Promise<SiteReportRow> {
+    const { ts: itemTs, clamped } = clampClientTimestamp(
+      item.client_submitted_at ?? new Date().toISOString(),
+    );
+    if (clamped) {
+      logger.warn(
+        {
+          event: 'sync.clock_skew_clamped',
+          entity_type: 'site_reports',
+          entity_id: row.report_id,
+          client_submitted_at: item.client_submitted_at,
+          tenant_id: this.tenantId,
+        },
+        'client_submitted_at was ahead of the server clock or unparseable — capped for ordering',
+      );
+    }
+    const rowTs = new Date(row.client_submitted_at ?? row.modified_at).getTime();
+    if (itemTs < rowTs) return row;
+
+    const stored = row as unknown as Record<string, unknown>;
+    const pick = <T>(field: keyof SyncItemDto | 'latitude' | 'longitude'): T | null => {
+      const sent = (item as unknown as Record<string, unknown>)[field];
+      return (sent !== undefined ? sent : (stored[field] ?? null)) as T | null;
+    };
+    const updated = await this.repo.updateSiteReport(row.report_id, {
+      summary: pick<string>('summary'),
+      blockers: pick<string>('blockers'),
+      weather: pick<string>('weather'),
+      manpower_count: pick<number>('manpower_count'),
+      client_submitted_at: new Date(itemTs).toISOString(),
+      latitude: pick<number>('latitude'),
+      longitude: pick<number>('longitude'),
+    });
+    return updated ?? row;
   }
 
   // ── Issues ────────────────────────────────────────────────────────────────

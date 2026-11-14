@@ -239,6 +239,26 @@ describe('SiteOpsRepository', () => {
     expect(mockPrisma.$queryRaw).not.toHaveBeenCalled();
   });
 
+  // Sync's second lookup: an id miss can still name a day that already has a report.
+  it('findReportsByNaturalKeys keys rows by project|day and strips the helper column', async () => {
+    mockPrisma.$queryRaw.mockResolvedValue([
+      { ...reportRow, natural_key: 'proj-uuid-001|2026-06-04' },
+    ]);
+    const found = await repo.findReportsByNaturalKeys('user-uuid-001', [
+      { project_id: 'proj-uuid-001', report_date: '2026-06-04' },
+    ]);
+    const row = found.get('proj-uuid-001|2026-06-04');
+    expect(row?.report_id).toBe(reportRow.report_id);
+    expect(row).not.toHaveProperty('natural_key');
+    expect(mockPrisma.$queryRaw).toHaveBeenCalledTimes(1);
+  });
+
+  it('findReportsByNaturalKeys short-circuits an empty key list without querying', async () => {
+    const found = await repo.findReportsByNaturalKeys('user-uuid-001', []);
+    expect(found.size).toBe(0);
+    expect(mockPrisma.$queryRaw).not.toHaveBeenCalled();
+  });
+
   // The LAST_WRITE_WINS half of offline sync (§17.5): when the client's submission is newer, the
   // server row is overwritten in place. modified_at is bumped here because the NEXT sync compares
   // against it to detect a concurrent server-side edit.

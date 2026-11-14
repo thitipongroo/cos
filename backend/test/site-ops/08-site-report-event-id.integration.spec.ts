@@ -158,7 +158,9 @@ describe('Site-report events name the written report (real database)', () => {
       .send({ items: [item(secondId, 'b')] });
     expect(b.status).toBeLessThan(400);
 
-    // The second item is told the report it landed on, not its own client_id.
+    // The second item is told the report it landed on, not its own client_id. Since
+    // fix/site-report-sync-natural-key it is an edit of that report (flagged, see below), not a
+    // second submission, so the one submitted event is the first one.
     expect((b.body as Array<{ client_id: string; report_id: string }>)[0]).toEqual(
       expect.objectContaining({ client_id: secondId, report_id: firstId }),
     );
@@ -167,6 +169,145 @@ describe('Site-report events name the written report (real database)', () => {
     expect(rows).toHaveLength(1);
     expect(rows[0]!.report_id).toBe(firstId);
 
-    expect(await eventReportIds('site.report.submitted.v1', day)).toEqual([firstId, firstId]);
+    expect(await eventReportIds('site.report.submitted.v1', day)).toEqual([firstId]);
+  });
+
+  // ── A new client_id for a day that already has a report: a plain edit of the submitter's own ──
+  // ── report. Newest save wins, only the fields sent are written, ACCEPTED, no conflict record. ──
+
+  const detailsOn = (
+    reportDate: string,
+  ): Promise<
+    Array<{
+      report_id: string;
+      summary: string | null;
+      blocker_category: string | null;
+      shift: string | null;
+      manpower_count: number | null;
+    }>
+  > =>
+    infra.prisma.$queryRawUnsafe(
+      `SELECT report_id::text AS report_id, summary, blocker_category, shift, manpower_count
+         FROM site_ops.site_reports
+        WHERE project_id = $1::uuid AND report_date = $2::date AND submitted_by = $3::uuid`,
+      projectId,
+      reportDate,
+      USER_ID,
+    );
+
+  const conflictsFor = (reportId: string): Promise<unknown[]> =>
+    infra.prisma.$queryRawUnsafe(
+      `SELECT conflict_id FROM site_ops.conflict_records WHERE entity_id = $1::uuid`,
+      reportId,
+    );
+
+  const flaggedEventsFor = async (reportId: string): Promise<number> => {
+    const rows = await infra.prisma.$queryRawUnsafe<Array<{ n: bigint }>>(
+      `SELECT count(*) AS n FROM platform.outbox_events
+        WHERE event_type = 'site.conflict.flagged.v1' AND payload->'payload'->>'entity_id' = $1`,
+      reportId,
+    );
+    return Number(rows[0]!.n);
+  };
+
+  const webReport = async (day: string) => {
+    const res = await http().post('/api/v1/site/reports').send({
+      project_id: projectId,
+      report_date: day,
+      summary: 'web version',
+      blocker_category: 'WEATHER',
+      shift: 'NIGHT',
+    });
+    expect([200, 201]).toContain(res.status);
+    return (res.body as { report_id: string }).report_id;
+  };
+
+  /** What the mobile app sends: no summary, a headcount, its own new id. */
+  const deviceItem = (day: string, clientSubmittedAt: string, manpower: number) => ({
+    client_id: randomUUID(),
+    project_id: projectId,
+    report_date: day,
+    manpower_count: manpower,
+    client_submitted_at: clientSubmittedAt,
+  });
+
+  it('a newer device save edits the web report: its fields written, the rest kept, unflagged', async () => {
+    const day = '2019-03-03';
+    const reportId = await webReport(day);
+
+    const res = await http()
+      .post('/api/v1/site/reports/sync')
+      .send({ items: [deviceItem(day, new Date().toISOString(), 14)] });
+    expect(res.status).toBeLessThan(400);
+    expect((res.body as Array<{ report_id: string; conflict_status: string }>)[0]).toEqual(
+      expect.objectContaining({ report_id: reportId, conflict_status: 'ACCEPTED' }),
+    );
+
+    expect(await detailsOn(day)).toEqual([
+      {
+        report_id: reportId,
+        summary: 'web version',
+        blocker_category: 'WEATHER',
+        shift: 'NIGHT',
+        manpower_count: 14,
+      },
+    ]);
+    expect(await conflictsFor(reportId)).toEqual([]);
+    expect(await flaggedEventsFor(reportId)).toBe(0);
+    // An edit, not a second submission: the analytics worker counts one report per submitted event.
+    expect(await eventReportIds('site.report.submitted.v1', day)).toEqual([]);
+  });
+
+  it('an older device save leaves the web report as it is, unflagged', async () => {
+    const day = '2019-03-04';
+    const reportId = await webReport(day);
+
+    const res = await http()
+      .post('/api/v1/site/reports/sync')
+      .send({ items: [deviceItem(day, '2019-03-04T06:00:00.000Z', 3)] });
+    expect(res.status).toBeLessThan(400);
+    expect((res.body as Array<{ conflict_status: string }>)[0]?.conflict_status).toBe('ACCEPTED');
+
+    expect(await detailsOn(day)).toEqual([
+      expect.objectContaining({ summary: 'web version', manpower_count: null }),
+    ]);
+    expect(await conflictsFor(reportId)).toEqual([]);
+  });
+
+  // The app's own flow: offline, save a draft at 09:00 and submit at 17:00 (each save a new id),
+  // reconnect later and sync both. The submit must win although the draft's row was written last.
+  it('offline draft then submit, synced together: the later save wins, one report, one submitted event', async () => {
+    const day = '2019-03-05';
+    const res = await http()
+      .post('/api/v1/site/reports/sync')
+      .send({
+        items: [
+          deviceItem(day, '2019-03-05T02:00:00.000Z', 5),
+          deviceItem(day, '2019-03-05T10:00:00.000Z', 9),
+        ],
+      });
+    expect(res.status).toBeLessThan(400);
+    const results = res.body as Array<{ report_id: string; conflict_status: string }>;
+    expect(results.map((r) => r.conflict_status)).toEqual(['ACCEPTED', 'ACCEPTED']);
+    expect(results[1]!.report_id).toBe(results[0]!.report_id);
+
+    const rows = await detailsOn(day);
+    expect(rows).toEqual([expect.objectContaining({ manpower_count: 9 })]);
+    expect(await eventReportIds('site.report.submitted.v1', day)).toEqual([results[0]!.report_id]);
+    expect(await conflictsFor(results[0]!.report_id)).toEqual([]);
+  });
+
+  it('the same two saves synced one at a time: still the later save wins', async () => {
+    const day = '2019-03-06';
+    const draft = await http()
+      .post('/api/v1/site/reports/sync')
+      .send({ items: [deviceItem(day, '2019-03-06T02:00:00.000Z', 5)] });
+    expect(draft.status).toBeLessThan(400);
+    const submit = await http()
+      .post('/api/v1/site/reports/sync')
+      .send({ items: [deviceItem(day, '2019-03-06T10:00:00.000Z', 9)] });
+    expect(submit.status).toBeLessThan(400);
+
+    expect(await detailsOn(day)).toEqual([expect.objectContaining({ manpower_count: 9 })]);
   });
 });
