@@ -123,7 +123,11 @@ export class AiProxyController {
       });
     } catch (err) {
       const timedOut = (err as Error).name === 'TimeoutError';
-      logger.error({ err: (err as Error).message, url: req.url, timedOut }, 'ai-proxy.failed');
+      // The path only: the query string is the caller's (a RAG question, a search) — PDPA.
+      logger.error(
+        { err: (err as Error).message, url: req.url.split('?')[0], timedOut },
+        'ai-proxy.failed',
+      );
       throw new HttpException(
         {
           error: {
@@ -143,7 +147,10 @@ export class AiProxyController {
       // The gateway answers JSON on every route; anything else means it is not the gateway
       // answering — a sidecar, a proxy error page — and passing it through as a body would present
       // that as an AI result.
-      logger.error({ status: res.status, url: req.url }, 'ai-proxy.non-json-response');
+      logger.error(
+        { status: res.status, url: req.url.split('?')[0] },
+        'ai-proxy.non-json-response',
+      );
       throw new HttpException(
         { error: { code: 'COS-AI-502', message: 'AI Gateway returned a non-JSON response' } },
         HttpStatus.BAD_GATEWAY,

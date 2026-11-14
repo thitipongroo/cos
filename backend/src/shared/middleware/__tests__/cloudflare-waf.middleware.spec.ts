@@ -1,3 +1,10 @@
+// One shared logger object, so a test can read what the middleware logged.
+jest.mock('@cos/logger', () => {
+  const log = { info: jest.fn(), warn: jest.fn(), error: jest.fn(), debug: jest.fn() };
+  return { createLogger: jest.fn(() => log) };
+});
+
+import { createLogger } from '@cos/logger';
 import { CloudflareWafMiddleware } from '../cloudflare-waf.middleware';
 import type { IncomingMessage, ServerResponse } from 'http';
 
@@ -200,5 +207,49 @@ describe('CloudflareWafMiddleware', () => {
     const { res } = makeRes();
     middleware.use(makeReq({}, undefined), res, next);
     expect(next).not.toHaveBeenCalled();
+  });
+
+  // ── What it logs: the path, never the query string (a search `q` is user text — PDPA) ──────────
+
+  describe('logged url', () => {
+    const SEARCH = `/api/v1/site/issues?q=${encodeURIComponent('นายสมชาย')}`;
+    const log = createLogger('cloudflare-waf') as unknown as Record<'warn' | 'debug', jest.Mock>;
+    const withUrl = (headers: Record<string, string>, extra: Record<string, unknown> = {}) =>
+      ({
+        headers,
+        url: SEARCH,
+        socket: { remoteAddress: '203.0.113.9' },
+        ...extra,
+      }) as unknown as IncomingMessage;
+
+    it('a missing CF-Ray warning logs the path without the query', () => {
+      process.env['NODE_ENV'] = 'production';
+      middleware.use(withUrl({}), makeRes().res, next);
+      expect(log.warn).toHaveBeenCalledWith({ url: '/api/v1/site/issues' }, expect.any(String));
+    });
+
+    it('an origin-denied warning logs the path without the query', () => {
+      process.env['NODE_ENV'] = 'production';
+      process.env['WAF_ORIGIN_ENFORCE'] = 'true';
+      process.env['TRUSTED_PROXY_CIDRS'] = '173.245.48.0/20';
+      middleware.use(withUrl({ 'cf-ray': '7d3b9abc-SIN' }), makeRes().res, next);
+      expect(log.warn).toHaveBeenCalledWith(
+        expect.objectContaining({ url: '/api/v1/site/issues' }),
+        expect.stringContaining('waf.origin.denied'),
+      );
+    });
+
+    it('the debug line logs originalUrl (middie strips req.url) without the query', () => {
+      process.env['NODE_ENV'] = 'development';
+      middleware.use(
+        withUrl({ 'cf-ray': '7d3b9abc-SIN' }, { url: '/?q=x', originalUrl: SEARCH }),
+        makeRes().res,
+        next,
+      );
+      expect(log.debug).toHaveBeenCalledWith(
+        expect.objectContaining({ url: '/api/v1/site/issues' }),
+        'WAF-validated request',
+      );
+    });
   });
 });

@@ -24,6 +24,16 @@ import { isInternalRequest, isInternalRoute } from '../net/internal-listener';
 
 const log = createLogger('cloudflare-waf');
 
+/**
+ * The path to log: `originalUrl` (middie strips the mount prefix from `req.url`) without its query
+ * string, which can carry user text such as a search `q` (PDPA) — as audit.interceptor.ts logs it.
+ */
+function loggedPath(req: IncomingMessage): string {
+  return ((req as IncomingMessage & { originalUrl?: string }).originalUrl ?? req.url ?? '').split(
+    '?',
+  )[0];
+}
+
 function originEnforcementEnabled(): boolean {
   return (process.env['WAF_ORIGIN_ENFORCE'] ?? 'false').toLowerCase() === 'true';
 }
@@ -63,7 +73,7 @@ export class CloudflareWafMiddleware implements NestMiddleware {
     // Layer 1 — in production: reject requests without CF-Ray (WAF not traversed).
     // In development: skip enforcement (no Cloudflare edge locally).
     if (process.env['NODE_ENV'] === 'production' && !cfRay) {
-      log.warn({ url: req.url }, 'Request missing CF-Ray header — WAF bypass detected');
+      log.warn({ url: loggedPath(req) }, 'Request missing CF-Ray header — WAF bypass detected');
       this.deny(res);
       return;
     }
@@ -78,7 +88,7 @@ export class CloudflareWafMiddleware implements NestMiddleware {
         // No peer address in the log line: it is the caller's IP, i.e. personal data under PDPA.
         // ip_address is recorded in platform.audit_logs only (cf. audit.interceptor.ts).
         log.warn(
-          { url: req.url, configuredRanges: cidrs.length },
+          { url: loggedPath(req), configuredRanges: cidrs.length },
           'waf.origin.denied — peer address is not within TRUSTED_PROXY_CIDRS',
         );
         this.deny(res);
@@ -96,7 +106,7 @@ export class CloudflareWafMiddleware implements NestMiddleware {
     // IP — personal data — into the application log stream, which is exactly what QM-8 and the
     // @pdpa note in audit.interceptor.ts rule out. cf-ray alone is the trace correlator (QM-8).
     if (cfRay) {
-      log.debug({ cfRay, url: req.url }, 'WAF-validated request');
+      log.debug({ cfRay, url: loggedPath(req) }, 'WAF-validated request');
     }
 
     next();

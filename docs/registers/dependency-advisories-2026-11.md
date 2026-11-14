@@ -3089,12 +3089,34 @@ modified_at)) <= $t`, milliseconds like the caller's comparison — `modified_at
     logged; controller specs for the cap (100 padded accepted, 101 rejected, non-string refused); app render test
     for `maxLength`; `test/search/03` 8/8 with OpenSearch down (101 characters → 400, 100 → a search). With HEAD's
     code, the new service, controller, render and integration assertions fail.
-- **Search text still reaches telemetry and two WAF warnings through the URL.** Found by /doubt on
-  `fix/search-q-log-and-cap`; not changed there. `http-metrics.interceptor.ts:16` labels `http_requests_total` and
-  the duration metric with `req.routerPath ?? req.url`; under Fastify 5 `routerPath` is gone, so the label is the URL
-  with its query string — `?q=<user text>` on every search (PDPA), and an unbounded label set.
-  `cloudflare-waf.middleware.ts:66` and `:81` warn with `{ url: req.url }` (and `:99` at debug), query included;
-  `audit.interceptor.ts` already strips it with `.split('?')[0]`. Not fixed.
+- **Closed — search text reached the HTTP metrics and the application's URL logs through the query string.** Fixed on
+  `fix/url-query-in-telemetry`. Found by /doubt on `fix/search-q-log-and-cap`.
+  - `http-metrics.interceptor.ts` labelled `http_requests_total` and the duration histogram with
+    `req.routerPath ?? req.url`. Fastify 5.12.2, which the app runs, has no `routerPath` (its `lib/request.js` has
+    only `routeOptions`), so the label was the URL — measured on a real Fastify app on HEAD:
+    `/api/v1/things/abc-123?q=%E0%B8%99…`, the id and the encoded search text. One series per distinct URL, and the
+    user's `q` in the metric (PDPA). The label is now the route template (`routeOptions.url`, else Express's
+    `route.path`, else the URL without its query string). The existing alert rules
+    (`cos-alerts.yml`, `path=~"/api/v1/analytics/…"`) still match templates; no Grafana dashboard in
+    `infrastructure/monitoring/grafana/dashboards` selects on `path`. A wildcard route's label differs by adapter:
+    `/api/v1/ai/*` on Fastify (production), `/api/v1/ai/{*path}` on Express (the integration harness).
+  - The URL was logged with its query string by `cloudflare-waf.middleware.ts` (two warnings, one debug line) and
+    `ai-proxy.controller.ts` (two errors; a RAG question can be in the query). They now log the path only, as
+    `audit.interceptor.ts` already did; the WAF reads `originalUrl` first, since middie strips `req.url`.
+  - Verified: `http-metrics.adapters.spec.ts` — a real Fastify app (`inject`) and a real Express app (loopback)
+    label `/api/v1/things/abc-123?q=…` as `/api/v1/things/:id`, and two ids with two searches are one series; the
+    WAF and ai-proxy specs read what is logged. With HEAD's files the three adapter tests and the four log tests
+    fail. The hand-fed metrics spec now feeds `routeOptions`, not the removed `routerPath`.
+  - Not closed here: the OpenTelemetry trace spans (next entry).
+- **OpenTelemetry trace spans carry the full URL, query string included, and the client IP.** Found by /doubt on
+  `fix/url-query-in-telemetry`; not changed there. `packages/@cos/tracing/src/otel.ts` starts
+  `getNodeAutoInstrumentations()` with no options, and the collector
+  (`infrastructure/monitoring/otel-collector/otel-collector-config.yml`) has no processor that edits span attributes.
+  Per /doubt's reading of the installed instrumentation (not run here): incoming server spans record `http.url` and
+  `http.target` with the query (`?q=<user text>` on every search), and `http.client_ip` / `net.peer.ip`; ai-proxy's
+  outbound `fetch` span records `url.full` / `url.query` (a RAG question). Error traces are always kept by the
+  tail sampler. Not fixed — options: instrumentation-http hooks that overwrite the attributes with the path, or a
+  collector `attributes`/`transform` processor that strips them for every service.
 - **COS-SITE-001 to -007 and -409 are thrown but not in `docs/api/error-codes.md`.** The section was opened with
   `-008` on `fix/search-q-log-and-cap`. Some of them are also thrown without the `{ error: { … } }` wrapper
   (`site-ops.service.ts:850`, `:876`). Not fixed.

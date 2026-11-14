@@ -6,11 +6,14 @@
 // A proxy whose route pattern is wrong is indistinguishable from no proxy at all, which is exactly
 // the state OQ-46 found the AI surface in.
 
-jest.mock('@cos/logger', () => ({
-  createLogger: () => ({ info: jest.fn(), warn: jest.fn(), error: jest.fn(), debug: jest.fn() }),
-}));
+// One shared logger object, so a test can read what the controller logged.
+jest.mock('@cos/logger', () => {
+  const log = { info: jest.fn(), warn: jest.fn(), error: jest.fn(), debug: jest.fn() };
+  return { createLogger: jest.fn(() => log) };
+});
 
 import { Test } from '@nestjs/testing';
+import { createLogger } from '@cos/logger';
 import { FastifyAdapter, NestFastifyApplication } from '@nestjs/platform-fastify';
 import { CanActivate } from '@nestjs/common';
 import { AiProxyController } from '../ai-proxy.controller';
@@ -206,6 +209,23 @@ describe('AiProxyController', () => {
       const res = await app.inject({ method: 'POST', url: '/api/v1/ai/completions' });
       expect(res.statusCode).toBe(504);
       expect(res.json().error.code).toBe('COS-AI-504');
+    });
+
+    // The caller's query string (a RAG question, a search) is theirs — the logs carry the path only.
+    it('logs a gateway failure and a non-JSON reply by path, without the query string', async () => {
+      const log = createLogger('ai-proxy') as unknown as { error: jest.Mock };
+      log.error.mockClear();
+      const url = `/api/v1/rag/query?q=${encodeURIComponent('นายสมชาย')}`;
+
+      (global.fetch as jest.Mock).mockRejectedValueOnce(new Error('ECONNREFUSED'));
+      await app.inject({ method: 'GET', url });
+      gatewayReplies(200, null, '<html>502 Bad Gateway</html>');
+      await app.inject({ method: 'GET', url });
+
+      expect(log.error).toHaveBeenCalledTimes(2);
+      for (const [fields] of log.error.mock.calls as Array<[{ url: string }]>) {
+        expect(fields.url).toBe('/api/v1/rag/query');
+      }
     });
 
     it('502s on a non-JSON body instead of presenting it as an AI result', async () => {

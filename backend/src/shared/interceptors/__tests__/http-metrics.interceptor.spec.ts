@@ -32,7 +32,7 @@ import { HttpMetricsInterceptor } from '../http-metrics.interceptor';
 function makeCtx(method = 'GET', path = '/api/v1/projects', status = 200): ExecutionContext {
   return {
     switchToHttp: () => ({
-      getRequest: () => ({ method, routerPath: path }),
+      getRequest: () => ({ method, routeOptions: { url: path } }),
       getResponse: () => ({ statusCode: status }),
     }),
   } as unknown as ExecutionContext;
@@ -147,7 +147,7 @@ describe('HttpMetricsInterceptor', () => {
       });
   });
 
-  it('uses routerPath label (not full URL) to avoid high cardinality', (done) => {
+  it('uses the route template (routeOptions.url), not the URL, to avoid high cardinality', (done) => {
     interceptor
       .intercept(makeCtx('GET', '/api/v1/projects/:id', 200), makeHandler(of({})))
       .subscribe({
@@ -159,10 +159,30 @@ describe('HttpMetricsInterceptor', () => {
       });
   });
 
-  it('falls back to req.url when routerPath is undefined', (done) => {
+  it("uses Express's matched route path when there is no routeOptions", (done) => {
     const ctx = {
       switchToHttp: () => ({
-        getRequest: () => ({ method: 'GET', url: '/fallback-url' }),
+        getRequest: () => ({
+          method: 'GET',
+          route: { path: '/api/v1/projects/:id' },
+          url: '/api/v1/projects/abc?q=x',
+        }),
+        getResponse: () => ({ statusCode: 200 }),
+      }),
+    } as unknown as ExecutionContext;
+    interceptor.intercept(ctx, makeHandler(of({}))).subscribe({
+      complete: () => {
+        const [, attrs] = mockRecord.mock.calls[0];
+        expect(attrs.path).toBe('/api/v1/projects/:id');
+        done();
+      },
+    });
+  });
+
+  it('falls back to req.url WITHOUT its query string when no route template is known', (done) => {
+    const ctx = {
+      switchToHttp: () => ({
+        getRequest: () => ({ method: 'GET', url: '/fallback-url?q=นายสมชาย' }),
         getResponse: () => ({ statusCode: 200 }),
       }),
     } as unknown as ExecutionContext;
@@ -175,7 +195,7 @@ describe('HttpMetricsInterceptor', () => {
     });
   });
 
-  it('falls back to "unknown" when both routerPath and url are undefined', (done) => {
+  it('falls back to "unknown" when neither a route template nor url is known', (done) => {
     const ctx = {
       switchToHttp: () => ({
         getRequest: () => ({ method: 'GET' }),
@@ -194,7 +214,7 @@ describe('HttpMetricsInterceptor', () => {
   it('uses "UNKNOWN" when req.method is undefined', (done) => {
     const ctx = {
       switchToHttp: () => ({
-        getRequest: () => ({ routerPath: '/api' }),
+        getRequest: () => ({ routeOptions: { url: '/api' } }),
         getResponse: () => ({ statusCode: 200 }),
       }),
     } as unknown as ExecutionContext;
@@ -210,7 +230,7 @@ describe('HttpMetricsInterceptor', () => {
   it('defaults statusCode to 200 when response statusCode is undefined', (done) => {
     const ctx = {
       switchToHttp: () => ({
-        getRequest: () => ({ method: 'GET', routerPath: '/api' }),
+        getRequest: () => ({ method: 'GET', routeOptions: { url: '/api' } }),
         getResponse: () => ({}),
       }),
     } as unknown as ExecutionContext;
