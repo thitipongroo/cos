@@ -330,7 +330,18 @@ export class SiteOpsService {
     const existingById = new Map(
       await this.repo
         .findReportsByIds(dto.items.map((i) => i.client_id).filter((id) => UUID_PATTERN.test(id)))
-        .catch(() => new Map<string, SiteReportRow>()),
+        .catch((err: unknown) => {
+          // Still the no-id path (a push must not fail wholesale over this lookup), but never
+          // silently: ids are UUID-filtered above, so this is not a cast error — it is the database
+          // or the tenant transaction (missing context, paused/moved tenant, pool timeout) — and it
+          // sends every item of the batch down the natural-key / create branches, skipping conflict
+          // detection. A lookup that succeeds but misses the row is not logged here.
+          logger.warn(
+            { err, tenant_id: this.tenantId, items: dto.items.length },
+            'site-report id lookup failed — items take the no-id path',
+          );
+          return new Map<string, SiteReportRow>();
+        }),
     );
 
     // A report is unique per (project, day, submitter). An item whose client_id is not a report can

@@ -2792,7 +2792,11 @@ openssl ca-certificates`; `groupadd`/`useradd` uid/gid 1001, as the charts run; 
   the client last looked" got ACCEPTED; alone it passed twice. With `last_known_modified_at` set, the resolver flags
   this case unconditionally, so ACCEPTED means the item did not reach it — the likeliest way is the batch id lookup
   (`findReportsByIds`) failing, whose `.catch(() => new Map())` logs nothing, sending the item down the natural-key
-  path. Not reproduced and not fixed; the first step is to log that swallowed error.
+  path. Not reproduced. Since `fix/site-report-sync-lookup-log` that failure is logged as a warning
+  (`site-report id lookup failed — items take the no-id path`, with the error and the batch size; the fallback itself
+  is unchanged). A recurrence with that warning confirms this path; one without it does not clear the lookup — it may
+  have succeeded but missed the row (removed by another suite's cleanup, or read under a different tenant than RLS),
+  which the log does not cover. The item stays open until a recurrence is diagnosed.
 - **Reports filed from the app notify no project manager.** The PM notification is routed for `site.report.created.v1`
   only (`notification.consumer.ts`, `EVENT_ROLE_MAP`), which the web `POST /site/reports` emits; the app's reports go
   through `/sync/push` and emit `site.report.submitted.v1`, which no notification route covers. Found by /doubt on

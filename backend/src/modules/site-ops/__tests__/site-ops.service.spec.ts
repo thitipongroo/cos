@@ -495,6 +495,28 @@ describe('syncSiteReports', () => {
     expect(mockRepo.createSiteReport).toHaveBeenCalledTimes(1);
   });
 
+  // The fallback stays, but the failure is logged: it sends every item down the no-id branches, and
+  // an id-hit that should have been CONFLICT_FLAGGED came back ACCEPTED once with nothing logged.
+  it('a failed id lookup is logged with its error', async () => {
+    const lookupError = new Error('connection terminated');
+    mockRepo.findReportsByIds.mockRejectedValueOnce(lookupError);
+    // A UUID client_id, so the real lookup would query the database (a non-UUID never reaches it).
+    const clientId = '0d9c4a1e-5b7f-4c2a-9e3d-1f2a3b4c5d6e';
+    mockRepo.createSiteReport.mockResolvedValueOnce(makeReport({ report_id: clientId }));
+    const warn = jest.requireMock('@cos/logger').createLogger().warn as jest.Mock;
+    warn.mockClear();
+
+    await service.syncSiteReports({
+      items: [{ client_id: clientId, project_id: 'project-1', report_date: '2026-06-04' }],
+    } as never);
+
+    expect(mockRepo.findReportsByIds).toHaveBeenCalledWith([clientId]);
+    expect(warn).toHaveBeenCalledWith(
+      expect.objectContaining({ err: lookupError, items: 1 }),
+      'site-report id lookup failed — items take the no-id path',
+    );
+  });
+
   it('ACCEPTED for new report with all optional fields provided (covers ?? null true branches)', async () => {
     mockRepo.findReportsByIds.mockResolvedValue(new Map());
     mockRepo.createSiteReport.mockResolvedValue(makeReport({ report_id: 'new-full-id' }));
