@@ -187,10 +187,13 @@ export class SyncService {
     // would otherwise surface as a Postgres error (HTTP 500) rather than a 400 the client can act on.
     const sinceMs = Date.parse(sinceIso);
     if (!Number.isFinite(sinceMs)) {
+      // In the `{ error: … }` body: a bare `{ code, … }` reaches the client as COS-GENERAL-400.
       throw new BadRequestException({
-        code: 'COS-SYNC-002',
-        message: `Invalid 'since' cursor: ${sinceIso}`,
-        messageKey: 'sync.delta.invalidCursor',
+        error: {
+          code: 'COS-SYNC-002',
+          message: `Invalid 'since' cursor: ${sinceIso}`,
+          messageKey: 'sync.delta.invalidCursor',
+        },
       });
     }
 

@@ -236,6 +236,14 @@ describe('permits', () => {
     );
   });
 
+  // fix/cos-site-error-codes: a bare `{ code, message }` reached the client as COS-GENERAL-422.
+  it('a non-PENDING permit carries COS-SAFE-003 in the QM-10 body, approve and reject alike', async () => {
+    mockRepo.findPermitById.mockResolvedValue({ ...pendingWork, status: 'ACTIVE' });
+    const body = { response: { error: { code: 'COS-SAFE-003' } } };
+    await expect(service.approvePermit('perm-1', 'TENANT_ADMIN')).rejects.toMatchObject(body);
+    await expect(service.rejectPermit('perm-1')).rejects.toMatchObject(body);
+  });
+
   it('rejectPermit: PENDING → REVOKED; non-PENDING → Unprocessable', async () => {
     mockRepo.findPermitById.mockResolvedValueOnce(pendingWork);
     mockRepo.updatePermitStatus.mockResolvedValue({ ...pendingWork, status: 'REVOKED' });

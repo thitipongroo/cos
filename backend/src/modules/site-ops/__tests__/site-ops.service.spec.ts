@@ -985,6 +985,21 @@ describe('changeIssueStatus', () => {
     expect(mockRepo.updateIssueStatus).not.toHaveBeenCalled();
   });
 
+  // fix/cos-site-error-codes: both throws were bare `{ code, message }`, which the exception filter
+  // answers as COS-GENERAL-404 — the code never reached the client.
+  it('a missing issue carries COS-SITE-002 in the QM-10 body, on both paths', async () => {
+    mockRepo.findIssueById.mockResolvedValueOnce(null);
+    await expect(
+      service.changeIssueStatus('missing', { status: IssueStatus.RESOLVED }),
+    ).rejects.toMatchObject({ response: { error: { code: 'COS-SITE-002' } } });
+
+    mockRepo.findIssueById.mockResolvedValueOnce(makeIssue({ status: 'OPEN' }));
+    mockRepo.updateIssueStatus.mockResolvedValueOnce(null);
+    await expect(
+      service.changeIssueStatus('gone', { status: IssueStatus.RESOLVED }),
+    ).rejects.toMatchObject({ response: { error: { code: 'COS-SITE-002' } } });
+  });
+
   it('persists the transition and builds the event from the UPDATEd row', async () => {
     const existing = makeIssue({ status: 'OPEN' });
     const updatedRow = makeIssue({ status: 'RESOLVED', resolution_note: 'fixed on site' });
@@ -1351,6 +1366,14 @@ describe('resolveConflict', () => {
     mockRepo.resolveConflictRecord.mockResolvedValue(record);
     const result = await service.resolveConflict('conflict-1');
     expect(result.reviewed_by).toBe('user-uuid-1');
+  });
+
+  // Its own code: COS-SITE-004 is "Project not found" (fix/cos-site-error-codes).
+  it('a missing or already-resolved record answers COS-SITE-009', async () => {
+    mockRepo.resolveConflictRecord.mockResolvedValueOnce(null);
+    await expect(service.resolveConflict('missing')).rejects.toMatchObject({
+      response: { error: { code: 'COS-SITE-009' } },
+    });
   });
 
   it('throws UnprocessableEntityException when not found or already resolved', async () => {

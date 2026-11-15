@@ -847,7 +847,7 @@ export class SiteOpsService {
   async changeIssueStatus(issueId: string, dto: ChangeIssueStatusDto): Promise<IssueRow> {
     const existing = await this.repo.findIssueById(issueId);
     if (!existing) {
-      throw new NotFoundException({ code: 'COS-SITE-002', message: 'Issue not found' });
+      throw new NotFoundException({ error: { code: 'COS-SITE-002', message: 'Issue not found' } });
     }
 
     const fromStatus = existing.status;
@@ -873,7 +873,7 @@ export class SiteOpsService {
     /* istanbul ignore next -- the row was read above in the same request; a concurrent hard delete
        is the only way to miss it, and site_ops.issues has no delete path. */
     if (!updated) {
-      throw new NotFoundException({ code: 'COS-SITE-002', message: 'Issue not found' });
+      throw new NotFoundException({ error: { code: 'COS-SITE-002', message: 'Issue not found' } });
     }
 
     logger.info({
@@ -1305,7 +1305,8 @@ export class SiteOpsService {
     if (!record) {
       throw new UnprocessableEntityException({
         error: {
-          code: 'COS-SITE-004',
+          // Its own code: COS-SITE-004 is "Project not found" (assertProjectExists).
+          code: 'COS-SITE-009',
           message: 'Conflict record not found or already resolved',
         },
       });

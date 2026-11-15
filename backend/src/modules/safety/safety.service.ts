@@ -187,8 +187,10 @@ export class SafetyService {
     const permit = await this.getPermit(permitId);
     if (permit.status !== 'PENDING') {
       throw new UnprocessableEntityException({
-        code: 'COS-SAFE-003',
-        message: `Permit is ${permit.status}; only PENDING permits can be approved`,
+        error: {
+          code: 'COS-SAFE-003',
+          message: `Permit is ${permit.status}; only PENDING permits can be approved`,
+        },
       });
     }
     if (permit.permit_type === 'SAFETY_PERMIT' && tier === 'SAFETY_OFFICER') {
@@ -216,8 +218,10 @@ export class SafetyService {
     const permit = await this.getPermit(permitId);
     if (permit.status !== 'PENDING') {
       throw new UnprocessableEntityException({
-        code: 'COS-SAFE-003',
-        message: `Permit is ${permit.status}; only PENDING permits can be rejected`,
+        error: {
+          code: 'COS-SAFE-003',
+          message: `Permit is ${permit.status}; only PENDING permits can be rejected`,
+        },
       });
     }
     return this.repo.updatePermitStatus(permitId, 'REVOKED', reason ?? null);

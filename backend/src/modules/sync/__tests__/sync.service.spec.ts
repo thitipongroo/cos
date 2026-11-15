@@ -546,6 +546,10 @@ describe('SyncService', () => {
     it('rejects an unparseable `since` cursor with 400, not a Postgres 500', async () => {
       const { svc } = harness();
       await expect(svc.delta('last-tuesday', ['task'])).rejects.toBeInstanceOf(BadRequestException);
+      // In the QM-10 body, so the client gets COS-SYNC-002 rather than COS-GENERAL-400.
+      await expect(svc.delta('last-tuesday', ['task'])).rejects.toMatchObject({
+        response: { error: { code: 'COS-SYNC-002', messageKey: 'sync.delta.invalidCursor' } },
+      });
     });
 
     it('flags full_resync_required when the cursor predates the retention window', async () => {

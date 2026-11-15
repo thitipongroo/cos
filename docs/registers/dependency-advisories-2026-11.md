@@ -3079,9 +3079,20 @@ modified_at)) <= $t`, milliseconds like the caller's comparison — `modified_at
     conformance test (`tests/conformance/observability/01`) pins the statements and fails on both.
   - Not covered: an attribute a service adds itself under another name; user text in an exception message that is
     not a URL; the OTLP logs pipeline (whether any service sends OTLP logs was not checked).
-- **COS-SITE-001 to -007 and -409 are thrown but not in `docs/api/error-codes.md`.** The section was opened with
-  `-008` on `fix/search-q-log-and-cap`. Some of them are also thrown without the `{ error: { … } }` wrapper
-  (`site-ops.service.ts:850`, `:876`). Not fixed.
+- **Closed — COS-SITE-001 to -007 and -409 were thrown but not in `docs/api/error-codes.md`.** Fixed on
+  `fix/cos-site-error-codes`. The COS-SITE section now lists every code the site-ops module throws, with its HTTP
+  status, message and route. Two codes changed: `changeIssueStatus` threw COS-SITE-002 as a bare `{ code, message }`,
+  which the exception filter answers as `COS-GENERAL-404` — now in the `{ error: … }` body; and `resolveConflict`'s
+  422 shared COS-SITE-004 with "Project not found" — it is COS-SITE-009. No client read either code (`git grep` over
+  apps and tests). The trigger column names every route that reaches each code, `/safety/checklists` and
+  `/sync/push` included.
+  - Found by /doubt on this branch and fixed with it: three more bare throws lost their code the same way —
+    COS-SAFE-003 (`approvePermit`, `rejectPermit`) and COS-SYNC-002 (`GET /sync/delta`, bad `since`). Wrapped, and
+    the COS-SAFE (001–004) and COS-SYNC (002) codes registered in new sections. No other bare `{ code: 'COS-…' }`
+    throw was found in `backend/src` (a pattern search; a code built from a variable or helper would not show).
+  - Verified: unit cases (both `changeIssueStatus` paths carry COS-SITE-002 in the body; `resolveConflict` answers
+    COS-SITE-009; approve/reject carry COS-SAFE-003; a bad cursor carries COS-SYNC-002) fail on HEAD's services; the
+    site-ops, safety and sync unit suites pass.
 - **Closed — the site-report notification said "0 issue(s), 0 photo(s)" on every submission.** Fixed on
   `fix/site-report-notification-counts`. `createSiteReport` put the constants 0 into `site.report.created.v1`, and the
   IN_APP template (`20260824000002`, English only) printed them. The event comes from the web `POST /site/reports`

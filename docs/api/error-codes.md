@@ -227,12 +227,48 @@ Full-CRUD backing entities under the project domain (§10.2 / §11.2). `-001` = 
 
 ## COS-SITE — Site operations: reports, issues, inspections
 
-Section opened 2026-11-14 with `-008`. Codes `-001` to `-007` and `-409` are thrown by
-`site-ops.service.ts` and are not yet registered here (see the dependency-advisories register).
+Section opened 2026-11-14 with `-008`; completed 2026-11-15 (`fix/cos-site-error-codes`) from
+`backend/src/modules/site-ops/`. Two codes changed then: `changeIssueStatus` threw `-002` without the
+`{ error: … }` body, so the client received `COS-GENERAL-404`; and `resolveConflict` shared `-004` with "Project
+not found" — it is `-009` now. `-001` and `-005` are both "Site report not found", on different routes.
 
-| Code         | HTTP | Message                                                      | Trigger                                                                                                                                                                              |
-| ------------ | ---- | ------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| COS-SITE-008 | 400  | q must be at most 100 characters / q must be a single string | `GET /site/reports` or `GET /site/issues` with a `q` longer than 100 characters after trimming, or a `q` that is not a string. `GET /projects` caps at 100 too, as `COS-GENERAL-400` |
+| Code         | HTTP | Message                                                                         | Trigger                                                                                                                                                                                |
+| ------------ | ---- | ------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| COS-SITE-001 | 404  | Site report not found                                                           | `GET /site/reports/{reportId}` for an id the calling tenant has no report under                                                                                                        |
+| COS-SITE-002 | 404  | Issue not found                                                                 | `POST /site/issues/{issueId}/escalate`, `PATCH /site/issues/{issueId}/status`, `PATCH /site/issues/{issueId}` for an issue the tenant does not have                                    |
+| COS-SITE-003 | 404  | Safety checklist not found                                                      | `POST /site/inspections`, `POST /safety/checklists`, `POST /sync/push` (`inspection`) with a `checklist_id` the tenant does not have                                                   |
+| COS-SITE-004 | 404  | Project not found                                                               | `POST /site/reports`, `POST /site/issues`, `POST /site/inspections`, `POST /safety/checklists`, `POST /sync/push` (`issue`, `inspection`) with a `project_id` the tenant does not have |
+| COS-SITE-005 | 404  | Site report not found                                                           | `POST /site/reports/{reportId}/materials`, `POST /sync/push` (`material`) for a report the tenant does not have                                                                        |
+| COS-SITE-006 | 404  | Inspection not found                                                            | `GET /site/inspections/{inspectionId}`, and the `PATCH` before it transitions                                                                                                          |
+| COS-SITE-007 | 422  | Inspection already PASSED (terminal); create a new inspection for re-inspection | `PATCH /site/inspections/{inspectionId}` on a PASSED inspection                                                                                                                        |
+| COS-SITE-008 | 400  | q must be at most 100 characters / q must be a single string                    | `GET /site/reports` or `GET /site/issues` with a `q` longer than 100 characters after trimming, or not a string. `GET /projects` caps at 100 too, as `COS-GENERAL-400`                 |
+| COS-SITE-009 | 422  | Conflict record not found or already resolved                                   | `PATCH /site/conflict-records/{conflictId}/resolve` for a record the tenant does not have, or one already resolved                                                                     |
+| COS-SITE-409 | 409  | client_id is already in use                                                     | `POST /site/issues`, `POST /sync/push` (`issue`), whose client id is taken by another tenant's issue — RLS hides that row while the key still refuses it                               |
+
+---
+
+## COS-SAFE — Safety incidents and permits
+
+Registered 2026-11-15 (`fix/cos-site-error-codes`) from `backend/src/modules/safety/safety.service.ts`. `-003` was
+thrown without the `{ error: … }` body until then, so the client received `COS-GENERAL-422`.
+
+| Code         | HTTP | Message                                                             | Trigger                                                                                          |
+| ------------ | ---- | ------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| COS-SAFE-001 | 404  | Incident not found                                                  | `PATCH /safety/incidents/{incidentId}/acknowledge` for an incident the tenant does not have      |
+| COS-SAFE-002 | 404  | Permit not found                                                    | `PATCH /safety/permits/{permitId}/approve` or `/reject` for a permit the tenant does not have    |
+| COS-SAFE-003 | 422  | Permit is {status}; only PENDING permits can be approved / rejected | `PATCH /safety/permits/{permitId}/approve` or `/reject` on a permit that is not PENDING          |
+| COS-SAFE-004 | 403  | Safety permits require PM (final) approval                          | `PATCH /safety/permits/{permitId}/approve` of a SAFETY_PERMIT at the SAFETY_OFFICER tier (§15.5) |
+
+---
+
+## COS-SYNC — Offline sync
+
+Registered 2026-11-15 (`fix/cos-site-error-codes`) from `backend/src/modules/sync/sync.service.ts`. `-002` was thrown
+without the `{ error: … }` body until then, so the client received `COS-GENERAL-400`.
+
+| Code         | HTTP | Message                         | Trigger                                                                                                    |
+| ------------ | ---- | ------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| COS-SYNC-002 | 400  | Invalid 'since' cursor: {value} | `GET /sync/delta` with a `since` that does not parse as an instant (messageKey `sync.delta.invalidCursor`) |
 
 ---
 
