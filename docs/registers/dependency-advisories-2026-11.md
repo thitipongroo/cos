@@ -2629,11 +2629,6 @@ openssl ca-certificates`; `groupadd`/`useradd` uid/gid 1001, as the charts run; 
     the assignee have both refreshed — later by up to an interval plus the skew between replicas, not lost. Nor the
     cost of `listTopics` on MSK: each call is a full-cluster metadata request, six per replica every 30 s, and the topic
     count grows with tenants × event types. One shared lister per process, or jitter, are the options if either shows.
-- **Messages written while no consumer runs, to a topic it never subscribed, are still skipped.** After the fix above,
-  a topic created between a consumer's last refresh and its shutdown (or while every replica is down) exists at the
-  next startup; `connect()` subscribes it with the caller's `fromBeginning` (false for the backend), so its messages
-  are read from the latest offset. Not fixed: using `fromBeginning: true` at startup would also make a new consumer
-  group read every existing topic's full retention.
 - **Closed — site-report events named a report id that did not exist after an upsert.** Fixed on
   `fix/site-report-event-id`. A site report is unique per (project, day, submitter), and
   `SiteOpsRepository.createSiteReport` upserts on that key, keeping the existing row's `report_id`. Both callers built
@@ -3217,3 +3212,17 @@ status = 'ACTIVE'` and leaves `vendor_id` as it was. Inviting the same e-mail ad
   through `/sync/push` and emit `site.report.submitted.v1`, which no notification route covers. Found by /doubt on
   `fix/site-report-notification-counts`. Not fixed (routing it is a product decision: one notification per day's
   report, not per save, given the app saves a draft and a submit separately).
+- **Messages written while no consumer runs, to a topic it never subscribed, are skipped.** A topic created between a
+  consumer's last refresh and its shutdown (or while every replica is down) is subscribed at the next startup with the
+  caller's `fromBeginning` (false for the backend), so the events that created it are read from the latest offset.
+  Measured on real Kafka on `fix/kafka-startup-new-topics` (2026-11-15): a group consumes tenant A's topic and stops,
+  tenant B's first event creates its topic meanwhile, and the restarted group never receives it.
+  - A fix was written there and withdrawn (product owner, 2026-11-15) after /doubt: reading a topic with no committed
+    offset from the beginning when the group "already exists" (has a commit elsewhere) misfires on prod's three
+    replicas — the first replica of a NEW group commits within seconds, the next ones then read up to seven days of
+    old events (all of a compacted `construction.project.*` topic); the check is per topic while KafkaJS applies
+    `fromBeginning` per partition, so a never-committed partition of a multi-partition topic still starts at the
+    latest offset; and `admin.fetchOffsets` over thousands of tenant topics can hit KafkaJS's lock timeout and fall
+    back silently.
+  - Parked: needs a design that knows when the group last ran — e.g. a heartbeat time per group, and a seek of each
+    never-committed partition to that time on group join — rather than "no committed offset".
