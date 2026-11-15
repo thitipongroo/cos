@@ -1635,11 +1635,18 @@ gate's isolated run) checks the hash was not tested either; it ran 12.18.0 with 
   same colour-only state, and takes the same fix. Verified: render cases on both screens (radio role; the selected
   state at start, after a press and back) fail on HEAD's screens; the unit and render suites and the RN a11y gate
   pass.
-- **The `allowBuilds` comment in `pnpm-workspace.yaml`** says puppeteer's postinstall never runs on a CI runner. But
-  the 12 CI jobs that install, and `apps/web/Dockerfile`, run an unfiltered `pnpm install --frozen-lockfile` that
-  includes root devDependencies, so it does run there. Its "~150 MB" is also low: Chrome and chrome-headless-shell
-  156 take about 367 MB and 203 MB on macOS. It reaches proxy-agent through `@puppeteer/browsers`' out-of-range
-  optional peer (branch 2 removed that link and branch 3 brought it back). This predates the series.
+- **Closed — the `allowBuilds` comment in `pnpm-workspace.yaml` said puppeteer's postinstall never runs on a CI
+  runner.** Fixed on `docs/puppeteer-allowbuilds-comment` (comment only). 13 of the 15 installs in
+  `.github/workflows` (2026-11-16) and `apps/web/Dockerfile` are unfiltered root-workspace `pnpm install
+  --frozen-lockfile` runs with root devDependencies — mermaid-cli, so puppeteer — and nothing sets
+  `PUPPETEER_SKIP_DOWNLOAD`, so the browser download runs on each; the other two install `apps/mobile`'s own
+  workspace, which has no puppeteer. (This entry first said "12 CI jobs"; there were 13 root installs then too.) The
+  comment now says so, with the sizes this entry recorded when it was opened — Chrome 156 ≈ 367 MB and
+  chrome-headless-shell ≈ 203 MB on macOS, how they were measured not written down; CI and the image fetch the linux
+  builds — instead of "~150 MB", and that skipping the download in CI is a separate decision. It still
+  reaches proxy-agent through `@puppeteer/browsers`' out-of-range optional peer (branch 2 removed that link and
+  branch 3 brought it back). Verified: the file parses with `allowBuilds.puppeteer` unchanged; the lockfile passes a
+  frozen `--lockfile-only` install.
 
 - **Closed — `backend/test/auth-tenant/01-entities-rls.integration.spec.ts` expected three `plan_type` values.** The
   database has four since `512dc085` added `LITE` (trial lifecycle). Fixed on `fix/rls-spec-lite`: the assertion expects

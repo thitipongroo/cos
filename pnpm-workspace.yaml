@@ -255,10 +255,17 @@ allowBuilds:
   prisma: true
   protobufjs: true
   # puppeteer's postinstall downloads the Chromium build that @mermaid-js/mermaid-cli renders with.
-  # Without it `mmdc` fails at launch. DEV TOOLING ONLY: mermaid-cli syntax-checks the ```mermaid
-  # blocks in docs/ before they are committed, and is deliberately NOT wired into CI (product-owner
-  # decision 2026-08-07) — so this ~150 MB download never runs on a CI runner, only on a dev machine
-  # that has installed devDependencies.
+  # Without it `mmdc` fails at launch. mermaid-cli is dev tooling: it syntax-checks the ```mermaid
+  # blocks in docs/ before they are committed, and `mmdc` is deliberately NOT run in CI (product-owner
+  # decision 2026-08-07).
+  # THE DOWNLOAD STILL RUNS IN CI. This comment used to say it never did. mermaid-cli is a root
+  # devDependency; 13 of the 15 installs in .github/workflows (2026-11-16) and apps/web/Dockerfile are
+  # unfiltered root-workspace `pnpm install --frozen-lockfile` runs (the other 2 install apps/mobile's own
+  # workspace, which has no puppeteer), and nothing sets PUPPETEER_SKIP_DOWNLOAD — so each of those jobs,
+  # and the web image build, fetches the browsers. Size: the register's entry on this comment
+  # (docs/registers/dependency-advisories-2026-11.md) records Chrome 156 ≈ 367 MB and
+  # chrome-headless-shell ≈ 203 MB on macOS, not the ~150 MB this said; CI and the image fetch the linux
+  # builds. Skipping it there is a separate decision; this entry only allows the build script.
   puppeteer: true
   sharp: true
   ssh2: true
