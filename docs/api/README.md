@@ -73,7 +73,8 @@ prefix, not this field.
 ## When you change an API
 
 1. Update the service's `.openapi.yaml` in the same PR as the code — **CI fails if the document is
-   older than the module it describes** (`scripts/readiness/check-openapi-freshness.sh`, wired into
+   older than the module's controllers, DTOs and route files** — the files that define the API, not the
+   whole module, since 2026-11-15 (`scripts/readiness/check-openapi-freshness.sh`, wired into
    the `lint` job on 2026-08-24). It compares git COMMIT timestamps, not mtimes, so a fresh clone
    gives the same answer as a working tree.
 

@@ -169,8 +169,9 @@ jobs:
       - name: Skill descriptions still route
         run: node ./scripts/ci/check-skill-routing.mjs
 
-      # Each document must be no older than the code it describes (git COMMIT timestamps, not
-      # mtimes — a clone has no meaningful mtimes). Wired 2026-08-24, once the last of 62
+      # Each document must be no older than the files that define its API — controllers, DTOs, route
+      # modules (since 2026-11-15; before, any module file) — by git COMMIT timestamps, not mtimes
+      # (a clone has no meaningful mtimes). Wired 2026-08-24, once the last of 62
       # undocumented routes was written.
       #
       # Before that day this script existed, worked, and ran nowhere, while docs/api/README told
@@ -181,7 +182,7 @@ jobs:
       # This step's comment used to open "Every controller route must appear in an OpenAPI
       # document", which no script here enforced — freshness compares timestamps and cannot see a
       # route that is in no document. The claim now belongs to the step below, which checks it.
-      # Until 2026-09-03 the map also covered only 12 of the 22 documents; it now covers 21, and a
+      # Until 2026-09-03 the map also covered only 12 of the 22 documents; it now covers 25, and a
       # mapping may name several source paths so a document can be gated against `services/` too.
       - name: OpenAPI documents are no older than the code they describe
         run: bash ./scripts/readiness/check-openapi-freshness.sh

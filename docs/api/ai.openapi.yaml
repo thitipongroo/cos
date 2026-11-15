@@ -23,6 +23,10 @@ info:
     text without Thai is joined as before. `QUOTA_BY_PLAN` gained `LITE` (500,000 tokens, as `STARTER`), which
     `/ai/usage` already documents. No route, parameter, request body or response shape in this document changed.
 
+    **Reviewed 2026-11-15** against `backend/src/modules/ai-proxy/ai-proxy.controller.ts` after fad81146: its two
+    error logs now write the request path without the query string (the caller's RAG question or search — PDPA).
+    Nothing the proxy forwards or answers changed: no route, parameter, request body or response shape here.
+
     **`/ai/transcribe`, `/ai/intent` and `/ai/usage` were added to this document on 2026-09-03.**
     All three had run since their ADRs shipped (ADR-052, ADR-073, and the §26 metering work) named
     in no §14.3 table and carried by no OpenAPI document. §14.3 additionally stated that voice

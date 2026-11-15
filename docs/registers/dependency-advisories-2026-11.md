@@ -2547,9 +2547,28 @@ openssl ca-certificates`; `groupadd`/`useradd` uid/gid 1001, as the charts run; 
     credential offline. The file-service worker fails identically on both (Open, above). hadolint reports what it
     reported at HEAD for each file; the conformance suite passes (61 suites, 2,343 tests), though none of it reads these
     Dockerfiles. x86_64 was not built.
-- **`openapi freshness`.**
-  - It reports `auth` and `ai` stale since commit `10be1567`.
-  - `requirements.txt` counts as source for `ai`, so branch 5 hits this again.
+- **Closed — `openapi freshness` was red on documents whose API had not changed.** Fixed on
+  `fix/openapi-freshness-contract` (product-owner decision 2026-11-15). The gate marked a document stale when any
+  non-test file of its module was committed after it — `requirements.txt` for `ai`, and by 2026-11-15 twelve of
+  twenty-five documents, every one for a service, repository or helper edit. It now compares each document with the
+  files that define the API: `*.controller.ts`, `dto/**`, `*.dto.ts`, `routes/**` (the Fastify services),
+  `main.py` / `router.py` (the Python services), plus single files the map names — the Fastify services' `main.ts`
+  (they mount the routes and their prefix) and helpers whose values are documented payload (`/ai/intent`'s enum,
+  `/ai/usage`'s `alertLevel`, procurement's vendor `category` enum, the central-price CSV columns and upload body,
+  the analytics `dateRange` query). A mapping that matches no such file fails instead of passing;
+  `OPENAPI_FRESHNESS_REV` reads a past revision's history (a revision that is not a commit is refused).
+  - Found by /doubt on this branch and fixed with it: `backend/src/modules/tasks` — the `/tasks` and
+    `/projects/{id}/tasks` routes `project.openapi.yaml` documents — was in no mapping at all (now under `project`);
+    the `router.py` pattern took the deliberately ungated digital-twin router (excluded); `docs/api/README.md` and
+    the CI step's comment described the old rule.
+  - The one document still stale, `ai` (fad81146 changed `ai-proxy.controller.ts`'s logging only), carries a
+    "Reviewed 2026-11-15" note saying so; the gate reads commits, so it passes once that note is committed.
+  - Verified: the gate on the working tree, 24 of 25 (the `ai` note uncommitted); at fad81146, `ai` stale; at
+    011be790 — which touched no controller, DTO or route file, only services (`finance.service.ts` within `finance`)
+    — `finance` current, where the old rule marks it stale. Runs under macOS `/bin/bash` 3.2.
+  - Not seen by the gate: shared shapes in `packages/@cos/types` (response types several controllers re-export),
+    a Pydantic model outside a route module, other helper constants a controller imports, and behaviour that
+    changes behind an unchanged controller.
 - **Closed — `tests/e2e/specs/daily-report.spec.ts:70-71` used an undeclared `notificationBell` (TS2552).** Fixed on
   `fix/small-test-docs`: the spec declares it as `approval-escalation.spec.ts:112-114` does — a button named
   `/notification|bell/i`, or the test id `notification-bell`, the locator `safety-incident.spec.ts:80-82` calls `bell`.

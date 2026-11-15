@@ -1,8 +1,11 @@
 #!/usr/bin/env bash
 # [AUTO] Phase 19 — OpenAPI spec freshness check
-# Verifies: each docs/api/{service}.openapi.yaml was committed no earlier than
-#           its corresponding backend/src/modules/{service}/ source directory.
+# Verifies: each docs/api/{service}.openapi.yaml was committed no earlier than the files that DEFINE
+#           its API — controllers, DTOs, route modules (see CONTRACT FILES below).
 # Usage: ./scripts/readiness/check-openapi-freshness.sh
+#        OPENAPI_FRESHNESS_REV=<rev> …   reads that revision's history instead of HEAD (default HEAD) —
+#                                        how the gate itself is checked against a past state. The
+#                                        file-existence checks still read the working tree.
 # Exit: 0 = all specs fresh, 1 = stale spec(s) detected
 
 set -euo pipefail
@@ -33,10 +36,14 @@ set -euo pipefail
 # docs/api/ was gated: analytics, crm, geo, graph, master-data, safety, sync, vendor and ai.
 
 ROOT="$(git rev-parse --show-toplevel 2>/dev/null || echo .)"
+REV="${OPENAPI_FRESHNESS_REV:-HEAD}"
+if ! git -C "$ROOT" rev-parse --verify -q "$REV^{commit}" >/dev/null; then
+  echo "OPENAPI_FRESHNESS_REV is not a commit: $REV" >&2
+  exit 1
+fi
 API_DIR="$ROOT/docs/api"
 PASS=0
 FAIL=0
-SKIP=0
 
 echo "==> OpenAPI spec freshness checks"
 
@@ -52,11 +59,11 @@ echo "==> OpenAPI spec freshness checks"
 # Iteration is now in source order rather than
 # `${!MODULE_MAP[@]}`'s undefined order, so the output is stable run to run.
 MODULE_MAP_ENTRIES=(
-  "analytics         backend/src/modules/analytics"
+  "analytics         backend/src/modules/analytics backend/src/modules/analytics/analytics.request.ts"
   "auth              backend/src/modules/identity"
   "boq               backend/src/modules/boq"
-  "central-prices    backend/src/modules/central-prices"
-  "credential        services/credential-service/src"
+  "central-prices    backend/src/modules/central-prices backend/src/modules/central-prices/central-price-rows.ts backend/src/modules/central-prices/central-price-upload.ts"
+  "credential        services/credential-service/src services/credential-service/src/main.ts"
   "crm               backend/src/modules/crm"
   "equipment         backend/src/modules/equipment"
   "finance           backend/src/modules/finance"
@@ -67,18 +74,26 @@ MODULE_MAP_ENTRIES=(
   "platform          backend/src/health.controller.ts backend/src/shared/feature-flags"
   "platform-settings backend/src/modules/platform-settings"
   "platform-webhooks backend/src/modules/platform-webhook"
-  "procurement       backend/src/modules/procurement"
-  "project           backend/src/modules/project"
+  "procurement       backend/src/modules/procurement backend/src/modules/procurement/vendor-classification.ts"
+  "project           backend/src/modules/project backend/src/modules/tasks"
   "safety            backend/src/modules/safety"
   "site-ops          backend/src/modules/site-ops"
   "sync              backend/src/modules/sync"
   "tenant            backend/src/modules/tenant"
   "vendor            backend/src/modules/vendor-portal"
   "workforce         backend/src/modules/workforce"
-  "file              backend/src/modules/files services/file-service/src"
-  "ai                backend/src/modules/ai-proxy services/ai-gateway services/ai-ocr-pipeline services/ai-embedding-worker services/ai-transcription-pipeline"
+  "file              backend/src/modules/files services/file-service/src services/file-service/src/main.ts"
+  "ai                backend/src/modules/ai-proxy services/ai-gateway services/ai-ocr-pipeline services/ai-embedding-worker services/ai-transcription-pipeline services/ai-gateway/intent/parse.py services/ai-gateway/usage.py"
 )
 
+# SINGLE FILES IN A MAPPING (2026-11-15) are contract files the patterns below cannot name generally:
+# the Fastify services' main.ts (they mount the routes and the prefix — a `**/main.ts` glob would also take
+# file-service's workers/main.ts, which serves nothing), and helpers whose values ARE documented payload:
+# ai-gateway intent/parse.py (the /ai/intent enum) and usage.py (alertLevel), procurement's
+# vendor-classification.ts (the `category` query enum), central-prices' CSV columns and upload body,
+# analytics.request.ts (the dateRange query all three analytics controllers share). `tasks` serves the
+# /tasks and /projects/{id}/tasks routes project.openapi.yaml documents; it was in no mapping at all.
+#
 # digital-twin is deliberately NOT mapped. Its code exists (services/ai-gateway/digital_twin/), but
 # §14.3 records the document as "Post-MVP — Phase 24 … not created before Phase 24 begins", so the
 # committed file is a contract ahead of its phase rather than a description of shipped behaviour.
@@ -108,74 +123,58 @@ for entry in "${MODULE_MAP_ENTRIES[@]}"; do
     continue
   fi
 
-  spec_ts=$(git -C "$ROOT" log -1 --format="%ct" -- "$spec_file" 2>/dev/null || echo "0")
+  spec_ts=$(git -C "$ROOT" log -1 --format="%ct" "$REV" -- "$spec_file" 2>/dev/null || echo "0")
+  [[ -n "$spec_ts" ]] || spec_ts=0
 
-  # SOURCE means the code the document describes — not everything that happens to sit beside it.
+  # CONTRACT FILES ONLY (fix/openapi-freshness-contract, 2026-11-15, product-owner decision).
   #
-  # This used to be the whole module directory, so a `__tests__/` edit, a README or a fixture made
-  # every document for that module stale, and the only way to clear it was to edit a document
-  # nobody had a reason to change. It fired three times in a row on 2026-08-31, most clearly on
-  # procurement for a change to approval-thresholds.workflow.spec.ts and nothing else.
+  # This used to be the whole module minus tests, READMEs and test config (the exclusion history is in
+  # git: a test edit, a README rewrap, a pytest.ini line each turned it red in turn). Even so, ANY
+  # service, repository or helper edit made the document "stale": on 2026-11-15 twelve of twenty-five
+  # were red and not one for an API change — so a real one would have been invisible among them, and
+  # the only way to clear the gate was to edit documents nobody had a reason to change.
   #
-  # Excluding them cannot hide an API change: a new route means a controller edit, and a changed
-  # payload means a DTO edit. Both are still in scope.
+  # What defines an API here: a route is declared in a controller (`*.controller.ts`) or a route
+  # module (`routes/**` in the Fastify services; `main.py` / `router.py` in the Python ones), and a
+  # payload in a DTO (`dto/**`, `*.dto.ts`). Those are the files compared, plus the single files named in
+  # the map. NOT seen: shared shapes in packages/@cos/types (response types several controllers re-export),
+  # a Pydantic model outside a route module, other helper constants a controller imports, and behaviour
+  # that changes behind an unchanged controller — the cost of a gate that can stay green.
   #
-  # The Python services carry their tests as `tests/` and `test_*.py` rather than `__tests__/` and
-  # `*.spec.ts`, so the exclusion list names both conventions. `.venv/` needs no exclusion — it is
-  # untracked, and git log only ever sees what is committed.
-  #
-  # TEST CONFIGURATION counts as test, not source. `pytest.ini`, `.coveragerc` and `conftest.py`
-  # decide how a suite runs; none of them can change a route or a payload. This was missed when the
-  # Python services were added to MODULE_MAP on 2026-09-03, and it fired the same day: adding one
-  # `filterwarnings` line to four `pytest.ini` files — a fix for an anyio deprecation that had
-  # nothing to do with the API — marked `ai.openapi.yaml` stale and blocked the push. Exactly the
-  # failure the `*.spec.ts` exclusion above was written for, one language later.
+  # `:(glob)` magic: `**/` there matches zero or more directories, so `<dir>/**/x` covers `<dir>/x`
+  # too (plain pathspecs needed a second form for every pattern). Test files inside those patterns
+  # stay excluded.
   pathspec=()
   for sp in "${source_paths[@]}"; do
-    pathspec+=("$sp")
-    # A mapping may name a single file (see [platform]); the ** excludes below are meaningless
-    # against one and git rejects nothing, but skipping them keeps the pathspec honest.
     if [[ -d "$ROOT/$sp" ]]; then
       pathspec+=(
-        # BOTH forms for every one of these, and the reason is not obvious: a pathspec's `**/` needs
-        # a literal slash on each side, so `<dir>/**/x` matches `<dir>/sub/x` and NOT `<dir>/x`.
-        # The paired-form note below was written for pytest.ini and friends but the same trap sat
-        # unfixed on the six entries here until 2026-09-04, when rewrapping README lines turned the
-        # gate red on `auth` and `ai`. Counted that day, the `**/`-only forms were missing:
-        # 23 root-level *.md (every backend module and all four AI services), 24 root-level
-        # __tests__/ and 4 root-level tests/. So a test edit or a README edit counted as a contract
-        # change in almost every module. Real code at a module root was never excluded and still
-        # is not — only these five kinds of file are.
-        ":(exclude)$sp/**/__tests__/**"
-        ":(exclude)$sp/__tests__/**"
-        ":(exclude)$sp/**/*.spec.ts"
-        ":(exclude)$sp/*.spec.ts"
-        ":(exclude)$sp/**/*.md"
-        ":(exclude)$sp/*.md"
-        ":(exclude)$sp/**/tests/**"
-        ":(exclude)$sp/tests/**"
-        ":(exclude)$sp/**/test_*.py"
-        ":(exclude)$sp/test_*.py"
-        ":(exclude)$sp/**/__pycache__/**"
-        ":(exclude)$sp/__pycache__/**"
-        ":(exclude)$sp/pytest.ini"
-        ":(exclude)$sp/**/pytest.ini"
-        ":(exclude)$sp/conftest.py"
-        ":(exclude)$sp/**/conftest.py"
-        ":(exclude)$sp/.coveragerc"
-        ":(exclude)$sp/**/.coveragerc"
-        ":(exclude)$sp/jest.config.js"
-        ":(exclude)$sp/jest.integration.config.js"
-        ":(exclude)$sp/jest.workflows.config.js"
+        ":(glob)$sp/**/*.controller.ts"
+        ":(glob)$sp/**/dto/**"
+        ":(glob)$sp/**/*.dto.ts"
+        ":(glob)$sp/**/routes/**"
+        ":(glob)$sp/**/main.py"
+        ":(glob)$sp/**/router.py"
+        ":(exclude,glob)$sp/**/__tests__/**"
+        ":(exclude,glob)$sp/**/*.spec.ts"
+        ":(exclude,glob)$sp/**/tests/**"
+        # digital-twin's /api/v1/twin router is ungated on purpose (below the map); its include_router
+        # line in ai-gateway main.py still is.
+        ":(exclude,glob)$sp/**/digital_twin/**"
       )
+    else
+      # A mapping may name a single file (see [platform]); it is a contract file by being named.
+      pathspec+=("$sp")
     fi
   done
 
-  src_ts=$(git -C "$ROOT" log -1 --format="%ct" -- "${pathspec[@]}" 2>/dev/null || echo "0")
+  src_ts=$(git -C "$ROOT" log -1 --format="%ct" "$REV" -- "${pathspec[@]}" 2>/dev/null || echo "0")
+  [[ -n "$src_ts" ]] || src_ts=0
 
-  if [[ "$spec_ts" == "0" && "$src_ts" == "0" ]]; then
-    echo "  - $spec_name — no git history found (skipping)"
-    SKIP=$((SKIP + 1))
+  # A mapping whose paths no commit ever touched a contract file under would compare against nothing
+  # and pass forever.
+  if [[ "$src_ts" == "0" ]]; then
+    echo "  ✗ $spec_name — no contract file (controller, DTO, route module) under its mapped paths"
+    FAIL=$((FAIL + 1))
     continue
   fi
 
@@ -199,5 +198,5 @@ echo ""
 echo "  Spec files in docs/api/: $existing_specs"
 
 echo ""
-echo "==> Result: $PASS passed, $FAIL failed, $SKIP skipped"
+echo "==> Result: $PASS passed, $FAIL failed"
 [[ "$FAIL" -eq 0 ]] || exit 1
