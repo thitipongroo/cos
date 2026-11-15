@@ -52,23 +52,36 @@ test.describe('Approval Escalation', () => {
   test('approval item shows pending status', async ({ page }) => {
     await loginAs(page, PM_EMAIL, PM_PASSWORD);
 
-    // Filter the PO queue to PENDING_APPROVAL (status is rendered as raw enum text in the table).
-    // Whether a pending row exists is data-dependent, so the row assertion is best-effort; selecting
-    // the status filter and the queue rendering is the guaranteed part.
+    // Unconditional (fix/e2e-approval-pending-assert). The filter's failure used to be swallowed and the
+    // only row assertion sat inside `if (await row.isVisible().catch(() => false))`, so the test passed with
+    // no pending order, a broken filter, or a filter the page ignored.
+    // PRECONDITION: at least one PENDING_APPROVAL order visible to the PM user. Locally,
+    // seed-realistic.ts `seedPendingApprovals` gives EKC two (scripts/dev/e2e-local.sh); on staging nothing
+    // in the repo seeds it, so this is a stated requirement there, not a verified one.
     await page.goto('/procurement/orders');
     await expect(page.getByRole('main')).toBeVisible({ timeout: 10_000 });
-    await page
-      .locator('select')
-      .first()
-      .selectOption({ label: 'PENDING_APPROVAL' })
-      .catch(() => null);
 
-    const pendingRow = page
-      .getByRole('row')
-      .filter({ hasText: /pending_approval/i })
-      .first();
-    if (await pendingRow.isVisible({ timeout: 5_000 }).catch(() => false)) {
-      await expect(pendingRow).toBeVisible();
+    // Wait for the filtered request — which also proves the filter reached the server — rather than
+    // reading the rows before React has hydrated the select or the refetch has landed.
+    const filter = page.locator('select').first();
+    await Promise.all([
+      page.waitForResponse(
+        (r) =>
+          r.url().includes('/procurement/purchase-orders') &&
+          new URL(r.url()).searchParams.get('status') === 'PENDING_APPROVAL' &&
+          r.ok(),
+        { timeout: 15_000 },
+      ),
+      filter.selectOption('PENDING_APPROVAL'),
+    ]);
+
+    // At least one data row (the header is th / columnheader, excluded), and every one is pending.
+    const dataRows = page.getByRole('row').filter({ has: page.getByRole('cell') });
+    await expect(dataRows.first()).toContainText('PENDING_APPROVAL', { timeout: 15_000 });
+    const count = await dataRows.count();
+    expect(count).toBeGreaterThan(0);
+    for (let i = 0; i < count; i++) {
+      await expect(dataRows.nth(i)).toContainText('PENDING_APPROVAL');
     }
   });
 

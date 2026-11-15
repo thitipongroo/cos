@@ -3115,9 +3115,19 @@ modified_at)) <= $t`, milliseconds like the caller's comparison — `modified_at
     text with no count placeholders; the rollback SQL, applied in a transaction and undone, restores the old body; a
     resubmission after an issue is linked writes `issue_count` 1 (the first submission 0). Negative controls: without
     the migration the two template tests fail; with HEAD's service the count test fails.
-- **`approval-escalation.spec.ts` "approval item shows pending status" still cannot fail.** Its only row assertion sits
-  in `if (await pendingRow.isVisible(…).catch(() => false))`. "purchase order approval state is inspectable" needs
-  `E2E_ADMIN_EMAIL`, a TENANT_ADMIN, whose login requires a second factor; locally it timed out at login.
+- **Closed — `approval-escalation.spec.ts` "approval item shows pending status" could not fail.** Fixed on
+  `fix/e2e-approval-pending-assert`. The filter's `selectOption` swallowed its failure and the only row assertion sat
+  in `if (await pendingRow.isVisible(…).catch(() => false))`. The test now selects `PENDING_APPROVAL`, waits for the
+  purchase-order response whose request carries `status=PENDING_APPROVAL` (the filter reached the server, and the
+  rows are not read before hydration or the refetch), and asserts unconditionally that there is at least one data row
+  and every one shows `PENDING_APPROVAL`.
+  - Precondition: at least one PENDING_APPROVAL order visible to the PM user. Locally `seed-realistic.ts`
+    `seedPendingApprovals` gives EKC two. The spec runs in CI only against staging (`BASE_URL`), and nothing in the
+    repo seeds staging, so there it is a stated requirement, not a verified one; a first version that named a seeded
+    order number was dropped for that reason (found by /doubt).
+  - Verified on the local stack only: passes once the pages are compiled; two controls fail it and leave HEAD's
+    version passing — the request stripped of `status` by a Playwright route (the filter ignored) and the two seeded
+    orders set to DRAFT (none pending). "purchase order approval state is inspectable" also passed there.
 - **Closed — the web E2E suite had no working local recipe.** Fixed on `fix/web-e2e-local-recipe`.
   `scripts/dev/e2e-local.sh` runs it on a local stack, start to finish (localhost only): infra `postgres pgbouncer
   redis kafka schema-registry keycloak temporal`, migrations, `seed-realistic.ts`, `seed.ts`, `seed-e2e-users.sh`,
@@ -3143,7 +3153,9 @@ modified_at)) <= $t`, milliseconds like the caller's comparison — `modified_at
   the page does not render (project code, amount, RFQ number). Three are real findings: axe WCAG A/AA violations on
   `/projects`, `/tasks` and `/site/issues`. An earlier run against servers already warm from a previous run had 13
   failures (the same axe finding on `/site/issues`), so cold `next dev` compiles likely cause part of the timeouts;
-  running the web as a production build (`next build && next start`) would tell the two apart. Not investigated.
+  running the web as a production build (`next build && next start`) would tell the two apart. Supporting that: on
+  `fix/e2e-approval-pending-assert` the approval-escalation spec timed out at login on a fresh start and passed in
+  full (3/3) on the next run, with Next's compile cache on disk. Not investigated further.
 
 ## Parked
 
