@@ -1627,9 +1627,14 @@ gate's isolated run) checks the hash was not tested either; it ran 12.18.0 with 
   fails for the move to `t()`, the English one for the reworded labels ("included", "Invoice"); the unit and render
   suites pass, including the en/th key-parity check. The values beside the labels are literals of a simulated screen —
   a hidden tab nothing links to (no in-app checkout exists) — and were not changed.
-- **The drone-capture scan-mode buttons show no selected state.** "Point Cloud" / "Orbit Scan" change only a style and
-  an icon colour — no text, no `accessibilityState.selected` — so neither a screen reader nor a test can tell which is
-  active; they are left out of the render specs for that reason.
+- **Closed — the drone-capture scan-mode buttons showed no selected state.** Fixed on `fix/mobile-scan-mode-selected`.
+  "Point Cloud" / "Orbit Scan" changed only a style and an icon colour. They are now `accessibilityRole="radio"` with
+  `accessibilityState={{ selected }}` and a `testID` — the app's pattern for one choice of several
+  (`SegmentedControl.tsx`, `roles-selection.tsx`, `incidents.tsx`); `activeMode` lost its unreachable `'ortho'`. Found
+  by /doubt on this branch and fixed with it: drone-mission-detail's layer selector (Ortho / DSM / Contours) had the
+  same colour-only state, and takes the same fix. Verified: render cases on both screens (radio role; the selected
+  state at start, after a press and back) fail on HEAD's screens; the unit and render suites and the RN a11y gate
+  pass.
 - **The `allowBuilds` comment in `pnpm-workspace.yaml`** says puppeteer's postinstall never runs on a CI runner. But
   the 12 CI jobs that install, and `apps/web/Dockerfile`, run an unfiltered `pnpm install --frozen-lockfile` that
   includes root devDependencies, so it does run there. Its "~150 MB" is also low: Chrome and chrome-headless-shell

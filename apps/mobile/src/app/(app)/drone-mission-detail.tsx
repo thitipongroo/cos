@@ -70,11 +70,13 @@ export default function DroneMissionDetailScreen(): React.JSX.Element {
       </View>
 
       <ScrollView contentContainerStyle={styles.contentContainer}>
-        {/* Layer Selector */}
+        {/* Layer Selector — one choice of three: `radio` + `selected`, not colour alone. */}
         <View style={styles.layerBar}>
           <Pressable
-            accessibilityRole="button"
+            accessibilityRole="radio"
             accessibilityLabel={t('drone.mission.a11yOrtho')}
+            accessibilityState={{ selected: activeLayer === 'ortho' }}
+            testID="layer-ortho"
             onPress={() => setActiveLayer('ortho')}
             style={[styles.layerButton, activeLayer === 'ortho' && styles.layerButtonActive]}
           >
@@ -84,8 +86,10 @@ export default function DroneMissionDetailScreen(): React.JSX.Element {
           </Pressable>
 
           <Pressable
-            accessibilityRole="button"
+            accessibilityRole="radio"
             accessibilityLabel={t('drone.mission.a11yHeatmap')}
+            accessibilityState={{ selected: activeLayer === 'heatmap' }}
+            testID="layer-heatmap"
             onPress={() => setActiveLayer('heatmap')}
             style={[styles.layerButton, activeLayer === 'heatmap' && styles.layerButtonActive]}
           >
@@ -95,8 +99,10 @@ export default function DroneMissionDetailScreen(): React.JSX.Element {
           </Pressable>
 
           <Pressable
-            accessibilityRole="button"
+            accessibilityRole="radio"
             accessibilityLabel={t('drone.mission.a11yContours')}
+            accessibilityState={{ selected: activeLayer === 'contours' }}
+            testID="layer-contours"
             onPress={() => setActiveLayer('contours')}
             style={[styles.layerButton, activeLayer === 'contours' && styles.layerButtonActive]}
           >

@@ -18,7 +18,7 @@ export default function DroneRealityCaptureScreen(): React.JSX.Element {
   const router = useRouter();
 
   const [isSurveying, setIsSurveying] = useState(false);
-  const [activeMode, setActiveMode] = useState<'mesh' | 'ortho' | 'orbit'>('mesh');
+  const [activeMode, setActiveMode] = useState<'mesh' | 'orbit'>('mesh');
 
   const handleToggleSurvey = useCallback(() => {
     setIsSurveying((prev) => !prev);
@@ -172,11 +172,14 @@ export default function DroneRealityCaptureScreen(): React.JSX.Element {
           </Text>
         </Pressable>
 
-        {/* Scan Modes */}
+        {/* Scan Modes — `radio` + `accessibilityState.selected` say which is active (SegmentedControl.tsx); colour alone said it to
+            sighted users only (fix/mobile-scan-mode-selected). */}
         <View style={styles.modeButtonsRow}>
           <Pressable
-            accessibilityRole="button"
+            accessibilityRole="radio"
             accessibilityLabel={t('drone.capture.pointCloud')}
+            accessibilityState={{ selected: activeMode === 'mesh' }}
+            testID="scan-mode-point-cloud"
             onPress={() => setActiveMode('mesh')}
             style={[styles.modeButton, activeMode === 'mesh' && styles.modeButtonActive]}
           >
@@ -194,8 +197,10 @@ export default function DroneRealityCaptureScreen(): React.JSX.Element {
           </Pressable>
 
           <Pressable
-            accessibilityRole="button"
+            accessibilityRole="radio"
             accessibilityLabel={t('drone.capture.orbitScan')}
+            accessibilityState={{ selected: activeMode === 'orbit' }}
+            testID="scan-mode-orbit"
             onPress={() => setActiveMode('orbit')}
             style={[styles.modeButton, activeMode === 'orbit' && styles.modeButtonActive]}
           >

@@ -112,6 +112,25 @@ describe('DroneRealityCaptureScreen', () => {
     expect(getByRole('button', { name: 'ดูทั้งหมด' })).toBeTruthy();
   });
 
+  // fix/mobile-scan-mode-selected: the active scan mode was shown by colour only.
+  it('the scan-mode buttons are radios that say which one is selected', async () => {
+    const { getByTestId } = await renderScreen();
+    const selected = (id: string) => getByTestId(id).props.accessibilityState?.selected;
+    for (const id of ['scan-mode-point-cloud', 'scan-mode-orbit'])
+      expect(getByTestId(id).props.accessibilityRole).toBe('radio');
+
+    expect(selected('scan-mode-point-cloud')).toBe(true);
+    expect(selected('scan-mode-orbit')).toBe(false);
+
+    await fireEvent.press(getByTestId('scan-mode-orbit'));
+    expect(selected('scan-mode-point-cloud')).toBe(false);
+    expect(selected('scan-mode-orbit')).toBe(true);
+
+    await fireEvent.press(getByTestId('scan-mode-point-cloud'));
+    expect(selected('scan-mode-point-cloud')).toBe(true);
+    expect(selected('scan-mode-orbit')).toBe(false);
+  });
+
   it('goes back', async () => {
     const { getByTestId } = await renderScreen();
 

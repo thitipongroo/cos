@@ -157,6 +157,26 @@ describe('DroneMissionDetailScreen', () => {
     expect(getByText('แบบจำลองพื้นผิวเชิงเลข (-2.4m ถึง +18.2m)')).toBeTruthy();
   });
 
+  // The layer selector said which layer was active by colour only (found with fix/mobile-scan-mode-selected).
+  it('the layer buttons are radios that say which layer is selected', async () => {
+    const { getByTestId } = await renderScreen();
+    const state = (id: string) => getByTestId(id).props.accessibilityState?.selected;
+    for (const id of ['layer-ortho', 'layer-heatmap', 'layer-contours'])
+      expect(getByTestId(id).props.accessibilityRole).toBe('radio');
+
+    expect([state('layer-ortho'), state('layer-heatmap'), state('layer-contours')]).toEqual([
+      true,
+      false,
+      false,
+    ]);
+    await fireEvent.press(getByTestId('layer-contours'));
+    expect([state('layer-ortho'), state('layer-heatmap'), state('layer-contours')]).toEqual([
+      false,
+      false,
+      true,
+    ]);
+  });
+
   // fix/mobile-landxml-badge: no LandXML export exists (D36). The badge said "LandXML Ready" and the
   // export button drew a PDF icon; both now say "not yet".
   it.each([
