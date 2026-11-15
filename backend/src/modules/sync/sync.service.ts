@@ -299,7 +299,11 @@ export class SyncService {
           items,
         } as unknown as ArgOf<SiteOpsService['syncSiteReports'], 0>);
         const status = (results[0]?.conflict_status ?? 'ACCEPTED') as ServerSyncStatus;
-        return { status };
+        // The report the server KEPT. A save that lands on an existing report (same project, day and
+        // submitter) keeps that report's id, not the device's client id; without it here the device
+        // went on holding the report — and its photos — under an id the server does not have.
+        const reportId = results[0]?.report_id;
+        return reportId ? { status, server_payload: { report_id: reportId } } : { status };
       }
 
       case 'issue': {

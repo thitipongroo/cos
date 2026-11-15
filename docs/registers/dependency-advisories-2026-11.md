@@ -2692,11 +2692,21 @@ openssl ca-certificates`; `groupadd`/`useradd` uid/gid 1001, as the charts run; 
   - Not covered: two pushes for one new day racing each other (neither sees the other's row), and a failed
     natural-key lookup, both of which still take the create path and its upsert as before. The id-hit edit path still
     writes NULL for fields an item omits (unchanged here).
-- **The device keeps a report under an id the server does not have.** `/sync/push` with `site_report`
-  (`backend/src/modules/sync/sync.service.ts:287-294`) returns only `{ status }`, so a device whose save landed on an
-  existing report never learns that report's id. Its later saves still reach the right row (the natural-key lookup
-  above), but its local row, and photos keyed by that id, name no server report. Needs the push response to carry the
-  kept `report_id` and the app to remap. Not fixed.
+- **Closed — the device kept a report under an id the server does not have.** Fixed on `fix/site-report-id-remap`.
+  `/sync/push` with `site_report` returned only `{ status }`, so a device whose save landed on an existing report
+  (same project, day, submitter) never learned that report's id: delta sync then brought the server's row as a second
+  local row, and the photos taken on the screen uploaded with an `entity_id` naming no server report. The answer now
+  carries `server_payload: { report_id }` — the id kept (`syncSiteReports` already returned it). The app
+  (`sync/siteReportRemap.ts`, called from `runPushSync`'s `onResolved`) moves its report rows to that id — or drops
+  them when delta sync already brought the server's row — and moves the report's photos that are not uploaded yet;
+  photo binaries upload after the queue drains in the same cycle, so they go up under the kept id.
+  - Verified: backend unit (the answer names the kept id) and `test/site-ops/08` on a real database (a second save of
+    the day, sent under a new id, is answered with the first report's id — 18/18); app unit for the remap (move, drop
+    the duplicate, untouched when ids match or none is named) and its wiring. With HEAD's `sync.service.ts` and
+    `runPushSync.ts` the new cases fail; a mutation that always moves fails the duplicate case. The SQL in
+    `db/database.ts` (`siteReportRemapStore`) is not exercised by a test — the unit suite mocks SQLite.
+  - Not covered: a photo already uploaded under the old id before the remap (its file record keeps that id). The web
+    needed no change: its replay reads only the HTTP status, not `server_payload`.
 - **Closed — sync dropped the report's `blocker_category`, `shift` and per-trade breakdown.** Fixed on
   `fix/site-report-sync-fields`. The app sends all three with every save (`report.tsx`, through `/sync/push`) and
   `SyncItemDto` extends `CreateSiteReportDto`, but `syncSiteReports` passed none of them on: a report filed from the app

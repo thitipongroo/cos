@@ -16,8 +16,9 @@
 // `SERVER_PAYLOAD WINS WHENEVER THERE IS ONE`, on every status including ACCEPTED. An accepted push
 // still comes back changed: server-assigned ids, server-authoritative timestamps (attendance), a
 // clamped progress_percent (task). Keeping the local copy in those cases leaves the device holding a
-// row the server does not have. When no payload comes back — `site_report`, whose service returns
-// only a conflict_status — the local payload stands, which is correct: it is what the server stored.
+// row the server does not have. When no payload comes back the local payload stands. `site_report`
+// returns `{ report_id }` only — not a row — which runPushSync uses to move the device's copy to the
+// id the server kept (siteReportRemap.ts); nothing reads it as the stored report.
 
 export type ServerSyncStatus = 'ACCEPTED' | 'CONFLICT_FLAGGED' | 'CONFLICT_REJECTED';
 export type LocalSyncStatus = 'PENDING' | 'SYNCED' | 'CONFLICT';

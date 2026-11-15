@@ -60,8 +60,14 @@ jest.mock('../../store/tenantStore', () => ({
   useTenantStore: { getState: () => ({ setTenant: mockSetTenant }) },
 }));
 const mockSetSyncStatusByKey = jest.fn().mockResolvedValue(undefined);
+const mockRemapStore = { tag: 'siteReportRemapStore' };
+const mockRemapSiteReport = jest.fn();
 jest.mock('../../db/database', () => ({
   setSyncStatusByKey: (...a: unknown[]) => mockSetSyncStatusByKey(...a),
+  siteReportRemapStore: mockRemapStore,
+}));
+jest.mock('../siteReportRemap', () => ({
+  remapSiteReport: (...a: unknown[]) => mockRemapSiteReport(...a),
 }));
 
 import { runPushSync } from '../runPushSync';
@@ -169,6 +175,35 @@ describe('runPushSync', () => {
         'client-uuid-1',
         'SYNCED',
       );
+    });
+
+    // fix/site-report-id-remap: the push answer names the report the server kept.
+    it('a site_report verdict also moves the device copy to the kept report id', async () => {
+      await runPushSync();
+      const onResolved = capturedManagerCallbacks['onResolved'] as (
+        t: string,
+        id: string,
+        r: { localSyncStatus: string; payload: unknown },
+      ) => Promise<void>;
+      mockRemapSiteReport.mockClear();
+
+      await onResolved('site_report', 'client-1', {
+        localSyncStatus: 'SYNCED',
+        payload: { report_id: 'kept-1' },
+      });
+      expect(mockSetSyncStatusByKey).toHaveBeenCalledWith(
+        'local_site_reports',
+        'reportId',
+        'client-1',
+        'SYNCED',
+      );
+      expect(mockRemapSiteReport).toHaveBeenCalledWith(mockRemapStore, 'client-1', {
+        report_id: 'kept-1',
+      });
+
+      mockRemapSiteReport.mockClear();
+      await onResolved('issue', 'i-1', { localSyncStatus: 'SYNCED', payload: { report_id: 'x' } });
+      expect(mockRemapSiteReport).not.toHaveBeenCalled();
     });
 
     it('writes CONFLICT for a flagged row', async () => {

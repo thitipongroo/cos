@@ -8,7 +8,7 @@
 
 import { openDatabaseSync } from 'expo-sqlite';
 import { drizzle } from 'drizzle-orm/expo-sqlite';
-import { eq, inArray } from 'drizzle-orm';
+import { and, eq, inArray, ne } from 'drizzle-orm';
 import { localDbStatus, type LocalDbStatus } from '../sync/localDbLimit';
 import {
   localSiteReports,
@@ -317,3 +317,39 @@ export type {
   UploadStatus,
   PhotoEntityType,
 } from './schema';
+
+/**
+ * The SQL behind `remapSiteReport` (sync/siteReportRemap.ts): a report saved over an existing one
+ * takes the id the server kept.
+ */
+export const siteReportRemapStore = {
+  async hasReport(reportId: string): Promise<boolean> {
+    const rows = await db
+      .select({ id: localSiteReports.id })
+      .from(localSiteReports)
+      .where(eq(localSiteReports.reportId, reportId))
+      .limit(1);
+    return rows.length > 0;
+  },
+  async moveReports(fromId: string, toId: string): Promise<void> {
+    await db
+      .update(localSiteReports)
+      .set({ reportId: toId })
+      .where(eq(localSiteReports.reportId, fromId));
+  },
+  async dropReports(reportId: string): Promise<void> {
+    await db.delete(localSiteReports).where(eq(localSiteReports.reportId, reportId));
+  },
+  async moveUnuploadedPhotos(fromId: string, toId: string): Promise<void> {
+    await db
+      .update(localPhotos)
+      .set({ entityId: toId })
+      .where(
+        and(
+          eq(localPhotos.entityType, 'site_report'),
+          eq(localPhotos.entityId, fromId),
+          ne(localPhotos.uploadStatus, 'UPLOADED'),
+        ),
+      );
+  },
+};

@@ -17,7 +17,8 @@ import { resolutionTarget } from './resolutionTargets';
 import { enqueue } from '../db/sync-queue';
 import { photoRepo, findLocalPhotoByServerFileId } from '../db/photoRepo';
 import { getAnnotation, markAnnotationSynced } from '../db/annotationRepo';
-import { setSyncStatusByKey } from '../db/database';
+import { setSyncStatusByKey, siteReportRemapStore } from '../db/database';
+import { remapSiteReport } from './siteReportRemap';
 import { apiClient } from '../api/client';
 import { useAuthStore } from '../store/authStore';
 import { useOfflineStore } from '../store/offlineStore';
@@ -47,6 +48,10 @@ export async function runPushSync(): Promise<void> {
         entityId,
         resolution.localSyncStatus,
       );
+      // A report saved over an existing one: adopt the id the server kept (siteReportRemap.ts).
+      if (entityType === 'site_report') {
+        await remapSiteReport(siteReportRemapStore, entityId, resolution.payload);
+      }
     },
     onAccepted: async (entityType, entityId, serverPayload) => {
       // Reconcile an accepted photo_annotation push: entityId is the server file_id, so map it back

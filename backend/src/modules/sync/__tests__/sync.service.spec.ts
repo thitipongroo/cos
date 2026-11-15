@@ -150,6 +150,16 @@ describe('SyncService', () => {
       });
     });
 
+    // A save that lands on an existing report keeps THAT report's id; the device must learn it.
+    it('site_report answers with the report id the server kept', async () => {
+      const { svc, siteOps } = harness();
+      siteOps.syncSiteReports.mockResolvedValue([
+        { client_id: 'r1', report_id: 'kept-1', conflict_status: 'ACCEPTED' },
+      ]);
+      const res = await svc.push(push({ entity_type: 'site_report', entity_id: 'r1' }));
+      expect(res).toEqual({ status: 'ACCEPTED', server_payload: { report_id: 'kept-1' } });
+    });
+
     it('site_report defaults to ACCEPTED when results are empty', async () => {
       const { svc, siteOps } = harness();
       siteOps.syncSiteReports.mockResolvedValue([]);

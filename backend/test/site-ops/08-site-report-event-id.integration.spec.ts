@@ -369,6 +369,12 @@ describe('Site-report events name the written report (real database)', () => {
       client_submitted_at: '2019-03-07T09:00:00.000Z',
     });
     expect((second.body as { status: string }).status).toBe('ACCEPTED');
+    // Both answers name the report the server kept — for the second save that is NOT the id it was
+    // sent under, which is how the device learns to move its copy (fix/site-report-id-remap).
+    const keptId = (r: typeof first) =>
+      (r.body as { server_payload?: { report_id?: string } }).server_payload?.report_id;
+    expect(keptId(first)).toBe(row!.report_id);
+    expect(keptId(second)).toBe(row!.report_id);
     expect(await detailsOn(day)).toEqual([
       expect.objectContaining({
         report_id: row!.report_id,
