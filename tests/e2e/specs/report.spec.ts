@@ -23,10 +23,8 @@ test.describe('Report Submit', () => {
     // project + date are the required fields that gate the (disabled) Submit button.
     await page.locator('select').first().selectOption({ index: 1 });
     await page.locator('input[type="date"]').fill(new Date().toISOString().split('T')[0]);
-    await page.getByPlaceholder(/manpower/i).fill('12');
-    await page
-      .getByPlaceholder(/summary/i)
-      .fill('E2E test daily progress report — automated submission');
+    await page.getByLabel(/manpower/i).fill('12');
+    await page.getByLabel(/summary/i).fill('E2E test daily progress report — automated submission');
     await page.getByRole('button', { name: /^submit$/i }).click();
     await expect(page.getByText(/submitted/i)).toBeVisible({ timeout: 15_000 });
   });

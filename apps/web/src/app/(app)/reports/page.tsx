@@ -47,6 +47,7 @@ export default function ReportsPage() {
 
       <div className="mb-4 flex gap-2">
         <select
+          aria-label={t('table.project')}
           value={projectId}
           onChange={(e) => setProjectId(e.target.value)}
           className="flex-1 rounded-md border border-gray-300 px-3 py-2"

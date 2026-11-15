@@ -67,7 +67,7 @@ test.describe('Procurement Flow — PR → RFQ → PO → Delivery → Invoice',
       .waitFor({ state: 'attached', timeout: 10_000 });
     await projectSelect.selectOption({ index: 1 });
     const prNumber = `E2E-PR-${Date.now().toString().slice(-8)}`;
-    await page.getByPlaceholder(/PR number|เลขที่ PR/i).fill(prNumber);
+    await page.getByLabel(/PR number|เลขที่ PR/i).fill(prNumber);
     await page.locator('input[type="date"]').fill(new Date().toISOString().split('T')[0]);
     await page.getByRole('button', { name: /create pr|สร้าง pr/i }).click();
     await expect(page.getByText(prNumber)).toBeVisible({ timeout: 15_000 });
@@ -87,7 +87,7 @@ test.describe('Procurement Flow — PR → RFQ → PO → Delivery → Invoice',
       .waitFor({ state: 'attached', timeout: 10_000 });
     await projectSelect.selectOption({ index: 1 });
     const rfqNumber = `E2E-RFQ-${Date.now().toString().slice(-8)}`;
-    await page.getByPlaceholder(/RFQ number|เลขที่ RFQ/i).fill(rfqNumber);
+    await page.getByLabel(/RFQ number|เลขที่ RFQ/i).fill(rfqNumber);
     await page.locator('input[type="datetime-local"]').fill('2026-12-31T12:00');
     await page.getByRole('button', { name: /create rfq|สร้าง rfq/i }).click();
     await expect(page.getByText(rfqNumber)).toBeVisible({ timeout: 15_000 });

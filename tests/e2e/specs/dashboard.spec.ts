@@ -40,9 +40,9 @@ test.describe('Executive Analytics Dashboard', () => {
 
   // The note here said this "runs on the spec-intended staging" — but `test.skip(title, fn)` is
   // UNCONDITIONAL, so it ran nowhere, staging included, and the §Phase 18 item-4 SLA had no enforcer
-  // at all. Made conditional on BASE_URL, which is what actually distinguishes the two: unset
-  // locally (Next dev + one shared stack, where five sequential loads push the p95 past 3s), set
-  // from secrets.STAGING_URL in the e2e job. The single-load check above stays as local coverage.
+  // at all. Made conditional on BASE_URL: set from secrets.STAGING_URL in the e2e job, and also by
+  // scripts/dev/e2e-local.sh, which since 2026-11-16 serves a production build — where it passes. Unset
+  // (plain `next dev` with no BASE_URL) it is skipped: five sequential cold loads there push the p95 past 3s.
   // Declared at DESCRIBE level, not inside the test body: `test.beforeEach` above logs in through
   // Keycloak, and a body-level skip is evaluated after hooks — so the login failed first and the
   // test reported as failed rather than skipped. A describe-level skip is resolved before any hook

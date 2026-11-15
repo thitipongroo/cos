@@ -79,6 +79,7 @@ export default function ProjectDetailPage(props: { params: Promise<{ id: string 
           </h2>
           <div className="flex flex-wrap items-center gap-2">
             <select
+              aria-label={t('pm.transition')}
               value={target}
               onChange={(e) => setTarget(e.target.value as ProjectTransitionTarget)}
               className="rounded-md border border-gray-300 px-3 py-2 text-sm"

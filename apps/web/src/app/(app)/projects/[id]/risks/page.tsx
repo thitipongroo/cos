@@ -149,6 +149,7 @@ export default function ProjectRisksPage(props: { params: Promise<{ id: string }
           t(`riskStatus.${r.status}`)
         ) : (
           <select
+            aria-label={t('table.status')}
             value={r.status}
             onChange={(e) =>
               transition.mutate({ riskId: r.risk_id, status: e.target.value as RiskStatus })
@@ -205,6 +206,7 @@ export default function ProjectRisksPage(props: { params: Promise<{ id: string }
 
       <div className="mb-4 flex gap-3">
         <select
+          aria-label={t('table.status')}
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
           className="rounded-md border border-gray-300 px-3 py-1.5 text-sm"
@@ -217,6 +219,7 @@ export default function ProjectRisksPage(props: { params: Promise<{ id: string }
           ))}
         </select>
         <select
+          aria-label={t('risk.colCategory')}
           value={categoryFilter}
           onChange={(e) => setCategoryFilter(e.target.value)}
           className="rounded-md border border-gray-300 px-3 py-1.5 text-sm"

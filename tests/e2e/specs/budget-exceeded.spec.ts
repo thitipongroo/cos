@@ -36,9 +36,9 @@ test.describe('Budget Exceeded Alert', () => {
     await page.locator('select').nth(1).selectOption({ index: 1 });
 
     const reference = `E2E-COST-${Date.now().toString().slice(-8)}`;
-    await page.getByPlaceholder(/amount|จำนวนเงิน/i).fill(OVERBUDGET_AMOUNT);
+    await page.getByLabel(/amount|จำนวนเงิน/i).fill(OVERBUDGET_AMOUNT);
     await page.locator('input[type="date"]').fill(new Date().toISOString().split('T')[0]);
-    await page.getByPlaceholder(/reference|อ้างอิง/i).fill(reference);
+    await page.getByLabel(/reference|อ้างอิง/i).fill(reference);
     await page.getByRole('button', { name: /record payment|บันทึกการจ่ายเงิน/i }).click();
 
     await expect(page.getByText(reference)).toBeVisible({ timeout: 15_000 });

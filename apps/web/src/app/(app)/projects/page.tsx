@@ -90,7 +90,7 @@ export default function ProjectsPage() {
 
   return (
     <div>
-      <div className="mb-6 flex items-center justify-between">
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-bold text-gray-800">{t('pm.projectsTitle')}</h1>
         {!readOnly && (
           <button
@@ -104,8 +104,9 @@ export default function ProjectsPage() {
       </div>
       <ReadOnlyBanner />
 
-      <div className="mb-4 flex gap-3">
+      <div className="mb-4 flex flex-wrap gap-3">
         <select
+          aria-label={t('table.status')}
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
           className="rounded-md border border-gray-300 px-3 py-1.5 text-sm"
@@ -118,6 +119,7 @@ export default function ProjectsPage() {
           ))}
         </select>
         <select
+          aria-label={t('table.type')}
           value={typeFilter}
           onChange={(e) => setTypeFilter(e.target.value)}
           className="rounded-md border border-gray-300 px-3 py-1.5 text-sm"

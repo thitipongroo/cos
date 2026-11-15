@@ -56,6 +56,7 @@ export default function QuotationsPage() {
       <p className="mb-4 text-xs text-gray-400">{t('proc.quotationsHint')}</p>
 
       <select
+        aria-label={t('proc.selectRfq')}
         value={rfqId}
         onChange={(e) => setRfqId(e.target.value)}
         className="mb-4 rounded-md border border-gray-300 px-3 py-1.5 text-sm"

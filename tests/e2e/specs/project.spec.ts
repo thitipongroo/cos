@@ -22,9 +22,9 @@ test.describe('Project Management', () => {
 
     const code = `E2E-${Date.now().toString().slice(-8)}`;
     const projectName = `E2E Project ${Date.now()}`;
-    await page.getByPlaceholder(/project code/i).fill(code);
-    await page.getByPlaceholder(/project name/i).fill(projectName);
-    await page.getByPlaceholder(/budget/i).fill('1000000');
+    await page.getByLabel(/project code/i).fill(code);
+    await page.getByLabel(/project name/i).fill(projectName);
+    await page.getByLabel(/budget/i).fill('1000000');
     await page.getByRole('button', { name: /^create$/i }).click();
 
     // On success the form closes and the new project appears in the list (no toast in this UI).

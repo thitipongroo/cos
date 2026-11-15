@@ -3187,15 +3187,34 @@ modified_at)) <= $t`, milliseconds like the caller's comparison — `modified_at
     23 failed, 8 skipped (next entry); a following short run left nothing listening on :3000/:3001. With HEAD's
     `seed.ts` the seed aborts on the foreign key (inspection row removed first, so the conflict clause could not hide
     it); HEAD's `seed-e2e-users.sh` gets 404 from the realm and writes nothing.
-- **23 of the web E2E specs fail on the local recipe.** Run on `fix/web-e2e-local-recipe` (2026-11-15), fresh
-  stack, `next dev`: 24 passed, 23 failed, 8 skipped. Almost all are timeouts — 60 s (120 s for two notification
-  cases), many in a `beforeEach` login waiting for the Keycloak `#username` field, others waiting for a placeholder
-  the page does not render (project code, amount, RFQ number). Three are real findings: axe WCAG A/AA violations on
-  `/projects`, `/tasks` and `/site/issues`. An earlier run against servers already warm from a previous run had 13
-  failures (the same axe finding on `/site/issues`), so cold `next dev` compiles likely cause part of the timeouts;
-  running the web as a production build (`next build && next start`) would tell the two apart. Supporting that: on
-  `fix/e2e-approval-pending-assert` the approval-escalation spec timed out at login on a fresh start and passed in
-  full (3/3) on the next run, with Next's compile cache on disk. Not investigated further.
+- **Closed — 23 of the web E2E specs failed on the local recipe.** Fixed on `fix/e2e-local-prod-build`. On a fresh
+  stack the suite now reports 47 passed, 0 failed, 8 skipped — seven skipped in their files, each with its reason
+  there (two routes that do not exist, a 48 h workflow timer, an unseeded analytics store, and three procurement
+  cases whose only assertion could not fail), one for want of `E2E_SYSADMIN_EMAIL` / `_PASSWORD` (a SYSTEM_ADMIN the
+  recipe does not create). The counts below come from the local runs of 2026-11-15/16; their logs were not kept in
+  the repository.
+  The failures had four causes:
+  - **Compiling on first request.** `next dev` compiled each page when a test first opened it, inside the 60 s test
+    timeout. `scripts/dev/e2e-local.sh` now runs the web as a production build by default (`next build`, `next
+    start`; `E2E_WEB_MODE=dev` keeps the old mode, where they can come back — a dev-mode run of `auth.spec` had one):
+    23 → 12 failures.
+  - **Parallel logins.** Several workers logging in through the one local Keycloak at once timed out at its
+    `#username` field; with one worker none did. The script passes `--workers=1` (`E2E_WORKERS` overrides). On a
+    fresh stack the very first login still timed out once, so the script loads Keycloak's login page (the web
+    client's authorize URL) and waits for that field before Playwright starts.
+  - **Wrong selectors.** `project`, `procurement` (PR, RFQ), `report` and `budget-exceeded` looked fields up by
+    placeholder; the forms have labelled fields (`TextInputField`) and no such placeholders. They use `getByLabel` now,
+    with the same patterns.
+  - **Real accessibility defects**, found by the a11y spec: the filter `<select>`s on `/projects` (status, type),
+    `/tasks` (project) and `/site/issues` (status) had no accessible name (axe `select-name`, critical) — they carry
+    an `aria-label` now; and `/projects` scrolled sideways at 200 % text on a 375 px viewport (507 > 375) — its header
+    and filter rows wrap now. The a11y spec scans only five routes; the same unnamed `<select>` sat on twelve more
+    page controls (filters and per-row status / role pickers on finance invoices, procurement orders, quotations,
+    requests and RFQs, a project's status change and risks, reports, users, inspections), found by /doubt and given
+    the same `aria-label` here — not scanned by axe.
+  - Verified: each fix's specs failed in the run before it and passed after; the full suite on a fresh stack passed
+    as above, with nothing left listening on :3000/:3001 afterwards. The fresh run without the Keycloak warm-up had
+    one failure (that first login), the one with it none.
 
 ## Parked
 

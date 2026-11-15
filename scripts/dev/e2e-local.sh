@@ -10,7 +10,7 @@
 #   3. seed-realistic.ts      (EKC: projects, POs, reports, checklists — the data the specs read)
 #   4. seed.ts                (dev tenant + field-staff fixture, which needs EKC)
 #   5. seed-e2e-users.sh      (the eight role users the specs log in as, in EKC)
-#   6. backend on :3000, web on :3001 (background; logs under .e2e-local/)
+#   6. backend on :3000, web on :3001 — a production build by default (E2E_WEB_MODE=build|dev; logs under .e2e-local/)
 #   7. playwright test        (BASE_URL=http://localhost:3001; extra args are passed through)
 #
 # LOCAL ONLY. It writes seed data and test users; it refuses a BASE_URL that is not localhost.
@@ -35,6 +35,15 @@ for url in "$BASE_URL" "$KEYCLOAK_URL"; do
       ;;
   esac
 done
+
+E2E_WEB_MODE=${E2E_WEB_MODE:-build}
+case "$E2E_WEB_MODE" in
+  build | dev) ;;
+  *)
+    echo "E2E_WEB_MODE must be build or dev (got $E2E_WEB_MODE)" >&2
+    exit 1
+    ;;
+esac
 
 # Refuse to start over servers already listening: the readiness waits below only see that SOMETHING
 # answers, so a leftover backend/web would be the one under test and the new ones would die on EADDRINUSE.
@@ -140,11 +149,41 @@ step "6/7 backend :3000 and web :3001 (logs: $LOG_DIR)"
 (cd backend && exec pnpm run dev) >"$LOG_DIR/backend.log" 2>&1 &
 BACKEND_PID=$!
 PIDS+=("$BACKEND_PID")
-(cd apps/web && exec pnpm run dev) >"$LOG_DIR/web.log" 2>&1 &
+# E2E_WEB_MODE=build (default): `next build`, then `next start` — every page compiled before the first test. With
+# `next dev` each page compiled on its first request, and the 60 s test timeouts were spent there (a fresh run: 23
+# failures, most at the login field; the same spec failed cold and passed warm). E2E_WEB_MODE=dev keeps next dev.
+if [[ "$E2E_WEB_MODE" == build ]]; then
+  (cd apps/web && pnpm run build) >"$LOG_DIR/web-build.log" 2>&1 || {
+    echo "web build failed — see $LOG_DIR/web-build.log" >&2
+    exit 1
+  }
+  WEB_CMD=start
+else
+  WEB_CMD=dev
+fi
+(cd apps/web && exec pnpm run "$WEB_CMD") >"$LOG_DIR/web.log" 2>&1 &
 WEB_PID=$!
 PIDS+=("$WEB_PID")
 wait_for "backend /api/v1/health/live" 300 up_and_http_ok "$BACKEND_PID" http://localhost:3000/api/v1/health/live
 wait_for "web :3001" 300 up_and_http_ok "$WEB_PID" "$BASE_URL"
 
+# Warm Keycloak's login page once. On a fresh stack the first test that logs in (a11y's, alphabetically) timed out
+# at the #username field while every later login was quick; the first render of the login theme is the slow part.
+# The web client's own authorize URL (PKCE is required; any challenge renders the page), checked for the field.
+WEB_CLIENT_ID=$(grep -E '^KEYCLOAK_WEB_CLIENT_ID=' apps/web/.env 2>/dev/null | cut -d= -f2- || true)
+LOGIN_URL="$KEYCLOAK_URL/realms/${KEYCLOAK_REALM:-construction-os-dev}/protocol/openid-connect/auth"
+LOGIN_URL+="?client_id=${WEB_CLIENT_ID:-cos-web}&response_type=code&scope=openid&code_challenge_method=S256"
+LOGIN_URL+="&code_challenge=E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM"
+# The redirect must be the web's own callback or Keycloak answers 400; BASE_URL is plain http://localhost:<port> or
+# http://127.0.0.1:<port> (guarded above), so encoding ':' and '/' is enough.
+CALLBACK="${BASE_URL%/}/api/auth/callback/keycloak"
+CALLBACK=${CALLBACK//:/%3A}
+LOGIN_URL+="&redirect_uri=${CALLBACK//\//%2F}"
+login_page_ready() { curl -fsSL "$LOGIN_URL" | grep -q 'id="username"'; }
+wait_for "keycloak login page" 120 login_page_ready || echo "  (login page not confirmed; continuing)"
+
 step "7/7 playwright"
-BASE_URL="$BASE_URL" pnpm exec playwright test -c tests/e2e/playwright.config.ts "$@"
+# One worker unless E2E_WORKERS says otherwise: parallel workers all log in through the one local Keycloak at
+# once, and the first logins timed out at its #username field; with one worker none did (2026-11-16).
+BASE_URL="$BASE_URL" pnpm exec playwright test -c tests/e2e/playwright.config.ts \
+  --workers="${E2E_WORKERS:-1}" "$@"

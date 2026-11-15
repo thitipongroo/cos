@@ -33,10 +33,10 @@ test.describe('Accessibility — authenticated', () => {
   // Routes chosen for coverage of distinct UI shapes rather than breadth: the app shell + a list
   // view, a data-dense table, and the two form pages that PART 2 migrates to react-hook-form.
   //
-  // NOT YET BASELINED. `/login` above was scanned clean locally; these five need a running backend
-  // and Keycloak, so their first real run is the staging pipeline (e2e-tests runs only on
-  // refs/heads/staging). Expect the first run to surface findings — that is the point — and fix
-  // them rather than trimming this list.
+  // BASELINED LOCALLY 2026-11-16 (scripts/dev/e2e-local.sh, fix/e2e-local-prod-build): the first run surfaced
+  // unnamed filter <select>s on /projects, /tasks and /site/issues and a sideways scroll on /projects at 200 %
+  // text; fixed, and all ten cases pass. Staging (e2e-tests on refs/heads/staging) runs them too. New findings
+  // are fixed rather than trimmed from this list.
   const ROUTES = ['/projects', '/tasks', '/site/issues', '/site/issues/new', '/site/reports/new'];
 
   for (const route of ROUTES) {

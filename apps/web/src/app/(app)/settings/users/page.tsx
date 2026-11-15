@@ -77,6 +77,7 @@ export default function SettingsUsersPage() {
       cell: (u) =>
         u.is_active ? (
           <select
+            aria-label={t('settings.colRole')}
             value={u.role}
             disabled={readOnly}
             onChange={(e) => {

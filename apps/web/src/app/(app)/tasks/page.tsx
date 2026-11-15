@@ -59,6 +59,7 @@ export default function TasksPage() {
     <div>
       <h1 className="mb-4 text-2xl font-bold text-gray-800">{t('site.tasksTitle')}</h1>
       <select
+        aria-label={t('table.project')}
         value={projectId}
         onChange={(e) => setProjectId(e.target.value)}
         className="mb-4 rounded-md border border-gray-300 px-3 py-1.5 text-sm"
