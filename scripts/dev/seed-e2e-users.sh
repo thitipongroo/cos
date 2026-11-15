@@ -2,18 +2,25 @@
 # Seed the 8 role-specific Keycloak users that the web E2E specs (tests/e2e/specs/*.ts) log in as.
 # Without these, loginViaKeycloak() cannot authenticate the role and the spec skips.
 #
-# Creates each user in the `construction-os` realm (idempotent) with password E2eTestPass123!,
+# Creates each user in the realm KEYCLOAK_REALM (default `construction-os-dev`, the local import), in the EKC tenant
+# seed-realistic.ts fills (idempotent), with password E2eTestPass123!,
 # the tenant_id / user_id / role attributes the JWT mappers project into the token, and the
 # matching platform.users + platform.tenant_memberships rows so the backend resolves the account.
 #
 # Requires: full docker stack up (keycloak :8090, postgres). Run: bash scripts/dev/seed-e2e-users.sh
 set -euo pipefail
 
-KC=http://localhost:8090
-REALM=construction-os
+KC=${KEYCLOAK_URL:-http://localhost:8090}
+# The local Keycloak imports the realm as `construction-os-dev` (docker-compose.yml, .env.example). This was
+# hardcoded `construction-os` — the shared staging/production realm — and every call got 404 locally.
+REALM=${KEYCLOAK_REALM:-construction-os-dev}
 ADMIN_USER=${KEYCLOAK_ADMIN_USER:-admin}
 ADMIN_PASS=${KEYCLOAK_ADMIN_PASSWORD:-cos_keycloak_admin}
-TENANT=00000000-0000-4000-8000-000000000001
+# EKC — the tenant seed-realistic.ts fills with projects, POs, reports; the specs read that data. The dev tenant
+# (…0001) has none of it. Looked up by code: EKC's id is derived, not a constant (seed.ts does the same).
+TENANT=$(docker exec -i cos-postgres psql -U cos -d construction_os -tA -c \
+  "SELECT tenant_id FROM platform.tenants WHERE tenant_code = 'EKC'")
+if [[ -z "$TENANT" ]]; then echo "EKC tenant not found — run backend/prisma/seed-realistic.ts first" >&2; exit 1; fi
 PASSWORD=E2eTestPass123!
 
 TOKEN=$(curl -s -X POST "$KC/realms/master/protocol/openid-connect/token" \
@@ -36,7 +43,11 @@ for row in "${USERS[@]}"; do
   IFS='|' read -r EMAIL ROLE USERID NAME <<< "$row"
   # The realm asks for OTP on `mfa_required` (ADR-110 round 5), which the backend sets for these two roles.
   MFA_ATTR=""
-  if [[ "$ROLE" == "TENANT_ADMIN" || "$ROLE" == "FINANCE" ]]; then MFA_ATTR=',"mfa_required":["true"]'; fi
+  # Off unless E2E_MFA=1: the specs drive no OTP step, and test users are MFA-exempt on the staging seed too
+  # (tests/e2e/helpers/auth.ts). With it on, the TENANT_ADMIN / FINANCE logins stop at the OTP prompt.
+  if [[ "${E2E_MFA:-0}" == "1" && ( "$ROLE" == "TENANT_ADMIN" || "$ROLE" == "FINANCE" ) ]]; then
+    MFA_ATTR=',"mfa_required":["true"]'
+  fi
 
   # Create the Keycloak user (ignore 409 if it already exists), then fetch its id.
   curl -s -o /dev/null -w "  KC create %{http_code} $EMAIL\n" -X POST "$KC/admin/realms/$REALM/users" \
@@ -64,7 +75,7 @@ for row in "${USERS[@]}"; do
   docker exec -i cos-postgres psql -U cos -d construction_os -q -c "
     INSERT INTO platform.users (user_id, tenant_id, keycloak_user_id, email, display_name, is_active, mfa_enabled)
     VALUES ('$USERID'::uuid, '$TENANT'::uuid, '$KCID'::uuid, '$EMAIL', '$NAME', true, false)
-    ON CONFLICT (user_id) DO UPDATE SET keycloak_user_id = EXCLUDED.keycloak_user_id;
+    ON CONFLICT (user_id) DO UPDATE SET keycloak_user_id = EXCLUDED.keycloak_user_id, tenant_id = EXCLUDED.tenant_id;
     INSERT INTO platform.tenant_memberships (tenant_id, user_id, role)
     VALUES ('$TENANT'::uuid, '$USERID'::uuid, '$ROLE'::platform.\"CosRoleEnum\")
     ON CONFLICT (tenant_id, user_id) DO UPDATE SET role = EXCLUDED.role;" >/dev/null
@@ -90,7 +101,7 @@ fi
 docker exec -i cos-postgres psql -U cos -d construction_os -q -c "
   INSERT INTO platform.users (user_id, tenant_id, keycloak_user_id, email, display_name, phone_number, is_active, mfa_enabled)
   VALUES ('$SE_USERID'::uuid,'$TENANT'::uuid,'$SE_KCID'::uuid,'e2e-inspector-phone@devtenant.co.th','E2E Inspector','$SE_PHONE',true,false)
-  ON CONFLICT (user_id) DO UPDATE SET keycloak_user_id=EXCLUDED.keycloak_user_id;
+  ON CONFLICT (user_id) DO UPDATE SET keycloak_user_id=EXCLUDED.keycloak_user_id, tenant_id=EXCLUDED.tenant_id;
   INSERT INTO platform.tenant_memberships (tenant_id,user_id,role) VALUES ('$TENANT'::uuid,'$SE_USERID'::uuid,'SITE_ENGINEER'::platform.\"CosRoleEnum\")
   ON CONFLICT (tenant_id,user_id) DO UPDATE SET role=EXCLUDED.role;" >/dev/null
 echo "  SITE_ENGINEER phone user OK: $SE_PHONE"

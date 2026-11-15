@@ -321,15 +321,29 @@ async function seedPlatformDevTenant(): Promise<void> {
 
   // One inspection for the SITE_ENGINEER, so GET /site/inspections returns a row and the offline
   // inspection E2E has an item to open. inspected_by = the +66800000002 user. Superuser insert.
-  await prisma.$executeRaw`
-    INSERT INTO site_ops.inspections
-      (inspection_id, project_id, tenant_id, checklist_id, status, inspected_by, inspected_at, notes)
-    VALUES
-      ('00000000-0000-4000-8000-000000000041'::uuid, '00000000-0000-4000-8000-000000000061'::uuid,
-       ${fixtureTenantId}::uuid, '00000000-0000-4000-8000-000000000051'::uuid, 'PENDING',
-       '00000000-0000-4000-8000-000000000012'::uuid, now(), 'E2E seed inspection')
-    ON CONFLICT (inspection_id) DO NOTHING
+  //
+  // On one of EKC's own checklists, and that checklist's project. It named project …0061 and checklist
+  // …0051, which no seed creates, so a fresh database aborted here on inspections_project_id_fkey
+  // (fix/web-e2e-local-recipe). seed-realistic.ts seeds EKC's checklists; none → skipped, logged.
+  const [checklist] = await prisma.$queryRaw<Array<{ checklist_id: string; project_id: string }>>`
+    SELECT checklist_id::text, project_id::text FROM site_ops.safety_checklists
+    WHERE tenant_id = ${fixtureTenantId}::uuid
+    ORDER BY checklist_id
+    LIMIT 1
   `;
+  if (!checklist) {
+    logger.warn({}, 'seed: EKC has no safety checklist — E2E inspection fixture SKIPPED.');
+  } else {
+    await prisma.$executeRaw`
+      INSERT INTO site_ops.inspections
+        (inspection_id, project_id, tenant_id, checklist_id, status, inspected_by, inspected_at, notes)
+      VALUES
+        ('00000000-0000-4000-8000-000000000041'::uuid, ${checklist.project_id}::uuid,
+         ${fixtureTenantId}::uuid, ${checklist.checklist_id}::uuid, 'PENDING',
+         '00000000-0000-4000-8000-000000000012'::uuid, now(), 'E2E seed inspection')
+      ON CONFLICT (inspection_id) DO NOTHING
+    `;
+  }
 
   logger.info({ tenantId: SEED_TENANT_ID, userId: SEED_USER_ID }, 'seed: dev tenant + user done');
 }

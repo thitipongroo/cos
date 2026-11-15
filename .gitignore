@@ -187,3 +187,6 @@ override_*.tf
 # `docs/research/` is where prompt material of this kind belongs, as Markdown that passes the
 # linters like every other document.
 docs/Claude outputs/
+
+# scripts/dev/e2e-local.sh logs (backend, web)
+.e2e-local/

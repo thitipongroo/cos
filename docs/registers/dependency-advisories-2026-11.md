@@ -3118,13 +3118,32 @@ modified_at)) <= $t`, milliseconds like the caller's comparison — `modified_at
 - **`approval-escalation.spec.ts` "approval item shows pending status" still cannot fail.** Its only row assertion sits
   in `if (await pendingRow.isVisible(…).catch(() => false))`. "purchase order approval state is inspectable" needs
   `E2E_ADMIN_EMAIL`, a TENANT_ADMIN, whose login requires a second factor; locally it timed out at login.
-- **The web E2E suite has no working local recipe.** `scripts/dev/seed-e2e-users.sh` creates its users in realm
-  `construction-os`, which the local Keycloak does not have (404; `construction-os-dev` is 200), and on a fresh
-  database `prisma/seed.ts` stops at its inspection fixture (`inspections_project_id_fkey`: project
-  `00000000-0000-4000-8000-000000000061` does not exist). What ran on 2026-11-13: infra `postgres pgbouncer redis kafka
-schema-registry keycloak temporal` (minio's image does not pull, above), migrations, `prisma/seed-realistic.ts`,
-  `prisma/provision-keycloak-demo.ts`, web on 3001, and the specs with `BASE_URL=http://localhost:3001` and
-  `E2E_SE_*` / `E2E_PM_*` / `E2E_SAFETY_*` set to the EKC demo accounts.
+- **Closed — the web E2E suite had no working local recipe.** Fixed on `fix/web-e2e-local-recipe`.
+  `scripts/dev/e2e-local.sh` runs it on a local stack, start to finish (localhost only): infra `postgres pgbouncer
+  redis kafka schema-registry keycloak temporal`, migrations, `seed-realistic.ts`, `seed.ts`, `seed-e2e-users.sh`,
+  backend :3000 and web :3001, then `playwright test` (arguments passed through). Three things it needed:
+  - `seed-e2e-users.sh` targeted realm `construction-os`; the local Keycloak imports `construction-os-dev` (404 on
+    every call). Realm from `KEYCLOAK_REALM`, default `construction-os-dev`. Its users now go into EKC's tenant (by
+    `tenant_code`), where `seed-realistic.ts` puts the data the specs read, and `mfa_required` is set only with
+    `E2E_MFA=1` — the specs drive no OTP step, as on staging.
+  - `seed.ts` inserted an inspection for project `…0061` and checklist `…0051`, which no seed creates: a fresh database
+    aborted on `inspections_project_id_fkey`. It now uses one of EKC's checklists and that checklist's project.
+  - Its first versions killed only the pnpm shim on exit, which ignores SIGTERM, so backend and web lived on as
+    orphans on :3000/:3001; the next run's servers then died on EADDRINUSE unnoticed and Playwright tested the old
+    ones (found by /doubt). The script now refuses to start over a listening :3000/:3001, checks that the servers it
+    started are alive while waiting, and on exit stops their whole process tree (TERM, then KILL after 5 s —
+    `nest start --watch` outlived TERM once). `KEYCLOAK_URL`, like `BASE_URL`, must be localhost.
+  - Verified: on a fresh local stack (no containers, no volumes) every step ran and Playwright reported 24 passed,
+    23 failed, 8 skipped (next entry); a following short run left nothing listening on :3000/:3001. With HEAD's
+    `seed.ts` the seed aborts on the foreign key (inspection row removed first, so the conflict clause could not hide
+    it); HEAD's `seed-e2e-users.sh` gets 404 from the realm and writes nothing.
+- **23 of the web E2E specs fail on the local recipe.** Run on `fix/web-e2e-local-recipe` (2026-11-15), fresh
+  stack, `next dev`: 24 passed, 23 failed, 8 skipped. Almost all are timeouts — 60 s (120 s for two notification
+  cases), many in a `beforeEach` login waiting for the Keycloak `#username` field, others waiting for a placeholder
+  the page does not render (project code, amount, RFQ number). Three are real findings: axe WCAG A/AA violations on
+  `/projects`, `/tasks` and `/site/issues`. An earlier run against servers already warm from a previous run had 13
+  failures (the same axe finding on `/site/issues`), so cold `next dev` compiles likely cause part of the timeouts;
+  running the web as a production build (`next build && next start`) would tell the two apart. Not investigated.
 
 ## Parked
 
