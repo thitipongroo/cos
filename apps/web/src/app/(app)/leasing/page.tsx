@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { SampleDataNotice } from '../../../components/ui/SampleDataNotice';
 import { useI18n } from '../../../i18n';
 import { fill } from '../../../i18n/fill';
 
@@ -17,6 +18,8 @@ interface PropertyAsset {
   yieldPercent: number;
 }
 
+// Shown from `sample.leasing.<id>.type|location` (en/th); the English fields here mark which records need a key
+// (i18n/__tests__/sample-keys.spec.ts) and are not rendered.
 const SAMPLE_ASSETS: PropertyAsset[] = [
   {
     id: 'vanguard-tower',
@@ -87,12 +90,13 @@ export default function PropertyLeasingPortfolioPage() {
   const filteredAssets = SAMPLE_ASSETS.filter(
     (a) =>
       a.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      a.location.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      a.type.toLowerCase().includes(searchQuery.toLowerCase()),
+      t(`sample.leasing.${a.id}.location`).toLowerCase().includes(searchQuery.toLowerCase()) ||
+      t(`sample.leasing.${a.id}.type`).toLowerCase().includes(searchQuery.toLowerCase()),
   );
 
   return (
     <div className="flex flex-col h-full bg-[#020617] text-[#F8FAFC]">
+      <SampleDataNotice />
       {/* Top Header Bar */}
       <div className="px-6 py-4 flex flex-wrap justify-between items-center border-b border-white/5 bg-[#0F172A]/40 gap-4">
         <div>
@@ -386,11 +390,15 @@ export default function PropertyLeasingPortfolioPage() {
                           <div className="font-bold text-white group-hover:text-blue-400 transition-colors">
                             {asset.name}
                           </div>
-                          <div className="text-[11px] text-slate-400">{asset.type}</div>
+                          <div className="text-[11px] text-slate-400">
+                            {t(`sample.leasing.${asset.id}.type`)}
+                          </div>
                         </div>
                       </Link>
                     </td>
-                    <td className="py-3 px-5 text-slate-300">{asset.location}</td>
+                    <td className="py-3 px-5 text-slate-300">
+                      {t(`sample.leasing.${asset.id}.location`)}
+                    </td>
                     <td className="py-3 px-5">
                       <div className="flex items-center gap-2">
                         <span className="font-mono font-bold text-white">{asset.occupancy}%</span>

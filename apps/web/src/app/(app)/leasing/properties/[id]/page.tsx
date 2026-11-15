@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
+import { SampleDataNotice } from '../../../../../components/ui/SampleDataNotice';
 import { useI18n } from '../../../../../i18n';
 import { fill } from '../../../../../i18n/fill';
 
@@ -56,7 +57,7 @@ export default function PropertyDetailPage() {
     floor: '10F',
     name: 'Unit 10-4',
     sizeSqft: 4250,
-    type: 'Commercial Office Space',
+    type: 'commercialOffice',
     status: 'leased',
     tenantName: 'Lumina Tech Group (APAC)',
     expiryDate: 'Dec 2026',
@@ -78,7 +79,7 @@ export default function PropertyDetailPage() {
       floor: floorName,
       name: `Unit ${floorName}-${idx + 1}`,
       sizeSqft: 2500 + (idx % 4) * 600,
-      type: floorNum >= 10 ? 'Executive Office Suite' : 'Grade-A Commercial Space',
+      type: floorNum >= 10 ? 'executiveSuite' : 'gradeA',
       status: st,
       tenantName:
         st === 'leased'
@@ -93,6 +94,7 @@ export default function PropertyDetailPage() {
 
   return (
     <div className="flex flex-col h-full bg-[#020617] text-[#F8FAFC]">
+      <SampleDataNotice />
       {/* Top Header */}
       <div className="px-6 py-4 flex flex-wrap justify-between items-center border-b border-white/5 bg-[#0F172A]/40 gap-4">
         <div>
@@ -258,7 +260,9 @@ export default function PropertyDetailPage() {
                   <h4 className="text-xl font-bold text-white mt-0.5">
                     {fill(t('leasing.property.unitName'), { unit: selectedUnit.id })}
                   </h4>
-                  <p className="text-xs text-slate-400 mt-1">{selectedUnit.type}</p>
+                  <p className="text-xs text-slate-400 mt-1">
+                    {t(`sample.leasingProperty.unitType.${selectedUnit.type}`)}
+                  </p>
                 </div>
 
                 <div className="grid grid-cols-2 gap-3 p-3 rounded-lg bg-slate-900/60 border border-white/5">

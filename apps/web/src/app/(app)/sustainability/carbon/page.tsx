@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { SampleDataNotice } from '../../../../components/ui/SampleDataNotice';
 import { useI18n } from '../../../../i18n';
 
 interface CarbonProject {
@@ -82,6 +83,7 @@ export default function CarbonMarketplacePage() {
 
   return (
     <div className="flex flex-col h-full bg-[#020617] text-[#F8FAFC]">
+      <SampleDataNotice />
       {/* Top Header */}
       <div className="px-6 py-4 flex flex-wrap justify-between items-center border-b border-white/5 bg-[#0F172A]/40 gap-4">
         <div>

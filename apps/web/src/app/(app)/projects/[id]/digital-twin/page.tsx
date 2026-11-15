@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
+import { SampleDataNotice } from '../../../../../components/ui/SampleDataNotice';
 import { useI18n } from '../../../../../i18n';
 
 interface DivergenceCard {
@@ -14,6 +15,8 @@ interface DivergenceCard {
   actionStatus: string;
 }
 
+// title / description / actionStatus are shown from `sample.digitalTwin.<id>.*` (en/th); the English fields
+// here mark which records need a key and are not rendered.
 const SAMPLE_DIVERGENCES: DivergenceCard[] = [
   {
     id: 'div-1',
@@ -56,6 +59,7 @@ export default function DigitalTwinPage() {
 
   return (
     <div className="flex flex-col h-full bg-[#020617] text-[#F8FAFC]">
+      <SampleDataNotice />
       {/* Top Header */}
       <div className="px-6 py-4 flex flex-wrap justify-between items-center border-b border-white/5 bg-[#0F172A]/40 gap-4">
         <div>
@@ -233,13 +237,17 @@ export default function DigitalTwinPage() {
                       </span>
                       <span className="text-[10px] font-mono text-slate-400">{div.code}</span>
                     </div>
-                    <p className="text-xs font-bold text-white">{div.title}</p>
+                    <p className="text-xs font-bold text-white">
+                      {t(`sample.digitalTwin.${div.id}.title`)}
+                    </p>
                     <p className="text-[11px] text-slate-400 mt-1 line-clamp-1">
-                      {div.description}
+                      {t(`sample.digitalTwin.${div.id}.description`)}
                     </p>
                   </div>
                   <div className="flex justify-between items-center mt-2 pt-2 border-t border-white/5 w-full">
-                    <span className="text-[10px] font-bold text-cyan-300">{div.actionStatus}</span>
+                    <span className="text-[10px] font-bold text-cyan-300">
+                      {t(`sample.digitalTwin.${div.id}.actionStatus`)}
+                    </span>
                     <span className="material-symbols-outlined text-[14px] text-slate-400">
                       arrow_forward
                     </span>

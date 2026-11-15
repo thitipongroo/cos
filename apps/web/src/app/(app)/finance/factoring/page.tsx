@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { SampleDataNotice } from '../../../../components/ui/SampleDataNotice';
 import { useI18n } from '../../../../i18n';
 import { fill } from '../../../../i18n/fill';
 import { formatMoney, formatPercent } from '../../../../lib/format';
@@ -80,6 +81,7 @@ const SAMPLE_FACTORING_INVOICES: FactoringInvoice[] = [
   },
 ];
 
+// workPackage is shown from `sample.factoring.<id>.workPackage` (en/th); the field marks which records need a key.
 const SAMPLE_PAYOUTS: SubcontractorPayout[] = [
   {
     id: 'pay-1',
@@ -160,6 +162,7 @@ export default function InvoiceFactoringPage() {
 
   return (
     <div className="flex flex-col h-full bg-[#020617] text-[#F8FAFC]">
+      <SampleDataNotice />
       {/* Top Header Bar */}
       <div className="px-6 py-4 flex flex-wrap justify-between items-center border-b border-white/5 bg-[#0F172A]/40 gap-4">
         <div>
@@ -397,7 +400,9 @@ export default function InvoiceFactoringPage() {
                 {payouts.map((p) => (
                   <tr key={p.id} className="hover:bg-white/[0.02] transition-colors">
                     <td className="py-3.5 px-4 font-bold text-white">{p.vendorName}</td>
-                    <td className="py-3.5 px-4 text-slate-200">{p.workPackage}</td>
+                    <td className="py-3.5 px-4 text-slate-200">
+                      {t(`sample.factoring.${p.id}.workPackage`)}
+                    </td>
                     <td className="py-3.5 px-4 text-slate-400 font-mono text-[11px]">
                       {p.project}
                     </td>

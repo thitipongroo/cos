@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { SampleDataNotice } from '../../../../components/ui/SampleDataNotice';
 import { useI18n } from '../../../../i18n';
 import { fill } from '../../../../i18n/fill';
 
@@ -25,6 +26,7 @@ interface SafetyAlert {
   acknowledged: boolean;
 }
 
+// Text shown from `sample.aiVision.<id>.*` (en/th); the English fields mark which records need a key.
 const INITIAL_FEEDS: CameraFeed[] = [
   {
     id: 'cam-04',
@@ -69,6 +71,7 @@ const INITIAL_FEEDS: CameraFeed[] = [
   },
 ];
 
+// title / zone / details are shown from `sample.aiVision.<id>.*` (en/th); the fields mark which need a key.
 const INITIAL_ALERTS: SafetyAlert[] = [
   {
     id: 'alt-1',
@@ -121,7 +124,7 @@ export default function SafetyAiVisionPage() {
 
   const handleDispatchOfficer = () => {
     setDispatchFeedback(
-      fill(t('safety.aiVision.dispatched'), { zones: 'Zone 4 & Tower Scaffold North' }),
+      fill(t('safety.aiVision.dispatched'), { zones: t('sample.aiVision.dispatchZones') }),
     );
     setTimeout(() => {
       setDispatchFeedback(null);
@@ -137,6 +140,7 @@ export default function SafetyAiVisionPage() {
 
   return (
     <div className="flex flex-col h-full bg-[#020617] text-[#F8FAFC]">
+      <SampleDataNotice />
       {/* Top Header */}
       <div className="px-6 py-4 flex flex-wrap justify-between items-center border-b border-white/5 bg-[#0F172A]/40 gap-4">
         <div>
@@ -219,7 +223,9 @@ export default function SafetyAiVisionPage() {
                     <span className="text-[11px] font-mono font-bold text-white">{feed.name}</span>
                   </div>
 
-                  <span className="text-[10px] text-slate-400 font-mono">{feed.zone}</span>
+                  <span className="text-[10px] text-slate-400 font-mono">
+                    {t(`sample.aiVision.${feed.id}.zone`)}
+                  </span>
                 </div>
 
                 {/* AI Bounding Box Overlay Simulation */}
@@ -227,7 +233,7 @@ export default function SafetyAiVisionPage() {
                   <div className="my-auto self-center p-3 rounded-lg border-2 border-dashed border-rose-500 bg-rose-950/40 text-center animate-pulse">
                     <div className="text-[11px] font-extrabold text-rose-300 flex items-center gap-1 justify-center">
                       <span className="material-symbols-outlined text-[16px]">warning</span>
-                      {feed.activeAlert}
+                      {t(`sample.aiVision.${feed.id}.activeAlert`)}
                     </div>
                     <span className="text-[10px] font-mono text-rose-400">
                       {fill(t('safety.aiVision.confidence'), { value: feed.confidence ?? '' })}
@@ -384,12 +390,18 @@ export default function SafetyAiVisionPage() {
                   }`}
                 >
                   <div className="flex justify-between items-start">
-                    <span className="font-bold text-white">{alt.title}</span>
+                    <span className="font-bold text-white">
+                      {t(`sample.aiVision.${alt.id}.title`)}
+                    </span>
                     <span className="text-[10px] font-mono text-slate-400">{alt.time}</span>
                   </div>
-                  <p className="text-[11px] text-slate-300 mt-1 leading-relaxed">{alt.details}</p>
+                  <p className="text-[11px] text-slate-300 mt-1 leading-relaxed">
+                    {t(`sample.aiVision.${alt.id}.details`)}
+                  </p>
                   <div className="mt-2.5 flex items-center justify-between">
-                    <span className="text-[10px] text-slate-400 font-mono">{alt.zone}</span>
+                    <span className="text-[10px] text-slate-400 font-mono">
+                      {t(`sample.aiVision.${alt.id}.zone`)}
+                    </span>
                     {!alt.acknowledged && (
                       <button
                         type="button"

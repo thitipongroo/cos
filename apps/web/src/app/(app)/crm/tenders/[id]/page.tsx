@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
+import { SampleDataNotice } from '../../../../../components/ui/SampleDataNotice';
 import { useI18n } from '../../../../../i18n';
 import { fill } from '../../../../../i18n/fill';
 import { formatMoney } from '../../../../../lib/format';
@@ -87,6 +88,7 @@ export default function TenderPackageDetailPage() {
 
   return (
     <div className="flex flex-col h-full bg-[#020617] text-[#F8FAFC]">
+      <SampleDataNotice />
       {/* Header Bar */}
       <div className="px-6 py-4 flex flex-wrap justify-between items-center border-b border-white/5 bg-[#0F172A]/40 gap-4">
         <div>

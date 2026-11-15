@@ -1602,11 +1602,25 @@ gate's isolated run) checks the hash was not tested either; it ran 12.18.0 with 
 
 ## Open
 
-- **Sample records on the `6a076c6d` pages are shown in English.** `SAMPLE_*` / `INITIAL_*` constants in
-  `leasing/page.tsx`, `leasing/properties/[id]`, `crm/tenders/[id]`, `finance/factoring` and `safety/ai-vision` hold
-  names, asset types, work packages, zones and, on `safety/ai-vision`, alert titles and details ("NO HARD HAT DETECTED",
-  "Immediate attention required…") that the pages show as they are. Left as data by D30; whether demo records should be
-  translated, or the pages read real data, is a product decision.
+- **Closed — sample records on the `6a076c6d` pages were shown in English, and nothing said they were samples.**
+  Fixed on `fix/web-sample-data-notice` (product-owner decision 2026-11-16: a notice, and the descriptive text
+  translated). Nine pages render only module-level sample constants and read nothing from the API — the five this
+  entry named (`leasing`, `leasing/properties/[id]`, `crm/tenders/[id]`, `finance/factoring`, `safety/ai-vision`) and
+  four /doubt found on the branch (`procurement/contractor-portal`, `procurement/rfqs/[id]/evaluate`,
+  `projects/[id]/digital-twin`, `sustainability/carbon`). None has a menu entry; they are reachable by URL and from
+  each other. Each now opens with `SampleDataNotice` ("Sample data — not from your projects." / "ข้อมูลตัวอย่าง —
+  ไม่ใช่ข้อมูลจากโครงการของคุณ", `role="note"`).
+  - The descriptive text renders from `sample.*` keys (en + th): asset types and locations, unit types, work packages
+    and package titles, divergence titles, descriptions and statuses, camera zones, live alerts, alert titles, zones
+    and details, and the AI-vision dispatch toast's zones. The leasing search matches the shown (translated) type and
+    location — so in Thai, "London" no longer finds a row. Proper names and identifiers stay as data (asset,
+    contractor, vendor, subcontractor names; invoice, project, package codes; camera ids; floor codes; ratings), as D30
+    keeps names; no figure changed. Not translated: the property page's month-name dates in the sample ("Dec 2026"
+    expiry; "Aug 2023", "Jan 2020" in the lease history).
+  - Verified: `sample-keys.spec.ts` reads each page's source, requires the key for every record that carries a
+    translated field, pins how many templates each page uses, fails a template whose records the parser cannot find,
+    and requires the notice on all nine (the parity test holds th to en); removing an en key, a th key, a template or a
+    notice each fails it. apps/web typecheck, eslint, jest (455) and `next build` pass.
 - **Closed — drone-mission-detail's "LandXML Ready" badge claimed a readiness nothing provides.** Fixed on
   `fix/mobile-landxml-badge`. No LandXML export exists (D36). The product owner (2026-11-15) chose to keep the badge
   reworded: `drone.mission.landxmlSoon`, en "LandXML — coming soon", th "LandXML — เร็ว ๆ นี้", in the palette's muted

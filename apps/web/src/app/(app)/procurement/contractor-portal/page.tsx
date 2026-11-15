@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { SampleDataNotice } from '../../../../components/ui/SampleDataNotice';
 import { useI18n } from '../../../../i18n';
 import { formatMoney } from '../../../../lib/format';
 
@@ -17,6 +18,7 @@ interface WorkPackage {
   submittalsCount: { approved: number; total: number };
 }
 
+// title is shown from `sample.contractorPortal.<id>.title` (en/th); the field marks which records need a key.
 const SAMPLE_PACKAGES: WorkPackage[] = [
   {
     id: 'wp-101',
@@ -92,6 +94,7 @@ export default function ContractorPortalPage() {
 
   return (
     <div className="flex flex-col h-full bg-[#020617] text-[#F8FAFC]">
+      <SampleDataNotice />
       {/* Top Header */}
       <div className="px-6 py-4 flex flex-wrap justify-between items-center border-b border-white/5 bg-[#0F172A]/40 gap-4">
         <div>
@@ -194,7 +197,9 @@ export default function ContractorPortalPage() {
               {packages.map((wp) => (
                 <tr key={wp.id} className="hover:bg-white/[0.02] transition-colors">
                   <td className="py-3.5 px-4 font-mono font-bold text-white">{wp.code}</td>
-                  <td className="py-3.5 px-4 font-medium text-slate-100">{wp.title}</td>
+                  <td className="py-3.5 px-4 font-medium text-slate-100">
+                    {t(`sample.contractorPortal.${wp.id}.title`)}
+                  </td>
                   <td className="py-3.5 px-4 text-slate-300">{wp.contractor}</td>
                   <td className="py-3.5 px-4 text-slate-400 font-mono text-[11px]">{wp.project}</td>
                   <td className="py-3.5 px-4 font-semibold text-white">
@@ -253,7 +258,8 @@ export default function ContractorPortalPage() {
               <div>
                 <h3 className="text-lg font-bold">{t('procurement.submitProgressClaimTitle')}</h3>
                 <p className="text-xs text-slate-400 mt-0.5">
-                  {claimModalPackage.code} • {claimModalPackage.title}
+                  {claimModalPackage.code} •{' '}
+                  {t(`sample.contractorPortal.${claimModalPackage.id}.title`)}
                 </p>
               </div>
               <button

@@ -2053,5 +2053,112 @@
     "role": {
       "pathBRequiresEmail": "TENANT_ADMIN and FINANCE sign in by email only, and this account has no email. Create an email account for this person instead."
     }
+  },
+  "sample": {
+    "notice": "Sample data — not from your projects.",
+    "leasing": {
+      "vanguard-tower": {
+        "type": "Commercial Office",
+        "location": "London, UK"
+      },
+      "logipark-central": {
+        "type": "Logistics Hub",
+        "location": "Chicago, IL"
+      },
+      "vanguard-tech-plant": {
+        "type": "Light Industrial",
+        "location": "Austin, TX"
+      },
+      "arctic-cold-store": {
+        "type": "Cold Storage",
+        "location": "Seattle, WA"
+      },
+      "midwest-distribution": {
+        "type": "Last Mile Logistics",
+        "location": "Columbus, OH"
+      }
+    },
+    "leasingProperty": {
+      "unitType": {
+        "commercialOffice": "Commercial Office Space",
+        "executiveSuite": "Executive Office Suite",
+        "gradeA": "Grade-A Commercial Space"
+      }
+    },
+    "factoring": {
+      "pay-1": {
+        "workPackage": "Bored Piling (Phase 2)"
+      },
+      "pay-2": {
+        "workPackage": "Superstructure Framing"
+      },
+      "pay-3": {
+        "workPackage": "HVAC Ducting & Electrical Main"
+      }
+    },
+    "aiVision": {
+      "cam-04": {
+        "zone": "Zone 4 • Sub-grade",
+        "activeAlert": "NO HARD HAT DETECTED"
+      },
+      "cam-12": {
+        "zone": "Zone 12 • Crane Staging"
+      },
+      "cam-01": {
+        "zone": "West Perimeter Fence",
+        "activeAlert": "UNAUTHORIZED ENTRY DETECTED"
+      },
+      "cam-09": {
+        "zone": "Main Gate Access"
+      },
+      "cam-07": {
+        "zone": "Tower Scaffold North",
+        "activeAlert": "HARNESS UNCLIPPED (HIGH RISK)"
+      },
+      "alt-1": {
+        "title": "No Hard Hat Detected",
+        "zone": "Zone 4 (Foundation)",
+        "details": "Immediate attention required. Person detected in concrete pour zone without head protection."
+      },
+      "alt-2": {
+        "title": "Unauthorized Zone Entry",
+        "zone": "Perimeter West",
+        "details": "Object type: Human. Crossed active excavation laser boundary."
+      },
+      "alt-3": {
+        "title": "Optimization Advisory",
+        "zone": "Staging Area B",
+        "details": "High worker density in Staging Area B may lead to safety bottlenecks. Recommend staggered breaks."
+      },
+      "dispatchZones": "Zone 4 & Tower Scaffold North"
+    },
+    "contractorPortal": {
+      "wp-101": {
+        "title": "Superstructure Reinforced Concrete Framing"
+      },
+      "wp-102": {
+        "title": "Curtain Wall Unitized Glazing & Weatherproofing"
+      },
+      "wp-103": {
+        "title": "HVAC Chilled Water Piping & AHU Installation"
+      }
+    },
+    "digitalTwin": {
+      "div-1": {
+        "title": "Column C4 Misalignment",
+        "description": "12cm offset from structural BIM axial line.",
+        "actionStatus": "Action Required"
+      },
+      "div-2": {
+        "title": "HVAC Ducting Clearance",
+        "description": "Ducting installed 50mm below design spec.",
+        "actionStatus": "Review Pending"
+      },
+      "div-3": {
+        "title": "Moisture Pattern Detected",
+        "description": "Possible curing delay in Zone 4B slab.",
+        "actionStatus": "Anomaly Detected"
+      }
+    }
   }
 }
