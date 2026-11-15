@@ -148,13 +148,31 @@ describe('DroneMissionDetailScreen', () => {
     expect(getByText('ดินขุดเหลือ +5,330 m³')).toBeTruthy();
     expect(getByText('จุดฐาน RTK 6 จุด (RMSE 1.1cm)')).toBeTruthy();
     for (const id of ['mission-export-btn', 'download-survey-btn'])
-      expect(getByTestId(id).props.accessibilityLabel).toBe('ส่งออกรายงาน (เร็วๆ นี้)');
+      expect(getByTestId(id).props.accessibilityLabel).toBe('ส่งออกรายงาน (เร็ว ๆ นี้)');
 
     await fireEvent.press(getByLabelText('เส้นชั้นความสูง'));
     expect(getByText('เส้นชั้นความสูงจากการประมาณค่า (ช่วง 0.5m)')).toBeTruthy();
 
     await fireEvent.press(getByLabelText('แผนที่สีระดับความสูง'));
     expect(getByText('แบบจำลองพื้นผิวเชิงเลข (-2.4m ถึง +18.2m)')).toBeTruthy();
+  });
+
+  // fix/mobile-landxml-badge: no LandXML export exists (D36). The badge said "LandXML Ready" and the
+  // export button drew a PDF icon; both now say "not yet".
+  it.each([
+    ['en', 'LandXML — coming soon'],
+    ['th', 'LandXML — เร็ว ๆ นี้'],
+  ] as const)('the LandXML badge says it is not available yet (%s)', async (locale, text) => {
+    useLocaleStore.setState({ locale });
+    const { getByTestId, getAllByTestId, queryByText, queryByTestId } = await renderScreen();
+
+    expect(getByTestId('landxml-badge')).toHaveTextContent(text);
+    expect(queryByText('LandXML Ready')).toBeNull();
+    expect(queryByText('พร้อม LandXML')).toBeNull();
+    expect(queryByTestId('icon-picture-as-pdf')).toBeNull();
+    expect(queryByTestId('icon-share')).toBeNull();
+    // Both export buttons — the header's and the bottom one.
+    expect(getAllByTestId('icon-schedule')).toHaveLength(2);
   });
 
   // Pins the screen's English, word for word as it was before the text moved into en.json.
@@ -172,7 +190,7 @@ describe('DroneMissionDetailScreen', () => {
       'Embankment (Fill)',
       'Compacted fill',
       'Net Soil Balance',
-      'LandXML Ready',
+      'LandXML — coming soon', // was 'LandXML Ready' (fix/mobile-landxml-badge)
       'Mission Metadata',
       'Sensor Model',
       'Ground Control (GCP)',

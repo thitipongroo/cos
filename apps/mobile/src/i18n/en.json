@@ -3763,7 +3763,7 @@
       "fillSub": "Compacted fill",
       "netBalance": "Net Soil Balance",
       "surplusCut": "{amount} Surplus Cut",
-      "landxmlReady": "LandXML Ready",
+      "landxmlSoon": "LandXML — coming soon",
       "metaTitle": "Mission Metadata",
       "sensor": "Sensor Model",
       "gcp": "Ground Control (GCP)",

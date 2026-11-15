@@ -1607,10 +1607,16 @@ gate's isolated run) checks the hash was not tested either; it ran 12.18.0 with 
   names, asset types, work packages, zones and, on `safety/ai-vision`, alert titles and details ("NO HARD HAT DETECTED",
   "Immediate attention required…") that the pages show as they are. Left as data by D30; whether demo records should be
   translated, or the pages read real data, is a product decision.
-- **drone-mission-detail's "LandXML Ready" badge claims a readiness nothing provides.** It sits under the net soil
-  balance, while no export exists (D36); the large export button also keeps its `picture-as-pdf` icon. Translated with
-  its meaning kept ("พร้อม LandXML") on `fix/mobile-6a076c6d-i18n`, not changed there; whether to drop or reword it is a
-  product decision.
+- **Closed — drone-mission-detail's "LandXML Ready" badge claimed a readiness nothing provides.** Fixed on
+  `fix/mobile-landxml-badge`. No LandXML export exists (D36). The product owner (2026-11-15) chose to keep the badge
+  reworded: `drone.mission.landxmlSoon`, en "LandXML — coming soon", th "LandXML — เร็ว ๆ นี้", in the palette's muted
+  text on `surfaceSoft` instead of the accent (muted on `border` was 3.65:1 in dark mode, under the 4.5:1 text floor;
+  on `surfaceSoft` 5.59:1 dark, 4.80:1 light — computed from the palette, no automated contrast check exists). Both
+  export buttons — the bottom one and the header's, which only say the export is not available — draw `schedule`
+  instead of `picture-as-pdf` / `share`. The screen's "soon" is now one spelling, the app-wide "เร็ว ๆ นี้"
+  (`exportComingSoon` had "เร็วๆ นี้"). Verified: a render case per locale (the new text, neither old text, two
+  `schedule` icons, no PDF or share icon) fails on HEAD's screen; the unit and render suites pass, en/th parity
+  included.
 - **Closed — `checkout.tsx` hard-coded English beyond its back label.** Fixed on `fix/mobile-checkout-i18n`. The five
   labels outside `t()` — "THB (VAT Included)", "Biller ID", "Reference 1 (Inv)", "Reference 2 (Project)", "THAI QR
   PAYMENT" — now read `checkout.amountCurrency`, `billerId`, `reference1`, `reference2`, `thaiQrBanner` (en + th); the

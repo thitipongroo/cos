@@ -9,13 +9,12 @@ import { View, Text, ScrollView, Pressable, StyleSheet, Alert } from 'react-nati
 import { useRouter } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useT } from '../../i18n';
-import { usePalette, useIsDark } from '../../theme/usePalette';
+import { usePalette } from '../../theme/usePalette';
 import { colors, fontFamily, radius, spacing, touchTarget } from '../../theme/tokens';
 
 export default function DroneMissionDetailScreen(): React.JSX.Element {
   const t = useT();
   const p = usePalette();
-  const isDark = useIsDark();
   const router = useRouter();
 
   const [activeLayer, setActiveLayer] = useState<'ortho' | 'heatmap' | 'contours'>('ortho');
@@ -32,7 +31,7 @@ export default function DroneMissionDetailScreen(): React.JSX.Element {
     ]);
   }, [t]);
 
-  const styles = useMemo(() => makeStyles(p, isDark), [p, isDark]);
+  const styles = useMemo(() => makeStyles(p), [p]);
 
   return (
     <View style={styles.container} testID="drone-mission-detail-screen">
@@ -65,7 +64,8 @@ export default function DroneMissionDetailScreen(): React.JSX.Element {
           style={styles.actionIconButton}
           testID="mission-export-btn"
         >
-          <MaterialIcons name="share" size={22} color={p.accent} />
+          {/* `schedule`, as the bottom button: both only say the export is not available yet. */}
+          <MaterialIcons name="schedule" size={22} color={p.muted} />
         </Pressable>
       </View>
 
@@ -175,8 +175,10 @@ export default function DroneMissionDetailScreen(): React.JSX.Element {
                 {t('drone.mission.surplusCut', { amount: '+5,330 m³' })}
               </Text>
             </View>
-            <View style={styles.exportBadge}>
-              <Text style={styles.exportBadgeText}>{t('drone.mission.landxmlReady')}</Text>
+            {/* No LandXML export exists yet (D36): the badge says so, in a muted tone, rather than
+                "LandXML Ready" in the accent colour (product owner, 2026-11-15). */}
+            <View style={styles.exportBadge} testID="landxml-badge">
+              <Text style={styles.exportBadgeText}>{t('drone.mission.landxmlSoon')}</Text>
             </View>
           </View>
         </View>
@@ -210,12 +212,8 @@ export default function DroneMissionDetailScreen(): React.JSX.Element {
           style={({ pressed }) => [styles.downloadButton, pressed && styles.buttonPressed]}
           testID="download-survey-btn"
         >
-          <MaterialIcons
-            name="picture-as-pdf"
-            size={20}
-            color={p.onPrimary}
-            style={{ marginRight: 8 }}
-          />
+          {/* `schedule`, not a PDF icon: the button only says the export is not available yet. */}
+          <MaterialIcons name="schedule" size={20} color={p.onPrimary} style={{ marginRight: 8 }} />
           <Text style={styles.downloadButtonText}>{t('drone.mission.exportComingSoon')}</Text>
         </Pressable>
       </ScrollView>
@@ -223,7 +221,7 @@ export default function DroneMissionDetailScreen(): React.JSX.Element {
   );
 }
 
-function makeStyles(p: ReturnType<typeof usePalette>, isDark: boolean) {
+function makeStyles(p: ReturnType<typeof usePalette>) {
   return StyleSheet.create({
     container: {
       flex: 1,
@@ -405,14 +403,16 @@ function makeStyles(p: ReturnType<typeof usePalette>, isDark: boolean) {
       fontFamily: fontFamily.bold,
     },
     exportBadge: {
-      backgroundColor: isDark ? 'rgba(6, 182, 212, 0.15)' : 'rgba(6, 182, 212, 0.12)',
+      // surfaceSoft, not border: muted text on `border` is 3.65:1 in dark mode, under the 4.5:1 text
+      // floor (DESIGN.md); on surfaceSoft it is 5.59:1 dark, 4.80:1 light.
+      backgroundColor: p.surfaceSoft,
       paddingHorizontal: 8,
       paddingVertical: 4,
       borderRadius: radius.xl,
     },
     exportBadgeText: {
       fontSize: 10,
-      color: p.accent,
+      color: p.muted,
       fontWeight: 'bold',
       fontFamily: fontFamily.medium,
     },

@@ -3746,7 +3746,7 @@
     "mission": {
       "title": "{sector} • สำรวจงานดิน",
       "rtkProcessed": "ประมวลผล RTK แล้ว • ความแม่นยำสูง",
-      "exportComingSoon": "ส่งออกรายงาน (เร็วๆ นี้)",
+      "exportComingSoon": "ส่งออกรายงาน (เร็ว ๆ นี้)",
       "a11yOrtho": "ภาพออร์โธ 2 มิติ",
       "a11yHeatmap": "แผนที่สีระดับความสูง",
       "a11yContours": "เส้นชั้นความสูง",
@@ -3763,7 +3763,7 @@
       "fillSub": "ดินถมบดอัด",
       "netBalance": "ปริมาณดินสุทธิ",
       "surplusCut": "ดินขุดเหลือ {amount}",
-      "landxmlReady": "พร้อม LandXML",
+      "landxmlSoon": "LandXML — เร็ว ๆ นี้",
       "metaTitle": "ข้อมูลภารกิจ",
       "sensor": "รุ่นเซนเซอร์",
       "gcp": "จุดควบคุมภาคพื้นดิน (GCP)",
