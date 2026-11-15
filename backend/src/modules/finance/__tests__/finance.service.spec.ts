@@ -5,6 +5,12 @@
 // envelope (or a builder over the written row) that rides the business transaction. These tests
 // therefore assert on what reached the repository, resolving builders exactly as the repo does.
 
+// The tenant's zone comes from platform.tenants over DATABASE_URL; the handlers' tests pin it.
+jest.mock('../../../shared/prisma/get-db-url', () => ({
+  ...jest.requireActual('../../../shared/prisma/get-db-url'),
+  tenantTimezone: jest.fn().mockResolvedValue('Asia/Bangkok'),
+}));
+
 jest.mock('@cos/logger', () => ({
   createLogger: () => ({ info: jest.fn(), warn: jest.fn(), error: jest.fn(), debug: jest.fn() }),
 }));
@@ -415,6 +421,49 @@ describe('handlePoCreated', () => {
 
     expect(mockRepo.createTransaction).toHaveBeenCalledWith(
       expect.objectContaining({ source_type: 'PURCHASE_ORDER', amount: '60000.0000' }),
+    );
+  });
+});
+
+// 23:30 UTC on 10 Jun is 06:30 on 11 Jun in Bangkok: the server's UTC day was the day before.
+describe("the transaction is dated the tenant's day, not the server's UTC day", () => {
+  beforeEach(() => {
+    jest.useFakeTimers({
+      now: new Date('2026-06-10T23:30:00Z'),
+      doNotFake: ['nextTick', 'setImmediate'],
+    });
+    mockRepo.createTransaction.mockResolvedValue(txRow);
+    mockRepo.findBudgetByProject.mockResolvedValue(budgetRow);
+    mockRepo.sumTransactionsByProject.mockResolvedValue({
+      committed_total: '0',
+      actual_total: '0',
+    });
+    mockRepo.updateBudgetAggregates.mockResolvedValue(undefined);
+  });
+  afterEach(() => jest.useRealTimers());
+
+  it('a PO commitment', async () => {
+    await service.handlePoCreated({
+      po_id: 'po-uuid-001',
+      project_id: 'proj-uuid-001',
+      tenant_id: 'tenant-uuid-001',
+      total_amount: { amount: '1.0000', currency_code: 'THB' },
+    });
+    expect(mockRepo.createTransaction).toHaveBeenCalledWith(
+      expect.objectContaining({ transaction_date: '2026-06-11' }),
+    );
+  });
+
+  it('an invoice actual', async () => {
+    await service.handleInvoiceReceived({
+      po_id: 'po-uuid-001',
+      invoice_id: 'inv-uuid-001',
+      project_id: 'proj-uuid-001',
+      tenant_id: 'tenant-uuid-001',
+      amount: { amount: '1.0000', currency_code: 'THB' },
+    });
+    expect(mockRepo.createTransaction).toHaveBeenCalledWith(
+      expect.objectContaining({ transaction_date: '2026-06-11' }),
     );
   });
 });

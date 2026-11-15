@@ -68,6 +68,26 @@ export async function resolveTenantDb(
   }
 }
 
+/** The zone a tenant has none on record for — the platform default, as the notification lookup uses. */
+export const DEFAULT_TENANT_TIMEZONE = 'Asia/Bangkok';
+
+/**
+ * A tenant's IANA timezone (`platform.tenants.timezone`), read over DATABASE_URL like `resolveTenantDb`:
+ * the platform schema never moves, so this holds for a tenant on a dedicated database too. Unknown tenant
+ * or no value → `DEFAULT_TENANT_TIMEZONE`; refusing an inactive tenant is the caller's routing's job.
+ */
+export async function tenantTimezone(tenantId: string): Promise<string> {
+  const prisma = createPrismaClient(process.env['DATABASE_URL']);
+  try {
+    const rows = await prisma.$queryRaw<Array<{ timezone: string | null }>>`
+      SELECT timezone FROM platform.tenants WHERE tenant_id = ${tenantId}::uuid LIMIT 1
+    `;
+    return rows[0]?.timezone || DEFAULT_TENANT_TIMEZONE;
+  } finally {
+    await prisma.$disconnect();
+  }
+}
+
 /** The app-role URL for a tenant's domain queries; throws TenantInactiveError (see resolveTenantDb). */
 export async function getDbUrlForTenant(tenantId: string): Promise<string> {
   const { dedicatedDbUrl } = await resolveTenantDb(tenantId);

@@ -33,6 +33,8 @@ import { FeatureFlagService } from '../../shared/feature-flags/feature-flag.serv
 export const PLAN_PROJECT_LIMIT_FLAG = 's1.project.plan-project-limit';
 import type { MemberProjectRow, ProjectRow } from './project.repository';
 import { validateTransition } from './project.state-machine';
+import { clsTenantId } from '../../shared/context/cls-context';
+import { tenantCalendarDay } from '../../shared/time/calendar-day';
 import type { ProjectStatus } from './project.state-machine';
 import type { CreateProjectDto } from './dto/create-project.dto';
 import type { UpdateProjectDto } from './dto/update-project.dto';
@@ -215,6 +217,10 @@ export class ProjectService {
       actorRole: this.userRole,
       endDate: existing.end_date,
       reason: dto.reason,
+      today:
+        dto.to === 'COMPLETED'
+          ? await tenantCalendarDay(this.tenantId || clsTenantId())
+          : undefined,
     });
 
     if (!result.allowed) {

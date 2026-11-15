@@ -15,6 +15,8 @@ export interface TransitionContext {
    */
   endDate?: Date | string | null;
   reason?: string;
+  /** `YYYY-MM-DD` — today in the tenant's zone (tenantCalendarDay). */
+  today?: string;
 }
 
 export interface TransitionResult {
@@ -83,7 +85,9 @@ export function validateTransition(ctx: TransitionContext): TransitionResult {
     if (!endDate) {
       return { allowed: false, reason: 'Project end_date must be set before completing' };
     }
-    const today = new Date().toISOString().slice(0, 10);
+    // The tenant's calendar day when the caller has it; the UTC day otherwise (before 07:00 in
+    // Bangkok that is yesterday, and a project ending today could not be completed).
+    const today = ctx.today ?? new Date().toISOString().slice(0, 10);
     const endDay = toCalendarDay(endDate);
     if (endDay > today) {
       return {

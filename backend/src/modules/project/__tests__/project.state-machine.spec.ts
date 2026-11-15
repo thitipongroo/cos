@@ -166,6 +166,19 @@ describe('Project State Machine', () => {
       expect(result.reason).toMatch(/end_date/i);
     });
 
+    // The caller passes the tenant's day: a project ending "today" in Bangkok can be completed before
+    // 07:00, when the UTC day is still yesterday.
+    it("ACTIVE → COMPLETED compares end_date with the caller's today when given", () => {
+      const ctx = {
+        currentStatus: 'ACTIVE' as const,
+        toStatus: 'COMPLETED' as const,
+        actorRole: 'TENANT_ADMIN',
+        endDate: '2026-06-11',
+      };
+      expect(validateTransition({ ...ctx, today: '2026-06-11' }).allowed).toBe(true);
+      expect(validateTransition({ ...ctx, today: '2026-06-10' }).allowed).toBe(false);
+    });
+
     it('ACTIVE → COMPLETED blocked when end_date is in the future', () => {
       const futureDate = new Date(Date.now() + 86_400_000).toISOString().slice(0, 10);
       const result = validateTransition({

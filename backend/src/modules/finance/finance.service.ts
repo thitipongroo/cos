@@ -21,6 +21,7 @@ import { EventOutboxService } from '../../shared/events/event-outbox.service';
 import { createLogger } from '@cos/logger';
 import { buildOutboxEvent } from '../../shared/outbox/outbox.types';
 import { FinanceRepository } from './finance.repository';
+import { tenantCalendarDay } from '../../shared/time/calendar-day';
 import { FileServiceClient } from '../files/file-service-client.service';
 import { CredentialClientService } from '../credentials/credential-client.service';
 import { ContractSignLinkService } from './contract-sign-link.service';
@@ -129,6 +130,14 @@ export class FinanceService {
   private get tenantId(): string {
     return (this.request as { tenantId?: string }).tenantId ?? '';
   }
+  /**
+   * Today as the tenant lives it, for a DATE written on the tenant's behalf. Was the server's UTC day
+   * (`toISOString().slice(0, 10)`): a PO approved at 06:00 in Bangkok was dated the day before.
+   */
+  private async tenantToday(): Promise<string> {
+    return tenantCalendarDay(this.tenantId);
+  }
+
   private get userId(): string {
     return (this.request as { userId?: string }).userId ?? '';
   }
@@ -258,7 +267,7 @@ export class FinanceService {
       source_id: event.po_id,
       amount: new Decimal(event.total_amount.amount).toFixed(4),
       currency_code: event.total_amount.currency_code,
-      transaction_date: new Date().toISOString().slice(0, 10),
+      transaction_date: await this.tenantToday(),
       description: `PO committed: ${event.po_id}`,
       // master:2910 — "actor_id from event, or user for manual entry". The consumer now puts the
       // event's actor into the request context, so this is the person whose approval created the
@@ -336,7 +345,7 @@ export class FinanceService {
       source_id: event.invoice_id,
       amount: new Decimal(event.amount.amount).toFixed(4),
       currency_code: event.amount.currency_code,
-      transaction_date: new Date().toISOString().slice(0, 10),
+      transaction_date: await this.tenantToday(),
       description: `Invoice actual: ${event.invoice_id}`,
       // master:2910 — "actor_id from event, or user for manual entry". The consumer now puts the
       // event's actor into the request context, so this is the person whose approval created the

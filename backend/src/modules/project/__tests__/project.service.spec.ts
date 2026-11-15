@@ -13,6 +13,12 @@ import { FeatureFlagService } from '../../../shared/feature-flags/feature-flag.s
 import { PLAN_PROJECT_LIMIT_FLAG } from '../project.service';
 import type { ProjectRow } from '../project.repository';
 
+// The tenant's zone comes from platform.tenants over DATABASE_URL; a unit test must not reach it.
+jest.mock('../../../shared/prisma/get-db-url', () => ({
+  ...jest.requireActual('../../../shared/prisma/get-db-url'),
+  tenantTimezone: jest.fn().mockResolvedValue('Asia/Bangkok'),
+}));
+
 jest.mock('@opensearch-project/opensearch', () => ({
   Client: jest.fn().mockImplementation(() => ({
     index: jest.fn().mockResolvedValue({}),
@@ -746,6 +752,32 @@ describe('ProjectService', () => {
         'construction.project.status_changed.v1',
         'construction.project.archived.v1',
       ]);
+    });
+  });
+
+  // 23:30 UTC on 10 Jun is 06:30 on 11 Jun in Bangkok: a project ending on the 11th can be completed.
+  describe("transition() to COMPLETED uses the tenant's calendar day", () => {
+    it('completes a project whose end_date is the tenant-local today, before 07:00', async () => {
+      jest.useFakeTimers({
+        now: new Date('2026-06-10T23:30:00Z'),
+        doNotFake: ['nextTick', 'setImmediate'],
+      });
+      try {
+        const row = { ...baseProject, status: 'ACTIVE' as const, end_date: '2026-06-11' };
+        const repo = makeRepo({
+          findById: jest.fn().mockResolvedValue(row),
+          updateStatus: jest.fn().mockResolvedValue({ ...row, status: 'COMPLETED' }),
+        });
+        const service = await buildService(repo, {
+          user: { user_id: 'user-uuid-001', role: 'TENANT_ADMIN' },
+          tenantId: 'tenant-uuid-001',
+        });
+        await expect(
+          service.transition('proj-uuid-001', { to: 'COMPLETED' } as never),
+        ).resolves.toBeDefined();
+      } finally {
+        jest.useRealTimers();
+      }
     });
   });
 

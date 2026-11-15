@@ -4,6 +4,12 @@ import { REQUEST } from '@nestjs/core';
 import { TasksRepository } from '../tasks.repository';
 import { TenantPrismaService } from '../../tenant/prisma/tenant-prisma.service';
 
+// The tenant's zone comes from platform.tenants over DATABASE_URL; a unit test must not reach it.
+jest.mock('../../../shared/prisma/get-db-url', () => ({
+  ...jest.requireActual('../../../shared/prisma/get-db-url'),
+  tenantTimezone: jest.fn().mockResolvedValue('Asia/Bangkok'),
+}));
+
 const mockPrisma = { $queryRaw: jest.fn() };
 const mockTenantPrisma = {
   run: jest.fn((fn: (p: typeof mockPrisma) => unknown) => fn(mockPrisma)),
@@ -97,6 +103,28 @@ describe('TasksRepository', () => {
       assigned_to: 'user-2',
     });
     expect(r.status).toBe('IN_PROGRESS');
+  });
+
+  // actual_start is the tenant's day: 23:30 UTC on 10 Jun is 06:30 on 11 Jun in Bangkok. It was
+  // `now()::date`, the database session's (UTC) day.
+  it("updateTask to IN_PROGRESS binds the tenant's calendar day for actual_start", async () => {
+    jest.useFakeTimers({
+      now: new Date('2026-06-10T23:30:00Z'),
+      doNotFake: ['nextTick', 'setImmediate'],
+    });
+    try {
+      mockPrisma.$queryRaw.mockClear();
+      mockPrisma.$queryRaw.mockResolvedValue([{ ...taskRow, status: 'IN_PROGRESS' }]);
+      await repo.updateTask({ task_id: 'task-1', status: 'IN_PROGRESS' });
+      const [strings, ...values] = mockPrisma.$queryRaw.mock.calls[0] as [
+        TemplateStringsArray,
+        ...unknown[],
+      ];
+      expect(strings.join('?')).not.toContain('now()::date');
+      expect(values).toContain('2026-06-11');
+    } finally {
+      jest.useRealTimers();
+    }
   });
 
   // /sync/delta pages `task` on modified_at. An UPDATE that leaves it alone is a change no device

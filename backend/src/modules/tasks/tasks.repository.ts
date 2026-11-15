@@ -6,6 +6,7 @@ import { REQUEST } from '@nestjs/core';
 import type { Request } from 'express';
 import { TenantPrismaService } from '../tenant/prisma/tenant-prisma.service';
 import { clsTenantId } from '../../shared/context/cls-context';
+import { tenantCalendarDay } from '../../shared/time/calendar-day';
 
 export type TaskStatus = 'NOT_STARTED' | 'IN_PROGRESS' | 'COMPLETED' | 'BLOCKED' | 'CANCELLED';
 
@@ -294,6 +295,10 @@ export class TasksRepository {
     progress_percent?: number | null;
     assigned_to?: string | null;
   }): Promise<TaskRow> {
+    // actual_start is the tenant's calendar day. It was `now()::date` — the database session's day,
+    // UTC on the defaults — so a task started before 07:00 in Bangkok began "yesterday".
+    const startDay =
+      params.status === 'IN_PROGRESS' ? await tenantCalendarDay(this.tenantId) : null;
     const rows = await this.db.run(
       (tx) =>
         tx.$queryRaw<TaskRow[]>`
@@ -302,7 +307,7 @@ export class TasksRepository {
           progress_percent = COALESCE(${params.progress_percent ?? null}, progress_percent),
           assigned_to = COALESCE(${params.assigned_to ?? null}::uuid, assigned_to),
           actual_start = CASE
-            WHEN ${params.status ?? null} = 'IN_PROGRESS' AND actual_start IS NULL THEN now()::date
+            WHEN ${params.status ?? null} = 'IN_PROGRESS' AND actual_start IS NULL THEN ${startDay}::date
             ELSE actual_start END,
           -- Every UPDATE here must set this: it is the column /sync/delta pages task on, so a
           -- write that leaves it stale is a write no device ever sees. Guarded by

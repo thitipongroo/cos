@@ -251,6 +251,60 @@ describe('Phase 7 · budget aggregation from procurement events (real database)'
     });
   });
 
+  // fix/cost-transaction-tenant-day: dated the tenant's calendar day (platform.tenants.timezone), not the
+  // server's UTC day. The zone is chosen so the two days differ whatever the hour the suite runs:
+  // UTC+14 from 10:00 UTC on, UTC−12 before 12:00 UTC.
+  // fix/cost-transaction-tenant-day: dated the tenant's calendar day (platform.tenants.timezone), not the
+  // server's UTC day. The zone is picked when the case runs, so the two days differ: UTC+14 differs
+  // from 10:00 UTC on, UTC−12 before 12:00 UTC — `>= 11` leaves an hour of margin either side.
+  describe("a cost transaction is dated the tenant's day, not the server's UTC day", () => {
+    const dayIn = (tz: string) =>
+      new Intl.DateTimeFormat('en-CA', {
+        timeZone: tz,
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+      }).format(new Date());
+    const datesOf = async (projectId: string) =>
+      (
+        await infra.prisma.$queryRawUnsafe<Array<{ d: string }>>(
+          `SELECT transaction_date::text AS d FROM finance.cost_transactions
+            WHERE project_id = $1::uuid ORDER BY recorded_at`,
+          projectId,
+        )
+      ).map((r) => r.d);
+    let original = 'Asia/Bangkok';
+
+    beforeAll(async () => {
+      const rows = await infra.prisma.$queryRawUnsafe<Array<{ timezone: string }>>(
+        `SELECT timezone FROM platform.tenants WHERE tenant_id = $1::uuid`,
+        TENANT_ID,
+      );
+      original = rows[0]?.timezone ?? original;
+    });
+    afterAll(async () => {
+      await infra.prisma.$executeRawUnsafe(
+        `UPDATE platform.tenants SET timezone = $2 WHERE tenant_id = $1::uuid`,
+        TENANT_ID,
+        original,
+      );
+    });
+
+    it('a PO commitment and an invoice actual both carry the tenant-zone day', async () => {
+      const zone = new Date().getUTCHours() >= 11 ? 'Pacific/Kiritimati' : 'Etc/GMT+12';
+      await infra.prisma.$executeRawUnsafe(
+        `UPDATE platform.tenants SET timezone = $2 WHERE tenant_id = $1::uuid`,
+        TENANT_ID,
+        zone,
+      );
+      expect(dayIn(zone)).not.toBe(dayIn('UTC')); // the case only means something if they differ
+      const projectId = await newBudgetedProject();
+      await poCreated(projectId, '1000.0000');
+      await invoiceReceived(projectId, '500.0000');
+      expect(await datesOf(projectId)).toEqual([dayIn(zone), dayIn(zone)]);
+    });
+  });
+
   describe('procurement.po.status_changed → release the commitment (master:2940)', () => {
     it('a CANCELLED PO releases its committed amount', async () => {
       const projectId = await newBudgetedProject();

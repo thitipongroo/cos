@@ -2760,11 +2760,26 @@ openssl ca-certificates`; `groupadd`/`useradd` uid/gid 1001, as the charts run; 
     early; and `defaultDateRange` (dashboard, alerts, portfolio, PM analytics) ended its 90 days on the UTC day. Both
     now use `localDatetimeInput` / `localIsoDate` (`apps/web/src/lib/format.ts`); the web spec pins
     `TZ=Asia/Bangkok`, and the cases fail with the UTC formulas put back.
-- **Cost transactions created from a PO commit or an invoice are dated the server's UTC day.**
-  `backend/src/modules/finance/finance.service.ts:261,339` set `transaction_date: new Date().toISOString().slice(0,
-  10)`, so a PO approved before 07:00 in Bangkok is dated the day before; the tenant's `timezone` (platform.tenants)
-  is not consulted. Found by /doubt on `fix/mobile-local-today`; not fixed there (it needs the tenant's timezone in
-  the finance consumer, including for a tenant on a dedicated database, and an integration test).
+- **Closed — cost transactions created from a PO commit or an invoice were dated the server's UTC day.** Fixed on
+  `fix/cost-transaction-tenant-day`. `finance.service.ts` `handlePoCreated` / `handleInvoiceReceived` set
+  `transaction_date: new Date().toISOString().slice(0, 10)`, so a PO approved before 07:00 in Bangkok was dated the
+  day before. They now take the tenant's calendar day, `tenantCalendarDay` (`shared/time/calendar-day.ts`): the zone
+  from `platform.tenants` over `DATABASE_URL` (`tenantTimezone`, `shared/prisma/get-db-url.ts`, like the routing
+  lookup, so a tenant on a dedicated database is covered; `Asia/Bangkok` for an unknown tenant or an empty value),
+  formatted with `Intl`; a zone `Intl` rejects (only hand-written SQL can store one) falls back to `Asia/Bangkok`
+  with a warning instead of failing every event.
+  - Found by /doubt on this branch and fixed with it: `tasks.repository.ts` `updateTask` set `actual_start` to
+    `now()::date` — the database session's day, UTC on the defaults — when a task first went IN_PROGRESS; and
+    `project.state-machine.ts` compared `end_date` with the UTC day, so before 07:00 a project ending that local day
+    could not be completed. Both take `tenantCalendarDay` now (the state machine through a `today` the service
+    passes).
+  - Verified: unit cases at 23:30 UTC (06:30 next day in Bangkok) for both finance handlers, `updateTask`, the
+    project transition, the state machine and the helper (including the invalid-zone fallback); on a real database,
+    `test/finance/02` and `test/site-ops/01` with the tenant's zone set, at run time, to one whose day differs from
+    UTC's — 30/30; with HEAD's finance service and tasks repository both new cases fail, and the unit cases fail on
+    HEAD's files (the state machine's by a mutation, its spec not compiling on HEAD). Every unit spec that reaches
+    the lookup mocks it. One earlier run of `test/finance/02` on this branch failed most of its cases and did not
+    recur in four later runs; its output was not kept.
 - **Closed — a site-report sync by the report's own id overwrote the row whatever its age.** Fixed on
   `fix/site-report-sync-id-lww`. `resolveReportConflict` flags only when the item carries `last_known_modified_at`,
   and no client sends it for reports (web and app alike), so every id hit — in practice a save replayed by its own

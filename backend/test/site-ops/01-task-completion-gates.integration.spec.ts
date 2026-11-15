@@ -368,4 +368,47 @@ describe('Phase 6 · task completion gates (real database)', () => {
       expect([200, 204]).toContain(res.status);
     });
   });
+
+  // fix/cost-transaction-tenant-day: actual_start is the tenant's calendar day. It was `now()::date`,
+  // the database session's (UTC) day. The zone is picked so the two days differ at the hour this runs.
+  describe("actual_start is the tenant's calendar day", () => {
+    it('a NOT_STARTED task moved to IN_PROGRESS starts on the tenant-zone day', async () => {
+      const zone = new Date().getUTCHours() >= 11 ? 'Pacific/Kiritimati' : 'Etc/GMT+12';
+      const dayIn = (tz: string) =>
+        new Intl.DateTimeFormat('en-CA', {
+          timeZone: tz,
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit',
+        }).format(new Date());
+      const [{ timezone: original }] = await infra.prisma.$queryRawUnsafe<
+        Array<{ timezone: string }>
+      >(`SELECT timezone FROM platform.tenants WHERE tenant_id = $1::uuid`, TENANT_ID);
+      await sql(
+        `UPDATE platform.tenants SET timezone = $2 WHERE tenant_id = $1::uuid`,
+        TENANT_ID,
+        zone,
+      );
+      try {
+        expect(dayIn(zone)).not.toBe(dayIn('UTC'));
+        const taskId = await newTask('NOT_STARTED');
+        const res = await http()
+          .patch(`/api/v1/tasks/${taskId}`)
+          .set('x-test-role', 'SITE_ENGINEER')
+          .send({ status: 'IN_PROGRESS' });
+        expect(res.status).toBe(200);
+        const [{ d }] = await infra.prisma.$queryRawUnsafe<Array<{ d: string }>>(
+          `SELECT actual_start::text AS d FROM projects.tasks WHERE task_id = $1::uuid`,
+          taskId,
+        );
+        expect(d).toBe(dayIn(zone));
+      } finally {
+        await sql(
+          `UPDATE platform.tenants SET timezone = $2 WHERE tenant_id = $1::uuid`,
+          TENANT_ID,
+          original,
+        );
+      }
+    });
+  });
 });

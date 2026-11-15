@@ -12,6 +12,12 @@
 // §35.13 ESC-13: events go to the outbox inside the repository write, so the service holds no
 // KafkaProducer and these tests assert on the envelope handed to the repository.
 
+// The tenant's zone comes from platform.tenants over DATABASE_URL; a unit test must not reach it.
+jest.mock('../../../shared/prisma/get-db-url', () => ({
+  ...jest.requireActual('../../../shared/prisma/get-db-url'),
+  tenantTimezone: jest.fn().mockResolvedValue('Asia/Bangkok'),
+}));
+
 jest.mock('@cos/logger', () => ({
   createLogger: () => ({ info: jest.fn(), warn: jest.fn(), error: jest.fn(), debug: jest.fn() }),
 }));
