@@ -3651,8 +3651,8 @@
     }
   },
   "checkout": {
-    "headerTitle": "ระบบชำระเงินและตั้งถิ่นฐาน",
-    "secureSession": "การเชื่อมต่อความปลอดภัยระดับ SSL ปลอดภัย",
+    "headerTitle": "ชำระเงินและปิดยอด",
+    "secureSession": "การเชื่อมต่อปลอดภัย เข้ารหัส SSL",
     "title": "ตรวจสอบยอดและชำระเงิน",
     "transactionId": "รหัสธุรกรรม",
     "validFor": "ใช้ได้ภายใน",
@@ -3665,7 +3665,12 @@
     "scanInstructions": "สแกน QR Code ด้วยแอปพลิเคชันธนาคารของคุณเพื่ออนุมัติการชำระเงิน",
     "confirmSimulatedPayment": "จำลองการสแกนจ่ายเงินสำเร็จ",
     "paymentReceived": "ได้รับการชำระเงินเรียบร้อยแล้ว! กำลังนำท่านไป...",
-    "cancel": "ยกเลิกและกลับสู่แดชบอร์ด"
+    "cancel": "ยกเลิกและกลับสู่แดชบอร์ด",
+    "amountCurrency": "บาท (รวม VAT)",
+    "billerId": "รหัสผู้รับชำระ (Biller ID)",
+    "reference1": "อ้างอิง 1 (ใบแจ้งหนี้)",
+    "reference2": "อ้างอิง 2 (โครงการ)",
+    "thaiQrBanner": "THAI QR PAYMENT"
   },
   "lineGuide": {
     "headerTitle": "คู่มือรับ LINE Token",

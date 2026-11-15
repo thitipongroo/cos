@@ -1611,9 +1611,16 @@ gate's isolated run) checks the hash was not tested either; it ran 12.18.0 with 
   balance, while no export exists (D36); the large export button also keeps its `picture-as-pdf` icon. Translated with
   its meaning kept ("พร้อม LandXML") on `fix/mobile-6a076c6d-i18n`, not changed there; whether to drop or reword it is a
   product decision.
-- **`checkout.tsx` still hard-codes English beyond its back label.** "THB (VAT Included)", "Biller ID", "Reference 1
-  (Inv)", "Reference 2 (Project)", "THAI QR PAYMENT" and others bypass `t()`. Only the back label was in scope on
-  `fix/mobile-6a076c6d-i18n`.
+- **Closed — `checkout.tsx` hard-coded English beyond its back label.** Fixed on `fix/mobile-checkout-i18n`. The five
+  labels outside `t()` — "THB (VAT Included)", "Biller ID", "Reference 1 (Inv)", "Reference 2 (Project)", "THAI QR
+  PAYMENT" — now read `checkout.amountCurrency`, `billerId`, `reference1`, `reference2`, `thaiQrBanner` (en + th); the
+  rest of the screen already used `t()`. The Thai QR banner stays "THAI QR PAYMENT" in Thai too: it copies the Thai QR
+  Payment mark, printed in English on real slips. Two Thai strings of the screen were also corrected: the header
+  ("Settlement" had been rendered ตั้งถิ่นฐาน, a human settlement) and the SSL line (ปลอดภัย twice). Verified: a
+  render case per locale (Thai shows the Thai labels and none of the four English ones); on HEAD's screen the Thai case
+  fails for the move to `t()`, the English one for the reworded labels ("included", "Invoice"); the unit and render
+  suites pass, including the en/th key-parity check. The values beside the labels are literals of a simulated screen —
+  a hidden tab nothing links to (no in-app checkout exists) — and were not changed.
 - **The drone-capture scan-mode buttons show no selected state.** "Point Cloud" / "Orbit Scan" change only a style and
   an icon colour — no text, no `accessibilityState.selected` — so neither a screen reader nor a test can tell which is
   active; they are left out of the render specs for that reason.
@@ -2089,7 +2096,8 @@ prebuild`, native builds, Detox, EAS.
   English value in `en.json` is changed. `test:render:cov` 1,797 tests, 90.09 / 83.2 / 85.64 / 90.97 over its 90 / 83 /
   85 / 90 floors (branches measured 83.14–83.22 across runs of the same tree, so its margin is about 0.15 points);
   `test:cov` 1,149; `type-check`, `eslint apps/mobile/src` and the RN a11y gate (0 of 131 tappable files without a
-  prop) pass. Found on the way, and Open: the "LandXML Ready" badge, and the rest of `checkout.tsx`.
+  prop) pass. Found on the way, and Open: the "LandXML Ready" badge, and the rest of `checkout.tsx` (since closed on
+  `fix/mobile-checkout-i18n`).
 - **Closed — the backend image was 4.46 GB and baked local secrets in.** Fixed on `perf/backend-image`.
   - Measured first (Docker 29.9.3, 8 CPUs, arm64): 4,460,823,684 bytes, a cold build of 485 s. The 5.56 GB this item's
     Open entry gave was measured in branch 4. The build itself took 15.8 s; the time went into moving a 3.1 GB `/app` —

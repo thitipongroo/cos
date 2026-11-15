@@ -53,6 +53,46 @@ describe('CheckoutScreen', () => {
     expect(getByText('THAI QR PAYMENT')).toBeTruthy();
   });
 
+  // fix/mobile-checkout-i18n: these five bypassed t() and stayed English in Thai.
+  it.each([
+    [
+      'en',
+      [
+        'THB (VAT included)',
+        'Biller ID',
+        'Reference 1 (Invoice)',
+        'Reference 2 (Project)',
+        'THAI QR PAYMENT',
+      ],
+    ],
+    [
+      'th',
+      [
+        'บาท (รวม VAT)',
+        'รหัสผู้รับชำระ (Biller ID)',
+        'อ้างอิง 1 (ใบแจ้งหนี้)',
+        'อ้างอิง 2 (โครงการ)',
+        'THAI QR PAYMENT',
+      ],
+    ],
+  ] as const)('renders the amount, reference and banner labels in %s', async (locale, labels) => {
+    useLocaleStore.setState({ locale });
+    const { getByText, queryByText } = await renderScreen();
+    for (const label of labels) expect(getByText(label)).toBeTruthy();
+    if (locale === 'th') {
+      // None of the English labels — except the Thai QR banner, a brand mark printed in English on
+      // real Thai QR slips in either language.
+      for (const english of [
+        'THB (VAT included)',
+        'Biller ID',
+        'Reference 1 (Invoice)',
+        'Reference 2 (Project)',
+      ]) {
+        expect(queryByText(english)).toBeNull();
+      }
+    }
+  });
+
   it('renders the initial countdown timer', async () => {
     const { getByTestId } = await renderScreen();
 

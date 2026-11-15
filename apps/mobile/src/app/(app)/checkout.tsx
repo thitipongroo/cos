@@ -124,21 +124,21 @@ export default function CheckoutScreen(): React.JSX.Element {
           <Text style={styles.amountValue} testID="checkout-amount">
             ฿1,450,200.00
           </Text>
-          <Text style={styles.amountCurrency}>THB (VAT Included)</Text>
+          <Text style={styles.amountCurrency}>{t('checkout.amountCurrency')}</Text>
         </View>
 
         <View style={styles.divider} />
 
         <View style={styles.metaRow}>
-          <Text style={styles.metaLabel}>Biller ID</Text>
+          <Text style={styles.metaLabel}>{t('checkout.billerId')}</Text>
           <Text style={styles.metaValue}>0-1055-61008-91-0</Text>
         </View>
         <View style={styles.metaRow}>
-          <Text style={styles.metaLabel}>Reference 1 (Inv)</Text>
+          <Text style={styles.metaLabel}>{t('checkout.reference1')}</Text>
           <Text style={styles.metaValue}>INV-2026-0891</Text>
         </View>
         <View style={styles.metaRow}>
-          <Text style={styles.metaLabel}>Reference 2 (Project)</Text>
+          <Text style={styles.metaLabel}>{t('checkout.reference2')}</Text>
           <Text style={styles.metaValue}>PRJ-BKK-01</Text>
         </View>
       </View>
@@ -157,7 +157,7 @@ export default function CheckoutScreen(): React.JSX.Element {
         <View style={styles.thaiQrFrame}>
           {/* Header Strip mimicking Thai QR Payment */}
           <View style={styles.thaiQrBanner}>
-            <Text style={styles.thaiQrBannerText}>THAI QR PAYMENT</Text>
+            <Text style={styles.thaiQrBannerText}>{t('checkout.thaiQrBanner')}</Text>
           </View>
 
           {/* QR Code Graphic Container */}
