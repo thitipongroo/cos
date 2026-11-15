@@ -1,3 +1,7 @@
+// Bangkok (UTC+7), where the UTC day and the local day differ before 07:00. Set before any Date is
+// made; Node re-reads TZ when it changes.
+process.env['TZ'] = 'Asia/Bangkok';
+
 /**
  * Locale-aware formatting — QM-3 (never raw string concatenation for money or dates).
  *
@@ -7,6 +11,8 @@
  */
 import {
   defaultDateRange,
+  localDatetimeInput,
+  localIsoDate,
   formatDate,
   formatDateTime,
   formatMoney,
@@ -38,9 +44,10 @@ describe('defaultDateRange', () => {
     expect(days).toBeLessThanOrEqual(91);
   });
 
-  it('ends today', () => {
-    const [, end] = defaultDateRange().split(',') as [string, string];
-    expect(end).toBe(new Date().toISOString().slice(0, 10));
+  it('ends on the LOCAL today, also before 07:00 in Bangkok', () => {
+    // 03:00 on 11 Aug in Bangkok is 20:00 on the 10th in UTC; the window used to end on the 10th.
+    const early = new Date('2026-08-10T20:00:00Z');
+    expect(defaultDateRange(early)).toBe('2026-05-13,2026-08-11');
   });
 });
 
@@ -148,5 +155,19 @@ describe('formatTime', () => {
     const out = formatTime('en', '2026-06-08T10:14:22Z');
     expect(out).toMatch(/\d{1,2}:\d{2}:\d{2}/);
     expect(out).not.toMatch(/2026/);
+  });
+});
+
+describe('localIsoDate / localDatetimeInput — the local calendar and clock', () => {
+  const early = new Date('2026-08-10T20:05:00Z'); // 03:05 on 11 Aug in Bangkok
+
+  it('localIsoDate is the local day, not the UTC one', () => {
+    expect(localIsoDate(early)).toBe('2026-08-11');
+  });
+
+  it('localDatetimeInput is the local wall clock a datetime-local input holds, and reads back exactly', () => {
+    expect(localDatetimeInput(early)).toBe('2026-08-11T03:05');
+    // The delivery form submits `new Date(value).toISOString()`: the instant must survive the trip.
+    expect(new Date(localDatetimeInput(early)).toISOString()).toBe('2026-08-10T20:05:00.000Z');
   });
 });

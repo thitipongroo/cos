@@ -48,4 +48,13 @@ describe('delaySeverity', () => {
     expect(early).toBe('HIGH');
     expect(late).toBe('HIGH');
   });
+
+  // "Today" is the LOCAL day (jest pins TZ=Asia/Bangkok). 2026-08-11T20:00Z is 03:00 on 12 Aug there;
+  // the UTC day is still the 11th, which read every task a day less late before 07:00.
+  it('counts days late from the local day, also before 07:00 in Bangkok', () => {
+    const early = new Date('2026-08-11T20:00:00Z');
+    expect(delaySeverity('2026-08-11', 'IN_PROGRESS', early)).toBe('LOW'); // 1 day late locally
+    expect(delaySeverity('2026-08-09', 'IN_PROGRESS', early)).toBe('MEDIUM'); // 3 days
+    expect(delaySeverity('2026-08-05', 'IN_PROGRESS', early)).toBe('HIGH'); // 7 days (UTC day: 6, MEDIUM)
+  });
 });

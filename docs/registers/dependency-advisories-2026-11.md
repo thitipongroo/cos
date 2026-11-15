@@ -2743,10 +2743,28 @@ openssl ca-certificates`; `groupadd`/`useradd` uid/gid 1001, as the charts run; 
     `manpower_lines: []`, `manpower_count: null`, `blockers: null` leaves no lines and both columns NULL, and the same
     save with the three left out fails that test; unit — an empty list is not cleared on a newly created row and is on
     an upserted one.
-- **Other "today" values in the app are the UTC day.** `src/lib/delaySeverity.ts` (the overdue chip), `spendTrend.ts`
-  (the finance tile) and `siteEngineerHome.ts` (`taskStartUrgency`) take today from the UTC calendar, so before 07:00
-  in Thailand lateness reads a day short and windows shift. Display only; none writes a date. Found by /doubt on
-  `fix/mobile-report-date-clear`. Not fixed.
+- **Closed — other "today" values in the app were the UTC day.** Fixed on `fix/mobile-local-today`.
+  `src/lib/delaySeverity.ts` (the overdue chip), `spendTrend.ts` (the finance tile) and `siteEngineerHome.ts`
+  (`taskStartUrgency`) took today as `Date.UTC(now.getUTCFullYear(), …)`, so before 07:00 in Thailand lateness read a
+  day short, a task starting today read as tomorrow, and the spend windows slid back a day. They now use
+  `localDayAsUtcMidnight` (`lib/isoDate.ts`): the local calendar day on the UTC-midnight scale the DATE values parse
+  to. The DATE side is unchanged. Display only; none writes a date. Verified: unit cases at 03:00 Bangkok time for
+  each of the three and for the helper; with HEAD's three files the three early-morning cases fail. One existing
+  case (`taskStartUrgency` "ignoring the time of day") had encoded the UTC day — its `now` was already the next
+  morning in Bangkok — and was rewritten to a time on the same local day. Every other `toISOString()` in the app is
+  an instant, not a day. The DATE values arrive as UTC midnight of their day (Prisma's `date` → `Date` → JSON), as
+  the comparison assumes.
+  - Found by /doubt on this branch and fixed with it, in the web app: the goods-receipt form
+    (`procurement/deliveries/new`) defaulted its `datetime-local` field to `toISOString().slice(0, 16)` — the UTC
+    clock — and submitted it read back as local time, so a delivery saved with the default time was stored seven hours
+    early; and `defaultDateRange` (dashboard, alerts, portfolio, PM analytics) ended its 90 days on the UTC day. Both
+    now use `localDatetimeInput` / `localIsoDate` (`apps/web/src/lib/format.ts`); the web spec pins
+    `TZ=Asia/Bangkok`, and the cases fail with the UTC formulas put back.
+- **Cost transactions created from a PO commit or an invoice are dated the server's UTC day.**
+  `backend/src/modules/finance/finance.service.ts:261,339` set `transaction_date: new Date().toISOString().slice(0,
+  10)`, so a PO approved before 07:00 in Bangkok is dated the day before; the tenant's `timezone` (platform.tenants)
+  is not consulted. Found by /doubt on `fix/mobile-local-today`; not fixed there (it needs the tenant's timezone in
+  the finance consumer, including for a tenant on a dedicated database, and an integration test).
 - **Closed — a site-report sync by the report's own id overwrote the row whatever its age.** Fixed on
   `fix/site-report-sync-id-lww`. `resolveReportConflict` flags only when the item carries `last_known_modified_at`,
   and no client sends it for reports (web and app alike), so every id hit — in practice a save replayed by its own

@@ -110,4 +110,17 @@ describe('spendTrend', () => {
     const rows = [tx(5, '0.1'), tx(5, '0.2'), tx(45, '0.3')];
     expect(spendTrend(rows, ['INVOICE'], NOW)).toEqual({ percent: 0, direction: 'flat' });
   });
+
+  // The windows end on the LOCAL day (jest pins TZ=Asia/Bangkok). 2026-08-10T20:00Z is 03:00 on
+  // 11 Aug there. Locally the current window is 13 Jul – 11 Aug and the baseline 13 Jun – 12 Jul; on
+  // the UTC day (the 10th) both slid back a day: the 11th fell outside, and 12 Jul moved into the
+  // current window, leaving no baseline at all.
+  it('anchors the windows on the local day, also before 07:00 in Bangkok', () => {
+    const early = new Date('2026-08-10T20:00:00Z');
+    const rows: CostTransaction[] = [
+      { source_type: 'INVOICE', amount: '100', transaction_date: '2026-08-11' }, // today, locally
+      { source_type: 'INVOICE', amount: '100', transaction_date: '2026-07-12' }, // baseline's last day
+    ];
+    expect(spendTrend(rows, ['INVOICE'], early)).toEqual({ percent: 0, direction: 'flat' });
+  });
 });

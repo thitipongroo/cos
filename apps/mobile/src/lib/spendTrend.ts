@@ -13,6 +13,7 @@
 // `windowDays` against money recorded in the `windowDays` before that.
 
 import { Decimal, sumDecimals, toDecimal } from '@cos/financial';
+import { localDayAsUtcMidnight } from './isoDate';
 
 /** A row of `GET /finance/cost-transactions` — only the fields a trend needs. */
 export interface CostTransaction {
@@ -75,8 +76,9 @@ export function spendTrend(
   now: Date,
   windowDays: number = TREND_WINDOW_DAYS,
 ): SpendTrend | null {
-  // Today, floored to the UTC midnight the DATE values are parsed to.
-  const today = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
+  // Today's LOCAL day, on the UTC-midnight scale the DATE values are parsed to (isoDate.ts) — the
+  // UTC day is yesterday before 07:00 in Bangkok.
+  const today = localDayAsUtcMidnight(now);
   const span = windowDays * DAY_MS;
   const current = windowTotal(rows, sourceTypes, today - span + DAY_MS, today);
   const previous = windowTotal(rows, sourceTypes, today - 2 * span + DAY_MS, today - span);

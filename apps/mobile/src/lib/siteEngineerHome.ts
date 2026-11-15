@@ -4,6 +4,8 @@
 // every existing suite tests logic directly. These are the parts with real decisions in them —
 // which tasks count as "upcoming", how to rank issues, the schedule-verdict colour, and so on.
 
+import { localDayAsUtcMidnight } from './isoDate';
+
 export interface UpcomingTask {
   task_id: string;
   task_name: string;
@@ -186,7 +188,8 @@ export type TaskUrgency = 'overdue' | 'due-soon' | 'normal';
 function daysUntil(plannedStart: string, now: Date): number {
   const start = new Date(plannedStart);
   const startMidnight = Date.UTC(start.getUTCFullYear(), start.getUTCMonth(), start.getUTCDate());
-  const nowMidnight = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
+  // The LOCAL day (isoDate.ts): the UTC one is yesterday before 07:00 in Bangkok.
+  const nowMidnight = localDayAsUtcMidnight(now);
   return Math.round((startMidnight - nowMidnight) / 86_400_000);
 }
 

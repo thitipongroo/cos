@@ -258,10 +258,21 @@ describe('taskStartUrgency — colour the start date (≤ 3 days = due-soon)', (
   });
 
   it('compares by date, ignoring the time of day', () => {
-    // A start earlier today than `now` is still "today" (due-soon), not overdue.
-    expect(taskStartUrgency('2026-07-16T01:00:00Z', new Date('2026-07-16T23:00:00Z'))).toBe(
+    // `planned_start` is a DATE; serialised it can arrive as UTC midnight of its day. Late on that
+    // same local day (22:00 in Bangkok) the task is still "today" (due-soon), not overdue.
+    expect(taskStartUrgency('2026-07-16T00:00:00.000Z', new Date('2026-07-16T15:00:00Z'))).toBe(
       'due-soon',
     );
+  });
+
+  // "Today" is the LOCAL day (jest pins TZ=Asia/Bangkok). 2026-07-16T20:00Z is 03:00 on the 17th
+  // there; the UTC day is still the 16th, which read a task starting on the 17th as tomorrow and one
+  // starting on the 16th as today.
+  it('takes today from the local calendar, also before 07:00 in Bangkok', () => {
+    const early = new Date('2026-07-16T20:00:00Z');
+    expect(taskStartUrgency('2026-07-16', early)).toBe('overdue'); // yesterday, locally
+    expect(taskStartUrgency('2026-07-17', early)).toBe('due-soon'); // today
+    expect(taskStartUrgency('2026-07-20', early)).toBe('due-soon'); // +3 (UTC day: +4, normal)
   });
 });
 

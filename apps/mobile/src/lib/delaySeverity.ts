@@ -13,6 +13,8 @@
 // platform's own and are shared with the event severities in §9.1 (low / medium / high / critical),
 // so one word means one thing across issues, incidents and schedule slippage.
 
+import { localDayAsUtcMidnight } from './isoDate';
+
 /** §15.4's four bands, plus `none` for a task that is not late. */
 export type DelaySeverity = 'none' | 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
 
@@ -24,14 +26,16 @@ const DAY_MS = 86_400_000;
 /**
  * Whole days between two dates, by calendar day.
  *
- * `planned_end` is a DATE, so both sides are floored to midnight UTC before subtracting — comparing
+ * `planned_end` is a DATE (parsed to UTC midnight of its day), and today is the local day on that same
+ * scale (`localDayAsUtcMidnight`), so both are whole days before subtracting — comparing
  * a date against a live instant makes the answer depend on the time of day the screen was opened,
  * which is the same trap `spendTrend` fell into.
  */
 function daysLate(plannedEnd: string, now: Date): number | null {
   const due = Date.parse(plannedEnd);
   if (Number.isNaN(due)) return null;
-  const today = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
+  // The LOCAL day (isoDate.ts): the UTC one is yesterday before 07:00 in Bangkok.
+  const today = localDayAsUtcMidnight(now);
   return Math.floor((today - due) / DAY_MS);
 }
 

@@ -2,7 +2,7 @@
 //
 // The timezone case is the reason the module exists, so it is asserted first and explicitly.
 
-import { toIsoDate, parseIsoDate } from '../isoDate';
+import { toIsoDate, parseIsoDate, localDayAsUtcMidnight } from '../isoDate';
 
 describe('toIsoDate', () => {
   it('reads the LOCAL calendar, not UTC', () => {
@@ -61,5 +61,14 @@ describe('parseIsoDate', () => {
 
   it('accepts 29 February in a real leap year', () => {
     expect(parseIsoDate('2024-02-29')).not.toBeNull();
+  });
+});
+
+describe('localDayAsUtcMidnight', () => {
+  it('is the LOCAL day on the UTC-midnight scale a DATE string parses to', () => {
+    // 03:00 on 11 Jun in Bangkok (UTC+7) is 20:00 on the 10th in UTC.
+    expect(localDayAsUtcMidnight(new Date('2026-06-10T20:00:00Z'))).toBe(Date.parse('2026-06-11'));
+    // Midday: the two calendars agree.
+    expect(localDayAsUtcMidnight(new Date('2026-06-11T05:00:00Z'))).toBe(Date.parse('2026-06-11'));
   });
 });

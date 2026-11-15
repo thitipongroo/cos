@@ -5,13 +5,30 @@ export function localeTag(locale: Locale): string {
   return locale === 'th' ? 'th-TH-u-ca-buddhist' : 'en-US';
 }
 
-/** Default analytics window: last 90 days as "YYYY-MM-DD,YYYY-MM-DD". */
-export function defaultDateRange(): string {
-  const end = new Date();
-  const start = new Date();
+const pad2 = (n: number): string => String(n).padStart(2, '0');
+
+/**
+ * `"YYYY-MM-DD"` of the LOCAL calendar day. Not `toISOString().slice(0, 10)`: that is the UTC day,
+ * which in Bangkok (UTC+7) is still yesterday before 07:00.
+ */
+export function localIsoDate(d: Date): string {
+  return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+}
+
+/**
+ * `"YYYY-MM-DDTHH:MM"` of the LOCAL wall clock — the value an `<input type="datetime-local">` holds.
+ * `toISOString().slice(0, 16)` put the UTC clock there, which the form then read back as local time:
+ * a delivery saved with the default time was stored seven hours early in Bangkok.
+ */
+export function localDatetimeInput(d: Date): string {
+  return `${localIsoDate(d)}T${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
+}
+
+/** Default analytics window: last 90 days as "YYYY-MM-DD,YYYY-MM-DD", ending on the local today. */
+export function defaultDateRange(now: Date = new Date()): string {
+  const start = new Date(now);
   start.setDate(start.getDate() - 90);
-  const iso = (d: Date) => d.toISOString().slice(0, 10);
-  return `${iso(start)},${iso(end)}`;
+  return `${localIsoDate(start)},${localIsoDate(now)}`;
 }
 
 /** Currency via Intl.NumberFormat (QM-3 — never raw concatenation). */

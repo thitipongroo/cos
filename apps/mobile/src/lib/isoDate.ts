@@ -29,6 +29,19 @@ export function toIsoDate(date: Date): string {
 }
 
 /**
+ * Today's LOCAL calendar day, as the UTC-midnight epoch milliseconds a DATE string parses to.
+ *
+ * `Date.parse('2026-06-11')` is UTC midnight of the 11th, so a DATE column (`planned_end`,
+ * `transaction_date`, `planned_start`) is compared against "today" on that scale. Taking today as
+ * `Date.UTC(now.getUTCFullYear(), …)` read the UTC calendar: in Bangkok, before 07:00 that is still
+ * yesterday, and lateness, start urgency and the spend windows were a day behind. The day is read
+ * from the local calendar — the one the user is living in — and only then placed on the UTC scale.
+ */
+export function localDayAsUtcMidnight(now: Date): number {
+  return Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
+}
+
+/**
  * `"YYYY-MM-DD"` → a local-midnight `Date`, or `null` if the string is not one.
  *
  * Constructed from the three numbers rather than `new Date(value)`: the string form of an ISO date

@@ -13,6 +13,7 @@ import {
   usePurchaseOrder,
   useRecordDelivery,
 } from '../../../../../lib/api/queries';
+import { localDatetimeInput } from '../../../../../lib/format';
 import { useValidatedForm } from '../../../../../lib/forms';
 import { useReadOnly } from '../../../../../lib/auth/useReadOnly';
 
@@ -44,7 +45,7 @@ export default function RecordDeliveryPage() {
     schema: deliveryRecordSchema,
     defaultValues: {
       po_id: '',
-      delivered_at: new Date().toISOString().slice(0, 16),
+      delivered_at: localDatetimeInput(new Date()),
       delivery_note: '',
       items: [],
     },
@@ -96,7 +97,7 @@ export default function RecordDeliveryPage() {
     setReceived({});
     reset({
       po_id: getValues('po_id'),
-      delivered_at: new Date().toISOString().slice(0, 16),
+      delivered_at: localDatetimeInput(new Date()),
       delivery_note: '',
       items: [],
     });
