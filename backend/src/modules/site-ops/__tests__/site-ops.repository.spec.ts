@@ -299,7 +299,13 @@ describe('SiteOpsRepository', () => {
       };
       const builder = jest.fn(() => event);
       await repo.updateSiteReport('report-uuid-001', base, builder as never);
-      expect(builder).toHaveBeenCalledWith(updated);
+      // No status sent: no status read, and nothing became SUBMITTED.
+      expect(builder).toHaveBeenCalledWith(
+        updated,
+        { issue_count: 0, photo_count: 0 },
+        { becameSubmitted: false },
+      );
+      expect(mockPrisma.$queryRaw).toHaveBeenCalledTimes(1);
       expect(mockPrisma.$executeRaw).toHaveBeenCalledTimes(1);
 
       mockPrisma.$executeRaw.mockClear();
@@ -870,7 +876,11 @@ describe('SiteOpsRepository', () => {
         { attachmentCounts: true },
       );
 
-      expect(builder).toHaveBeenCalledWith(row, { issue_count: 1, photo_count: 3 });
+      expect(builder).toHaveBeenCalledWith(
+        row,
+        { issue_count: 1, photo_count: 3 },
+        { becameSubmitted: false },
+      );
       const countSql = (mockPrisma.$queryRaw.mock.calls[1]![0] as TemplateStringsArray).join('?');
       expect(countSql).toMatch(/site_ops\.issues/);
       expect(countSql).toMatch(/files\.file_metadata/);
@@ -900,8 +910,186 @@ describe('SiteOpsRepository', () => {
 
       expect(builder).toHaveBeenCalledTimes(1);
       // Without the option no count query runs, and the builder gets zeros.
-      expect(builder).toHaveBeenCalledWith(row, { issue_count: 0, photo_count: 0 });
+      expect(builder).toHaveBeenCalledWith(
+        row,
+        { issue_count: 0, photo_count: 0 },
+        { becameSubmitted: false },
+      );
+      // No status sent: no advisory lock, no status read — only the outbox INSERT.
       expect(mockPrisma.$executeRaw).toHaveBeenCalledTimes(1);
+    });
+
+    // fix/app-report-submit-notify: with a status, the write takes the natural key's advisory lock, reads
+    // the status it had, and tells the builder whether this write made it SUBMITTED (the counts then
+    // come along for site.report.created.v1). The SQL rule itself is run against Postgres in
+    // test/site-ops/08.
+    describe('createSiteReport with a status', () => {
+      const params = (status: 'DRAFT' | 'SUBMITTED') => ({
+        report_id: 'r-1',
+        project_id: 'p-1',
+        submitted_by: 'u-1',
+        report_date: '2026-06-04',
+        summary: null,
+        weather: null,
+        manpower_count: null,
+        client_submitted_at: null,
+        status,
+      });
+
+      it.each([
+        ['no row before, SUBMITTED', [], 'SUBMITTED', 'SUBMITTED', true],
+        ['DRAFT before, SUBMITTED', [{ status: 'DRAFT' }], 'SUBMITTED', 'SUBMITTED', true],
+        [
+          'SUBMITTED before, SUBMITTED again',
+          [{ status: 'SUBMITTED' }],
+          'SUBMITTED',
+          'SUBMITTED',
+          false,
+        ],
+        [
+          'ACKNOWLEDGED before, SUBMITTED',
+          [{ status: 'ACKNOWLEDGED' }],
+          'SUBMITTED',
+          'ACKNOWLEDGED',
+          false,
+        ],
+      ] as const)('%s', async (_n, before, sent, after, became) => {
+        const row = { ...reportRow, report_id: 'r-1', status: after };
+        mockPrisma.$queryRaw.mockResolvedValueOnce(before).mockResolvedValueOnce([row]);
+        // The count query runs only when the write made the report SUBMITTED.
+        if (became)
+          mockPrisma.$queryRaw.mockResolvedValueOnce([{ issue_count: 2, photo_count: 1 }]);
+        const builder = jest.fn(() => [envelope, envelope]);
+
+        await repo.createSiteReport(params(sent), builder as never);
+
+        expect(builder).toHaveBeenCalledWith(
+          row,
+          became ? { issue_count: 2, photo_count: 1 } : { issue_count: 0, photo_count: 0 },
+          { becameSubmitted: became },
+        );
+        const lockSql = (mockPrisma.$executeRaw.mock.calls[0]![0] as TemplateStringsArray).join(
+          '?',
+        );
+        expect(lockSql).toMatch(/pg_advisory_xact_lock/);
+        const readSql = (mockPrisma.$queryRaw.mock.calls[0]![0] as TemplateStringsArray).join('?');
+        expect(readSql).toMatch(/FOR UPDATE/);
+        // The lock, then one outbox INSERT per event the builder returned.
+        expect(mockPrisma.$executeRaw).toHaveBeenCalledTimes(3);
+      });
+
+      it('DRAFT: no lock and no read (a draft cannot announce), and nothing became SUBMITTED', async () => {
+        const row = { ...reportRow, report_id: 'r-1', status: 'DRAFT' };
+        mockPrisma.$queryRaw.mockResolvedValueOnce([row]);
+        const builder = jest.fn(() => envelope);
+
+        await repo.createSiteReport(params('DRAFT'), builder as never);
+
+        expect(builder).toHaveBeenCalledWith(
+          row,
+          { issue_count: 0, photo_count: 0 },
+          { becameSubmitted: false },
+        );
+        expect(mockPrisma.$queryRaw).toHaveBeenCalledTimes(1);
+        const insertSql = (mockPrisma.$queryRaw.mock.calls[0]![0] as TemplateStringsArray).join(
+          '?',
+        );
+        expect(insertSql).toMatch(/INSERT INTO site_ops\.site_reports/);
+        expect(mockPrisma.$executeRaw).toHaveBeenCalledTimes(1); // the outbox INSERT only
+      });
+
+      it('the lock key casts the day in SQL, so a day with a time is the same lock', async () => {
+        mockPrisma.$queryRaw
+          .mockResolvedValueOnce([])
+          .mockResolvedValueOnce([{ ...reportRow, status: 'SUBMITTED' }])
+          .mockResolvedValueOnce([{ issue_count: 0, photo_count: 0 }]);
+        await repo.createSiteReport(params('SUBMITTED'), (() => envelope) as never);
+        const lockSql = (mockPrisma.$executeRaw.mock.calls[0]![0] as TemplateStringsArray).join(
+          '?',
+        );
+        expect(lockSql).toMatch(/\?::date\)::text/);
+      });
+    });
+
+    describe('updateSiteReport with a status', () => {
+      const base = {
+        summary: null,
+        blockers: null,
+        weather: null,
+        manpower_count: null,
+        client_submitted_at: null,
+      };
+
+      it.each([
+        ['DRAFT before, SUBMITTED', 'DRAFT', 'SUBMITTED', true],
+        ['SUBMITTED before, SUBMITTED again', 'SUBMITTED', 'SUBMITTED', false],
+        ['ACKNOWLEDGED before, SUBMITTED', 'ACKNOWLEDGED', 'ACKNOWLEDGED', false],
+      ] as const)('%s', async (_n, before, after, became) => {
+        const row = { ...reportRow, status: after };
+        mockPrisma.$queryRaw
+          .mockResolvedValueOnce([{ status: before }])
+          .mockResolvedValueOnce([row]);
+        if (became)
+          mockPrisma.$queryRaw.mockResolvedValueOnce([{ issue_count: 4, photo_count: 0 }]);
+        const builder = jest.fn(() => [envelope, envelope]);
+
+        await repo.updateSiteReport(
+          'report-uuid-001',
+          { ...base, status: 'SUBMITTED' },
+          builder as never,
+        );
+
+        expect(builder).toHaveBeenCalledWith(
+          row,
+          became ? { issue_count: 4, photo_count: 0 } : { issue_count: 0, photo_count: 0 },
+          { becameSubmitted: became },
+        );
+        const readSql = (mockPrisma.$queryRaw.mock.calls[0]![0] as TemplateStringsArray).join('?');
+        expect(readSql).toMatch(/FOR UPDATE/);
+        expect(mockPrisma.$executeRaw).toHaveBeenCalledTimes(2);
+      });
+
+      it('DRAFT: no status read, nothing became SUBMITTED', async () => {
+        mockPrisma.$queryRaw.mockResolvedValueOnce([reportRow]);
+        const builder = jest.fn(() => envelope);
+        await repo.updateSiteReport(
+          'report-uuid-001',
+          { ...base, status: 'DRAFT' },
+          builder as never,
+        );
+        expect(mockPrisma.$queryRaw).toHaveBeenCalledTimes(1);
+        expect(builder).toHaveBeenCalledWith(
+          reportRow,
+          { issue_count: 0, photo_count: 0 },
+          { becameSubmitted: false },
+        );
+      });
+    });
+
+    describe('promoteToSubmitted', () => {
+      it('promotes only a DRAFT row, with its counts, and writes each event', async () => {
+        const row = { ...reportRow, status: 'SUBMITTED' };
+        mockPrisma.$queryRaw
+          .mockResolvedValueOnce([row])
+          .mockResolvedValueOnce([{ issue_count: 1, photo_count: 2 }]);
+        const builder = jest.fn(() => [envelope, envelope]);
+
+        expect(await repo.promoteToSubmitted('report-uuid-001', builder as never)).toBe(row);
+
+        const sql = (mockPrisma.$queryRaw.mock.calls[0]![0] as TemplateStringsArray).join('?');
+        expect(sql).toMatch(/SET status = 'SUBMITTED'/);
+        expect(sql).toMatch(/AND status = 'DRAFT'/);
+        expect(builder).toHaveBeenCalledWith(row, { issue_count: 1, photo_count: 2 });
+        expect(mockPrisma.$executeRaw).toHaveBeenCalledTimes(2);
+      });
+
+      it('not DRAFT (or gone): null, and no event', async () => {
+        mockPrisma.$queryRaw.mockResolvedValueOnce([]);
+        const builder = jest.fn();
+        expect(await repo.promoteToSubmitted('report-uuid-001', builder)).toBeNull();
+        expect(builder).not.toHaveBeenCalled();
+        expect(mockPrisma.$executeRaw).not.toHaveBeenCalled();
+      });
     });
 
     // The true branch of every optional-outbox write: the outbox INSERT rides the SAME tx handle.

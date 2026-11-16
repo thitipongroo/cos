@@ -57,18 +57,18 @@ conflict_status ∈ { ACCEPTED | CONFLICT_FLAGGED | CONFLICT_REJECTED }
 
 ## Kafka Events Emitted
 
-| Event                          | Trigger                                 |
-| ------------------------------ | --------------------------------------- |
-| `site.report.created.v1`       | Report created                          |
-| `site.report.submitted.v1`     | Report synced from offline              |
-| `site.report.updated.v1`       | Report edited through offline sync      |
-| `site.issue.created.v1`        | Issue created                           |
-| `site.issue.status_changed.v1` | Issue status transitions                |
-| `site.issue.updated.v1`        | Issue edited (PATCH /site/issues/:id)   |
-| `site.inspection.passed.v1`    | Inspection submitted with PASSED status |
-| `site.inspection.failed.v1`    | Inspection submitted with FAILED status |
-| `site.material.consumed.v1`    | Material consumption logged             |
-| `site.conflict.flagged.v1`     | Offline-sync CONFLICT_FLAGGED persisted |
+| Event                          | Trigger                                                                         |
+| ------------------------------ | ------------------------------------------------------------------------------- |
+| `site.report.created.v1`       | Report created on the web; or a synced report first SUBMITTED (notifies the PM) |
+| `site.report.submitted.v1`     | Report synced from offline                                                      |
+| `site.report.updated.v1`       | Report edited through offline sync                                              |
+| `site.issue.created.v1`        | Issue created                                                                   |
+| `site.issue.status_changed.v1` | Issue status transitions                                                        |
+| `site.issue.updated.v1`        | Issue edited (PATCH /site/issues/:id)                                           |
+| `site.inspection.passed.v1`    | Inspection submitted with PASSED status                                         |
+| `site.inspection.failed.v1`    | Inspection submitted with FAILED status                                         |
+| `site.material.consumed.v1`    | Material consumption logged                                                     |
+| `site.conflict.flagged.v1`     | Offline-sync CONFLICT_FLAGGED persisted                                         |
 
 ## Dependencies
 

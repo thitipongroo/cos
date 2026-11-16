@@ -33,6 +33,7 @@ import { SearchIndexRepository } from '../../src/modules/search/search-index.rep
 import { runInTenantContext } from '../../src/shared/context/run-in-tenant-context';
 import { ContextIdFactory } from '@nestjs/core';
 import { SiteOpsRepository } from '../../src/modules/site-ops/site-ops.repository';
+import { buildOutboxEvent } from '../../src/shared/outbox/outbox.types';
 
 const TENANT_ID = 'bbbb1111-1111-4000-8000-000000000068';
 const USER_ID = 'bbbb2222-2222-4000-8000-000000000068';
@@ -688,5 +689,173 @@ describe('Site-report events name the written report (real database)', () => {
       { issue_count: 0, photo_count: 0 },
       { issue_count: 1, photo_count: 0 },
     ]);
+  });
+
+  // ── The app's submit tells the project manager (fix/app-report-submit-notify) ───────────────
+  // The app sends DRAFT or SUBMITTED with each save. The row's status only moves DRAFT → SUBMITTED, and
+  // site.report.created.v1 — the event notification.service turns into the PM's notification — is
+  // written once, by the save that first made the report SUBMITTED.
+
+  const statusOn = async (day: string): Promise<string | undefined> =>
+    (
+      await infra.prisma.$queryRawUnsafe<Array<{ status: string }>>(
+        `SELECT status FROM site_ops.site_reports
+          WHERE project_id = $1::uuid AND report_date = $2::date AND submitted_by = $3::uuid`,
+        projectId,
+        day,
+        USER_ID,
+      )
+    )[0]?.status;
+
+  it('push: draft, then submit, then submit again, then a draft save — one created.v1, at the first submit', async () => {
+    const day = '2019-03-17';
+    const save = async (status: string, at: string) => {
+      const res = await push(day, { status, manpower_count: 6, client_submitted_at: at });
+      expect((res.body as { status: string }).status).toBe('ACCEPTED');
+    };
+
+    await save('DRAFT', '2019-03-17T02:00:00.000Z');
+    expect(await statusOn(day)).toBe('DRAFT');
+    expect(await eventReportIds('site.report.created.v1', day)).toEqual([]);
+    const [row] = await detailsOn(day);
+
+    await save('SUBMITTED', '2019-03-17T09:00:00.000Z');
+    expect(await statusOn(day)).toBe('SUBMITTED');
+    expect(await eventReportIds('site.report.created.v1', day)).toEqual([row!.report_id]);
+
+    await save('SUBMITTED', '2019-03-17T10:00:00.000Z'); // resubmitted after an edit
+    await save('DRAFT', '2019-03-17T11:00:00.000Z'); // a draft save after the submit
+    expect(await statusOn(day)).toBe('SUBMITTED'); // never back to DRAFT
+    expect(await eventReportIds('site.report.created.v1', day)).toEqual([row!.report_id]);
+    // Analytics still counts the report once (the first save's submitted.v1).
+    expect(await eventReportIds('site.report.submitted.v1', day)).toEqual([row!.report_id]);
+  });
+
+  it('push: a report submitted on its first save is created SUBMITTED and announced, with its counts', async () => {
+    const day = '2019-03-18';
+    const res = await push(day, {
+      status: 'SUBMITTED',
+      manpower_count: 4,
+      client_submitted_at: '2019-03-18T02:00:00.000Z',
+    });
+    expect((res.body as { status: string }).status).toBe('ACCEPTED');
+    const [row] = await detailsOn(day);
+    expect(await statusOn(day)).toBe('SUBMITTED');
+
+    const events = await infra.prisma.$queryRawUnsafe<Array<{ payload: Record<string, unknown> }>>(
+      `SELECT payload->'payload' AS payload FROM platform.outbox_events
+        WHERE event_type = 'site.report.created.v1' AND payload->'payload'->>'report_id' = $1`,
+      row!.report_id,
+    );
+    expect(events.map((e) => e.payload)).toEqual([
+      {
+        report_id: row!.report_id,
+        project_id: projectId,
+        report_date: day,
+        submitted_by: USER_ID,
+        summary: '',
+        issue_count: 0,
+        photo_count: 0,
+      },
+    ]);
+  });
+
+  it('push: a submit that arrives after a later draft save still submits, once', async () => {
+    const day = '2019-03-22';
+    await push(day, {
+      status: 'DRAFT',
+      manpower_count: 2,
+      client_submitted_at: '2019-03-22T09:00:00.000Z',
+    });
+    // The submit saved at 02:00 (its first push failed and was retried) is older than the stored save:
+    // its fields are not written, but the status only moves up.
+    const late = await push(day, {
+      status: 'SUBMITTED',
+      manpower_count: 7,
+      client_submitted_at: '2019-03-22T02:00:00.000Z',
+    });
+    expect((late.body as { status: string }).status).toBe('ACCEPTED');
+    const [row] = await detailsOn(day);
+    expect(row).toEqual(expect.objectContaining({ manpower_count: 2 }));
+    expect(await statusOn(day)).toBe('SUBMITTED');
+    expect(await eventReportIds('site.report.created.v1', day)).toEqual([row!.report_id]);
+
+    await push(day, { status: 'SUBMITTED', client_submitted_at: '2019-03-22T01:00:00.000Z' });
+    expect(await eventReportIds('site.report.created.v1', day)).toEqual([row!.report_id]);
+  });
+
+  it('push: no status (an app from before this change) stores DRAFT and announces nothing', async () => {
+    const day = '2019-03-19';
+    await push(day, { manpower_count: 2, client_submitted_at: '2019-03-19T02:00:00.000Z' });
+    expect(await statusOn(day)).toBe('DRAFT');
+    expect(await eventReportIds('site.report.created.v1', day)).toEqual([]);
+  });
+
+  it('push: two first submits sent at once write one created.v1', async () => {
+    const day = '2019-03-20';
+    const results = await Promise.all(
+      [0, 1].map((n) =>
+        push(day, {
+          status: 'SUBMITTED',
+          manpower_count: 3 + n,
+          client_submitted_at: `2019-03-20T0${2 + n}:00:00.000Z`,
+        }),
+      ),
+    );
+    expect(results.map((r) => (r.body as { status: string }).status)).toEqual([
+      'ACCEPTED',
+      'ACCEPTED',
+    ]);
+    const [row] = await detailsOn(day);
+    expect(await eventReportIds('site.report.created.v1', day)).toEqual([row!.report_id]);
+  });
+
+  // The upsert's own rule, for the race the service's natural-key lookup does not see (two writes of one
+  // key in flight): on conflict the status only moves DRAFT → SUBMITTED, and the builder is told whether
+  // this write made it SUBMITTED.
+  it('createSiteReport on conflict: DRAFT → SUBMITTED once, never back; the builder is told when', async () => {
+    const day = '2019-03-21';
+    const contextId = ContextIdFactory.create();
+    app.registerRequestByContextId({ tenantId: TENANT_ID }, contextId);
+    const repo = await app.resolve(SiteOpsRepository, contextId, { strict: false });
+    const seen: boolean[] = [];
+    const write = (status: 'DRAFT' | 'SUBMITTED') =>
+      runInTenantContext({ tenantId: TENANT_ID, userId: USER_ID }, () =>
+        repo.createSiteReport(
+          {
+            report_id: randomUUID(),
+            project_id: projectId,
+            submitted_by: USER_ID,
+            report_date: day,
+            summary: null,
+            blockers: null,
+            weather: null,
+            manpower_count: null,
+            client_submitted_at: null,
+            status,
+          },
+          (row, _counts, meta) => {
+            seen.push(meta.becameSubmitted);
+            return buildOutboxEvent({
+              eventType: 'site.report.updated.v1',
+              tenantId: TENANT_ID,
+              actorId: USER_ID,
+              correlationId: randomUUID(),
+              payload: {
+                report_id: row.report_id,
+                project_id: projectId,
+                report_date: day,
+                submitted_by: USER_ID,
+              },
+            });
+          },
+        ),
+      );
+
+    expect((await write('DRAFT')).status).toBe('DRAFT');
+    expect((await write('SUBMITTED')).status).toBe('SUBMITTED');
+    expect((await write('SUBMITTED')).status).toBe('SUBMITTED');
+    expect((await write('DRAFT')).status).toBe('SUBMITTED');
+    expect(seen).toEqual([false, true, false, false]);
   });
 });

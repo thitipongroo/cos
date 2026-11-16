@@ -26,6 +26,9 @@ import type {
   SiteReportRow,
   InspectionRow,
   MaterialConsumptionRow,
+  ReportAttachmentCounts,
+  ReportWriteMeta,
+  SyncReportStatus,
 } from './site-ops.repository';
 import { UUID_PATTERN } from '../../shared/prisma/assert-safe-tenant-id';
 import {
@@ -102,7 +105,11 @@ interface SyncReportExtras {
   blocker_category?: string;
   shift?: string;
   manpower_lines?: Array<{ trade_type: string; worker_count: number; hours_worked: number }>;
+  status?: SyncReportStatus;
 }
+
+/** The two states the app's buttons send. ACKNOWLEDGED is the manager's; the app never sets it. */
+const SYNC_REPORT_STATUSES: ReadonlySet<string> = new Set<SyncReportStatus>(['DRAFT', 'SUBMITTED']);
 
 /**
  * The three report fields the app sends and the sync service used to drop, checked here because
@@ -154,6 +161,14 @@ function syncReportExtras(
         hours_worked: (l['hours_worked'] as number | undefined) ?? DEFAULT_SHIFT_HOURS,
       }));
     } else onInvalid('manpower_lines');
+  }
+  // DRAFT or SUBMITTED from the app's two buttons (fix/app-report-submit-notify). Anything else is
+  // dropped and logged; the stored status is then left as it is.
+  const status = item['status'];
+  if (status !== undefined && status !== null) {
+    if (typeof status === 'string' && SYNC_REPORT_STATUSES.has(status)) {
+      extras.status = status as SyncReportStatus;
+    } else onInvalid('status');
   }
   return extras;
 }
@@ -426,16 +441,19 @@ export class SiteOpsService {
             longitude: item.longitude ?? null,
             blocker_category: extras.blocker_category ?? null,
             shift: extras.shift ?? null,
+            status: extras.status,
           },
           // From the written row: an item with a new client_id for a (project, day, submitter) that
           // already has a report upserts onto that report, which keeps its own report_id.
-          (row) =>
+          (row, counts, meta) => [
             this.outboxEvent('site.report.submitted.v1', {
               report_id: row.report_id,
               project_id: item.project_id,
               report_date: item.report_date,
               submitted_by: this.userId,
             }),
+            ...this.firstSubmitEvents(row, counts, meta),
+          ],
         );
 
         // Against the row's own id: a create that upserted onto another report writes its lines there.
@@ -537,8 +555,14 @@ export class SiteOpsService {
             // Only when the item sent them: absent leaves the stored values (see syncReportExtras).
             blocker_category: extras.blocker_category,
             shift: extras.shift,
+            // Only the submitter's own report: an item naming a colleague's report (this path is not
+            // limited to the caller's) must not submit it on their behalf.
+            status: existing.submitted_by === this.userId ? extras.status : undefined,
           },
-          (row) => this.reportUpdatedEvent(row),
+          (row, counts, meta) => [
+            this.reportUpdatedEvent(row),
+            ...this.firstSubmitEvents(row, counts, meta),
+          ],
         );
         // The row was read a moment ago under the same tenant context; a null here means it was
         // deleted in between. Never report ACCEPTED for a write that did not land — that is the
@@ -559,6 +583,13 @@ export class SiteOpsService {
         // colleague's report must not become the target of the caller's next item for that day.
         if (updated.submitted_by === this.userId) existingByKey.set(rowKey(updated), updated);
         existingById.set(item.client_id, updated);
+      } else if (existing.submitted_by === this.userId) {
+        // The server row is kept (flagged or not newer); a submit still moves it up.
+        const promoted = await this.promoteStaleSubmit(extras, existing);
+        if (promoted !== existing) {
+          existingByKey.set(rowKey(promoted), promoted);
+          existingById.set(item.client_id, promoted);
+        }
       }
 
       if (resolution.conflict_status === 'CONFLICT_FLAGGED') {
@@ -589,6 +620,50 @@ export class SiteOpsService {
     }
 
     return results;
+  }
+
+  /**
+   * site.report.created.v1 — the event that tells the project manager — when this sync write moved the
+   * report to SUBMITTED for the first time (fix/app-report-submit-notify). A report filed from the app
+   * used to notify no one: sync emitted only submitted.v1 (analytics) and updated.v1 (search). A draft
+   * notifies no one, and neither does a second submit or a later edit. The search indexer also consumes
+   * created.v1; it upserts by report_id, so indexing the report again is harmless.
+   */
+  private firstSubmitEvents(
+    row: SiteReportRow,
+    counts: ReportAttachmentCounts,
+    meta: ReportWriteMeta,
+  ) {
+    if (!meta.becameSubmitted) return [];
+    return [
+      this.outboxEvent('site.report.created.v1', {
+        report_id: row.report_id,
+        project_id: row.project_id,
+        report_date: reportDayOf(row),
+        submitted_by: row.submitted_by,
+        summary: row.summary ?? '',
+        issue_count: counts.issue_count,
+        photo_count: counts.photo_count,
+      }),
+    ];
+  }
+
+  /**
+   * A SUBMITTED save that writes no fields — older than the stored save, overtaken before its write, or
+   * kept out by the resolver — still submits the caller's DRAFT report: the status only moves up, so the
+   * order the saves arrive in does not decide it. Same events as a first submit by an edit. Returns the
+   * promoted row, or `row` when there was nothing to promote.
+   */
+  private async promoteStaleSubmit(
+    extras: SyncReportExtras,
+    row: SiteReportRow,
+  ): Promise<SiteReportRow> {
+    if (extras.status !== 'SUBMITTED' || row.submitted_by !== this.userId) return row;
+    const promoted = await this.repo.promoteToSubmitted(row.report_id, (r, counts) => [
+      this.reportUpdatedEvent(r),
+      ...this.firstSubmitEvents(r, counts, { becameSubmitted: true }),
+    ]);
+    return promoted ?? row;
   }
 
   /**
@@ -661,7 +736,7 @@ export class SiteOpsService {
         },
         'site-report sync item older than the stored save — not written',
       );
-      return row;
+      return this.promoteStaleSubmit(extras, row);
     }
 
     const stored = row as unknown as Record<string, unknown>;
@@ -684,8 +759,12 @@ export class SiteOpsService {
         // The comparison above used the row as read at the start of the batch; the UPDATE repeats it,
         // so a newer save that landed in between is not overwritten.
         notNewerThan: new Date(itemTs).toISOString(),
+        status: extras.status,
       },
-      (updatedRow) => this.reportUpdatedEvent(updatedRow),
+      (updatedRow, counts, meta) => [
+        this.reportUpdatedEvent(updatedRow),
+        ...this.firstSubmitEvents(updatedRow, counts, meta),
+      ],
     );
     if (!updated) {
       // Nothing matched: either a newer save landed since the read (the row is there — this one is
@@ -704,7 +783,7 @@ export class SiteOpsService {
           },
           'site-report sync item overtaken by a newer save before its write — not written',
         );
-        return current;
+        return this.promoteStaleSubmit(extras, current);
       }
       return null;
     }

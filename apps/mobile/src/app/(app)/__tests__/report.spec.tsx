@@ -113,6 +113,20 @@ describe('ReportScreen', () => {
     expect(mockInsert.mock.calls[0][0].status).toBe('DRAFT');
   });
 
+  // fix/app-report-submit-notify: the server needs the status to tell the project manager about a submit, not a draft.
+  it.each([
+    ['save-report-button', 'SUBMITTED'],
+    ['save-draft-button', 'DRAFT'],
+  ] as const)('sends the status to the server (%s → %s)', async (button, status) => {
+    const { getByTestId } = await renderScreen();
+
+    await fireEvent.press(getByTestId('blocker-category-OTHER'));
+    await fireEvent.press(getByTestId(button));
+
+    await waitFor(() => expect(queue.enqueue).toHaveBeenCalledTimes(1));
+    expect(queue.enqueue.mock.calls[0][3].status).toBe(status);
+  });
+
   // ADR-051: the client id IS the server's idempotency key. A second save must not reuse it, or it
   // overwrites the report already sent instead of filing a new one.
   it('files a second save as a NEW report, not an edit of the first', async () => {

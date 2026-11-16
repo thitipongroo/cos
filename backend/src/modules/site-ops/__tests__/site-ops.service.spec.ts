@@ -59,6 +59,7 @@ const mockRepo = {
   listManpowerLogs: jest.fn().mockResolvedValue([]),
   listSiteReports: jest.fn(),
   updateSiteReport: jest.fn(),
+  promoteToSubmitted: jest.fn(),
   updateReportStatus: jest.fn(),
   createIssue: jest.fn(),
   nextIssueNumber: jest.fn(),
@@ -93,8 +94,19 @@ const outboxArg = (
   row?: unknown,
 ): { event_type?: string; payload?: Record<string, unknown> } | undefined => {
   const arg = fn.mock.calls[0]?.[argIndex];
-  return typeof arg === 'function' ? arg(row, { issue_count: 0, photo_count: 0 }) : arg;
+  if (typeof arg !== 'function') return arg;
+  // Report builders take what the write did to the status and may return several events (the first is
+  // the one these tests name; firstSubmitEvents adds created.v1 after it).
+  const built = arg(row, { issue_count: 0, photo_count: 0 }, { becameSubmitted: false });
+  return Array.isArray(built) ? built[0] : built;
 };
+
+/** A sync report builder as the repository calls it: the written row, its counts, what the write did. */
+type SyncReportBuilder = (
+  row: SiteReportRow,
+  counts: { issue_count: number; photo_count: number },
+  meta: { becameSubmitted: boolean },
+) => Array<{ event_type: string; payload: Record<string, unknown> }>;
 
 const MOCK_REQUEST = {
   tenantId: 'tenant-uuid-1',
@@ -2511,6 +2523,288 @@ describe('syncSiteReports — category, shift and lines', () => {
   });
 });
 
+// ── syncSiteReports — the app's status, and the project manager told on the first submit ──────────
+//
+// fix/app-report-submit-notify. The app kept DRAFT/SUBMITTED on the device; sync stored neither and emitted
+// only submitted.v1 (analytics) and updated.v1 (search), so a report filed from the app reached no project
+// manager — site.report.created.v1 is what notification.service turns into the PM's notification. The
+// status now goes with the item; the repository reports whether this write made the report SUBMITTED for
+// the first time, and only then does created.v1 ride along. (The DB rule — DRAFT → SUBMITTED, never back,
+// read under FOR UPDATE — is exercised against Postgres in test/site-ops/08.)
+
+describe('syncSiteReports — status and the first-submit notification', () => {
+  const PROJECT = '11111111-1111-4111-8111-111111111111';
+  const DAY = '2026-06-04';
+  const ID = '77777777-7777-4777-8777-777777777777';
+  const written = (overrides: Partial<SiteReportRow> = {}) =>
+    makeReport({
+      report_id: 'row-id',
+      project_id: PROJECT,
+      report_date: new Date(`${DAY}T00:00:00.000Z`),
+      submitted_by: 'user-uuid-1',
+      summary: null,
+      status: 'SUBMITTED',
+      client_submitted_at: new Date('2026-06-04T10:00:00Z'),
+      modified_at: new Date('2026-06-04T07:00:00Z'),
+      ...overrides,
+    });
+  const item = (clientId: string, extra: Record<string, unknown> = {}) => ({
+    client_id: clientId,
+    project_id: PROJECT,
+    report_date: DAY,
+    client_submitted_at: '2026-06-04T11:00:00Z',
+    ...extra,
+  });
+  const sync = (items: Array<Record<string, unknown>>) =>
+    service.syncSiteReports({ items } as never);
+  const COUNTS = { issue_count: 2, photo_count: 3 };
+  const run = (fn: jest.Mock, row: SiteReportRow, becameSubmitted: boolean) =>
+    (fn.mock.calls[0]![fn === mockRepo.createSiteReport ? 1 : 2] as SyncReportBuilder)(
+      row,
+      COUNTS,
+      { becameSubmitted },
+    );
+
+  beforeEach(() => {
+    mockRepo.findReportsByIds.mockResolvedValue(new Map());
+    mockRepo.findReportsByNaturalKeys.mockResolvedValue(new Map());
+  });
+
+  it.each(['SUBMITTED', 'DRAFT'])(
+    "create: the item's %s is passed to the write",
+    async (status) => {
+      mockRepo.createSiteReport.mockResolvedValueOnce(written());
+      await sync([item('device-id', { status })]);
+      expect(mockRepo.createSiteReport).toHaveBeenCalledWith(
+        expect.objectContaining({ status }),
+        expect.any(Function),
+      );
+    },
+  );
+
+  it('create that became SUBMITTED: submitted.v1, then created.v1 for the project manager', async () => {
+    mockRepo.createSiteReport.mockResolvedValueOnce(written());
+    await sync([item('device-id', { status: 'SUBMITTED' })]);
+
+    const events = run(mockRepo.createSiteReport, written({ summary: 'slab poured' }), true);
+    expect(events.map((e) => e.event_type)).toEqual([
+      'site.report.submitted.v1',
+      'site.report.created.v1',
+    ]);
+    expect(events[1]!.payload).toEqual({
+      report_id: 'row-id',
+      project_id: PROJECT,
+      report_date: DAY,
+      submitted_by: 'user-uuid-1',
+      summary: 'slab poured',
+      issue_count: 2,
+      photo_count: 3,
+    });
+  });
+
+  it('created.v1 carries an empty summary when the report has none (the app sends none)', async () => {
+    mockRepo.createSiteReport.mockResolvedValueOnce(written());
+    await sync([item('device-id', { status: 'SUBMITTED' })]);
+    expect(run(mockRepo.createSiteReport, written(), true)[1]!.payload['summary']).toBe('');
+  });
+
+  it('create that did not become SUBMITTED (a draft, or already submitted): submitted.v1 only', async () => {
+    mockRepo.createSiteReport.mockResolvedValueOnce(written({ status: 'DRAFT' }));
+    await sync([item('device-id', { status: 'DRAFT' })]);
+    expect(
+      run(mockRepo.createSiteReport, written({ status: 'DRAFT' }), false).map((e) => e.event_type),
+    ).toEqual(['site.report.submitted.v1']);
+  });
+
+  it('own edit (natural-key hit) that became SUBMITTED: updated.v1, then created.v1', async () => {
+    const stored = written({ report_id: 'server-report', status: 'DRAFT' });
+    mockRepo.findReportsByNaturalKeys.mockResolvedValueOnce(
+      new Map([[`${PROJECT}|${DAY}`, stored]]),
+    );
+    mockRepo.updateSiteReport.mockResolvedValueOnce(written({ report_id: 'server-report' }));
+
+    await sync([item('device-id', { status: 'SUBMITTED' })]);
+
+    expect(mockRepo.updateSiteReport).toHaveBeenCalledWith(
+      'server-report',
+      expect.objectContaining({ status: 'SUBMITTED' }),
+      expect.any(Function),
+    );
+    const events = run(mockRepo.updateSiteReport, written({ report_id: 'server-report' }), true);
+    expect(events.map((e) => e.event_type)).toEqual([
+      'site.report.updated.v1',
+      'site.report.created.v1',
+    ]);
+    expect(events[1]!.payload['report_id']).toBe('server-report');
+  });
+
+  it('own edit that did not become SUBMITTED (a second submit, or a draft save): updated.v1 only', async () => {
+    mockRepo.findReportsByIds.mockResolvedValueOnce(new Map([[ID, written({ report_id: ID })]]));
+    mockRepo.updateSiteReport.mockResolvedValueOnce(written({ report_id: ID }));
+
+    await sync([item(ID, { status: 'SUBMITTED' })]);
+
+    expect(
+      run(mockRepo.updateSiteReport, written({ report_id: ID }), false).map((e) => e.event_type),
+    ).toEqual(['site.report.updated.v1']);
+  });
+
+  it('resolver edit (last_known_modified_at sent) passes the status and announces a first submit', async () => {
+    mockRepo.findReportsByIds.mockResolvedValueOnce(
+      new Map([[ID, written({ report_id: ID, status: 'DRAFT' })]]),
+    );
+    mockRepo.updateSiteReport.mockResolvedValueOnce(written({ report_id: ID }));
+
+    const results = await sync([
+      item(ID, { status: 'SUBMITTED', last_known_modified_at: '2026-06-04T10:00:00Z' }),
+    ]);
+
+    expect(results[0]?.conflict_status).toBe('ACCEPTED');
+    expect(mockRepo.updateSiteReport).toHaveBeenCalledWith(
+      ID,
+      expect.objectContaining({ status: 'SUBMITTED' }),
+      expect.any(Function),
+    );
+    expect(
+      run(mockRepo.updateSiteReport, written({ report_id: ID }), true).map((e) => e.event_type),
+    ).toEqual(['site.report.updated.v1', 'site.report.created.v1']);
+  });
+
+  // A SUBMITTED save that writes no fields still submits (doubt on this branch): the status only moves up.
+  const promoteEvents = (row: SiteReportRow) =>
+    (
+      mockRepo.promoteToSubmitted.mock.calls[0]![1] as (
+        r: SiteReportRow,
+        c: typeof COUNTS,
+      ) => Array<{ event_type: string }>
+    )(row, COUNTS).map((e) => e.event_type);
+
+  it('an older SUBMITTED save than the stored one: no field written, but the DRAFT is promoted and announced', async () => {
+    const stored = written({ report_id: 'server-report', status: 'DRAFT' });
+    stored.client_submitted_at = new Date('2026-06-04T12:00:00Z');
+    mockRepo.findReportsByNaturalKeys.mockResolvedValueOnce(
+      new Map([[`${PROJECT}|${DAY}`, stored]]),
+    );
+    mockRepo.promoteToSubmitted.mockResolvedValueOnce(written({ report_id: 'server-report' }));
+
+    const results = await sync([item('device-id', { status: 'SUBMITTED' })]); // saved 11:00
+
+    expect(results[0]?.conflict_status).toBe('ACCEPTED');
+    expect(mockRepo.updateSiteReport).not.toHaveBeenCalled();
+    expect(mockRepo.promoteToSubmitted).toHaveBeenCalledWith('server-report', expect.any(Function));
+    expect(promoteEvents(written({ report_id: 'server-report' }))).toEqual([
+      'site.report.updated.v1',
+      'site.report.created.v1',
+    ]);
+  });
+
+  it('an older DRAFT save writes nothing and promotes nothing', async () => {
+    const stored = written({ report_id: 'server-report', status: 'DRAFT' });
+    stored.client_submitted_at = new Date('2026-06-04T12:00:00Z');
+    mockRepo.findReportsByNaturalKeys.mockResolvedValueOnce(
+      new Map([[`${PROJECT}|${DAY}`, stored]]),
+    );
+
+    await sync([item('device-id', { status: 'DRAFT' })]);
+
+    expect(mockRepo.updateSiteReport).not.toHaveBeenCalled();
+    expect(mockRepo.promoteToSubmitted).not.toHaveBeenCalled();
+  });
+
+  it('a SUBMITTED save overtaken before its write is promoted from the current row', async () => {
+    const stored = written({ report_id: 'server-report', status: 'DRAFT' });
+    mockRepo.findReportsByNaturalKeys.mockResolvedValueOnce(
+      new Map([[`${PROJECT}|${DAY}`, stored]]),
+    );
+    mockRepo.updateSiteReport.mockResolvedValueOnce(null);
+    mockRepo.findReportById.mockResolvedValueOnce(stored);
+    mockRepo.promoteToSubmitted.mockResolvedValueOnce(written({ report_id: 'server-report' }));
+
+    const results = await sync([item('device-id', { status: 'SUBMITTED' })]);
+
+    expect(results[0]?.conflict_status).toBe('ACCEPTED');
+    expect(mockRepo.promoteToSubmitted).toHaveBeenCalledWith('server-report', expect.any(Function));
+  });
+
+  it("resolver path: a colleague's report is neither given the status nor promoted", async () => {
+    const colleagues = written({ report_id: ID, status: 'DRAFT', submitted_by: 'colleague' });
+    mockRepo.findReportsByIds.mockResolvedValueOnce(new Map([[ID, colleagues]]));
+    mockRepo.updateSiteReport.mockResolvedValueOnce(colleagues);
+
+    await sync([item(ID, { status: 'SUBMITTED', last_known_modified_at: '2026-06-04T10:00:00Z' })]);
+
+    const params = mockRepo.updateSiteReport.mock.calls[0]![1] as Record<string, unknown>;
+    expect(params['status']).toBeUndefined();
+    expect(mockRepo.promoteToSubmitted).not.toHaveBeenCalled();
+  });
+
+  it('resolver path keeping the server row (not newer): the own DRAFT is still promoted', async () => {
+    mockRepo.findReportsByIds.mockResolvedValueOnce(
+      new Map([
+        [
+          ID,
+          written({
+            report_id: ID,
+            status: 'DRAFT',
+            modified_at: new Date('2026-06-04T12:00:00Z'),
+          }),
+        ],
+      ]),
+    );
+    mockRepo.createConflictRecord.mockResolvedValue({});
+    mockRepo.promoteToSubmitted.mockResolvedValueOnce(written({ report_id: ID }));
+
+    await sync([
+      item(ID, {
+        status: 'SUBMITTED',
+        last_known_modified_at: '2026-06-04T08:00:00Z',
+        client_submitted_at: '2026-06-04T09:00:00Z',
+      }),
+    ]);
+
+    expect(mockRepo.updateSiteReport).not.toHaveBeenCalled();
+    expect(mockRepo.promoteToSubmitted).toHaveBeenCalledWith(ID, expect.any(Function));
+  });
+
+  it.each([
+    ["ACKNOWLEDGED (the manager's, never the app's)", 'ACKNOWLEDGED'],
+    ['an unknown value', 'SENT'],
+    ['a non-string', 1],
+  ])('%s is dropped and logged; the report is still ACCEPTED', async (_name, bad) => {
+    mockRepo.createSiteReport.mockResolvedValueOnce(written({ status: 'DRAFT' }));
+    const warn = jest.requireMock('@cos/logger').createLogger().warn as jest.Mock;
+
+    const results = await sync([item('device-id', { status: bad })]);
+
+    expect(results[0]?.conflict_status).toBe('ACCEPTED');
+    const params = mockRepo.createSiteReport.mock.calls[0]![0] as Record<string, unknown>;
+    expect(params['status']).toBeUndefined();
+    expect(warn).toHaveBeenCalledWith(
+      expect.objectContaining({ event: 'sync.site_report.invalid_field', field: 'status' }),
+      expect.any(String),
+    );
+  });
+
+  it('no status sent (an older app): the write leaves the status alone', async () => {
+    mockRepo.createSiteReport.mockResolvedValueOnce(written({ status: 'DRAFT' }));
+    await sync([item('device-id')]);
+    const params = mockRepo.createSiteReport.mock.calls[0]![0] as Record<string, unknown>;
+    expect(params['status']).toBeUndefined();
+  });
+
+  it('the web create sends no status: its own created.v1 is unchanged and nothing is added', async () => {
+    mockRepo.createSiteReport.mockResolvedValueOnce(written({ status: 'DRAFT' }));
+    await service.createSiteReport({ project_id: PROJECT, report_date: DAY } as never);
+    const [params, builder] = mockRepo.createSiteReport.mock.calls[0]!;
+    expect((params as Record<string, unknown>)['status']).toBeUndefined();
+    const built = (builder as (...a: unknown[]) => unknown)(written(), COUNTS, {
+      becameSubmitted: true,
+    });
+    expect(Array.isArray(built)).toBe(false);
+    expect((built as { event_type: string }).event_type).toBe('site.report.created.v1');
+  });
+});
+
 // ── syncSiteReports — edits emit site.report.updated.v1 ─────────────────────────
 //
 // A sync edit wrote the row and emitted nothing, so the search index never followed it. Its own event:
@@ -2529,10 +2823,16 @@ describe('syncSiteReports — edits emit site.report.updated.v1', () => {
       client_submitted_at: new Date('2026-06-04T10:00:00Z'),
       ...overrides,
     });
-  const builderOf = (call = 0) =>
-    mockRepo.updateSiteReport.mock.calls[call]![2] as (r: SiteReportRow) => {
-      event_type: string;
-      payload: Record<string, unknown>;
+  const builderOf =
+    (call = 0) =>
+    (r: SiteReportRow): { event_type: string; payload: Record<string, unknown> } => {
+      const built = (mockRepo.updateSiteReport.mock.calls[call]![2] as SyncReportBuilder)(
+        r,
+        { issue_count: 0, photo_count: 0 },
+        { becameSubmitted: false },
+      );
+      expect(built).toHaveLength(1); // no created.v1: nothing became SUBMITTED
+      return built[0]!;
     };
 
   beforeEach(() => {
@@ -2667,9 +2967,12 @@ describe('syncSiteReports — id hit without last_known_modified_at', () => {
     expect(params).toEqual(
       expect.objectContaining({ summary: 'kept summary', weather: 'sunny', manpower_count: 7 }),
     );
-    expect((builder as (r: SiteReportRow) => { event_type: string })(stored()).event_type).toBe(
-      'site.report.updated.v1',
+    const built = (builder as SyncReportBuilder)(
+      stored(),
+      { issue_count: 0, photo_count: 0 },
+      { becameSubmitted: false },
     );
+    expect(built.map((e) => e.event_type)).toEqual(['site.report.updated.v1']);
   });
 
   it('a newer save whose row vanished before the write is CONFLICT_REJECTED, not ACCEPTED', async () => {

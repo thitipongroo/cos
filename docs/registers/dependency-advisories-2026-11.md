@@ -1602,6 +1602,48 @@ gate's isolated run) checks the hash was not tested either; it ran 12.18.0 with 
 
 ## Open
 
+- **Closed — reports filed from the app notified no project manager.** Fixed on `fix/app-report-submit-notify`
+  (product-owner decision 2026-11-16: notify when a report first becomes SUBMITTED). The PM notification is routed
+  for `site.report.created.v1` only; sync emitted `submitted.v1` (analytics) and `updated.v1` (search). The app also
+  kept DRAFT/SUBMITTED on the device, so the server could not tell a draft from a submit.
+  - The app now sends `status` with each save (`report.tsx`). Sync accepts `DRAFT` or `SUBMITTED`; any other value is
+    dropped and logged (`sync.site_report.invalid_field`), and an item without one (an older app) leaves the status
+    as it is. The row's status only moves DRAFT → SUBMITTED, never back — in the natural-key/id edit's UPDATE and in
+    the create's ON CONFLICT.
+  - A SUBMITTED write reads the status it had in the same transaction (`FOR UPDATE`; on create also an advisory lock
+    on (tenant, project, day cast in SQL, submitter), since FOR UPDATE locks nothing before the row exists). The save
+    that first makes the report SUBMITTED adds `site.report.created.v1` (summary `''` when none, so the template
+    reads "submitted by X:  (report …)"; issue and photo counts at the write) after its `submitted.v1` or
+    `updated.v1`. A draft, a second submit, and a draft save after the submit add nothing.
+  - A SUBMITTED save that writes no fields — older than the stored save, overtaken before its write, or kept out by
+    the resolver — still promotes the submitter's own DRAFT (`promoteToSubmitted`, `WHERE status = 'DRAFT'`), with
+    the same two events: the status only moves up, so the order saves arrive in does not decide it (found by /doubt).
+    On the resolver path (an item with `last_known_modified_at`, which no client sends) a colleague's report is
+    neither given the status nor promoted.
+  - `submitted.v1` is unchanged: emitted by every create-path write, so once per report in sequence; two first saves
+    of one key in flight together both take the create path and count twice (as before this branch).
+  - Not covered: the web `POST /site/reports` sends no status, so its reports stay DRAFT and it emits `created.v1` on
+    every save, as before; an app SUBMITTED save for a day that already has a web report therefore notifies again.
+    `/site/reports/sync` (`SyncItemDto`, `forbidNonWhitelisted`) would reject an item carrying `status`; no client
+    calls it (the app uses `/sync/push`).
+  - What else now sees app reports as SUBMITTED: the AI gateway's site context
+    (`services/ai-gateway/reports/context/site.py`) counts them as submitted, and the app's report list and its
+    delta pull show the server's status. Nothing sets ACKNOWLEDGED (`updateReportStatus` has no caller); both CASEs
+    keep it.
+  - Verified: backend unit (4443) — the service's events per branch, the sanitizer, the stale-submit
+    promotion and the colleague guard; the repository's lock (day cast in SQL), read, `becameSubmitted` on create and
+    update, and `promoteToSubmitted`. `test/site-ops/08` on Postgres (24): draft → submit → submit → draft gives one
+    `created.v1` and status SUBMITTED, a first-save submit is announced with its payload, a submit arriving after a
+    later draft save is promoted once, no status stays DRAFT, two concurrent first submits give one `created.v1`, and
+    the upsert's rule directly. Controls fail them: no `created.v1` (4 unit), the status read ignored (1 unit on
+    create, 1 on update), no promotion (3 unit, 1 integration), the colleague guard removed (1), the resolver's
+    promotion removed (1), the day uncast in the lock key (1), the advisory lock removed (concurrency case, 3 runs of
+    3), each CASE allowing DRAFT back (1 each), HEAD's service and repository (3 of the 4 push cases then present).
+    The app's render case (the status in the payload, per button) fails on HEAD. apps/mobile: jest (1158), the render
+    suite (`jest.render.config.ts`, 1811 of 1812 — the one failure is `TaskCard` "reads LOW when the task is 2 days
+    past its date", untouched here; its `daysAgo` slices a UTC date, and it failed at 02:xx Bangkok time, so it looks
+    timezone-dependent — not checked further) and tsc. The full backend integration suite passed (186) before the
+    last two `08` cases were added.
 - **Closed — sample records on the `6a076c6d` pages were shown in English, and nothing said they were samples.**
   Fixed on `fix/web-sample-data-notice` (product-owner decision 2026-11-16: a notice, and the descriptive text
   translated). Nine pages render only module-level sample constants and read nothing from the API — the five this
@@ -3327,11 +3369,6 @@ status = 'ACTIVE'` and leaves `vendor_id` as it was. Inviting the same e-mail ad
   is unchanged). A recurrence with that warning confirms this path; one without it does not clear the lookup — it may
   have succeeded but missed the row (removed by another suite's cleanup, or read under a different tenant than RLS),
   which the log does not cover. The item stays open until a recurrence is diagnosed.
-- **Reports filed from the app notify no project manager.** The PM notification is routed for `site.report.created.v1`
-  only (`notification.consumer.ts`, `EVENT_ROLE_MAP`), which the web `POST /site/reports` emits; the app's reports go
-  through `/sync/push` and emit `site.report.submitted.v1`, which no notification route covers. Found by /doubt on
-  `fix/site-report-notification-counts`. Not fixed (routing it is a product decision: one notification per day's
-  report, not per save, given the app saves a draft and a submit separately).
 - **Messages written while no consumer runs, to a topic it never subscribed, are skipped.** A topic created between a
   consumer's last refresh and its shutdown (or while every replica is down) is subscribed at the next startup with the
   caller's `fromBeginning` (false for the backend), so the events that created it are read from the latest offset.

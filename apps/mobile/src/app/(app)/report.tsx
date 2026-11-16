@@ -175,6 +175,9 @@ export default function ReportScreen() {
       manpower_count: sentManpower,
       shift,
       manpower_lines: sentLines,
+      // The server stores it (DRAFT → SUBMITTED, never back) and tells the project manager the first time a
+      // report is SUBMITTED. It used to stay on this device only, so the server could not tell a draft from a submit.
+      status,
       client_submitted_at: new Date().toISOString(),
     });
 

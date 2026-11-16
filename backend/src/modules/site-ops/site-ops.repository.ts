@@ -36,6 +36,18 @@ export interface ReportAttachmentCounts {
   photo_count: number;
 }
 
+/**
+ * What a sync write did to the report's status (fix/app-report-submit-notify). `becameSubmitted` is true
+ * only when this write moved it to SUBMITTED for the first time — from no row or from DRAFT — which is
+ * when the project manager is told (site.report.created.v1). Read in the same transaction as the write.
+ */
+export interface ReportWriteMeta {
+  becameSubmitted: boolean;
+}
+
+/** A report status a sync item may set: the app's two buttons. ACKNOWLEDGED is the manager's, never sent. */
+export type SyncReportStatus = 'DRAFT' | 'SUBMITTED';
+
 @Injectable({ scope: Scope.REQUEST })
 export class SiteOpsRepository {
   constructor(
@@ -66,6 +78,27 @@ export class SiteOpsRepository {
 
   // ── Site Reports ───────────────────────────────────────────────────────
 
+  /**
+   * A report's issue and photo counts, in the caller's transaction — what site.report.created.v1 carries.
+   * Photos are the distinct live files whose metadata names this report; a photo filed under a device id
+   * that is not this report's id does not count.
+   */
+  private async attachmentCounts(
+    tx: Pick<Parameters<Parameters<TenantPrismaService['run']>[0]>[0], '$queryRaw'>,
+    reportId: string,
+  ): Promise<ReportAttachmentCounts> {
+    const [row] = await tx.$queryRaw<ReportAttachmentCounts[]>`
+      SELECT
+        (SELECT count(*)::int FROM site_ops.issues
+          WHERE report_id = ${reportId}::uuid AND tenant_id = ${this.tenantId}::uuid) AS issue_count,
+        (SELECT count(DISTINCT f.file_id)::int
+           FROM files.file_metadata m JOIN files.files f ON f.file_id = m.file_id
+          WHERE m.entity_type = 'site_report' AND m.entity_id = ${reportId}::uuid
+            AND m.tenant_id = ${this.tenantId}::uuid AND f.deleted_at IS NULL) AS photo_count
+    `;
+    return row ?? { issue_count: 0, photo_count: 0 };
+  }
+
   async createSiteReport(
     params: {
       report_id: string;
@@ -81,16 +114,48 @@ export class SiteOpsRepository {
       client_submitted_at: string | null;
       latitude?: number | null;
       longitude?: number | null;
+      /**
+       * Sync only. Absent: the column keeps its default (DRAFT) on insert and is left alone on conflict.
+       * Present: inserted as given; on conflict it only moves DRAFT → SUBMITTED, never back.
+       */
+      status?: SyncReportStatus;
     },
-    buildOutboxEvent?: (row: SiteReportRow, counts: ReportAttachmentCounts) => OutboxEventInput,
+    buildOutboxEvent?: (
+      row: SiteReportRow,
+      counts: ReportAttachmentCounts,
+      meta: ReportWriteMeta,
+    ) => OutboxEventInput | OutboxEventInput[],
     options: { attachmentCounts?: boolean } = {},
   ): Promise<SiteReportRow> {
+    const status = params.status ?? null;
     const rows = await this.db.run(async (tx) => {
+      // The status this (project, day, submitter) has before the write. FOR UPDATE alone locks nothing
+      // when there is no row yet, so two first saves landing together (a retry sent while the first is
+      // still running) would both read "no row" and both announce the submit; the advisory lock on the
+      // natural key makes the sync writes of one key take turns. Held to the end of the transaction.
+      // Only a SUBMITTED write can announce, so only it needs the lock and the read. The day is cast in
+      // SQL: '2026-11-16' and '2026-11-16T00:00:00Z' are one row and must be one lock.
+      const announcing = status === 'SUBMITTED';
+      if (announcing) {
+        await tx.$executeRaw`
+          SELECT pg_advisory_xact_lock(hashtextextended(
+            'site_report:' || ${this.tenantId} || ':' || ${params.project_id} || ':'
+              || (${params.report_date}::date)::text || ':' || ${params.submitted_by}, 0))
+        `;
+      }
+      const [before] = announcing
+        ? await tx.$queryRaw<Array<{ status: string }>>`
+            SELECT status FROM site_ops.site_reports
+            WHERE project_id = ${params.project_id}::uuid AND report_date = ${params.report_date}::date
+              AND submitted_by = ${params.submitted_by}::uuid AND tenant_id = ${this.tenantId}::uuid
+            FOR UPDATE
+          `
+        : [];
       const written = await tx.$queryRaw<SiteReportRow[]>`
         INSERT INTO site_ops.site_reports
           (report_id, project_id, tenant_id, report_date, submitted_by,
            summary, blockers, blocker_category, weather, manpower_count, shift,
-           client_submitted_at, latitude, longitude)
+           client_submitted_at, latitude, longitude, status)
         VALUES
           (${params.report_id}::uuid, ${params.project_id}::uuid,
            ${this.tenantId}::uuid, ${params.report_date}::date,
@@ -98,9 +163,12 @@ export class SiteOpsRepository {
            ${params.summary}, ${params.blockers ?? null}, ${params.blocker_category ?? null},
            ${params.weather}, ${params.manpower_count}, ${params.shift ?? null},
            ${params.client_submitted_at}::timestamptz,
-           ${params.latitude ?? null}::numeric, ${params.longitude ?? null}::numeric)
+           ${params.latitude ?? null}::numeric, ${params.longitude ?? null}::numeric,
+           COALESCE(${status}::varchar, 'DRAFT'))
         ON CONFLICT (project_id, report_date, submitted_by)
           DO UPDATE SET
+            status              = CASE WHEN ${status}::varchar = 'SUBMITTED' AND site_reports.status = 'DRAFT'
+                                       THEN 'SUBMITTED' ELSE site_reports.status END,
             summary             = EXCLUDED.summary,
             blockers            = EXCLUDED.blockers,
             blocker_category    = EXCLUDED.blocker_category,
@@ -116,24 +184,23 @@ export class SiteOpsRepository {
       // Built from the RETURNING row, not from params: on conflict the row keeps its first
       // report_id, so `params.report_id` names a report that does not exist.
       if (buildOutboxEvent && written[0]) {
-        // Counted in the same transaction as the write, only when the event carries them
-        // (site.report.created.v1). Photos are the distinct live files whose metadata names this
-        // report; a photo filed under a device id that is not this report's id does not count.
-        let counts: ReportAttachmentCounts = { issue_count: 0, photo_count: 0 };
-        if (options.attachmentCounts) {
-          const reportId = written[0].report_id;
-          const [row] = await tx.$queryRaw<ReportAttachmentCounts[]>`
-            SELECT
-              (SELECT count(*)::int FROM site_ops.issues
-                WHERE report_id = ${reportId}::uuid AND tenant_id = ${this.tenantId}::uuid) AS issue_count,
-              (SELECT count(DISTINCT f.file_id)::int
-                 FROM files.file_metadata m JOIN files.files f ON f.file_id = m.file_id
-                WHERE m.entity_type = 'site_report' AND m.entity_id = ${reportId}::uuid
-                  AND m.tenant_id = ${this.tenantId}::uuid AND f.deleted_at IS NULL) AS photo_count
-          `;
-          if (row) counts = row;
+        // Counted in the same transaction as the write, only when an event carries them
+        // (site.report.created.v1: the web create, or the app's first submit).
+        // Only a write that sent SUBMITTED can announce it: a write without a status (the web create) landing
+        // on a row the app already submitted changes nothing about who has been told.
+        const meta: ReportWriteMeta = {
+          becameSubmitted:
+            status === 'SUBMITTED' &&
+            written[0].status === 'SUBMITTED' &&
+            (before === undefined || before.status === 'DRAFT'),
+        };
+        const counts =
+          options.attachmentCounts || meta.becameSubmitted
+            ? await this.attachmentCounts(tx, written[0].report_id)
+            : { issue_count: 0, photo_count: 0 };
+        for (const event of [buildOutboxEvent(written[0], counts, meta)].flat()) {
+          await OutboxPublisher.write(tx, event);
         }
-        await OutboxPublisher.write(tx, buildOutboxEvent(written[0], counts));
       }
       return written;
     });
@@ -325,6 +392,34 @@ export class SiteOpsRepository {
    *
    * Returns null when no row matched, so a caller cannot report a write that did not land.
    */
+  /**
+   * DRAFT → SUBMITTED and nothing else, for a SUBMITTED save that writes no fields (older than the stored
+   * save, or overtaken): the status only moves up, so the order of saves does not decide it
+   * (fix/app-report-submit-notify). `WHERE status = 'DRAFT'` makes one caller the winner when two race.
+   * Returns the promoted row, or null when it was not DRAFT (or is gone); events only on a promotion.
+   */
+  async promoteToSubmitted(
+    reportId: string,
+    buildOutboxEvent: (row: SiteReportRow, counts: ReportAttachmentCounts) => OutboxEventInput[],
+  ): Promise<SiteReportRow | null> {
+    const rows = await this.db.run(async (tx) => {
+      const written = await tx.$queryRaw<SiteReportRow[]>`
+        UPDATE site_ops.site_reports
+        SET status = 'SUBMITTED', modified_at = now()
+        WHERE report_id = ${reportId}::uuid AND tenant_id = ${this.tenantId}::uuid AND status = 'DRAFT'
+        RETURNING *
+      `;
+      if (written[0]) {
+        const counts = await this.attachmentCounts(tx, written[0].report_id);
+        for (const event of buildOutboxEvent(written[0], counts)) {
+          await OutboxPublisher.write(tx, event);
+        }
+      }
+      return written;
+    });
+    return rows[0] ?? null;
+  }
+
   async updateSiteReport(
     reportId: string,
     params: {
@@ -345,16 +440,33 @@ export class SiteOpsRepository {
        * Null / absent: no ordering condition.
        */
       notNewerThan?: string | null;
+      /** Sync only: moves DRAFT → SUBMITTED, never back; absent leaves the status alone. */
+      status?: SyncReportStatus;
     },
     /** Builder over the UPDATEd row, written in the same transaction — skipped when nothing matched. */
-    buildOutboxEvent?: (row: SiteReportRow) => OutboxEventInput,
+    buildOutboxEvent?: (
+      row: SiteReportRow,
+      counts: ReportAttachmentCounts,
+      meta: ReportWriteMeta,
+    ) => OutboxEventInput | OutboxEventInput[],
   ): Promise<SiteReportRow | null> {
     const setCategory = params.blocker_category !== undefined;
     const setShift = params.shift !== undefined;
+    const status = params.status ?? null;
     const rows = await this.db.run(async (tx) => {
+      const [before] =
+        status === 'SUBMITTED'
+          ? await tx.$queryRaw<Array<{ status: string }>>`
+            SELECT status FROM site_ops.site_reports
+            WHERE report_id = ${reportId}::uuid AND tenant_id = ${this.tenantId}::uuid
+            FOR UPDATE
+          `
+          : [];
       const written = await tx.$queryRaw<SiteReportRow[]>`
         UPDATE site_ops.site_reports
-        SET summary             = ${params.summary},
+        SET status              = CASE WHEN ${status}::varchar = 'SUBMITTED' AND status = 'DRAFT'
+                                       THEN 'SUBMITTED' ELSE status END,
+            summary             = ${params.summary},
             blockers            = ${params.blockers},
             weather             = ${params.weather},
             manpower_count      = ${params.manpower_count},
@@ -375,7 +487,18 @@ export class SiteOpsRepository {
         RETURNING *
       `;
       if (buildOutboxEvent && written[0]) {
-        await OutboxPublisher.write(tx, buildOutboxEvent(written[0]));
+        const meta: ReportWriteMeta = {
+          becameSubmitted:
+            status === 'SUBMITTED' &&
+            written[0].status === 'SUBMITTED' &&
+            before?.status === 'DRAFT',
+        };
+        const counts = meta.becameSubmitted
+          ? await this.attachmentCounts(tx, written[0].report_id)
+          : { issue_count: 0, photo_count: 0 };
+        for (const event of [buildOutboxEvent(written[0], counts, meta)].flat()) {
+          await OutboxPublisher.write(tx, event);
+        }
       }
       return written;
     });
