@@ -22,7 +22,25 @@ function ctxFor(req: VendorRequest): ExecutionContext {
   return { switchToHttp: () => ({ getRequest: () => req }) } as unknown as ExecutionContext;
 }
 
-function build(relationship: unknown = { vendor_id: 'ven-1' }, clsActive = true) {
+/**
+ * TenantPrismaService double: run() hands a tx whose $queryRaw answers whether the vendor is ACTIVE, and records the
+ * tenant CLS held at the moment it was called — the real run() resolves its database from exactly that.
+ */
+function tenantDb(vendorActive = true, store?: Map<string, unknown>) {
+  const queryRaw = jest.fn().mockResolvedValue([{ found: vendorActive }]);
+  const tenantAtCall: unknown[] = [];
+  const run = jest.fn((fn: (tx: unknown) => unknown) => {
+    tenantAtCall.push(store?.get(CLS_TENANT_ID));
+    return fn({ $queryRaw: queryRaw });
+  });
+  return { run, queryRaw, tenantAtCall };
+}
+
+function build(
+  relationship: unknown = { vendor_id: 'ven-1' },
+  clsActive = true,
+  vendorActive = true,
+) {
   const store = new Map<string, unknown>();
   const cls = { isActive: () => clsActive, set: (k: string, v: unknown) => void store.set(k, v) };
   const magicLink = {
@@ -30,11 +48,55 @@ function build(relationship: unknown = { vendor_id: 'ven-1' }, clsActive = true)
     verifySessionToken: jest.fn().mockReturnValue('vid-1'),
   };
   const identities = { findActiveRelationship: jest.fn().mockResolvedValue(relationship) };
-  const guard = new VendorAuthGuard(cls as never, magicLink as never, identities as never);
-  return { guard, magicLink, identities, store };
+  const db = tenantDb(vendorActive, store);
+  const guard = new VendorAuthGuard(
+    cls as never,
+    magicLink as never,
+    identities as never,
+    db as never,
+  );
+  return { guard, magicLink, identities, store, db };
 }
 
 describe('VendorAuthGuard', () => {
+  // fix/vendor-portal-inactive-vendor: a vendor deactivated (soft-deleted) after its session was issued keeps no
+  // standing. The vendor row is in the tenant's database, read after publish() has set the tenant context.
+  describe('Tier 2 — the vendor must still be ACTIVE', () => {
+    const tier2Req = () =>
+      ({
+        method: 'GET',
+        headers: { authorization: 'Bearer s', 'x-vendor-tenant-id': TENANT },
+      }) as unknown as VendorRequest;
+
+    it('refuses a deactivated vendor with 403, after the tenant context is published', async () => {
+      const { guard, db, store } = build({ vendor_id: 'ven-1' }, true, /* vendorActive */ false);
+      await expect(guard.canActivate(ctxFor(tier2Req()))).rejects.toThrow(
+        new ForbiddenException('No active trading relationship with this tenant'),
+      );
+      // Published first, so run() resolved the tenant's own database.
+      expect(db.tenantAtCall).toEqual([TENANT]);
+      expect(store.get(CLS_TENANT_ID)).toBe(TENANT);
+      const sql = (db.queryRaw.mock.calls[0]![0] as string[]).join('?').replace(/\s+/g, ' ');
+      expect(sql).toContain(
+        'FROM procurement.vendors WHERE vendor_id = ?::uuid AND is_active = true',
+      );
+      expect(db.queryRaw.mock.calls[0]!.slice(1)).toEqual(['ven-1']);
+    });
+
+    it('lets an ACTIVE vendor through', async () => {
+      const { guard, db } = build();
+      await expect(guard.canActivate(ctxFor(tier2Req()))).resolves.toBe(true);
+      expect(db.run).toHaveBeenCalledTimes(1);
+    });
+
+    it('does not look the vendor up on Tier 1 (the service does, in resolveVendorId)', async () => {
+      const { guard, db } = build();
+      const req = { params: { token: 'T' }, headers: {} } as unknown as VendorRequest;
+      await expect(guard.canActivate(ctxFor(req))).resolves.toBe(true);
+      expect(db.run).not.toHaveBeenCalled();
+    });
+  });
+
   describe('Tier 1 — invitation magic-link', () => {
     it('publishes tenant + invitation from the :token route param, into CLS and the request', async () => {
       const { guard, magicLink, store } = build();
@@ -151,7 +213,7 @@ describe('VendorAuthGuard', () => {
 });
 
 describe('VendorAuthGuard — read-only trials (§7.10, ADR-109)', () => {
-  function buildWith(status: string | null, flagOn = true) {
+  function buildWith(status: string | null, flagOn = true, vendorActive = true) {
     const cls = { isActive: () => false, set: jest.fn() };
     const magicLink = {
       verifyInvitationToken: jest.fn().mockReturnValue({ tenantId: TENANT, invitationId: 'inv-1' }),
@@ -166,6 +228,7 @@ describe('VendorAuthGuard — read-only trials (§7.10, ADR-109)', () => {
       cls as never,
       magicLink as never,
       identities as never,
+      tenantDb(vendorActive) as never,
       flags as never,
     );
     return { guard, identities, flags };
@@ -189,6 +252,16 @@ describe('VendorAuthGuard — read-only trials (§7.10, ADR-109)', () => {
       error: expect.objectContaining({ code: 'COS-PLAN-003', messageKey: 'trial.error.readOnly' }),
     });
     expect(flags.isEnabled).toHaveBeenCalledWith('s1.tenant.trial-lifecycle', { tenantId: TENANT });
+  });
+
+  // fix/vendor-portal-inactive-vendor (/doubt): the vendor check comes before the trial check, so a deactivated
+  // vendor gets the same 403 as a revoked one and learns nothing of the tenant's plan.
+  it('Tier 2: a deactivated vendor writing into an EXPIRED tenant gets 403, not the trial error', async () => {
+    const { guard, identities } = buildWith('EXPIRED', true, /* vendorActive */ false);
+    await expect(guard.canActivate(ctxFor(tier2('POST')))).rejects.toThrow(
+      new ForbiddenException('No active trading relationship with this tenant'),
+    );
+    expect(identities.tenantSubscriptionStatus).not.toHaveBeenCalled();
   });
 
   it('lets a read through without looking the tenant up', async () => {
@@ -216,6 +289,7 @@ describe('VendorAuthGuard — read-only trials (§7.10, ADR-109)', () => {
         verifyInvitationToken: () => ({ tenantId: TENANT, invitationId: 'i' }),
       } as never,
       identities as never,
+      tenantDb() as never,
     );
     await expect(guard.canActivate(ctxFor(tier1('POST')))).resolves.toBe(true);
   });

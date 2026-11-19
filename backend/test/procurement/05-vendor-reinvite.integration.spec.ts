@@ -403,4 +403,56 @@ describe('Vendor invitations: one e-mail, one vendor per tenant (real database)'
     expect(await relationshipsOf(email)).toEqual([{ vendor_id: vendorA, status: 'ACTIVE' }]);
     expect(await invitationsFor(rfq)).toBe(1); // the one issued before it was disabled
   });
+
+  // fix/vendor-portal-inactive-vendor: a vendor deactivated after it was invited keeps no standing — on the
+  // invitation's magic link (Tier 1) or with the session it was given on quoting (Tier 2).
+  it('a vendor deactivated after it was invited can no longer open, quote or use its session', async () => {
+    const vendor = await createVendor();
+    const rfq = await seedRfq();
+    const email = 'mint.reinvite@example.com';
+    const tokenOf = async (): Promise<string> => {
+      const res = await invite(rfq, vendor, email);
+      expect(res.status).toBe(201);
+      return (res.body as { magicLinkToken: string }).magicLinkToken;
+    };
+    const first = await tokenOf();
+    const second = await tokenOf(); // ACTIVE: re-invited as before
+    const quote = (token: string) =>
+      http()
+        .post(`/api/v1/vendor/rfq/${encodeURIComponent(token)}/quotation`)
+        .send({ total_amount: '1000.00', currency_code: 'THB', validity_days: 30 });
+    const quoted = await quote(first);
+    expect(quoted.status).toBe(201);
+    const session = (quoted.body as { vendorSession: string }).vendorSession;
+    const tier2 = () =>
+      http()
+        .get('/api/v1/vendor/quotations')
+        .set('authorization', `Bearer ${session}`)
+        .set('x-vendor-tenant-id', TENANT_ID);
+    expect((await tier2()).status).toBe(200);
+    expect((await http().get(`/api/v1/vendor/rfq/${encodeURIComponent(second)}`)).status).toBe(200);
+
+    const gone = await http()
+      .delete(`/api/v1/procurement/vendors/${vendor}`)
+      .set('x-test-role', 'PROC_MANAGER');
+    expect(gone.status).toBe(204);
+
+    const opened = await http().get(`/api/v1/vendor/rfq/${encodeURIComponent(second)}`);
+    expect(opened.status).toBe(403);
+    expect((opened.body as { error: { message: string } }).error.message).toBe(
+      'COS-VND-005: No active trading relationship',
+    );
+    const again = await quote(second);
+    expect(again.status).toBe(403);
+    const quotations = await infra.prisma.$queryRawUnsafe<Array<{ n: bigint }>>(
+      `SELECT count(*) AS n FROM procurement.quotations WHERE rfq_id = $1::uuid`,
+      rfq,
+    );
+    expect(Number(quotations[0]!.n)).toBe(1); // the one quoted while ACTIVE
+    const session403 = await tier2();
+    expect(session403.status).toBe(403);
+    expect((session403.body as { error: { message: string } }).error.message).toBe(
+      'No active trading relationship with this tenant',
+    );
+  });
 });

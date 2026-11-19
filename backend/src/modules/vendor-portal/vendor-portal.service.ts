@@ -230,7 +230,9 @@ export class VendorPortalService {
       vendorIdentityId,
       this.tenantId,
     );
-    if (!relationship) {
+    // A relationship to a vendor deactivated (soft-deleted) since the invitation is not an active one: the vendor
+    // row is in the tenant's database, read here with the tenant context set (fix/vendor-portal-inactive-vendor).
+    if (!relationship || !(await this.repo.vendorExists(relationship.vendor_id))) {
       throw new ForbiddenException('COS-VND-005: No active trading relationship');
     }
     return relationship.vendor_id;

@@ -9,6 +9,7 @@
 
 import { Injectable, Scope, Inject } from '@nestjs/common';
 import { REQUEST } from '@nestjs/core';
+import { activeVendorExists } from './active-vendor';
 import { TenantPrismaService } from '../tenant/prisma/tenant-prisma.service';
 import { clsTenantId } from '../../shared/context/cls-context';
 
@@ -144,16 +145,8 @@ export class VendorPortalRepository {
    * /procurement/vendors/:id), which the vendor lists already hide; a deactivated vendor is not one to invite
    * (fix/vendor-invite-inactive).
    */
-  async vendorExists(vendorId: string): Promise<boolean> {
-    const rows = await this.db.run(
-      (tx) =>
-        tx.$queryRaw<Array<{ found: boolean }>>`
-        SELECT EXISTS (
-          SELECT 1 FROM procurement.vendors WHERE vendor_id = ${vendorId}::uuid AND is_active = true
-        ) AS found
-      `,
-    );
-    return rows[0]?.found === true;
+  vendorExists(vendorId: string): Promise<boolean> {
+    return this.db.run((tx) => activeVendorExists(tx, vendorId));
   }
 
   async findRfq(rfqId: string): Promise<RfqRow | null> {

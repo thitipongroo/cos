@@ -1602,6 +1602,29 @@ gate's isolated run) checks the hash was not tested either; it ran 12.18.0 with 
 
 ## Open
 
+- **Closed — a vendor deactivated after it was invited kept using the portal.** Fixed on
+  `fix/vendor-portal-inactive-vendor` (found by /doubt on `fix/vendor-invite-inactive`). After `DELETE
+  /procurement/vendors/:id` (the soft delete), an invitation issued before still opened the RFQ and quoted — the
+  quotation filed under the deactivated `vendor_id` — and the Tier-2 session kept working: both checked only the
+  relationship and the identity, which live in the platform database, while the vendor row lives in the tenant's (a
+  separate database for a dedicated tenant, D56).
+  - Tier 1: `resolveVendorId` (used by `openRfq` and `submitQuotation`) also requires the vendor ACTIVE through
+    `VendorPortalRepository.vendorExists` — 403 `COS-VND-005` "No active trading relationship" otherwise, before the
+    RFQ is read or a quotation written. Tier 2: `VendorAuthGuard`, after `publish()` has set the tenant context, reads
+    the vendor's `is_active` through `TenantPrismaService` (which resolves the tenant's database from CLS) — 403 "No
+    active trading relationship with this tenant" otherwise — and only then checks a trial's read-only state, so a
+    refused vendor learns nothing of the tenant's plan (found by /doubt). Both sides use one query,
+    `activeVendorExists` (`vendor-portal/active-vendor.ts`). No new error code; `COS-VND-005`'s trigger in
+    `docs/api/error-codes.md` names the case. The Tier-2 refusal still carries no code (as for a revoked relationship).
+  - Verified: vendor-portal unit (109) — the guard refuses a deactivated vendor with the tenant already in CLS when
+    its query runs, lets an ACTIVE one through, does not query on Tier 1, and answers a deactivated vendor's write into
+    an EXPIRED tenant with 403, not the trial error (fails with the trial check moved back first); the service
+    refuses opening and quoting with nothing written;
+    `test/procurement/05-vendor-reinvite` (11): two invitations, a quote and a Tier-2 request while ACTIVE (201/200),
+    then after deactivation through the API the second invitation's open and quote → 403 `COS-VND-005` (still one
+    quotation) and the session → 403. HEAD's guard fails it at the Tier-2 request, HEAD's service at the open; the
+    unit cases fail on HEAD too. Backend unit (4463), tsc, eslint, prettier and markdownlint pass.
+
 - **Closed — a deactivated vendor, or a disabled vendor identity, could still be invited.** Fixed on
   `fix/vendor-invite-inactive` (found by /doubt on `fix/vendor-reinvite-refuse` and `fix/vendor-revoked-reinvite`).
   `vendorExists` checked only that the vendor row existed, though `is_active = false` is the vendor soft delete
@@ -1612,7 +1635,8 @@ gate's isolated run) checks the hash was not tested either; it ran 12.18.0 with 
     `is_active = true`); a disabled identity answers 409 `COS-VND-009` ("This e-mail is disabled across the vendor
     network") before any relationship, token or invitation. Listed in `docs/api/error-codes.md` and the buyer route's
     409 text in `vendor.openapi.yaml`.
-  - Not changed — only NEW invitations are refused (found by /doubt): a vendor invited and then deactivated still
+  - Not changed — only NEW invitations are refused (found by /doubt; refused since on
+    `fix/vendor-portal-inactive-vendor`): a vendor invited and then deactivated still
     opens the RFQ, quotes through the portal (filed under the deactivated `vendor_id`) and uses its Tier-2 session,
     since `resolveVendorId` and the Tier-2 guard check the relationship and the identity in the platform database, not
     `procurement.vendors.is_active` in the tenant's (a separate database for a dedicated tenant, D56) — a separate

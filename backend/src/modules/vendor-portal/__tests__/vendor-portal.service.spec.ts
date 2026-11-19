@@ -266,6 +266,30 @@ describe('VendorPortalService', () => {
   });
 
   describe('submitQuotation', () => {
+    // fix/vendor-portal-inactive-vendor: a vendor deactivated (soft-deleted) after the invitation was issued has no
+    // active relationship any more — neither the RFQ nor a quotation, and nothing is filed under it.
+    it('403 COS-VND-005 for a vendor deactivated since the invitation: no quotation written', async () => {
+      const { service, repo } = build({ vendorExists: false });
+      await expect(
+        service.submitQuotation('TOK', 'inv-1', {
+          total_amount: '100.00',
+          currency_code: 'THB',
+          validity_days: 30,
+        }),
+      ).rejects.toThrow('COS-VND-005: No active trading relationship');
+      expect(repo.vendorExists).toHaveBeenCalledWith('ven-1');
+      expect(repo.createQuotation).not.toHaveBeenCalled();
+      expect(repo.markInvitationResponded).not.toHaveBeenCalled();
+    });
+
+    it('403 COS-VND-005 on opening the RFQ for a deactivated vendor, before the RFQ is read', async () => {
+      const { service, repo } = build({ vendorExists: false });
+      await expect(service.openRfq('TOK', 'inv-1')).rejects.toThrow(
+        'COS-VND-005: No active trading relationship',
+      );
+      expect(repo.findRfq).not.toHaveBeenCalled();
+    });
+
     const dto = { total_amount: '100.00', currency_code: 'THB', validity_days: 30 };
 
     it('403 when invitation has no vendor identity', async () => {
