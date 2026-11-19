@@ -88,6 +88,7 @@ jest.mock('@temporalio/client', () => ({
 const mockRepo = {
   createVendor: jest.fn(),
   findVendorById: jest.fn(),
+  projectExists: jest.fn(),
   listVendors: jest.fn(),
   listVendorDirectory: jest.fn(),
   deactivateVendor: jest.fn(),
@@ -422,6 +423,12 @@ describe('Quotation comparison', () => {
 // ── PO financial calculation tests ────────────────────────────────────────
 
 describe('Purchase Order financial calculations', () => {
+  // fix/proc-po-foreign-ids: the vendor (ACTIVE) and the project are the tenant's own.
+  beforeEach(() => {
+    mockRepo.findVendorById.mockResolvedValue(vendorFixture);
+    mockRepo.projectExists.mockResolvedValue(true);
+  });
+
   it('createPurchaseOrder — rejects when line totals do not match total_amount', async () => {
     await expect(
       service.createPurchaseOrder({
@@ -1618,7 +1625,80 @@ describe('exact contracts — quotations', () => {
   });
 });
 
+describe("createPurchaseOrder — the ids it names are the tenant's own (fix/proc-po-foreign-ids)", () => {
+  const dto = (over: Record<string, unknown> = {}) =>
+    ({
+      vendor_id: 'vendor-uuid-001',
+      project_id: 'project-uuid-001',
+      po_number: 'PO-001',
+      total_amount: '60000.0000',
+      currency_code: 'THB',
+      delivery_date: '2026-09-01',
+      line_items: [
+        { description: 'Concrete', quantity: '10.0000', unit: 'm3', unit_price: '6000.0000' },
+      ],
+      ...over,
+    }) as never;
+
+  beforeEach(() => {
+    mockRepo.findVendorById.mockResolvedValue(vendorFixture);
+    mockRepo.findRfqById.mockResolvedValue(rfqPublishedFixture);
+    mockRepo.projectExists.mockResolvedValue(true);
+  });
+
+  it.each([
+    [
+      "an absent (or another tenant's) vendor",
+      () => mockRepo.findVendorById.mockResolvedValue(null),
+      {},
+      'Vendor vendor-uuid-001 not found',
+    ],
+    [
+      'a deactivated vendor',
+      () => mockRepo.findVendorById.mockResolvedValue({ ...vendorFixture, is_active: false }),
+      {},
+      'Vendor vendor-uuid-001 not found',
+    ],
+    [
+      "an absent (or another tenant's) RFQ",
+      () => mockRepo.findRfqById.mockResolvedValue(null),
+      { rfq_id: 'rfq-x' },
+      'RFQ rfq-x not found',
+    ],
+    [
+      "an absent (or another tenant's) project",
+      () => mockRepo.projectExists.mockResolvedValue(false),
+      {},
+      'Project project-uuid-001 not found',
+    ],
+  ])('404 for %s, and nothing written', async (_n, arrange, over, message) => {
+    arrange();
+    await expect(service.createPurchaseOrder(dto(over))).rejects.toThrow(
+      new NotFoundException(message),
+    );
+    expect(mockRepo.createPurchaseOrderWithLineItems).not.toHaveBeenCalled();
+  });
+
+  it('asks for the RFQ only when one is named', async () => {
+    mockRepo.createPurchaseOrderWithLineItems.mockResolvedValue({
+      po: poFixture,
+      line_items: lineItemFixtures,
+    });
+    mockRepo.setPoWorkflowId.mockResolvedValue(undefined);
+    await service.createPurchaseOrder(dto());
+    expect(mockRepo.findRfqById).not.toHaveBeenCalled();
+    expect(mockRepo.projectExists).toHaveBeenCalledWith('project-uuid-001');
+    expect(mockRepo.createPurchaseOrderWithLineItems).toHaveBeenCalled();
+  });
+});
+
 describe('exact contracts — createPurchaseOrder', () => {
+  // fix/proc-po-foreign-ids: the vendor (ACTIVE) and the project are the tenant's own.
+  beforeEach(() => {
+    mockRepo.findVendorById.mockResolvedValue(vendorFixture);
+    mockRepo.projectExists.mockResolvedValue(true);
+  });
+
   const poDto = {
     vendor_id: 'vendor-uuid-001',
     project_id: 'project-uuid-001',

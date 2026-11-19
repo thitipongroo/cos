@@ -14,6 +14,7 @@ import type { OutboxEventInput } from '../../shared/outbox/outbox.types';
 import type { PrismaClient } from '@prisma/client';
 import { applyCap, capLimit } from '../../shared/pagination/list-cap';
 import { clsTenantId } from '../../shared/context/cls-context';
+import { projectExistsInTenant } from '../project/public/parent-existence';
 
 // Row types live in ./procurement.rows; imported here for the method signatures below and re-exported
 // so existing `from './procurement.repository'` type imports (service, specs) keep resolving.
@@ -330,6 +331,11 @@ export class ProcurementRepository {
         RETURNING *`,
     );
     return rows[0]!;
+  }
+
+  /** A project of this tenant (fix/proc-po-foreign-ids: a PO's project_id has no foreign key at all). */
+  async projectExists(projectId: string): Promise<boolean> {
+    return projectExistsInTenant(this.db, projectId, this.tenantId);
   }
 
   async findRfqById(rfq_id: string): Promise<RfqRow | null> {

@@ -1602,20 +1602,36 @@ gate's isolated run) checks the hash was not tested either; it ran 12.18.0 with 
 
 ## Open
 
-- **Procurement and finance writes take foreign ids unchecked: a record can name another tenant's row, or a
-  deactivated vendor.** A foreign key is checked without RLS, so — as measured for quotations on
+- **Closed — a purchase order took its vendor, RFQ and project ids unchecked.** Fixed on `fix/proc-po-foreign-ids`
+  (product-owner decision 2026-11-20: the RFQ is checked to be the tenant's only — no AWARDED or awarded-vendor rule).
+  `createPurchaseOrder` passed them to the INSERT; `vendor_id` and `rfq_id` have foreign keys, checked without RLS,
+  and `project_id` none. Measured on HEAD, `POST /procurement/purchase-orders` with each bad id: a deactivated
+  vendor, another tenant's vendor, RFQ or project, and an unknown project each WROTE the PO (then answered 500 at the
+  Temporal workflow start, which this harness lacks); an unknown vendor or RFQ answered 500 on the foreign key, no row.
+  - The checks run after the body's own arithmetic and before anything is written: the vendor (`findVendorById`,
+    tenant-scoped, ACTIVE) → else 404 `Vendor <id> not found`; `rfq_id` when given (`findRfqById`) → else 404 `RFQ
+    <id> not found`; the project (`projectExistsInTenant`, new `ProcurementRepository.projectExists`) → else 404
+    `Project <id> not found`. The route's OpenAPI lists the 404 and the ValidationPipe 400.
+  - Verified: procurement unit (311) — each refusal with no INSERT, and the RFQ looked up only when named;
+    `test/procurement/04-procurement` (20): all seven bad ids → 404 with no PO row; the tenant's own active vendor,
+    RFQ and project → the PO row written (status left unasserted: the workflow start needs Temporal). HEAD's service
+    fails all seven (500) and five unit cases. Backend tsc, eslint, prettier, OpenAPI validation and markdownlint pass.
+
+- **Procurement and finance writes take foreign ids unchecked: a record can name another tenant's row, or any
+  UUID.** A foreign key is checked without RLS, so — as measured for quotations on
   `fix/proc-quotation-vendor-check` (another tenant's vendor id → 201 on HEAD, an unknown one → 500) — an id passed
   through unchecked can reference another tenant's row. Read from code (found on that branch and by its /doubt), not
   yet measured:
-  - `createPurchaseOrder` (`procurement.service.ts:374-415`): `vendor_id` (FK → `vendors`, so another tenant's or a
-    deactivated vendor), `rfq_id` (FK → `rfqs`; nor is the RFQ checked AWARDED or its awarded vendor matched) and
-    `project_id` (no FK, no check). Invoices inherit the PO's vendor (`receiveInvoice` copies `po.vendor_id`), and
-    `procurement.invoice.received.v1` carries it.
+  - ~~`createPurchaseOrder`~~ — checked since `fix/proc-po-foreign-ids` (Closed entry above): vendor (ACTIVE), RFQ
+    and project must be the tenant's. Invoices inherit the PO's vendor, so new POs' invoices are covered; PO rows
+    written before (HEAD wrote cross-tenant ids, measured there) were not re-checked, and a vendor deactivated after
+    its PO still receives invoices on it.
   - `createRfq` (`procurement.service.ts:209-216`): `pr_id` (FK → `purchase_requests`).
   - `FinanceService.createContract` (`finance.service.ts:544-553`): `customer_id` (FK → `finance.customers`) and
     `vendor_id` (no FK at all, `20260619000001_ar_billing`) — any UUID.
   An unknown id behind a foreign key answers 500 (23503 is not mapped). Medium: it needs a leaked id, and the reads
-  join under RLS, so no other tenant's data was found disclosed; a deactivated vendor on a PO is the likelier case.
+  join under RLS, so no other tenant's data was found disclosed. Of what remains, a contract's `vendor_id` — no
+  foreign key, any UUID, a deactivated vendor included — is the likelier case.
 - **A second quotation for the same RFQ and vendor answers 500.** `uq_quotation_rfq_vendor` raises 23505 and nothing
   maps it — on the buyer route and on the vendor portal's `createQuotation` (a vendor answering a second invitation to
   the same RFQ). Found by /doubt on `fix/proc-quotation-vendor-check`.

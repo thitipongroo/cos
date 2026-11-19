@@ -22,6 +22,10 @@ const TENANT_ID = 'ee000003-0001-4000-8000-000000000001';
 const ADMIN_ID = 'ee000003-0002-4000-8000-000000000001';
 const PROC_ID = 'ee000003-0003-4000-8000-000000000001';
 const PM_ID = 'ee000003-0004-4000-8000-000000000001';
+// A second tenant, whose vendor / project / RFQ ids a PO of the first must not be able to name.
+const OTHER_TOKEN = 'Bearer test-other-tenant-token';
+const OTHER_TENANT_ID = 'ee000003-0001-4000-8000-000000000002';
+const OTHER_ADMIN_ID = 'ee000003-0002-4000-8000-000000000002';
 
 describe('Procurement Integration (Phase 5)', () => {
   let infra: IntegrationInfra;
@@ -32,6 +36,10 @@ describe('Procurement Integration (Phase 5)', () => {
     await infra.prisma.$executeRaw`
       INSERT INTO platform.tenants (tenant_id, tenant_code, tenant_name, keycloak_realm, plan_type, is_active)
       VALUES (${TENANT_ID}::uuid, 'acme_corp', 'Procurement Integration Tenant', 'proc-realm', 'STARTER'::platform."PlanType", true)
+    `;
+    await infra.prisma.$executeRaw`
+      INSERT INTO platform.tenants (tenant_id, tenant_code, tenant_name, keycloak_realm, plan_type, is_active)
+      VALUES (${OTHER_TENANT_ID}::uuid, 'other_corp', 'Procurement Other Tenant', 'construction-os', 'STARTER'::platform."PlanType", true)
     `;
 
     const module: TestingModule = await Test.createTestingModule({
@@ -47,6 +55,13 @@ describe('Procurement Integration (Phase 5)', () => {
               user_id: ADMIN_ID,
               role: 'TENANT_ADMIN',
               tenantCode: 'acme_corp',
+            };
+          if (auth === OTHER_TOKEN)
+            return {
+              tenant_id: OTHER_TENANT_ID,
+              user_id: OTHER_ADMIN_ID,
+              role: 'TENANT_ADMIN',
+              tenantCode: 'other_corp',
             };
           if (auth === PROC_TOKEN)
             return {
@@ -229,6 +244,144 @@ describe('Procurement Integration (Phase 5)', () => {
         .get('/api/v1/procurement/vendors/ee000003-9999-4000-8000-000000000999/quotations')
         .set('Authorization', PROC_TOKEN)
         .expect(404);
+    });
+  });
+
+  // fix/proc-po-foreign-ids: a PO names the tenant's own vendor (ACTIVE), RFQ and project. The ids went straight to
+  // the INSERT — vendor_id and rfq_id have foreign keys, checked without RLS, and project_id has none. The checks run
+  // before the INSERT; the Temporal workflow start after it has no server in this harness, so a valid PO is shown to
+  // have passed them by its row, not by its status.
+  describe("POST /api/v1/procurement/purchase-orders — the ids are the tenant's own", () => {
+    const UNKNOWN = 'ee000003-9999-4000-8000-00000000abcd';
+    let seq = 0;
+    const ids = {
+      vendor: '',
+      inactiveVendor: '',
+      project: '',
+      rfq: '',
+      otherVendor: '',
+      otherProject: '',
+      otherRfq: '',
+    };
+
+    const vendorFor = async (token: string): Promise<string> => {
+      seq += 1;
+      const res = await request(app.getHttpServer())
+        .post('/api/v1/procurement/vendors')
+        .set('Authorization', token)
+        .send(buildCreateVendorDto({ vendor_code: `POV-${seq}`, vendor_name: `PO Vendor ${seq}` }));
+      expect(res.status).toBe(201);
+      return (res.body as { vendor_id: string }).vendor_id;
+    };
+    const projectFor = async (token: string): Promise<string> => {
+      seq += 1;
+      const res = await request(app.getHttpServer())
+        .post('/api/v1/projects')
+        .set('Authorization', token)
+        .send({
+          project_code: `PO-HOST-${seq}`,
+          project_name: `PO Host ${seq}`,
+          project_type: 'COMMERCIAL',
+          start_date: '2019-01-01',
+          end_date: '2020-01-01',
+        });
+      expect([200, 201]).toContain(res.status);
+      return (res.body as { project_id: string }).project_id;
+    };
+    /**
+     * POST /procurement/rfqs starts a Temporal workflow, so the RFQ is seeded — PUBLISHED, not AWARDED: the decision
+     * is that a PO's RFQ need only be the tenant's, and the valid case would hide an AWARDED rule added later.
+     */
+    const rfqFor = async (tenantId: string, projectId: string, userId: string): Promise<string> => {
+      seq += 1;
+      const rows = await infra.prisma.$queryRawUnsafe<Array<{ rfq_id: string }>>(
+        `INSERT INTO procurement.rfqs (rfq_id, project_id, tenant_id, rfq_number, status, deadline, created_by)
+         VALUES (gen_random_uuid(), $1::uuid, $2::uuid, $3, 'PUBLISHED', now() + interval '7 days', $4::uuid)
+         RETURNING rfq_id::text AS rfq_id`,
+        projectId,
+        tenantId,
+        `RFQ-PO-${seq}`,
+        userId,
+      );
+      return rows[0]!.rfq_id;
+    };
+
+    beforeAll(async () => {
+      ids.vendor = await vendorFor(PROC_TOKEN);
+      ids.inactiveVendor = await vendorFor(PROC_TOKEN);
+      await request(app.getHttpServer())
+        .delete(`/api/v1/procurement/vendors/${ids.inactiveVendor}`)
+        .set('Authorization', ADMIN_TOKEN)
+        .expect(204);
+      ids.project = await projectFor(ADMIN_TOKEN);
+      ids.rfq = await rfqFor(TENANT_ID, ids.project, ADMIN_ID);
+      ids.otherVendor = await vendorFor(OTHER_TOKEN);
+      ids.otherProject = await projectFor(OTHER_TOKEN);
+      ids.otherRfq = await rfqFor(OTHER_TENANT_ID, ids.otherProject, OTHER_ADMIN_ID);
+    });
+
+    const po = (over: Partial<{ vendor_id: string; project_id: string; rfq_id: string }>) => {
+      seq += 1;
+      const poNumber = `PO-FK-${seq}`;
+      return {
+        poNumber,
+        send: () =>
+          request(app.getHttpServer())
+            .post('/api/v1/procurement/purchase-orders')
+            .set('Authorization', PROC_TOKEN)
+            .send({
+              vendor_id: ids.vendor,
+              project_id: ids.project,
+              po_number: poNumber,
+              total_amount: '60000.0000',
+              currency_code: 'THB',
+              delivery_date: '2026-12-31',
+              line_items: [
+                {
+                  description: 'Concrete',
+                  quantity: '10.0000',
+                  unit: 'm3',
+                  unit_price: '6000.0000',
+                },
+              ],
+              ...over,
+            }),
+      };
+    };
+    const poRows = async (poNumber: string): Promise<number> => {
+      const rows = await infra.prisma.$queryRawUnsafe<Array<{ n: bigint }>>(
+        `SELECT count(*) AS n FROM procurement.purchase_orders WHERE po_number = $1`,
+        poNumber,
+      );
+      return Number(rows[0]!.n);
+    };
+
+    it.each([
+      ['a deactivated vendor', () => ({ vendor_id: ids.inactiveVendor }), /^Vendor .* not found$/],
+      ["another tenant's vendor", () => ({ vendor_id: ids.otherVendor }), /^Vendor .* not found$/],
+      ['an unknown vendor', () => ({ vendor_id: UNKNOWN }), /^Vendor .* not found$/],
+      ["another tenant's RFQ", () => ({ rfq_id: ids.otherRfq }), /^RFQ .* not found$/],
+      ['an unknown RFQ', () => ({ rfq_id: UNKNOWN }), /^RFQ .* not found$/],
+      [
+        "another tenant's project",
+        () => ({ project_id: ids.otherProject }),
+        /^Project .* not found$/,
+      ],
+      ['an unknown project', () => ({ project_id: UNKNOWN }), /^Project .* not found$/],
+    ])('%s: 404, no PO written', async (_n, over, message) => {
+      const { poNumber, send } = po(over());
+      const res = await send();
+      expect(res.status).toBe(404);
+      // Nest's default body (this spec mounts no GlobalExceptionFilter): { statusCode, message, error: 'Not Found' }.
+      expect((res.body as { message: string }).message).toMatch(message);
+      expect(await poRows(poNumber)).toBe(0);
+    });
+
+    it("the tenant's own active vendor, RFQ and project pass the checks: the PO row is written", async () => {
+      const { poNumber, send } = po({ rfq_id: ids.rfq });
+      const res = await send();
+      expect(res.status).not.toBe(404); // the workflow start afterwards has no Temporal here
+      expect(await poRows(poNumber)).toBe(1);
     });
   });
 });

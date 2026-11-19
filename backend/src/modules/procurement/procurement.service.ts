@@ -399,6 +399,23 @@ export class ProcurementService {
       );
     }
 
+    // The ids it names are the tenant's own (fix/proc-po-foreign-ids) — checked after the body's own arithmetic,
+    // before anything is written. They went straight to the INSERT: vendor_id and rfq_id have foreign keys, which are
+    // checked without RLS — another tenant's row was accepted, an unknown id failed the INSERT unmapped (500) — and
+    // project_id has none, so any UUID was taken. The vendor must also be ACTIVE (the vendor lists hide a deactivated
+    // one). rfq_id is checked to exist in the tenant only — no AWARDED or awarded-vendor rule (product owner,
+    // 2026-11-20).
+    const vendor = await this.repo.findVendorById(dto.vendor_id);
+    if (!vendor || !vendor.is_active) {
+      throw new NotFoundException(`Vendor ${dto.vendor_id} not found`);
+    }
+    if (dto.rfq_id && !(await this.repo.findRfqById(dto.rfq_id))) {
+      throw new NotFoundException(`RFQ ${dto.rfq_id} not found`);
+    }
+    if (!(await this.repo.projectExists(dto.project_id))) {
+      throw new NotFoundException(`Project ${dto.project_id} not found`);
+    }
+
     // One transaction for the header + every line: a partial write would leave a committed PO whose
     // total_amount contradicts the sum just validated above.
     const { po, line_items: createdLines } = await this.repo.createPurchaseOrderWithLineItems(
