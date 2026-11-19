@@ -13,7 +13,7 @@
 // The approve action is exclusive while it runs: a second approval fired at another PO before the
 // first returns would leave two rows both looking approved when one of them may not be.
 
-import { render, fireEvent, waitFor } from '@testing-library/react-native';
+import { render, fireEvent, waitFor, within } from '@testing-library/react-native';
 import { Alert } from 'react-native';
 import { I18nProvider } from '../../../i18n';
 import ProcurementScreen from '../procurement';
@@ -147,13 +147,53 @@ describe('ProcurementScreen', () => {
     expect(call?.[1].page).toBe('1');
   });
 
-  it('counts only today`s deliveries', async () => {
-    const today = new Date().toISOString();
-    respond({ deliveries: [delivery(today), delivery('2026-01-01T09:00:00Z')] });
+  // The device's LOCAL day (the screen compares `toDateString()`). It used to check only that the stat
+  // rendered, so a count of every delivery passed too (test/mobile-finance-procurement-specs). The two edges are
+  // where a UTC count goes wrong in Bangkok: 00:30 today is still yesterday in UTC, 23:30 yesterday is not today.
+  // `Date` is held at noon so midnight cannot pass between the rows built here and the screen's reading of today.
+  describe('counts only today`s deliveries', () => {
+    beforeEach(() => {
+      jest.useFakeTimers({
+        now: new Date(2026, 10, 19, 12, 0),
+        doNotFake: [
+          'setTimeout',
+          'clearTimeout',
+          'setInterval',
+          'clearInterval',
+          'setImmediate',
+          'clearImmediate',
+          'nextTick',
+          'queueMicrotask',
+          'requestAnimationFrame',
+          'cancelAnimationFrame',
+          'hrtime',
+          'performance',
+        ],
+      });
+    });
+    afterEach(() => {
+      jest.useRealTimers();
+    });
 
-    const { getByTestId } = await renderScreen();
+    it('by the local day, including just after midnight', async () => {
+      // The edges discriminate only because the jest configs pin TZ to Asia/Bangkok: under UTC, 00:30 local
+      // would be 00:30 UTC and a UTC count would pass too. Fail loudly if that pin goes.
+      expect(new Date(2026, 10, 19, 0, 30).getUTCDate()).toBe(18);
+      respond({
+        deliveries: [
+          delivery(new Date(2026, 10, 19, 11, 0).toISOString()), // this morning
+          delivery(new Date(2026, 10, 19, 0, 30).toISOString()), // 00:30 today — 17:30 yesterday in UTC
+          delivery(new Date(2026, 10, 18, 23, 30).toISOString()), // 23:30 yesterday — not today
+          delivery('2026-01-01T09:00:00Z'),
+        ],
+      });
 
-    await waitFor(() => expect(getByTestId('stat-deliveries-today')).toBeTruthy());
+      const { getByTestId } = await renderScreen();
+
+      await waitFor(() =>
+        expect(within(getByTestId('stat-deliveries-today')).getByText('2')).toBeTruthy(),
+      );
+    });
   });
 
   it('lists the purchase orders waiting on a decision', async () => {

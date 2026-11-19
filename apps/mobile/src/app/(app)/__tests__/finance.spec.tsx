@@ -13,6 +13,7 @@
 import { render, fireEvent, waitFor } from '@testing-library/react-native';
 import { I18nProvider } from '../../../i18n';
 import FinanceScreen from '../finance';
+import { toIsoDate } from '../../../lib/isoDate';
 
 const mockPush = jest.fn();
 jest.mock('expo-router', () => {
@@ -366,9 +367,15 @@ describe('FinanceScreen', () => {
   });
 });
 
-/** A dated ledger entry `daysAgo` days back. */
+/**
+ * A dated ledger entry `daysAgo` days back, on the LOCAL calendar — the one spendTrend windows from
+ * (localDayAsUtcMidnight). `toISOString().slice(0, 10)` read the UTC calendar, a day behind before 07:00 in
+ * Bangkok; days 5 and 40 had room for it, a day at a window's edge would not (test/mobile-finance-procurement-specs).
+ */
 function ledgerEntries(sourceType: string, daysAgo: number, amount: string) {
-  const date = new Date(Date.now() - daysAgo * 86_400_000).toISOString().slice(0, 10);
+  const day = new Date();
+  day.setDate(day.getDate() - daysAgo);
+  const date = toIsoDate(day);
   return [{ source_type: sourceType, amount, transaction_date: date }];
 }
 

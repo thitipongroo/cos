@@ -1602,6 +1602,20 @@ gate's isolated run) checks the hash was not tested either; it ran 12.18.0 with 
 
 ## Open
 
+- **Closed — two mobile specs: a deliveries count never checked, and ledger dates on the UTC calendar.** Fixed on
+  `test/mobile-finance-procurement-specs` (both found by /doubt on `test/mobile-taskcard-local-day`).
+  - `procurement.spec`'s test of today's deliveries count checked only that the stat rendered: with the screen counting
+    every delivery it still passed. It now asserts the number, with the two edges where a UTC count goes wrong in
+    Bangkok — 00:30 today (yesterday in UTC, counted) and 23:30 yesterday (not counted) — and `Date` held at noon. The
+    screen was already right (`toDateString()`, the local day). The edges discriminate only under the jest configs'
+    `TZ=Asia/Bangkok` pin, so the test first asserts that 00:30 local is the previous UTC day (found by /doubt).
+    Verified: passes; fails with the filter counting every delivery and with it comparing UTC dates (both restored
+    after).
+  - `finance.spec`'s `ledgerEntries` used `toISOString().slice(0, 10)` while `spendTrend` windows from the local day;
+    it now uses `toIsoDate`. It did not fail before (days 5 and 40 sit a day inside the windows; a temporary copy at
+    02:30 passed before and after, 22/22) — this keeps a later day at a window edge from failing before 07:00.
+  - apps/mobile render suite (1812/1812), jest (1158), tsc, eslint and prettier pass.
+
 - **Closed — two first invitations of a new e-mail at once: one answered 500.** Fixed on
   `fix/vendor-identity-upsert-race` (found by /doubt on `fix/vendor-reinvite-refuse`). `upsertIdentity` was
   find-then-insert: both requests missed the find, both inserted, and the second failed on
