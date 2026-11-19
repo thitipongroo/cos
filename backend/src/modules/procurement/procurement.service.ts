@@ -312,6 +312,13 @@ export class ProcurementService {
         `RFQ ${rfq_id} is not PUBLISHED — cannot submit quotation`,
       );
     }
+    // The tenant's ACTIVE vendor only (fix/proc-quotation-vendor-check). The id went straight to the INSERT: a
+    // deactivated (soft-deleted) vendor was quoted for, compared and awardable; an unknown id failed the foreign key.
+    // findVendorById is tenant-scoped, so another tenant's vendor is "not found" too — a foreign key is checked
+    // without RLS and would have accepted it.
+    const vendor = await this.repo.findVendorById(dto.vendor_id);
+    if (!vendor || !vendor.is_active)
+      throw new NotFoundException(`Vendor ${dto.vendor_id} not found`);
 
     const quotation = await this.repo.createQuotation({
       rfq_id,

@@ -1602,6 +1602,37 @@ gate's isolated run) checks the hash was not tested either; it ran 12.18.0 with 
 
 ## Open
 
+- **Procurement and finance writes take foreign ids unchecked: a record can name another tenant's row, or a
+  deactivated vendor.** A foreign key is checked without RLS, so — as measured for quotations on
+  `fix/proc-quotation-vendor-check` (another tenant's vendor id → 201 on HEAD, an unknown one → 500) — an id passed
+  through unchecked can reference another tenant's row. Read from code (found on that branch and by its /doubt), not
+  yet measured:
+  - `createPurchaseOrder` (`procurement.service.ts:374-415`): `vendor_id` (FK → `vendors`, so another tenant's or a
+    deactivated vendor), `rfq_id` (FK → `rfqs`; nor is the RFQ checked AWARDED or its awarded vendor matched) and
+    `project_id` (no FK, no check). Invoices inherit the PO's vendor (`receiveInvoice` copies `po.vendor_id`), and
+    `procurement.invoice.received.v1` carries it.
+  - `createRfq` (`procurement.service.ts:209-216`): `pr_id` (FK → `purchase_requests`).
+  - `FinanceService.createContract` (`finance.service.ts:544-553`): `customer_id` (FK → `finance.customers`) and
+    `vendor_id` (no FK at all, `20260619000001_ar_billing`) — any UUID.
+  An unknown id behind a foreign key answers 500 (23503 is not mapped). Medium: it needs a leaked id, and the reads
+  join under RLS, so no other tenant's data was found disclosed; a deactivated vendor on a PO is the likelier case.
+- **A second quotation for the same RFQ and vendor answers 500.** `uq_quotation_rfq_vendor` raises 23505 and nothing
+  maps it — on the buyer route and on the vendor portal's `createQuotation` (a vendor answering a second invitation to
+  the same RFQ). Found by /doubt on `fix/proc-quotation-vendor-check`.
+- **Closed — the buyer side recorded a quotation for any vendor id.** Fixed on `fix/proc-quotation-vendor-check`
+  (found by /doubt on `fix/vendor-invite-inactive`). `POST /procurement/rfqs/:rfqId/quotations` inserted `vendor_id`
+  as given. Measured on HEAD: a deactivated vendor → 201 (quoted for, so comparable and awardable); an id that does
+  not exist → 500 (the foreign key, unmapped); another tenant's vendor → 201 — the foreign key is checked without RLS,
+  so tenant A's quotation referenced tenant B's vendor.
+  - `submitQuotation` now looks the vendor up with `findVendorById` (tenant-scoped, RLS) and requires it ACTIVE:
+    otherwise 404 `Vendor <id> not found` (the message `getVendor` uses for an absent vendor; a deactivated one counts
+    as not found here, though `GET /procurement/vendors/{id}` still answers it 200), with nothing inserted. The route's
+    OpenAPI now lists that 404 and the ValidationPipe 400 (found by /doubt; neither was listed).
+  - Verified: procurement unit (306) — absent and deactivated vendors → 404 with no insert; the existing cases given
+    an active vendor; `test/procurement/03-rfq-lifecycle` (11): an active vendor → 201; deactivated (through the
+    API), nonexistent and another tenant's → 404, no quotation written. HEAD's service fails the three (201, 500,
+    201) and the two unit cases. Backend tsc, eslint, prettier and markdownlint pass.
+
 - **Closed — a vendor deactivated after it was invited kept using the portal.** Fixed on
   `fix/vendor-portal-inactive-vendor` (found by /doubt on `fix/vendor-invite-inactive`). After `DELETE
   /procurement/vendors/:id` (the soft delete), an invitation issued before still opened the RFQ and quoted — the
@@ -1641,7 +1672,7 @@ gate's isolated run) checks the hash was not tested either; it ran 12.18.0 with 
     since `resolveVendorId` and the Tier-2 guard check the relationship and the identity in the platform database, not
     `procurement.vendors.is_active` in the tenant's (a separate database for a dedicated tenant, D56) — a separate
     item. The buyer-side `submitQuotation` (`procurement.service.ts:307`) also still records a quotation for a
-    deactivated vendor.
+    deactivated vendor (refused since on `fix/proc-quotation-vendor-check`).
   - A deactivation cannot be undone through the API (nothing sets `is_active = true`, and `uq_vendors_tenant_code`
     blocks re-creating the code); its contacts' ACTIVE relationships still name it, so inviting one for a
     replacement vendor answers `COS-VND-007`. An operator edits the row.

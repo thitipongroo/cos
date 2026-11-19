@@ -830,6 +830,7 @@ describe('submitQuotation', () => {
   it('submits quotation for PUBLISHED RFQ', async () => {
     const q = { ...quotationFixtures[0]! };
     mockRepo.findRfqById.mockResolvedValue(rfqPublishedFixture);
+    mockRepo.findVendorById.mockResolvedValue({ ...vendorFixture, vendor_id: 'vendor-uuid-002' });
     mockRepo.createQuotation.mockResolvedValue(q);
 
     const result = await service.submitQuotation('rfq-uuid-001', {
@@ -840,6 +841,29 @@ describe('submitQuotation', () => {
       submitted_at: new Date().toISOString(),
     });
     expect(result.quotation_id).toBe('quot-uuid-002');
+  });
+
+  // fix/proc-quotation-vendor-check: the tenant's ACTIVE vendor only — the id used to go straight to the INSERT.
+  it.each([
+    ["absent (or another tenant's — findVendorById is tenant-scoped)", null],
+    [
+      'deactivated (soft-deleted)',
+      { ...vendorFixture, vendor_id: 'vendor-uuid-002', is_active: false },
+    ],
+  ])('404 for a vendor that is %s, and nothing inserted', async (_n, vendor) => {
+    mockRepo.findRfqById.mockResolvedValue(rfqPublishedFixture);
+    mockRepo.findVendorById.mockResolvedValue(vendor);
+    await expect(
+      service.submitQuotation('rfq-uuid-001', {
+        vendor_id: 'vendor-uuid-002',
+        total_amount: '1.0000',
+        currency_code: 'THB',
+        validity_days: 30,
+        submitted_at: new Date().toISOString(),
+      }),
+    ).rejects.toThrow(new NotFoundException('Vendor vendor-uuid-002 not found'));
+    expect(mockRepo.findVendorById).toHaveBeenCalledWith('vendor-uuid-002');
+    expect(mockRepo.createQuotation).not.toHaveBeenCalled();
   });
 
   it('throws NotFoundException when RFQ not found', async () => {
@@ -1526,6 +1550,7 @@ describe('exact contracts — quotations', () => {
   it('submitQuotation — exact repo payload and log', async () => {
     const submittedAt = new Date().toISOString();
     mockRepo.findRfqById.mockResolvedValue(rfqPublishedFixture);
+    mockRepo.findVendorById.mockResolvedValue({ ...vendorFixture, vendor_id: 'vendor-uuid-002' });
     mockRepo.createQuotation.mockResolvedValue({ ...quotationFixtures[0]! });
     await service.submitQuotation('rfq-uuid-001', {
       vendor_id: 'vendor-uuid-002',

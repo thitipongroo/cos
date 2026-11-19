@@ -1011,6 +1011,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/QuotationRow'
+        '400':
+          description: Body failed validation — ValidationPipe rejects it before the handler runs
+        '404':
+          description: >-
+            RFQ not found, or the vendor is not one of this tenant's ACTIVE vendors (absent, another tenant's, or
+            deactivated — fix/proc-quotation-vendor-check); nothing is written
         '422':
           description: RFQ not PUBLISHED
     get:

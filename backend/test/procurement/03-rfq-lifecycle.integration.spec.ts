@@ -267,4 +267,69 @@ describe('Phase 5 · RFQ lifecycle, quotation comparison and event emission', ()
       expect(await outboxCount()).toBe(before);
     });
   });
+
+  // fix/proc-quotation-vendor-check: a quotation is for one of the tenant's ACTIVE vendors. The id used to go straight
+  // to the INSERT — a deactivated vendor was quoted for, and the foreign key (checked without RLS) took another
+  // tenant's vendor.
+  describe("a quotation names one of the tenant's active vendors", () => {
+    const quote = (rfqId: string, vendorId: string) =>
+      http().post(`/api/v1/procurement/rfqs/${rfqId}/quotations`).set('x-test-role', PO_ROLE).send({
+        vendor_id: vendorId,
+        total_amount: '1000.0000',
+        currency_code: 'THB',
+        validity_days: 30,
+        submitted_at: '2026-01-01T00:00:00.000Z',
+      });
+    const quotationsOn = async (rfqId: string): Promise<number> => {
+      const rows = await infra.prisma.$queryRawUnsafe<Array<{ n: bigint }>>(
+        `SELECT count(*) AS n FROM procurement.quotations WHERE rfq_id = $1::uuid`,
+        rfqId,
+      );
+      return Number(rows[0]!.n);
+    };
+
+    it('an active vendor: 201, as before', async () => {
+      const rfqId = await seedRfq('PUBLISHED');
+      expect((await quote(rfqId, await createVendor())).status).toBe(201);
+      expect(await quotationsOn(rfqId)).toBe(1);
+    });
+
+    it('a deactivated vendor: 404, nothing written', async () => {
+      const rfqId = await seedRfq('PUBLISHED');
+      const vendorId = await createVendor();
+      const gone = await http()
+        .delete(`/api/v1/procurement/vendors/${vendorId}`)
+        .set('x-test-role', 'PROC_MANAGER');
+      expect(gone.status).toBe(204);
+      const res = await quote(rfqId, vendorId);
+      expect(res.status).toBe(404);
+      expect(await quotationsOn(rfqId)).toBe(0);
+    });
+
+    it('a vendor id that does not exist: 404, nothing written', async () => {
+      const rfqId = await seedRfq('PUBLISHED');
+      const res = await quote(rfqId, '00000000-0000-4000-8000-000000000999');
+      expect(res.status).toBe(404);
+      expect(await quotationsOn(rfqId)).toBe(0);
+    });
+
+    it("another tenant's vendor: 404, nothing written", async () => {
+      const rfqId = await seedRfq('PUBLISHED');
+      const otherTenant = 'aaaa3333-3333-4000-8000-000000000005';
+      await infra.prisma.$executeRawUnsafe(
+        `INSERT INTO platform.tenants (tenant_id, tenant_code, tenant_name, keycloak_realm, plan_type, is_active)
+         VALUES ($1::uuid, 'sd-p5b', 'Other Tenant P5', 'construction-os', 'STARTER'::platform."PlanType", true)
+         ON CONFLICT DO NOTHING`,
+        otherTenant,
+      );
+      const [other] = await infra.prisma.$queryRawUnsafe<Array<{ vendor_id: string }>>(
+        `INSERT INTO procurement.vendors (tenant_id, vendor_code, vendor_name)
+         VALUES ($1::uuid, 'V-OTHER', 'Other Tenant Vendor') RETURNING vendor_id::text AS vendor_id`,
+        otherTenant,
+      );
+      const res = await quote(rfqId, other!.vendor_id);
+      expect(res.status).toBe(404);
+      expect(await quotationsOn(rfqId)).toBe(0);
+    });
+  });
 });
