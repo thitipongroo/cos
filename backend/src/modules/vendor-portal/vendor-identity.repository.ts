@@ -14,6 +14,14 @@ export interface VendorIdentityRow {
   is_active: boolean;
 }
 
+/**
+ * What `createRelationship` did: the relationship (created, or already ACTIVE for this vendor), or why it wrote
+ * nothing — the identity is linked to ANOTHER vendor of the tenant (active or revoked), or its link to THIS vendor
+ * was revoked.
+ */
+export type RelationshipResult =
+  { relationship: TradingRelationshipRow } | { refused: 'OTHER_VENDOR' | 'REVOKED' };
+
 export interface TradingRelationshipRow {
   relationship_id: string;
   vendor_identity_id: string;
@@ -81,26 +89,34 @@ export class VendorIdentityRepository implements OnModuleDestroy {
   }
 
   /**
-   * The identity's trading relationship with this tenant, for this vendor: created, or re-activated when it
-   * already names the same vendor. One identity acts for one vendor of a tenant (product owner, 2026-11-16):
-   * when the tenant's relationship with this identity names ANOTHER vendor — active or revoked — nothing is
-   * written and null is returned, so the caller refuses the invitation (fix/vendor-reinvite-refuse). It used to
-   * re-activate the row and keep its old vendor, so the person's quotations were filed under the first vendor.
-   * One statement: two invitations racing cannot both pass.
+   * The identity's trading relationship with this tenant, for this vendor: created, or returned as it is when it
+   * is already ACTIVE for the same vendor. Nothing is written otherwise, and the result says why:
+   * - another vendor of the tenant, active or revoked — one identity acts for one vendor of a tenant (product
+   *   owner, 2026-11-16, fix/vendor-reinvite-refuse; it used to keep the old vendor and file the quotations there);
+   * - this vendor, REVOKED — an invitation does not undo a revocation; whoever revoked it restores it (product
+   *   owner, 2026-11-19, fix/vendor-revoked-reinvite; any procurement officer's re-invite used to re-activate it).
+   * The upsert is one statement, so two invitations racing cannot both pass; the reason is read afterwards.
    */
   async createRelationship(
     vendorIdentityId: string,
     tenantId: string,
     vendorId: string,
-  ): Promise<TradingRelationshipRow | null> {
+  ): Promise<RelationshipResult> {
     const rows = await this.prisma.$queryRaw<TradingRelationshipRow[]>`
       INSERT INTO platform.vendor_trading_relationships (vendor_identity_id, tenant_id, vendor_id)
       VALUES (${vendorIdentityId}::uuid, ${tenantId}::uuid, ${vendorId}::uuid)
       ON CONFLICT (tenant_id, vendor_identity_id) DO UPDATE SET status = 'ACTIVE'
         WHERE vendor_trading_relationships.vendor_id = EXCLUDED.vendor_id
+          AND vendor_trading_relationships.status = 'ACTIVE'
       RETURNING relationship_id, vendor_identity_id, tenant_id, vendor_id, status
     `;
-    return rows[0] ?? null;
+    if (rows[0]) return { relationship: rows[0] };
+    const [existing] = await this.prisma.$queryRaw<Array<{ vendor_id: string }>>`
+      SELECT vendor_id FROM platform.vendor_trading_relationships
+      WHERE tenant_id = ${tenantId}::uuid AND vendor_identity_id = ${vendorIdentityId}::uuid
+    `;
+    // Rows are never deleted; a missing one here would be a row removed by hand mid-call — refuse rather than guess.
+    return { refused: existing && existing.vendor_id === vendorId ? 'REVOKED' : 'OTHER_VENDOR' };
   }
 
   /**

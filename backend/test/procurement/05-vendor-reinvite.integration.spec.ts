@@ -4,8 +4,9 @@
  * The tenant's trading relationship with a vendor identity is unique per (tenant, identity). Inviting the same
  * e-mail for a second vendor used to re-activate that row and keep its first vendor: the invitation went out,
  * and the person's quotations were filed under the first vendor (`resolveVendorId`). The second invitation is
- * now refused — 409 COS-VND-007, before any invitation row exists — and re-inviting for the same vendor still
- * works, revoked or not.
+ * now refused — 409 COS-VND-007, before any invitation row exists. Re-inviting for the same vendor works while the
+ * relationship is ACTIVE; a REVOKED one is refused too — 409 COS-VND-008 — since an invitation does not undo a
+ * revocation (fix/vendor-revoked-reinvite, product owner 2026-11-19).
  *
  * Asserted on the real database: the relationship rows and the invitation rows.
  */
@@ -191,13 +192,14 @@ describe('Vendor invitations: one e-mail, one vendor per tenant (real database)'
     expect(await invitationsFor(rfq)).toBe(1); // the refused one wrote no invitation
   });
 
-  it('re-inviting for the same vendor still works, and re-activates a revoked relationship', async () => {
+  it('re-inviting for the same vendor works while ACTIVE; once revoked, no invitation re-activates it', async () => {
     const vendorA = await createVendor();
     const vendorB = await createVendor();
     const rfq = await seedRfq();
     const email = 'malee.reinvite@example.com';
 
     expect((await invite(rfq, vendorA, email)).status).toBe(201);
+    expect((await invite(rfq, vendorA, email)).status).toBe(201); // ACTIVE: re-invited as before
     // Nothing in the app revokes; an operator does it by hand.
     await infra.prisma.$executeRawUnsafe(
       `UPDATE platform.vendor_trading_relationships r SET status = 'REVOKED'
@@ -210,11 +212,20 @@ describe('Vendor invitations: one e-mail, one vendor per tenant (real database)'
     // A revoked relationship for vendor A does not free the e-mail for vendor B.
     const other = await invite(rfq, vendorB, email);
     expect(other.status).toBe(409);
-    expect(await relationshipsOf(email)).toEqual([{ vendor_id: vendorA, status: 'REVOKED' }]);
+    expect((other.body as { error: { code: string } }).error.code).toBe('COS-VND-007');
 
-    expect((await invite(rfq, vendorA, email)).status).toBe(201);
-    expect(await relationshipsOf(email)).toEqual([{ vendor_id: vendorA, status: 'ACTIVE' }]);
-    expect(await invitationsFor(rfq)).toBe(2);
+    // Nor does re-inviting for vendor A restore it: refused, still REVOKED, no invitation written.
+    const again = await invite(rfq, vendorA, email);
+    expect(again.status).toBe(409);
+    expect(again.body).toEqual({
+      error: expect.objectContaining({
+        code: 'COS-VND-008',
+        message: "This e-mail's link to this vendor was revoked",
+        traceId: expect.any(String),
+      }),
+    });
+    expect(await relationshipsOf(email)).toEqual([{ vendor_id: vendorA, status: 'REVOKED' }]);
+    expect(await invitationsFor(rfq)).toBe(2); // the two issued while ACTIVE
   });
 
   it('the same address in another letter case is the same person: refused for another vendor', async () => {
@@ -282,6 +293,9 @@ describe('Vendor invitations: one e-mail, one vendor per tenant (real database)'
       const answers = await Promise.all([invite(rfq, vendorA, email), invite(rfq, vendorB, email)]);
       const statuses = answers.map((a) => a.status);
       expect({ round, statuses: [...statuses].sort() }).toEqual({ round, statuses: [201, 409] });
+      // The loser is the other-vendor refusal, not the revoked one.
+      const loser = answers.find((a) => a.status === 409)!;
+      expect((loser.body as { error: { code: string } }).error.code).toBe('COS-VND-007');
       const winner = statuses[0] === 201 ? vendorA : vendorB;
       expect(await relationshipsOf(email)).toEqual([{ vendor_id: winner, status: 'ACTIVE' }]);
       const identities = await infra.prisma.$queryRawUnsafe<Array<{ n: bigint }>>(

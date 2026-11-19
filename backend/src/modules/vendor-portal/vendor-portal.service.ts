@@ -66,20 +66,27 @@ export class VendorPortalService {
     // One spelling per address: an e-mail differing only in case or surrounding spaces is the same person.
     const email = params.email.trim().toLowerCase();
     const identity = await this.identities.upsertIdentity(email, params.displayName);
-    const relationship = await this.identities.createRelationship(
+    const result = await this.identities.createRelationship(
       identity.vendor_identity_id,
       this.tenantId,
       params.vendorId,
     );
-    // The e-mail already acts for another of the tenant's vendors (fix/vendor-reinvite-refuse): refused
-    // before any invitation or token exists. The relationship and its vendor are left as they were.
-    if (!relationship) {
+    // Refused before any invitation or token exists; the relationship is left as it was.
+    if ('refused' in result) {
       throw new ConflictException({
-        error: {
-          code: 'COS-VND-007',
-          // "Linked", not "acts for": a revoked relationship to the other vendor refuses too.
-          message: 'This e-mail is already linked to another vendor of this tenant',
-        },
+        error:
+          result.refused === 'OTHER_VENDOR'
+            ? {
+                // One e-mail, one vendor of the tenant (fix/vendor-reinvite-refuse). "Linked", not "acts for":
+                // a revoked relationship to the other vendor refuses too.
+                code: 'COS-VND-007',
+                message: 'This e-mail is already linked to another vendor of this tenant',
+              }
+            : {
+                // An invitation does not undo a revocation (fix/vendor-revoked-reinvite).
+                code: 'COS-VND-008',
+                message: "This e-mail's link to this vendor was revoked",
+              },
       });
     }
 

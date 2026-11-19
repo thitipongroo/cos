@@ -49,7 +49,7 @@ function build(
   };
   const identities = {
     upsertIdentity: jest.fn().mockResolvedValue({ vendor_identity_id: 'vid-1' }),
-    createRelationship: jest.fn().mockResolvedValue({ relationship_id: 'rel-1' }),
+    createRelationship: jest.fn().mockResolvedValue({ relationship: { relationship_id: 'rel-1' } }),
     findActiveRelationship: jest
       .fn()
       .mockResolvedValue(
@@ -137,7 +137,7 @@ describe('VendorPortalService', () => {
 
     it('409 COS-VND-007 when the e-mail already acts for another vendor, and no invitation is written', async () => {
       const { service, identities, repo, magicLink } = build();
-      identities.createRelationship.mockResolvedValueOnce(null);
+      identities.createRelationship.mockResolvedValueOnce({ refused: 'OTHER_VENDOR' });
       const attempt = service.issueInvitation({
         rfqId: 'rfq-1',
         vendorId: 'ven-2',
@@ -149,6 +149,29 @@ describe('VendorPortalService', () => {
         response: { error: { code: 'COS-VND-007' } },
       });
       expect(identities.createRelationship).toHaveBeenCalledWith('vid-1', 'ten-1', 'ven-2');
+      expect(magicLink.issueInvitationToken).not.toHaveBeenCalled();
+      expect(repo.createInvitation).not.toHaveBeenCalled();
+    });
+
+    // fix/vendor-revoked-reinvite: an invitation does not undo a revocation (product owner, 2026-11-19).
+    it('409 COS-VND-008 when the link to this vendor was revoked, and no invitation is written', async () => {
+      const { service, identities, repo, magicLink } = build();
+      identities.createRelationship.mockResolvedValueOnce({ refused: 'REVOKED' });
+      const attempt = service.issueInvitation({
+        rfqId: 'rfq-1',
+        vendorId: 'ven-1',
+        email: 'a@b.co',
+        displayName: 'ACME',
+      });
+      await expect(attempt).rejects.toThrow(ConflictException);
+      await expect(attempt).rejects.toMatchObject({
+        response: {
+          error: {
+            code: 'COS-VND-008',
+            message: "This e-mail's link to this vendor was revoked",
+          },
+        },
+      });
       expect(magicLink.issueInvitationToken).not.toHaveBeenCalled();
       expect(repo.createInvitation).not.toHaveBeenCalled();
     });

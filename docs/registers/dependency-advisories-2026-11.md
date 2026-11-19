@@ -1602,6 +1602,29 @@ gate's isolated run) checks the hash was not tested either; it ran 12.18.0 with 
 
 ## Open
 
+- **Closed — an invitation re-activated a revoked vendor relationship.** Fixed on `fix/vendor-revoked-reinvite`
+  (product-owner decision 2026-11-19: refuse for everyone; whoever revoked it restores it). Found by /doubt on
+  `fix/vendor-reinvite-refuse`. The relationship upsert set `status = 'ACTIVE'` on any same-vendor row, so a
+  PROCUREMENT_OFFICER, PROC_MANAGER or TENANT_ADMIN re-inviting the e-mail undid an operator's revocation, and the
+  vendor could quote again. Nothing in the app revokes; an operator edits the row.
+  - The upsert now touches only an ACTIVE same-vendor row (`… AND status = 'ACTIVE'`, returned unchanged). When it
+    writes nothing, the row is read to say why: another vendor (`COS-VND-007`, as before, revoked or not) or this
+    vendor, revoked — `409 COS-VND-008` ("This e-mail's link to this vendor was revoked"), before any token or
+    invitation. A row missing at the read-back is refused as another vendor, not allowed. Listed in
+    `docs/api/error-codes.md` and the 409 text of `vendor.openapi.yaml`; the BZ entry below is annotated.
+  - Verified: vendor-portal unit (100) — the SQL's `status = 'ACTIVE'` predicate and no read-back when the upsert
+    answers, the read-back's two reasons and the missing-row case, the service's 409 `COS-VND-008` with no token and
+    no invitation; `test/procurement/05-vendor-reinvite` (6): an ACTIVE same-vendor re-invite → 201, then after a hand
+    revoke another vendor → 409 `COS-VND-007` and the same vendor → 409 `COS-VND-008` (through the app's filter),
+    still REVOKED, no new invitation. HEAD's repository and service fail it (201 where 409 was due) and 7 unit cases.
+    OpenAPI validation (26 documents), the freshness gate (25 passed, 0 failed) and markdownlint pass.
+  - Not in this entry (also seen by /doubt): a revocation leaves PENDING invitations PENDING, and `openRfq`
+    (`GET /vendor/rfq/:token`) checks only the invitation's token, status and expiry — so a vendor revoked after
+    being invited can still read that RFQ until the invitation expires (quoting is blocked, 403 `COS-VND-005`, and so
+    is every Tier-2 request). `vendorExists` ignores `procurement.vendors.is_active`, and the invitation does not
+    check `vendor_identities.is_active`, so a deactivated vendor or a disabled identity can still be invited (the
+    quotation is then refused).
+
 - **Closed — two mobile specs: a deliveries count never checked, and ledger dates on the UTC calendar.** Fixed on
   `test/mobile-finance-procurement-specs` (both found by /doubt on `test/mobile-taskcard-local-day`).
   - `procurement.spec`'s test of today's deliveries count checked only that the stat rendered: with the screen counting
@@ -1655,7 +1678,8 @@ gate's isolated run) checks the hash was not tested either; it ran 12.18.0 with 
     `issueInvitation` then answers 409 `COS-VND-007` ("This e-mail is already linked to another vendor of this
     tenant", in the QM-10 `{ error: { code } }` body) before any invitation or token exists. A revoked relationship
     for another vendor is refused too (an operator moves the person by editing the row); re-inviting for the same
-    vendor works as before, revoked or not. The rule is per tenant: another tenant may invite the same e-mail.
+    vendor worked as before at the time, revoked or not; a revoked one has been refused since
+    `fix/vendor-revoked-reinvite` (`COS-VND-008`). The rule is per tenant: another tenant may invite the same e-mail.
   - One address, one identity (found by /doubt): the e-mail is lower-cased and trimmed before it is looked up and
     stored, and the lookup ignores case (`lower(email)`, the oldest row first), since the column's UNIQUE is
     case-sensitive — `Somchai@ACME.co` had become a second identity, free to act for a second vendor.
@@ -1666,8 +1690,9 @@ gate's isolated run) checks the hash was not tested either; it ran 12.18.0 with 
     differ only in case (no data migration; no `lower(email)` unique index, which such rows would block); the API
     message is English only, as the other `COS-VND` codes; `COS-VND-001`…`006` still go out as
     `COS-GENERAL-<status>` with the code in the message. Also seen by /doubt, not changed: two first invitations of a
-    new e-mail racing — one fails with a 500 on the e-mail's UNIQUE (find-then-insert, as before); and a same-vendor
-    re-invite by any procurement officer re-activates a relationship an operator revoked (as before).
+    new e-mail racing — one fails with a 500 on the e-mail's UNIQUE (find-then-insert, as before; fixed since on
+    `fix/vendor-identity-upsert-race`); and a same-vendor re-invite by any procurement officer re-activates a
+    relationship an operator revoked (as before; refused since on `fix/vendor-revoked-reinvite`).
   - Verified: vendor-portal unit (93) — the SQL carries the vendor predicate and null comes back on no row, the lookup
     ignores case, the e-mail is stored lower-cased and trimmed, and the service answers 409 with no token and no
     invitation; `test/procurement/05-vendor-reinvite` on Postgres (4), through the app's exception filter: A → 201,

@@ -95,7 +95,7 @@ describe('VendorIdentityRepository', () => {
 
   it('createRelationship returns the row', async () => {
     q.mockResolvedValue([relationship]);
-    expect(await repo.createRelationship('vid-1', 'ten-1', 'ven-1')).toEqual(relationship);
+    expect(await repo.createRelationship('vid-1', 'ten-1', 'ven-1')).toEqual({ relationship });
   });
 
   it('findIdentityByEmail matches whatever the letter case, oldest first', async () => {
@@ -108,13 +108,32 @@ describe('VendorIdentityRepository', () => {
 
   // fix/vendor-reinvite-refuse: the conflict re-activates only a relationship that names the same vendor. A row
   // for another vendor is left as it is, so RETURNING yields nothing and the caller is told (null).
-  it('createRelationship re-activates only for the same vendor, and returns null otherwise', async () => {
-    q.mockResolvedValue([]);
-    expect(await repo.createRelationship('vid-1', 'ten-1', 'ven-2')).toBeNull();
+  // The upsert touches only an ACTIVE row of the same vendor (fix/vendor-reinvite-refuse, then
+  // fix/vendor-revoked-reinvite): another vendor's row, or a revoked one, comes back empty and is left as it is.
+  it('createRelationship re-activates nothing: only a same-vendor ACTIVE row is returned', async () => {
+    q.mockResolvedValue([relationship]);
+    await repo.createRelationship('vid-1', 'ten-1', 'ven-1');
     const sql = (q.mock.calls[0]![0] as string[]).join('?').replace(/\s+/g, ' ');
     expect(sql).toContain(
-      "DO UPDATE SET status = 'ACTIVE' WHERE vendor_trading_relationships.vendor_id = EXCLUDED.vendor_id",
+      "DO UPDATE SET status = 'ACTIVE' WHERE vendor_trading_relationships.vendor_id = EXCLUDED.vendor_id AND vendor_trading_relationships.status = 'ACTIVE'",
     );
+    expect(q).toHaveBeenCalledTimes(1); // no read-back when the upsert answered
+  });
+
+  it.each([
+    ['another vendor', 'ven-2', 'OTHER_VENDOR'],
+    ['this vendor, revoked', 'ven-1', 'REVOKED'],
+  ])('createRelationship refused: the row names %s', async (_n, stored, reason) => {
+    q.mockResolvedValueOnce([]).mockResolvedValueOnce([{ vendor_id: stored }]);
+    expect(await repo.createRelationship('vid-1', 'ten-1', 'ven-1')).toEqual({ refused: reason });
+    expect(q.mock.calls[1]!.slice(1)).toEqual(['ten-1', 'vid-1']);
+  });
+
+  it('createRelationship refused with no row to read back: treated as another vendor, not allowed', async () => {
+    q.mockResolvedValue([]);
+    expect(await repo.createRelationship('vid-1', 'ten-1', 'ven-1')).toEqual({
+      refused: 'OTHER_VENDOR',
+    });
   });
 
   it('findActiveRelationship returns the row', async () => {
