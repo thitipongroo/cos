@@ -1,4 +1,5 @@
 import {
+  ConflictException,
   NotFoundException,
   UnauthorizedException,
   ForbiddenException,
@@ -116,6 +117,40 @@ describe('VendorPortalService', () => {
         magicLinkToken: 'TOK',
         expiresAt: expect.any(Date),
       });
+    });
+
+    // fix/vendor-reinvite-refuse: one e-mail acts for one vendor of a tenant (product owner, 2026-11-16). The
+    // repository returns null when the relationship names another vendor; no invitation or token follows.
+    it('the e-mail is looked up and stored lower-cased and trimmed (one spelling per person)', async () => {
+      const { service, identities, repo } = build();
+      await service.issueInvitation({
+        rfqId: 'rfq-1',
+        vendorId: 'ven-1',
+        email: '  Somchai@ACME.co ',
+        displayName: 'ACME',
+      });
+      expect(identities.upsertIdentity).toHaveBeenCalledWith('somchai@acme.co', 'ACME');
+      expect(repo.createInvitation).toHaveBeenCalledWith(
+        expect.objectContaining({ invitedEmail: 'somchai@acme.co' }),
+      );
+    });
+
+    it('409 COS-VND-007 when the e-mail already acts for another vendor, and no invitation is written', async () => {
+      const { service, identities, repo, magicLink } = build();
+      identities.createRelationship.mockResolvedValueOnce(null);
+      const attempt = service.issueInvitation({
+        rfqId: 'rfq-1',
+        vendorId: 'ven-2',
+        email: 'a@b.co',
+        displayName: 'ACME',
+      });
+      await expect(attempt).rejects.toThrow(ConflictException);
+      await expect(attempt).rejects.toMatchObject({
+        response: { error: { code: 'COS-VND-007' } },
+      });
+      expect(identities.createRelationship).toHaveBeenCalledWith('vid-1', 'ten-1', 'ven-2');
+      expect(magicLink.issueInvitationToken).not.toHaveBeenCalled();
+      expect(repo.createInvitation).not.toHaveBeenCalled();
     });
   });
 

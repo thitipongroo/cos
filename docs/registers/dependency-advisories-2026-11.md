@@ -1602,6 +1602,40 @@ gate's isolated run) checks the hash was not tested either; it ran 12.18.0 with 
 
 ## Open
 
+- **Closed — re-inviting a vendor identity for another vendor kept the old vendor.** Fixed on
+  `fix/vendor-reinvite-refuse` (product-owner decision 2026-11-16: one person acts for one vendor of a tenant, so the
+  second invitation is refused). `createRelationship` upserted on `(tenant_id, vendor_identity_id)` and re-activated
+  the row without its `vendor_id`: inviting the same e-mail for vendor B after vendor A answered 201 with a magic link,
+  and the person's quotations were filed under A (`resolveVendorId`).
+  - The upsert now re-activates only a row that names the same vendor (`DO UPDATE … WHERE vendor_id =
+    EXCLUDED.vendor_id`, one statement, so two invitations racing cannot both pass) and returns null otherwise;
+    `issueInvitation` then answers 409 `COS-VND-007` ("This e-mail is already linked to another vendor of this
+    tenant", in the QM-10 `{ error: { code } }` body) before any invitation or token exists. A revoked relationship
+    for another vendor is refused too (an operator moves the person by editing the row); re-inviting for the same
+    vendor works as before, revoked or not. The rule is per tenant: another tenant may invite the same e-mail.
+  - One address, one identity (found by /doubt): the e-mail is lower-cased and trimmed before it is looked up and
+    stored, and the lookup ignores case (`lower(email)`, the oldest row first), since the column's UNIQUE is
+    case-sensitive — `Somchai@ACME.co` had become a second identity, free to act for a second vendor.
+  - Docs: `COS-VND-007` in `docs/api/error-codes.md`; `vendor.openapi.yaml` has the 409 on the buyer route, and its
+    `ErrorResponse` now shows the QM-10 envelope every error leaves in — it showed NestJS's default body (found by
+    /doubt). No web or mobile screen calls the route, so no UI text.
+  - Not changed: relationships already filed under the wrong vendor, and identities from before this change that
+    differ only in case (no data migration; no `lower(email)` unique index, which such rows would block); the API
+    message is English only, as the other `COS-VND` codes; `COS-VND-001`…`006` still go out as
+    `COS-GENERAL-<status>` with the code in the message. Also seen by /doubt, not changed: two first invitations of a
+    new e-mail racing — one fails with a 500 on the e-mail's UNIQUE (find-then-insert, as before); and a same-vendor
+    re-invite by any procurement officer re-activates a relationship an operator revoked (as before).
+  - Verified: vendor-portal unit (93) — the SQL carries the vendor predicate and null comes back on no row, the lookup
+    ignores case, the e-mail is stored lower-cased and trimmed, and the service answers 409 with no token and no
+    invitation; `test/procurement/05-vendor-reinvite` on Postgres (4), through the app's exception filter: A → 201,
+    B → 409 `COS-VND-007` (with `traceId`) with the relationship still A and one invitation row; after a hand
+    revoke, B → 409 and A → 201, ACTIVE again; `Pim.Reinvite@EXAMPLE.com` for B after `pim.reinvite@example.com` for
+    A → 409, one identity; a second tenant invites the same e-mail for its own vendor → 201. Controls: HEAD's
+    repository and service fail the first two integration and both first unit cases (201 where 409 was due); exact
+    matching without the lower-casing fails the case test; without the filter the envelope test fails. The per-tenant
+    case passes on HEAD too — it pins the conflict key, it does not test a change. OpenAPI validation (26 documents),
+    the freshness gate (25 passed, 0 failed) and markdownlint pass.
+
 - **Closed — reports filed from the app notified no project manager.** Fixed on `fix/app-report-submit-notify`
   (product-owner decision 2026-11-16: notify when a report first becomes SUBMITTED). The PM notification is routed
   for `site.report.created.v1` only; sync emitted `submitted.v1` (analytics) and `updated.v1` (search). The app also
@@ -3286,13 +3320,6 @@ recurrence to diagnose. The text is as it was under Open.
   that bypasses RLS; whether the RDS master user may do each was not checked. The integration spec runs on TimescaleDB
   pg16 as superuser. Found on `fix/enterprise-provisioning-db`; needs a decision on the dedicated database's engine
   (or on making those migrations conditional) and a run against a real RDS instance.
-- **Re-inviting a vendor identity for another vendor keeps the old vendor.**
-  `VendorIdentityRepository.createRelationship` inserts `ON CONFLICT (tenant_id, vendor_identity_id) DO UPDATE SET
-status = 'ACTIVE'` and leaves `vendor_id` as it was. Inviting the same e-mail address for a different vendor of the
-  tenant therefore keeps the relationship on the first vendor, and that person's quotations are filed under it
-  (`resolveVendorId`). Since D56 the new vendor id is checked to be the tenant's, and then ignored on conflict. Found
-  by review on `fix/cross-boundary-fks`; whether one person may act for two vendors of a tenant (and so whether to
-  update the vendor or refuse the second invitation) is a product decision.
 - **Telemetry and provisioning: runs begun before D48, and MLOps reading the shared database.** A provisioning run
   begun before D48 still switches routing before the approval wait and does not pause the tenant; device sync and CRM
   writes during that wait go to the dedicated database, and since D55 the copy then finds them there and refuses (the

@@ -72,6 +72,25 @@ describe('VendorIdentityRepository', () => {
     expect(await repo.createRelationship('vid-1', 'ten-1', 'ven-1')).toEqual(relationship);
   });
 
+  it('findIdentityByEmail matches whatever the letter case, oldest first', async () => {
+    q.mockResolvedValue([identity]);
+    await repo.findIdentityByEmail('Somchai@ACME.co');
+    const sql = (q.mock.calls[0]![0] as string[]).join('?').replace(/\s+/g, ' ');
+    expect(sql).toContain('WHERE lower(email) = lower(?)');
+    expect(sql).toContain('ORDER BY created_at, vendor_identity_id LIMIT 1');
+  });
+
+  // fix/vendor-reinvite-refuse: the conflict re-activates only a relationship that names the same vendor. A row
+  // for another vendor is left as it is, so RETURNING yields nothing and the caller is told (null).
+  it('createRelationship re-activates only for the same vendor, and returns null otherwise', async () => {
+    q.mockResolvedValue([]);
+    expect(await repo.createRelationship('vid-1', 'ten-1', 'ven-2')).toBeNull();
+    const sql = (q.mock.calls[0]![0] as string[]).join('?').replace(/\s+/g, ' ');
+    expect(sql).toContain(
+      "DO UPDATE SET status = 'ACTIVE' WHERE vendor_trading_relationships.vendor_id = EXCLUDED.vendor_id",
+    );
+  });
+
   it('findActiveRelationship returns the row', async () => {
     q.mockResolvedValue([relationship]);
     expect(await repo.findActiveRelationship('vid-1', 'ten-1')).toEqual(relationship);

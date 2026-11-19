@@ -31,10 +31,18 @@ export class VendorIdentityRepository implements OnModuleDestroy {
     await this.prisma.$disconnect();
   }
 
+  /**
+   * The identity for an e-mail, whatever its letter case (fix/vendor-reinvite-refuse): `Somchai@ACME.co` and
+   * `somchai@acme.co` are one person, and an exact match let the second spelling become a second identity — and
+   * so act for a second vendor of the tenant. The column's UNIQUE is case-sensitive, so rows from before this
+   * change may differ only in case; the oldest is the one used.
+   */
   async findIdentityByEmail(email: string): Promise<VendorIdentityRow | null> {
     const rows = await this.prisma.$queryRaw<VendorIdentityRow[]>`
       SELECT vendor_identity_id, email, display_name, keycloak_user_id, is_active
-      FROM platform.vendor_identities WHERE email = ${email}
+      FROM platform.vendor_identities WHERE lower(email) = lower(${email})
+      ORDER BY created_at, vendor_identity_id
+      LIMIT 1
     `;
     return rows[0] ?? null;
   }
@@ -55,18 +63,27 @@ export class VendorIdentityRepository implements OnModuleDestroy {
     );
   }
 
+  /**
+   * The identity's trading relationship with this tenant, for this vendor: created, or re-activated when it
+   * already names the same vendor. One identity acts for one vendor of a tenant (product owner, 2026-11-16):
+   * when the tenant's relationship with this identity names ANOTHER vendor — active or revoked — nothing is
+   * written and null is returned, so the caller refuses the invitation (fix/vendor-reinvite-refuse). It used to
+   * re-activate the row and keep its old vendor, so the person's quotations were filed under the first vendor.
+   * One statement: two invitations racing cannot both pass.
+   */
   async createRelationship(
     vendorIdentityId: string,
     tenantId: string,
     vendorId: string,
-  ): Promise<TradingRelationshipRow> {
+  ): Promise<TradingRelationshipRow | null> {
     const rows = await this.prisma.$queryRaw<TradingRelationshipRow[]>`
       INSERT INTO platform.vendor_trading_relationships (vendor_identity_id, tenant_id, vendor_id)
       VALUES (${vendorIdentityId}::uuid, ${tenantId}::uuid, ${vendorId}::uuid)
       ON CONFLICT (tenant_id, vendor_identity_id) DO UPDATE SET status = 'ACTIVE'
+        WHERE vendor_trading_relationships.vendor_id = EXCLUDED.vendor_id
       RETURNING relationship_id, vendor_identity_id, tenant_id, vendor_id, status
     `;
-    return rows[0];
+    return rows[0] ?? null;
   }
 
   /**

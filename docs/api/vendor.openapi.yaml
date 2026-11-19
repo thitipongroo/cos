@@ -88,6 +88,14 @@ paths:
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
+        '409':
+          description: |
+            `COS-VND-007` — the e-mail already acts for another of this tenant's vendors (its trading relationship,
+            active or revoked, names another vendor). One person acts for one vendor of a tenant; nothing is
+            written. Re-inviting for the same vendor is not refused.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
         '422': { $ref: '#/components/responses/UnprocessableEntity' }
 
   /vendor/rfq/{token}:
@@ -348,9 +356,20 @@ components:
         status: { type: string }
 
     ErrorResponse:
+      description: |
+        The QM-10 envelope every error leaves the API in (GlobalExceptionFilter). COS-VND-007 carries its own
+        `code`; COS-VND-001…006 are thrown as text, so their `code` is `COS-GENERAL-<status>` and the COS-VND code
+        leads the `message` (fix/vendor-reinvite-refuse; this schema used to show NestJS's default body).
       type: object
-      required: [statusCode, message]
+      required: [error]
       properties:
-        statusCode: { type: integer, example: 401 }
-        message: { type: string, example: 'COS-VND-004: Invitation expired' }
-        error: { type: string, example: Unauthorized }
+        error:
+          type: object
+          required: [code, message]
+          properties:
+            code: { type: string, example: COS-GENERAL-401 }
+            message: { type: string, example: 'COS-VND-004: Invitation expired' }
+            messageKey: { type: string }
+            details: { type: object }
+            traceId: { type: string }
+            timestamp: { type: string, format: date-time }

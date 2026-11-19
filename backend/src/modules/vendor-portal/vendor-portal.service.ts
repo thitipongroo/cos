@@ -12,6 +12,7 @@ import {
   UnauthorizedException,
   ForbiddenException,
   UnprocessableEntityException,
+  ConflictException,
 } from '@nestjs/common';
 import { REQUEST } from '@nestjs/core';
 import { randomUUID } from 'crypto';
@@ -62,12 +63,25 @@ export class VendorPortalService {
       throw new NotFoundException('COS-VND-006: Vendor not found');
     }
 
-    const identity = await this.identities.upsertIdentity(params.email, params.displayName);
-    await this.identities.createRelationship(
+    // One spelling per address: an e-mail differing only in case or surrounding spaces is the same person.
+    const email = params.email.trim().toLowerCase();
+    const identity = await this.identities.upsertIdentity(email, params.displayName);
+    const relationship = await this.identities.createRelationship(
       identity.vendor_identity_id,
       this.tenantId,
       params.vendorId,
     );
+    // The e-mail already acts for another of the tenant's vendors (fix/vendor-reinvite-refuse): refused
+    // before any invitation or token exists. The relationship and its vendor are left as they were.
+    if (!relationship) {
+      throw new ConflictException({
+        error: {
+          code: 'COS-VND-007',
+          // "Linked", not "acts for": a revoked relationship to the other vendor refuses too.
+          message: 'This e-mail is already linked to another vendor of this tenant',
+        },
+      });
+    }
 
     const invitationId = randomUUID();
     const issued = this.magicLink.issueInvitationToken(this.tenantId, invitationId);
@@ -75,7 +89,7 @@ export class VendorPortalService {
       invitationId,
       rfqId: params.rfqId,
       vendorIdentityId: identity.vendor_identity_id,
-      invitedEmail: params.email,
+      invitedEmail: email,
       tokenHash: issued.tokenHash,
       expiresAt: issued.expiresAt,
     });
