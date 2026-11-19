@@ -67,6 +67,32 @@ describe('VendorIdentityRepository', () => {
     expect(q).toHaveBeenCalledTimes(2);
   });
 
+  // fix/vendor-identity-upsert-race: two first invitations of one e-mail at once both missed the find and both
+  // inserted; the second failed on the e-mail's UNIQUE and answered 500.
+  it('createIdentity yields null instead of failing when the e-mail was inserted meanwhile', async () => {
+    q.mockResolvedValue([]);
+    expect(await repo.createIdentity('a@b.co', 'ACME')).toBeNull();
+    const sql = (q.mock.calls[0]![0] as string[]).join('?').replace(/\s+/g, ' ');
+    expect(sql).toContain('ON CONFLICT (email) DO NOTHING');
+  });
+
+  it('upsertIdentity reads back the row a concurrent request inserted first', async () => {
+    q.mockResolvedValueOnce([]) // find: nothing yet
+      .mockResolvedValueOnce([]) // insert: the other request won
+      .mockResolvedValueOnce([identity]); // find again: its row
+    expect(await repo.upsertIdentity('a@b.co', 'ACME')).toEqual(identity);
+    expect(q).toHaveBeenCalledTimes(3);
+    // The read-back looks for the same address.
+    expect(q.mock.calls[2]!.slice(1)).toEqual(['a@b.co']);
+  });
+
+  it('upsertIdentity fails loudly if the conflicting row cannot be read back', async () => {
+    q.mockResolvedValue([]);
+    await expect(repo.upsertIdentity('a@b.co', 'ACME')).rejects.toThrow(
+      'vendor identity conflicted on insert but could not be read back',
+    );
+  });
+
   it('createRelationship returns the row', async () => {
     q.mockResolvedValue([relationship]);
     expect(await repo.createRelationship('vid-1', 'ten-1', 'ven-1')).toEqual(relationship);

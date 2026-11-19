@@ -1602,6 +1602,20 @@ gate's isolated run) checks the hash was not tested either; it ran 12.18.0 with 
 
 ## Open
 
+- **Closed — two first invitations of a new e-mail at once: one answered 500.** Fixed on
+  `fix/vendor-identity-upsert-race` (found by /doubt on `fix/vendor-reinvite-refuse`). `upsertIdentity` was
+  find-then-insert: both requests missed the find, both inserted, and the second failed on
+  `vendor_identities_email_key` (23505), which nothing maps — `500 COS-GENERAL-500`. Measured on Postgres: 3 rounds in
+  10 of two simultaneous invitations had one 500.
+  - The insert is now `ON CONFLICT (email) DO NOTHING`; when it returns nothing (another request won), the identity
+    is found again. The first find is kept, since it ignores case and so still finds a row from before e-mails were
+    lower-cased. Both requests answer 201 with one identity.
+  - Verified: vendor-portal unit (96) — the INSERT's conflict clause, the read-back for the same address, and a loud
+    error if the row cannot be read back; `test/procurement/05-vendor-reinvite` (6): 10 rounds of two simultaneous
+    first invitations for one vendor — every answer 201, one identity and one relationship per e-mail; and 10 rounds
+    for two vendors (added after /doubt) — one 201 and one 409 `COS-VND-007`, one identity, the winner's relationship.
+    With HEAD's repository each fails on every run (3 of 3 each: a 500 where 201, or 409, was due).
+
 - **Closed — TaskCard's lateness test failed before 07:00 Bangkok time.** Fixed on `test/mobile-taskcard-local-day`
   (noted on `fix/app-report-submit-notify`, where the render suite had this one failure at 02:xx). The card is right:
   `delaySeverity` counts days from the local day (`localDayAsUtcMidnight`). The spec built its dates on the UTC

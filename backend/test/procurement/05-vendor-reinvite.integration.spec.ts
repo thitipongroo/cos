@@ -249,4 +249,46 @@ describe('Vendor invitations: one e-mail, one vendor per tenant (real database)'
       { vendor_id: vendorOther, status: 'ACTIVE' },
     ]);
   });
+
+  // fix/vendor-identity-upsert-race: the identity was found-then-inserted, so two first invitations of one e-mail
+  // at once could both insert, and one failed on the e-mail's UNIQUE with a 500 (3 rounds in 10 when measured).
+  it('two first invitations of a new e-mail at once both succeed, with one identity', async () => {
+    const vendorA = await createVendor();
+    const rfq = await seedRfq();
+    for (let round = 0; round < 10; round++) {
+      const email = `race${round}.reinvite@example.com`;
+      const answers = await Promise.all([invite(rfq, vendorA, email), invite(rfq, vendorA, email)]);
+      expect({ round, statuses: answers.map((a) => a.status) }).toEqual({
+        round,
+        statuses: [201, 201],
+      });
+      const identities = await infra.prisma.$queryRawUnsafe<Array<{ n: bigint }>>(
+        `SELECT count(*) AS n FROM platform.vendor_identities WHERE email = $1`,
+        email,
+      );
+      expect(Number(identities[0]!.n)).toBe(1);
+      expect(await relationshipsOf(email)).toEqual([{ vendor_id: vendorA, status: 'ACTIVE' }]);
+    }
+  });
+
+  // The same race for two different vendors used to answer 500 too; now one invitation wins and the other is the
+  // ordinary refusal.
+  it('two first invitations of a new e-mail for two vendors at once: one 201, one 409', async () => {
+    const vendorA = await createVendor();
+    const vendorB = await createVendor();
+    const rfq = await seedRfq();
+    for (let round = 0; round < 10; round++) {
+      const email = `race-two${round}.reinvite@example.com`;
+      const answers = await Promise.all([invite(rfq, vendorA, email), invite(rfq, vendorB, email)]);
+      const statuses = answers.map((a) => a.status);
+      expect({ round, statuses: [...statuses].sort() }).toEqual({ round, statuses: [201, 409] });
+      const winner = statuses[0] === 201 ? vendorA : vendorB;
+      expect(await relationshipsOf(email)).toEqual([{ vendor_id: winner, status: 'ACTIVE' }]);
+      const identities = await infra.prisma.$queryRawUnsafe<Array<{ n: bigint }>>(
+        `SELECT count(*) AS n FROM platform.vendor_identities WHERE email = $1`,
+        email,
+      );
+      expect(Number(identities[0]!.n)).toBe(1);
+    }
+  });
 });

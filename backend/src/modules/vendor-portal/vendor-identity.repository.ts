@@ -47,20 +47,37 @@ export class VendorIdentityRepository implements OnModuleDestroy {
     return rows[0] ?? null;
   }
 
-  async createIdentity(email: string, displayName: string): Promise<VendorIdentityRow> {
+  /**
+   * Inserts the identity, or returns null when a row with this exact e-mail already exists — another request
+   * inserted it between our find and this insert (fix/vendor-identity-upsert-race). A plain INSERT failed there
+   * on `vendor_identities_email_key`, and the invitation answered 500.
+   */
+  async createIdentity(email: string, displayName: string): Promise<VendorIdentityRow | null> {
     const rows = await this.prisma.$queryRaw<VendorIdentityRow[]>`
       INSERT INTO platform.vendor_identities (email, display_name)
       VALUES (${email}, ${displayName})
+      ON CONFLICT (email) DO NOTHING
       RETURNING vendor_identity_id, email, display_name, keycloak_user_id, is_active
     `;
-    return rows[0];
+    return rows[0] ?? null;
   }
 
-  /** Get-or-create the network identity for an invited email. */
+  /**
+   * Get-or-create the network identity for an invited email. Found first — the lookup ignores case, so a row from
+   * before the e-mail was lower-cased is still the one used; then inserted; and when a concurrent request won the
+   * insert, found again (that row is committed: ON CONFLICT DO NOTHING waits for the other insert to finish).
+   */
   async upsertIdentity(email: string, displayName: string): Promise<VendorIdentityRow> {
-    return (
-      (await this.findIdentityByEmail(email)) ?? (await this.createIdentity(email, displayName))
-    );
+    const found = await this.findIdentityByEmail(email);
+    if (found) return found;
+    const created = await this.createIdentity(email, displayName);
+    if (created) return created;
+    const winner = await this.findIdentityByEmail(email);
+    if (!winner) {
+      // Inserted by another request and gone again before we read it — not expected; fail loudly, not silently.
+      throw new Error('vendor identity conflicted on insert but could not be read back');
+    }
+    return winner;
   }
 
   /**
