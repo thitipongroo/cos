@@ -43,9 +43,10 @@ describe('VendorPortalRepository', () => {
   it("vendorExists asks the tenant's own vendors (D56) and answers a boolean", async () => {
     queryRaw.mockResolvedValueOnce([{ found: true }]);
     expect(await repo.vendorExists('ven-1')).toBe(true);
-    expect((queryRaw.mock.calls[0]![0] as string[]).join('?')).toContain(
-      'FROM procurement.vendors',
-    );
+    const sql = (queryRaw.mock.calls[0]![0] as string[]).join('?').replace(/\s+/g, ' ');
+    expect(sql).toContain('FROM procurement.vendors');
+    // A deactivated (soft-deleted) vendor is not one to invite (fix/vendor-invite-inactive).
+    expect(sql).toContain('AND is_active = true');
     queryRaw.mockResolvedValueOnce([{ found: false }]);
     expect(await repo.vendorExists('ven-2')).toBe(false);
     queryRaw.mockResolvedValueOnce([]);

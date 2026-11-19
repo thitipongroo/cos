@@ -92,8 +92,10 @@ paths:
           description: |
             `COS-VND-007` — the e-mail is already linked to another of this tenant's vendors (its trading
             relationship, active or revoked, names another vendor): one person acts for one vendor of a tenant.
-            `COS-VND-008` — its link to this vendor was revoked: an invitation does not undo a revocation. Nothing
-            is written either way. Re-inviting for the same vendor while the link is ACTIVE is not refused.
+            `COS-VND-008` — its link to this vendor was revoked: an invitation does not undo a revocation.
+            `COS-VND-009` — the e-mail's vendor identity is disabled across the network. Nothing is written in any
+            case. Re-inviting for the same vendor while the link is ACTIVE is not refused. (A deactivated vendor is
+            a 404 `COS-VND-006`, as an absent one.)
           content:
             application/json:
               schema: { $ref: '#/components/schemas/ErrorResponse' }
@@ -360,7 +362,7 @@ components:
 
     ErrorResponse:
       description: |
-        The QM-10 envelope every error leaves the API in (GlobalExceptionFilter). COS-VND-007 and COS-VND-008 carry
+        The QM-10 envelope every error leaves the API in (GlobalExceptionFilter). COS-VND-007, 008 and 009 carry
         their own `code`; COS-VND-001…006 are thrown as text, so their `code` is `COS-GENERAL-<status>` and the COS-VND code
         leads the `message` (fix/vendor-reinvite-refuse; this schema used to show NestJS's default body).
       type: object

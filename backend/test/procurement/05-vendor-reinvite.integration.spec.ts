@@ -358,4 +358,49 @@ describe('Vendor invitations: one e-mail, one vendor per tenant (real database)'
       'COS-VND-005: No active trading relationship',
     );
   });
+
+  // fix/vendor-invite-inactive: a deactivated (soft-deleted) vendor is not one to invite, and an identity disabled
+  // across the network gets no invitation it could neither open nor answer.
+  it('a deactivated vendor cannot be invited: 404 COS-VND-006, nothing written', async () => {
+    const vendor = await createVendor();
+    const rfq = await seedRfq();
+    const gone = await http()
+      .delete(`/api/v1/procurement/vendors/${vendor}`)
+      .set('x-test-role', 'PROC_MANAGER');
+    expect(gone.status).toBe(204);
+
+    const email = 'ploy.reinvite@example.com';
+    const res = await invite(rfq, vendor, email);
+    expect(res.status).toBe(404);
+    expect((res.body as { error: { message: string } }).error.message).toBe(
+      'COS-VND-006: Vendor not found',
+    );
+    expect(await relationshipsOf(email)).toEqual([]);
+    expect(await invitationsFor(rfq)).toBe(0);
+  });
+
+  it('an identity disabled across the network cannot be invited: 409 COS-VND-009, nothing written', async () => {
+    const vendorA = await createVendor();
+    const vendorB = await createVendor();
+    const rfq = await seedRfq();
+    const email = 'fon.reinvite@example.com';
+    expect((await invite(rfq, vendorA, email)).status).toBe(201);
+    await infra.prisma.$executeRawUnsafe(
+      `UPDATE platform.vendor_identities SET is_active = false WHERE email = $1`,
+      email,
+    );
+
+    for (const vendor of [vendorA, vendorB]) {
+      const res = await invite(rfq, vendor, email);
+      expect(res.status).toBe(409);
+      expect(res.body).toEqual({
+        error: expect.objectContaining({
+          code: 'COS-VND-009',
+          message: 'This e-mail is disabled across the vendor network',
+        }),
+      });
+    }
+    expect(await relationshipsOf(email)).toEqual([{ vendor_id: vendorA, status: 'ACTIVE' }]);
+    expect(await invitationsFor(rfq)).toBe(1); // the one issued before it was disabled
+  });
 });

@@ -66,6 +66,16 @@ export class VendorPortalService {
     // One spelling per address: an e-mail differing only in case or surrounding spaces is the same person.
     const email = params.email.trim().toLowerCase();
     const identity = await this.identities.upsertIdentity(email, params.displayName);
+    // Disabled across the vendor network (an operator's edit): an invitation could be neither opened nor answered
+    // (findActiveRelationship requires an active identity), so none is issued (fix/vendor-invite-inactive).
+    if (!identity.is_active) {
+      throw new ConflictException({
+        error: {
+          code: 'COS-VND-009',
+          message: 'This e-mail is disabled across the vendor network',
+        },
+      });
+    }
     const result = await this.identities.createRelationship(
       identity.vendor_identity_id,
       this.tenantId,

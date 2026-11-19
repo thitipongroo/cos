@@ -1602,6 +1602,32 @@ gate's isolated run) checks the hash was not tested either; it ran 12.18.0 with 
 
 ## Open
 
+- **Closed — a deactivated vendor, or a disabled vendor identity, could still be invited.** Fixed on
+  `fix/vendor-invite-inactive` (found by /doubt on `fix/vendor-reinvite-refuse` and `fix/vendor-revoked-reinvite`).
+  `vendorExists` checked only that the vendor row existed, though `is_active = false` is the vendor soft delete
+  (`DELETE /procurement/vendors/:id`) that the vendor lists already hide; and `issueInvitation` never looked at
+  `vendor_identities.is_active`, so an identity disabled network-wide got an invitation it could neither open nor
+  answer.
+  - A deactivated vendor now answers 404 `COS-VND-006` "Vendor not found", as an absent one (`vendorExists` requires
+    `is_active = true`); a disabled identity answers 409 `COS-VND-009` ("This e-mail is disabled across the vendor
+    network") before any relationship, token or invitation. Listed in `docs/api/error-codes.md` and the buyer route's
+    409 text in `vendor.openapi.yaml`.
+  - Not changed — only NEW invitations are refused (found by /doubt): a vendor invited and then deactivated still
+    opens the RFQ, quotes through the portal (filed under the deactivated `vendor_id`) and uses its Tier-2 session,
+    since `resolveVendorId` and the Tier-2 guard check the relationship and the identity in the platform database, not
+    `procurement.vendors.is_active` in the tenant's (a separate database for a dedicated tenant, D56) — a separate
+    item. The buyer-side `submitQuotation` (`procurement.service.ts:307`) also still records a quotation for a
+    deactivated vendor.
+  - A deactivation cannot be undone through the API (nothing sets `is_active = true`, and `uq_vendors_tenant_code`
+    blocks re-creating the code); its contacts' ACTIVE relationships still name it, so inviting one for a
+    replacement vendor answers `COS-VND-007`. An operator edits the row.
+  - Verified: vendor-portal unit (103) — the `vendorExists` SQL's `is_active = true`, and the service's 409
+    `COS-VND-009` with no relationship, token or invitation; `test/procurement/05-vendor-reinvite` (10): a vendor
+    deactivated through the API → 404 `COS-VND-006` with nothing written; an identity disabled by hand → 409
+    `COS-VND-009` for its own vendor and another, nothing new written. HEAD's repository and service fail all four
+    (201 where 404/409 was due). Backend unit (4457), tsc, eslint, prettier, OpenAPI validation (26 documents), the
+    freshness gate (25 passed), conformance `procurement/02-openapi` (38) and markdownlint pass.
+
 - **Closed — the test-estate conformance rule failed on the integration harness's own self-test.** Fixed on
   `test/conformance-harness-selftest` (seen on `fix/vendor-open-rfq-relationship`, where the conformance suite had
   this one failure). "backend/test holds Testcontainers specs and nothing else"
@@ -1660,7 +1686,9 @@ gate's isolated run) checks the hash was not tested either; it ran 12.18.0 with 
     `fix/vendor-open-rfq-relationship`; quoting was already blocked, 403 `COS-VND-005`, and so is every Tier-2
     request). `vendorExists` ignores `procurement.vendors.is_active`, and the invitation does not
     check `vendor_identities.is_active`, so a deactivated vendor or a disabled identity can still be invited (the
-    quotation is then refused).
+    quotation is then refused — true for a disabled identity only; a deactivated vendor's relationship and identity
+    stay ACTIVE, so its quotation was accepted). New invitations to either are refused since
+    `fix/vendor-invite-inactive`; see that entry for what an already-invited deactivated vendor can still do.
 
 - **Closed — two mobile specs: a deliveries count never checked, and ledger dates on the UTC calendar.** Fixed on
   `test/mobile-finance-procurement-specs` (both found by /doubt on `test/mobile-taskcard-local-day`).

@@ -48,7 +48,7 @@ function build(
     listRfqInvitationsByVendor: jest.fn().mockResolvedValue([{ rfq_id: 'r-1' }]),
   };
   const identities = {
-    upsertIdentity: jest.fn().mockResolvedValue({ vendor_identity_id: 'vid-1' }),
+    upsertIdentity: jest.fn().mockResolvedValue({ vendor_identity_id: 'vid-1', is_active: true }),
     createRelationship: jest.fn().mockResolvedValue({ relationship: { relationship_id: 'rel-1' } }),
     findActiveRelationship: jest
       .fn()
@@ -133,6 +133,33 @@ describe('VendorPortalService', () => {
       expect(repo.createInvitation).toHaveBeenCalledWith(
         expect.objectContaining({ invitedEmail: 'somchai@acme.co' }),
       );
+    });
+
+    // fix/vendor-invite-inactive: an identity disabled across the network gets no invitation it could not use.
+    it('409 COS-VND-009 for an identity disabled across the network, and nothing is written', async () => {
+      const { service, identities, repo, magicLink } = build();
+      identities.upsertIdentity.mockResolvedValueOnce({
+        vendor_identity_id: 'vid-1',
+        is_active: false,
+      });
+      const attempt = service.issueInvitation({
+        rfqId: 'rfq-1',
+        vendorId: 'ven-1',
+        email: 'a@b.co',
+        displayName: 'ACME',
+      });
+      await expect(attempt).rejects.toThrow(ConflictException);
+      await expect(attempt).rejects.toMatchObject({
+        response: {
+          error: {
+            code: 'COS-VND-009',
+            message: 'This e-mail is disabled across the vendor network',
+          },
+        },
+      });
+      expect(identities.createRelationship).not.toHaveBeenCalled();
+      expect(magicLink.issueInvitationToken).not.toHaveBeenCalled();
+      expect(repo.createInvitation).not.toHaveBeenCalled();
     });
 
     it('409 COS-VND-007 when the e-mail already acts for another vendor, and no invitation is written', async () => {

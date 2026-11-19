@@ -139,11 +139,18 @@ export class VendorPortalRepository {
    * D56 dropped it (2026-11-13): that key could not hold once a tenant's vendors live in its dedicated
    * database.
    */
+  /**
+   * The tenant's vendor exists and is ACTIVE. `is_active = false` is the vendor soft delete (DELETE
+   * /procurement/vendors/:id), which the vendor lists already hide; a deactivated vendor is not one to invite
+   * (fix/vendor-invite-inactive).
+   */
   async vendorExists(vendorId: string): Promise<boolean> {
     const rows = await this.db.run(
       (tx) =>
         tx.$queryRaw<Array<{ found: boolean }>>`
-        SELECT EXISTS (SELECT 1 FROM procurement.vendors WHERE vendor_id = ${vendorId}::uuid) AS found
+        SELECT EXISTS (
+          SELECT 1 FROM procurement.vendors WHERE vendor_id = ${vendorId}::uuid AND is_active = true
+        ) AS found
       `,
     );
     return rows[0]?.found === true;
