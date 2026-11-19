@@ -22,10 +22,19 @@
 import { render, fireEvent } from '@testing-library/react-native';
 import { I18nProvider } from '../../i18n';
 import { TaskCard, shortTaskId } from '../TaskCard';
+import { toIsoDate } from '../../lib/isoDate';
 
-/** `planned_end` is a DATE; these are built relative to today so the bands are what they claim. */
+/**
+ * `planned_end` is a DATE; these are built relative to today so the bands are what they claim.
+ *
+ * On the LOCAL calendar, as the card counts (delaySeverity → localDayAsUtcMidnight). It used
+ * `toISOString().slice(0, 10)`, the UTC calendar: before 07:00 in Bangkok that is still yesterday, so
+ * "2 days past" was three local days and the LOW case read MEDIUM (test/mobile-taskcard-local-day).
+ */
 function daysAgo(n: number): string {
-  return new Date(Date.now() - n * 86_400_000).toISOString().slice(0, 10);
+  const day = new Date();
+  day.setDate(day.getDate() - n);
+  return toIsoDate(day);
 }
 
 function task(over: Record<string, unknown> = {}) {
@@ -169,31 +178,59 @@ describe('TaskCard', () => {
   // §15.4's four bands, on the task list only. The dashboard shows state instead — one component,
   // because everything else about the card is identical and two copies would drift.
 
-  it.each([
-    ['CRITICAL', 20],
-    ['HIGH', 9],
-    ['MEDIUM', 4],
-    ['LOW', 2],
-  ])('reads %s when the task is %s days past its date', async (band, late) => {
-    const { utils } = renderCard({
-      badge: 'severity',
-      task: { plannedEnd: daysAgo(late as number) },
+  // At 02:30 local, with the clock held: before 07:00 the UTC calendar is a day behind the local one (the
+  // trap this spec once fell into), and holding it means local midnight cannot pass between the spec's
+  // reading of today and the card's — "2 days past" would then be 3 (test/mobile-taskcard-local-day).
+  // Only Date is faked; the jest configs pin TZ to Asia/Bangkok.
+  describe('at 02:30, before the UTC day turns', () => {
+    beforeEach(() => {
+      jest.useFakeTimers({
+        now: new Date(2026, 10, 19, 2, 30),
+        doNotFake: [
+          'setTimeout',
+          'clearTimeout',
+          'setInterval',
+          'clearInterval',
+          'setImmediate',
+          'clearImmediate',
+          'nextTick',
+          'queueMicrotask',
+          'requestAnimationFrame',
+          'cancelAnimationFrame',
+          'hrtime',
+          'performance',
+        ],
+      });
     });
-    const { getByText } = await utils;
-
-    expect(getByText(band as string)).toBeTruthy();
-  });
-
-  // Not late is not a band: a task inside its window shows its STATE, because there is nothing
-  // overdue to report and a fifth "on time" band would be a badge that never changes.
-  it('falls back to the state when the task is not late at all', async () => {
-    const { utils } = renderCard({
-      badge: 'severity',
-      task: { plannedEnd: new Date(Date.now() + 86_400_000).toISOString().slice(0, 10) },
+    afterEach(() => {
+      jest.useRealTimers();
     });
-    const { getByText } = await utils;
+    it.each([
+      ['CRITICAL', 20],
+      ['HIGH', 9],
+      ['MEDIUM', 4],
+      ['LOW', 2],
+    ])('reads %s when the task is %s days past its date', async (band, late) => {
+      const { utils } = renderCard({
+        badge: 'severity',
+        task: { plannedEnd: daysAgo(late as number) },
+      });
+      const { getByText } = await utils;
 
-    expect(getByText('In progress')).toBeTruthy();
+      expect(getByText(band as string)).toBeTruthy();
+    });
+
+    // Not late is not a band: a task inside its window shows its STATE, because there is nothing
+    // overdue to report and a fifth "on time" band would be a badge that never changes.
+    it('falls back to the state when the task is not late at all', async () => {
+      const { utils } = renderCard({
+        badge: 'severity',
+        task: { plannedEnd: daysAgo(-1) },
+      });
+      const { getByText } = await utils;
+
+      expect(getByText('In progress')).toBeTruthy();
+    });
   });
 
   // A task with no planned end cannot be late. The card says nothing rather than assuming a date.

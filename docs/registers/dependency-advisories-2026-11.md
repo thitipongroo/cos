@@ -1602,6 +1602,21 @@ gate's isolated run) checks the hash was not tested either; it ran 12.18.0 with 
 
 ## Open
 
+- **Closed — TaskCard's lateness test failed before 07:00 Bangkok time.** Fixed on `test/mobile-taskcard-local-day`
+  (noted on `fix/app-report-submit-notify`, where the render suite had this one failure at 02:xx). The card is right:
+  `delaySeverity` counts days from the local day (`localDayAsUtcMidnight`). The spec built its dates on the UTC
+  calendar (`toISOString().slice(0, 10)`): before 07:00 in Bangkok that is still yesterday, so "2 days past" was three
+  local days and the LOW case read MEDIUM. Its `daysAgo` and its "tomorrow" date now use `toIsoDate`, the local
+  calendar; no component change. The band cases and the "not late" case now run with `Date` held at 02:30 local (the
+  jest configs pin `TZ` to Asia/Bangkok), so the hour that failed is tested on every run, and local midnight cannot
+  pass between the spec's reading of today and the card's (found by /doubt; the old spec had that race too).
+  - Verified: the spec passes (31/31); with the old UTC `daysAgo` under the held clock the LOW case fails on every run
+    (1 of 31), whatever the hour. Before the clock was held, a temporary copy with `Date` faked (deleted after) passed
+    at 02:30, 07:30 and 23:30 +07:00 and HEAD's spec failed at 02:30. apps/mobile render suite (1812/1812), jest
+    (1158), tsc, eslint and prettier pass.
+  - Same pattern, left: `finance.spec.tsx:371` builds ledger dates the same way and passes at 02:30 too (22/22);
+    `delaySeverity.spec.ts` and `spendTrend.spec.ts` use a fixed `NOW`.
+
 - **Closed — re-inviting a vendor identity for another vendor kept the old vendor.** Fixed on
   `fix/vendor-reinvite-refuse` (product-owner decision 2026-11-16: one person acts for one vendor of a tenant, so the
   second invitation is refused). `createRelationship` upserted on `(tenant_id, vendor_identity_id)` and re-activated
