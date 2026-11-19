@@ -212,6 +212,30 @@ describe('VendorPortalService', () => {
         rfq_number: 'RFQ-1',
       });
     });
+
+    // fix/vendor-open-rfq-relationship: the same standing as quoting — a vendor revoked after it was invited could
+    // still read the RFQ.
+    it('403 COS-VND-005 when the relationship is no longer active, before the RFQ is read', async () => {
+      const { service, repo, identities } = build({ relationship: null });
+      await expect(service.openRfq('TOK', 'inv-1')).rejects.toThrow(
+        'COS-VND-005: No active trading relationship',
+      );
+      expect(identities.findActiveRelationship).toHaveBeenCalledWith(
+        validInvitation.vendor_identity_id,
+        'ten-1',
+      );
+      expect(repo.findRfq).not.toHaveBeenCalled();
+    });
+
+    it('403 COS-VND-005 for an invitation with no vendor identity, before the RFQ is read', async () => {
+      const { service, repo } = build({
+        invitation: { ...validInvitation, vendor_identity_id: null },
+      });
+      await expect(service.openRfq('TOK', 'inv-1')).rejects.toThrow(
+        'COS-VND-005: Invitation has no linked vendor identity',
+      );
+      expect(repo.findRfq).not.toHaveBeenCalled();
+    });
   });
 
   describe('submitQuotation', () => {

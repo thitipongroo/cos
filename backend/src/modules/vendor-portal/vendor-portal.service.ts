@@ -108,6 +108,10 @@ export class VendorPortalService {
 
   async openRfq(token: string, invitationId: string): Promise<RfqRow> {
     const invitation = await this.assertValidInvitation(token, invitationId);
+    // The same standing as quoting (fix/vendor-open-rfq-relationship): a vendor revoked after it was invited, or
+    // an identity disabled network-wide, could read the RFQ until the invitation expired, though it could no
+    // longer quote. 403 COS-VND-005 before the RFQ is read.
+    await this.resolveVendorId(invitation.vendor_identity_id);
     const rfq = await this.repo.findRfq(invitation.rfq_id);
     if (!rfq) {
       throw new NotFoundException('COS-VND-001: RFQ not found');

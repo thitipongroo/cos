@@ -1602,6 +1602,25 @@ gate's isolated run) checks the hash was not tested either; it ran 12.18.0 with 
 
 ## Open
 
+- **Closed — a revoked vendor could still open the RFQ it was invited to.** Fixed on
+  `fix/vendor-open-rfq-relationship` (found by /doubt on `fix/vendor-revoked-reinvite`). `GET /vendor/rfq/:token`
+  (`openRfq`) checked only the invitation — token, PENDING, not expired — so a vendor revoked after it was invited, or
+  an identity disabled network-wide, read the RFQ (`rfq_number`, `project_id`, `status`, `deadline`) until the
+  invitation expired, though it could no longer quote. `openRfq` now runs the same `resolveVendorId` as
+  `submitQuotation`: 403 `COS-VND-005` ("No active trading relationship") before the RFQ is read — no new helper or
+  code; `openRfq` reuses `resolveVendorId`. Listed as a 403 on the route in `vendor.openapi.yaml`, and the
+  `COS-VND-005` trigger in `docs/api/error-codes.md` now names `openRfq` and a disabled identity (found by /doubt).
+  - Not changed: a revocation leaves PENDING invitations PENDING (revocation is a manual DB edit); they can no longer
+    open or quote.
+  - Verified: vendor-portal unit (102) — no active relationship, and an invitation with no vendor identity, each →
+    `COS-VND-005` with the RFQ not read; `test/procurement/05-vendor-reinvite` (8): an invitation's magic link opens
+    the RFQ (200), and answers 403 `COS-VND-005` after a hand revoke, and — in a second case — after the identity is
+    disabled with its relationship still ACTIVE. HEAD's service fails all four (200, or the RFQ, where 403 was due).
+    tsc, eslint, prettier, OpenAPI validation (26 documents), the freshness gate (25 passed) and markdownlint pass;
+    the conformance suite passes `procurement/02-openapi` (38) — its one failure, `testing/01-test-estate` flagging
+    `backend/test/infra/01-loopback-listen.integration.spec.ts` (last changed 2026-11-14), is in a file this branch
+    does not touch.
+
 - **Closed — an invitation re-activated a revoked vendor relationship.** Fixed on `fix/vendor-revoked-reinvite`
   (product-owner decision 2026-11-19: refuse for everyone; whoever revoked it restores it). Found by /doubt on
   `fix/vendor-reinvite-refuse`. The relationship upsert set `status = 'ACTIVE'` on any same-vendor row, so a
@@ -1619,9 +1638,10 @@ gate's isolated run) checks the hash was not tested either; it ran 12.18.0 with 
     still REVOKED, no new invitation. HEAD's repository and service fail it (201 where 409 was due) and 7 unit cases.
     OpenAPI validation (26 documents), the freshness gate (25 passed, 0 failed) and markdownlint pass.
   - Not in this entry (also seen by /doubt): a revocation leaves PENDING invitations PENDING, and `openRfq`
-    (`GET /vendor/rfq/:token`) checks only the invitation's token, status and expiry — so a vendor revoked after
-    being invited can still read that RFQ until the invitation expires (quoting is blocked, 403 `COS-VND-005`, and so
-    is every Tier-2 request). `vendorExists` ignores `procurement.vendors.is_active`, and the invitation does not
+    (`GET /vendor/rfq/:token`) checked only the invitation's token, status and expiry — so a vendor revoked after
+    being invited could still read that RFQ until the invitation expired (fixed since on
+    `fix/vendor-open-rfq-relationship`; quoting was already blocked, 403 `COS-VND-005`, and so is every Tier-2
+    request). `vendorExists` ignores `procurement.vendors.is_active`, and the invitation does not
     check `vendor_identities.is_active`, so a deactivated vendor or a disabled identity can still be invited (the
     quotation is then refused).
 

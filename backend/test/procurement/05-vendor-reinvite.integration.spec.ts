@@ -305,4 +305,57 @@ describe('Vendor invitations: one e-mail, one vendor per tenant (real database)'
       expect(Number(identities[0]!.n)).toBe(1);
     }
   });
+
+  // fix/vendor-open-rfq-relationship: opening an RFQ through its magic link now needs the same standing as quoting.
+  // A vendor revoked after it was invited could still read the RFQ until the invitation expired.
+  it('a revoked vendor can no longer open the RFQ it was invited to', async () => {
+    const vendorA = await createVendor();
+    const rfq = await seedRfq();
+    const email = 'dao.reinvite@example.com';
+    const issued = await invite(rfq, vendorA, email);
+    expect(issued.status).toBe(201);
+    const token = (issued.body as { magicLinkToken: string }).magicLinkToken;
+
+    const open = () => http().get(`/api/v1/vendor/rfq/${encodeURIComponent(token)}`);
+    const before = await open();
+    expect(before.status).toBe(200);
+    expect((before.body as { rfq_id: string }).rfq_id).toBe(rfq);
+
+    await infra.prisma.$executeRawUnsafe(
+      `UPDATE platform.vendor_trading_relationships r SET status = 'REVOKED'
+         FROM platform.vendor_identities i
+        WHERE i.vendor_identity_id = r.vendor_identity_id AND i.email = $1 AND r.tenant_id = $2::uuid`,
+      email,
+      TENANT_ID,
+    );
+
+    const after = await open();
+    expect(after.status).toBe(403);
+    expect((after.body as { error: { message: string } }).error.message).toBe(
+      'COS-VND-005: No active trading relationship',
+    );
+  });
+
+  it('a vendor identity disabled network-wide can no longer open the RFQ either', async () => {
+    const vendorA = await createVendor();
+    const rfq = await seedRfq();
+    const email = 'kaew.reinvite@example.com';
+    const issued = await invite(rfq, vendorA, email);
+    expect(issued.status).toBe(201);
+    const token = (issued.body as { magicLinkToken: string }).magicLinkToken;
+    const open = () => http().get(`/api/v1/vendor/rfq/${encodeURIComponent(token)}`);
+    expect((await open()).status).toBe(200);
+
+    // The relationship stays ACTIVE; the identity is disabled across the network (an operator edit).
+    await infra.prisma.$executeRawUnsafe(
+      `UPDATE platform.vendor_identities SET is_active = false WHERE email = $1`,
+      email,
+    );
+    expect(await relationshipsOf(email)).toEqual([{ vendor_id: vendorA, status: 'ACTIVE' }]);
+    const after = await open();
+    expect(after.status).toBe(403);
+    expect((after.body as { error: { message: string } }).error.message).toBe(
+      'COS-VND-005: No active trading relationship',
+    );
+  });
 });
