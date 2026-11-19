@@ -85,6 +85,7 @@ right config: nothing fails, and nothing says anything. Write it down here, enfo
 | `backend/src/**/*.workflow.spec.ts`           | Temporal workflows — needs a TestWorkflowEnvironment, not a container, so it stays beside its module | `backend/jest.workflows.config.js`   |
 | `backend/test/<module>/*.integration.spec.ts` | integration — boots the real `AppModule` against Testcontainers                                      | `backend/jest.integration.config.js` |
 | `backend/test/helpers/`                       | the integration harness (see §30.4) — not specs, no runner picks them up                             | —                                    |
+| `backend/test/infra/`                         | self-tests of that harness — no container; each named in `HARNESS_SELF_TESTS` (01-test-estate)        | `backend/jest.integration.config.js` |
 | `tests/conformance/<module>/`                 | architecture fitness functions — read source as text, import no app code                             | `jest.conformance.config.js`         |
 | `tests/contract/`                             | Pact consumer-driven contracts                                                                       | `jest.contract.config.js`            |
 | `tests/e2e/specs/`                            | Playwright, against a deployed environment                                                           | `playwright.config.ts`               |

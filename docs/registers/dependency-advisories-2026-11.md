@@ -1602,6 +1602,23 @@ gate's isolated run) checks the hash was not tested either; it ran 12.18.0 with 
 
 ## Open
 
+- **Closed — the test-estate conformance rule failed on the integration harness's own self-test.** Fixed on
+  `test/conformance-harness-selftest` (seen on `fix/vendor-open-rfq-relationship`, where the conformance suite had
+  this one failure). "backend/test holds Testcontainers specs and nothing else"
+  (`tests/conformance/testing/01-test-estate.spec.ts`) flagged `backend/test/infra/01-loopback-listen.integration.spec.ts`
+  (added 2026-11-14, `ab1ea5a6`; CI had not run since 2026-11-08, so nothing showed it). That spec tests the
+  `listen()` patch in `test/helpers/integration-mocks.ts` under the integration runner, which is what proves
+  `jest.integration.config.js`'s `setupFilesAfterEnv` puts it in effect — a unit spec importing the module would test
+  the patch but not that wiring (reworded after /doubt, which found "would test nothing elsewhere" overclaimed). It
+  starts no container, so it pays no startup; it stays where it is.
+  - The rule now exempts harness self-tests named one by one with the reason (this file only, looked up with
+    `Object.hasOwn`), and a second test fails if an exempted file is gone or has started using containers. §30.2a
+    (`docs/specifications/30-testing-strategy.md`) gains a `backend/test/infra/` row, pinned by the §30.2a test. The
+    spec itself is unchanged.
+  - Verified: the conformance suite passes in full (61 suites; 2349 passed, 1 skipped); with the list emptied the
+    rule fails on that file again, and with a nonexistent entry the new test fails on it (both restored after). tsc
+    (`tests/conformance`), eslint, prettier and markdownlint pass.
+
 - **Closed — a revoked vendor could still open the RFQ it was invited to.** Fixed on
   `fix/vendor-open-rfq-relationship` (found by /doubt on `fix/vendor-revoked-reinvite`). `GET /vendor/rfq/:token`
   (`openRfq`) checked only the invitation — token, PENDING, not expired — so a vendor revoked after it was invited, or

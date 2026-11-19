@@ -266,12 +266,33 @@ describe('Phase 18 · a spec lives where its runner says, not where its phase do
       codeOnly(fs.readFileSync(path.join(repoRoot, file), 'utf8')),
     );
 
+  // Self-tests of the integration HARNESS, run under jest.integration.config.js without a container. A unit spec
+  // could import the harness module and test it, but not the wiring: only under the integration runner does the
+  // spec prove the config's setupFilesAfterEnv actually puts it in effect for every integration suite — and that
+  // config only runs `test/**`. They start no container, so they pay no startup. Named one by one, with why
+  // (§30.2a's `backend/test/infra/` row).
+  const HARNESS_SELF_TESTS: Record<string, string> = {
+    // The listen() patch in test/helpers/integration-mocks.ts that binds every app under test to 127.0.0.1.
+    'backend/test/infra/01-loopback-listen.integration.spec.ts':
+      'tests the integration-mocks listen() patch',
+  };
+
   it('backend/test holds Testcontainers specs and nothing else', () => {
     // The integration config runs `<rootDir>/test/**` minus `*.workflow.spec.ts`. A spec here that
     // starts no container is either misfiled or misnamed, and either way it is paying container
-    // startup and a 120s timeout for a test that does not need them.
-    const strays = specsUnder(backendTest).filter((f) => !usesContainers(f));
+    // startup and a 120s timeout for a test that does not need them — unless it tests the harness itself
+    // (HARNESS_SELF_TESTS; test/conformance-harness-selftest).
+    const strays = specsUnder(backendTest).filter(
+      (f) => !usesContainers(f) && !Object.hasOwn(HARNESS_SELF_TESTS, f),
+    );
     expect(strays).toEqual([]);
+  });
+
+  it('every harness self-test exempted above still exists and still starts no container', () => {
+    // So the exemption cannot outlive its file, or cover a spec that has since become an ordinary container spec.
+    const specs = new Set(specsUnder(backendTest));
+    const stale = Object.keys(HARNESS_SELF_TESTS).filter((f) => !specs.has(f) || usesContainers(f));
+    expect(stale).toEqual([]);
   });
 
   it('every Temporal workflow spec sits beside the module it drives', () => {
@@ -306,6 +327,8 @@ describe('Phase 18 · a spec lives where its runner says, not where its phase do
     expect(spec).toContain('## 30.2a Where a test file lives');
     expect(spec).toMatch(/backend\/test\/<module>\/\*\.integration\.spec\.ts/);
     expect(spec).toMatch(/backend\/src\/\*\*\/\*\.workflow\.spec\.ts/);
+    // The one exemption from "backend/test holds Testcontainers specs" is written down there too.
+    expect(spec).toMatch(/`backend\/test\/infra\/`.*HARNESS_SELF_TESTS/);
     // The decision itself, not just the shape: `backend/test/` keeps the NestJS name rather than
     // gaining a k8s-style type layer. Recorded so it is not re-argued from scratch.
     expect(spec).toMatch(/keeps the name the NestJS CLI generates/);
