@@ -89,7 +89,7 @@ jest.mock('@temporalio/client', () => ({
 const mockRepo = {
   createVendor: jest.fn(),
   findVendorById: jest.fn(),
-  projectExists: jest.fn(),
+  projectStatus: jest.fn(),
   listVendors: jest.fn(),
   listVendorDirectory: jest.fn(),
   deactivateVendor: jest.fn(),
@@ -238,8 +238,9 @@ let service: ProcurementService;
 
 beforeEach(async () => {
   Object.values(mockRepo).forEach((fn) => (fn as jest.Mock).mockReset());
-  // fix/proc-rfq-pr-foreign-ids: a PR, an RFQ and a PO all check their project; tests that need it missing say so.
-  mockRepo.projectExists.mockResolvedValue(true);
+  // fix/proc-rfq-pr-foreign-ids / plan CS: a PR, an RFQ and a PO all check their project is the tenant's and open;
+  // ACTIVE unless a test says otherwise.
+  mockRepo.projectStatus.mockResolvedValue('ACTIVE');
 
   mockKafkaConnect.mockClear().mockResolvedValue(undefined);
   mockKafkaPublish.mockClear().mockResolvedValue(undefined);
@@ -474,7 +475,7 @@ describe('Purchase Order financial calculations', () => {
   // fix/proc-po-foreign-ids: the vendor (ACTIVE) and the project are the tenant's own.
   beforeEach(() => {
     mockRepo.findVendorById.mockResolvedValue(vendorFixture);
-    mockRepo.projectExists.mockResolvedValue(true);
+    mockRepo.projectStatus.mockResolvedValue('ACTIVE');
   });
 
   it('createPurchaseOrder — rejects when line totals do not match total_amount', async () => {
@@ -762,14 +763,14 @@ describe('deactivateVendor', () => {
 
 describe('Purchase Requests', () => {
   it("404 when the project is not the tenant's, nothing written (fix/proc-rfq-pr-foreign-ids)", async () => {
-    mockRepo.projectExists.mockResolvedValue(false);
+    mockRepo.projectStatus.mockResolvedValue(null);
     await expect(
       service.createPurchaseRequest({
         project_id: 'project-x',
         required_date: '2026-12-31',
       } as never),
     ).rejects.toThrow(new NotFoundException('Project project-x not found'));
-    expect(mockRepo.projectExists).toHaveBeenCalledWith('project-x');
+    expect(mockRepo.projectStatus).toHaveBeenCalledWith('project-x');
     expect(mockRepo.createPurchaseRequest).not.toHaveBeenCalled();
   });
 
@@ -824,7 +825,7 @@ describe('createRfq', () => {
   it.each([
     [
       'project',
-      () => mockRepo.projectExists.mockResolvedValue(false),
+      () => mockRepo.projectStatus.mockResolvedValue(null),
       {},
       'Project project-uuid-001 not found',
     ],
@@ -1783,7 +1784,7 @@ describe("createPurchaseOrder — the ids it names are the tenant's own (fix/pro
   beforeEach(() => {
     mockRepo.findVendorById.mockResolvedValue(vendorFixture);
     mockRepo.findRfqById.mockResolvedValue(rfqPublishedFixture);
-    mockRepo.projectExists.mockResolvedValue(true);
+    mockRepo.projectStatus.mockResolvedValue('ACTIVE');
   });
 
   it.each([
@@ -1807,7 +1808,7 @@ describe("createPurchaseOrder — the ids it names are the tenant's own (fix/pro
     ],
     [
       "an absent (or another tenant's) project",
-      () => mockRepo.projectExists.mockResolvedValue(false),
+      () => mockRepo.projectStatus.mockResolvedValue(null),
       {},
       'Project project-uuid-001 not found',
     ],
@@ -1827,7 +1828,7 @@ describe("createPurchaseOrder — the ids it names are the tenant's own (fix/pro
     mockRepo.setPoWorkflowId.mockResolvedValue(undefined);
     await service.createPurchaseOrder(dto());
     expect(mockRepo.findRfqById).not.toHaveBeenCalled();
-    expect(mockRepo.projectExists).toHaveBeenCalledWith('project-uuid-001');
+    expect(mockRepo.projectStatus).toHaveBeenCalledWith('project-uuid-001');
     expect(mockRepo.createPurchaseOrderWithLineItems).toHaveBeenCalled();
   });
 });
@@ -1836,7 +1837,7 @@ describe('exact contracts — createPurchaseOrder', () => {
   // fix/proc-po-foreign-ids: the vendor (ACTIVE) and the project are the tenant's own.
   beforeEach(() => {
     mockRepo.findVendorById.mockResolvedValue(vendorFixture);
-    mockRepo.projectExists.mockResolvedValue(true);
+    mockRepo.projectStatus.mockResolvedValue('ACTIVE');
   });
 
   const poDto = {
@@ -2557,5 +2558,113 @@ describe('replayed offline creates', () => {
       }),
     ).rejects.toMatchObject({ status: 409 });
     expect(mockRepo.findDeliveryById).not.toHaveBeenCalled();
+  });
+});
+
+// plan CS (product owner, 2026-11-20): a CANCELLED or COMPLETED project takes no new purchase request, RFQ or purchase
+// order — 422 COS-PROC-422, checked before anything is written. DRAFT, ACTIVE and ON_HOLD still take them.
+describe('no new procurement on a closed project (plan CS)', () => {
+  const creates = [
+    [
+      'purchase request',
+      () => service.createPurchaseRequest({ project_id: 'project-uuid-001', pr_number: 'PR-1' }),
+      () => mockRepo.createPurchaseRequest,
+    ],
+    [
+      'RFQ',
+      () =>
+        service.createRfq({
+          project_id: 'project-uuid-001',
+          rfq_number: 'RFQ-1',
+          deadline: new Date(Date.now() + 86_400_000).toISOString(),
+        }),
+      () => mockRepo.createRfq,
+    ],
+    [
+      'purchase order',
+      () =>
+        service.createPurchaseOrder({
+          vendor_id: 'vendor-uuid-001',
+          project_id: 'project-uuid-001',
+          po_number: 'PO-1',
+          total_amount: '60000.0000',
+          currency_code: 'THB',
+          delivery_date: '2026-09-01',
+          line_items: [
+            { description: 'Concrete', quantity: '10.0000', unit: 'm3', unit_price: '6000.0000' },
+          ],
+        } as never),
+      () => mockRepo.createPurchaseOrderWithLineItems,
+    ],
+  ] as const;
+
+  beforeEach(() => {
+    mockRepo.findVendorById.mockResolvedValue(vendorFixture);
+  });
+
+  describe.each(creates)('%s', (_name, create, write) => {
+    it.each(['CANCELLED', 'COMPLETED'])(
+      'a %s project: 422 COS-PROC-422, nothing written',
+      async (status) => {
+        mockRepo.projectStatus.mockResolvedValue(status);
+        const err = await create().catch((e: unknown) => e);
+        expect(err).toBeInstanceOf(UnprocessableEntityException);
+        expect((err as UnprocessableEntityException).getResponse()).toEqual({
+          error: {
+            code: 'COS-PROC-422',
+            message: `Project project-uuid-001 is ${status} — no new procurement`,
+            messageKey: 'procurement.project.closed',
+          },
+        });
+        expect(mockRepo.projectStatus).toHaveBeenCalledWith('project-uuid-001');
+        expect(write()).not.toHaveBeenCalled();
+        expect(mockWorkflowStart).not.toHaveBeenCalled();
+      },
+    );
+
+    it.each(['DRAFT', 'ACTIVE', 'ON_HOLD'])(
+      'a %s project is open: it is written',
+      async (status) => {
+        mockRepo.projectStatus.mockResolvedValue(status);
+        // Anything after the write is not this test's business; the write being reached is.
+        write().mockRejectedValue(new Error('written'));
+        await expect(create()).rejects.toThrow('written');
+        expect(write()).toHaveBeenCalled();
+      },
+    );
+  });
+});
+
+// plan CS, found by /doubt: an offline PR that landed, then its project closed, then the app replays it (the push
+// timed out). The replay answers with the row — a 422 would make the device discard, as refused, a request the
+// server holds.
+describe('createPurchaseRequest — a replay after the project closed (plan CS)', () => {
+  it('answers with the landed row, not 422, and writes nothing', async () => {
+    const landed = {
+      pr_id: '11111111-1111-4111-8111-111111111111',
+      project_id: 'project-uuid-001',
+    };
+    mockRepo.findPurchaseRequestById.mockResolvedValue(landed);
+    mockRepo.projectStatus.mockResolvedValue('CANCELLED');
+    await expect(
+      service.createPurchaseRequest({
+        client_id: landed.pr_id,
+        project_id: 'project-uuid-001',
+      } as never),
+    ).resolves.toBe(landed);
+    expect(mockRepo.findPurchaseRequestById).toHaveBeenCalledWith(landed.pr_id);
+    expect(mockRepo.createPurchaseRequest).not.toHaveBeenCalled();
+  });
+
+  it('a new client_id on a closed project is still refused', async () => {
+    mockRepo.findPurchaseRequestById.mockResolvedValue(null);
+    mockRepo.projectStatus.mockResolvedValue('COMPLETED');
+    await expect(
+      service.createPurchaseRequest({
+        client_id: '22222222-2222-4222-8222-222222222222',
+        project_id: 'project-uuid-001',
+      } as never),
+    ).rejects.toBeInstanceOf(UnprocessableEntityException);
+    expect(mockRepo.createPurchaseRequest).not.toHaveBeenCalled();
   });
 });

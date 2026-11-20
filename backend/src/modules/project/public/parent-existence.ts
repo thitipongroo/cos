@@ -6,9 +6,11 @@
 // isolation; this WHERE is defence-in-depth and drives the not-found → 404 in the services).
 //
 // Callers are the modules/project/* repositories, which delegate their projectExists / buildingExists
-// / floorExists methods here so the existence SQL for each parent lives in exactly one place.
+// / floorExists methods here so the existence SQL for each parent lives in exactly one place — and, through this
+// public API, other modules' repositories (procurement, finance) checking the projects they name.
 
 import type { TenantPrismaService } from '../../tenant/prisma/tenant-prisma.service';
+import type { ProjectStatus } from '../project.state-machine';
 
 /** True when a project with this id exists in the tenant. */
 export async function projectExistsInTenant(
@@ -26,6 +28,25 @@ export async function projectExistsInTenant(
       `,
   );
   return rows[0]?.exists ?? false;
+}
+
+/**
+ * The project's status in the tenant, or null when there is no such project (plan CS). For callers that refuse new
+ * work on a closed project (CANCELLED / COMPLETED) and still answer 404 for a missing one.
+ */
+export async function projectStatusInTenant(
+  tenantPrisma: TenantPrismaService,
+  projectId: string,
+  tenantId: string,
+): Promise<ProjectStatus | null> {
+  const rows = await tenantPrisma.run(
+    async (tx) =>
+      await tx.$queryRaw<Array<{ status: ProjectStatus }>>`
+        SELECT status::text AS status FROM projects.projects
+        WHERE project_id = ${projectId}::uuid AND tenant_id = ${tenantId}::uuid
+      `,
+  );
+  return rows[0]?.status ?? null;
 }
 
 /** True when a building with this id exists in the tenant. */

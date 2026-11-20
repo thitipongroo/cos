@@ -176,9 +176,17 @@ export class ProcurementService {
     // The project is the tenant's own (fix/proc-rfq-pr-foreign-ids): project_id has no foreign key, so any UUID was
     // taken. Also reached from the app's offline /sync/push: there a 404 is permanent, and the device discards the
     // item and tells the user (SyncManager, DISCARD_NOTIFY_TYPES).
-    if (!(await this.repo.projectExists(dto.project_id))) {
-      throw new NotFoundException(`Project ${dto.project_id} not found`);
+    // A replay of a request that already landed answers with that row first, before the project's state is read:
+    // the project may have been closed since (plan CS), and refusing the replay would make the device discard — and
+    // report as refused — a request the server holds (found by /doubt).
+    if (dto.client_id) {
+      const landed = await this.repo.findPurchaseRequestById(dto.client_id);
+      if (landed) {
+        logger.info({ pr_id: dto.client_id }, 'pr.created.duplicate_ignored');
+        return landed;
+      }
     }
+    await this.assertProjectOpenForProcurement(dto.project_id);
     // A caller that supplies its own number keeps it (the web form does); everyone else gets the
     // tenant's next PR-<year>-<seq>, because a document number is not something to ask a site
     // engineer to invent on their phone. Allocation happens inside the insert transaction (see
@@ -225,9 +233,7 @@ export class ProcurementService {
     // taken) and pr_id's is checked without RLS (another tenant's purchase request was accepted; an unknown one failed
     // the INSERT unmapped, 500). Existence in the tenant only — no APPROVED or same-project rule (product owner,
     // 2026-11-20), as for a PO's rfq_id.
-    if (!(await this.repo.projectExists(dto.project_id))) {
-      throw new NotFoundException(`Project ${dto.project_id} not found`);
-    }
+    await this.assertProjectOpenForProcurement(dto.project_id);
     if (dto.pr_id && !(await this.repo.findPrById(dto.pr_id))) {
       throw new NotFoundException(`Purchase request ${dto.pr_id} not found`);
     }
@@ -452,9 +458,7 @@ export class ProcurementService {
     if (dto.rfq_id && !(await this.repo.findRfqById(dto.rfq_id))) {
       throw new NotFoundException(`RFQ ${dto.rfq_id} not found`);
     }
-    if (!(await this.repo.projectExists(dto.project_id))) {
-      throw new NotFoundException(`Project ${dto.project_id} not found`);
-    }
+    await this.assertProjectOpenForProcurement(dto.project_id);
 
     // One transaction for the header + every line: a partial write would leave a committed PO whose
     // total_amount contradicts the sum just validated above.
@@ -924,6 +928,27 @@ export class ProcurementService {
   }
 
   // ── Private Helpers ────────────────────────────────────────────────────────
+
+  /**
+   * The project is the tenant's own (404 otherwise) and still takes new procurement: a CANCELLED or COMPLETED project
+   * takes no new purchase request, RFQ or purchase order (product owner, 2026-11-20; plan CS) — 422 `COS-PROC-422`.
+   * What is already open on it carries on. DRAFT, ACTIVE and ON_HOLD are open.
+   */
+  // The check and the write are separate transactions: a project closed in between can take one more — the same as
+  // work already open on it, which carries on.
+  private async assertProjectOpenForProcurement(project_id: string): Promise<void> {
+    const status = await this.repo.projectStatus(project_id);
+    if (status === null) throw new NotFoundException(`Project ${project_id} not found`);
+    if (status === 'CANCELLED' || status === 'COMPLETED') {
+      throw new UnprocessableEntityException({
+        error: {
+          code: 'COS-PROC-422',
+          message: `Project ${project_id} is ${status} — no new procurement`,
+          messageKey: 'procurement.project.closed',
+        },
+      });
+    }
+  }
 
   private async assertRfqStatus(rfq_id: string, expected: RfqRow['status']): Promise<RfqRow> {
     const rfq = await this.repo.findRfqById(rfq_id);

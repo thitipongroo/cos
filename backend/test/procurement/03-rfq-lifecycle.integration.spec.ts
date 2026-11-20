@@ -631,4 +631,116 @@ describe('Phase 5 · RFQ lifecycle, quotation comparison and event emission', ()
       expect(await selectedIds(rfqId)).toEqual([only]);
     });
   });
+
+  // plan CS (product owner, 2026-11-20): a CANCELLED or COMPLETED project takes no new purchase request, RFQ or
+  // purchase order — 422 COS-PROC-422, nothing written. All three refusals come before Temporal is touched.
+  describe('no new procurement on a closed project', () => {
+    const closedProject = async (status: 'CANCELLED' | 'COMPLETED'): Promise<string> => {
+      seq += 1;
+      const res = await http()
+        .post('/api/v1/projects')
+        .set('x-test-role', 'TENANT_ADMIN')
+        .send({
+          project_code: `SD-CS-${seq}`,
+          project_name: `Closed ${seq}`,
+          project_type: 'INFRASTRUCTURE',
+          start_date: '2019-01-01',
+          end_date: '2020-01-01',
+        });
+      expect([200, 201]).toContain(res.status);
+      const id = (res.body as { project_id: string }).project_id;
+      // A literal from the two-value union above (the column is an enum; a text parameter would not coerce).
+      await infra.prisma.$executeRawUnsafe(
+        `UPDATE projects.projects SET status = '${status}' WHERE project_id = $1::uuid`,
+        id,
+      );
+      return id;
+    };
+    const count = async (table: string, projectId: string): Promise<number> => {
+      const rows = await infra.prisma.$queryRawUnsafe<Array<{ n: bigint }>>(
+        `SELECT count(*) AS n FROM procurement.${table} WHERE project_id = $1::uuid`,
+        projectId,
+      );
+      return Number(rows[0]!.n);
+    };
+
+    // Found by /doubt: an offline PR that landed, then the project closed, then the app's replay (the push timed
+    // out) — answered with the row, not refused.
+    it('a PR replayed after its project closed answers with the row it landed as', async () => {
+      seq += 1;
+      const proj = await http()
+        .post('/api/v1/projects')
+        .set('x-test-role', 'TENANT_ADMIN')
+        .send({
+          project_code: `SD-CS-R${seq}`,
+          project_name: `Replay ${seq}`,
+          project_type: 'INFRASTRUCTURE',
+          start_date: '2019-01-01',
+          end_date: '2020-01-01',
+        });
+      const projectId = (proj.body as { project_id: string }).project_id;
+      const clientId = '33333333-3333-4333-8333-' + String(seq).padStart(12, '0');
+      const send = () =>
+        http()
+          .post('/api/v1/procurement/purchase-requests')
+          .set('x-test-role', PO_ROLE)
+          .send({ client_id: clientId, project_id: projectId, pr_number: `PR-CS-R${seq}` });
+
+      const first = await send();
+      expect(first.status).toBe(201);
+      await infra.prisma.$executeRawUnsafe(
+        `UPDATE projects.projects SET status = 'CANCELLED' WHERE project_id = $1::uuid`,
+        projectId,
+      );
+      const replay = await send();
+      expect(replay.status).toBe(201);
+      expect((replay.body as { pr_id: string }).pr_id).toBe(clientId);
+      expect(await count('purchase_requests', projectId)).toBe(1);
+    });
+
+    it.each(['CANCELLED', 'COMPLETED'] as const)(
+      'a %s project: PR, RFQ and PO all 422 COS-PROC-422, nothing written',
+      async (status) => {
+        const projectId = await closedProject(status);
+        const vendorId = await createVendor();
+
+        const pr = await http()
+          .post('/api/v1/procurement/purchase-requests')
+          .set('x-test-role', PO_ROLE)
+          .send({ project_id: projectId, pr_number: `PR-CS-${seq}` });
+        const rfq = await http()
+          .post('/api/v1/procurement/rfqs')
+          .set('x-test-role', PO_ROLE)
+          .send({
+            project_id: projectId,
+            rfq_number: `RFQ-CS-${seq}`,
+            deadline: new Date(Date.now() + 7 * 86_400_000).toISOString(),
+          });
+        const po = await http()
+          .post('/api/v1/procurement/purchase-orders')
+          .set('x-test-role', PO_ROLE)
+          .send({
+            vendor_id: vendorId,
+            project_id: projectId,
+            po_number: `PO-CS-${seq}`,
+            total_amount: '60000.0000',
+            currency_code: 'THB',
+            delivery_date: '2026-09-01',
+            line_items: [
+              { description: 'Concrete', quantity: '10.0000', unit: 'm3', unit_price: '6000.0000' },
+            ],
+          });
+
+        for (const res of [pr, rfq, po]) {
+          expect(res.status).toBe(422);
+          expect(res.body).toMatchObject({
+            error: { code: 'COS-PROC-422', messageKey: 'procurement.project.closed' },
+          });
+        }
+        expect(await count('purchase_requests', projectId)).toBe(0);
+        expect(await count('rfqs', projectId)).toBe(0);
+        expect(await count('purchase_orders', projectId)).toBe(0);
+      },
+    );
+  });
 });

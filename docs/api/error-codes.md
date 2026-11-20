@@ -293,10 +293,11 @@ Recorded 2026-11-13 from `vendor-portal.service.ts`, where they were thrown but 
 ## COS-PROC — Procurement
 
 Recorded 2026-11-20 from `procurement.service.ts`, where it was thrown but not listed here (fix/quotation-duplicate-and-closed-rfq).
-One code covers four conflicts; the `messageKey` tells them apart.
+`COS-PROC-409` covers four conflicts; the `messageKey` tells them apart.
 
-| Code         | HTTP | Message                                                  | Trigger                                                                                                          |
-| ------------ | ---- | -------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
-| COS-PROC-409 | 409  | client_id is already in use                              | `procurement.pr.duplicateId` / `procurement.delivery.duplicateId` — a replayed id that belongs to another tenant |
-| COS-PROC-409 | 409  | A quotation from this vendor already exists for this RFQ | `procurement.quotation.duplicate` — `submitQuotation` (buyer) for an RFQ the vendor has already quoted for       |
-| COS-PROC-409 | 409  | This RFQ has already been awarded to another quotation   | `procurement.rfq.alreadyAwarded` — `awardRfq` for a quotation other than the one already awarded (plan CR)       |
+| Code         | HTTP | Message                                                  | Trigger                                                                                                                                    |
+| ------------ | ---- | -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| COS-PROC-409 | 409  | client_id is already in use                              | `procurement.pr.duplicateId` / `procurement.delivery.duplicateId` — a replayed id that belongs to another tenant                           |
+| COS-PROC-409 | 409  | A quotation from this vendor already exists for this RFQ | `procurement.quotation.duplicate` — `submitQuotation` (buyer) for an RFQ the vendor has already quoted for                                 |
+| COS-PROC-409 | 409  | This RFQ has already been awarded to another quotation   | `procurement.rfq.alreadyAwarded` — `awardRfq` for a quotation other than the one already awarded (plan CR)                                 |
+| COS-PROC-422 | 422  | Project `<id>` is `<status>` — no new procurement        | `procurement.project.closed` — `createPurchaseRequest`, `createRfq` or `createPurchaseOrder` on a CANCELLED or COMPLETED project (plan CS) |

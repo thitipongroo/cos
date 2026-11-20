@@ -1602,6 +1602,32 @@ gate's isolated run) checks the hash was not tested either; it ran 12.18.0 with 
 
 ## Open
 
+- **Closed — a CANCELLED or COMPLETED project still took new purchase requests, RFQs and purchase orders.** Fixed in
+  plan CS (on `docs/vendor-deactivated-invoices`, one commit; product-owner decisions 2026-11-20: CANCELLED and
+  COMPLETED refuse; DRAFT, ACTIVE and ON_HOLD take them; what is already open carries on; 422 with a new code; finance
+  contracts not in this round). Measured on HEAD: `createPurchaseRequest`, `createRfq` and `createPurchaseOrder`
+  checked only that the project exists in the tenant (`projectExists`, 404); its status was never read.
+  - `project/public/parent-existence.ts` gains `projectStatusInTenant` (one tenant-scoped query, explicit
+    `tenant_id`); procurement's `projectStatus` replaces its `projectExists`. The three creates: no project → 404 as
+    before; CANCELLED / COMPLETED → 422 `{ error: { code: 'COS-PROC-422', message: 'Project <id> is <status> — no
+    new procurement', messageKey: 'procurement.project.closed' } }`, before anything is written.
+  - Docs: `error-codes.md` row; OpenAPI 422 on the three creates. No web or mobile change: the web PR and RFQ forms
+    show no server error at all (none before either) and there is no web PO form; the app already discards an
+    offline PR refused with a 4xx and tells the user (`isPermanentFailure`, `DISCARD_NOTIFY_TYPES`).
+  - Found by /doubt: an offline PR that landed, then its project closed, then the app's replay (the push timed out)
+    would have been refused 422 — the device discarding, as refused, a request the server holds. A replay
+    (`client_id` already landed) now answers with that row before the project's state is read. The check and the
+    write are separate transactions: a project closed in between can take one more — the same as work already open.
+    `projectStatusInTenant` returns the `ProjectStatus` union.
+  - Not covered: finance `createContract` on a closed project (out of this round by decision).
+  - Unit: each of the three creates refused for CANCELLED and COMPLETED with the exact body, nothing written, no
+    workflow started; DRAFT, ACTIVE and ON_HOLD reach the write; a replay after the project closed answers with the row;
+    `projectStatusInTenant`'s SQL and null. Integration (`03-rfq-lifecycle`, 23): a CANCELLED and a COMPLETED project
+    refuse PR, RFQ and PO with `COS-PROC-422`, nothing written; a PR replayed after its project closed answers 201 with
+    its row, one row held. Controls: HEAD's service and repository fail both refusal cases; the gate disabled fails the
+    six refusal unit cases; without the replay-first read the replay fails (integration and unit). Backend tsc, eslint,
+    prettier, unit, OpenAPI validity and freshness, conformance and markdownlint pass.
+
 - **Closed — a second award on the same RFQ was accepted until the workflow marked it AWARDED.** Fixed in plan CR (on
   `docs/vendor-deactivated-invoices`, one commit; product-owner decisions 2026-11-20: another quotation is refused,
   the first award standing; the same quotation again is accepted and re-signalled). Found by the second /doubt cycle

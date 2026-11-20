@@ -907,6 +907,14 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          description: >-
+            `COS-PROC-422` (`procurement.project.closed`) — the project is CANCELLED or COMPLETED and takes no new
+            procurement (plan CS); nothing is written
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /procurement/rfqs/{rfqId}/publish:
     post:
       tags:
@@ -1165,7 +1173,9 @@ paths:
             The vendor is not one of this tenant's ACTIVE vendors, or the RFQ (when named) or the project is not this
             tenant's (absent or another tenant's — fix/proc-po-foreign-ids); nothing is written
         '422':
-          description: Total mismatch or validation error
+          description: >-
+            Total mismatch or validation error; or `COS-PROC-422` (`procurement.project.closed`) — the project is
+            CANCELLED or COMPLETED and takes no new procurement (plan CS); nothing is written
   /procurement/purchase-orders/{poId}:
     get:
       tags:
@@ -1459,6 +1469,14 @@ paths:
           description: >-
             The project is not this tenant's (absent or another tenant's — fix/proc-rfq-pr-foreign-ids); nothing is
             written
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          description: >-
+            `COS-PROC-422` (`procurement.project.closed`) — the project is CANCELLED or COMPLETED and takes no new
+            procurement (plan CS); nothing is written
           content:
             application/json:
               schema:
