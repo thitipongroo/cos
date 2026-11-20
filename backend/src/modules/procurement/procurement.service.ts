@@ -712,6 +712,11 @@ export class ProcurementService {
 
   // ── Invoice Receipt ────────────────────────────────────────────────────────
 
+  // By design (product owner, 2026-11-20; docs/vendor-deactivated-invoices): the vendor is not checked
+  // here, nor in approveInvoice or markInvoicePaid. A vendor deactivated after its PO was issued still has
+  // that PO's invoices received, approved and paid on the buyer side — deactivation means "buy no more",
+  // not "pay no debts". Creating new business with the vendor (a PO, contract, quotation or RFQ invitation)
+  // is what checks is_active.
   async receiveInvoice(dto: ReceiveInvoiceDto): Promise<InvoiceRow> {
     const po_id = dto.po_id;
     const po = await this.assertPoStatus(po_id, 'FULLY_DELIVERED');

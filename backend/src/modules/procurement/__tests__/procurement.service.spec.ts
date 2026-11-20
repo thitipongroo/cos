@@ -1032,6 +1032,20 @@ describe('receiveInvoice', () => {
     const result = await service.receiveInvoice(invoiceDto);
     expect(result.invoice_id).toBe('inv-uuid-001');
   });
+
+  // docs/vendor-deactivated-invoices: by design, deactivation stops new business, not the PO's invoices.
+  it('receives the invoice of a PO whose vendor has since been deactivated, without looking the vendor up', async () => {
+    mockRepo.findPoById.mockResolvedValue({ ...poFixture, status: 'FULLY_DELIVERED' });
+    mockRepo.findVendorById.mockResolvedValue({ ...vendorFixture, is_active: false });
+    mockRepo.createInvoice.mockResolvedValue(invoiceRow);
+    const result = await service.receiveInvoice(invoiceDto);
+    expect(result.invoice_id).toBe('inv-uuid-001');
+    expect(mockRepo.createInvoice).toHaveBeenCalledWith(
+      expect.objectContaining({ vendor_id: poFixture.vendor_id }),
+      expect.any(Function),
+    );
+    expect(mockRepo.findVendorById).not.toHaveBeenCalled();
+  });
 });
 
 describe('approveInvoice', () => {
@@ -1057,6 +1071,17 @@ describe('approveInvoice', () => {
     mockRepo.findPoById.mockResolvedValue(poFixture);
     const result = await service.approveInvoice('inv-uuid-001');
     expect(result.status).toBe('APPROVED');
+  });
+
+  // docs/vendor-deactivated-invoices: approval does not look the vendor up either.
+  it('approves the invoice of a since-deactivated vendor without looking the vendor up', async () => {
+    mockRepo.findInvoiceById.mockResolvedValue(invoiceRow);
+    mockRepo.updateInvoiceStatus.mockResolvedValue(undefined);
+    mockRepo.findPoById.mockResolvedValue(poFixture);
+    mockRepo.findVendorById.mockResolvedValue({ ...vendorFixture, is_active: false });
+    const result = await service.approveInvoice('inv-uuid-001');
+    expect(result.status).toBe('APPROVED');
+    expect(mockRepo.findVendorById).not.toHaveBeenCalled();
   });
 
   it('throws NotFoundException when invoice not found', async () => {
@@ -1205,6 +1230,14 @@ describe('listInvoices / markInvoicePaid / disputeInvoice', () => {
   it('markInvoicePaid — signals workflow when INVOICED', async () => {
     mockRepo.findPoById.mockResolvedValue({ ...poFixture, status: 'INVOICED' });
     await expect(service.markInvoicePaid('po-uuid-001')).resolves.toBeUndefined();
+  });
+
+  // docs/vendor-deactivated-invoices: payment does not look the vendor up either.
+  it('markInvoicePaid — pays a since-deactivated vendor without looking the vendor up', async () => {
+    mockRepo.findPoById.mockResolvedValue({ ...poFixture, status: 'INVOICED' });
+    mockRepo.findVendorById.mockResolvedValue({ ...vendorFixture, is_active: false });
+    await expect(service.markInvoicePaid('po-uuid-001')).resolves.toBeUndefined();
+    expect(mockRepo.findVendorById).not.toHaveBeenCalled();
   });
 
   it('disputeInvoice — signals workflow when INVOICED', async () => {

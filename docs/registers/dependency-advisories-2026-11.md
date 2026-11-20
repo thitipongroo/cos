@@ -1602,6 +1602,24 @@ gate's isolated run) checks the hash was not tested either; it ran 12.18.0 with 
 
 ## Open
 
+- **Closed (by design) — a vendor deactivated after its PO still has that PO's invoices received, approved and paid.**
+  Recorded on `docs/vendor-deactivated-invoices` (product-owner decision 2026-11-20: deactivation means "buy no more",
+  not "pay no debts"). Found by /doubt on `fix/proc-rfq-pr-foreign-ids`. Measured on HEAD: the buyer's
+  `receiveInvoice` (`POST /procurement/invoices`) writes the invoice with `po.vendor_id` for a FULLY_DELIVERED PO and
+  never looks the vendor up; `approveInvoice` and `markInvoicePaid` do not either. The portal's own `submitInvoice` is
+  closed to a deactivated vendor by the Tier-2 guard (`fix/vendor-portal-inactive-vendor`), so this is the buyer side only.
+  - No behaviour change. A comment at `receiveInvoice` states the rule for it and its approval and payment neighbours;
+    creating new business (a PO, contract, quotation or RFQ invitation) is what checks `is_active`.
+  - The same Tier-2 guard also closes `GET /vendor/invoices`: a deactivated vendor whose invoices are still being paid
+    cannot follow them in the portal. Left as it is (consistent with the guard's rule).
+  - Not decided here (found by /doubt, parked as product questions): `awardRfq` awards a quotation from a vendor
+    deactivated after it quoted (the PO that follows is still refused by `createPurchaseOrder`), and finance
+    `activateContract` activates a SIGNED contract whose vendor has since been deactivated. Neither checks the vendor.
+  - Unit: pinning tests — `receiveInvoice`, `approveInvoice` and `markInvoicePaid` for a deactivated vendor succeed and
+    never call `findVendorById`. With a vendor check added to `receiveInvoice`, its test fails (control; restored).
+    The tests pin the `findVendorById` route only; a check through other SQL would pass them. Backend tsc, eslint,
+    prettier, unit (4490) and markdownlint pass.
+
 - **Closed — a second quotation for the same RFQ and vendor answered 500; the portal quoted a closed RFQ.** Fixed on
   `fix/quotation-duplicate-and-closed-rfq` (product-owner decisions 2026-11-20: a second quotation is refused, the first
   standing — no revision; the portal refuses an RFQ that is not PUBLISHED, as the buyer side does). Found by /doubt on
@@ -1744,7 +1762,8 @@ gate's isolated run) checks the hash was not tested either; it ran 12.18.0 with 
   (`fix/proc-quotation-vendor-check`), purchase orders (`fix/proc-po-foreign-ids`), finance contracts
   (`fix/finance-contract-foreign-ids`), and RFQs and purchase requests (`fix/proc-rfq-pr-foreign-ids`) — see their
   entries. Not covered by them (found by /doubt on the last branch, where the summary had dropped the first):
-  - a vendor deactivated after its PO still receives invoices on that PO (`receiveInvoice` copies `po.vendor_id`);
+  - a vendor deactivated after its PO still receives invoices on that PO (`receiveInvoice` copies `po.vendor_id`) —
+    by design, see `docs/vendor-deactivated-invoices` above;
   - rows written before those branches were not re-checked (HEAD wrote cross-tenant and unknown ids, measured there);
   - an unknown id behind a foreign key on any other route still answers 500 (23503 is not mapped globally).
 - **Closed — a second quotation for the same RFQ and vendor answered 500.** See the entry for
