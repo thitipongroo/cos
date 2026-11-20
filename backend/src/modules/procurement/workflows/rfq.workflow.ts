@@ -121,7 +121,7 @@ export async function rfqWorkflow(params: RfqWorkflowParams): Promise<void> {
   status = 'CLOSED';
 
   // ── CLOSED → EVALUATED (system auto) ────────────────────────────────────
-  // Service layer computes quotation comparison before signalling EVALUATED.
+  // The activity runs the quotation comparison (selection) in the EVALUATED update's transaction (plan CQ).
   await acts.markQuotationsEvaluated(actParams);
   status = 'EVALUATED';
 

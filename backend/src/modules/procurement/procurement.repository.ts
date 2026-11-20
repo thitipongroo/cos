@@ -403,7 +403,7 @@ export class ProcurementRepository {
         prisma.$queryRaw<QuotationRow[]>`
         SELECT * FROM procurement.quotations
         WHERE rfq_id = ${rfq_id}::uuid AND tenant_id = ${this.tenantId}::uuid
-        ORDER BY total_amount ASC`,
+        ORDER BY total_amount ASC, submitted_at ASC, quotation_id ASC`,
     );
   }
 
@@ -419,28 +419,12 @@ export class ProcurementRepository {
     );
   }
 
-  // The vendors among an RFQ's quotations that are still ACTIVE in the tenant — the ones the comparison may
-  // auto-select (plan CP). tenant_id is filtered explicitly on both sides, not left to RLS.
-  async findActiveQuotingVendorIds(rfq_id: string): Promise<string[]> {
-    const rows = await this.db.run(
-      (prisma) =>
-        prisma.$queryRaw<Array<{ vendor_id: string }>>`
-        SELECT DISTINCT q.vendor_id
-        FROM procurement.quotations q
-        JOIN procurement.vendors v ON v.vendor_id = q.vendor_id AND v.tenant_id = q.tenant_id
-        WHERE q.rfq_id = ${rfq_id}::uuid AND q.tenant_id = ${this.tenantId}::uuid AND v.is_active = true`,
-    );
-    return rows.map((r) => r.vendor_id);
-  }
-
-  // A null quotation_id only clears the RFQ's selection (no quotation has an active vendor).
-  async markQuotationSelected(quotation_id: string | null, rfq_id: string): Promise<void> {
+  async markQuotationSelected(quotation_id: string, rfq_id: string): Promise<void> {
     // Clear previous selection, then set new one — single transaction via db.run
     await this.db.run(async (prisma) => {
       await prisma.$executeRaw`
         UPDATE procurement.quotations SET is_selected = false
         WHERE rfq_id = ${rfq_id}::uuid AND tenant_id = ${this.tenantId}::uuid`;
-      if (quotation_id === null) return;
       await prisma.$executeRaw`
         UPDATE procurement.quotations SET is_selected = true
         WHERE quotation_id = ${quotation_id}::uuid AND tenant_id = ${this.tenantId}::uuid`;

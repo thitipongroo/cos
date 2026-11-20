@@ -1602,6 +1602,40 @@ gate's isolated run) checks the hash was not tested either; it ran 12.18.0 with 
 
 ## Open
 
+- **Closed — the quotations GET answered 422 on every workflow-driven RFQ, and nothing made the automatic
+  selection.** Fixed in plan CQ (on `docs/vendor-deactivated-invoices`, one commit; product-owner decisions
+  2026-11-20). Found by /doubt on plan CP. Measured on HEAD: `rfq.workflow.ts` moves PUBLISHED → CLOSED and at once
+  CLOSED → EVALUATED (`markQuotationsEvaluated`, which changed the status only — its comment said the service
+  selected first, but nothing called it), while `compareQuotations` (`GET /procurement/rfqs/{id}/quotations`) required
+  CLOSED, answered 422 with no quotations, and was what wrote `is_selected`. The web quotations page reads that GET.
+  - The selection is the evaluation's, as spec 32 §706 has it ("System — after quotation comparison complete"):
+    `markQuotationsEvaluated` clears the RFQ's selection and selects the lowest quotation whose vendor is the tenant's
+    ACTIVE vendor — a tie going to the one submitted first, then `quotation_id` — in the EVALUATED update's
+    transaction, before the outbox event. None active → none selected. The EVALUATED update is guarded on CLOSED
+    (found by /doubt): a Temporal retry after a commit whose result was lost changes nothing — no re-selection over a
+    user's award, no second event. Workflow code unchanged but for its comment.
+  - The GET only reads: readable at CLOSED, EVALUATED, AWARDED or CANCELLED; sealed while DRAFT or PUBLISHED (422,
+    "its quotations are sealed until it is CLOSED"); 404 for an unknown RFQ; an RFQ with no quotations → `[]`.
+    `findQuotationsByRfq` orders `total_amount, submitted_at, quotation_id`.
+  - Web: the hint (en/th) and the page comment. Once the GET answered, the system's pick showed "Selected" with no
+    Award button (found by /doubt): Award is now offered on every row, the pick included, while the RFQ is EVALUATED
+    and on none otherwise (`canAwardQuotations`, `src/lib`); after an accepted award the page offers no more and
+    refetches the RFQ list (second /doubt cycle). OpenAPI: the GET's summary, description, 422 and 404;
+    the controller's summary to match. No new error code.
+  - Stale text noted, history kept: mobile comments and test comments that called the GET "not a read", ADR-099's
+    sixth amendment (an amendment note), and the phase-05 technical design row. `context/phases` (source spec) left.
+  - Unit: the activity's four statements in order on one transaction (the guarded EVALUATED update; clear; select with
+    the active-vendor join, explicit tenant and the three-key order; outbox) and the skip when not CLOSED; the GET in
+    each readable and sealed state, writing nothing; the repository order; `canAwardQuotations`. Integration
+    (`03-rfq-lifecycle`, 18): the activity run against the database selects the cheapest, skips a cheaper deactivated
+    vendor, clears when none is active, breaks a tie by `submitted_at`, and leaves an RFQ no longer CLOSED untouched;
+    the GET on an EVALUATED RFQ returns the stored selection untouched; PUBLISHED → 422; a closed RFQ with no quotations
+    → `[]`. Controls: HEAD's service, activity and repository fail five integration tests; the tie order reversed fails
+    the tie test (integration and unit); the activity without `is_active` fails the deactivated-vendor test; without the
+    CLOSED guard the retry test fails (integration and unit); `canAwardQuotations` without the status check fails six of
+    its eight cases. Backend tsc, eslint, prettier, unit; web tsc, eslint, tests; mobile rfqs render test; OpenAPI
+    validity and freshness; conformance; markdownlint pass.
+
 - **Closed — a deactivated vendor's quotation was awarded and auto-selected.** Fixed in plan CP (on
   `docs/vendor-deactivated-invoices`, one commit; product-owner decisions 2026-11-20). Found by /doubt on the plan CO
   round. Measured on HEAD: `awardRfq` checked only that the RFQ was EVALUATED and the quotation was its own, so a
@@ -1613,7 +1647,8 @@ gate's isolated run) checks the hash was not tested either; it ran 12.18.0 with 
   - `compareQuotations`: every quotation is still returned, but `is_selected` goes to the lowest one whose vendor is
     active (`findActiveQuotingVendorIds`: one query joining `procurement.vendors` on vendor and tenant, `is_active`,
     `tenant_id` filtered explicitly). None active → none selected and an earlier selection cleared
-    (`markQuotationSelected(null, …)`).
+    (`markQuotationSelected(null, …)`). Superseded by plan CQ: the selection moved to the evaluation activity, with
+    the same active-vendor rule; this query and the null clear were removed.
   - By design, no change: finance `activateContract` still activates a SIGNED contract whose vendor has since been
     deactivated — a signed contract is an existing commitment ("buy no more", not "break what was signed");
     `terminateContract` ends it. Stated in its JSDoc and pinned by a unit test.
@@ -1630,13 +1665,15 @@ gate's isolated run) checks the hash was not tested either; it ran 12.18.0 with 
     shows an Award button on a deactivated vendor's row (the row carries `vendor_id` only), which now answers 404 —
     UX, parked.
 
-- **Open — the comparison is only reachable at CLOSED, which the RFQ workflow leaves at once.** Found by /doubt on plan
-  CP; measured from the code only, not run. `compareQuotations` (`GET /procurement/rfqs/{id}/quotations`) requires
-  CLOSED (422 otherwise), but `rfq.workflow.ts` moves PUBLISHED → CLOSED and straight on to EVALUATED
-  (`markQuotationsEvaluated`, which changes the status only) with no wait between. So on an RFQ driven by the workflow
-  the comparison — and its auto-selection — likely answers 422, and so does the web quotations page, which reads the
-  same route (`useQuotations`). Predates plan CP. Needs a product decision (where comparison belongs: EVALUATED as well,
-  or the workflow calling it).
+- **Open — a second award on the same RFQ is accepted until the workflow marks it AWARDED.** Found by the second
+  /doubt cycle on plan CQ; measured from the code only, not run. Predates plan CQ. `awardRfq` checks the database's
+  EVALUATED status, writes the selection and signals; the workflow's award handler checks its own `status`, which
+  stays EVALUATED until the AWARDED activity completes. A second award in that window moves `is_selected` to another
+  quotation and its signal may overwrite `selectedQuotationId`. The web page no longer offers it after an accepted
+  award (plan CQ), but the API does. Needs a decision: refuse a second award (e.g. an `awarded_at` / status guard in
+  the same write) or let the last one win.
+- **Closed — the comparison is only reachable at CLOSED, which the RFQ workflow leaves at once.** See the plan CQ
+  entry above.
 
 - **Closed (by design) — a vendor deactivated after its PO still has that PO's invoices received, approved and paid.**
   Recorded on `docs/vendor-deactivated-invoices` (product-owner decision 2026-11-20: deactivation means "buy no more",

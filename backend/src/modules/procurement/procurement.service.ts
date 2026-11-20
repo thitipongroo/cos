@@ -63,6 +63,14 @@ import {
 } from './workflows/po.workflow';
 import type { PoWorkflowParams } from './workflows/po.workflow';
 
+// Quoting is over: the buyer may read an RFQ's quotations (product owner, 2026-11-20; plan CQ).
+const QUOTATIONS_READABLE: ReadonlyArray<RfqRow['status']> = [
+  'CLOSED',
+  'EVALUATED',
+  'AWARDED',
+  'CANCELLED',
+];
+
 const logger = createLogger('procurement-service');
 
 // Default approval thresholds in THB (tenant-configurable in Phase 14 admin UI)
@@ -370,39 +378,24 @@ export class ProcurementService {
   }
 
   /**
-   * Compare all quotations for an RFQ.
-   * Returns them sorted by total_amount ASC (lowest price first).
-   * Marks is_selected on the lowest-price quotation whose vendor is still ACTIVE — none if no vendor is (plan CP).
-   * Used after RFQ is CLOSED, before signalling EVALUATED.
+   * The quotations of an RFQ, cheapest first — read only (product owner, 2026-11-20; plan CQ).
+   * Sealed while the RFQ is DRAFT or PUBLISHED (422); readable once quoting is over. The automatic selection
+   * (`is_selected`) is made by the workflow's evaluation activity (`markQuotationsEvaluated`), not here: this
+   * route used to make it and required CLOSED, which the workflow leaves at once, so it answered 422.
    */
   async compareQuotations(rfq_id: string): Promise<QuotationRow[]> {
-    await this.assertRfqStatus(rfq_id, 'CLOSED');
-    const quotations = await this.repo.findQuotationsByRfq(rfq_id);
-    if (quotations.length === 0) {
-      throw new UnprocessableEntityException(`RFQ ${rfq_id} has no quotations — cannot evaluate`);
+    const rfq = await this.repo.findRfqById(rfq_id);
+    if (!rfq) throw new NotFoundException(`RFQ ${rfq_id} not found`);
+    if (!QUOTATIONS_READABLE.includes(rfq.status)) {
+      throw new UnprocessableEntityException(
+        `RFQ ${rfq_id} is ${rfq.status} — its quotations are sealed until it is CLOSED`,
+      );
     }
-
-    // Sort by total_amount ASC (decimal-safe comparison)
-    const sorted = [...quotations].sort((a, b) =>
+    const quotations = await this.repo.findQuotationsByRfq(rfq_id);
+    // Decimal-safe and stable: the repository's order (submitted_at, quotation_id) breaks a tie on price.
+    return [...quotations].sort((a, b) =>
       new Decimal(a.total_amount).comparedTo(new Decimal(b.total_amount)),
     );
-
-    // Auto-select the lowest price among vendors still ACTIVE (product owner, 2026-11-20): a deactivated
-    // vendor's quotation is still listed, but cannot be awarded, so it is not suggested. None active → none
-    // selected, any earlier selection cleared.
-    const active = new Set(await this.repo.findActiveQuotingVendorIds(rfq_id));
-    const lowest = sorted.find((q) => active.has(q.vendor_id)) ?? null;
-    await this.repo.markQuotationSelected(lowest?.quotation_id ?? null, rfq_id);
-
-    logger.info(
-      { rfq_id, winner: lowest?.quotation_id ?? null, total: lowest?.total_amount ?? null },
-      'quotations.evaluated',
-    );
-
-    return sorted.map((q) => ({
-      ...q,
-      is_selected: q.quotation_id === lowest?.quotation_id,
-    }));
   }
 
   // ── Purchase Order Lifecycle ───────────────────────────────────────────────

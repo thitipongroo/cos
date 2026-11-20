@@ -37,7 +37,8 @@ function rfq(over: Partial<Record<string, unknown>> = {}) {
  *
  * THERE IS NO THIRD, and that is asserted below rather than assumed. A per-row call to
  * `GET /procurement/rfqs/:rfqId/quotations` was written and removed on 2026-09-08: it is a step of
- * the award workflow wearing a `@Get`, and rendering a list must never reach it.
+ * the award workflow wearing a `@Get`, and rendering a list must never reach it. (Since plan CQ, 2026-11-20,
+ * it only reads, but is sealed while an RFQ is open — a per-row call still has nothing to show on most cards.)
  */
 function route(rows: unknown[] = [rfq()]) {
   return (path: string) => {
@@ -155,7 +156,8 @@ describe('RfqsScreen', () => {
     await waitFor(() => expect(second.getByTestId('rfq-award-r-1')).toBeTruthy());
   });
 
-  it('never touches the quotations endpoint, which awards rather than reads', async () => {
+  it('never touches the quotations endpoint — no per-row call (it awarded rather than read until plan CQ)', async () => {
+    // (History: until plan CQ, 2026-11-20, it wrote; it now only reads, sealed while the RFQ is open.)
     // `compareQuotations` asserts the RFQ is CLOSED, 422s on an RFQ with no quotations, and MARKS
     // THE LOWEST ONE SELECTED. A list that fetched it per row would award every closed RFQ in the
     // tenant by being looked at. This assertion is the guard on that, and it is the reason the card

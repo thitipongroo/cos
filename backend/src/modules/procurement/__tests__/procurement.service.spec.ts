@@ -105,7 +105,6 @@ const mockRepo = {
   findQuotationsByRfq: jest.fn(),
   findQuotationsByVendor: jest.fn(),
   markQuotationSelected: jest.fn(),
-  findActiveQuotingVendorIds: jest.fn(),
   createPurchaseOrder: jest.fn(),
   createPurchaseOrderWithLineItems: jest.fn(),
   findPoById: jest.fn(),
@@ -239,8 +238,6 @@ let service: ProcurementService;
 
 beforeEach(async () => {
   Object.values(mockRepo).forEach((fn) => (fn as jest.Mock).mockReset());
-  // plan CP: the comparison auto-selects among active vendors only; both fixture vendors are active unless a test says.
-  mockRepo.findActiveQuotingVendorIds.mockResolvedValue(['vendor-uuid-001', 'vendor-uuid-002']);
   // fix/proc-rfq-pr-foreign-ids: a PR, an RFQ and a PO all check their project; tests that need it missing say so.
   mockRepo.projectExists.mockResolvedValue(true);
 
@@ -350,26 +347,26 @@ describe('Quotation comparison', () => {
     );
   });
 
-  it('compareQuotations — throws if no quotations exist', async () => {
+  // plan CQ: the GET only reads, so an RFQ with no quotations is an empty list, not a 422.
+  it('compareQuotations — no quotations: an empty list', async () => {
     mockRepo.findRfqById.mockResolvedValue(rfqClosedFixture);
     mockRepo.findQuotationsByRfq.mockResolvedValue([]);
-    await expect(service.compareQuotations('rfq-uuid-001')).rejects.toBeInstanceOf(
-      UnprocessableEntityException,
-    );
+    await expect(service.compareQuotations('rfq-uuid-001')).resolves.toEqual([]);
   });
 
-  it('compareQuotations — sorts by price ASC and marks lowest as selected', async () => {
+  it('compareQuotations — sorts by price ASC and returns is_selected as stored, writing nothing', async () => {
     mockRepo.findRfqById.mockResolvedValue(rfqClosedFixture);
     mockRepo.findQuotationsByRfq.mockResolvedValue(quotationFixtures);
-    mockRepo.markQuotationSelected.mockResolvedValue(undefined);
 
     const result = await service.compareQuotations('rfq-uuid-001');
 
-    // First result is lowest price
+    expect(result.map((q) => [q.total_amount, q.is_selected])).toEqual(
+      [...quotationFixtures]
+        .sort((a, b) => Number(a.total_amount) - Number(b.total_amount))
+        .map((q) => [q.total_amount, q.is_selected]),
+    );
     expect(result[0]!.total_amount).toBe('120000.0000');
-    expect(result[0]!.is_selected).toBe(true);
-    expect(result[1]!.is_selected).toBe(false);
-    expect(mockRepo.markQuotationSelected).toHaveBeenCalledWith('quot-uuid-001', 'rfq-uuid-001');
+    expect(mockRepo.markQuotationSelected).not.toHaveBeenCalled();
   });
 
   it('compareQuotations — orders by VALUE, not by the string the amount is stored as', async () => {
@@ -384,14 +381,10 @@ describe('Quotation comparison', () => {
     const dear = { ...quotationFixtures[1]!, quotation_id: 'q-dear', total_amount: '10000.0000' };
     mockRepo.findRfqById.mockResolvedValue(rfqClosedFixture);
     mockRepo.findQuotationsByRfq.mockResolvedValue([dear, cheap]);
-    mockRepo.markQuotationSelected.mockResolvedValue(undefined);
 
     const result = await service.compareQuotations('rfq-uuid-001');
 
     expect(result.map((q) => q.quotation_id)).toEqual(['q-cheap', 'q-dear']);
-    expect(result[0]!.is_selected).toBe(true);
-    expect(result[1]!.is_selected).toBe(false);
-    expect(mockRepo.markQuotationSelected).toHaveBeenCalledWith('q-cheap', 'rfq-uuid-001');
   });
 
   it('compareQuotations — separates amounts that differ only past the decimal point', async () => {
@@ -402,12 +395,10 @@ describe('Quotation comparison', () => {
     const dear = { ...quotationFixtures[1]!, quotation_id: 'q-b', total_amount: '1000.0500' };
     mockRepo.findRfqById.mockResolvedValue(rfqClosedFixture);
     mockRepo.findQuotationsByRfq.mockResolvedValue([dear, cheap]);
-    mockRepo.markQuotationSelected.mockResolvedValue(undefined);
 
     const result = await service.compareQuotations('rfq-uuid-001');
 
     expect(result.map((q) => q.quotation_id)).toEqual(['q-a', 'q-b']);
-    expect(mockRepo.markQuotationSelected).toHaveBeenCalledWith('q-a', 'rfq-uuid-001');
   });
 
   it('awardRfq — throws if RFQ not EVALUATED', async () => {
@@ -445,37 +436,34 @@ describe('Quotation comparison', () => {
     },
   );
 
-  // plan CP: the cheapest quotation's vendor is deactivated — still listed, but the next cheapest active one is selected.
-  it('compareQuotations — skips a cheaper deactivated vendor when auto-selecting', async () => {
-    mockRepo.findRfqById.mockResolvedValue(rfqClosedFixture);
-    mockRepo.findQuotationsByRfq.mockResolvedValue(quotationFixtures);
-    mockRepo.findActiveQuotingVendorIds.mockResolvedValue(['vendor-uuid-002']);
-    mockRepo.markQuotationSelected.mockResolvedValue(undefined);
+  // plan CQ (product owner, 2026-11-20): quotations are readable once quoting is over, sealed before.
+  it.each(['CLOSED', 'EVALUATED', 'AWARDED', 'CANCELLED'] as const)(
+    'compareQuotations — readable when the RFQ is %s',
+    async (status) => {
+      mockRepo.findRfqById.mockResolvedValue({ ...rfqDraftFixture, status });
+      mockRepo.findQuotationsByRfq.mockResolvedValue(quotationFixtures);
+      await expect(service.compareQuotations('rfq-uuid-001')).resolves.toHaveLength(2);
+      expect(mockRepo.markQuotationSelected).not.toHaveBeenCalled();
+    },
+  );
 
-    const result = await service.compareQuotations('rfq-uuid-001');
+  it.each(['DRAFT', 'PUBLISHED'] as const)(
+    'compareQuotations — sealed while the RFQ is %s: 422, nothing read',
+    async (status) => {
+      mockRepo.findRfqById.mockResolvedValue({ ...rfqDraftFixture, status });
+      await expect(service.compareQuotations('rfq-uuid-001')).rejects.toThrow(
+        new UnprocessableEntityException(
+          `RFQ rfq-uuid-001 is ${status} — its quotations are sealed until it is CLOSED`,
+        ),
+      );
+      expect(mockRepo.findQuotationsByRfq).not.toHaveBeenCalled();
+    },
+  );
 
-    expect(result.map((q) => [q.quotation_id, q.is_selected])).toEqual([
-      ['quot-uuid-001', false],
-      ['quot-uuid-002', true],
-    ]);
-    expect(mockRepo.findActiveQuotingVendorIds).toHaveBeenCalledWith('rfq-uuid-001');
-    expect(mockRepo.markQuotationSelected).toHaveBeenCalledWith('quot-uuid-002', 'rfq-uuid-001');
-  });
-
-  it('compareQuotations — no quotation has an active vendor: all listed, none selected, earlier one cleared', async () => {
-    mockRepo.findRfqById.mockResolvedValue(rfqClosedFixture);
-    mockRepo.findQuotationsByRfq.mockResolvedValue(quotationFixtures);
-    mockRepo.findActiveQuotingVendorIds.mockResolvedValue([]);
-    mockRepo.markQuotationSelected.mockResolvedValue(undefined);
-
-    const result = await service.compareQuotations('rfq-uuid-001');
-
-    expect(result).toHaveLength(2);
-    expect(result.every((q) => q.is_selected === false)).toBe(true);
-    expect(mockRepo.markQuotationSelected).toHaveBeenCalledWith(null, 'rfq-uuid-001');
-    expect(loggerMock.info).toHaveBeenCalledWith(
-      { rfq_id: 'rfq-uuid-001', winner: null, total: null },
-      'quotations.evaluated',
+  it('compareQuotations — unknown RFQ: 404', async () => {
+    mockRepo.findRfqById.mockResolvedValue(null);
+    await expect(service.compareQuotations('rfq-uuid-001')).rejects.toBeInstanceOf(
+      NotFoundException,
     );
   });
 });
@@ -1768,20 +1756,12 @@ describe('exact contracts — quotations', () => {
     ).rejects.toThrow('RFQ rfq-uuid-001 is not PUBLISHED — cannot submit quotation');
   });
 
-  it('compareQuotations — exact no-quotations message and evaluation log', async () => {
+  it('compareQuotations — reads without logging an evaluation (the workflow evaluates, plan CQ)', async () => {
     mockRepo.findRfqById.mockResolvedValue(rfqClosedFixture);
-    mockRepo.findQuotationsByRfq.mockResolvedValue([]);
-    await expect(service.compareQuotations('rfq-uuid-001')).rejects.toThrow(
-      'RFQ rfq-uuid-001 has no quotations — cannot evaluate',
-    );
-
     mockRepo.findQuotationsByRfq.mockResolvedValue(quotationFixtures);
-    mockRepo.markQuotationSelected.mockResolvedValue(undefined);
     await service.compareQuotations('rfq-uuid-001');
-    expect(loggerMock.info).toHaveBeenCalledWith(
-      { rfq_id: 'rfq-uuid-001', winner: 'quot-uuid-001', total: '120000.0000' },
-      'quotations.evaluated',
-    );
+    expect(mockRepo.findQuotationsByRfq).toHaveBeenCalledWith('rfq-uuid-001');
+    expect(loggerMock.info).not.toHaveBeenCalledWith(expect.anything(), 'quotations.evaluated');
   });
 });
 

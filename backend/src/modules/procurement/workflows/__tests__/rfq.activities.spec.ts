@@ -198,8 +198,8 @@ describe('markQuotationsEvaluated', () => {
   it('executes DB update and publishes event', async () => {
     await markQuotationsEvaluated(baseParams);
     expect(mockTransaction).toHaveBeenCalledTimes(1);
-    // one business UPDATE + one outbox INSERT, both through the same tx handle
-    expect(mockExecuteRaw).toHaveBeenCalledTimes(2);
+    // the guarded EVALUATED UPDATE, the selection (clear + select) and the outbox INSERT, all on the same tx handle
+    expect(mockExecuteRaw).toHaveBeenCalledTimes(4);
     expect(mockKafkaPublish).not.toHaveBeenCalled();
     // Pooling (ADR-021): the client is reused across activities and closed only by
     // disconnectActivityClients() on worker shutdown. Disconnecting per activity is what made every
@@ -209,7 +209,9 @@ describe('markQuotationsEvaluated', () => {
 
   it('runs the exact EVALUATED UPDATE and publishes the exact CLOSED→EVALUATED envelope', async () => {
     await markQuotationsEvaluated(baseParams);
-    const [template, ...values] = businessUpdateCall()!;
+    const [template, ...values] = mockExecuteRaw.mock.calls.find(([t]: [TemplateStringsArray]) =>
+      t.join('').includes('UPDATE procurement.rfqs'),
+    ) as [TemplateStringsArray, ...unknown[]];
     const sql = template.join('¶');
     expect(sql).toContain("UPDATE procurement.rfqs SET status = 'EVALUATED'");
     expect(sql).toContain('WHERE rfq_id =');
@@ -233,5 +235,50 @@ describe('markQuotationsEvaluated', () => {
       { rfq_id: 'rfq-uuid-001', correlation_id: 'corr-uuid-001' },
       'rfq.evaluated',
     );
+  });
+
+  // plan CQ (product owner, 2026-11-20): the comparison runs here, before EVALUATED, in the same transaction.
+  it('evaluates a CLOSED RFQ, then selects the lowest ACTIVE-vendor quotation (first submitted on a tie)', async () => {
+    await markQuotationsEvaluated(baseParams);
+    const sqls = mockExecuteRaw.mock.calls.map(([t]: [TemplateStringsArray]) =>
+      t.join('?').replace(/\s+/g, ' '),
+    );
+    expect(sqls[0]).toContain("UPDATE procurement.rfqs SET status = 'EVALUATED'");
+    expect(sqls[0]).toContain("AND status = 'CLOSED'");
+    expect(sqls[1]).toContain('UPDATE procurement.quotations SET is_selected = false');
+    expect(sqls[1]).toContain('WHERE rfq_id = ?::uuid AND tenant_id = ?::uuid');
+    expect(mockExecuteRaw.mock.calls[1]!.slice(1)).toEqual([
+      'rfq-uuid-001',
+      '00000000-0000-4000-8000-000000000001',
+    ]);
+    expect(sqls[2]).toContain('UPDATE procurement.quotations SET is_selected = true');
+    expect(sqls[2]).toContain(
+      'JOIN procurement.vendors v ON v.vendor_id = q.vendor_id AND v.tenant_id = q.tenant_id',
+    );
+    expect(sqls[2]).toContain('AND v.is_active = true');
+    expect(sqls[2]).toContain(
+      'ORDER BY q.total_amount ASC, q.submitted_at ASC, q.quotation_id ASC LIMIT 1',
+    );
+    expect(mockExecuteRaw.mock.calls[2]!.slice(1)).toEqual([
+      'rfq-uuid-001',
+      '00000000-0000-4000-8000-000000000001',
+      '00000000-0000-4000-8000-000000000001',
+    ]);
+    expect(sqls[3]).toContain('INSERT INTO platform.outbox_events');
+    expect(mockTransaction).toHaveBeenCalledTimes(1);
+  });
+
+  // A Temporal retry after a commit whose result was lost: the RFQ is no longer CLOSED — nothing re-selected
+  // (a user's award would be overwritten) and no second event.
+  it('changes nothing when the RFQ is no longer CLOSED (a retry after a lost commit)', async () => {
+    mockExecuteRaw.mockResolvedValueOnce(0);
+    await markQuotationsEvaluated(baseParams);
+    expect(mockExecuteRaw).toHaveBeenCalledTimes(1);
+    expect(outboxEnvelope()).toBeUndefined();
+    expect(loggerMock.warn).toHaveBeenCalledWith(
+      { rfq_id: 'rfq-uuid-001', correlation_id: 'corr-uuid-001' },
+      'rfq.evaluate.skipped_not_closed',
+    );
+    expect(loggerMock.info).not.toHaveBeenCalledWith(expect.anything(), 'rfq.evaluated');
   });
 });

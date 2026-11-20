@@ -35,7 +35,8 @@
 //     `quotation_id`, and the only endpoint that lists an RFQ's quotations is
 //     `GET /procurement/rfqs/:rfqId/quotations`, which is not a read: it asserts the RFQ is CLOSED
 //     and MARKS THE LOWEST QUOTATION SELECTED (found 2026-09-08, ADR-099's sixth amendment). There
-//     is no way to obtain an id to award without awarding.
+//     is no way to obtain an id to award without awarding. (Since plan CQ, 2026-11-20, that GET only reads
+//     and answers on an EVALUATED RFQ, so the ids are obtainable; awarding from here is still not built.)
 //
 // So the button draws and says so, which is the `more.tsx` convention (PO 2026-09-04). What would
 // make it real: for a PO, a `PROC_MANAGER` rung in the approval ladder and the role added to the

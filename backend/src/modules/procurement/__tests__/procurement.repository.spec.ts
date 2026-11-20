@@ -454,36 +454,17 @@ describe('ProcurementRepository', () => {
   it('findQuotationsByRfq returns rows', async () => {
     mockPrisma.$queryRaw.mockResolvedValue([quotRow]);
     expect(await repo.findQuotationsByRfq('rfq-uuid-001')).toHaveLength(1);
+    // plan CQ: a tie on price is ordered by who submitted first, then by id — the order the evaluation selects by.
+    const sql = (mockPrisma.$queryRaw.mock.calls.at(-1)![0] as string[])
+      .join('?')
+      .replace(/\s+/g, ' ');
+    expect(sql).toContain('ORDER BY total_amount ASC, submitted_at ASC, quotation_id ASC');
   });
 
   it('markQuotationSelected calls $executeRaw twice (deselect + select)', async () => {
     mockPrisma.$executeRaw.mockResolvedValue(1);
     await repo.markQuotationSelected('quot-uuid-001', 'rfq-uuid-001');
     expect(mockPrisma.$executeRaw).toHaveBeenCalledTimes(2);
-  });
-
-  // plan CP: no quotation with an active vendor — the selection is only cleared.
-  it('markQuotationSelected(null) only clears the selection', async () => {
-    mockPrisma.$executeRaw.mockResolvedValue(1);
-    await repo.markQuotationSelected(null, 'rfq-uuid-001');
-    expect(mockPrisma.$executeRaw).toHaveBeenCalledTimes(1);
-    const sql = (mockPrisma.$executeRaw.mock.calls[0]![0] as string[])
-      .join('?')
-      .replace(/\s+/g, ' ');
-    expect(sql).toContain('SET is_selected = false');
-  });
-
-  it("findActiveQuotingVendorIds joins the tenant's active vendors and returns their ids", async () => {
-    mockPrisma.$queryRaw.mockResolvedValue([{ vendor_id: 'vendor-uuid-002' }]);
-    expect(await repo.findActiveQuotingVendorIds('rfq-uuid-001')).toEqual(['vendor-uuid-002']);
-    const call = mockPrisma.$queryRaw.mock.calls.at(-1)!;
-    const sql = (call[0] as string[]).join('?').replace(/\s+/g, ' ');
-    expect(sql).toContain(
-      'JOIN procurement.vendors v ON v.vendor_id = q.vendor_id AND v.tenant_id = q.tenant_id',
-    );
-    expect(sql).toContain('AND v.is_active = true');
-    expect(sql).toContain('q.tenant_id = ?::uuid');
-    expect(call.slice(1)).toEqual(['rfq-uuid-001', 'tenant-uuid-001']);
   });
 
   // ── Purchase Orders ────────────────────────────────────────────────────────

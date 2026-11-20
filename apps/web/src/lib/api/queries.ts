@@ -411,7 +411,12 @@ export function useAwardRfq(rfqId: string) {
         method: 'POST',
         body: JSON.stringify({ quotation_id }),
       }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['quotations', rfqId] }),
+    // The RFQ's status too: the page offers Award only while it is EVALUATED (plan CQ).
+    onSuccess: () =>
+      Promise.all([
+        qc.invalidateQueries({ queryKey: ['quotations', rfqId] }),
+        qc.invalidateQueries({ queryKey: ['rfqs'] }),
+      ]),
   });
 }
 

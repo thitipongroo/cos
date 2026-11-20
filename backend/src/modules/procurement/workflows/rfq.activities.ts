@@ -65,12 +65,39 @@ export async function updateRfqStatus(
 }
 
 export async function markQuotationsEvaluated(params: RfqActivityParams): Promise<void> {
-  // System automatically marks RFQ as EVALUATED after quotation comparison.
-  // The service layer selects the winning quotation before this activity runs.
-  await withTenantTx(params.tenant_id, async (prisma) => {
-    await prisma.$executeRaw`
+  // CLOSED → EVALUATED is the system's, "after quotation comparison complete" (spec 32 §706): the comparison runs
+  // here, in the EVALUATED update's transaction (product owner, 2026-11-20; plan CQ). Nothing else selects — the
+  // quotations GET only reads. The selection is the lowest quotation whose vendor is the tenant's ACTIVE vendor
+  // (plan CP); a tie goes to the one submitted first, then quotation_id for a stable order. None active → none
+  // selected. tenant_id is filtered explicitly, not left to RLS alone.
+  // Guarded on CLOSED: a retry after a commit whose result was lost (Temporal retries this activity) finds the RFQ
+  // already EVALUATED and changes nothing — no re-selection over a user's award, no second event.
+  const done = await withTenantTx(params.tenant_id, async (prisma) => {
+    const evaluated = await prisma.$executeRaw`
       UPDATE procurement.rfqs SET status = 'EVALUATED', updated_at = now()
+      WHERE rfq_id = ${params.rfq_id}::uuid AND tenant_id = ${params.tenant_id}::uuid AND status = 'CLOSED'`;
+    if (evaluated === 0) {
+      logger.warn(
+        { rfq_id: params.rfq_id, correlation_id: params.correlation_id },
+        'rfq.evaluate.skipped_not_closed',
+      );
+      return false;
+    }
+
+    await prisma.$executeRaw`
+      UPDATE procurement.quotations SET is_selected = false
       WHERE rfq_id = ${params.rfq_id}::uuid AND tenant_id = ${params.tenant_id}::uuid`;
+    await prisma.$executeRaw`
+      UPDATE procurement.quotations SET is_selected = true
+      WHERE quotation_id = (
+        SELECT q.quotation_id
+        FROM procurement.quotations q
+        JOIN procurement.vendors v ON v.vendor_id = q.vendor_id AND v.tenant_id = q.tenant_id
+        WHERE q.rfq_id = ${params.rfq_id}::uuid AND q.tenant_id = ${params.tenant_id}::uuid
+          AND v.is_active = true
+        ORDER BY q.total_amount ASC, q.submitted_at ASC, q.quotation_id ASC
+        LIMIT 1
+      ) AND tenant_id = ${params.tenant_id}::uuid`;
 
     await OutboxPublisher.write(
       prisma,
@@ -81,7 +108,10 @@ export async function markQuotationsEvaluated(params: RfqActivityParams): Promis
         params.correlation_id,
       ),
     );
+    return true;
   });
 
-  logger.info({ rfq_id: params.rfq_id, correlation_id: params.correlation_id }, 'rfq.evaluated');
+  if (done) {
+    logger.info({ rfq_id: params.rfq_id, correlation_id: params.correlation_id }, 'rfq.evaluated');
+  }
 }

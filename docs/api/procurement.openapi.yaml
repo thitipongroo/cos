@@ -1036,11 +1036,13 @@ paths:
     get:
       tags:
         - Quotations
-      summary: Compare quotations (sorted by price ASC, lowest auto-selected)
+      summary: Quotations of an RFQ once quoting is over (sorted by price ASC)
       description: |
-        Every quotation is returned, but the auto-selection (`is_selected`) takes the lowest one whose vendor is still
-        ACTIVE in the tenant: a deactivated vendor's quotation is listed and never selected. When no quotation has an
-        active vendor, none is selected and any earlier selection is cleared (product owner, 2026-11-20; plan CP).
+        Read only (product owner, 2026-11-20; plan CQ). Readable once quoting is over — CLOSED, EVALUATED, AWARDED or
+        CANCELLED; sealed while DRAFT or PUBLISHED. Cheapest first; a tie on price in submission order. `is_selected`
+        is as stored: the system selects when it evaluates the RFQ (CLOSED → EVALUATED) — the lowest quotation whose
+        vendor is still ACTIVE in the tenant, a tie going to the one submitted first, none when no vendor is active.
+        An RFQ with no quotations answers an empty list.
       operationId: compareQuotations
       parameters:
         - name: rfqId
@@ -1059,7 +1061,9 @@ paths:
                 items:
                   $ref: '#/components/schemas/QuotationRow'
         '422':
-          description: RFQ not CLOSED or no quotations
+          description: RFQ still DRAFT or PUBLISHED — its quotations are sealed until it is CLOSED
+        '404':
+          description: RFQ not found
   /procurement/purchase-orders:
     get:
       description: |

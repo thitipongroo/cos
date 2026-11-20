@@ -19,7 +19,8 @@
 // THE CARD SHOWS NO QUOTE COUNT AND NO LOWEST PRICE, and finding out why was the most useful hour of
 // this screen's build. `GET /procurement/rfqs/:rfqId/quotations` reads like the source for both — a
 // `@Get` whose summary is "Compare quotations for an RFQ (sorted by price ASC)" — and a per-row
-// fetch was written against it. IT IS NOT A READ: `compareQuotations` asserts the RFQ is `CLOSED`,
+// fetch was written against it. IT WAS NOT A READ (until plan CQ, 2026-11-20 — it now only reads, once the RFQ
+// is closed; see api/procurement.ts): `compareQuotations` asserted the RFQ is `CLOSED`,
 // 422s when it holds no quotations, and MARKS THE LOWEST ONE SELECTED. Rendering this list would
 // have awarded every closed RFQ in the tenant. Nothing was mutated — the seeded tenant holds no
 // CLOSED RFQ, so all 45 calls threw, which is what a column of zeros in the first capture was

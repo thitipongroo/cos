@@ -385,6 +385,10 @@ export interface DeliveryRow {
 //
 // What would make the count real: a read-only `GET` returning quotations for an RFQ, or a count on
 // the RFQ list itself. Until then the card shows what it can prove.
+//
+// Since plan CQ (2026-11-20) the GET only reads: it answers once the RFQ is closed (CLOSED, EVALUATED,
+// AWARDED, CANCELLED), is sealed (422) before, and the selection is made when the workflow evaluates the
+// RFQ. It still cannot count an open RFQ's quotations, so the card is unchanged.
 
 function page<T>(res: Paged<T> | T[]): { items: T[]; total: number } {
   if (Array.isArray(res)) return { items: res, total: res.length };

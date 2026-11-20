@@ -563,6 +563,9 @@ when it holds no quotations, and then **marks the lowest one selected**. It is a
 workflow wearing a GET. The zeros were 45 rejected calls; on a tenant holding a CLOSED RFQ, opening
 the list would have awarded it.
 
+(Amended 2026-11-20, plan CQ: the GET now only reads — readable once the RFQ is closed, sealed while it is
+open — and the selection is made when the workflow evaluates the RFQ. The finding above stands as history.)
+
 Nothing was mutated — the seeded tenant has no CLOSED RFQ — and the call came out the same day.
 **Neither the count nor the lowest price was moved into this register in its place.** A figure nobody
 can fetch is not one to invent on a screen whose job is to say how much interest an RFQ has attracted;

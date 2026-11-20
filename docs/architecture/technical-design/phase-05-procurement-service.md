@@ -306,7 +306,7 @@ Verified on **2026-08-22** against this working tree (Rule 36 — commands run, 
 | NestJS module / service / repository / controller | ✅ present | `procurement.*.ts` + `vendor-portal`                                                                               |
 | Temporal workflow definitions — RFQ, PO           | ✅ present | `rfq.workflow.ts`, `po.workflow.ts` — signals, queries, timers                                                     |
 | Temporal worker setup and registration            | ✅ present | `workflows/worker.ts`, launched by `workers/main.ts` in the `cos-temporal-worker` chart (OQ-32, closed 2026-08-22) |
-| Quotation comparison service                      | ✅ present | `compareQuotations` — sorts by `total_amount` ASC, marks `is_selected` on the lowest                               |
+| Quotation comparison service                      | ✅ present | `markQuotationsEvaluated` selects the lowest active-vendor quotation; `compareQuotations` reads (plan CQ)          |
 | DTOs with validation                              | ✅ present | 8 DTOs                                                                                                             |
 | OpenAPI 3.1                                       | ✅ present | `docs/api/procurement.openapi.yaml` + controller decorators                                                        |
 | All specified API routes                          | ✅ present | see § 5 — every group complete, several extras                                                                     |

@@ -124,6 +124,26 @@ describe('Phase 5 · RFQ lifecycle, quotation comparison and event emission', ()
     return rows[0]?.status ?? '(missing)';
   };
 
+  /**
+   * Run the workflow's evaluation activity (CLOSED → EVALUATED, with the selection — plan CQ) against this
+   * database. Loaded through the Jest resolver at call time, not imported: the activity reads the database URL
+   * from the environment startIntegrationInfra sets.
+   */
+  const evaluate = async (rfqId: string): Promise<void> => {
+    const acts = jest.requireActual('../../src/modules/procurement/workflows/rfq.activities') as {
+      markQuotationsEvaluated: (p: {
+        rfq_id: string;
+        tenant_id: string;
+        correlation_id: string;
+      }) => Promise<void>;
+    };
+    await acts.markQuotationsEvaluated({
+      rfq_id: rfqId,
+      tenant_id: TENANT_ID,
+      correlation_id: '00000000-0000-4000-8000-0000000000cc',
+    });
+  };
+
   const createVendor = async (): Promise<string> => {
     seq += 1;
     const res = await http()
@@ -229,10 +249,16 @@ describe('Phase 5 · RFQ lifecycle, quotation comparison and event emission', ()
         rfqId,
       );
 
+      // plan CQ: the selection is the evaluation's (the workflow's activity), not the GET's.
+      await evaluate(rfqId);
+      expect(await rfqStatus(rfqId)).toBe('EVALUATED');
       const compared = await http()
         .get(`/api/v1/procurement/rfqs/${rfqId}/quotations`)
         .set('x-test-role', PO_ROLE);
       expect(compared.status).toBe(200);
+      expect(
+        (compared.body as Array<{ total_amount: string }>).map((q) => Number(q.total_amount)),
+      ).toEqual([120000.5, 450000, 900000]);
 
       const rows = await infra.prisma.$queryRawUnsafe<
         Array<{ total_amount: string; is_selected: boolean }>
@@ -397,7 +423,7 @@ describe('Phase 5 · RFQ lifecycle, quotation comparison and event emission', ()
       expect(await rfqStatus(rfqId)).toBe('EVALUATED');
     });
 
-    it('the comparison lists it but selects the cheapest ACTIVE vendor; none active → none selected', async () => {
+    it('the evaluation skips it for the cheapest ACTIVE vendor; none active → none selected', async () => {
       const rfqId = await seedRfq('PUBLISHED');
       const cheapVendor = await createVendor();
       const dearVendor = await createVendor();
@@ -406,12 +432,83 @@ describe('Phase 5 · RFQ lifecycle, quotation comparison and event emission', ()
       await setStatus(rfqId, 'CLOSED');
       await deactivate(cheapVendor);
 
-      const compared = await http()
-        .get(`/api/v1/procurement/rfqs/${rfqId}/quotations`)
-        .set('x-test-role', PO_ROLE);
-      expect(compared.status).toBe(200);
+      await evaluate(rfqId);
+      expect(await rfqStatus(rfqId)).toBe('EVALUATED');
+      expect(await selection(rfqId)).toEqual([
+        { quotation_id: cheap, is_selected: false },
+        { quotation_id: dear, is_selected: true },
+      ]);
+
+      // The other vendor deactivated too: evaluated again, the earlier selection is cleared.
+      await deactivate(dearVendor);
+      await setStatus(rfqId, 'CLOSED');
+      await evaluate(rfqId);
+      expect(await selection(rfqId)).toEqual([
+        { quotation_id: cheap, is_selected: false },
+        { quotation_id: dear, is_selected: false },
+      ]);
+    });
+  });
+
+  // plan CQ (product owner, 2026-11-20): the system selects at evaluation; the GET reads once quoting is over.
+  describe('quotations after the RFQ closes', () => {
+    const quoteAt = async (rfqId: string, amount: string, submittedAt: string): Promise<string> => {
+      const res = await http()
+        .post(`/api/v1/procurement/rfqs/${rfqId}/quotations`)
+        .set('x-test-role', PO_ROLE)
+        .send({
+          vendor_id: await createVendor(),
+          total_amount: amount,
+          currency_code: 'THB',
+          validity_days: 30,
+          submitted_at: submittedAt,
+        });
+      expect(res.status).toBe(201);
+      return (res.body as { quotation_id: string }).quotation_id;
+    };
+    const selected = async (rfqId: string) =>
+      (
+        await infra.prisma.$queryRawUnsafe<Array<{ quotation_id: string }>>(
+          `SELECT quotation_id::text FROM procurement.quotations WHERE rfq_id = $1::uuid AND is_selected`,
+          rfqId,
+        )
+      ).map((r) => r.quotation_id);
+    const list = (rfqId: string) =>
+      http().get(`/api/v1/procurement/rfqs/${rfqId}/quotations`).set('x-test-role', PO_ROLE);
+
+    it('a tie on the lowest price goes to the quotation submitted first', async () => {
+      const rfqId = await seedRfq('PUBLISHED');
+      // Submitted later but entered first, so neither insertion order nor id order decides it by accident.
+      const later = await quoteAt(rfqId, '500.0000', '2026-01-02T00:00:00.000Z');
+      const first = await quoteAt(rfqId, '500.0000', '2026-01-01T00:00:00.000Z');
+      await quoteAt(rfqId, '700.0000', '2025-12-31T00:00:00.000Z');
+      await infra.prisma.$executeRawUnsafe(
+        `UPDATE procurement.rfqs SET status = 'CLOSED' WHERE rfq_id = $1::uuid`,
+        rfqId,
+      );
+      await evaluate(rfqId);
+      expect(await selected(rfqId)).toEqual([first]);
+      expect(later).not.toBe(first);
+    });
+
+    it('the GET on an EVALUATED RFQ: 200, the rows as stored, nothing written', async () => {
+      const rfqId = await seedRfq('PUBLISHED');
+      const dear = await quoteAt(rfqId, '900.0000', '2026-01-01T00:00:00.000Z');
+      const cheap = await quoteAt(rfqId, '100.0000', '2026-01-01T00:00:00.000Z');
+      // The evaluation's choice overridden by hand: a GET that re-selected would put it back on the cheapest.
+      await infra.prisma.$executeRawUnsafe(
+        `UPDATE procurement.quotations SET is_selected = (quotation_id = $2::uuid) WHERE rfq_id = $1::uuid`,
+        rfqId,
+        dear,
+      );
+      await infra.prisma.$executeRawUnsafe(
+        `UPDATE procurement.rfqs SET status = 'EVALUATED' WHERE rfq_id = $1::uuid`,
+        rfqId,
+      );
+      const res = await list(rfqId);
+      expect(res.status).toBe(200);
       expect(
-        (compared.body as Array<{ quotation_id: string; is_selected: boolean }>).map((q) => [
+        (res.body as Array<{ quotation_id: string; is_selected: boolean }>).map((q) => [
           q.quotation_id,
           q.is_selected,
         ]),
@@ -419,21 +516,39 @@ describe('Phase 5 · RFQ lifecycle, quotation comparison and event emission', ()
         [cheap, false],
         [dear, true],
       ]);
-      expect(await selection(rfqId)).toEqual([
-        { quotation_id: cheap, is_selected: false },
-        { quotation_id: dear, is_selected: true },
-      ]);
+      expect(await selected(rfqId)).toEqual([dear]);
+    });
 
-      // The other vendor deactivated too: compared again, the earlier selection is cleared.
-      await deactivate(dearVendor);
-      const again = await http()
-        .get(`/api/v1/procurement/rfqs/${rfqId}/quotations`)
-        .set('x-test-role', PO_ROLE);
-      expect(again.status).toBe(200);
-      expect(await selection(rfqId)).toEqual([
-        { quotation_id: cheap, is_selected: false },
-        { quotation_id: dear, is_selected: false },
-      ]);
+    // A Temporal retry after a commit whose result was lost finds the RFQ EVALUATED: nothing re-selected.
+    it('the evaluation on an RFQ no longer CLOSED changes nothing (a retry after a lost commit)', async () => {
+      const rfqId = await seedRfq('PUBLISHED');
+      const dear = await quoteAt(rfqId, '900.0000', '2026-01-01T00:00:00.000Z');
+      await quoteAt(rfqId, '100.0000', '2026-01-01T00:00:00.000Z');
+      await infra.prisma.$executeRawUnsafe(
+        `UPDATE procurement.quotations SET is_selected = (quotation_id = $2::uuid) WHERE rfq_id = $1::uuid`,
+        rfqId,
+        dear,
+      );
+      await infra.prisma.$executeRawUnsafe(
+        `UPDATE procurement.rfqs SET status = 'EVALUATED' WHERE rfq_id = $1::uuid`,
+        rfqId,
+      );
+      const before = await outboxCount();
+      await evaluate(rfqId);
+      expect(await selected(rfqId)).toEqual([dear]);
+      expect(await rfqStatus(rfqId)).toBe('EVALUATED');
+      expect(await outboxCount()).toBe(before);
+    });
+
+    it('sealed while PUBLISHED: 422; an RFQ closed with no quotations: 200 []', async () => {
+      const open = await seedRfq('PUBLISHED');
+      await quoteAt(open, '100.0000', '2026-01-01T00:00:00.000Z');
+      expect((await list(open)).status).toBe(422);
+
+      const empty = await seedRfq('CLOSED');
+      const res = await list(empty);
+      expect(res.status).toBe(200);
+      expect(res.body).toEqual([]);
     });
   });
 });

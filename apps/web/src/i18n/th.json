@@ -1655,7 +1655,7 @@
     "colValidity": "ยืนราคา (วัน)",
     "colDeliveryNote": "ใบส่งของ",
     "colPo": "PO",
-    "quotationsHint": "ดูได้เฉพาะ RFQ ที่สถานะ CLOSED; เลือกผู้ชนะได้เมื่อสถานะ EVALUATED",
+    "quotationsHint": "ดูได้เมื่อ RFQ ปิดรับใบเสนอราคาแล้ว; เลือกผู้ชนะได้เมื่อสถานะ EVALUATED",
     "recordDelivery": "บันทึกการรับของ",
     "recordDeliveryTitle": "บันทึกการรับของ",
     "backToDeliveries": "กลับไปรายการรับของ",

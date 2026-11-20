@@ -247,7 +247,7 @@ export class ProcurementController {
   // GET /api/v1/procurement/rfqs/:rfqId/quotations
   @Get('procurement/rfqs/:rfqId/quotations')
   @Roles(...READ_ROLES)
-  @ApiOperation({ summary: 'Compare quotations for an RFQ (sorted by price ASC)' })
+  @ApiOperation({ summary: 'Quotations of an RFQ once quoting is over (sorted by price ASC)' })
   @ApiParam({ name: 'rfqId', type: 'string', format: 'uuid' })
   compareQuotations(@Param('rfqId', ParseUUIDPipe) rfqId: string) {
     return this.svc.compareQuotations(rfqId);

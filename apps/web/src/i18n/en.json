@@ -1655,7 +1655,7 @@
     "colValidity": "Validity (days)",
     "colDeliveryNote": "Delivery note",
     "colPo": "PO",
-    "quotationsHint": "Viewable only for CLOSED RFQs; award is available when status is EVALUATED",
+    "quotationsHint": "Viewable once the RFQ is closed for quoting; award is available when status is EVALUATED",
     "recordDelivery": "Record delivery",
     "recordDeliveryTitle": "Record delivery",
     "backToDeliveries": "Back to deliveries",
