@@ -62,7 +62,7 @@ const mockRepo = {
   createCustomer: jest.fn(),
   listCustomers: jest.fn(),
   createContract: jest.fn(),
-  projectExists: jest.fn(),
+  projectStatus: jest.fn(),
   findCustomerById: jest.fn(),
   activeVendorExists: jest.fn(),
   findContractById: jest.fn(),
@@ -724,7 +724,7 @@ describe('AR billing — customers, contracts, invoices and payments', () => {
   describe('Customers & Contracts', () => {
     // fix/finance-contract-foreign-ids: the project, customer and vendor a contract names are the tenant's own.
     beforeEach(() => {
-      mockRepo.projectExists.mockResolvedValue(true);
+      mockRepo.projectStatus.mockResolvedValue('ACTIVE');
       mockRepo.findCustomerById.mockResolvedValue({ customer_id: 'cust-1' });
       mockRepo.activeVendorExists.mockResolvedValue(true);
     });
@@ -732,7 +732,7 @@ describe('AR billing — customers, contracts, invoices and payments', () => {
     it.each([
       [
         'project',
-        () => mockRepo.projectExists.mockResolvedValue(false),
+        () => mockRepo.projectStatus.mockResolvedValue(null),
         {},
         'Project proj-uuid-001 not found',
       ],
@@ -763,10 +763,42 @@ describe('AR billing — customers, contracts, invoices and payments', () => {
       },
     );
 
+    // Plan CY (product owner 2026-11-21): a closed project takes no new contract.
+    it.each(['CANCELLED', 'COMPLETED'])(
+      'createContract on a %s project: 422 COS-FIN-422, nothing written',
+      async (status) => {
+        mockRepo.projectStatus.mockResolvedValue(status);
+        const err = await service
+          .createContract({ project_id: 'proj-uuid-001', contract_type: 'SUBCONTRACT' })
+          .catch((e: unknown) => e);
+        expect(err).toBeInstanceOf(UnprocessableEntityException);
+        expect(err).toMatchObject({
+          response: {
+            error: {
+              code: 'COS-FIN-422',
+              message: `Project proj-uuid-001 is ${status} — no new contract`,
+              messageKey: 'finance.project.closed',
+            },
+          },
+        });
+        expect(mockRepo.createContract).not.toHaveBeenCalled();
+      },
+    );
+
+    it.each(['DRAFT', 'ACTIVE', 'ON_HOLD'])(
+      'createContract on a %s project is written',
+      async (status) => {
+        mockRepo.projectStatus.mockResolvedValue(status);
+        mockRepo.createContract.mockResolvedValue({ contract_id: 'con-1' });
+        await service.createContract({ project_id: 'proj-uuid-001', contract_type: 'SUBCONTRACT' });
+        expect(mockRepo.createContract).toHaveBeenCalled();
+      },
+    );
+
     it('createContract asks for the customer and the vendor only when named', async () => {
       mockRepo.createContract.mockResolvedValue({ contract_id: 'con-1' });
       await service.createContract({ project_id: 'proj-uuid-001', contract_type: 'SUBCONTRACT' });
-      expect(mockRepo.projectExists).toHaveBeenCalledWith('proj-uuid-001');
+      expect(mockRepo.projectStatus).toHaveBeenCalledWith('proj-uuid-001');
       expect(mockRepo.findCustomerById).not.toHaveBeenCalled();
       expect(mockRepo.activeVendorExists).not.toHaveBeenCalled();
     });

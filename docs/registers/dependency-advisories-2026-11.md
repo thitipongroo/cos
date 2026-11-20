@@ -1602,6 +1602,24 @@ gate's isolated run) checks the hash was not tested either; it ran 12.18.0 with 
 
 ## Open
 
+- **Closed — a closed project still took new contracts.** Fixed in plan CY (on the current branch; product-owner
+  decisions 2026-11-21: `createContract` on a CANCELLED or COMPLETED project → 422 `COS-FIN-422`; contracts already
+  made carry on — signing, activation, termination, and their billings and receipts; budgets, budget lines and
+  payments on a closed project stay allowed — closing the books and paying open invoices happen after a project
+  closes). Closes the item plan CS left ("finance `createContract` on a closed project").
+  `FinanceService.createContract` checked the project to be the tenant's only.
+  - Now `FinanceRepository.projectStatus` (via `projectStatusInTenant`, replacing `projectExists`): none → 404 as
+    before; CANCELLED / COMPLETED → 422 `COS-FIN-422` with `messageKey: 'finance.project.closed'` and the message
+    "Project `<id>` is `<status>` — no new contract", nothing written. Comments at `createOrUpdateBudget`,
+    `addBudgetLine` and `recordPayment` record that a closed project is allowed there by design. As in plan CS, the
+    check and the write are separate transactions: a project closed in between can take one more contract.
+  - Docs: `finance.openapi.yaml` (422 on `postFinanceContracts`); `error-codes.md` gains a COS-FIN section, and its
+    COS-PROC intro now counts five 409 conflicts (plan CX added one).
+  - Verified: finance unit (322: CANCELLED and COMPLETED refused with no INSERT; DRAFT, ACTIVE, ON_HOLD written; the
+    repository's status or null); `test/finance/05` (13: a contract on a project set COMPLETED → 422 `COS-FIN-422`,
+    no row — HEAD's service answers 201); `test/finance/01`–`04` (49, 16, 23, 9). No client creates contracts today.
+  - Parked (found by /doubt, not about new contracts): `createBilling` checks that the contract exists, not that the
+    billing's `project_id` is the contract's — an AR billing can be written under another project (closed or not).
 - **Closed — a PR number already in use answered 500, and the web purchase request page showed no refusal.** Fixed
   in plan CX (on the current branch; product-owner decisions 2026-11-20: a taken number → 409; the web forms stop
   the PR and RFQ numbers at 50; the PR page shows a TH/EN reason as plan CW's pages do). Closes the two items plan
@@ -1741,7 +1759,7 @@ gate's isolated run) checks the hash was not tested either; it ran 12.18.0 with 
     (`client_id` already landed) now answers with that row before the project's state is read. The check and the
     write are separate transactions: a project closed in between can take one more — the same as work already open.
     `projectStatusInTenant` returns the `ProjectStatus` union.
-  - Not covered: finance `createContract` on a closed project (out of this round by decision).
+  - Not covered: finance `createContract` on a closed project (out of this round by decision; closed by plan CY).
   - Unit: each of the three creates refused for CANCELLED and COMPLETED with the exact body, nothing written, no
     workflow started; DRAFT, ACTIVE and ON_HOLD reach the write; a replay after the project closed answers with the row;
     `projectStatusInTenant`'s SQL and null. Integration (`03-rfq-lifecycle`, 23): a CANCELLED and a COMPLETED project

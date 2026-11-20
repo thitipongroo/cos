@@ -263,4 +263,43 @@ describe('Contract signing integration', () => {
 
     expect(res.status).toBe(400); // now TERMINATED
   });
+
+  // Plan CY (product owner 2026-11-21): a CANCELLED or COMPLETED project takes no new contract.
+  it('refuses a contract on a COMPLETED project: 422 COS-FIN-422, nothing written', async () => {
+    const proj = await request(app.getHttpServer())
+      .post('/api/v1/projects')
+      .set('Authorization', TOKEN)
+      .send({
+        project_code: 'CON-CLOSED',
+        project_name: 'Contract Closed Host',
+        project_type: 'COMMERCIAL',
+        start_date: '2019-01-01',
+        end_date: '2020-01-01',
+      });
+    expect([200, 201]).toContain(proj.status);
+    const closedId = (proj.body as { project_id: string }).project_id;
+    await infra.prisma.$executeRawUnsafe(
+      `UPDATE projects.projects SET status = 'COMPLETED' WHERE project_id = $1::uuid`,
+      closedId,
+    );
+
+    const res = await request(app.getHttpServer())
+      .post('/api/v1/finance/contracts')
+      .set('Authorization', TOKEN)
+      .send({ project_id: closedId, contract_type: 'MAIN_CONTRACT', contract_value: '1000' });
+
+    expect(res.status).toBe(422);
+    expect(res.body).toEqual({
+      error: {
+        code: 'COS-FIN-422',
+        message: `Project ${closedId} is COMPLETED — no new contract`,
+        messageKey: 'finance.project.closed',
+      },
+    });
+    const rows = await infra.prisma.$queryRawUnsafe<Array<{ n: bigint }>>(
+      `SELECT count(*) AS n FROM finance.contracts WHERE project_id = $1::uuid`,
+      closedId,
+    );
+    expect(Number(rows[0]!.n)).toBe(0);
+  });
 });

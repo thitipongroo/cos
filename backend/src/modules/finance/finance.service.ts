@@ -157,6 +157,7 @@ export class FinanceService {
 
   // ── Budget Management ─────────────────────────────────────────────────────
 
+  // A closed project's budget may still be set (plan CY, by design): closing the books happens after a project closes.
   async createOrUpdateBudget(project_id: string, dto: CreateBudgetDto): Promise<ProjectBudgetRow> {
     const threshold = dto.variance_alert_threshold
       ? new Decimal(dto.variance_alert_threshold).toFixed(2)
@@ -207,6 +208,7 @@ export class FinanceService {
 
   // ── Budget Lines ──────────────────────────────────────────────────────────
 
+  // Allowed on a closed project, as its budget (plan CY, by design).
   async addBudgetLine(project_id: string, dto: AddBudgetLineDto): Promise<BudgetLineRow> {
     const budget = await this.repo.findBudgetByProject(project_id);
     if (!budget) throw new NotFoundException(`No budget found for project ${project_id}`);
@@ -379,6 +381,7 @@ export class FinanceService {
 
   // ── Payments ──────────────────────────────────────────────────────────────
 
+  // Allowed on a closed project (plan CY, by design): open invoices are still paid after a project closes.
   async recordPayment(dto: RecordPaymentDto): Promise<PaymentRow> {
     const project_id = dto.project_id;
     const payment = await this.repo.createPayment(
@@ -546,8 +549,20 @@ export class FinanceService {
     // project_id and vendor_id have no foreign key (any UUID was taken), and customer_id's is checked without RLS
     // (another tenant's customer was accepted; an unknown one failed the INSERT unmapped, 500). A vendor must also be
     // ACTIVE; customers have no deactivation, so existence is the check.
-    if (!(await this.repo.projectExists(dto.project_id))) {
+    // A CANCELLED or COMPLETED project takes no new contract (product owner, 2026-11-21; plan CY) — as procurement
+    // (plan CS). Contracts already made carry on: sign, activate, terminate.
+    const projectStatus = await this.repo.projectStatus(dto.project_id);
+    if (projectStatus === null) {
       throw new NotFoundException(`Project ${dto.project_id} not found`);
+    }
+    if (projectStatus === 'CANCELLED' || projectStatus === 'COMPLETED') {
+      throw new UnprocessableEntityException({
+        error: {
+          code: 'COS-FIN-422',
+          message: `Project ${dto.project_id} is ${projectStatus} — no new contract`,
+          messageKey: 'finance.project.closed',
+        },
+      });
     }
     if (dto.customer_id && !(await this.repo.findCustomerById(dto.customer_id))) {
       throw new NotFoundException(`Customer ${dto.customer_id} not found`);

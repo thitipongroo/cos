@@ -10,7 +10,7 @@ import { TenantPrismaService } from '../tenant/prisma/tenant-prisma.service';
 import type { OutboxEventInput } from '../../shared/outbox/outbox.types';
 import { applyCap, capLimit } from '../../shared/pagination/list-cap';
 import { clsTenantId } from '../../shared/context/cls-context';
-import { projectExistsInTenant } from '../project/public/parent-existence';
+import { projectStatusInTenant } from '../project/public/parent-existence';
 import { activeVendorExistsInTenant } from '../procurement/public/active-vendor';
 
 // Row types live in ./finance.rows; imported here for the method signatures below and re-exported so
@@ -412,9 +412,12 @@ export class FinanceRepository {
     return rows[0]!;
   }
 
-  /** A project of this tenant — a contract's project_id has no foreign key (fix/finance-contract-foreign-ids). */
-  projectExists(projectId: string): Promise<boolean> {
-    return projectExistsInTenant(this.db, projectId, this.tenantId);
+  /**
+   * The status of a project of this tenant, or null when there is none — a contract's project_id has no foreign key
+   * (fix/finance-contract-foreign-ids), and a closed project takes no new contract (plan CY).
+   */
+  async projectStatus(projectId: string) {
+    return projectStatusInTenant(this.db, projectId, this.tenantId);
   }
 
   /**

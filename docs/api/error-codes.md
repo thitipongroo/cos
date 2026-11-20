@@ -290,10 +290,19 @@ Recorded 2026-11-13 from `vendor-portal.service.ts`, where they were thrown but 
 | COS-VND-010 | 409  | A quotation from this vendor already exists for this RFQ                  | `submitQuotation` (portal) for an RFQ this vendor has already quoted for; the first quotation stands, the invitation is left as it is (fix/quotation-duplicate-and-closed-rfq)                                                           |
 | COS-VND-011 | 422  | RFQ is not open for quotations                                            | `submitQuotation` (portal) for an RFQ that is not PUBLISHED — closed, evaluated, awarded or cancelled (fix/quotation-duplicate-and-closed-rfq) — or past its deadline (plan CT)                                                          |
 
+## COS-FIN — Finance
+
+Added 2026-11-21 (plan CY). Same shape as `COS-PROC-422`: a closed project takes no new contract; contracts already
+made carry on, and budgets and payments on a closed project stay allowed by design.
+
+| Code        | HTTP | Message                                        | Trigger                                                                         |
+| ----------- | ---- | ---------------------------------------------- | ------------------------------------------------------------------------------- |
+| COS-FIN-422 | 422  | Project `<id>` is `<status>` — no new contract | `finance.project.closed` — `createContract` on a CANCELLED or COMPLETED project |
+
 ## COS-PROC — Procurement
 
 Recorded 2026-11-20 from `procurement.service.ts`, where it was thrown but not listed here (fix/quotation-duplicate-and-closed-rfq).
-`COS-PROC-409` covers four conflicts; the `messageKey` tells them apart.
+`COS-PROC-409` covers five conflicts; the `messageKey` tells them apart.
 
 | Code         | HTTP | Message                                                  | Trigger                                                                                                                                    |
 | ------------ | ---- | -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |

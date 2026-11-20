@@ -719,6 +719,10 @@ paths:
           description: >-
             The project, or the customer / vendor when named, is not this tenant's (absent or another tenant's; a
             vendor must also be ACTIVE — fix/finance-contract-foreign-ids); nothing is written
+        '422':
+          description: >-
+            `COS-FIN-422` (`finance.project.closed`) — the project is CANCELLED or COMPLETED and takes no new
+            contract (plan CY); nothing is written
     get:
       operationId: getFinanceContracts
       tags:

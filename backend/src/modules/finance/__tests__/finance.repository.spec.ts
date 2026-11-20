@@ -317,12 +317,15 @@ describe('FinanceRepository', () => {
   });
 
   // fix/finance-contract-foreign-ids: a contract's project and vendor are checked in the caller's own tenant.
-  it('projectExists asks for the project in this tenant', async () => {
-    mockPrisma.$queryRaw.mockResolvedValueOnce([{ exists: true }]);
-    expect(await repo.projectExists('proj-1')).toBe(true);
+  // Plan CY: and its status, so a closed one can be refused.
+  it('projectStatus asks for the project in this tenant and answers its status, or null', async () => {
+    mockPrisma.$queryRaw.mockResolvedValueOnce([{ status: 'COMPLETED' }]);
+    expect(await repo.projectStatus('proj-1')).toBe('COMPLETED');
     const call = mockPrisma.$queryRaw.mock.calls.at(-1)!;
     expect((call[0] as string[]).join('?')).toContain('FROM projects.projects');
     expect(call.slice(1)).toEqual(['proj-1', 'tenant-uuid-001']);
+    mockPrisma.$queryRaw.mockResolvedValueOnce([]);
+    expect(await repo.projectStatus('proj-2')).toBeNull();
   });
 
   it('activeVendorExists asks for an ACTIVE vendor in this tenant', async () => {
