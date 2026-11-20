@@ -78,6 +78,9 @@ const DEFAULT_PM_ONLY_MAX = 50_000;
 const DEFAULT_PM_FINANCE_MAX = 500_000;
 const PROCUREMENT_TASK_QUEUE = 'procurement';
 
+/** Postgres returns a uuid lower-case; a request may send it upper-case (`@IsUUID` takes either). */
+const sameUuid = (a: string, b: string): boolean => a.toLowerCase() === b.toLowerCase();
+
 @Injectable({ scope: Scope.REQUEST })
 export class ProcurementService {
   private get tenantId(): string {
@@ -242,11 +245,18 @@ export class ProcurementService {
     }
     // The ids it names are the tenant's own (fix/proc-rfq-pr-foreign-ids): project_id has no foreign key (any UUID was
     // taken) and pr_id's is checked without RLS (another tenant's purchase request was accepted; an unknown one failed
-    // the INSERT unmapped, 500). Existence in the tenant only — no APPROVED or same-project rule (product owner,
-    // 2026-11-20), as for a PO's rfq_id.
+    // the INSERT unmapped, 500). No APPROVED rule; the purchase request must be the RFQ's own project's (plan CU,
+    // product owner 2026-11-20, replacing the earlier "no same-project rule"), so PR → RFQ → PO stay in one project.
     await this.assertProjectOpenForProcurement(dto.project_id);
-    if (dto.pr_id && !(await this.repo.findPrById(dto.pr_id))) {
-      throw new NotFoundException(`Purchase request ${dto.pr_id} not found`);
+    if (dto.pr_id) {
+      const pr = await this.repo.findPrById(dto.pr_id);
+      if (!pr) throw new NotFoundException(`Purchase request ${dto.pr_id} not found`);
+      if (!sameUuid(pr.project_id, dto.project_id)) {
+        throw this.otherProject(
+          `Purchase request ${dto.pr_id} belongs to another project`,
+          'procurement.rfq.prOtherProject',
+        );
+      }
     }
     const rfq = await this.repo.createRfq({
       pr_id: dto.pr_id,
@@ -476,16 +486,24 @@ export class ProcurementService {
     // before anything is written. They went straight to the INSERT: vendor_id and rfq_id have foreign keys, which are
     // checked without RLS — another tenant's row was accepted, an unknown id failed the INSERT unmapped (500) — and
     // project_id has none, so any UUID was taken. The vendor must also be ACTIVE (the vendor lists hide a deactivated
-    // one). rfq_id is checked to exist in the tenant only — no AWARDED or awarded-vendor rule (product owner,
-    // 2026-11-20).
+    // one). rfq_id: no AWARDED or awarded-vendor rule (product owner, 2026-11-20), but it must be the PO's own
+    // project's RFQ (plan CU, product owner 2026-11-20).
     const vendor = await this.repo.findVendorById(dto.vendor_id);
     if (!vendor || !vendor.is_active) {
       throw new NotFoundException(`Vendor ${dto.vendor_id} not found`);
     }
-    if (dto.rfq_id && !(await this.repo.findRfqById(dto.rfq_id))) {
-      throw new NotFoundException(`RFQ ${dto.rfq_id} not found`);
-    }
+    // The project first, as in createRfq: an unknown or closed project answers as such, whatever RFQ is named.
     await this.assertProjectOpenForProcurement(dto.project_id);
+    if (dto.rfq_id) {
+      const rfq = await this.repo.findRfqById(dto.rfq_id);
+      if (!rfq) throw new NotFoundException(`RFQ ${dto.rfq_id} not found`);
+      if (!sameUuid(rfq.project_id, dto.project_id)) {
+        throw this.otherProject(
+          `RFQ ${dto.rfq_id} belongs to another project`,
+          'procurement.po.rfqOtherProject',
+        );
+      }
+    }
 
     // One transaction for the header + every line: a partial write would leave a committed PO whose
     // total_amount contradicts the sum just validated above.
@@ -955,6 +973,13 @@ export class ProcurementService {
   }
 
   // ── Private Helpers ────────────────────────────────────────────────────────
+
+  /** Plan CU: a PO's RFQ and an RFQ's purchase request must be the same project's — 422 `COS-PROC-422`. */
+  private otherProject(message: string, messageKey: string): UnprocessableEntityException {
+    return new UnprocessableEntityException({
+      error: { code: 'COS-PROC-422', message, messageKey },
+    });
+  }
 
   /**
    * The project is the tenant's own (404 otherwise) and still takes new procurement: a CANCELLED or COMPLETED project

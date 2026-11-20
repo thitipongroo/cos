@@ -914,7 +914,8 @@ paths:
         '422':
           description: >-
             `COS-PROC-422` (`procurement.project.closed`) — the project is CANCELLED or COMPLETED and takes no new
-            procurement (plan CS); nothing is written
+            procurement (plan CS); or `COS-PROC-422` (`procurement.rfq.prOtherProject`) — the purchase request named is
+            another project's (plan CU); nothing is written
           content:
             application/json:
               schema:
@@ -1181,7 +1182,8 @@ paths:
         '422':
           description: >-
             Total mismatch or validation error; or `COS-PROC-422` (`procurement.project.closed`) — the project is
-            CANCELLED or COMPLETED and takes no new procurement (plan CS); nothing is written
+            CANCELLED or COMPLETED and takes no new procurement (plan CS); or `COS-PROC-422`
+            (`procurement.po.rfqOtherProject`) — the RFQ named is another project's (plan CU); nothing is written
   /procurement/purchase-orders/{poId}:
     get:
       tags:

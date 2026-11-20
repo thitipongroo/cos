@@ -1526,7 +1526,7 @@ describe('exact contracts — createRfq', () => {
   });
 
   it('publishes the RFQ pr_id when the RFQ was created from a PR', async () => {
-    mockRepo.findPrById.mockResolvedValue({ pr_id: 'pr-uuid-777' });
+    mockRepo.findPrById.mockResolvedValue({ pr_id: 'pr-uuid-777', project_id: 'project-uuid-001' });
     mockRepo.createRfq.mockResolvedValue({ ...rfqDraftFixture, pr_id: 'pr-uuid-777' });
     mockRepo.setRfqWorkflowId.mockResolvedValue(undefined);
     await service.createRfq({
@@ -2756,5 +2756,94 @@ describe('RFQ deadline (plan CT)', () => {
     mockRepo.createQuotation.mockResolvedValue({ quotation_id: 'q-1' });
     await expect(quote(new Date(T).toISOString())).resolves.toEqual({ quotation_id: 'q-1' });
     expect(mockRepo.createQuotation).toHaveBeenCalled();
+  });
+});
+
+describe("a PO, or an RFQ, naming another project's RFQ or purchase request (plan CU)", () => {
+  const otherProject = (message: string, messageKey: string) => ({
+    response: { error: { code: 'COS-PROC-422', message, messageKey } },
+  });
+  const poDto = (over: Record<string, unknown> = {}) =>
+    ({
+      vendor_id: 'vendor-uuid-001',
+      project_id: 'project-uuid-001',
+      rfq_id: 'rfq-uuid-001',
+      po_number: 'PO-CU',
+      total_amount: '60000.0000',
+      currency_code: 'THB',
+      delivery_date: '2026-09-01',
+      line_items: [
+        { description: 'Concrete', quantity: '10.0000', unit: 'm3', unit_price: '6000.0000' },
+      ],
+      ...over,
+    }) as never;
+  const rfqDto = (over: Record<string, unknown> = {}) => ({
+    pr_id: 'pr-uuid-001',
+    project_id: 'project-uuid-001',
+    rfq_number: 'RFQ-CU',
+    deadline: new Date(Date.now() + 7 * 86_400_000).toISOString(),
+    ...over,
+  });
+
+  beforeEach(() => {
+    mockRepo.findVendorById.mockResolvedValue(vendorFixture);
+    mockRepo.projectStatus.mockResolvedValue('ACTIVE');
+    mockRepo.findRfqById.mockResolvedValue(rfqPublishedFixture); // project-uuid-001
+    mockRepo.findPrById.mockResolvedValue({ pr_id: 'pr-uuid-001', project_id: 'project-uuid-001' });
+    mockRepo.createPurchaseOrderWithLineItems.mockResolvedValue({
+      po: poFixture,
+      line_items: lineItemFixtures,
+    });
+    mockRepo.setPoWorkflowId.mockResolvedValue(undefined);
+    mockRepo.createRfq.mockResolvedValue({ ...rfqDraftFixture, pr_id: 'pr-uuid-001' });
+    mockRepo.setRfqWorkflowId.mockResolvedValue(undefined);
+  });
+
+  it("refuses a PO whose RFQ is another project's — 422 COS-PROC-422, nothing written", async () => {
+    mockRepo.findRfqById.mockResolvedValue({
+      ...rfqPublishedFixture,
+      project_id: 'project-uuid-002',
+    });
+    const err = await service.createPurchaseOrder(poDto()).catch((e: unknown) => e);
+    expect(err).toBeInstanceOf(UnprocessableEntityException);
+    expect(err).toMatchObject(
+      otherProject('RFQ rfq-uuid-001 belongs to another project', 'procurement.po.rfqOtherProject'),
+    );
+    expect(mockRepo.createPurchaseOrderWithLineItems).not.toHaveBeenCalled();
+  });
+
+  it("refuses an RFQ whose purchase request is another project's — 422, nothing written, no workflow", async () => {
+    mockRepo.findPrById.mockResolvedValue({ pr_id: 'pr-uuid-001', project_id: 'project-uuid-002' });
+    const err = await service.createRfq(rfqDto()).catch((e: unknown) => e);
+    expect(err).toBeInstanceOf(UnprocessableEntityException);
+    expect(err).toMatchObject(
+      otherProject(
+        'Purchase request pr-uuid-001 belongs to another project',
+        'procurement.rfq.prOtherProject',
+      ),
+    );
+    expect(mockRepo.createRfq).not.toHaveBeenCalled();
+    expect(mockWorkflowStart).not.toHaveBeenCalled();
+  });
+
+  it('a closed project answers as closed before the RFQ is compared, on a PO as on an RFQ', async () => {
+    mockRepo.projectStatus.mockResolvedValue('COMPLETED');
+    mockRepo.findRfqById.mockResolvedValue({
+      ...rfqPublishedFixture,
+      project_id: 'project-uuid-002',
+    });
+    mockRepo.findPrById.mockResolvedValue({ pr_id: 'pr-uuid-001', project_id: 'project-uuid-002' });
+    const closed = { response: { error: { messageKey: 'procurement.project.closed' } } };
+    expect(await service.createPurchaseOrder(poDto()).catch((e: unknown) => e)).toMatchObject(
+      closed,
+    );
+    expect(await service.createRfq(rfqDto()).catch((e: unknown) => e)).toMatchObject(closed);
+  });
+
+  it('writes both when the project is the same — compared without regard to letter case', async () => {
+    await service.createPurchaseOrder(poDto({ project_id: 'PROJECT-UUID-001' }));
+    expect(mockRepo.createPurchaseOrderWithLineItems).toHaveBeenCalled();
+    await service.createRfq(rfqDto({ project_id: 'PROJECT-UUID-001' }));
+    expect(mockRepo.createRfq).toHaveBeenCalled();
   });
 });

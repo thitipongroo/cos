@@ -1602,6 +1602,24 @@ gate's isolated run) checks the hash was not tested either; it ran 12.18.0 with 
 
 ## Open
 
+- **Closed — a purchase order or RFQ could name another project's RFQ or purchase request.** Fixed in plan CU (on
+  the current branch; product-owner decision 2026-11-20, replacing the earlier "no same-project rule" for an RFQ's
+  `pr_id` recorded under `fix/proc-rfq-pr-foreign-ids` below). `createPurchaseOrder` checked a named `rfq_id` and
+  `createRfq` a named `pr_id` only to exist in the tenant; neither compared its `project_id`. Measured on HEAD: a PO
+  naming an RFQ of another project in the tenant, and an RFQ naming such a purchase request, were each WRITTEN.
+  - Now, after the existence check and before anything is written (and, for the RFQ, before the workflow start): a
+    mismatch → 422 `{ error: { code: 'COS-PROC-422', message: 'RFQ <id> belongs to another project', messageKey:
+    'procurement.po.rfqOtherProject' } }`, or `Purchase request <id> belongs to another project` with
+    `procurement.rfq.prOtherProject`. The ids are compared without regard to letter case (`@IsUUID` takes upper case;
+    Postgres returns lower). OpenAPI and `error-codes.md` list both.
+  - The PO now checks the project (404 / closed 422) before the RFQ, as `createRfq` already did (found by /doubt: an
+    unknown or closed project named with another project's RFQ answered `rfqOtherProject`).
+  - Verified: procurement unit (363) — each mismatch refused with no INSERT and no workflow, a closed project
+    answering as closed first, the same project in upper case written; `test/procurement/04-procurement` (29) — both
+    → 422 with no row. HEAD's service fails the two new unit and two new integration tests; the old order fails the
+    order test. Backend tsc, eslint, prettier, unit (4538), conformance, OpenAPI and markdownlint pass.
+  - Not covered (by decision): rows written before this change are not re-checked, and there is no database
+    constraint — another write path (seeds, SQL) can still link projects. No client sends either id today.
 - **Closed — the RFQ deadline was not enforced where quotations came in.** Fixed in plan CT (on
   `docs/vendor-deactivated-invoices`, one commit; product-owner decisions 2026-11-20). Measured on HEAD: buyer and
   portal `submitQuotation` checked only PUBLISHED, so a quotation after the deadline was taken whenever the workflow
@@ -1862,11 +1880,12 @@ gate's isolated run) checks the hash was not tested either; it ran 12.18.0 with 
 
 - **Closed — an RFQ and a purchase request took their parent ids unchecked.** Fixed on `fix/proc-rfq-pr-foreign-ids`
   (product-owner decision 2026-11-20: an RFQ's `pr_id` is checked to be the tenant's only — no APPROVED or
-  same-project rule — as a PO's `rfq_id`). `createRfq` inserted `pr_id` (foreign key, checked without RLS) and
-  `project_id` (none); `createPurchaseRequest` inserted `project_id` (none). Measured on HEAD: an RFQ naming another
-  tenant's project, an unknown project or another tenant's purchase request was WRITTEN (then 500 at the Temporal
-  workflow start, which this harness lacks); one naming an unknown purchase request → 500 on the foreign key, no row;
-  a purchase request naming another tenant's or an unknown project → 201, written.
+  same-project rule — as a PO's `rfq_id`; the same-project part superseded by plan CU, above). `createRfq` inserted
+  `pr_id` (foreign key, checked without RLS) and `project_id` (none); `createPurchaseRequest` inserted `project_id`
+  (none). Measured on HEAD: an RFQ naming another tenant's project, an unknown project or another tenant's purchase
+  request was WRITTEN (then 500 at the Temporal workflow start, which this harness lacks); one naming an unknown
+  purchase request → 500 on the foreign key, no row; a purchase request naming another tenant's or an unknown project
+  → 201, written.
   - Now, before the INSERT: `createRfq` — the project (`projectExists`) → else 404 `Project <id> not found`, `pr_id`
     when given (`findPrById`) → else 404 `Purchase request <id> not found`; `createPurchaseRequest` (also reached from
     the app's offline `/sync/push`, where a 4xx is permanent: the device discards the item and tells the user) — the

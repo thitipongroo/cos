@@ -279,6 +279,7 @@ describe('Procurement Integration (Phase 5)', () => {
       otherVendor: '',
       otherProject: '',
       otherRfq: '',
+      sideRfq: '',
     };
 
     const vendorFor = async (token: string): Promise<string> => {
@@ -335,6 +336,8 @@ describe('Procurement Integration (Phase 5)', () => {
       ids.otherVendor = await vendorFor(OTHER_TOKEN);
       ids.otherProject = await projectFor(OTHER_TOKEN);
       ids.otherRfq = await rfqFor(OTHER_TENANT_ID, ids.otherProject, OTHER_ADMIN_ID);
+      // Plan CU: an RFQ of another project in the same tenant.
+      ids.sideRfq = await rfqFor(TENANT_ID, await projectFor(ADMIN_TOKEN), ADMIN_ID);
     });
 
     const po = (over: Partial<{ vendor_id: string; project_id: string; rfq_id: string }>) => {
@@ -400,6 +403,21 @@ describe('Procurement Integration (Phase 5)', () => {
       expect(res.status).not.toBe(404); // the workflow start afterwards has no Temporal here
       expect(await poRows(poNumber)).toBe(1);
     });
+
+    // Plan CU (product owner 2026-11-20): the RFQ must be the PO's own project's.
+    it('an RFQ of another project in the tenant: 422 COS-PROC-422, no PO written', async () => {
+      const { poNumber, send } = po({ rfq_id: ids.sideRfq });
+      const res = await send();
+      expect(res.status).toBe(422);
+      expect(res.body).toEqual({
+        error: {
+          code: 'COS-PROC-422',
+          message: `RFQ ${ids.sideRfq} belongs to another project`,
+          messageKey: 'procurement.po.rfqOtherProject',
+        },
+      });
+      expect(await poRows(poNumber)).toBe(0);
+    });
   });
 
   // fix/proc-rfq-pr-foreign-ids: an RFQ names the tenant's own project and (when given) purchase request; a purchase
@@ -408,7 +426,7 @@ describe('Procurement Integration (Phase 5)', () => {
   describe("RFQ and purchase request — the ids are the tenant's own", () => {
     const UNKNOWN = 'ee000003-9999-4000-8000-00000000bcde';
     let seq = 0;
-    const ids = { project: '', pr: '', otherProject: '', otherPr: '' };
+    const ids = { project: '', pr: '', otherProject: '', otherPr: '', sidePr: '' };
 
     const projectFor = async (token: string): Promise<string> => {
       seq += 1;
@@ -450,6 +468,8 @@ describe('Procurement Integration (Phase 5)', () => {
       ids.pr = await prFor(PROC_TOKEN, ids.project);
       ids.otherProject = await projectFor(OTHER_TOKEN);
       ids.otherPr = await prFor(OTHER_TOKEN, ids.otherProject);
+      // Plan CU: a purchase request of another project in the same tenant.
+      ids.sidePr = await prFor(PROC_TOKEN, await projectFor(ADMIN_TOKEN));
     });
 
     const rfq = (over: Record<string, string>) => {
@@ -501,6 +521,21 @@ describe('Procurement Integration (Phase 5)', () => {
       const res = await send();
       expect(res.status).not.toBe(404); // the workflow start afterwards has no Temporal here
       expect(await count('rfqs', 'rfq_number', rfqNumber)).toBe(1);
+    });
+
+    // Plan CU (product owner 2026-11-20): the purchase request must be the RFQ's own project's.
+    it('RFQ with a purchase request of another project in the tenant: 422 COS-PROC-422, no RFQ written', async () => {
+      const { rfqNumber, send } = rfq({ pr_id: ids.sidePr });
+      const res = await send();
+      expect(res.status).toBe(422);
+      expect(res.body).toEqual({
+        error: {
+          code: 'COS-PROC-422',
+          message: `Purchase request ${ids.sidePr} belongs to another project`,
+          messageKey: 'procurement.rfq.prOtherProject',
+        },
+      });
+      expect(await count('rfqs', 'rfq_number', rfqNumber)).toBe(0);
     });
 
     it.each([
