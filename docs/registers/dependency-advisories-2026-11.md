@@ -1602,6 +1602,27 @@ gate's isolated run) checks the hash was not tested either; it ran 12.18.0 with 
 
 ## Open
 
+- **Closed — an AR billing or receipt could name another project than its contract or billing.** Fixed in plan CZ
+  (on the current branch; product-owner decisions 2026-11-21: refuse 422 `COS-FIN-422`, as plan CU for procurement;
+  the billing and the AR receipt; the contract's status is not checked in this round). Closes the item parked by
+  plan CY. `createBilling` checked the contract to exist and `recordArReceipt` the billing to exist and be ISSUED;
+  both wrote the DTO's `project_id` unchecked, and the receipt's event carried it — a project's AR, read by
+  `project_id`, then misstated both projects.
+  - Now `createBilling`: the contract's project ≠ `project_id` (compared without regard to letter case) → 422
+    `COS-FIN-422`, `finance.billing.contractOtherProject` ("Contract `<id>` belongs to another project"), nothing
+    written. `recordArReceipt`: likewise against the billing's project, before the status check →
+    `finance.receipt.billingOtherProject`; no receipt, no event, the billing left ISSUED.
+  - Docs: `finance.openapi.yaml` (404 and 422 on `postFinanceBilling` and `postFinanceArReceipts`); `error-codes.md`
+    COS-FIN rows.
+  - Verified: finance unit (326: each mismatch with nothing written, the project reason before the status, the same
+    project in upper case written); `test/finance/03` (25: both → 422 with no row, the billing still ISSUED). HEAD's
+    service fails the two integration and three unit tests.
+  - Not covered (by decision): AP `recordPayment` (a procurement invoice's project is not compared — another module;
+    the invoice's existence is not checked either); the contract's status for a billing (DRAFT or TERMINATED
+    contracts still take billings); rows written before this change.
+  - Parked (found by /doubt): a receipt's `customer_id` is neither compared with the contract's customer nor checked
+    in the tenant (its foreign key has no tenant column and is checked without RLS); a billing may be raised on a
+    vendor-side contract (SUBCONTRACT, SUPPLY_AGREEMENT); a receipt of any amount marks its billing PAID.
 - **Closed — a closed project still took new contracts.** Fixed in plan CY (on the current branch; product-owner
   decisions 2026-11-21: `createContract` on a CANCELLED or COMPLETED project → 422 `COS-FIN-422`; contracts already
   made carry on — signing, activation, termination, and their billings and receipts; budgets, budget lines and
@@ -1620,6 +1641,7 @@ gate's isolated run) checks the hash was not tested either; it ran 12.18.0 with 
     no row — HEAD's service answers 201); `test/finance/01`–`04` (49, 16, 23, 9). No client creates contracts today.
   - Parked (found by /doubt, not about new contracts): `createBilling` checks that the contract exists, not that the
     billing's `project_id` is the contract's — an AR billing can be written under another project (closed or not).
+    Closed by plan CZ, above.
 - **Closed — a PR number already in use answered 500, and the web purchase request page showed no refusal.** Fixed
   in plan CX (on the current branch; product-owner decisions 2026-11-20: a taken number → 409; the web forms stop
   the PR and RFQ numbers at 50; the PR page shows a TH/EN reason as plan CW's pages do). Closes the two items plan

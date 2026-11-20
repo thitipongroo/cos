@@ -1356,7 +1356,10 @@ describe('AR billing — customers, contracts, invoices and payments', () => {
     };
 
     it('createBilling succeeds when contract exists', async () => {
-      mockRepo.findContractById.mockResolvedValue({ contract_id: 'con-1' });
+      mockRepo.findContractById.mockResolvedValue({
+        contract_id: 'con-1',
+        project_id: 'proj-uuid-001',
+      });
       mockRepo.createBilling.mockResolvedValue(draftBilling);
       const r = await service.createBilling({
         project_id: 'proj-uuid-001',
@@ -1489,6 +1492,85 @@ describe('AR billing — customers, contracts, invoices and payments', () => {
           received_date: '2026-07-14',
         }),
       ).rejects.toBeInstanceOf(UnprocessableEntityException);
+    });
+
+    // Plan CZ (product owner 2026-11-21): a billing is its contract's project's, a receipt its billing's.
+    describe('another project than the contract or billing (plan CZ)', () => {
+      const billingDto = (project_id: string) => ({
+        project_id,
+        contract_id: 'con-1',
+        billing_number: 'AR-002',
+        amount: '100',
+        due_date: '2026-07-15',
+      });
+      const receiptDto = (project_id: string) => ({
+        project_id,
+        billing_id: 'bill-1',
+        customer_id: 'cust-1',
+        amount_received: '100000',
+        received_date: '2026-07-14',
+      });
+      beforeEach(() => {
+        mockRepo.findContractById.mockResolvedValue({
+          contract_id: 'con-1',
+          project_id: 'proj-uuid-001',
+        });
+        mockRepo.findBillingById.mockResolvedValue({ ...draftBilling, status: 'ISSUED' });
+        mockRepo.createBilling.mockResolvedValue(draftBilling);
+        mockRepo.createArReceipt.mockResolvedValue({ ar_receipt_id: 'rcpt-1' });
+        mockRepo.updateBillingStatus.mockResolvedValue({ ...draftBilling, status: 'PAID' });
+      });
+
+      it('refuses a billing under another project than its contract — 422, nothing written', async () => {
+        const err = await service
+          .createBilling(billingDto('proj-uuid-002'))
+          .catch((e: unknown) => e);
+        expect(err).toBeInstanceOf(UnprocessableEntityException);
+        expect(err).toMatchObject({
+          response: {
+            error: {
+              code: 'COS-FIN-422',
+              message: 'Contract con-1 belongs to another project',
+              messageKey: 'finance.billing.contractOtherProject',
+            },
+          },
+        });
+        expect(mockRepo.createBilling).not.toHaveBeenCalled();
+      });
+
+      it('refuses a receipt under another project than its billing — 422, nothing written, no event', async () => {
+        const err = await service
+          .recordArReceipt(receiptDto('proj-uuid-002'))
+          .catch((e: unknown) => e);
+        expect(err).toMatchObject({
+          response: {
+            error: {
+              code: 'COS-FIN-422',
+              message: 'Billing bill-1 belongs to another project',
+              messageKey: 'finance.receipt.billingOtherProject',
+            },
+          },
+        });
+        expect(mockRepo.createArReceipt).not.toHaveBeenCalled();
+        expect(mockRepo.updateBillingStatus).not.toHaveBeenCalled();
+      });
+
+      it('the mismatch is answered before the status: a DRAFT billing of another project → the project reason', async () => {
+        mockRepo.findBillingById.mockResolvedValue(draftBilling);
+        const err = await service
+          .recordArReceipt(receiptDto('proj-uuid-002'))
+          .catch((e: unknown) => e);
+        expect(err).toMatchObject({
+          response: { error: { messageKey: 'finance.receipt.billingOtherProject' } },
+        });
+      });
+
+      it('writes both when the project is the same, compared without regard to letter case', async () => {
+        await service.createBilling(billingDto('PROJ-UUID-001'));
+        expect(mockRepo.createBilling).toHaveBeenCalled();
+        await service.recordArReceipt(receiptDto('PROJ-UUID-001'));
+        expect(mockRepo.createArReceipt).toHaveBeenCalled();
+      });
     });
   });
 

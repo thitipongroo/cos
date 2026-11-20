@@ -778,6 +778,12 @@ paths:
           description: Billing created (DRAFT)
         '401':
           description: Unauthenticated — missing or invalid bearer token
+        '404':
+          description: No such contract in this tenant; nothing is written
+        '422':
+          description: >-
+            `COS-FIN-422` (`finance.billing.contractOtherProject`) — `project_id` is not the contract's project (plan
+            CZ); nothing is written
     get:
       operationId: getFinanceBilling
       tags:
@@ -910,6 +916,13 @@ paths:
           description: AR receipt recorded (billing → PAID)
         '401':
           description: Unauthenticated — missing or invalid bearer token
+        '404':
+          description: No such billing in this tenant; nothing is written
+        '422':
+          description: >-
+            The billing is not ISSUED (a plain message, no `error.code`); or `COS-FIN-422`
+            (`finance.receipt.billingOtherProject`) — `project_id` is not the billing's project (plan CZ); nothing is
+            written
   /finance/cashflow-forecast/{projectId}:
     get:
       description: |

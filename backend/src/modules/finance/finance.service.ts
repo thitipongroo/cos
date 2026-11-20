@@ -125,6 +125,9 @@ export function buildForecast(
   return periods;
 }
 
+/** Postgres returns a uuid lower-case; a request may send it upper-case (`@IsUUID` takes either). */
+const sameUuid = (a: string, b: string): boolean => a.toLowerCase() === b.toLowerCase();
+
 @Injectable({ scope: Scope.REQUEST })
 export class FinanceService {
   private get tenantId(): string {
@@ -834,10 +837,25 @@ export class FinanceService {
 
   // ── Client Billing (AR — §11, §15) ──────────────────────────────────────────
 
+  /** Plan CZ: an AR billing or receipt naming another project than its contract or billing — 422 `COS-FIN-422`. */
+  private otherProject(message: string, messageKey: string): UnprocessableEntityException {
+    return new UnprocessableEntityException({
+      error: { code: 'COS-FIN-422', message, messageKey },
+    });
+  }
+
   async createBilling(dto: CreateBillingDto): Promise<BillingRow> {
     const contract = await this.repo.findContractById(dto.contract_id);
     if (!contract) {
       throw new NotFoundException(`Contract ${dto.contract_id} not found`);
+    }
+    // The billing is its contract's project's (product owner, 2026-11-21; plan CZ) — the project's AR is read by
+    // project_id, so one under another project misstates both.
+    if (!sameUuid(contract.project_id, dto.project_id)) {
+      throw this.otherProject(
+        `Contract ${dto.contract_id} belongs to another project`,
+        'finance.billing.contractOtherProject',
+      );
     }
     return this.repo.createBilling({
       project_id: dto.project_id,
@@ -907,6 +925,13 @@ export class FinanceService {
   /** Record a client payment; settles the parent billing (ISSUED → PAID). */
   async recordArReceipt(dto: RecordArReceiptDto): Promise<ArReceiptRow> {
     const billing = await this.getBilling(dto.billing_id);
+    // The receipt is its billing's project's (plan CZ), checked before the status: nothing written, no event.
+    if (!sameUuid(billing.project_id, dto.project_id)) {
+      throw this.otherProject(
+        `Billing ${dto.billing_id} belongs to another project`,
+        'finance.receipt.billingOtherProject',
+      );
+    }
     if (billing.status !== 'ISSUED') {
       throw new UnprocessableEntityException(
         `Billing ${dto.billing_id} is ${billing.status}; a receipt can only settle an ISSUED billing`,

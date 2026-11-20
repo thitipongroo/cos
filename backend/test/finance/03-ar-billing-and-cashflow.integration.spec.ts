@@ -234,6 +234,66 @@ describe('Phase 7 · AR billing lifecycle and cash flow forecast (real database)
   });
 
   // ---------------------------------------------------------------------------------------------
+  // Plan CZ (product owner 2026-11-21): a billing is its contract's project's, a receipt its billing's.
+  describe('a billing or receipt naming another project (plan CZ)', () => {
+    const count = async (table: string, column: string, value: string): Promise<number> => {
+      const rows = await infra.prisma.$queryRawUnsafe<Array<{ n: bigint }>>(
+        `SELECT count(*) AS n FROM finance.${table} WHERE ${column} = $1`,
+        value,
+      );
+      return Number(rows[0]!.n);
+    };
+
+    it("a billing under another project than its contract's: 422 COS-FIN-422, no row", async () => {
+      const contractId = await newContract(await newProject());
+      const otherProject = await newProject();
+      seq += 1;
+      const billingNumber = `BILL-CZ-${seq}`;
+      const res = await http()
+        .post('/api/v1/finance/billing')
+        .set('x-test-role', 'FINANCE')
+        .send({
+          project_id: otherProject,
+          contract_id: contractId,
+          billing_number: billingNumber,
+          amount: '1000.0000',
+          due_date: isoDaysFromNow(10),
+        });
+      expect(res.status).toBe(422);
+      expect(res.body).toMatchObject({
+        error: {
+          code: 'COS-FIN-422',
+          message: `Contract ${contractId} belongs to another project`,
+          messageKey: 'finance.billing.contractOtherProject',
+        },
+      });
+      expect(await count('billings', 'billing_number', billingNumber)).toBe(0);
+    });
+
+    it("a receipt under another project than its billing's: 422, no receipt, the billing still ISSUED", async () => {
+      const billingId = await newBilling(await newProject(), '1000.0000');
+      await approve(billingId, 'PM', 'PROJECT_MANAGER');
+      const res = await http()
+        .post('/api/v1/finance/ar-receipts')
+        .set('x-test-role', 'FINANCE')
+        .send({
+          project_id: await newProject(),
+          billing_id: billingId,
+          customer_id: customerId,
+          amount_received: '1000.0000',
+          received_date: isoDaysFromNow(0),
+          payment_method: 'BANK_TRANSFER',
+        });
+      expect(res.status).toBe(422);
+      expect(res.body).toMatchObject({
+        error: { code: 'COS-FIN-422', messageKey: 'finance.receipt.billingOtherProject' },
+      });
+      expect(await count('ar_receipts', 'billing_id::text', billingId)).toBe(0);
+      expect(await billingStatus(billingId)).toBe('ISSUED');
+    });
+  });
+
+  // ---------------------------------------------------------------------------------------------
   describe('the PM approval limit (master:2965; §15; ADR-024 §4)', () => {
     it('a PM may approve at the limit', async () => {
       const billingId = await newBilling(await newProject(), '500000.0000');
