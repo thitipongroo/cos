@@ -1701,7 +1701,8 @@
       "stateChanged": "The RFQ's status has changed since this page loaded. Refresh the page.",
       "quotationGone": "The quotation or its vendor is no longer available (the vendor may have been deactivated).",
       "prNumberTaken": "This PR number is already in use. Choose another number."
-    }
+    },
+    "vendorDeactivated": "Vendor deactivated"
   },
   "profile": {
     "title": "My profile",

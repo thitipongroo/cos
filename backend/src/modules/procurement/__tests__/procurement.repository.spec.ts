@@ -545,7 +545,15 @@ describe('ProcurementRepository', () => {
     const sql = (mockPrisma.$queryRaw.mock.calls.at(-1)![0] as string[])
       .join('?')
       .replace(/\s+/g, ' ');
-    expect(sql).toContain('ORDER BY total_amount ASC, submitted_at ASC, quotation_id ASC');
+    expect(sql).toContain('ORDER BY q.total_amount ASC, q.submitted_at ASC, q.quotation_id ASC');
+    // plan DI: the vendor's name and whether it is active, joined LEFT and tenant-scoped.
+    expect(sql).toContain(
+      'SELECT q.*, v.vendor_name, COALESCE(v.is_active, false) AS vendor_active',
+    );
+    expect(sql).toContain(
+      'LEFT JOIN procurement.vendors v ON v.vendor_id = q.vendor_id AND v.tenant_id = q.tenant_id',
+    );
+    expect(sql).toContain('WHERE q.rfq_id = ?::uuid AND q.tenant_id = ?::uuid');
   });
 
   // plan CR: the award is recorded by a guarded UPDATE; the selection follows only when it recorded.

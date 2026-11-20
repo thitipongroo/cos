@@ -77,6 +77,9 @@ export interface QuotationRow {
   validity_days: number;
   submitted_at: Date;
   is_selected: boolean;
+  /** JOINED IN by `findQuotationsByRfq` (plan DI) — not columns of `quotations`. */
+  vendor_name?: string | null;
+  vendor_active?: boolean;
 }
 
 export interface PurchaseOrderRow {

@@ -7,7 +7,7 @@ import { useAllRfqs, useAwardRfq, useQuotations } from '../../../../lib/api/quer
 import type { QuotationRow } from '../../../../lib/api/types';
 import { formatMoney } from '../../../../lib/format';
 import { useReadOnly } from '../../../../lib/auth/useReadOnly';
-import { canAwardQuotations } from '../../../../lib/quotationAward';
+import { canAwardQuotation, canAwardQuotations } from '../../../../lib/quotationAward';
 import { procurementActionErrorKey } from '../../../../lib/procurementErrors';
 
 /**
@@ -32,7 +32,8 @@ export default function QuotationsPage() {
   const canAward = canAwardQuotations(readOnly, rfqStatus) && !award.isSuccess;
 
   const columns: Column<QuotationRow>[] = [
-    { headerKey: 'proc.colVendor', cell: (q) => q.vendor_id },
+    // The vendor's name (plan DI); its id when the API gave none.
+    { headerKey: 'proc.colVendor', cell: (q) => q.vendor_name ?? q.vendor_id },
     {
       headerKey: 'pm.colAmount',
       cell: (q) => formatMoney(locale, q.total_amount, q.currency_code),
@@ -45,7 +46,7 @@ export default function QuotationsPage() {
           {q.is_selected && (
             <span className="font-medium text-green-700">{t('proc.selected')}</span>
           )}
-          {canAward ? (
+          {canAward && canAwardQuotation(readOnly, rfqStatus, q) ? (
             <button
               type="button"
               disabled={award.isPending}
@@ -54,6 +55,9 @@ export default function QuotationsPage() {
             >
               {t('proc.award')}
             </button>
+          ) : canAward ? (
+            // Plan DI: the server refuses an award to a deactivated vendor (404, plan CP) — no button, a label.
+            <span className="text-xs text-gray-500">{t('proc.vendorDeactivated')}</span>
           ) : (
             !q.is_selected && '—'
           )}

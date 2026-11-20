@@ -1602,6 +1602,23 @@ gate's isolated run) checks the hash was not tested either; it ran 12.18.0 with 
 
 ## Open
 
+- **Closed — the quotations page offered Award on a deactivated vendor's row, and named vendors by id.** Fixed in
+  plan DI (on the current branch; product-owner decisions 2026-11-21: the rows carry the vendor's name and whether it
+  is active; on a deactivated vendor's row no Award button but a "vendor deactivated" label, the row kept for the
+  comparison). Closes the item parked by plan CP. Measured on HEAD (`test/procurement/03`): the rows had neither
+  field; the page drew Award on every row at EVALUATED, and the server refused a deactivated vendor's (404).
+  - `findQuotationsByRfq` LEFT-joins `procurement.vendors` (tenant-scoped, as `findInvoices`) → `vendor_name`,
+    `vendor_active` (`COALESCE(v.is_active, false)`); the order is unchanged and `awardRfq` reads the same rows.
+    `QuotationRow` and OpenAPI gain both (optional).
+  - Web: the vendor cell shows the name (the id when none); `lib/quotationAward.ts` `canAwardQuotation(readOnly,
+    status, row)` — no Award when `vendor_active === false` (absent reads as active); the row shows
+    `proc.vendorDeactivated` (TH/EN) instead.
+  - Verified: procurement unit (372: the join's SQL), `test/procurement/03` (27: an active and a deactivated
+    vendor's rows carry their names and `vendor_active` — HEAD has neither), apps/web jest (504, the per-row rule).
+    tsc, eslint, prettier, conformance, OpenAPI validity and freshness, markdownlint. No browser run.
+  - Not covered: a quotation whose vendor row is not found in the tenant (cross-module foreign keys were dropped in
+    `20261113000001`) reads as inactive — labelled "vendor deactivated", with its id for a name; the server's 404
+    is the same either way.
 - **Closed — an AR billing could be raised on a vendor-side or inactive contract.** Fixed in plan DH (on the current
   branch; product-owner decisions 2026-11-21: only a `MAIN_CONTRACT`, only while ACTIVE; billings already made are
   untouched). Closes the items plan CZ parked (vendor-side contracts) and left by decision (the contract's status).
@@ -2052,7 +2069,7 @@ gate's isolated run) checks the hash was not tested either; it ran 12.18.0 with 
     still awarded, as `createPurchaseOrder` checks then writes too. The activate pin asserts only that
     `activeVendorExists` is not called; a check through another query would pass it. The web quotations page still
     shows an Award button on a deactivated vendor's row (the row carries `vendor_id` only), which now answers 404 —
-    UX, parked.
+    UX, parked (closed by plan DI).
 
 - **Closed — a second award on the same RFQ is accepted until the workflow marks it AWARDED.** See the plan CR
   entry above.

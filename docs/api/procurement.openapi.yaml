@@ -260,6 +260,14 @@ components:
           format: date-time
         is_selected:
           type: boolean
+        vendor_name:
+          type: [string, 'null']
+          description: The vendor's name — on the comparison rows (`GET /procurement/rfqs/{id}/quotations`, plan DI)
+        vendor_active:
+          type: boolean
+          description: >-
+            Whether the vendor is still ACTIVE — on the comparison rows (plan DI); an award to an inactive one is
+            refused (404)
     SubmitQuotationDto:
       type: object
       required:

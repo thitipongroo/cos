@@ -216,6 +216,9 @@ export interface QuotationRow {
   currency_code: string;
   validity_days: number;
   is_selected: boolean;
+  /** The vendor's name and whether it is still active (plan DI). */
+  vendor_name?: string | null;
+  vendor_active?: boolean;
 }
 
 export interface PaginatedResponse<T> {

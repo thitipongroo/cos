@@ -424,13 +424,22 @@ export class ProcurementRepository {
     return rows[0] ?? null;
   }
 
+  /**
+   * An RFQ's quotations, cheapest first. Each row carries its vendor's name and whether the vendor is still ACTIVE
+   * (plan DI) — the comparison page names the vendor and offers no Award on a deactivated one (awardRfq refuses it,
+   * plan CP). LEFT and tenant-scoped, as `findInvoices`'s vendor join: a quotation is never dropped by the join; a
+   * vendor row not found reads as inactive with no name.
+   */
   async findQuotationsByRfq(rfq_id: string): Promise<QuotationRow[]> {
     return this.db.run(
       (prisma) =>
         prisma.$queryRaw<QuotationRow[]>`
-        SELECT * FROM procurement.quotations
-        WHERE rfq_id = ${rfq_id}::uuid AND tenant_id = ${this.tenantId}::uuid
-        ORDER BY total_amount ASC, submitted_at ASC, quotation_id ASC`,
+        SELECT q.*, v.vendor_name, COALESCE(v.is_active, false) AS vendor_active
+        FROM procurement.quotations q
+        LEFT JOIN procurement.vendors v
+          ON v.vendor_id = q.vendor_id AND v.tenant_id = q.tenant_id
+        WHERE q.rfq_id = ${rfq_id}::uuid AND q.tenant_id = ${this.tenantId}::uuid
+        ORDER BY q.total_amount ASC, q.submitted_at ASC, q.quotation_id ASC`,
     );
   }
 

@@ -8,3 +8,16 @@
 export function canAwardQuotations(readOnly: boolean, rfqStatus: string | undefined): boolean {
   return !readOnly && rfqStatus === 'EVALUATED';
 }
+
+/**
+ * Whether this row offers Award (plan DI): as `canAwardQuotations`, and not for a deactivated vendor — the server
+ * refuses that award (404, plan CP); the row stays, for the comparison, with a label instead of the button.
+ * `vendor_active` absent (an older API) reads as active, so nothing is hidden that the server would accept.
+ */
+export function canAwardQuotation(
+  readOnly: boolean,
+  rfqStatus: string | undefined,
+  row: { vendor_active?: boolean },
+): boolean {
+  return canAwardQuotations(readOnly, rfqStatus) && row.vendor_active !== false;
+}

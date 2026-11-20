@@ -491,6 +491,50 @@ describe('Phase 5 · RFQ lifecycle, quotation comparison and event emission', ()
       expect(later).not.toBe(first);
     });
 
+    // Plan DI (product owner 2026-11-21): each row names its vendor and says whether the vendor is still active.
+    it("each row carries its vendor's name and whether it is active", async () => {
+      const rfqId = await seedRfq('PUBLISHED');
+      const live = await createVendor();
+      const gone = await createVendor();
+      for (const vendor_id of [live, gone]) {
+        const res = await http()
+          .post(`/api/v1/procurement/rfqs/${rfqId}/quotations`)
+          .set('x-test-role', PO_ROLE)
+          .send({
+            vendor_id,
+            total_amount: '100.0000',
+            currency_code: 'THB',
+            validity_days: 30,
+            submitted_at: '2026-01-01T00:00:00.000Z',
+          });
+        expect(res.status).toBe(201);
+      }
+      await infra.prisma.$executeRawUnsafe(
+        `UPDATE procurement.vendors SET is_active = false WHERE vendor_id = $1::uuid`,
+        gone,
+      );
+      await infra.prisma.$executeRawUnsafe(
+        `UPDATE procurement.rfqs SET status = 'EVALUATED' WHERE rfq_id = $1::uuid`,
+        rfqId,
+      );
+      const res = await list(rfqId);
+      expect(res.status).toBe(200);
+      const rows = res.body as Array<{
+        vendor_id: string;
+        vendor_name: string;
+        vendor_active: boolean;
+      }>;
+      const byVendor = Object.fromEntries(rows.map((r) => [r.vendor_id, r]));
+      expect(byVendor[live]).toMatchObject({
+        vendor_active: true,
+        vendor_name: expect.stringMatching(/^Vendor /),
+      });
+      expect(byVendor[gone]).toMatchObject({
+        vendor_active: false,
+        vendor_name: expect.stringMatching(/^Vendor /),
+      });
+    });
+
     it('the GET on an EVALUATED RFQ: 200, the rows as stored, nothing written', async () => {
       const rfqId = await seedRfq('PUBLISHED');
       const dear = await quoteAt(rfqId, '900.0000', '2026-01-01T00:00:00.000Z');
