@@ -1881,6 +1881,8 @@
     "currency": "สกุลเงิน",
     "validityDays": "ยืนราคา (วัน)",
     "submitFailed": "ส่งไม่สำเร็จ กรุณาตรวจสอบข้อมูล",
+    "quotationExists": "คุณส่งใบเสนอราคาสำหรับ RFQ นี้ไปแล้ว ใบแรกยังมีผลอยู่",
+    "rfqClosed": "RFQ นี้ปิดรับใบเสนอราคาแล้ว",
     "dashboardTitle": "แดชบอร์ดผู้ขาย",
     "purchaseOrders": "ใบสั่งซื้อ",
     "invoices": "ใบแจ้งหนี้",

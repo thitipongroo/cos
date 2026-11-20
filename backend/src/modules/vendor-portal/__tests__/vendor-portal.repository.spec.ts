@@ -34,12 +34,6 @@ describe('VendorPortalRepository', () => {
     expect(await repo.findInvitation('inv-1')).toBeNull();
   });
 
-  it('markInvitationResponded runs an update', async () => {
-    executeRaw.mockResolvedValue(1);
-    await repo.markInvitationResponded('inv-1');
-    expect(executeRaw).toHaveBeenCalled();
-  });
-
   it("vendorExists asks the tenant's own vendors (D56) and answers a boolean", async () => {
     queryRaw.mockResolvedValueOnce([{ found: true }]);
     expect(await repo.vendorExists('ven-1')).toBe(true);
@@ -73,8 +67,31 @@ describe('VendorPortalRepository', () => {
         totalAmount: '100.00',
         currencyCode: 'THB',
         validityDays: 30,
+        invitationId: 'inv-1',
       }),
     ).toBe(row);
+    // The invitation is marked RESPONDED in the same transaction (fix/quotation-duplicate-and-closed-rfq).
+    const update = (executeRaw.mock.calls[0]![0] as string[]).join('?').replace(/\s+/g, ' ');
+    expect(update).toContain("UPDATE procurement.rfq_invitations SET status = 'RESPONDED'");
+    expect(executeRaw.mock.calls[0]!.slice(1)).toEqual(['inv-1']);
+  });
+
+  // fix/quotation-duplicate-and-closed-rfq: a second quotation from the vendor is not written; null, not a 500.
+  it('createQuotation leaves an existing quotation alone and returns null', async () => {
+    queryRaw.mockResolvedValue([]);
+    expect(
+      await repo.createQuotation({
+        rfqId: 'rfq-1',
+        vendorId: 'ven-1',
+        totalAmount: '100.00',
+        currencyCode: 'THB',
+        validityDays: 30,
+        invitationId: 'inv-1',
+      }),
+    ).toBeNull();
+    const sql = (queryRaw.mock.calls.at(-1)![0] as string[]).join('?').replace(/\s+/g, ' ');
+    expect(sql).toContain('ON CONFLICT (rfq_id, vendor_id) DO NOTHING');
+    expect(executeRaw).not.toHaveBeenCalled(); // the invitation is left as it is
   });
 
   it('listPurchaseOrdersByVendor returns rows', async () => {

@@ -137,14 +137,35 @@ export class VendorPortalService {
     const invitation = await this.assertValidInvitation(token, invitationId);
     const vendorId = await this.resolveVendorId(invitation.vendor_identity_id);
 
+    // Quoting is open while the RFQ is PUBLISHED, as on the buyer side (fix/quotation-duplicate-and-closed-rfq):
+    // the portal used to take a quotation for an RFQ already closed, evaluated, awarded or cancelled.
+    const rfq = await this.repo.findRfq(invitation.rfq_id);
+    if (!rfq) throw new NotFoundException('COS-VND-001: RFQ not found');
+    if (rfq.status !== 'PUBLISHED') {
+      throw new UnprocessableEntityException({
+        error: { code: 'COS-VND-011', message: 'RFQ is not open for quotations' },
+      });
+    }
+
     const quotation = await this.repo.createQuotation({
       rfqId: invitation.rfq_id,
       vendorId,
       totalAmount: dto.total_amount,
       currencyCode: dto.currency_code,
       validityDays: dto.validity_days,
+      // Marked RESPONDED in the same transaction as the quotation (see the repository).
+      invitationId,
     });
-    await this.repo.markInvitationResponded(invitationId);
+    // One per vendor per RFQ, the first standing — no revision (product owner, 2026-11-20). The invitation is left
+    // as it is and no session is issued.
+    if (!quotation) {
+      throw new ConflictException({
+        error: {
+          code: 'COS-VND-010',
+          message: 'A quotation from this vendor already exists for this RFQ',
+        },
+      });
+    }
 
     // Tier-1 → Tier-2 handoff (ADR-030, option A): responding grants a vendor session bound to the
     // vendor identity, scoped to this buyer tenant, for PO-status tracking and invoice submission.

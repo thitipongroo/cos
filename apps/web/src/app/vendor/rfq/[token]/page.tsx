@@ -8,6 +8,8 @@ import { TextInputField } from '../../../../components/form/TextInputField';
 import { useI18n } from '../../../../i18n';
 import { useVendorRfq, useSubmitQuotation } from '../../../../lib/api/vendor';
 import { useValidatedForm } from '../../../../lib/forms';
+import { quotationErrorKey } from '../../../../lib/vendorQuotation';
+import { ApiError } from '../../../../lib/api/client';
 
 /** Tier-1 magic-link page (§20.7.12): open an invited RFQ and submit a quotation — no account. */
 export default function VendorRfqPage(props: { params: Promise<{ token: string }> }) {
@@ -104,7 +106,7 @@ export default function VendorRfqPage(props: { params: Promise<{ token: string }
         />
         {submit.isError && (
           <p role="alert" className="text-sm text-red-600">
-            {t('vendor.submitFailed')}
+            {t(quotationErrorKey(submit.error instanceof ApiError ? submit.error : null))}
           </p>
         )}
         <button

@@ -34,12 +34,13 @@ function build(
     findRfq: jest
       .fn()
       .mockResolvedValue(
-        'rfq' in overrides ? overrides.rfq : { rfq_id: 'rfq-1', rfq_number: 'RFQ-1' },
+        'rfq' in overrides
+          ? overrides.rfq
+          : { rfq_id: 'rfq-1', rfq_number: 'RFQ-1', status: 'PUBLISHED' },
       ),
     createInvitation: jest.fn().mockResolvedValue({ invitation_id: 'inv-1' }),
     vendorExists: jest.fn().mockResolvedValue(overrides.vendorExists ?? true),
     createQuotation: jest.fn().mockResolvedValue({ quotation_id: 'q-1' }),
-    markInvitationResponded: jest.fn().mockResolvedValue(undefined),
     listPurchaseOrdersByVendor: jest.fn().mockResolvedValue([{ po_id: 'po-1' }]),
     findPurchaseOrderForVendor: jest.fn().mockResolvedValue({ po_id: 'po-1' }),
     createInvoice: jest.fn().mockResolvedValue({ invoice_id: 'i-1' }),
@@ -237,6 +238,7 @@ describe('VendorPortalService', () => {
       expect(await service.openRfq('TOK', 'inv-1')).toEqual({
         rfq_id: 'rfq-1',
         rfq_number: 'RFQ-1',
+        status: 'PUBLISHED',
       });
     });
 
@@ -279,7 +281,6 @@ describe('VendorPortalService', () => {
       ).rejects.toThrow('COS-VND-005: No active trading relationship');
       expect(repo.vendorExists).toHaveBeenCalledWith('ven-1');
       expect(repo.createQuotation).not.toHaveBeenCalled();
-      expect(repo.markInvitationResponded).not.toHaveBeenCalled();
     });
 
     it('403 COS-VND-005 on opening the RFQ for a deactivated vendor, before the RFQ is read', async () => {
@@ -306,6 +307,30 @@ describe('VendorPortalService', () => {
       );
     });
 
+    // fix/quotation-duplicate-and-closed-rfq: quoting is open while the RFQ is PUBLISHED, as on the buyer side.
+    it.each(['DRAFT', 'CLOSED', 'EVALUATED', 'AWARDED', 'CANCELLED'])(
+      '422 COS-VND-011 for a %s RFQ, nothing written',
+      async (status) => {
+        const { service, repo, magicLink } = build({
+          rfq: { rfq_id: 'rfq-1', rfq_number: 'RFQ-1', status },
+        });
+        await expect(service.submitQuotation('TOK', 'inv-1', dto)).rejects.toMatchObject({
+          response: { error: { code: 'COS-VND-011' } },
+        });
+        expect(repo.createQuotation).not.toHaveBeenCalled();
+        expect(magicLink.issueSessionToken).not.toHaveBeenCalled();
+      },
+    );
+
+    it('409 COS-VND-010 when the vendor already quoted for this RFQ; the invitation is left as it is', async () => {
+      const { service, repo, magicLink } = build();
+      repo.createQuotation.mockResolvedValueOnce(null);
+      const attempt = service.submitQuotation('TOK', 'inv-1', dto);
+      await expect(attempt).rejects.toThrow(ConflictException);
+      await expect(attempt).rejects.toMatchObject({ response: { error: { code: 'COS-VND-010' } } });
+      expect(magicLink.issueSessionToken).not.toHaveBeenCalled();
+    });
+
     it('creates the quotation, marks responded, and returns a vendor session', async () => {
       const { service, repo, magicLink } = build();
       const result = await service.submitQuotation('TOK', 'inv-1', dto);
@@ -315,8 +340,8 @@ describe('VendorPortalService', () => {
         totalAmount: '100.00',
         currencyCode: 'THB',
         validityDays: 30,
+        invitationId: 'inv-1', // marked RESPONDED with the quotation, in one transaction
       });
-      expect(repo.markInvitationResponded).toHaveBeenCalledWith('inv-1');
       expect(magicLink.issueSessionToken).toHaveBeenCalledWith('vid-1');
       expect(result).toEqual({
         quotation: { quotation_id: 'q-1' },

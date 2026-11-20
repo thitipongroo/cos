@@ -287,3 +287,15 @@ Recorded 2026-11-13 from `vendor-portal.service.ts`, where they were thrown but 
 | COS-VND-007 | 409  | This e-mail is already linked to another vendor of this tenant            | `issueInvitation` for an e-mail (any letter case) whose trading relationship with the tenant (active or revoked) names another vendor; nothing is written (fix/vendor-reinvite-refuse)                                                   |
 | COS-VND-008 | 409  | This e-mail's link to this vendor was revoked                             | `issueInvitation` for an e-mail whose trading relationship with the tenant names this vendor and is REVOKED; an invitation does not undo a revocation, nothing is written (fix/vendor-revoked-reinvite)                                  |
 | COS-VND-009 | 409  | This e-mail is disabled across the vendor network                         | `issueInvitation` for an e-mail whose vendor identity is disabled network-wide (`vendor_identities.is_active = false`, an operator edit); nothing is written (fix/vendor-invite-inactive)                                                |
+| COS-VND-010 | 409  | A quotation from this vendor already exists for this RFQ                  | `submitQuotation` (portal) for an RFQ this vendor has already quoted for; the first quotation stands, the invitation is left as it is (fix/quotation-duplicate-and-closed-rfq)                                                           |
+| COS-VND-011 | 422  | RFQ is not open for quotations                                            | `submitQuotation` (portal) for an RFQ that is not PUBLISHED — closed, evaluated, awarded or cancelled (fix/quotation-duplicate-and-closed-rfq)                                                                                           |
+
+## COS-PROC — Procurement
+
+Recorded 2026-11-20 from `procurement.service.ts`, where it was thrown but not listed here (fix/quotation-duplicate-and-closed-rfq).
+One code covers three conflicts; the `messageKey` tells them apart.
+
+| Code         | HTTP | Message                                                  | Trigger                                                                                                          |
+| ------------ | ---- | -------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| COS-PROC-409 | 409  | client_id is already in use                              | `procurement.pr.duplicateId` / `procurement.delivery.duplicateId` — a replayed id that belongs to another tenant |
+| COS-PROC-409 | 409  | A quotation from this vendor already exists for this RFQ | `procurement.quotation.duplicate` — `submitQuotation` (buyer) for an RFQ the vendor has already quoted for       |

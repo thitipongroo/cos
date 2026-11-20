@@ -430,7 +430,25 @@ describe('ProcurementRepository', () => {
       validity_days: 30,
       submitted_at: new Date().toISOString(),
     });
-    expect(result.quotation_id).toBe('quot-uuid-001');
+    expect(result?.quotation_id).toBe('quot-uuid-001');
+  });
+
+  // fix/quotation-duplicate-and-closed-rfq: a second quotation from the vendor is not written; null, not a 500.
+  it('createQuotation leaves an existing quotation alone and returns null', async () => {
+    mockPrisma.$queryRaw.mockResolvedValue([]);
+    const result = await repo.createQuotation({
+      rfq_id: 'rfq-uuid-001',
+      vendor_id: 'vendor-uuid-001',
+      total_amount: '1.0000',
+      currency_code: 'THB',
+      validity_days: 30,
+      submitted_at: new Date().toISOString(),
+    });
+    expect(result).toBeNull();
+    const sql = (mockPrisma.$queryRaw.mock.calls.at(-1)![0] as string[])
+      .join('?')
+      .replace(/\s+/g, ' ');
+    expect(sql).toContain('ON CONFLICT (rfq_id, vendor_id) DO NOTHING');
   });
 
   it('findQuotationsByRfq returns rows', async () => {

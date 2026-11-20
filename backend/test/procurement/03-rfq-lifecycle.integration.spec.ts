@@ -288,6 +288,16 @@ describe('Phase 5 · RFQ lifecycle, quotation comparison and event emission', ()
       return Number(rows[0]!.n);
     };
 
+    // fix/quotation-duplicate-and-closed-rfq: one per vendor per RFQ, the first standing. It was a 500 (the unique key).
+    it('a second quotation from the same vendor: 409, the first standing', async () => {
+      const rfqId = await seedRfq('PUBLISHED');
+      const vendorId = await createVendor();
+      expect((await quote(rfqId, vendorId)).status).toBe(201);
+      const again = await quote(rfqId, vendorId);
+      expect(again.status).toBe(409);
+      expect(await quotationsOn(rfqId)).toBe(1);
+    });
+
     it('an active vendor: 201, as before', async () => {
       const rfqId = await seedRfq('PUBLISHED');
       expect((await quote(rfqId, await createVendor())).status).toBe(201);

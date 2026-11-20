@@ -455,4 +455,67 @@ describe('Vendor invitations: one e-mail, one vendor per tenant (real database)'
       'No active trading relationship with this tenant',
     );
   });
+
+  // fix/quotation-duplicate-and-closed-rfq: through the portal, one quotation per vendor per RFQ (a second invitation
+  // to the same RFQ answered → 409, was a 500), and only while the RFQ is PUBLISHED (was taken for a closed one).
+  describe('portal quotations: one per vendor per RFQ, while the RFQ is open', () => {
+    const quoteWith = (token: string) =>
+      http()
+        .post(`/api/v1/vendor/rfq/${encodeURIComponent(token)}/quotation`)
+        .send({ total_amount: '500.00', currency_code: 'THB', validity_days: 30 });
+    const tokenFor = async (rfq: string, vendor: string, email: string): Promise<string> => {
+      const res = await invite(rfq, vendor, email);
+      expect(res.status).toBe(201);
+      return (res.body as { magicLinkToken: string }).magicLinkToken;
+    };
+    const quotationsOn = async (rfq: string): Promise<number> => {
+      const rows = await infra.prisma.$queryRawUnsafe<Array<{ n: bigint }>>(
+        `SELECT count(*) AS n FROM procurement.quotations WHERE rfq_id = $1::uuid`,
+        rfq,
+      );
+      return Number(rows[0]!.n);
+    };
+    const invitationStatus = async (rfq: string): Promise<string[]> => {
+      const rows = await infra.prisma.$queryRawUnsafe<Array<{ status: string }>>(
+        `SELECT status FROM procurement.rfq_invitations WHERE rfq_id = $1::uuid ORDER BY created_at`,
+        rfq,
+      );
+      return rows.map((r) => r.status);
+    };
+
+    it('a second invitation to the same RFQ, answered: 409 COS-VND-010, one quotation, that invitation still PENDING', async () => {
+      const vendor = await createVendor();
+      const rfq = await seedRfq();
+      const email = 'yai.reinvite@example.com';
+      const first = await tokenFor(rfq, vendor, email);
+      const second = await tokenFor(rfq, vendor, email);
+      expect((await quoteWith(first)).status).toBe(201);
+
+      const again = await quoteWith(second);
+      expect(again.status).toBe(409);
+      expect(again.body).toEqual({
+        error: expect.objectContaining({
+          code: 'COS-VND-010',
+          message: 'A quotation from this vendor already exists for this RFQ',
+        }),
+      });
+      expect(await quotationsOn(rfq)).toBe(1);
+      expect(await invitationStatus(rfq)).toEqual(['RESPONDED', 'PENDING']);
+    });
+
+    it('an RFQ no longer PUBLISHED: 422 COS-VND-011, nothing written', async () => {
+      const vendor = await createVendor();
+      const rfq = await seedRfq();
+      const token = await tokenFor(rfq, vendor, 'som.reinvite@example.com');
+      await infra.prisma.$executeRawUnsafe(
+        `UPDATE procurement.rfqs SET status = 'CLOSED' WHERE rfq_id = $1::uuid`,
+        rfq,
+      );
+      const res = await quoteWith(token);
+      expect(res.status).toBe(422);
+      expect((res.body as { error: { code: string } }).error.code).toBe('COS-VND-011');
+      expect(await quotationsOn(rfq)).toBe(0);
+      expect(await invitationStatus(rfq)).toEqual(['PENDING']);
+    });
+  });
 });

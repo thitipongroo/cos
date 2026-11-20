@@ -4,6 +4,7 @@
 
 import {
   BadRequestException,
+  ConflictException,
   NotFoundException,
   UnprocessableEntityException,
 } from '@nestjs/common';
@@ -918,6 +919,24 @@ describe('submitQuotation', () => {
     ).rejects.toThrow(new NotFoundException('Vendor vendor-uuid-002 not found'));
     expect(mockRepo.findVendorById).toHaveBeenCalledWith('vendor-uuid-002');
     expect(mockRepo.createQuotation).not.toHaveBeenCalled();
+  });
+
+  // fix/quotation-duplicate-and-closed-rfq: one per vendor per RFQ, the first standing.
+  it('409 COS-PROC-409 when the vendor already quoted for this RFQ', async () => {
+    mockRepo.findRfqById.mockResolvedValue(rfqPublishedFixture);
+    mockRepo.findVendorById.mockResolvedValue({ ...vendorFixture, vendor_id: 'vendor-uuid-002' });
+    mockRepo.createQuotation.mockResolvedValue(null);
+    const attempt = service.submitQuotation('rfq-uuid-001', {
+      vendor_id: 'vendor-uuid-002',
+      total_amount: '1.0000',
+      currency_code: 'THB',
+      validity_days: 30,
+      submitted_at: new Date().toISOString(),
+    });
+    await expect(attempt).rejects.toBeInstanceOf(ConflictException);
+    await expect(attempt).rejects.toMatchObject({
+      response: { error: { code: 'COS-PROC-409' } },
+    });
   });
 
   it('throws NotFoundException when RFQ not found', async () => {

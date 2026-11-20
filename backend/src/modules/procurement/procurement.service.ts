@@ -344,6 +344,16 @@ export class ProcurementService {
       validity_days: dto.validity_days,
       submitted_at: dto.submitted_at,
     });
+    // One per vendor per RFQ, the first standing — no revision (product owner, 2026-11-20).
+    if (!quotation) {
+      throw new ConflictException({
+        error: {
+          code: 'COS-PROC-409',
+          message: 'A quotation from this vendor already exists for this RFQ',
+          messageKey: 'procurement.quotation.duplicate',
+        },
+      });
+    }
 
     logger.info(
       { quotation_id: quotation.quotation_id, rfq_id, vendor_id: dto.vendor_id },

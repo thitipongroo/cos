@@ -122,16 +122,6 @@ export class VendorPortalRepository {
     return rows[0] ?? null;
   }
 
-  async markInvitationResponded(invitationId: string): Promise<void> {
-    await this.db.run(
-      (tx) =>
-        tx.$executeRaw`
-        UPDATE procurement.rfq_invitations SET status = 'RESPONDED'
-        WHERE invitation_id = ${invitationId}::uuid
-      `,
-    );
-  }
-
   // ── RFQ + quotation (Tier-1 capability) ─────────────────────────────────────
 
   /**
@@ -160,24 +150,40 @@ export class VendorPortalRepository {
     return rows[0] ?? null;
   }
 
+  /**
+   * The quotation, and the invitation it answers marked RESPONDED, in ONE transaction — both or neither
+   * (fix/quotation-duplicate-and-closed-rfq). Apart, a quotation written whose mark then failed left the invitation
+   * PENDING: the vendor's retry hit the unique key, and no session was ever issued for a quotation that existed.
+   *
+   * One quotation per vendor per RFQ (uq_quotation_rfq_vendor): null when one exists — a second invitation to the
+   * same RFQ — instead of the unmapped 23505's 500; the invitation is then left as it is.
+   */
   async createQuotation(params: {
     rfqId: string;
     vendorId: string;
     totalAmount: string;
     currencyCode: string;
     validityDays: number;
-  }): Promise<QuotationRow> {
-    const rows = await this.db.run(
-      (tx) =>
-        tx.$queryRaw<QuotationRow[]>`
+    invitationId: string;
+  }): Promise<QuotationRow | null> {
+    const rows = await this.db.run(async (tx) => {
+      const written = await tx.$queryRaw<QuotationRow[]>`
         INSERT INTO procurement.quotations
           (rfq_id, vendor_id, tenant_id, total_amount, currency_code, validity_days, submitted_at)
         VALUES (${params.rfqId}::uuid, ${params.vendorId}::uuid, ${this.tenantId}::uuid,
                 ${params.totalAmount}::decimal, ${params.currencyCode}, ${params.validityDays}, now())
+        ON CONFLICT (rfq_id, vendor_id) DO NOTHING
         RETURNING quotation_id, rfq_id, vendor_id, total_amount, currency_code, validity_days, submitted_at
-      `,
-    );
-    return rows[0];
+      `;
+      if (written[0]) {
+        await tx.$executeRaw`
+          UPDATE procurement.rfq_invitations SET status = 'RESPONDED'
+          WHERE invitation_id = ${params.invitationId}::uuid
+        `;
+      }
+      return written;
+    });
+    return rows[0] ?? null;
   }
 
   // ── Purchase orders (Tier-2: track status) ──────────────────────────────────

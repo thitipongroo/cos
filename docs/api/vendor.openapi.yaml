@@ -148,9 +148,29 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/QuotationResult' }
         '401': { $ref: '#/components/responses/Unauthorized' }
-        '403': { $ref: '#/components/responses/TrialReadOnly' }
+        '403':
+          description: >-
+            `COS-PLAN-003` — the buying tenant's free trial has ended and it is read-only (§7.10, ADR-109; writes
+            are refused, reads still work; only while `s1.tenant.trial-lifecycle` is on), or `COS-VND-005` — no
+            active trading relationship (revoked, the identity disabled, or the vendor deactivated)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
         '404': { $ref: '#/components/responses/NotFound' }
-        '422': { $ref: '#/components/responses/UnprocessableEntity' }
+        '409':
+          description: >-
+            `COS-VND-010` — this vendor already quoted for this RFQ; the first quotation stands and nothing is written
+            (fix/quotation-duplicate-and-closed-rfq)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+        '422':
+          description: >-
+            Invitation already used (`COS-VND-003`), validation, or `COS-VND-011` — the RFQ is not PUBLISHED, so not
+            open for quotations
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
 
   /vendor/purchase-orders:
     get:
@@ -242,13 +262,6 @@ components:
   responses:
     Unauthorized:
       description: Missing/invalid token or expired invitation
-      content:
-        application/json:
-          schema: { $ref: '#/components/schemas/ErrorResponse' }
-    TrialReadOnly:
-      description: |
-        `COS-PLAN-003` — the buying tenant's free trial has ended and it is read-only (§7.10, ADR-109): writes are
-        refused, reads still work. Only while `s1.tenant.trial-lifecycle` is on.
       content:
         application/json:
           schema: { $ref: '#/components/schemas/ErrorResponse' }
@@ -362,7 +375,7 @@ components:
 
     ErrorResponse:
       description: |
-        The QM-10 envelope every error leaves the API in (GlobalExceptionFilter). COS-VND-007, 008 and 009 carry
+        The QM-10 envelope every error leaves the API in (GlobalExceptionFilter). COS-VND-007 to 011 carry
         their own `code`; COS-VND-001…006 are thrown as text, so their `code` is `COS-GENERAL-<status>` and the COS-VND code
         leads the `message` (fix/vendor-reinvite-refuse; this schema used to show NestJS's default body).
       type: object

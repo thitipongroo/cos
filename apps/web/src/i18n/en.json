@@ -1881,6 +1881,8 @@
     "currency": "Currency",
     "validityDays": "Validity (days)",
     "submitFailed": "Submission failed. Please check your input.",
+    "quotationExists": "You have already submitted a quotation for this RFQ. The first one stands.",
+    "rfqClosed": "This RFQ is no longer open for quotations.",
     "dashboardTitle": "Vendor dashboard",
     "purchaseOrders": "Purchase orders",
     "invoices": "Invoices",

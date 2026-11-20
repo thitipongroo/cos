@@ -1025,6 +1025,10 @@ paths:
           description: >-
             RFQ not found, or the vendor is not one of this tenant's ACTIVE vendors (absent, another tenant's, or
             deactivated — fix/proc-quotation-vendor-check); nothing is written
+        '409':
+          description: >-
+            `COS-PROC-409` — this vendor already quoted for this RFQ; the first quotation stands and nothing is
+            written (fix/quotation-duplicate-and-closed-rfq)
         '422':
           description: RFQ not PUBLISHED
     get:

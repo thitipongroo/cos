@@ -381,7 +381,9 @@ export class ProcurementRepository {
     currency_code: string;
     validity_days: number;
     submitted_at: string;
-  }): Promise<QuotationRow> {
+  }): Promise<QuotationRow | null> {
+    // One quotation per vendor per RFQ (uq_quotation_rfq_vendor): a second is not written and null comes back, so the
+    // caller answers 409 rather than the unmapped 23505's 500 (fix/quotation-duplicate-and-closed-rfq).
     const rows = await this.db.run(
       (prisma) =>
         prisma.$queryRaw<QuotationRow[]>`
@@ -389,9 +391,10 @@ export class ProcurementRepository {
         VALUES (${params.rfq_id}::uuid, ${params.vendor_id}::uuid, ${this.tenantId}::uuid,
                 ${params.total_amount}::decimal, ${params.currency_code},
                 ${params.validity_days}, ${params.submitted_at}::timestamptz)
+        ON CONFLICT (rfq_id, vendor_id) DO NOTHING
         RETURNING *`,
     );
-    return rows[0]!;
+    return rows[0] ?? null;
   }
 
   async findQuotationsByRfq(rfq_id: string): Promise<QuotationRow[]> {

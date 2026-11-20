@@ -1602,6 +1602,37 @@ gate's isolated run) checks the hash was not tested either; it ran 12.18.0 with 
 
 ## Open
 
+- **Closed — a second quotation for the same RFQ and vendor answered 500; the portal quoted a closed RFQ.** Fixed on
+  `fix/quotation-duplicate-and-closed-rfq` (product-owner decisions 2026-11-20: a second quotation is refused, the first
+  standing — no revision; the portal refuses an RFQ that is not PUBLISHED, as the buyer side does). Found by /doubt on
+  `fix/proc-quotation-vendor-check`. Measured on HEAD: a second quotation from the same vendor → 500 on both the buyer
+  route and the portal (`uq_quotation_rfq_vendor`, 23505 unmapped — on the portal, a second invitation to the same RFQ
+  answered); a portal quotation for a CLOSED RFQ → 201.
+  - Both `createQuotation`s insert with `ON CONFLICT (rfq_id, vendor_id) DO NOTHING` and return null when one exists,
+    so two racing submissions cannot both pass or 500. Buyer: 409 `COS-PROC-409` ("A quotation from this vendor
+    already exists for this RFQ"). Portal: the RFQ must be PUBLISHED → else 422 `COS-VND-011` ("RFQ is not open for
+    quotations"); a duplicate → 409 `COS-VND-010`; neither marks the invitation or issues a session. The portal's
+    quotation and its invitation's RESPONDED mark are now one transaction (found by /doubt): apart, a quotation
+    written whose mark then failed left the invitation PENDING, and the vendor's retry got 409 with no session for a
+    quotation that existed.
+  - The vendor's RFQ page (`apps/web/src/app/vendor/rfq/[token]/page.tsx`) says which refusal it was —
+    `vendor.quotationExists` / `vendor.rfqClosed` (en + th, `lib/vendorQuotation.ts`) — instead of "check your input"
+    for both (found by /doubt). `COS-PROC-409` now has a `COS-PROC` section in `docs/api/error-codes.md` (one code,
+    three conflicts told apart by `messageKey`; the web reads codes, not message keys).
+  - Docs: `COS-VND-010` and `011` in `docs/api/error-codes.md`; the 409 on both routes; the portal route's 403 now
+    names `COS-VND-005` beside `COS-PLAN-003` (its only `TrialReadOnly` reference, so that component was folded in)
+    and its 422 names `COS-VND-011`.
+  - Not changed: neither side checks the RFQ's `deadline` — both rely on the Temporal workflow to close it; and a
+    status check then insert can take one quotation in the moment an RFQ closes.
+  - Verified: unit (procurement and vendor-portal, 431) — both repositories' conflict clause and null, the portal's
+    RESPONDED mark in the quotation's transaction (and none when nothing was written), the buyer's 409, the portal's
+    422 for each non-PUBLISHED status and 409, with no session issued; apps/web — the page's message per code, both
+    languages (jest 459, tsc);
+    `test/procurement/03-rfq-lifecycle` (12): a second quotation → 409, one row; `test/procurement/05-vendor-reinvite`
+    (13): a second invitation answered → 409 `COS-VND-010`, one quotation, that invitation still PENDING; a CLOSED
+    RFQ → 422 `COS-VND-011`, nothing written. HEAD's code fails all three (500, 500, 201) and nine unit cases.
+    OpenAPI validation (26 documents), the freshness gate (25 passed), conformance (in full) and markdownlint pass.
+
 - **Closed — a shared phone sent one user's offline work as the next user, and showed them the last user's cache.**
   Fixed on `fix/mobile-queue-per-user` (product-owner decisions 2026-11-20: queued work is kept per user; the read
   caches are cleared when a different user signs in; that clear may delete the previous user's offline-created rows,
@@ -1716,9 +1747,8 @@ gate's isolated run) checks the hash was not tested either; it ran 12.18.0 with 
   - a vendor deactivated after its PO still receives invoices on that PO (`receiveInvoice` copies `po.vendor_id`);
   - rows written before those branches were not re-checked (HEAD wrote cross-tenant and unknown ids, measured there);
   - an unknown id behind a foreign key on any other route still answers 500 (23503 is not mapped globally).
-- **A second quotation for the same RFQ and vendor answers 500.** `uq_quotation_rfq_vendor` raises 23505 and nothing
-  maps it — on the buyer route and on the vendor portal's `createQuotation` (a vendor answering a second invitation to
-  the same RFQ). Found by /doubt on `fix/proc-quotation-vendor-check`.
+- **Closed — a second quotation for the same RFQ and vendor answered 500.** See the entry for
+  `fix/quotation-duplicate-and-closed-rfq` above.
 - **Closed — the buyer side recorded a quotation for any vendor id.** Fixed on `fix/proc-quotation-vendor-check`
   (found by /doubt on `fix/vendor-invite-inactive`). `POST /procurement/rfqs/:rfqId/quotations` inserted `vendor_id`
   as given. Measured on HEAD: a deactivated vendor → 201 (quoted for, so comparable and awardable); an id that does
