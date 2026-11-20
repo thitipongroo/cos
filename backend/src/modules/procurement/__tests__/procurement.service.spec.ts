@@ -237,6 +237,8 @@ let service: ProcurementService;
 
 beforeEach(async () => {
   Object.values(mockRepo).forEach((fn) => (fn as jest.Mock).mockReset());
+  // fix/proc-rfq-pr-foreign-ids: a PR, an RFQ and a PO all check their project; tests that need it missing say so.
+  mockRepo.projectExists.mockResolvedValue(true);
 
   mockKafkaConnect.mockClear().mockResolvedValue(undefined);
   mockKafkaPublish.mockClear().mockResolvedValue(undefined);
@@ -713,6 +715,18 @@ describe('deactivateVendor', () => {
 });
 
 describe('Purchase Requests', () => {
+  it("404 when the project is not the tenant's, nothing written (fix/proc-rfq-pr-foreign-ids)", async () => {
+    mockRepo.projectExists.mockResolvedValue(false);
+    await expect(
+      service.createPurchaseRequest({
+        project_id: 'project-x',
+        required_date: '2026-12-31',
+      } as never),
+    ).rejects.toThrow(new NotFoundException('Project project-x not found'));
+    expect(mockRepo.projectExists).toHaveBeenCalledWith('project-x');
+    expect(mockRepo.createPurchaseRequest).not.toHaveBeenCalled();
+  });
+
   it('createPurchaseRequest returns PR', async () => {
     const pr = {
       pr_id: 'pr-001',
@@ -760,6 +774,37 @@ describe('Purchase Requests', () => {
 });
 
 describe('createRfq', () => {
+  // fix/proc-rfq-pr-foreign-ids: the project and the purchase request an RFQ names are the tenant's own.
+  it.each([
+    [
+      'project',
+      () => mockRepo.projectExists.mockResolvedValue(false),
+      {},
+      'Project project-uuid-001 not found',
+    ],
+    [
+      'purchase request',
+      () => mockRepo.findPrById.mockResolvedValue(null),
+      { pr_id: 'pr-x' },
+      'Purchase request pr-x not found',
+    ],
+  ])(
+    "404 when the %s is not the tenant's, nothing written and no workflow",
+    async (_n, arrange, over, message) => {
+      arrange();
+      await expect(
+        service.createRfq({
+          project_id: 'project-uuid-001',
+          rfq_number: 'RFQ-X',
+          deadline: new Date(Date.now() + 86_400_000).toISOString(),
+          ...over,
+        }),
+      ).rejects.toThrow(new NotFoundException(message));
+      expect(mockRepo.createRfq).not.toHaveBeenCalled();
+      expect(mockWorkflowStart).not.toHaveBeenCalled();
+    },
+  );
+
   it('creates RFQ and starts Temporal workflow', async () => {
     const rfq = { ...rfqDraftFixture };
     mockRepo.createRfq.mockResolvedValue(rfq);
@@ -772,6 +817,8 @@ describe('createRfq', () => {
     });
     expect(result.rfq_id).toBe('rfq-uuid-001');
     expect(mockRepo.setRfqWorkflowId).toHaveBeenCalled();
+    // No pr_id named: no purchase request looked up (fix/proc-rfq-pr-foreign-ids).
+    expect(mockRepo.findPrById).not.toHaveBeenCalled();
   });
 
   it('covers both TEMPORAL_ADDRESS env-defined and default branches (line 654)', async () => {
@@ -1380,6 +1427,7 @@ describe('exact contracts — createRfq', () => {
   });
 
   it('publishes the RFQ pr_id when the RFQ was created from a PR', async () => {
+    mockRepo.findPrById.mockResolvedValue({ pr_id: 'pr-uuid-777' });
     mockRepo.createRfq.mockResolvedValue({ ...rfqDraftFixture, pr_id: 'pr-uuid-777' });
     mockRepo.setRfqWorkflowId.mockResolvedValue(undefined);
     await service.createRfq({

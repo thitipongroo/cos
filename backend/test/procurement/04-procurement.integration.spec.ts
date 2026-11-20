@@ -116,13 +116,30 @@ describe('Procurement Integration (Phase 5)', () => {
   });
 
   describe('POST /api/v1/procurement/purchase-requests', () => {
+    // A real project: a PR's project is checked since fix/proc-rfq-pr-foreign-ids (this sent a constant id no row had).
+    let prProjectId = '';
+    beforeAll(async () => {
+      const proj = await request(app.getHttpServer())
+        .post('/api/v1/projects')
+        .set('Authorization', ADMIN_TOKEN)
+        .send({
+          project_code: 'PR-HOST',
+          project_name: 'PR Host',
+          project_type: 'COMMERCIAL',
+          start_date: '2019-01-01',
+          end_date: '2020-01-01',
+        });
+      expect([200, 201]).toContain(proj.status);
+      prProjectId = (proj.body as { project_id: string }).project_id;
+    });
+
     it('returns 201 with valid PR payload', async () => {
       const res = await request(app.getHttpServer())
         .post('/api/v1/procurement/purchase-requests')
         .set('Authorization', PROC_TOKEN) // PR creation requires PROCUREMENT_OFFICER
         .send({
           ...buildCreatePurchaseRequestDto({ pr_number: 'PR-001' }),
-          project_id: '3fa85f64-5717-4562-b3fc-2c963f66afa6', // required @IsUUID (not in factory type)
+          project_id: prProjectId, // required @IsUUID (not in factory type)
         });
       expect([201, 409]).toContain(res.status);
     });
@@ -382,6 +399,126 @@ describe('Procurement Integration (Phase 5)', () => {
       const res = await send();
       expect(res.status).not.toBe(404); // the workflow start afterwards has no Temporal here
       expect(await poRows(poNumber)).toBe(1);
+    });
+  });
+
+  // fix/proc-rfq-pr-foreign-ids: an RFQ names the tenant's own project and (when given) purchase request; a purchase
+  // request names the tenant's own project. RFQ creation starts a Temporal workflow after the INSERT, which this
+  // harness lacks — so a valid RFQ shows it passed the checks by its row.
+  describe("RFQ and purchase request — the ids are the tenant's own", () => {
+    const UNKNOWN = 'ee000003-9999-4000-8000-00000000bcde';
+    let seq = 0;
+    const ids = { project: '', pr: '', otherProject: '', otherPr: '' };
+
+    const projectFor = async (token: string): Promise<string> => {
+      seq += 1;
+      const res = await request(app.getHttpServer())
+        .post('/api/v1/projects')
+        .set('Authorization', token)
+        .send({
+          project_code: `CL-HOST-${seq}`,
+          project_name: `CL Host ${seq}`,
+          project_type: 'COMMERCIAL',
+          start_date: '2019-01-01',
+          end_date: '2020-01-01',
+        });
+      expect([200, 201]).toContain(res.status);
+      return (res.body as { project_id: string }).project_id;
+    };
+    const prFor = async (token: string, projectId: string): Promise<string> => {
+      seq += 1;
+      const res = await request(app.getHttpServer())
+        .post('/api/v1/procurement/purchase-requests')
+        .set('Authorization', token)
+        .send({
+          ...buildCreatePurchaseRequestDto({ pr_number: `PR-CL-${seq}` }),
+          project_id: projectId,
+        });
+      expect(res.status).toBe(201);
+      return (res.body as { pr_id: string }).pr_id;
+    };
+    const count = async (table: string, column: string, value: string): Promise<number> => {
+      const rows = await infra.prisma.$queryRawUnsafe<Array<{ n: bigint }>>(
+        `SELECT count(*) AS n FROM procurement.${table} WHERE ${column} = $1`,
+        value,
+      );
+      return Number(rows[0]!.n);
+    };
+
+    beforeAll(async () => {
+      ids.project = await projectFor(ADMIN_TOKEN);
+      ids.pr = await prFor(PROC_TOKEN, ids.project);
+      ids.otherProject = await projectFor(OTHER_TOKEN);
+      ids.otherPr = await prFor(OTHER_TOKEN, ids.otherProject);
+    });
+
+    const rfq = (over: Record<string, string>) => {
+      seq += 1;
+      const rfqNumber = `RFQ-CL-${seq}`;
+      return {
+        rfqNumber,
+        send: () =>
+          request(app.getHttpServer())
+            .post('/api/v1/procurement/rfqs')
+            .set('Authorization', PROC_TOKEN)
+            .send({
+              project_id: ids.project,
+              rfq_number: rfqNumber,
+              deadline: new Date(Date.now() + 7 * 86_400_000).toISOString(),
+              ...over,
+            }),
+      };
+    };
+
+    it.each([
+      [
+        "another tenant's project",
+        () => ({ project_id: ids.otherProject }),
+        /^Project .* not found$/,
+      ],
+      ['an unknown project', () => ({ project_id: UNKNOWN }), /^Project .* not found$/],
+      [
+        "another tenant's purchase request",
+        () => ({ pr_id: ids.otherPr }),
+        /^Purchase request .* not found$/,
+      ],
+      [
+        'an unknown purchase request',
+        () => ({ pr_id: UNKNOWN }),
+        /^Purchase request .* not found$/,
+      ],
+    ])('RFQ with %s: 404, no RFQ written', async (_n, over, message) => {
+      const { rfqNumber, send } = rfq(over());
+      const res = await send();
+      expect(res.status).toBe(404);
+      // Nest's default body (this spec mounts no GlobalExceptionFilter).
+      expect((res.body as { message: string }).message).toMatch(message);
+      expect(await count('rfqs', 'rfq_number', rfqNumber)).toBe(0);
+    });
+
+    it("RFQ with the tenant's own project and purchase request passes the checks: its row is written", async () => {
+      const { rfqNumber, send } = rfq({ pr_id: ids.pr });
+      const res = await send();
+      expect(res.status).not.toBe(404); // the workflow start afterwards has no Temporal here
+      expect(await count('rfqs', 'rfq_number', rfqNumber)).toBe(1);
+    });
+
+    it.each([
+      ["another tenant's project", () => ids.otherProject],
+      ['an unknown project', () => UNKNOWN],
+    ])('purchase request with %s: 404, no PR written', async (_n, projectId) => {
+      seq += 1;
+      const prNumber = `PR-CL-BAD-${seq}`;
+      const res = await request(app.getHttpServer())
+        .post('/api/v1/procurement/purchase-requests')
+        .set('Authorization', PROC_TOKEN)
+        .send({
+          ...buildCreatePurchaseRequestDto({ pr_number: prNumber }),
+          project_id: projectId(),
+        });
+      expect(res.status).toBe(404);
+      expect((res.body as { message: string }).message).toMatch(/^Project .* not found$/);
+      expect(await count('purchase_requests', 'pr_number', prNumber)).toBe(0);
     });
   });
 });

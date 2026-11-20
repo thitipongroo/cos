@@ -891,6 +891,14 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: >-
+            The project, or the purchase request when named, is not this tenant's (absent or another tenant's —
+            fix/proc-rfq-pr-foreign-ids); nothing is written
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /procurement/rfqs/{rfqId}/publish:
     post:
       tags:
@@ -1416,6 +1424,14 @@ paths:
                 $ref: '#/components/schemas/PurchaseRequestRow'
         '401':
           description: Unauthenticated — missing or invalid bearer token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: >-
+            The project is not this tenant's (absent or another tenant's — fix/proc-rfq-pr-foreign-ids); nothing is
+            written
           content:
             application/json:
               schema:

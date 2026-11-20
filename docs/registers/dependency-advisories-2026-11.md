@@ -1602,6 +1602,26 @@ gate's isolated run) checks the hash was not tested either; it ran 12.18.0 with 
 
 ## Open
 
+- **Closed — an RFQ and a purchase request took their parent ids unchecked.** Fixed on `fix/proc-rfq-pr-foreign-ids`
+  (product-owner decision 2026-11-20: an RFQ's `pr_id` is checked to be the tenant's only — no APPROVED or
+  same-project rule — as a PO's `rfq_id`). `createRfq` inserted `pr_id` (foreign key, checked without RLS) and
+  `project_id` (none); `createPurchaseRequest` inserted `project_id` (none). Measured on HEAD: an RFQ naming another
+  tenant's project, an unknown project or another tenant's purchase request was WRITTEN (then 500 at the Temporal
+  workflow start, which this harness lacks); one naming an unknown purchase request → 500 on the foreign key, no row;
+  a purchase request naming another tenant's or an unknown project → 201, written.
+  - Now, before the INSERT: `createRfq` — the project (`projectExists`) → else 404 `Project <id> not found`, `pr_id`
+    when given (`findPrById`) → else 404 `Purchase request <id> not found`; `createPurchaseRequest` (also reached from
+    the app's offline `/sync/push`, where a 4xx is permanent: the device discards the item and tells the user) — the
+    project → else 404. Both routes list the 404 in `procurement.openapi.yaml`.
+  - `test/procurement/04`'s "returns 201 with valid PR payload" sent a constant project id no row had (accepting 201
+    or 409); it now creates its project.
+  - Verified: procurement unit (314) — each refusal with nothing written and no workflow started;
+    `test/procurement/04` (27): the four bad RFQ ids and the two bad PR projects → 404 with no row, a valid RFQ → its
+    row (status left unasserted: the workflow start needs Temporal); `test/site-ops/02` (the PR sync replay, 23) and
+    `test/procurement/03` (11) pass. HEAD's service fails all six and three unit cases; a unit assertion that no
+    purchase request is looked up when none is named fails with the guard removed. Backend unit (4479), tsc, eslint,
+    prettier, OpenAPI validation, conformance `procurement/02-openapi` and markdownlint pass.
+
 - **Closed — a finance contract took its project, customer and vendor ids unchecked.** Fixed on
   `fix/finance-contract-foreign-ids`. `createContract` passed them to the INSERT: `project_id` and `vendor_id` have no
   foreign key, `customer_id`'s is checked without RLS. Measured on HEAD (`POST /finance/contracts`): another tenant's
@@ -1641,20 +1661,13 @@ gate's isolated run) checks the hash was not tested either; it ran 12.18.0 with 
     RFQ and project → the PO row written (status left unasserted: the workflow start needs Temporal). HEAD's service
     fails all seven (500) and five unit cases. Backend tsc, eslint, prettier, OpenAPI validation and markdownlint pass.
 
-- **Procurement and finance writes take foreign ids unchecked: a record can name another tenant's row, or any
-  UUID.** A foreign key is checked without RLS, so — as measured for quotations on
-  `fix/proc-quotation-vendor-check` (another tenant's vendor id → 201 on HEAD, an unknown one → 500) — an id passed
-  through unchecked can reference another tenant's row. Read from code (found on that branch and by its /doubt), not
-  yet measured:
-  - ~~`createPurchaseOrder`~~ — checked since `fix/proc-po-foreign-ids` (Closed entry above): vendor (ACTIVE), RFQ
-    and project must be the tenant's. Invoices inherit the PO's vendor, so new POs' invoices are covered; PO rows
-    written before (HEAD wrote cross-tenant ids, measured there) were not re-checked, and a vendor deactivated after
-    its PO still receives invoices on it.
-  - `createRfq` (`procurement.service.ts:209-216`): `pr_id` (FK → `purchase_requests`).
-  - ~~`FinanceService.createContract`~~ — checked since `fix/finance-contract-foreign-ids` (Closed entry above):
-    project, customer and (ACTIVE) vendor must be the tenant's.
-  An unknown id behind a foreign key answers 500 (23503 is not mapped). Medium: it needs a leaked id, and the reads
-  join under RLS, so no other tenant's data was found disclosed. What remains is `createRfq`'s `pr_id`.
+- **Closed — procurement and finance writes took foreign ids unchecked.** Every part is closed: quotations
+  (`fix/proc-quotation-vendor-check`), purchase orders (`fix/proc-po-foreign-ids`), finance contracts
+  (`fix/finance-contract-foreign-ids`), and RFQs and purchase requests (`fix/proc-rfq-pr-foreign-ids`) — see their
+  entries. Not covered by them (found by /doubt on the last branch, where the summary had dropped the first):
+  - a vendor deactivated after its PO still receives invoices on that PO (`receiveInvoice` copies `po.vendor_id`);
+  - rows written before those branches were not re-checked (HEAD wrote cross-tenant and unknown ids, measured there);
+  - an unknown id behind a foreign key on any other route still answers 500 (23503 is not mapped globally).
 - **A second quotation for the same RFQ and vendor answers 500.** `uq_quotation_rfq_vendor` raises 23505 and nothing
   maps it — on the buyer route and on the vendor portal's `createQuotation` (a vendor answering a second invitation to
   the same RFQ). Found by /doubt on `fix/proc-quotation-vendor-check`.

@@ -165,6 +165,12 @@ export class ProcurementService {
    * against the same shortage, and consumed another PR number doing it.
    */
   async createPurchaseRequest(dto: CreatePurchaseRequestDto): Promise<PurchaseRequestRow> {
+    // The project is the tenant's own (fix/proc-rfq-pr-foreign-ids): project_id has no foreign key, so any UUID was
+    // taken. Also reached from the app's offline /sync/push: there a 404 is permanent, and the device discards the
+    // item and tells the user (SyncManager, DISCARD_NOTIFY_TYPES).
+    if (!(await this.repo.projectExists(dto.project_id))) {
+      throw new NotFoundException(`Project ${dto.project_id} not found`);
+    }
     // A caller that supplies its own number keeps it (the web form does); everyone else gets the
     // tenant's next PR-<year>-<seq>, because a document number is not something to ask a site
     // engineer to invent on their phone. Allocation happens inside the insert transaction (see
@@ -207,6 +213,16 @@ export class ProcurementService {
   // ── RFQ Lifecycle ──────────────────────────────────────────────────────────
 
   async createRfq(dto: CreateRfqDto): Promise<RfqRow> {
+    // The ids it names are the tenant's own (fix/proc-rfq-pr-foreign-ids): project_id has no foreign key (any UUID was
+    // taken) and pr_id's is checked without RLS (another tenant's purchase request was accepted; an unknown one failed
+    // the INSERT unmapped, 500). Existence in the tenant only — no APPROVED or same-project rule (product owner,
+    // 2026-11-20), as for a PO's rfq_id.
+    if (!(await this.repo.projectExists(dto.project_id))) {
+      throw new NotFoundException(`Project ${dto.project_id} not found`);
+    }
+    if (dto.pr_id && !(await this.repo.findPrById(dto.pr_id))) {
+      throw new NotFoundException(`Purchase request ${dto.pr_id} not found`);
+    }
     const rfq = await this.repo.createRfq({
       pr_id: dto.pr_id,
       project_id: dto.project_id,
