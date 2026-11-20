@@ -105,6 +105,7 @@ const mockRepo = {
   findQuotationsByRfq: jest.fn(),
   findQuotationsByVendor: jest.fn(),
   markQuotationSelected: jest.fn(),
+  findActiveQuotingVendorIds: jest.fn(),
   createPurchaseOrder: jest.fn(),
   createPurchaseOrderWithLineItems: jest.fn(),
   findPoById: jest.fn(),
@@ -238,6 +239,8 @@ let service: ProcurementService;
 
 beforeEach(async () => {
   Object.values(mockRepo).forEach((fn) => (fn as jest.Mock).mockReset());
+  // plan CP: the comparison auto-selects among active vendors only; both fixture vendors are active unless a test says.
+  mockRepo.findActiveQuotingVendorIds.mockResolvedValue(['vendor-uuid-001', 'vendor-uuid-002']);
   // fix/proc-rfq-pr-foreign-ids: a PR, an RFQ and a PO all check their project; tests that need it missing say so.
   mockRepo.projectExists.mockResolvedValue(true);
 
@@ -419,6 +422,60 @@ describe('Quotation comparison', () => {
     mockRepo.findQuotationsByRfq.mockResolvedValue([]);
     await expect(service.awardRfq('rfq-uuid-001', 'quot-uuid-999')).rejects.toBeInstanceOf(
       NotFoundException,
+    );
+  });
+
+  // plan CP (product owner, 2026-11-20): a quotation whose vendor is deactivated, or not the tenant's, is not
+  // awarded — 404 as for a PO, nothing marked or signalled, so the RFQ stays EVALUATED.
+  it.each([
+    ['deactivated', { ...vendorFixture, is_active: false }],
+    ["absent (or another tenant's — findVendorById is tenant-scoped)", null],
+  ])(
+    'awardRfq — the quotation’s vendor %s: 404, nothing marked or signalled',
+    async (_, vendor) => {
+      mockRepo.findRfqById.mockResolvedValue(rfqEvaluatedFixture);
+      mockRepo.findQuotationsByRfq.mockResolvedValue(quotationFixtures);
+      mockRepo.findVendorById.mockResolvedValue(vendor);
+      await expect(service.awardRfq('rfq-uuid-001', 'quot-uuid-001')).rejects.toThrow(
+        new NotFoundException('Vendor vendor-uuid-001 not found'),
+      );
+      expect(mockRepo.findVendorById).toHaveBeenCalledWith('vendor-uuid-001');
+      expect(mockRepo.markQuotationSelected).not.toHaveBeenCalled();
+      expect(mockWorkflowSignal).not.toHaveBeenCalled();
+    },
+  );
+
+  // plan CP: the cheapest quotation's vendor is deactivated — still listed, but the next cheapest active one is selected.
+  it('compareQuotations — skips a cheaper deactivated vendor when auto-selecting', async () => {
+    mockRepo.findRfqById.mockResolvedValue(rfqClosedFixture);
+    mockRepo.findQuotationsByRfq.mockResolvedValue(quotationFixtures);
+    mockRepo.findActiveQuotingVendorIds.mockResolvedValue(['vendor-uuid-002']);
+    mockRepo.markQuotationSelected.mockResolvedValue(undefined);
+
+    const result = await service.compareQuotations('rfq-uuid-001');
+
+    expect(result.map((q) => [q.quotation_id, q.is_selected])).toEqual([
+      ['quot-uuid-001', false],
+      ['quot-uuid-002', true],
+    ]);
+    expect(mockRepo.findActiveQuotingVendorIds).toHaveBeenCalledWith('rfq-uuid-001');
+    expect(mockRepo.markQuotationSelected).toHaveBeenCalledWith('quot-uuid-002', 'rfq-uuid-001');
+  });
+
+  it('compareQuotations — no quotation has an active vendor: all listed, none selected, earlier one cleared', async () => {
+    mockRepo.findRfqById.mockResolvedValue(rfqClosedFixture);
+    mockRepo.findQuotationsByRfq.mockResolvedValue(quotationFixtures);
+    mockRepo.findActiveQuotingVendorIds.mockResolvedValue([]);
+    mockRepo.markQuotationSelected.mockResolvedValue(undefined);
+
+    const result = await service.compareQuotations('rfq-uuid-001');
+
+    expect(result).toHaveLength(2);
+    expect(result.every((q) => q.is_selected === false)).toBe(true);
+    expect(mockRepo.markQuotationSelected).toHaveBeenCalledWith(null, 'rfq-uuid-001');
+    expect(loggerMock.info).toHaveBeenCalledWith(
+      { rfq_id: 'rfq-uuid-001', winner: null, total: null },
+      'quotations.evaluated',
     );
   });
 });
@@ -876,6 +933,7 @@ describe('RFQ — additional happy paths', () => {
   it('awardRfq — happy path marks selected and signals', async () => {
     mockRepo.findRfqById.mockResolvedValue(rfqEvaluatedFixture);
     mockRepo.findQuotationsByRfq.mockResolvedValue(quotationFixtures);
+    mockRepo.findVendorById.mockResolvedValue(vendorFixture);
     mockRepo.markQuotationSelected.mockResolvedValue(undefined);
     await expect(service.awardRfq('rfq-uuid-001', 'quot-uuid-001')).resolves.toBeUndefined();
   });
@@ -1631,8 +1689,10 @@ describe('exact contracts — RFQ lifecycle signals and errors', () => {
     mockRepo.findRfqById.mockResolvedValue(rfqEvaluatedFixture);
     // Single quotation that IS the target: a negated find-predicate returns undefined here.
     mockRepo.findQuotationsByRfq.mockResolvedValue([quotationFixtures[1]!]);
+    mockRepo.findVendorById.mockResolvedValue(vendorFixture);
     mockRepo.markQuotationSelected.mockResolvedValue(undefined);
     await service.awardRfq('rfq-uuid-001', 'quot-uuid-001');
+    expect(mockRepo.findVendorById).toHaveBeenCalledWith('vendor-uuid-001');
     expect(mockRepo.markQuotationSelected).toHaveBeenCalledWith('quot-uuid-001', 'rfq-uuid-001');
     expect(mockWorkflowSignal).toHaveBeenCalledWith(awardRfqSignal, {
       actor_id: 'user-uuid-001',

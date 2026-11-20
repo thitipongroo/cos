@@ -837,6 +837,21 @@ describe('AR billing — customers, contracts, invoices and payments', () => {
         expect(mockRepo.updateContractStatus).toHaveBeenCalledWith('con-1', 'ACTIVE');
       });
 
+      // plan CP (product owner, 2026-11-20): by design, a signed contract is an existing commitment — its vendor,
+      // deactivated since, is not checked on activation.
+      it('activates a SIGNED contract whose vendor has since been deactivated, without looking the vendor up', async () => {
+        mockRepo.findContractById.mockResolvedValue({
+          contract_id: 'con-1',
+          status: 'SIGNED',
+          vendor_id: 'ven-1',
+        });
+        mockRepo.activeVendorExists.mockResolvedValue(false);
+        mockRepo.updateContractStatus.mockResolvedValue({ contract_id: 'con-1', status: 'ACTIVE' });
+        const r = await service.activateContract('con-1');
+        expect(r.status).toBe('ACTIVE');
+        expect(mockRepo.activeVendorExists).not.toHaveBeenCalled();
+      });
+
       it('404s activating an unknown contract', async () => {
         mockRepo.findContractById.mockResolvedValue(null);
         await expect(service.activateContract('missing')).rejects.toBeInstanceOf(NotFoundException);

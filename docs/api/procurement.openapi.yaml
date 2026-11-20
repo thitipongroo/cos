@@ -992,7 +992,9 @@ paths:
         '400':
           description: Body failed validation — ValidationPipe rejects it before the handler runs
         '404':
-          description: Quotation not found in RFQ
+          description: |
+            Quotation not found in RFQ, or its vendor is deactivated or not the tenant's ("Vendor … not found", as
+            for a purchase order). Nothing is selected or signalled; the RFQ stays EVALUATED (plan CP).
   /procurement/rfqs/{rfqId}/quotations:
     post:
       tags:
@@ -1035,6 +1037,10 @@ paths:
       tags:
         - Quotations
       summary: Compare quotations (sorted by price ASC, lowest auto-selected)
+      description: |
+        Every quotation is returned, but the auto-selection (`is_selected`) takes the lowest one whose vendor is still
+        ACTIVE in the tenant: a deactivated vendor's quotation is listed and never selected. When no quotation has an
+        active vendor, none is selected and any earlier selection is cleared (product owner, 2026-11-20; plan CP).
       operationId: compareQuotations
       parameters:
         - name: rfqId

@@ -310,6 +310,13 @@ export class ProcurementService {
     const selected = quotation.find((q) => q.quotation_id === quotation_id);
     if (!selected)
       throw new NotFoundException(`Quotation ${quotation_id} not found in RFQ ${rfq_id}`);
+    // The quotation's vendor must still be the tenant's ACTIVE vendor (product owner, 2026-11-20), as for a PO:
+    // awarded to a deactivated vendor, the RFQ was left AWARDED with no PO possible. Refused before anything is
+    // marked or signalled, so the RFQ stays EVALUATED and another quotation can be awarded.
+    const vendor = await this.repo.findVendorById(selected.vendor_id);
+    if (!vendor || !vendor.is_active) {
+      throw new NotFoundException(`Vendor ${selected.vendor_id} not found`);
+    }
 
     await this.repo.markQuotationSelected(quotation_id, rfq_id);
 
@@ -365,7 +372,7 @@ export class ProcurementService {
   /**
    * Compare all quotations for an RFQ.
    * Returns them sorted by total_amount ASC (lowest price first).
-   * Marks is_selected on the lowest-price quotation.
+   * Marks is_selected on the lowest-price quotation whose vendor is still ACTIVE — none if no vendor is (plan CP).
    * Used after RFQ is CLOSED, before signalling EVALUATED.
    */
   async compareQuotations(rfq_id: string): Promise<QuotationRow[]> {
@@ -380,18 +387,21 @@ export class ProcurementService {
       new Decimal(a.total_amount).comparedTo(new Decimal(b.total_amount)),
     );
 
-    // Auto-select lowest price
-    const lowest = sorted[0]!;
-    await this.repo.markQuotationSelected(lowest.quotation_id, rfq_id);
+    // Auto-select the lowest price among vendors still ACTIVE (product owner, 2026-11-20): a deactivated
+    // vendor's quotation is still listed, but cannot be awarded, so it is not suggested. None active → none
+    // selected, any earlier selection cleared.
+    const active = new Set(await this.repo.findActiveQuotingVendorIds(rfq_id));
+    const lowest = sorted.find((q) => active.has(q.vendor_id)) ?? null;
+    await this.repo.markQuotationSelected(lowest?.quotation_id ?? null, rfq_id);
 
     logger.info(
-      { rfq_id, winner: lowest.quotation_id, total: lowest.total_amount },
+      { rfq_id, winner: lowest?.quotation_id ?? null, total: lowest?.total_amount ?? null },
       'quotations.evaluated',
     );
 
     return sorted.map((q) => ({
       ...q,
-      is_selected: q.quotation_id === lowest.quotation_id,
+      is_selected: q.quotation_id === lowest?.quotation_id,
     }));
   }
 

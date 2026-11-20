@@ -578,6 +578,10 @@ export class FinanceService {
    * Put a fully-signed contract into force (signed → ACTIVE).
    * "downstream" of signing without naming a trigger, so it is a deliberate authorized action: billing
    * milestones and retention run against ACTIVE, which may start later than the signature date.
+   *
+   * By design (product owner, 2026-11-20; plan CP): the vendor is not checked here. A SIGNED contract whose
+   * vendor has since been deactivated still activates — it is an existing commitment ("buy no more", not
+   * "break what was signed"); terminateContract ends it. createContract is what requires an active vendor.
    */
   async activateContract(contract_id: string): Promise<ContractRow> {
     const contract = await this.repo.findContractById(contract_id);

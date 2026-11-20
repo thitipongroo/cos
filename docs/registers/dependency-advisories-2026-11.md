@@ -1602,6 +1602,42 @@ gate's isolated run) checks the hash was not tested either; it ran 12.18.0 with 
 
 ## Open
 
+- **Closed — a deactivated vendor's quotation was awarded and auto-selected.** Fixed in plan CP (on
+  `docs/vendor-deactivated-invoices`, one commit; product-owner decisions 2026-11-20). Found by /doubt on the plan CO
+  round. Measured on HEAD: `awardRfq` checked only that the RFQ was EVALUATED and the quotation was its own, so a
+  quotation whose vendor had been deactivated after quoting was awarded — the RFQ left AWARDED with no PO possible
+  (`createPurchaseOrder` requires an active vendor); `compareQuotations` auto-selected the lowest quotation whatever its
+  vendor.
+  - `awardRfq`: the quotation's vendor must be the tenant's ACTIVE vendor (`findVendorById`, tenant-scoped) — else
+    404 "Vendor … not found", as for a PO, before anything is marked or signalled; the RFQ stays EVALUATED.
+  - `compareQuotations`: every quotation is still returned, but `is_selected` goes to the lowest one whose vendor is
+    active (`findActiveQuotingVendorIds`: one query joining `procurement.vendors` on vendor and tenant, `is_active`,
+    `tenant_id` filtered explicitly). None active → none selected and an earlier selection cleared
+    (`markQuotationSelected(null, …)`).
+  - By design, no change: finance `activateContract` still activates a SIGNED contract whose vendor has since been
+    deactivated — a signed contract is an existing commitment ("buy no more", not "break what was signed");
+    `terminateContract` ends it. Stated in its JSDoc and pinned by a unit test.
+  - OpenAPI: `awardRfq`'s 404 covers the vendor; `compareQuotations` describes the selection. No new error code.
+  - Unit: award refused for a deactivated / absent vendor (nothing marked, no signal); compare skips a cheaper
+    deactivated vendor and selects none when none is active; the repository query and the null clear; the activate
+    pin. Integration (`03-rfq-lifecycle`, 14): award 404 with the selection and EVALUATED status untouched; compare
+    selects the cheapest active vendor, then clears when both are deactivated. Controls: HEAD's service fails both
+    integration tests and five unit tests; the query without `is_active` fails the compare integration test. Backend
+    tsc, eslint, prettier, unit, OpenAPI validity and freshness, conformance and markdownlint pass.
+  - Limits (found by /doubt): the award check and the signal are not atomic — a vendor deactivated in between is
+    still awarded, as `createPurchaseOrder` checks then writes too. The activate pin asserts only that
+    `activeVendorExists` is not called; a check through another query would pass it. The web quotations page still
+    shows an Award button on a deactivated vendor's row (the row carries `vendor_id` only), which now answers 404 —
+    UX, parked.
+
+- **Open — the comparison is only reachable at CLOSED, which the RFQ workflow leaves at once.** Found by /doubt on plan
+  CP; measured from the code only, not run. `compareQuotations` (`GET /procurement/rfqs/{id}/quotations`) requires
+  CLOSED (422 otherwise), but `rfq.workflow.ts` moves PUBLISHED → CLOSED and straight on to EVALUATED
+  (`markQuotationsEvaluated`, which changes the status only) with no wait between. So on an RFQ driven by the workflow
+  the comparison — and its auto-selection — likely answers 422, and so does the web quotations page, which reads the
+  same route (`useQuotations`). Predates plan CP. Needs a product decision (where comparison belongs: EVALUATED as well,
+  or the workflow calling it).
+
 - **Closed (by design) — a vendor deactivated after its PO still has that PO's invoices received, approved and paid.**
   Recorded on `docs/vendor-deactivated-invoices` (product-owner decision 2026-11-20: deactivation means "buy no more",
   not "pay no debts"). Found by /doubt on `fix/proc-rfq-pr-foreign-ids`. Measured on HEAD: the buyer's
@@ -1615,6 +1651,7 @@ gate's isolated run) checks the hash was not tested either; it ran 12.18.0 with 
   - Not decided here (found by /doubt, parked as product questions): `awardRfq` awards a quotation from a vendor
     deactivated after it quoted (the PO that follows is still refused by `createPurchaseOrder`), and finance
     `activateContract` activates a SIGNED contract whose vendor has since been deactivated. Neither checks the vendor.
+    Both decided since — see the plan CP entry above.
   - Unit: pinning tests — `receiveInvoice`, `approveInvoice` and `markInvoicePaid` for a deactivated vendor succeed and
     never call `findVendorById`. With a vendor check added to `receiveInvoice`, its test fails (control; restored).
     The tests pin the `findVendorById` route only; a check through other SQL would pass them. Backend tsc, eslint,

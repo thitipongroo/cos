@@ -342,4 +342,98 @@ describe('Phase 5 · RFQ lifecycle, quotation comparison and event emission', ()
       expect(await quotationsOn(rfqId)).toBe(0);
     });
   });
+
+  // plan CP (product owner, 2026-11-20): a deactivated vendor is not awarded, nor auto-selected by the comparison.
+  describe('a vendor deactivated after it quoted', () => {
+    const quoteAs = async (rfqId: string, vendorId: string, amount: string): Promise<string> => {
+      const res = await http()
+        .post(`/api/v1/procurement/rfqs/${rfqId}/quotations`)
+        .set('x-test-role', PO_ROLE)
+        .send({
+          vendor_id: vendorId,
+          total_amount: amount,
+          currency_code: 'THB',
+          validity_days: 30,
+          submitted_at: '2026-01-01T00:00:00.000Z',
+        });
+      expect(res.status).toBe(201);
+      return (res.body as { quotation_id: string }).quotation_id;
+    };
+    const deactivate = async (vendorId: string) => {
+      const res = await http()
+        .delete(`/api/v1/procurement/vendors/${vendorId}`)
+        .set('x-test-role', 'PROC_MANAGER');
+      expect(res.status).toBe(204);
+    };
+    // Moved by SQL: the close and evaluate transitions are Temporal signals.
+    const setStatus = (rfqId: string, status: string) =>
+      infra.prisma.$executeRawUnsafe(
+        `UPDATE procurement.rfqs SET status = $2 WHERE rfq_id = $1::uuid`,
+        rfqId,
+        status,
+      );
+    const selection = async (rfqId: string) =>
+      infra.prisma.$queryRawUnsafe<Array<{ quotation_id: string; is_selected: boolean }>>(
+        `SELECT quotation_id::text, is_selected FROM procurement.quotations
+          WHERE rfq_id = $1::uuid ORDER BY total_amount ASC`,
+        rfqId,
+      );
+
+    it('award to its quotation: 404, nothing selected, the RFQ still EVALUATED', async () => {
+      const rfqId = await seedRfq('PUBLISHED');
+      const vendorId = await createVendor();
+      const quotationId = await quoteAs(rfqId, vendorId, '1000.0000');
+      await setStatus(rfqId, 'EVALUATED');
+      await deactivate(vendorId);
+
+      const res = await http()
+        .post(`/api/v1/procurement/rfqs/${rfqId}/award`)
+        .set('x-test-role', PO_ROLE)
+        .send({ quotation_id: quotationId });
+
+      expect(res.status).toBe(404);
+      expect(JSON.stringify(res.body)).toContain(`Vendor ${vendorId} not found`);
+      expect(await selection(rfqId)).toEqual([{ quotation_id: quotationId, is_selected: false }]);
+      expect(await rfqStatus(rfqId)).toBe('EVALUATED');
+    });
+
+    it('the comparison lists it but selects the cheapest ACTIVE vendor; none active → none selected', async () => {
+      const rfqId = await seedRfq('PUBLISHED');
+      const cheapVendor = await createVendor();
+      const dearVendor = await createVendor();
+      const cheap = await quoteAs(rfqId, cheapVendor, '1000.0000');
+      const dear = await quoteAs(rfqId, dearVendor, '2000.0000');
+      await setStatus(rfqId, 'CLOSED');
+      await deactivate(cheapVendor);
+
+      const compared = await http()
+        .get(`/api/v1/procurement/rfqs/${rfqId}/quotations`)
+        .set('x-test-role', PO_ROLE);
+      expect(compared.status).toBe(200);
+      expect(
+        (compared.body as Array<{ quotation_id: string; is_selected: boolean }>).map((q) => [
+          q.quotation_id,
+          q.is_selected,
+        ]),
+      ).toEqual([
+        [cheap, false],
+        [dear, true],
+      ]);
+      expect(await selection(rfqId)).toEqual([
+        { quotation_id: cheap, is_selected: false },
+        { quotation_id: dear, is_selected: true },
+      ]);
+
+      // The other vendor deactivated too: compared again, the earlier selection is cleared.
+      await deactivate(dearVendor);
+      const again = await http()
+        .get(`/api/v1/procurement/rfqs/${rfqId}/quotations`)
+        .set('x-test-role', PO_ROLE);
+      expect(again.status).toBe(200);
+      expect(await selection(rfqId)).toEqual([
+        { quotation_id: cheap, is_selected: false },
+        { quotation_id: dear, is_selected: false },
+      ]);
+    });
+  });
 });
