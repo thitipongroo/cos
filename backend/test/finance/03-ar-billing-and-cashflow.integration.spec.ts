@@ -400,14 +400,14 @@ describe('Phase 7 · AR billing lifecycle and cash flow forecast (real database)
       );
       return Number(rows[0]!.n);
     };
-    const pay = (projectId: string, invoiceId: string) =>
+    const pay = (projectId: string, invoiceId: string, amount = '40000.0000') =>
       http()
         .post('/api/v1/finance/payments')
         .set('x-test-role', 'FINANCE')
         .send({
           project_id: projectId,
           invoice_id: invoiceId,
-          amount: '40000.0000',
+          amount,
           currency_code: 'THB',
           payment_date: isoDaysFromNow(3),
         });
@@ -472,10 +472,65 @@ describe('Phase 7 · AR billing lifecycle and cash flow forecast (real database)
 
     it('two instalments against one APPROVED invoice are both written', async () => {
       const projectId = await newProject();
-      const invoiceId = await vendorInvoice(projectId);
-      expect([200, 201]).toContain((await pay(projectId, invoiceId)).status);
-      expect([200, 201]).toContain((await pay(projectId, invoiceId)).status);
+      const invoiceId = await vendorInvoice(projectId); // 40,000
+      expect([200, 201]).toContain((await pay(projectId, invoiceId, '20000.0000')).status);
+      expect([200, 201]).toContain((await pay(projectId, invoiceId, '20000.0000')).status);
       expect(await payments(invoiceId)).toBe(2);
+    });
+
+    // Plan DE (product owner 2026-11-21): PENDING + PROCESSED payments never exceed the invoice's amount.
+    it('pays up to the amount, then refuses more: 422 COS-FIN-422', async () => {
+      const projectId = await newProject();
+      const invoiceId = await vendorInvoice(projectId); // 40,000
+      expect([200, 201]).toContain((await pay(projectId, invoiceId, '30000.0000')).status);
+      expect([200, 201]).toContain((await pay(projectId, invoiceId, '10000.0000')).status);
+      const more = await pay(projectId, invoiceId, '0.0100');
+      expect(more.status).toBe(422);
+      expect(more.body).toMatchObject({
+        error: {
+          code: 'COS-FIN-422',
+          message: `Payment of 0.0100 exceeds what remains on invoice ${invoiceId} (0.0000 of 40000.0000)`,
+          messageKey: 'finance.payment.exceedsInvoice',
+        },
+      });
+      expect(await payments(invoiceId)).toBe(2);
+    });
+
+    it.each(['0.0000', '-40000.0000'])(
+      'an amount of %s: 400, no payment (a negative one would lower the paid sum)',
+      async (amount) => {
+        const projectId = await newProject();
+        const invoiceId = await vendorInvoice(projectId);
+        const res = await pay(projectId, invoiceId, amount);
+        expect(res.status).toBe(400);
+        expect(await payments(invoiceId)).toBe(0);
+      },
+    );
+
+    it('a FAILED payment does not count against the amount', async () => {
+      const projectId = await newProject();
+      const invoiceId = await vendorInvoice(projectId);
+      expect([200, 201]).toContain((await pay(projectId, invoiceId, '40000.0000')).status);
+      await infra.prisma.$executeRawUnsafe(
+        `UPDATE finance.payments SET status = 'FAILED' WHERE invoice_id = $1::uuid`,
+        invoiceId,
+      );
+      expect([200, 201]).toContain((await pay(projectId, invoiceId, '40000.0000')).status);
+    });
+
+    it('two payments sent together cannot both pass: one written, one 422', async () => {
+      const projectId = await newProject();
+      const invoiceId = await vendorInvoice(projectId);
+      const statuses = (
+        await Promise.all([
+          pay(projectId, invoiceId, '30000.0000'),
+          pay(projectId, invoiceId, '30000.0000'),
+        ])
+      )
+        .map((r) => r.status)
+        .sort();
+      expect(statuses).toEqual([201, 422]);
+      expect(await payments(invoiceId)).toBe(1);
     });
 
     it("an invoice of another project's PO: 422 COS-FIN-422, no payment", async () => {

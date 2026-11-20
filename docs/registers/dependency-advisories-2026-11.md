@@ -1602,6 +1602,30 @@ gate's isolated run) checks the hash was not tested either; it ran 12.18.0 with 
 
 ## Open
 
+- **Closed — an AP invoice could be paid beyond its amount.** Fixed in plan DE (on the current branch;
+  product-owner decisions 2026-11-21: the invoice's PENDING and PROCESSED payments, with the new one, never exceed
+  its amount — FAILED does not count; the invoice's status is not changed when fully paid). Closes the item plan DD
+  parked. Measured on HEAD (`test/finance/03`): a further 0.01 on a fully paid 40,000 invoice → 201, and two 30,000
+  payments sent together → both written.
+  - `invoiceForPaymentInTenant` also returns the invoice's `amount`. `FinanceRepository.createPayment` takes it as
+    `cap`: in the INSERT's transaction, a per-invoice advisory lock (`'payment:' || tenant || ':' || invoice`), the
+    sum of PENDING + PROCESSED payments, and over the cap no INSERT — what remains is answered.
+    `recordPayment` turns that into 422 `COS-FIN-422`, `finance.payment.exceedsInvoice` ("Payment of `<a>` exceeds
+    what remains on invoice `<id>` (`<r>` of `<total>`)" — what remains never shown below zero). Paying exactly
+    what remains is written. Web: `paymentErrorKey` maps it (TH/EN).
+  - A payment of zero or less → 400 `Payment amount must be greater than zero`, before anything is read (product
+    owner 2026-11-21; found by /doubt: the DTO's decimal format takes a sign, and a negative PENDING payment lowered
+    the paid sum so the invoice could be paid again).
+  - `test/finance/03`'s instalments test now pays 20,000 twice on its 40,000 invoice (it paid 40,000 twice).
+  - Verified: finance unit (346: the lock, the sum's statuses, no INSERT over the cap, the service's 422, the 400
+    for 0 and a negative amount), `test/finance/03` (43: 30,000 + 10,000 written then 0.01 refused; a FAILED payment
+    not counted; 0 and −40,000 → 400 with no row; two concurrent 30,000 → one 201, one 422), apps/web jest (501).
+    HEAD's service writes the 0.01 and both concurrent payments; without the amount guard the two 400 tests fail.
+    The concurrent test shows the cap holds under two requests sent together; that the lock is what serialises them
+    is held by the repository unit test (the requests may not overlap on a fast database). tsc, eslint, prettier,
+    conformance, OpenAPI validity and freshness, markdownlint.
+  - Not covered (by decision): the invoice is never set PAID; payments recorded before this change are not
+    re-checked (an invoice already over is refused any further payment).
 - **Closed — an AP payment could be recorded against an unapproved or disputed invoice, in any currency.** Fixed in
   plan DD (on the current branch; product-owner decisions 2026-11-21: only an APPROVED invoice — several payments
   against one stay allowed, as instalments; the payment in the invoice's currency; the payments page lists only

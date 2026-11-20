@@ -623,7 +623,12 @@ describe('variance alert', () => {
 // ── recordPayment ──────────────────────────────────────────────────────────
 
 describe('recordPayment', () => {
-  const approvedInvoice = { project_id: 'proj-uuid-001', status: 'APPROVED', currency_code: 'THB' };
+  const approvedInvoice = {
+    project_id: 'proj-uuid-001',
+    status: 'APPROVED',
+    currency_code: 'THB',
+    amount: '60000.0000',
+  };
   beforeEach(() => mockRepo.invoiceForPayment.mockResolvedValue(approvedInvoice)); // plans DB, DD
 
   it('records payment and emits finance.payment.processed.v1', async () => {
@@ -702,6 +707,38 @@ describe('recordPayment', () => {
       expect(mockRepo.createPayment).not.toHaveBeenCalled();
     },
   );
+
+  // Plan DE (product owner 2026-11-21): a payment is greater than zero — a negative one would lower the paid sum.
+  it.each(['0', '0.0000', '-40000.0000'])(
+    '400 for an amount of %s, nothing read or written',
+    async (amount) => {
+      await expect(service.recordPayment({ ...payDto(), amount })).rejects.toThrow(
+        new BadRequestException('Payment amount must be greater than zero'),
+      );
+      expect(mockRepo.invoiceForPayment).not.toHaveBeenCalled();
+      expect(mockRepo.createPayment).not.toHaveBeenCalled();
+    },
+  );
+
+  // Plan DE (product owner 2026-11-21): never beyond the invoice's amount.
+  it('passes the invoice amount as the cap, and refuses with what remains when over it', async () => {
+    mockRepo.createPayment.mockResolvedValue({ exceeds: true, remaining: '0.5000' });
+    const err = await service.recordPayment(payDto()).catch((e: unknown) => e);
+    expect(mockRepo.createPayment).toHaveBeenCalledWith(
+      expect.objectContaining({ cap: '60000.0000' }),
+      expect.any(Function),
+    );
+    expect(err).toMatchObject({
+      response: {
+        error: {
+          code: 'COS-FIN-422',
+          message:
+            'Payment of 1.0000 exceeds what remains on invoice inv-uuid-001 (0.5000 of 60000.0000)',
+          messageKey: 'finance.payment.exceedsInvoice',
+        },
+      },
+    });
+  });
 
   it("the invoice's currency in another letter case is the same currency", async () => {
     mockRepo.invoiceForPayment.mockResolvedValue({ ...approvedInvoice, currency_code: 'thb' });

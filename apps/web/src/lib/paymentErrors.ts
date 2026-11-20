@@ -17,6 +17,8 @@ const KNOWN_MESSAGE_KEYS: Record<string, string> = {
   // Plan DD: only an APPROVED invoice, in its own currency.
   'finance.payment.invoiceNotApproved': 'finance.err.invoiceNotApproved',
   'finance.payment.currencyMismatch': 'finance.err.currencyMismatch',
+  // Plan DE: never beyond the invoice's amount.
+  'finance.payment.exceedsInvoice': 'finance.err.exceedsInvoice',
 };
 
 export function paymentErrorKey(error: unknown): string {

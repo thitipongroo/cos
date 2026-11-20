@@ -386,6 +386,12 @@ export class FinanceService {
 
   // Allowed on a closed project (plan CY, by design): open invoices are still paid after a project closes.
   async recordPayment(dto: RecordPaymentDto): Promise<PaymentRow> {
+    // A payment is money out: zero or a negative amount is refused (product owner, 2026-11-21; plan DE — found by
+    // /doubt: a negative PENDING payment lowered the invoice's paid sum and let the cap be paid past). The DTO's
+    // decimal format takes a sign; a refund or correction goes through the payment's status instead.
+    if (!new Decimal(dto.amount).greaterThan(0)) {
+      throw new BadRequestException('Payment amount must be greater than zero');
+    }
     const project_id = dto.project_id;
     // The invoice is the tenant's, and the payment is under its PO's project (product owner, 2026-11-21; plan DB);
     // it is APPROVED and paid in its own currency (plan DD) — several payments against one APPROVED invoice stay
@@ -414,8 +420,10 @@ export class FinanceService {
         'finance.payment.currencyMismatch',
       );
     }
+    // Never beyond the invoice's amount (plan DE): checked with the INSERT, under a per-invoice lock.
     const payment = await this.repo.createPayment(
       {
+        cap: invoice.amount,
         invoice_id: dto.invoice_id,
         project_id,
         amount: new Decimal(dto.amount).toFixed(4),
@@ -434,6 +442,14 @@ export class FinanceService {
           payment_date: dto.payment_date,
         }),
     );
+
+    if ('exceeds' in payment) {
+      throw this.refuse(
+        `Payment of ${new Decimal(dto.amount).toFixed(4)} exceeds what remains on invoice ${dto.invoice_id} ` +
+          `(${payment.remaining} of ${new Decimal(invoice.amount).toFixed(4)})`,
+        'finance.payment.exceedsInvoice',
+      );
+    }
 
     logger.info(
       { payment_id: payment.payment_id, project_id, tenant_id: this.tenantId },

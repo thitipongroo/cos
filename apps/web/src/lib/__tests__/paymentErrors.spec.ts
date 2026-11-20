@@ -24,6 +24,11 @@ describe('paymentErrorKey', () => {
       apiError(422, 'finance.payment.currencyMismatch', 'COS-FIN-422'),
       'finance.err.currencyMismatch',
     ],
+    [
+      'more than remains on the invoice',
+      apiError(422, 'finance.payment.exceedsInvoice', 'COS-FIN-422'),
+      'finance.err.exceedsInvoice',
+    ],
     ['no such invoice in the tenant', apiError(404), 'finance.err.invoiceNotFound'],
     ['no permission', apiError(403, undefined, 'COS-PLAN-003'), 'finance.err.forbidden'],
     ['a ValidationPipe 400', apiError(400, 'general.error.validation'), 'finance.err.generic'],
@@ -42,6 +47,7 @@ describe('paymentErrorKey', () => {
         'invoiceOtherProject',
         'invoiceNotApproved',
         'currencyMismatch',
+        'exceedsInvoice',
       ]) {
         expect(dict.finance.err[k]).toEqual(expect.any(String));
       }

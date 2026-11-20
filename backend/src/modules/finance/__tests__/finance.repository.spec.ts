@@ -239,7 +239,8 @@ describe('FinanceRepository', () => {
       payment_date: '2026-06-05',
       recorded_by: 'user-uuid-001',
     });
-    expect(result.payment_id).toBe('pay-uuid-001');
+    expect((result as { payment_id: string }).payment_id).toBe('pay-uuid-001');
+    expect(mockPrisma.$executeRaw).not.toHaveBeenCalled(); // no cap given: no lock, no sum
   });
 
   it('createPayment with payment_reference provided', async () => {
@@ -253,7 +254,54 @@ describe('FinanceRepository', () => {
       recorded_by: 'user-uuid-001',
       payment_reference: 'TRF-12345',
     });
-    expect(result.payment_id).toBe('pay-uuid-001');
+    expect((result as { payment_id: string }).payment_id).toBe('pay-uuid-001');
+  });
+
+  // Plan DE: with a cap, the invoice's PENDING + PROCESSED payments are summed under a per-invoice lock, in the
+  // INSERT's transaction; over the cap, nothing is written.
+  describe('createPayment with the invoice amount as its cap (plan DE)', () => {
+    const params = {
+      invoice_id: 'inv-uuid-001',
+      project_id: 'proj-uuid-001',
+      amount: '10000.0000',
+      currency_code: 'THB',
+      payment_date: '2026-06-05',
+      recorded_by: 'user-uuid-001',
+      cap: '40000.0000',
+    };
+    const sqlOf = (call: unknown[]) => (call[0] as string[]).join('?').replace(/\s+/g, ' ');
+
+    it('locks the invoice, sums PENDING + PROCESSED, and writes when within the cap', async () => {
+      mockPrisma.$executeRaw.mockResolvedValue(1);
+      mockPrisma.$queryRaw
+        .mockResolvedValueOnce([{ remaining: '10000.0000', over: false }])
+        .mockResolvedValueOnce([paymentRow]);
+      const result = await repo.createPayment(params);
+      expect((result as { payment_id: string }).payment_id).toBe('pay-uuid-001');
+      const lock = mockPrisma.$executeRaw.mock.calls[0]!;
+      expect(sqlOf(lock)).toContain('pg_advisory_xact_lock');
+      expect(lock.slice(1)).toEqual(['tenant-uuid-001', 'inv-uuid-001']);
+      const sum = mockPrisma.$queryRaw.mock.calls[0]!;
+      expect(sqlOf(sum)).toContain(
+        `AND status IN ('PENDING'::finance."PaymentStatus", 'PROCESSED'::finance."PaymentStatus")`,
+      );
+      // Never a negative remaining in the message, for an invoice already over from earlier payments.
+      expect(sqlOf(sum)).toContain('GREATEST(');
+      expect(sum.slice(1)).toEqual([
+        '40000.0000',
+        '10000.0000',
+        '40000.0000',
+        'inv-uuid-001',
+        'tenant-uuid-001',
+      ]);
+    });
+
+    it('over the cap: what remains, and no INSERT', async () => {
+      mockPrisma.$executeRaw.mockResolvedValue(1);
+      mockPrisma.$queryRaw.mockResolvedValueOnce([{ remaining: '5000.0000', over: true }]);
+      expect(await repo.createPayment(params)).toEqual({ exceeds: true, remaining: '5000.0000' });
+      expect(mockPrisma.$queryRaw).toHaveBeenCalledTimes(1);
+    });
   });
 
   it('findPayments returns rows and total (with project + status filter)', async () => {

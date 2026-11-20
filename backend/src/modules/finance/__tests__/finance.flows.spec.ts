@@ -298,7 +298,8 @@ describe('recordPayment', () => {
       project_id: 'proj-int-001',
       status: 'APPROVED',
       currency_code: 'THB',
-    }); // plans DB, DD
+      amount: '50000.0000',
+    }); // plans DB, DD, DE
 
     const result = await svc.recordPayment({
       project_id: 'proj-int-001',

@@ -264,10 +264,28 @@ export class FinanceRepository {
       payment_date: string;
       payment_reference?: string | null;
       recorded_by: string;
+      /**
+       * The invoice's amount (plan DE): its PENDING + PROCESSED payments, this one included, must not exceed it.
+       * Checked in this transaction under a per-invoice lock, so two payments sent together cannot both pass.
+       */
+      cap?: string;
     },
     buildOutboxEvent?: (row: PaymentRow) => OutboxEventInput,
-  ): Promise<PaymentRow> {
+  ): Promise<PaymentRow | { exceeds: true; remaining: string }> {
     const rows = await this.db.run(async (tx) => {
+      if (params.cap !== undefined) {
+        await tx.$executeRaw`
+          SELECT pg_advisory_xact_lock(
+            hashtextextended('payment:' || ${this.tenantId}::text || ':' || ${params.invoice_id}::text, 0)
+          )`;
+        const [paid] = await tx.$queryRaw<Array<{ remaining: string; over: boolean }>>`
+          SELECT GREATEST(${params.cap}::decimal - COALESCE(SUM(amount), 0), 0)::decimal(19,4)::text AS remaining,
+                 COALESCE(SUM(amount), 0) + ${params.amount}::decimal > ${params.cap}::decimal AS over
+          FROM finance.payments
+          WHERE invoice_id = ${params.invoice_id}::uuid AND tenant_id = ${this.tenantId}::uuid
+            AND status IN ('PENDING'::finance."PaymentStatus", 'PROCESSED'::finance."PaymentStatus")`;
+        if (paid?.over) return { exceeds: true as const, remaining: paid.remaining };
+      }
       const inserted = await tx.$queryRaw<PaymentRow[]>`
         INSERT INTO finance.payments
           (invoice_id, project_id, tenant_id, amount, currency_code,
@@ -286,6 +304,7 @@ export class FinanceRepository {
       }
       return inserted;
     });
+    if (!Array.isArray(rows)) return rows; // the cap refused it: nothing written (plan DE)
     return rows[0]!;
   }
 

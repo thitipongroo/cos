@@ -1277,7 +1277,8 @@
       "invoiceNotFound": "The invoice was not found. Refresh the page and choose it again.",
       "invoiceOtherProject": "This invoice belongs to another project. Choose the invoice's project, or another invoice.",
       "invoiceNotApproved": "This invoice is not approved yet, or is disputed. Only an approved invoice can be paid.",
-      "currencyMismatch": "The payment's currency is not the invoice's. Use the invoice's currency."
+      "currencyMismatch": "The payment's currency is not the invoice's. Use the invoice's currency.",
+      "exceedsInvoice": "This payment is more than what remains to be paid on the invoice. Lower the amount."
     }
   },
   "checkout": {

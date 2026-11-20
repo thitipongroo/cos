@@ -626,6 +626,8 @@ paths:
       responses:
         '201':
           description: Payment recorded
+        '400':
+          description: A field fails validation, or `amount` is not greater than zero (plan DE); nothing is written
         '401':
           description: Unauthenticated — missing or invalid bearer token
         '404':
@@ -634,8 +636,9 @@ paths:
           description: >-
             `COS-FIN-422` — `finance.payment.invoiceOtherProject`: the invoice's purchase order is under another
             project than `project_id` (plan DB); `finance.payment.invoiceNotApproved`: the invoice is not APPROVED
-            (plan DD); `finance.payment.currencyMismatch`: `currency_code` is not the invoice's (plan DD). Nothing is
-            written
+            (plan DD); `finance.payment.currencyMismatch`: `currency_code` is not the invoice's (plan DD);
+            `finance.payment.exceedsInvoice`: with the invoice's PENDING and PROCESSED payments it would exceed the
+            invoice's amount (plan DE). Nothing is written
   /finance/reports/variance:
     get:
       operationId: getFinanceReportsVariance
