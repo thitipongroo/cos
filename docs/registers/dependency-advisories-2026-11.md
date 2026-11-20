@@ -1602,6 +1602,28 @@ gate's isolated run) checks the hash was not tested either; it ran 12.18.0 with 
 
 ## Open
 
+- **Closed — the payments page offered every invoice of the tenant, whatever project was chosen.** Fixed in plan DC
+  (on the current branch; product-owner decisions 2026-11-21: the list takes `?project_id=` and each row carries its
+  PO's project; the payments page asks for the chosen project's invoices, the invoice select disabled until a project
+  is chosen and cleared when it changes). Closes the item plan DB parked. Measured on HEAD (`test/finance/03`):
+  `?project_id=` was ignored (every invoice of the tenant) and a non-UUID was accepted (200).
+  - `ProcurementRepository.findInvoices` LEFT-joins the PO (`po.project_id` in each row; the filter on rows and on
+    the count) — LEFT, as the vendor join, so the join alone never drops an invoice from the queue (found by /doubt).
+    The controller takes `project_id` through `ParseUUIDPipe({ optional: true })` (400 when not a UUID, an empty
+    value included).
+    `InvoiceRow.project_id?`; OpenAPI: the parameter, the 400 and the row field.
+  - Web: `lib/vendorInvoicesQuery.ts` builds the query string; `useFinanceInvoices(status, { projectId,
+    requireProject })` (the project in the query key; held until one is chosen). `FinanceInvoiceRow.project_id?`.
+    The invoices page is unchanged (no project).
+  - e2e `budget-exceeded.spec.ts`: choose a project, then the first of its invoices; a project with none (another
+    spec's, on a reused database — found by /doubt) is skipped for the next. Parsed by Playwright (`--list`), not
+    run here.
+  - Parked: the mobile invoices screen still filters by project on the client (all the project's POs, then a match)
+    and counts the tenant's; it could use `?project_id=` now (its header comment says so).
+  - Verified: procurement unit (372: the SQL joins and filters rows and count; the controller passes `project_id`),
+    `test/finance/03` (33: two projects' invoices, `?project_id=` returns only one's, each row carrying it; a
+    non-UUID → 400 — HEAD fails both), apps/web jest (498). tsc, eslint, prettier, OpenAPI validity and freshness,
+    conformance, markdownlint.
 - **Closed — an AP payment took any invoice id, under any project.** Fixed in plan DB (on the current branch;
   product-owner decisions 2026-11-21: the invoice is the tenant's, the payment is under its PO's project; the
   invoice's status and currency are not checked in this round; the web page shows the reason). Closes the item plans
@@ -1629,7 +1651,7 @@ gate's isolated run) checks the hash was not tested either; it ran 12.18.0 with 
     rows written before this change.
   - Parked (found by /doubt): the payments page's invoice select lists every invoice of the tenant whatever project
     is chosen — the vendor-invoice rows carry no project, so it cannot filter; the alert reports a wrong pair, it
-    does not prevent one.
+    does not prevent one. Closed by plan DC, above.
 - **Closed — an AR receipt took any customer id.** Fixed in plan DA (on the current branch; product-owner decision
   2026-11-21: the receipt's customer is the tenant's, and the contract's when the contract names one; a contract
   with no customer takes any of the tenant's). Closes the item parked by plan CZ. `recordArReceipt` inserted

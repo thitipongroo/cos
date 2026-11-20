@@ -431,11 +431,15 @@ export class ProcurementController {
     return this.svc.receiveInvoice(dto);
   }
 
-  // GET /api/v1/procurement/vendor-invoices  (tenant-wide AP queue, AIP-132; ?po_id= ?status=)
+  // GET /api/v1/procurement/vendor-invoices  (tenant-wide AP queue, AIP-132; ?po_id= ?status= ?project_id=)
   @Get('procurement/vendor-invoices')
   @Roles(...READ_ROLES)
-  @ApiOperation({ summary: 'List vendor invoices across the tenant (filterable by PO/status)' })
+  @ApiOperation({
+    summary: 'List vendor invoices across the tenant (filterable by PO/status/project)',
+  })
   @ApiQuery({ name: 'po_id', required: false, type: String })
+  // Plan DC: the invoice's PO's project — the payments page lists only the chosen project's invoices.
+  @ApiQuery({ name: 'project_id', required: false, type: String })
   @ApiQuery({ name: 'status', required: false, type: String })
   @ApiQuery({ name: 'page', required: false, type: Number })
   @ApiQuery({ name: 'limit', required: false, type: Number })
@@ -444,10 +448,12 @@ export class ProcurementController {
     @Query('status') status?: string,
     @Query('page') page = '1',
     @Query('limit') limit = '20',
+    @Query('project_id', new ParseUUIDPipe({ optional: true })) project_id?: string,
   ) {
     return this.svc.listInvoices({
       po_id,
       status,
+      project_id,
       page: parsePage(page),
       limit: parseLimit(limit),
     });

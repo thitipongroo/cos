@@ -217,6 +217,14 @@ describe('ProcurementController', () => {
     });
   });
 
+  // Plan DC: the payments page asks for one project's invoices.
+  it('listInvoices passes project_id through', () => {
+    ctrl.listInvoices(undefined, undefined, '1', '100', 'proj-uuid-001');
+    expect(mockSvc.listInvoices).toHaveBeenCalledWith(
+      expect.objectContaining({ project_id: 'proj-uuid-001', limit: 100 }),
+    );
+  });
+
   it('listInvoices uses query defaults when params omitted', () => {
     ctrl.listInvoices();
     expect(mockSvc.listInvoices).toHaveBeenCalledWith({

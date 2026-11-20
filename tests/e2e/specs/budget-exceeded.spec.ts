@@ -32,26 +32,28 @@ test.describe('Budget Exceeded Alert', () => {
       .locator('option:not([value=""])')
       .first()
       .waitFor({ state: 'attached', timeout: 10_000 });
-    const projectCount = (await projectSelect.locator('option:not([value=""])').count()) || 1;
-
-    // A payment is refused unless the project is the one the invoice's PO is under (plan DB, 422 + an alert). The
-    // invoice list is tenant-wide and its rows carry no project, so keep the first invoice and try each project
-    // until the payment lands; each wrong pick must show the reason and write nothing.
-    const reference = `E2E-COST-${Date.now().toString().slice(-8)}`;
-    let recorded = false;
-    for (let i = 1; i <= projectCount && !recorded; i += 1) {
+    // The invoice select lists only the chosen project's invoices (plan DC) — so its first one is payable here. A
+    // project with no invoice (one another spec created, on a reused database) is skipped for the next.
+    const invoiceSelect = page.locator('select').nth(1);
+    const projectCount = await projectSelect.locator('option:not([value=""])').count();
+    let found = false;
+    for (let i = 1; i <= projectCount && !found; i += 1) {
       await projectSelect.selectOption({ index: i });
-      await page.locator('select').nth(1).selectOption({ index: 1 });
-      await page.getByLabel(/amount|จำนวนเงิน/i).fill(OVERBUDGET_AMOUNT);
-      await page.locator('input[type="date"]').fill(new Date().toISOString().split('T')[0]);
-      await page.getByLabel(/reference|อ้างอิง/i).fill(reference);
-      await page.getByRole('button', { name: /record payment|บันทึกการจ่ายเงิน/i }).click();
-
-      const row = page.getByText(reference);
-      const refused = page.getByRole('alert').filter({ hasText: /another project|โครงการอื่น/i });
-      await expect(row.or(refused)).toBeVisible({ timeout: 15_000 });
-      recorded = await row.isVisible();
+      found = await invoiceSelect
+        .locator('option:not([value=""])')
+        .first()
+        .waitFor({ state: 'attached', timeout: 5_000 })
+        .then(() => true)
+        .catch(() => false);
     }
+    expect(found).toBe(true);
+    await invoiceSelect.selectOption({ index: 1 });
+
+    const reference = `E2E-COST-${Date.now().toString().slice(-8)}`;
+    await page.getByLabel(/amount|จำนวนเงิน/i).fill(OVERBUDGET_AMOUNT);
+    await page.locator('input[type="date"]').fill(new Date().toISOString().split('T')[0]);
+    await page.getByLabel(/reference|อ้างอิง/i).fill(reference);
+    await page.getByRole('button', { name: /record payment|บันทึกการจ่ายเงิน/i }).click();
 
     await expect(page.getByText(reference)).toBeVisible({ timeout: 15_000 });
   });

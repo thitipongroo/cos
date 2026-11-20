@@ -75,6 +75,7 @@ import type {
   TenantAdminCancelResult,
   MyTenant,
 } from './types';
+import { vendorInvoicesQuery } from '../vendorInvoicesQuery';
 
 function filterQuery(filter: ProcurementListFilter): string {
   const params = new URLSearchParams({ limit: '100' });
@@ -458,17 +459,22 @@ export function useVarianceReport() {
   });
 }
 
-/** Finance AP invoice queue — vendor invoices owned by procurement (ADR-023). */
-export function useFinanceInvoices(status: string) {
+/**
+ * Finance AP invoice queue — vendor invoices owned by procurement (ADR-023). With `projectId` (plan DC) only that
+ * project's; `requireProject` holds the query until one is chosen (the payments page).
+ */
+export function useFinanceInvoices(
+  status: string,
+  opts: { projectId?: string; requireProject?: boolean } = {},
+) {
   const api = useApi();
-  const qs = new URLSearchParams({ limit: '100' });
-  if (status) {
-    qs.set('status', status);
-  }
   return useQuery({
-    queryKey: ['finance', 'invoices', status],
+    queryKey: ['finance', 'invoices', status, opts.projectId ?? ''],
     queryFn: () =>
-      api<PaginatedResponse<FinanceInvoiceRow>>(`/procurement/vendor-invoices?${qs.toString()}`),
+      api<PaginatedResponse<FinanceInvoiceRow>>(
+        `/procurement/vendor-invoices?${vendorInvoicesQuery(status, opts.projectId)}`,
+      ),
+    enabled: !opts.requireProject || Boolean(opts.projectId),
   });
 }
 

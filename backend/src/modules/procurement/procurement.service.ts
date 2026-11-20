@@ -978,7 +978,13 @@ export class ProcurementService {
     logger.info({ po_id, actor_id: this.userId }, 'invoice.disputed');
   }
 
-  async listInvoices(params: { po_id?: string; status?: string; page: number; limit: number }) {
+  async listInvoices(params: {
+    po_id?: string;
+    status?: string;
+    project_id?: string;
+    page: number;
+    limit: number;
+  }) {
     const { rows, total } = await this.repo.findInvoices(params);
     return { items: rows, total, page: params.page, limit: params.limit };
   }

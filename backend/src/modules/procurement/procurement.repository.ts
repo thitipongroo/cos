@@ -920,7 +920,10 @@ export class ProcurementRepository {
   }
 
   /**
-   * Tenant-wide vendor-invoice list (AIP-132 AP queue); optional po_id / status filters.
+   * Tenant-wide vendor-invoice list (AIP-132 AP queue); optional po_id / status / project_id filters. Each row
+   * carries its PO's `project_id` (plan DC) — the payments page lists only the chosen project's invoices. The PO
+   * join is LEFT for the reason the vendor join below is: with no project filter, an invoice whose PO row is
+   * missing from the tenant is still listed (and counted), with no project; the filter alone drops it.
    *
    * CARRIES `vendor_name` SINCE 2026-09-08. Every screen that lists an invoice or a payment shows
    * who is being paid, and `invoices` holds only a `vendor_id`. The join belongs HERE, in the
@@ -938,6 +941,8 @@ export class ProcurementRepository {
   async findInvoices(params: {
     po_id?: string;
     status?: string;
+    /** The invoice's PO's project (plan DC). */
+    project_id?: string;
     page: number;
     limit: number;
   }): Promise<{ rows: InvoiceRow[]; total: number }> {
@@ -945,23 +950,30 @@ export class ProcurementRepository {
     const rows = await this.db.run(
       (prisma) =>
         prisma.$queryRaw<InvoiceRow[]>`
-        SELECT i.*, v.vendor_name
+        SELECT i.*, v.vendor_name, po.project_id
         FROM procurement.invoices i
         LEFT JOIN procurement.vendors v
           ON v.vendor_id = i.vendor_id AND v.tenant_id = i.tenant_id
+        LEFT JOIN procurement.purchase_orders po
+          ON po.po_id = i.po_id AND po.tenant_id = i.tenant_id
         WHERE i.tenant_id = ${this.tenantId}::uuid
           AND (${params.po_id ?? null}::uuid IS NULL OR i.po_id = ${params.po_id ?? null}::uuid)
           AND (${params.status ?? null}::text IS NULL OR i.status = ${params.status ?? null}::text)
+          AND (${params.project_id ?? null}::uuid IS NULL OR po.project_id = ${params.project_id ?? null}::uuid)
         ORDER BY i.invoice_date DESC
         LIMIT ${params.limit} OFFSET ${offset}`,
     );
     const countRows = await this.db.run(
       (prisma) =>
         prisma.$queryRaw<[{ count: bigint }]>`
-        SELECT COUNT(*)::bigint AS count FROM procurement.invoices
-        WHERE tenant_id = ${this.tenantId}::uuid
-          AND (${params.po_id ?? null}::uuid IS NULL OR po_id = ${params.po_id ?? null}::uuid)
-          AND (${params.status ?? null}::text IS NULL OR status = ${params.status ?? null}::text)`,
+        SELECT COUNT(*)::bigint AS count
+        FROM procurement.invoices i
+        LEFT JOIN procurement.purchase_orders po
+          ON po.po_id = i.po_id AND po.tenant_id = i.tenant_id
+        WHERE i.tenant_id = ${this.tenantId}::uuid
+          AND (${params.po_id ?? null}::uuid IS NULL OR i.po_id = ${params.po_id ?? null}::uuid)
+          AND (${params.status ?? null}::text IS NULL OR i.status = ${params.status ?? null}::text)
+          AND (${params.project_id ?? null}::uuid IS NULL OR po.project_id = ${params.project_id ?? null}::uuid)`,
     );
     return { rows, total: Number(countRows[0]?.count ?? 0) };
   }

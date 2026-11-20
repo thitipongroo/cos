@@ -158,4 +158,6 @@ export interface InvoiceRow {
    * would be the wrong trade here.
    */
   vendor_name?: string | null;
+  /** The invoice's PO's project — JOINED IN by `findInvoices` (plan DC); not a column of `invoices`. */
+  project_id?: string;
 }

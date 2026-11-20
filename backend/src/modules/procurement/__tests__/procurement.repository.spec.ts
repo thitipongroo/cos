@@ -885,6 +885,25 @@ describe('ProcurementRepository', () => {
     expect(result.total).toBe(0);
   });
 
+  // Plan DC: each row carries its PO's project, and the list (and its count) can be filtered by it.
+  it('findInvoices joins the PO for its project and filters rows and count by project_id', async () => {
+    mockPrisma.$queryRaw.mockResolvedValueOnce([invoiceRow]).mockResolvedValueOnce([{ count: 1n }]);
+    await repo.findInvoices({ project_id: 'proj-uuid-001', page: 1, limit: 20 });
+    const [list, count] = mockPrisma.$queryRaw.mock.calls.slice(-2).map((c) => ({
+      sql: (c[0] as string[]).join('?').replace(/\s+/g, ' '),
+      values: c.slice(1),
+    }));
+    for (const q of [list!, count!]) {
+      // LEFT, as the vendor join: an invoice is never dropped from the queue by the join alone (found by /doubt).
+      expect(q.sql).toContain(
+        'LEFT JOIN procurement.purchase_orders po ON po.po_id = i.po_id AND po.tenant_id = i.tenant_id',
+      );
+      expect(q.sql).toContain('OR po.project_id = ?::uuid)');
+      expect(q.values).toContain('proj-uuid-001');
+    }
+    expect(list!.sql).toContain('SELECT i.*, v.vendor_name, po.project_id');
+  });
+
   it('updateInvoiceStatus calls $executeRaw', async () => {
     mockPrisma.$executeRaw.mockResolvedValue(1);
     await repo.updateInvoiceStatus('inv-uuid-001', 'APPROVED');

@@ -262,6 +262,8 @@ export interface FinanceInvoiceRow {
   currency_code: string;
   status: 'RECEIVED' | 'VERIFIED' | 'APPROVED' | 'PAID' | 'DISPUTED';
   due_date: string;
+  /** The invoice's PO's project (plan DC). */
+  project_id?: string;
 }
 
 export interface RecordPaymentInput {

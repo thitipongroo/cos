@@ -442,6 +442,37 @@ describe('Phase 7 · AR billing lifecycle and cash flow forecast (real database)
   });
 
   // ---------------------------------------------------------------------------------------------
+  // Plan DC (product owner 2026-11-21): the payments page asks for one project's invoices; each row names its project.
+  describe('GET /procurement/vendor-invoices?project_id= (plan DC)', () => {
+    it("lists only that project's invoices, each row carrying its PO's project", async () => {
+      const mine = await newProject();
+      const other = await newProject();
+      const a = await vendorInvoice(mine);
+      const b = await vendorInvoice(mine);
+      const c = await vendorInvoice(other);
+      const res = await http()
+        .get(`/api/v1/procurement/vendor-invoices?project_id=${mine}&limit=100`)
+        .set('x-test-role', 'FINANCE');
+      expect(res.status).toBe(200);
+      const body = res.body as {
+        items: Array<{ invoice_id: string; project_id: string }>;
+        total: number;
+      };
+      expect(body.items.map((i) => i.invoice_id).sort()).toEqual([a, b].sort());
+      expect(body.items.every((i) => i.project_id === mine)).toBe(true);
+      expect(body.total).toBe(2);
+      expect(body.items.map((i) => i.invoice_id)).not.toContain(c);
+    });
+
+    it('refuses a project_id that is not a UUID — 400', async () => {
+      const res = await http()
+        .get('/api/v1/procurement/vendor-invoices?project_id=not-a-uuid')
+        .set('x-test-role', 'FINANCE');
+      expect(res.status).toBe(400);
+    });
+  });
+
+  // ---------------------------------------------------------------------------------------------
   describe('the PM approval limit (master:2965; §15; ADR-024 §4)', () => {
     it('a PM may approve at the limit', async () => {
       const billingId = await newBilling(await newProject(), '500000.0000');

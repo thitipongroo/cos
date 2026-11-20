@@ -30,7 +30,6 @@ export default function PaymentsPage() {
   const approve = useApprovePayment();
   const record = useRecordPayment();
   const projects = useProjects();
-  const invoices = useFinanceInvoices('');
   const readOnly = useReadOnly();
 
   const {
@@ -39,6 +38,7 @@ export default function PaymentsPage() {
     reset,
     setValue,
     getValues,
+    watch,
     formState: { errors, isSubmitting },
   } = useValidatedForm({
     schema: paymentRecordSchema,
@@ -53,6 +53,11 @@ export default function PaymentsPage() {
   });
 
   const messageFor = (key?: string) => (key ? t(key) : undefined);
+
+  // Only the chosen project's invoices (plan DC): none is offered until a project is chosen, so an invoice of
+  // another project cannot be picked.
+  const projectId = watch('project_id');
+  const invoices = useFinanceInvoices('', { projectId, requireProject: true });
 
   // Why the last attempt was refused (plan DB) — the project and the invoice are picked separately; changing either clears it.
   const [recordError, setRecordError] = useState<string | null>(null);
@@ -141,6 +146,8 @@ export default function PaymentsPage() {
                 onChange={(value) => {
                   setRecordError(null);
                   field.onChange(value);
+                  // The chosen invoice was the previous project's (plan DC).
+                  setValue('invoice_id', '');
                 }}
                 label={t('finance.selectProject')}
                 placeholder={t('finance.selectProject')}
@@ -160,6 +167,7 @@ export default function PaymentsPage() {
                 {...field}
                 // Not field.onChange: picking an invoice also pre-fills amount and currency.
                 onChange={onSelectInvoice}
+                disabled={!projectId}
                 label={t('finance.selectInvoice')}
                 placeholder={t('finance.selectInvoice')}
                 options={

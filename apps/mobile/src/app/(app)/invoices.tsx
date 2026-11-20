@@ -15,11 +15,12 @@
 //   · the disputed card carries the drawing's two buttons — chat history and "เปิดข้อพิพาท" — and no
 //     telemetry strip, as drawn
 //
-// THE PROJECT FILTER IS THE APP'S, NOT THE SERVER'S (D30, D37). `GET /procurement/vendor-invoices`
-// filters by `po_id` or `status` and has no project filter, so the screen fetches the ACTIVE
-// PROJECT's purchase orders (`GET /procurement/purchase-orders?project_id=`, every page, through
+// THE PROJECT FILTER IS THE APP'S, NOT THE SERVER'S (D30, D37). When this screen was written,
+// `GET /procurement/vendor-invoices` filtered by `po_id` or `status` only, so the screen fetches the
+// ACTIVE PROJECT's purchase orders (`GET /procurement/purchase-orders?project_id=`, every page, through
 // `projectPoIndex`) and keeps the invoices whose `po_id` is one of them. The chip counts stay the
-// TENANT's (D30) — a per-project count would need that missing server filter. With no project
+// TENANT's (D30). Since 2026-11-21 (plan DC) the endpoint takes `?project_id=` and each row carries it,
+// so both could move to the server; this screen has not been switched (recorded in the register). With no project
 // chosen the bar renders nothing and the list is the tenant's, as before.
 // The 2026-09-08 header said "the drawing does not have a project bar"; the Stitch drawing does.
 //

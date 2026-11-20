@@ -506,6 +506,10 @@ components:
         po_id:
           type: string
           format: uuid
+        project_id:
+          type: string
+          format: uuid
+          description: The invoice's PO's project — on the list's rows only (plan DC)
         vendor_id:
           type: string
           format: uuid
@@ -1634,12 +1638,21 @@ paths:
     get:
       tags:
         - Invoices
-      summary: List vendor invoices across the tenant (AP queue; filterable by PO/status)
+      summary: List vendor invoices across the tenant (AP queue; filterable by PO/status/project)
       operationId: listInvoices
       parameters:
         - name: po_id
           in: query
           required: false
+          schema:
+            type: string
+            format: uuid
+        - name: project_id
+          in: query
+          required: false
+          description: >-
+            The invoice's PO's project (plan DC) — the payments page lists only the chosen project's invoices. Not a
+            UUID → 400, an empty value included (omit the parameter for no filter).
           schema:
             type: string
             format: uuid
@@ -1687,6 +1700,8 @@ paths:
                     type: integer
                   limit:
                     type: integer
+        '400':
+          description: '`project_id` is not a UUID'
         '401':
           description: Unauthenticated — missing or invalid bearer token
           content:
