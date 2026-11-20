@@ -124,7 +124,7 @@ APIs (canonical prefix /api/v1/finance/*; spec §14 Financial APIs; AIP-132; see
   GET  /api/v1/finance/billing                         — list AR billings (tenant-wide; ?project_id=&status=)
   GET  /api/v1/finance/billing/:billingId              — get a single AR billing
   PATCH /api/v1/finance/billing/:billingId/approve     — approve billing DRAFT→ISSUED (§15: PM≤limit, Exec above)
-  POST /api/v1/finance/ar-receipts                     — record client payment; settles billing → PAID (§11)
+  POST /api/v1/finance/ar-receipts                     — record client payment; billing → PAID once fully received (§11; plan DF)
   GET  /api/v1/finance/cashflow-forecast/:projectId    — 13-week direct-method cash flow forecast (ADR-024)
 
 Generate:

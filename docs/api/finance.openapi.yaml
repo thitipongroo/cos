@@ -924,7 +924,11 @@ paths:
                   type: string
       responses:
         '201':
-          description: AR receipt recorded (billing → PAID)
+          description: >-
+            AR receipt recorded; the billing turns PAID when its receipts reach its amount, else stays ISSUED
+            (instalments — plan DF)
+        '400':
+          description: A field fails validation, or `amount_received` is not greater than zero (plan DF)
         '401':
           description: Unauthenticated — missing or invalid bearer token
         '404':
@@ -936,7 +940,8 @@ paths:
             The billing is not ISSUED (a plain message, no `error.code`); or `COS-FIN-422`
             (`finance.receipt.billingOtherProject`) — `project_id` is not the billing's project (plan CZ); or
             `COS-FIN-422` (`finance.receipt.customerNotContract`) — the billing's contract names another customer
-            (plan DA); nothing is written
+            (plan DA); or `COS-FIN-422` (`finance.receipt.exceedsBilling`) — with the billing's receipts it would
+            exceed its amount (plan DF); nothing is written
   /finance/cashflow-forecast/{projectId}:
     get:
       description: |

@@ -292,11 +292,11 @@ Recorded 2026-11-13 from `vendor-portal.service.ts`, where they were thrown but 
 
 ## COS-FIN — Finance
 
-Added 2026-11-21 (plans CY, CZ, DA, DB, DD, DE). Same shape as `COS-PROC-422`; the `messageKey` tells the cases apart.
-A closed project takes no new contract (contracts already made carry on; budgets and payments on a closed project stay
-allowed by design), an AR billing or receipt is its contract's or billing's project's, a receipt's customer is its
-contract's when the contract names one, and an AP payment is its invoice's PO's project's, for an APPROVED invoice, in
-its currency.
+Added 2026-11-21 (plans CY, CZ, DA, DB, DD, DE, DF). Same shape as `COS-PROC-422`; the `messageKey` tells the cases
+apart. A closed project takes no new contract (contracts already made carry on; budgets and payments on a closed
+project stay allowed by design), an AR billing or receipt is its contract's or billing's project's, a receipt's
+customer is its contract's when the contract names one, and an AP payment is its invoice's PO's project's, for an
+APPROVED invoice, in its currency.
 
 | Code        | HTTP | Message                                                                      | Trigger                                                                                                                                       |
 | ----------- | ---- | ---------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -304,6 +304,7 @@ its currency.
 | COS-FIN-422 | 422  | Contract `<id>` belongs to another project                                   | `finance.billing.contractOtherProject` — `createBilling` whose `project_id` is not the contract's (plan CZ)                                   |
 | COS-FIN-422 | 422  | Billing `<id>` belongs to another project                                    | `finance.receipt.billingOtherProject` — `recordArReceipt` whose `project_id` is not the billing's (plan CZ)                                   |
 | COS-FIN-422 | 422  | Customer `<id>` is not the contract's customer                               | `finance.receipt.customerNotContract` — `recordArReceipt` naming another customer than the billing's contract's (plan DA)                     |
+| COS-FIN-422 | 422  | Receipt of `<a>` exceeds what remains on billing `<id>` (`<r>` of `<total>`) | `finance.receipt.exceedsBilling` — `recordArReceipt` that, with the billing's receipts, would exceed its amount (plan DF)                     |
 | COS-FIN-422 | 422  | Invoice `<id>` belongs to another project                                    | `finance.payment.invoiceOtherProject` — `recordPayment` whose `project_id` is not the invoice's PO's project (plan DB)                        |
 | COS-FIN-422 | 422  | Invoice `<id>` is `<status>` — only an APPROVED invoice can be paid          | `finance.payment.invoiceNotApproved` — `recordPayment` for an invoice that is not APPROVED (plan DD)                                          |
 | COS-FIN-422 | 422  | Payment currency `<c>` is not the invoice's (`<invoice c>`)                  | `finance.payment.currencyMismatch` — `recordPayment` in another currency than the invoice's (plan DD)                                         |

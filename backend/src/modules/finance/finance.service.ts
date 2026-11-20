@@ -965,8 +965,13 @@ export class FinanceService {
 
   // ── AR Receipts (§11) ───────────────────────────────────────────────────────
 
-  /** Record a client payment; settles the parent billing (ISSUED → PAID). */
+  /** Record a client payment against an ISSUED billing; PAID once its receipts reach its amount (plan DF). */
   async recordArReceipt(dto: RecordArReceiptDto): Promise<ArReceiptRow> {
+    // Money in is greater than zero (plan DF, as AP payments in plan DE): the DTO's decimal takes a sign, and a
+    // zero or negative receipt settled the billing.
+    if (!new Decimal(dto.amount_received).greaterThan(0)) {
+      throw new BadRequestException('Receipt amount must be greater than zero');
+    }
     const billing = await this.getBilling(dto.billing_id);
     // The receipt is its billing's project's (plan CZ), checked before the status: nothing written, no event.
     if (!sameUuid(billing.project_id, dto.project_id)) {
@@ -995,27 +1000,44 @@ export class FinanceService {
         `Billing ${dto.billing_id} is ${billing.status}; a receipt can only settle an ISSUED billing`,
       );
     }
-    const receipt = await this.repo.createArReceipt({
-      project_id: dto.project_id,
-      billing_id: dto.billing_id,
-      customer_id: dto.customer_id,
-      amount_received: new Decimal(dto.amount_received).toFixed(4),
-      received_date: dto.received_date,
-      payment_method: dto.payment_method ?? null,
-      payment_reference: dto.payment_reference ?? null,
-      received_by: this.userId,
-    });
-    // Anchored to the PAID transition — the last write of the receipt — so the event cannot
-    // report a settled billing that was never settled (§35.13 ESC-13). The receipt's ids are
-    // already known here, so the builder ignores the UPDATEd row.
-    await this.repo.updateBillingStatus({ billing_id: dto.billing_id, status: 'PAID' }, () =>
-      this.outboxEvent('finance.ar_receipt.recorded.v1', {
-        ar_receipt_id: receipt.ar_receipt_id,
-        billing_id: dto.billing_id,
+    // Instalments (product owner, 2026-11-21; plan DF): the receipt, its event and — when the receipts reach the
+    // billing's amount — the PAID transition in one transaction, under the billing's row lock; never beyond the
+    // amount. The status is checked again there, as a concurrent receipt may have settled it meanwhile.
+    const notIssued = (status: string) =>
+      new UnprocessableEntityException(
+        `Billing ${dto.billing_id} is ${status}; a receipt can only settle an ISSUED billing`,
+      );
+    const amount = new Decimal(dto.amount_received).toFixed(4);
+    const result = await this.repo.recordArReceipt(
+      {
         project_id: dto.project_id,
-        amount_received: receipt.amount_received,
-      }),
+        billing_id: dto.billing_id,
+        customer_id: dto.customer_id,
+        amount_received: amount,
+        received_date: dto.received_date,
+        payment_method: dto.payment_method ?? null,
+        payment_reference: dto.payment_reference ?? null,
+        received_by: this.userId,
+      },
+      (row, billingStatus) =>
+        this.outboxEvent('finance.ar_receipt.recorded.v1', {
+          ar_receipt_id: row.ar_receipt_id,
+          billing_id: dto.billing_id,
+          project_id: dto.project_id,
+          amount_received: row.amount_received,
+          billing_status: billingStatus,
+        }),
     );
+    if ('notFound' in result) throw new NotFoundException(`Billing ${dto.billing_id} not found`);
+    if ('notIssued' in result) throw notIssued(result.notIssued);
+    if ('exceeds' in result) {
+      throw this.refuse(
+        `Receipt of ${amount} exceeds what remains on billing ${dto.billing_id} ` +
+          `(${result.remaining} of ${new Decimal(result.total).toFixed(4)})`,
+        'finance.receipt.exceedsBilling',
+      );
+    }
+    const receipt = result.receipt;
     logger.info(
       {
         ar_receipt_id: receipt.ar_receipt_id,

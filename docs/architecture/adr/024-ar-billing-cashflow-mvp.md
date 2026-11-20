@@ -58,7 +58,9 @@ admin UI — mirroring the existing procurement approval thresholds.
 - AR Client Billing, AR Receipts, Contracts, Customers, and the Cash Flow Forecast are live MVP
   endpoints under `/api/v1/finance/*`. §14, the finance OpenAPI, and master Phase 7 are updated.
 - Billing lifecycle: `DRAFT → ISSUED` (approval, emits `finance.billing.approved.v1`) → `PAID`
-  (on AR receipt, emits `finance.ar_receipt.recorded.v1`).
+  (on AR receipt, emits `finance.ar_receipt.recorded.v1`). Amended 2026-11-21 (plan DF): receipts may come in
+  instalments — one event per receipt, carrying `billing_status`; the billing turns `PAID` when they reach its
+  amount, and a receipt beyond it is refused.
 - Placing customers/contracts in `finance` is a pragmatic MVP choice; a future dedicated `crm`
   schema (with the Lead → Opportunity pipeline) can migrate these tables and back-fill
   `opportunity_id`.

@@ -580,6 +580,86 @@ describe('Phase 7 · AR billing lifecycle and cash flow forecast (real database)
   });
 
   // ---------------------------------------------------------------------------------------------
+  // Plan DF (product owner 2026-11-21): receipts in instalments; the billing PAID only when fully received.
+  describe('AR receipts in instalments (plan DF)', () => {
+    const issued = async (amount: string): Promise<{ projectId: string; billingId: string }> => {
+      const projectId = await newProject();
+      const billingId = await newBilling(projectId, amount);
+      await approve(billingId, 'PM', 'PROJECT_MANAGER');
+      return { projectId, billingId };
+    };
+    const receive = (projectId: string, billingId: string, amount: string) =>
+      http()
+        .post('/api/v1/finance/ar-receipts')
+        .set('x-test-role', 'FINANCE')
+        .send({
+          project_id: projectId,
+          billing_id: billingId,
+          customer_id: customerId,
+          amount_received: amount,
+          received_date: isoDaysFromNow(0),
+          payment_method: 'BANK_TRANSFER',
+        });
+    const receipts = async (billingId: string): Promise<number> => {
+      const rows = await infra.prisma.$queryRawUnsafe<Array<{ n: bigint }>>(
+        `SELECT count(*) AS n FROM finance.ar_receipts WHERE billing_id = $1::uuid`,
+        billingId,
+      );
+      return Number(rows[0]!.n);
+    };
+
+    it('400 then 600 of 1,000: ISSUED after the first, PAID after the second; nothing more after', async () => {
+      const { projectId, billingId } = await issued('1000.0000');
+      expect([200, 201]).toContain((await receive(projectId, billingId, '400.0000')).status);
+      expect(await billingStatus(billingId)).toBe('ISSUED');
+      expect([200, 201]).toContain((await receive(projectId, billingId, '600.0000')).status);
+      expect(await billingStatus(billingId)).toBe('PAID');
+      expect((await receive(projectId, billingId, '0.0100')).status).toBe(422); // no longer ISSUED
+      expect(await receipts(billingId)).toBe(2);
+    });
+
+    it('more than remains: 422 COS-FIN-422, no receipt, still ISSUED', async () => {
+      const { projectId, billingId } = await issued('1000.0000');
+      const res = await receive(projectId, billingId, '1200.0000');
+      expect(res.status).toBe(422);
+      expect(res.body).toMatchObject({
+        error: {
+          code: 'COS-FIN-422',
+          message: `Receipt of 1200.0000 exceeds what remains on billing ${billingId} (1000.0000 of 1000.0000)`,
+          messageKey: 'finance.receipt.exceedsBilling',
+        },
+      });
+      expect(await receipts(billingId)).toBe(0);
+      expect(await billingStatus(billingId)).toBe('ISSUED');
+    });
+
+    it.each(['0.0000', '-1.0000'])(
+      'an amount of %s: 400, no receipt, still ISSUED',
+      async (amount) => {
+        const { projectId, billingId } = await issued('1000.0000');
+        expect((await receive(projectId, billingId, amount)).status).toBe(400);
+        expect(await receipts(billingId)).toBe(0);
+        expect(await billingStatus(billingId)).toBe('ISSUED');
+      },
+    );
+
+    it('two receipts sent together cannot both pass: one written, one 422', async () => {
+      const { projectId, billingId } = await issued('1000.0000');
+      const statuses = (
+        await Promise.all([
+          receive(projectId, billingId, '600.0000'),
+          receive(projectId, billingId, '600.0000'),
+        ])
+      )
+        .map((r) => r.status)
+        .sort();
+      expect(statuses).toEqual([201, 422]);
+      expect(await receipts(billingId)).toBe(1);
+      expect(await billingStatus(billingId)).toBe('ISSUED');
+    });
+  });
+
+  // ---------------------------------------------------------------------------------------------
   describe('the PM approval limit (master:2965; §15; ADR-024 §4)', () => {
     it('a PM may approve at the limit', async () => {
       const billingId = await newBilling(await newProject(), '500000.0000');

@@ -1602,6 +1602,35 @@ gate's isolated run) checks the hash was not tested either; it ran 12.18.0 with 
 
 ## Open
 
+- **Closed — any AR receipt, even 0.01 or negative, settled its billing.** Fixed in plan DF (on the current branch;
+  product-owner decisions 2026-11-21: receipts in instalments, the billing PAID only when they reach its amount; a
+  receipt beyond what remains → 422; zero or less → 400; no new billing status). Closes the item parked by plan CZ.
+  Measured on HEAD (`test/finance/03`): a 400 receipt on a 1,000 billing set it PAID; 1,200, 0 and −1 → 201; and the
+  receipt and the PAID transition were two transactions.
+  - New `FinanceRepository.recordArReceipt` — one transaction: the billing row `FOR UPDATE`; still ISSUED; then, in
+    a statement of its own, the sum of its receipts (a sum read in the locking statement uses a snapshot taken
+    before the lock was granted — the concurrent test caught exactly that: both 600s were written); over the amount
+    → nothing written; else the receipt, its `finance.ar_receipt.recorded.v1` event (one per receipt; the payload
+    gains `billing_status`), and PAID when the amount is reached. It replaces `createArReceipt` and the separate
+    `updateBillingStatus(PAID)` call (which still serves `approveBilling`).
+  - `recordArReceipt` (service): amount ≤ 0 → 400 `Receipt amount must be greater than zero`; the plan CZ / DA
+    checks; the repository's answers → the existing not-ISSUED 422 (also when settled meanwhile) or 422
+    `COS-FIN-422`, `finance.receipt.exceedsBilling` ("Receipt of `<a>` exceeds what remains on billing `<id>`
+    (`<r>` of `<total>`)").
+  - Docs: `finance.openapi.yaml` (201 text, 400, 422), `error-codes.md` row.
+  - Verified: finance unit (353: the lock, the sum's own statement, no write over, PAID only at the amount, the
+    event per receipt; the service's 400 and 422s), `test/finance/03` (48, three runs: 400 + 600 → ISSUED then PAID,
+    then 0.01 refused; 1,200 → 422 still ISSUED; 0 and −1 → 400; two concurrent 600s → one 201, one 422). HEAD's
+    service fails five of them.
+  - The event: `billing_status` added to its Avro schema (optional, default null — the producer encodes against the
+    schema and would drop an undeclared field; found by /doubt) and TS type; its description, the ADR-024 lifecycle
+    note, §14, the phase-07 context and test design, the escalation register and the code comments now say one
+    event per receipt, PAID at the amount.
+  - Not covered: the cash-flow forecast (`findUnpaidBillingsDue`) and the cash-flow risk query
+    (`cashflow-risk.service.ts`) still count a part-received ISSUED billing at its full amount; the 201 returns the
+    receipt only (not whether the billing is now PAID); the concurrent test shows the cap holds under two requests
+    sent together but cannot force them to overlap (it did catch the snapshot bug once); receipts recorded before
+    this change are not re-checked.
 - **Closed — an AP invoice could be paid beyond its amount.** Fixed in plan DE (on the current branch;
   product-owner decisions 2026-11-21: the invoice's PENDING and PROCESSED payments, with the new one, never exceed
   its amount — FAILED does not count; the invoice's status is not changed when fully paid). Closes the item plan DD

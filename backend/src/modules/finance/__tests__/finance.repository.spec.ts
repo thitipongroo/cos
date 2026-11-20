@@ -629,32 +629,84 @@ describe('FinanceRepository', () => {
     expect(await repo.approvePayment('pay-x')).toBeNull();
   });
 
-  it('createArReceipt with optional fields provided', async () => {
-    mockPrisma.$queryRaw.mockResolvedValue([arReceiptRow]);
-    const r = await repo.createArReceipt({
+  // Plan DF: one transaction — the billing locked, still ISSUED, never beyond its amount; PAID when reached.
+  describe('recordArReceipt (plan DF)', () => {
+    const params = {
       project_id: 'proj-uuid-001',
       billing_id: 'bill-1',
       customer_id: 'cust-1',
-      amount_received: '50000.0000',
+      amount_received: '600.0000',
       received_date: '2026-07-14',
       payment_method: 'transfer',
       payment_reference: 'TXN-1',
       received_by: 'user-1',
-    });
-    expect(r.ar_receipt_id).toBe('rcpt-1');
-  });
+    };
+    const build = jest.fn(() => ({ event_type: 'finance.ar_receipt.recorded.v1' }) as never);
+    const sqlOf = (i: number) =>
+      (mockPrisma.$queryRaw.mock.calls[i]![0] as string[]).join('?').replace(/\s+/g, ' ');
+    beforeEach(() => build.mockClear());
 
-  it('createArReceipt with optionals omitted (null branch)', async () => {
-    mockPrisma.$queryRaw.mockResolvedValue([arReceiptRow]);
-    const r = await repo.createArReceipt({
-      project_id: 'proj-uuid-001',
-      billing_id: 'bill-1',
-      customer_id: 'cust-1',
-      amount_received: '50000.0000',
-      received_date: '2026-07-14',
-      received_by: 'user-1',
+    it('locks the billing, writes the receipt and its event, and stays ISSUED when short of the amount', async () => {
+      mockPrisma.$queryRaw
+        .mockResolvedValueOnce([{ status: 'ISSUED', amount: '1000.0000' }])
+        .mockResolvedValueOnce([{ received: '0.0000' }])
+        .mockResolvedValueOnce([{ over: false, full: false, remaining: '1000.0000' }])
+        .mockResolvedValueOnce([arReceiptRow]);
+      const r = await repo.recordArReceipt(params, build);
+      expect(r).toEqual({ receipt: arReceiptRow, billingStatus: 'ISSUED' });
+      expect(sqlOf(0)).toContain('FOR UPDATE OF b');
+      expect(sqlOf(0)).toContain('AND b.tenant_id = ?::uuid');
+      // The sum in its own statement after the lock (a fresh snapshot), not inside the locking one.
+      expect(sqlOf(0)).not.toContain('SUM(');
+      expect(sqlOf(1)).toContain('SUM(amount_received)');
+      const updates = mockPrisma.$executeRaw.mock.calls.filter((c) =>
+        (c[0] as string[]).join('?').includes('UPDATE finance.billings'),
+      );
+      expect(updates).toHaveLength(0); // not PAID yet (the other call is the outbox event)
+      expect(build).toHaveBeenCalledWith(arReceiptRow, 'ISSUED');
     });
-    expect(r.ar_receipt_id).toBe('rcpt-1');
+
+    it('sets the billing PAID when the receipts reach its amount', async () => {
+      mockPrisma.$executeRaw.mockResolvedValue(1);
+      mockPrisma.$queryRaw
+        .mockResolvedValueOnce([{ status: 'ISSUED', amount: '1000.0000' }])
+        .mockResolvedValueOnce([{ received: '400.0000' }])
+        .mockResolvedValueOnce([{ over: false, full: true, remaining: '600.0000' }])
+        .mockResolvedValueOnce([arReceiptRow]);
+      expect(await repo.recordArReceipt(params, build)).toEqual({
+        receipt: arReceiptRow,
+        billingStatus: 'PAID',
+      });
+      const update = mockPrisma.$executeRaw.mock.calls
+        .map((c) => (c[0] as string[]).join('?'))
+        .find((q) => q.includes('UPDATE finance.billings'));
+      expect(update).toContain(`SET status = 'PAID'`);
+      expect(build).toHaveBeenCalledWith(arReceiptRow, 'PAID');
+    });
+
+    it('beyond the amount: what remains, nothing written', async () => {
+      mockPrisma.$queryRaw
+        .mockResolvedValueOnce([{ status: 'ISSUED', amount: '1000.0000' }])
+        .mockResolvedValueOnce([{ received: '700.0000' }])
+        .mockResolvedValueOnce([{ over: true, full: false, remaining: '300.0000' }]);
+      expect(await repo.recordArReceipt(params, build)).toEqual({
+        exceeds: true,
+        remaining: '300.0000',
+        total: '1000.0000',
+      });
+      expect(mockPrisma.$queryRaw).toHaveBeenCalledTimes(3);
+      expect(build).not.toHaveBeenCalled();
+    });
+
+    it('not ISSUED (settled meanwhile) or absent: nothing written', async () => {
+      mockPrisma.$queryRaw.mockResolvedValueOnce([{ status: 'PAID', amount: '1000.0000' }]);
+      expect(await repo.recordArReceipt({ ...params, payment_method: null }, build)).toEqual({
+        notIssued: 'PAID',
+      });
+      mockPrisma.$queryRaw.mockResolvedValueOnce([]);
+      expect(await repo.recordArReceipt(params, build)).toEqual({ notFound: true });
+      expect(build).not.toHaveBeenCalled();
+    });
   });
 
   it('findUnpaidBillingsDue returns dated amounts', async () => {

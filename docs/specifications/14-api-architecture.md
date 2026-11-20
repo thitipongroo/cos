@@ -566,7 +566,7 @@ the same nested form.
 | `GET`   | `/api/v1/finance/billing`                        | List client billings (tenant-wide)                                  | FINANCE, PM, EXEC, PROC, ADMIN |
 | `GET`   | `/api/v1/finance/billing/{billing_id}`           | Get a client billing                                                | FINANCE, PM, EXEC, PROC, ADMIN |
 | `PATCH` | `/api/v1/finance/billing/{billing_id}/approve`   | Approve billing (DRAFT → ISSUED, §15)                               | PM, EXEC, ADMIN                |
-| `POST`  | `/api/v1/finance/ar-receipts`                    | Record client payment (billing → PAID)                              | FINANCE, ADMIN                 |
+| `POST`  | `/api/v1/finance/ar-receipts`                    | Record client payment (billing PAID once fully received)            | FINANCE, ADMIN                 |
 | `GET`   | `/api/v1/finance/cashflow-forecast/{project_id}` | 13-week direct-method cash forecast                                 | FINANCE, PM, EXEC, ADMIN       |
 
 ---

@@ -358,7 +358,7 @@ export class FinanceController {
 
   // ── AR Receipts (§11) ───────────────────────────────────────────────────────
 
-  // POST /api/v1/finance/ar-receipts  (record client payment → billing PAID)
+  // POST /api/v1/finance/ar-receipts  (record client payment; billing PAID once fully received — plan DF)
   @Post('finance/ar-receipts')
   @Roles(CosRole.FINANCE, CosRole.TENANT_ADMIN)
   @ApiOperation({ summary: 'Record a client payment (AR receipt) against an ISSUED billing' })

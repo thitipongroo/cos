@@ -854,7 +854,7 @@ export class FinanceRepository {
     return { rows, total: Number(countRows[0]?.count ?? 0) };
   }
 
-  /** DRAFT → ISSUED (approval, §15) or ISSUED → PAID (AR receipt recorded). */
+  /** DRAFT → ISSUED (approval, §15). An AR receipt's ISSUED → PAID is `recordArReceipt`'s, in its transaction (plan DF). */
   async updateBillingStatus(
     params: {
       billing_id: string;
@@ -872,8 +872,7 @@ export class FinanceRepository {
         WHERE billing_id = ${params.billing_id}::uuid AND tenant_id = ${this.tenantId}::uuid
         RETURNING *
       `;
-      // §35.13 ESC-13 — approveBilling derives its payload from the UPDATEd row; recordArReceipt
-      // passes a constant builder because its ids are already known.
+      // §35.13 ESC-13 — approveBilling derives its payload from the UPDATEd row.
       if (buildOutboxEvent && updated[0]) {
         await OutboxPublisher.write(tx, buildOutboxEvent(updated[0]));
       }
@@ -884,19 +883,56 @@ export class FinanceRepository {
 
   // ── ar_receipts (§11) ───────────────────────────────────────────────────────
 
-  async createArReceipt(params: {
-    project_id: string;
-    billing_id: string;
-    customer_id: string;
-    amount_received: string;
-    received_date: string;
-    payment_method?: string | null;
-    payment_reference?: string | null;
-    received_by: string;
-  }): Promise<ArReceiptRow> {
-    const rows = await this.db.run(
-      (tx) =>
-        tx.$queryRaw<ArReceiptRow[]>`
+  /**
+   * Record an AR receipt against its billing (plan DF), in one transaction: the billing row locked (`FOR UPDATE`),
+   * still ISSUED, its receipts with this one not beyond its amount; then the receipt, its event, and — when the
+   * receipts reach the amount — the billing PAID. Several receipts may settle one billing (instalments). Answers
+   * why nothing was written instead of throwing, so the service words the refusal.
+   */
+  async recordArReceipt(
+    params: {
+      project_id: string;
+      billing_id: string;
+      customer_id: string;
+      amount_received: string;
+      received_date: string;
+      payment_method?: string | null;
+      payment_reference?: string | null;
+      received_by: string;
+    },
+    buildOutboxEvent: (receipt: ArReceiptRow, billingStatus: 'ISSUED' | 'PAID') => OutboxEventInput,
+  ): Promise<
+    | { receipt: ArReceiptRow; billingStatus: 'ISSUED' | 'PAID' }
+    | { notIssued: string }
+    | { exceeds: true; remaining: string; total: string }
+    | { notFound: true }
+  > {
+    return this.db.run(async (tx) => {
+      // The lock first, the sum after it in a statement of its own: under READ COMMITTED a statement's snapshot is
+      // taken before it waits for a row lock, so a sum read in the locking statement would miss the receipt a
+      // concurrent request committed while this one waited (caught by the integration test).
+      const [billing] = await tx.$queryRaw<Array<{ status: string; amount: string }>>`
+        SELECT b.status::text AS status, b.amount::text AS amount
+        FROM finance.billings b
+        WHERE b.billing_id = ${params.billing_id}::uuid AND b.tenant_id = ${this.tenantId}::uuid
+        FOR UPDATE OF b`;
+      if (!billing) return { notFound: true as const };
+      if (billing.status !== 'ISSUED') return { notIssued: billing.status };
+      const sums = await tx.$queryRaw<Array<{ received: string }>>`
+        SELECT COALESCE(SUM(amount_received), 0)::decimal(19,4)::text AS received
+        FROM finance.ar_receipts
+        WHERE billing_id = ${params.billing_id}::uuid AND tenant_id = ${this.tenantId}::uuid`;
+      const received = sums[0]?.received ?? '0';
+      const [check] = await tx.$queryRaw<
+        Array<{ over: boolean; full: boolean; remaining: string }>
+      >`
+        SELECT ${received}::decimal + ${params.amount_received}::decimal > ${billing.amount}::decimal AS over,
+               ${received}::decimal + ${params.amount_received}::decimal = ${billing.amount}::decimal AS full,
+               GREATEST(${billing.amount}::decimal - ${received}::decimal, 0)::decimal(19,4)::text AS remaining`;
+      if (check!.over) {
+        return { exceeds: true as const, remaining: check!.remaining, total: billing.amount };
+      }
+      const [receipt] = await tx.$queryRaw<ArReceiptRow[]>`
         INSERT INTO finance.ar_receipts
           (tenant_id, project_id, billing_id, customer_id, amount_received,
            received_date, payment_method, payment_reference, received_by)
@@ -906,9 +942,17 @@ export class FinanceRepository {
            ${params.received_date}::date, ${params.payment_method ?? null},
            ${params.payment_reference ?? null}, ${params.received_by}::uuid)
         RETURNING *
-      `,
-    );
-    return rows[0]!;
+      `;
+      const billingStatus = check!.full ? ('PAID' as const) : ('ISSUED' as const);
+      if (billingStatus === 'PAID') {
+        await tx.$executeRaw`
+          UPDATE finance.billings SET status = 'PAID'::finance."BillingStatus"
+          WHERE billing_id = ${params.billing_id}::uuid AND tenant_id = ${this.tenantId}::uuid`;
+      }
+      // §35.13 ESC-13 — one event per receipt, in the receipt's transaction.
+      await OutboxPublisher.write(tx, buildOutboxEvent(receipt!, billingStatus));
+      return { receipt: receipt!, billingStatus };
+    });
   }
 
   // ── cash flow forecast sources (direct method) ──────────────────────────────

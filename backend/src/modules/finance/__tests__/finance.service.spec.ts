@@ -80,7 +80,7 @@ const mockRepo = {
   findBillingById: jest.fn(),
   listBillings: jest.fn(),
   updateBillingStatus: jest.fn(),
-  createArReceipt: jest.fn(),
+  recordArReceipt: jest.fn(),
   findUnpaidBillingsDue: jest.fn(),
   findPendingPaymentsDue: jest.fn(),
 };
@@ -1584,11 +1584,13 @@ describe('AR billing — customers, contracts, invoices and payments', () => {
 
     it('recordArReceipt settles an ISSUED billing → PAID', async () => {
       mockRepo.findBillingById.mockResolvedValue({ ...draftBilling, status: 'ISSUED' });
-      mockRepo.createArReceipt.mockResolvedValue({
-        ar_receipt_id: 'rcpt-1',
-        amount_received: '100000.0000',
+      mockRepo.recordArReceipt.mockResolvedValue({
+        receipt: {
+          ar_receipt_id: 'rcpt-1',
+          amount_received: '100000.0000',
+        },
+        billingStatus: 'PAID',
       });
-      mockRepo.updateBillingStatus.mockResolvedValue({ ...draftBilling, status: 'PAID' });
       const r = await service.recordArReceipt({
         project_id: 'proj-uuid-001',
         billing_id: 'bill-1',
@@ -1597,17 +1599,26 @@ describe('AR billing — customers, contracts, invoices and payments', () => {
         received_date: '2026-07-14',
       });
       expect(r.ar_receipt_id).toBe('rcpt-1');
-      expect(mockRepo.updateBillingStatus).toHaveBeenCalledWith(
-        { billing_id: 'bill-1', status: 'PAID' },
+      // Plan DF: the receipt, its event and the PAID transition are the repository's one transaction.
+      expect(mockRepo.recordArReceipt).toHaveBeenCalledWith(
+        expect.objectContaining({ billing_id: 'bill-1', amount_received: '100000.0000' }),
         expect.any(Function),
       );
-      // The receipt event is anchored to the PAID transition, not to the receipt INSERT.
-      expect(outboxArg(mockRepo.updateBillingStatus, 1)).toEqual(
+      const build = mockRepo.recordArReceipt.mock.calls[0]![1] as (
+        row: { ar_receipt_id: string; amount_received: string },
+        status: string,
+      ) => unknown;
+      expect(build({ ar_receipt_id: 'rcpt-1', amount_received: '100000.0000' }, 'PAID')).toEqual(
         expect.objectContaining({
           event_type: 'finance.ar_receipt.recorded.v1',
-          payload: expect.objectContaining({ ar_receipt_id: 'rcpt-1', billing_id: 'bill-1' }),
+          payload: expect.objectContaining({
+            ar_receipt_id: 'rcpt-1',
+            billing_id: 'bill-1',
+            billing_status: 'PAID',
+          }),
         }),
       );
+      expect(mockRepo.updateBillingStatus).not.toHaveBeenCalled();
     });
 
     it('recordArReceipt throws when billing not ISSUED', async () => {
@@ -1646,7 +1657,10 @@ describe('AR billing — customers, contracts, invoices and payments', () => {
         });
         mockRepo.findBillingById.mockResolvedValue({ ...draftBilling, status: 'ISSUED' });
         mockRepo.createBilling.mockResolvedValue(draftBilling);
-        mockRepo.createArReceipt.mockResolvedValue({ ar_receipt_id: 'rcpt-1' });
+        mockRepo.recordArReceipt.mockResolvedValue({
+          receipt: { ar_receipt_id: 'rcpt-1' },
+          billingStatus: 'PAID',
+        });
         mockRepo.updateBillingStatus.mockResolvedValue({ ...draftBilling, status: 'PAID' });
       });
 
@@ -1680,7 +1694,7 @@ describe('AR billing — customers, contracts, invoices and payments', () => {
             },
           },
         });
-        expect(mockRepo.createArReceipt).not.toHaveBeenCalled();
+        expect(mockRepo.recordArReceipt).not.toHaveBeenCalled();
         expect(mockRepo.updateBillingStatus).not.toHaveBeenCalled();
       });
 
@@ -1698,7 +1712,7 @@ describe('AR billing — customers, contracts, invoices and payments', () => {
         await service.createBilling(billingDto('PROJ-UUID-001'));
         expect(mockRepo.createBilling).toHaveBeenCalled();
         await service.recordArReceipt(receiptDto('PROJ-UUID-001'));
-        expect(mockRepo.createArReceipt).toHaveBeenCalled();
+        expect(mockRepo.recordArReceipt).toHaveBeenCalled();
       });
     });
   });
@@ -1723,11 +1737,14 @@ describe('AR billing — customers, contracts, invoices and payments', () => {
       mockRepo.findBillingById.mockResolvedValue(issued);
       mockRepo.findCustomerById.mockResolvedValue({ customer_id: 'cust-1' });
       mockRepo.findContractById.mockResolvedValue({ contract_id: 'con-1', customer_id: 'cust-1' });
-      mockRepo.createArReceipt.mockResolvedValue({ ar_receipt_id: 'rcpt-1' });
+      mockRepo.recordArReceipt.mockResolvedValue({
+        receipt: { ar_receipt_id: 'rcpt-1' },
+        billingStatus: 'PAID',
+      });
       mockRepo.updateBillingStatus.mockResolvedValue({ ...issued, status: 'PAID' });
     });
     const nothingWritten = () => {
-      expect(mockRepo.createArReceipt).not.toHaveBeenCalled();
+      expect(mockRepo.recordArReceipt).not.toHaveBeenCalled();
       expect(mockRepo.updateBillingStatus).not.toHaveBeenCalled();
     };
 
@@ -1758,12 +1775,81 @@ describe('AR billing — customers, contracts, invoices and payments', () => {
     it("a contract with no customer takes any of the tenant's customers", async () => {
       mockRepo.findContractById.mockResolvedValue({ contract_id: 'con-1', customer_id: null });
       await service.recordArReceipt(dto('cust-9'));
-      expect(mockRepo.createArReceipt).toHaveBeenCalled();
+      expect(mockRepo.recordArReceipt).toHaveBeenCalled();
     });
 
     it("the contract's own customer is written, compared without regard to letter case", async () => {
       await service.recordArReceipt(dto('CUST-1'));
-      expect(mockRepo.createArReceipt).toHaveBeenCalled();
+      expect(mockRepo.recordArReceipt).toHaveBeenCalled();
+    });
+  });
+
+  // Plan DF (product owner 2026-11-21): receipts in instalments; never beyond the billing; greater than zero.
+  describe('AR receipt — instalments (plan DF)', () => {
+    const dto = (amount_received: string) => ({
+      project_id: 'proj-uuid-001',
+      billing_id: 'bill-1',
+      customer_id: 'cust-1',
+      amount_received,
+      received_date: '2026-07-14',
+    });
+    beforeEach(() => {
+      mockRepo.findBillingById.mockResolvedValue({
+        billing_id: 'bill-1',
+        project_id: 'proj-uuid-001',
+        contract_id: 'con-1',
+        amount: '1000.0000',
+        status: 'ISSUED',
+      });
+      mockRepo.findCustomerById.mockResolvedValue({ customer_id: 'cust-1' });
+      mockRepo.findContractById.mockResolvedValue({ contract_id: 'con-1', customer_id: 'cust-1' });
+    });
+
+    it.each(['0', '-1.0000'])(
+      '400 for an amount of %s, nothing read or written',
+      async (amount) => {
+        await expect(service.recordArReceipt(dto(amount))).rejects.toThrow(
+          new BadRequestException('Receipt amount must be greater than zero'),
+        );
+        expect(mockRepo.findBillingById).not.toHaveBeenCalled();
+        expect(mockRepo.recordArReceipt).not.toHaveBeenCalled();
+      },
+    );
+
+    it('422 COS-FIN-422 with what remains when beyond the billing', async () => {
+      mockRepo.recordArReceipt.mockResolvedValue({
+        exceeds: true,
+        remaining: '600.0000',
+        total: '1000.0000',
+      });
+      const err = await service.recordArReceipt(dto('700')).catch((e: unknown) => e);
+      expect(err).toMatchObject({
+        response: {
+          error: {
+            code: 'COS-FIN-422',
+            message:
+              'Receipt of 700.0000 exceeds what remains on billing bill-1 (600.0000 of 1000.0000)',
+            messageKey: 'finance.receipt.exceedsBilling',
+          },
+        },
+      });
+    });
+
+    it('the status checked again under the lock: settled meanwhile → the not-ISSUED 422', async () => {
+      mockRepo.recordArReceipt.mockResolvedValue({ notIssued: 'PAID' });
+      await expect(service.recordArReceipt(dto('100'))).rejects.toThrow(
+        new UnprocessableEntityException(
+          'Billing bill-1 is PAID; a receipt can only settle an ISSUED billing',
+        ),
+      );
+    });
+
+    it('a part-receipt is written and the billing stays ISSUED', async () => {
+      mockRepo.recordArReceipt.mockResolvedValue({
+        receipt: { ar_receipt_id: 'rcpt-2', amount_received: '400.0000' },
+        billingStatus: 'ISSUED',
+      });
+      expect((await service.recordArReceipt(dto('400'))).ar_receipt_id).toBe('rcpt-2');
     });
   });
 
