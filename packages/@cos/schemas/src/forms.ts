@@ -159,7 +159,15 @@ export const rfqCreateSchema = z.object({
   // These schemas validate what the *form* holds, not what is POSTed. The RFQ page collects the
   // deadline with an <input type="datetime-local"> and converts it with `new Date(...).toISOString()`
   // on submit, so the value reaching validation is `YYYY-MM-DDTHH:mm`, not a full ISO timestamp.
-  deadline: isoDateTimeLocal,
+  // It must also be in the future (plan CW): the server refuses a deadline at or before now (plan CT), and the form
+  // says so at the field. Read as local time, as the page converts it. A value the shape check already refuses is
+  // left to that message.
+  deadline: isoDateTimeLocal.check(
+    z.refine((v) => {
+      const at = new Date(v).getTime();
+      return !Number.isFinite(at) || at > Date.now();
+    }, 'validation.notInFuture'),
+  ),
 });
 
 /**

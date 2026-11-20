@@ -57,6 +57,22 @@ describe('apiFetch — error envelope', () => {
     expect(err.status).toBe(409);
     expect(err.code).toBe('COS-PLAN-002');
     expect(err.details).toEqual({ target_plan: 'LITE', limit: 1, active_projects: 2 });
+    expect(err.messageKey).toBeUndefined();
+  });
+
+  // Plan CW: the case's i18n key, so a screen can say why in the user's language.
+  it('carries the messageKey when the body has one, and only a string', async () => {
+    mockFetch({
+      ok: false,
+      status: 422,
+      jsonBody: { error: { code: 'COS-PROC-422', messageKey: 'procurement.project.closed' } },
+    });
+    const err = (await apiFetch('/procurement/rfqs', 'tok').catch((e: unknown) => e)) as ApiError;
+    expect(err.messageKey).toBe('procurement.project.closed');
+
+    mockFetch({ ok: false, status: 422, jsonBody: { error: { code: 'X', messageKey: 7 } } });
+    const odd = (await apiFetch('/x', 'tok').catch((e: unknown) => e)) as ApiError;
+    expect(odd.messageKey).toBeUndefined();
   });
 
   it.each([

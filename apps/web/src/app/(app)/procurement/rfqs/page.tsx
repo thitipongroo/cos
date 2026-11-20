@@ -19,6 +19,7 @@ import type { RfqRow } from '../../../../lib/api/types';
 import { formatDate } from '../../../../lib/format';
 import { useReadOnly } from '../../../../lib/auth/useReadOnly';
 import { useValidatedForm } from '../../../../lib/forms';
+import { rfqActionErrorKey, type RfqAction } from '../../../../lib/procurementErrors';
 
 const STATUSES = ['DRAFT', 'PUBLISHED', 'CLOSED', 'EVALUATED', 'AWARDED', 'CANCELLED'];
 
@@ -47,15 +48,37 @@ export default function RfqsPage() {
 
   const messageFor = (key?: string) => (key ? t(key) : undefined);
 
-  const submitCreate = handleSubmit(async (values) => {
-    await create.mutateAsync({
-      project_id: values.project_id,
-      rfq_number: values.rfq_number,
-      // The field holds a local datetime; the API takes an absolute instant.
-      deadline: new Date(values.deadline).toISOString(),
-    });
-    reset({ project_id: getValues('project_id'), rfq_number: '', deadline: '' });
-  });
+  // The last refused action's reason (plan CW): one line, cleared when another action starts.
+  const [actionError, setActionError] = useState<string | null>(null);
+  const run =
+    (action: RfqAction, mutate: (rfqId: string, opts: { onError: (e: unknown) => void }) => void) =>
+    (rfqId: string) => {
+      setActionError(null);
+      mutate(rfqId, { onError: (e) => setActionError(rfqActionErrorKey(action, e)) });
+    };
+  const doPublish = run('publish', publish.mutate);
+  const doClose = run('close', close.mutate);
+  const doCancel = run('cancel', cancel.mutate);
+
+  const submitCreate = handleSubmit(
+    async (values) => {
+      setActionError(null);
+      try {
+        await create.mutateAsync({
+          project_id: values.project_id,
+          rfq_number: values.rfq_number,
+          // The field holds a local datetime; the API takes an absolute instant.
+          deadline: new Date(values.deadline).toISOString(),
+        });
+      } catch (e) {
+        // Shown, not left unhandled; the form keeps what was typed so it can be corrected.
+        setActionError(rfqActionErrorKey('create', e));
+        return;
+      }
+      reset({ project_id: getValues('project_id'), rfq_number: '', deadline: '' });
+    },
+    () => setActionError(null),
+  ); // a new attempt the form refuses itself drops the old server line
 
   const columns: Column<RfqRow>[] = [
     { headerKey: 'pm.colNumber', cell: (r) => r.rfq_number },
@@ -70,7 +93,7 @@ export default function RfqsPage() {
             <ActionBtn
               label={t('proc.publish')}
               disabled={busy}
-              onClick={() => publish.mutate(r.rfq_id)}
+              onClick={() => doPublish(r.rfq_id)}
             />
           );
         }
@@ -80,13 +103,13 @@ export default function RfqsPage() {
               <ActionBtn
                 label={t('proc.close')}
                 disabled={busy}
-                onClick={() => close.mutate(r.rfq_id)}
+                onClick={() => doClose(r.rfq_id)}
               />
               <ActionBtn
                 label={t('proc.cancel')}
                 danger
                 disabled={busy}
-                onClick={() => cancel.mutate(r.rfq_id)}
+                onClick={() => doCancel(r.rfq_id)}
               />
             </span>
           );
@@ -99,6 +122,12 @@ export default function RfqsPage() {
   return (
     <div>
       <h1 className="mb-6 text-2xl font-bold text-gray-800">{t('proc.rfqsTitle')}</h1>
+
+      {actionError && (
+        <p role="alert" className="mb-4 text-sm text-red-700">
+          {t(actionError)}
+        </p>
+      )}
 
       {!readOnly && (
         <form onSubmit={submitCreate} noValidate className="mb-4 flex flex-wrap items-start gap-2">

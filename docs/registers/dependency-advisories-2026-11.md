@@ -1602,6 +1602,33 @@ gate's isolated run) checks the hash was not tested either; it ran 12.18.0 with 
 
 ## Open
 
+- **Closed — the web RFQ and quotation pages showed nothing when the server refused.** Fixed in plan CW (on the
+  current branch; product-owner decisions 2026-11-20: a TH/EN line for the case, else a generic one, never the
+  server's English text; the RFQ form checks the deadline is in the future; every action on the two pages). Closes
+  the RFQ and quotation pages' part of the web notes left by plans CR, CS and CT below (the purchase request page is
+  not covered — see the last bullet). `create.mutateAsync` rejected unhandled; publish, close, cancel and award
+  showed nothing; the RFQ form checked the deadline's shape only.
+  - `ApiError` (`apps/web/src/lib/api/client.ts`) now carries the envelope's `messageKey`. New
+    `lib/procurementErrors.ts` `rfqActionErrorKey(action, error)`: a known `messageKey` first (project closed, a
+    purchase request of another project, already awarded), then 403 → no permission, then the action and status
+    (create 400 with no field errors → deadline, a ValidationPipe 400 with `details.fieldErrors` → generic — found by
+    /doubt; create 404 project; publish 422 deadline passed or no longer a draft; close and cancel 422 state
+    changed; award 404 quotation or vendor gone / 422 state changed), else a generic line. Strings in `proc.err.*`,
+    TH and EN.
+  - The RFQs page shows the last refused action in one `role="alert"` line, cleared when another starts; a refused
+    create keeps the form's values, and a new attempt the form refuses itself drops the old line. The quotations page
+    shows a refused award the same way, cleared with the RFQ.
+  - `rfqCreateSchema` (`@cos/schemas`): the deadline must be after now, read as local time as the page converts it
+    → `validation.notInFuture` (TH/EN); a malformed value keeps the shape message.
+  - Verified: `procurementErrors.spec` (each mapping, 403, the fallbacks, every key in both languages), the client
+    spec (`messageKey` carried, a non-string ignored), the schema spec (past and now refused, a minute ahead
+    accepted). HEAD's client fails 4 web tests and HEAD's schema 2; without the field-errors guard, 1. apps/web jest
+    (485), tsc, eslint, prettier; `@cos/schemas` jest (323), tsc, eslint; the schema-contract check; markdownlint. No
+    browser run.
+  - Not covered: the web purchase request page still shows nothing on a refusal (its 422 project closed included);
+    the RFQ form allows an RFQ number of 64 characters where the API takes 50 (a longer one now gets the generic
+    line); an RFQ with no workflow (422, corrupted data only) shows the publish or "status changed" line; the
+    buttons are not re-checked against a status that changed (the line says to refresh).
 - **Closed — signing out on the phone left the active project for the next sign-in.** Fixed in plan CV (on the
   current branch; product-owner decisions 2026-11-20: a sign-out the user chooses forgets the active project; a
   session that ends by itself keeps it; only the active project — the read caches and the per-user outbox keep the

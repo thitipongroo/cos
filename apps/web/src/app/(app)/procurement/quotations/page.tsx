@@ -8,6 +8,7 @@ import type { QuotationRow } from '../../../../lib/api/types';
 import { formatMoney } from '../../../../lib/format';
 import { useReadOnly } from '../../../../lib/auth/useReadOnly';
 import { canAwardQuotations } from '../../../../lib/quotationAward';
+import { rfqActionErrorKey } from '../../../../lib/procurementErrors';
 
 /**
  * Quotation comparison (§20.7.3). Quotations are RFQ-scoped in the backend:
@@ -65,6 +66,13 @@ export default function QuotationsPage() {
     <div>
       <h1 className="mb-2 text-2xl font-bold text-gray-800">{t('proc.quotationsTitle')}</h1>
       <p className="mb-4 text-xs text-gray-400">{t('proc.quotationsHint')}</p>
+
+      {/* Why an award was refused (plan CW); award.reset() on a new RFQ clears it. */}
+      {award.isError && (
+        <p role="alert" className="mb-4 text-sm text-red-700">
+          {t(rfqActionErrorKey('award', award.error))}
+        </p>
+      )}
 
       <select
         aria-label={t('proc.selectRfq')}

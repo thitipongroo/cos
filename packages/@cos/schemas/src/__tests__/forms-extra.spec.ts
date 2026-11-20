@@ -94,7 +94,36 @@ describe('purchaseRequestCreateSchema', () => {
 
 describe('rfqCreateSchema', () => {
   // datetime-local, the value the RFQ form actually holds before it converts to ISO on submit.
-  const base = { project_id: UUID, rfq_number: 'RFQ-001', deadline: '2026-09-15T17:00' };
+  const base = { project_id: UUID, rfq_number: 'RFQ-001', deadline: '2099-09-15T17:00' };
+
+  // Plan CW: the deadline must be in the future — the server refuses one at or before now (plan CT).
+  describe('the deadline is in the future', () => {
+    const NOW = new Date(2027, 2, 1, 10, 0).getTime(); // 2027-03-01 10:00 local, as the field is read
+    beforeEach(() => jest.spyOn(Date, 'now').mockReturnValue(NOW));
+    afterEach(() => jest.restoreAllMocks());
+
+    it.each([
+      ['in the past', '2027-02-28T10:00'],
+      ['exactly now', '2027-03-01T10:00'],
+    ])('refuses one %s', (_n, deadline) => {
+      expect(firstIssue(rfqCreateSchema.safeParse({ ...base, deadline }))).toMatchObject({
+        message: 'validation.notInFuture',
+        path: ['deadline'],
+      });
+    });
+
+    it('accepts one a minute ahead', () => {
+      expect(rfqCreateSchema.safeParse({ ...base, deadline: '2027-03-01T10:01' }).success).toBe(
+        true,
+      );
+    });
+
+    it('leaves a malformed value to the shape message', () => {
+      expect(
+        firstIssue(rfqCreateSchema.safeParse({ ...base, deadline: 'tomorrow' }))?.message,
+      ).toBe('validation.notADate');
+    });
+  });
 
   it('accepts without a pr_id', () => {
     expect(rfqCreateSchema.safeParse(base).success).toBe(true);

@@ -26,21 +26,29 @@ export class ApiError extends Error {
      */
     public readonly code?: string,
     public readonly details?: Record<string, unknown>,
+    /**
+     * The API's i18n key for the case (`{ error: { messageKey } }`) when the body carried one — so a screen can say
+     * why in the user's language (plan CW) rather than show the server's English message.
+     */
+    public readonly messageKey?: string,
   ) {
     super(message);
     this.name = 'ApiError';
   }
 }
 
-/** The `{ error: { code, details } }` envelope of HttpExceptionFilter, or nothing when the body is not one. */
+/** The `{ error: { code, details, messageKey } }` envelope of HttpExceptionFilter, or nothing when not one. */
 async function readErrorEnvelope(
   res: Response,
-): Promise<{ code?: string; details?: Record<string, unknown> }> {
+): Promise<{ code?: string; details?: Record<string, unknown>; messageKey?: string }> {
   try {
-    const body = (await res.json()) as { error?: { code?: unknown; details?: unknown } } | null;
+    const body = (await res.json()) as {
+      error?: { code?: unknown; details?: unknown; messageKey?: unknown };
+    } | null;
     const error = body?.error;
     return {
       code: typeof error?.code === 'string' ? error.code : undefined,
+      messageKey: typeof error?.messageKey === 'string' ? error.messageKey : undefined,
       details:
         error?.details && typeof error.details === 'object'
           ? (error.details as Record<string, unknown>)
@@ -70,8 +78,8 @@ export async function apiFetch<T>(
   }
   const res = await fetch(`${API_BASE}${path}`, { ...init, headers });
   if (!res.ok) {
-    const { code, details } = await readErrorEnvelope(res);
-    throw new ApiError(res.status, `Request failed: ${res.status}`, code, details);
+    const { code, details, messageKey } = await readErrorEnvelope(res);
+    throw new ApiError(res.status, `Request failed: ${res.status}`, code, details, messageKey);
   }
   if (res.status === 204) {
     return undefined as T;
