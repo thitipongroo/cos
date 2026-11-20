@@ -166,8 +166,8 @@ paths:
               schema: { $ref: '#/components/schemas/ErrorResponse' }
         '422':
           description: >-
-            Invitation already used (`COS-VND-003`), validation, or `COS-VND-011` — the RFQ is not PUBLISHED, so not
-            open for quotations
+            Invitation already used (`COS-VND-003`), validation, or `COS-VND-011` — the RFQ is not PUBLISHED, or its
+            deadline has passed though the workflow has not closed it yet (plan CT), so not open for quotations
           content:
             application/json:
               schema: { $ref: '#/components/schemas/ErrorResponse' }

@@ -893,6 +893,10 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/RfqRow'
+        '400':
+          description: >-
+            Body failed validation, or the deadline is not in the future ("RFQ deadline must be in the future", plan CT);
+            nothing is written and no workflow is started
         '401':
           description: Unauthenticated — missing or invalid bearer token
           content:
@@ -932,7 +936,7 @@ paths:
         '200':
           description: Signal sent
         '422':
-          description: Not in DRAFT state
+          description: Not in DRAFT state, or its deadline has passed ("deadline has passed — cannot publish", plan CT)
   /procurement/rfqs/{rfqId}/close:
     post:
       tags:
@@ -1053,7 +1057,9 @@ paths:
             `COS-PROC-409` — this vendor already quoted for this RFQ; the first quotation stands and nothing is
             written (fix/quotation-duplicate-and-closed-rfq)
         '422':
-          description: RFQ not PUBLISHED
+          description: >-
+            RFQ not PUBLISHED, or the quotation's `submitted_at` is after the RFQ's deadline (plan CT; a bid submitted
+            on time may be recorded later)
     get:
       tags:
         - Quotations

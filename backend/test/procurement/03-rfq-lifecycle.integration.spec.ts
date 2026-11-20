@@ -743,4 +743,64 @@ describe('Phase 5 · RFQ lifecycle, quotation comparison and event emission', ()
       },
     );
   });
+
+  // plan CT (product owner, 2026-11-20): the deadline holds where quotations come in, and on create and publish.
+  describe('the RFQ deadline', () => {
+    const pastDeadline = async (rfqId: string, iso: string) =>
+      infra.prisma.$executeRawUnsafe(
+        `UPDATE procurement.rfqs SET deadline = $2::timestamptz WHERE rfq_id = $1::uuid`,
+        rfqId,
+        iso,
+      );
+    const record = (rfqId: string, vendorId: string, submittedAt: string) =>
+      http().post(`/api/v1/procurement/rfqs/${rfqId}/quotations`).set('x-test-role', PO_ROLE).send({
+        vendor_id: vendorId,
+        total_amount: '1000.0000',
+        currency_code: 'THB',
+        validity_days: 30,
+        submitted_at: submittedAt,
+      });
+
+    it('a PUBLISHED RFQ past its deadline: a bid submitted after it 422; one submitted before it 201', async () => {
+      const rfqId = await seedRfq('PUBLISHED');
+      await pastDeadline(rfqId, '2026-01-10T00:00:00.000Z');
+      const late = await record(rfqId, await createVendor(), '2026-01-10T00:00:01.000Z');
+      expect(late.status).toBe(422);
+      const onTime = await record(rfqId, await createVendor(), '2026-01-10T00:00:00.000Z');
+      expect(onTime.status).toBe(201);
+      const rows = await infra.prisma.$queryRawUnsafe<Array<{ n: bigint }>>(
+        `SELECT count(*) AS n FROM procurement.quotations WHERE rfq_id = $1::uuid`,
+        rfqId,
+      );
+      expect(Number(rows[0]!.n)).toBe(1);
+    });
+
+    it('create with a deadline already passed: 400, nothing written', async () => {
+      seq += 1;
+      const res = await http()
+        .post('/api/v1/procurement/rfqs')
+        .set('x-test-role', PO_ROLE)
+        .send({
+          project_id: projectId,
+          rfq_number: `RFQ-CT-${seq}`,
+          deadline: new Date(Date.now() - 60_000).toISOString(),
+        });
+      expect(res.status).toBe(400);
+      const rows = await infra.prisma.$queryRawUnsafe<Array<{ n: bigint }>>(
+        `SELECT count(*) AS n FROM procurement.rfqs WHERE rfq_number = $1`,
+        `RFQ-CT-${seq}`,
+      );
+      expect(Number(rows[0]!.n)).toBe(0);
+    });
+
+    it('publish a DRAFT whose deadline has passed: 422, still DRAFT', async () => {
+      const rfqId = await seedRfq('DRAFT');
+      await pastDeadline(rfqId, new Date(Date.now() - 60_000).toISOString());
+      const res = await act(rfqId, 'publish');
+      expect(res.status).toBe(422);
+      // The reason, not any 422: a seeded RFQ has no workflow, which is refused with a 422 of its own.
+      expect(JSON.stringify(res.body)).toContain('deadline has passed');
+      expect(await rfqStatus(rfqId)).toBe('DRAFT');
+    });
+  });
 });

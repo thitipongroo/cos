@@ -141,7 +141,9 @@ export class VendorPortalService {
     // the portal used to take a quotation for an RFQ already closed, evaluated, awarded or cancelled.
     const rfq = await this.repo.findRfq(invitation.rfq_id);
     if (!rfq) throw new NotFoundException('COS-VND-001: RFQ not found');
-    if (rfq.status !== 'PUBLISHED') {
+    // Past its deadline it is not open either, though the workflow may not have closed it yet (plan CT, product owner
+    // 2026-11-20). The vendor's quotation is stamped now() by the database, so now is what is compared.
+    if (rfq.status !== 'PUBLISHED' || Date.now() > new Date(rfq.deadline).getTime()) {
       throw new UnprocessableEntityException({
         error: { code: 'COS-VND-011', message: 'RFQ is not open for quotations' },
       });

@@ -1602,6 +1602,35 @@ gate's isolated run) checks the hash was not tested either; it ran 12.18.0 with 
 
 ## Open
 
+- **Closed — the RFQ deadline was not enforced where quotations came in.** Fixed in plan CT (on
+  `docs/vendor-deactivated-invoices`, one commit; product-owner decisions 2026-11-20). Measured on HEAD: buyer and
+  portal `submitQuotation` checked only PUBLISHED, so a quotation after the deadline was taken whenever the workflow
+  had not closed the RFQ yet (a late timer, a stopped worker); `createRfq` took any date and `publishRfq` any DRAFT, a
+  past deadline making the workflow close the RFQ the moment it was published. No route edits a deadline.
+  - Portal: past the deadline → 422 `COS-VND-011` ("RFQ is not open for quotations"), nothing written, no session,
+    invitation untouched (the server's clock; the row's `submitted_at` is the database's `now()`).
+  - Buyer: the quotation's `submitted_at` after the deadline → 422; at or before it is recorded, even after the
+    deadline (a paper bid received on time, entered later).
+  - `createRfq`: a deadline not in the future → 400 before anything is written or started. `publishRfq`: a DRAFT whose
+    deadline has passed → 422, nothing signalled — cancel it and create another.
+  - Conventions: buyer-side refusals are plain 400/422 like the other RFQ state refusals (no new code); the portal
+    reuses `COS-VND-011`. Docs: OpenAPI (create 400, publish 422, both submit 422s), `error-codes.md` COS-VND-011.
+  - Found by /doubt: the ISO validators take forms `Date` cannot read (ISO week `2027-W09-1`, ordinal `2027-060`),
+    which compared as NaN and passed the checks; a deadline or `submitted_at` like that is now refused 400.
+  - Noted, not built (low): the buyer's `submitted_at` has no bounds — a future date, or one backdated past the deadline,
+    is taken (trusting the buyer, by decision). The web RFQ form has no "in the future" rule and the page shows no
+    server error on create or publish (none before either), so the new 400/422 is silent there; mobile has no create or
+    publish screens. The demo seed's DRAFT RFQ (deadline 2026-07-25) can no longer be published. A deadline without an
+    offset is read in the server's zone by JS and the session's by Postgres — the same when both run in UTC.
+  - Unit: each refusal with nothing written or signalled, at the boundaries (a deadline exactly now refused on create
+    and publish; `submitted_at` equal to the deadline recorded). Integration: `03-rfq-lifecycle` (26) — a PUBLISHED
+    RFQ past its deadline refuses a late bid and records an on-time one; create with a past deadline 400, nothing
+    written; publish a DRAFT past its deadline 422 with its reason, still DRAFT. `05-vendor-reinvite` (14) — the portal
+    on a PUBLISHED RFQ past its deadline 422 `COS-VND-011`, nothing written. Controls: HEAD's services fail all four
+    (the publish test first passed on HEAD — a seeded RFQ has no workflow, refused with a 422 of its own — and now
+    checks the reason). Backend tsc, eslint, prettier, unit, workflow specs, OpenAPI validity and freshness,
+    conformance and markdownlint pass.
+
 - **Closed — a CANCELLED or COMPLETED project still took new purchase requests, RFQs and purchase orders.** Fixed in
   plan CS (on `docs/vendor-deactivated-invoices`, one commit; product-owner decisions 2026-11-20: CANCELLED and
   COMPLETED refuse; DRAFT, ACTIVE and ON_HOLD take them; what is already open carries on; 422 with a new code; finance

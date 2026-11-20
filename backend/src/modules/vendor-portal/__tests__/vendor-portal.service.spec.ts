@@ -31,13 +31,16 @@ function build(
     findInvitation: jest
       .fn()
       .mockResolvedValue('invitation' in overrides ? overrides.invitation : validInvitation),
-    findRfq: jest
-      .fn()
-      .mockResolvedValue(
-        'rfq' in overrides
-          ? overrides.rfq
-          : { rfq_id: 'rfq-1', rfq_number: 'RFQ-1', status: 'PUBLISHED' },
-      ),
+    findRfq: jest.fn().mockResolvedValue(
+      'rfq' in overrides
+        ? overrides.rfq
+        : {
+            rfq_id: 'rfq-1',
+            rfq_number: 'RFQ-1',
+            status: 'PUBLISHED',
+            deadline: new Date(Date.now() + 86_400_000),
+          },
+    ),
     createInvitation: jest.fn().mockResolvedValue({ invitation_id: 'inv-1' }),
     vendorExists: jest.fn().mockResolvedValue(overrides.vendorExists ?? true),
     createQuotation: jest.fn().mockResolvedValue({ quotation_id: 'q-1' }),
@@ -239,6 +242,7 @@ describe('VendorPortalService', () => {
         rfq_id: 'rfq-1',
         rfq_number: 'RFQ-1',
         status: 'PUBLISHED',
+        deadline: expect.any(Date),
       });
     });
 
@@ -321,6 +325,24 @@ describe('VendorPortalService', () => {
         expect(magicLink.issueSessionToken).not.toHaveBeenCalled();
       },
     );
+
+    // plan CT (product owner, 2026-11-20): past its deadline the RFQ is not open, though still PUBLISHED (the workflow
+    // has not closed it yet).
+    it('422 COS-VND-011 for a PUBLISHED RFQ past its deadline, nothing written, no session', async () => {
+      const { service, repo, magicLink } = build({
+        rfq: {
+          rfq_id: 'rfq-1',
+          rfq_number: 'RFQ-1',
+          status: 'PUBLISHED',
+          deadline: new Date(Date.now() - 1000),
+        },
+      });
+      await expect(service.submitQuotation('TOK', 'inv-1', dto)).rejects.toMatchObject({
+        response: { error: { code: 'COS-VND-011', message: 'RFQ is not open for quotations' } },
+      });
+      expect(repo.createQuotation).not.toHaveBeenCalled();
+      expect(magicLink.issueSessionToken).not.toHaveBeenCalled();
+    });
 
     it('409 COS-VND-010 when the vendor already quoted for this RFQ; the invitation is left as it is', async () => {
       const { service, repo, magicLink } = build();

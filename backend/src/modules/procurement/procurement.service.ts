@@ -229,6 +229,17 @@ export class ProcurementService {
   // ── RFQ Lifecycle ──────────────────────────────────────────────────────────
 
   async createRfq(dto: CreateRfqDto): Promise<RfqRow> {
+    // The deadline is in the future (product owner, 2026-11-20; plan CT): one already passed made the workflow close
+    // the RFQ the moment it was published.
+    // A form the validator takes but Date cannot read (ISO week or ordinal dates) would compare as NaN — false — and
+    // pass; it is refused instead (found by /doubt).
+    const deadlineAt = new Date(dto.deadline).getTime();
+    if (!Number.isFinite(deadlineAt)) {
+      throw new BadRequestException('RFQ deadline is not a date-time this server can read');
+    }
+    if (deadlineAt <= Date.now()) {
+      throw new BadRequestException('RFQ deadline must be in the future');
+    }
     // The ids it names are the tenant's own (fix/proc-rfq-pr-foreign-ids): project_id has no foreign key (any UUID was
     // taken) and pr_id's is checked without RLS (another tenant's purchase request was accepted; an unknown one failed
     // the INSERT unmapped, 500). Existence in the tenant only — no APPROVED or same-project rule (product owner,
@@ -293,6 +304,11 @@ export class ProcurementService {
 
   async publishRfq(rfq_id: string): Promise<void> {
     const rfq = await this.assertRfqStatus(rfq_id, 'DRAFT');
+    // A DRAFT whose deadline has passed is not published (plan CT): it would close at once. No route edits a
+    // deadline — cancel it and create another.
+    if (new Date(rfq.deadline).getTime() <= Date.now()) {
+      throw new UnprocessableEntityException(`RFQ ${rfq_id} deadline has passed — cannot publish`);
+    }
     const handle = await this.getRfqWorkflowHandle(rfq);
     await handle.signal(publishRfqSignal, { actor_id: this.userId });
     logger.info({ rfq_id, actor_id: this.userId }, 'rfq.published');
@@ -358,6 +374,17 @@ export class ProcurementService {
     if (rfq.status !== 'PUBLISHED') {
       throw new UnprocessableEntityException(
         `RFQ ${rfq_id} is not PUBLISHED — cannot submit quotation`,
+      );
+    }
+    // The deadline holds even while the workflow has not closed the RFQ yet (plan CT). The buyer may enter a bid
+    // received on time later, so the quotation's own submitted_at is what is compared — at the deadline still counts.
+    const submittedAt = new Date(dto.submitted_at).getTime();
+    if (!Number.isFinite(submittedAt)) {
+      throw new BadRequestException('submitted_at is not a date-time this server can read');
+    }
+    if (submittedAt > new Date(rfq.deadline).getTime()) {
+      throw new UnprocessableEntityException(
+        `Quotation submitted after the RFQ deadline (${new Date(rfq.deadline).toISOString()})`,
       );
     }
     // The tenant's ACTIVE vendor only (fix/proc-quotation-vendor-check). The id went straight to the INSERT: a

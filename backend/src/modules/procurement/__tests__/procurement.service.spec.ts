@@ -2668,3 +2668,93 @@ describe('createPurchaseRequest — a replay after the project closed (plan CS)'
     expect(mockRepo.createPurchaseRequest).not.toHaveBeenCalled();
   });
 });
+
+// plan CT (product owner, 2026-11-20): the RFQ deadline is enforced where quotations come in.
+describe('RFQ deadline (plan CT)', () => {
+  const T = Date.parse('2027-03-01T10:00:00.000Z');
+  let nowSpy: jest.SpyInstance;
+  beforeEach(() => {
+    nowSpy = jest.spyOn(Date, 'now').mockReturnValue(T);
+  });
+  afterEach(() => nowSpy.mockRestore());
+
+  it.each([
+    ['in the past', T - 1000],
+    ['exactly now', T],
+  ])('createRfq: a deadline %s → 400, nothing written, no workflow', async (_n, at) => {
+    await expect(
+      service.createRfq({
+        project_id: 'project-uuid-001',
+        rfq_number: 'RFQ-D',
+        deadline: new Date(at).toISOString(),
+      }),
+    ).rejects.toThrow(new BadRequestException('RFQ deadline must be in the future'));
+    expect(mockRepo.createRfq).not.toHaveBeenCalled();
+    expect(mockWorkflowStart).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ['has passed', T - 1000],
+    ['is exactly now', T],
+  ])('publishRfq: a DRAFT whose deadline %s → 422, nothing signalled', async (_n, at) => {
+    mockRepo.findRfqById.mockResolvedValue({ ...rfqDraftFixture, deadline: new Date(at) });
+    await expect(service.publishRfq('rfq-uuid-001')).rejects.toThrow(
+      new UnprocessableEntityException('RFQ rfq-uuid-001 deadline has passed — cannot publish'),
+    );
+    expect(mockWorkflowSignal).not.toHaveBeenCalled();
+  });
+
+  it('publishRfq: a DRAFT whose deadline is ahead is signalled', async () => {
+    mockRepo.findRfqById.mockResolvedValue({ ...rfqDraftFixture, deadline: new Date(T + 1000) });
+    await service.publishRfq('rfq-uuid-001');
+    expect(mockWorkflowSignal).toHaveBeenCalled();
+  });
+
+  const quote = (submitted_at: string) =>
+    service.submitQuotation('rfq-uuid-001', {
+      vendor_id: 'vendor-uuid-001',
+      total_amount: '1000.0000',
+      currency_code: 'THB',
+      validity_days: 30,
+      submitted_at,
+    });
+
+  it('buyer submitQuotation: submitted after the deadline → 422, nothing written', async () => {
+    mockRepo.findRfqById.mockResolvedValue({ ...rfqPublishedFixture, deadline: new Date(T) });
+    mockRepo.findVendorById.mockResolvedValue(vendorFixture);
+    await expect(quote(new Date(T + 1).toISOString())).rejects.toThrow(
+      new UnprocessableEntityException(
+        `Quotation submitted after the RFQ deadline (${new Date(T).toISOString()})`,
+      ),
+    );
+    expect(mockRepo.createQuotation).not.toHaveBeenCalled();
+  });
+
+  // Found by /doubt: forms the ISO validator accepts but Date cannot read compared as NaN and passed.
+  it.each(['2027-W09-1', '2027-060'])(
+    'a date the server cannot read (%s) is refused 400, not let through',
+    async (odd) => {
+      await expect(
+        service.createRfq({ project_id: 'project-uuid-001', rfq_number: 'RFQ-D', deadline: odd }),
+      ).rejects.toThrow(
+        new BadRequestException('RFQ deadline is not a date-time this server can read'),
+      );
+      mockRepo.findRfqById.mockResolvedValue({ ...rfqPublishedFixture, deadline: new Date(T) });
+      mockRepo.findVendorById.mockResolvedValue(vendorFixture);
+      await expect(quote(odd)).rejects.toThrow(
+        new BadRequestException('submitted_at is not a date-time this server can read'),
+      );
+      expect(mockRepo.createRfq).not.toHaveBeenCalled();
+      expect(mockRepo.createQuotation).not.toHaveBeenCalled();
+    },
+  );
+
+  it('buyer submitQuotation: submitted at the deadline, entered later, is recorded', async () => {
+    nowSpy.mockReturnValue(T + 3_600_000);
+    mockRepo.findRfqById.mockResolvedValue({ ...rfqPublishedFixture, deadline: new Date(T) });
+    mockRepo.findVendorById.mockResolvedValue(vendorFixture);
+    mockRepo.createQuotation.mockResolvedValue({ quotation_id: 'q-1' });
+    await expect(quote(new Date(T).toISOString())).resolves.toEqual({ quotation_id: 'q-1' });
+    expect(mockRepo.createQuotation).toHaveBeenCalled();
+  });
+});

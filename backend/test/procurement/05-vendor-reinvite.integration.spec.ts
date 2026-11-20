@@ -517,5 +517,21 @@ describe('Vendor invitations: one e-mail, one vendor per tenant (real database)'
       expect(await quotationsOn(rfq)).toBe(0);
       expect(await invitationStatus(rfq)).toEqual(['PENDING']);
     });
+
+    // plan CT (product owner, 2026-11-20): past its deadline the RFQ is not open, though the workflow has not closed it.
+    it('a PUBLISHED RFQ past its deadline: 422 COS-VND-011, nothing written', async () => {
+      const vendor = await createVendor();
+      const rfq = await seedRfq();
+      const token = await tokenFor(rfq, vendor, 'chai.deadline@example.com');
+      await infra.prisma.$executeRawUnsafe(
+        `UPDATE procurement.rfqs SET deadline = now() - interval '1 minute' WHERE rfq_id = $1::uuid`,
+        rfq,
+      );
+      const res = await quoteWith(token);
+      expect(res.status).toBe(422);
+      expect((res.body as { error: { code: string } }).error.code).toBe('COS-VND-011');
+      expect(await quotationsOn(rfq)).toBe(0);
+      expect(await invitationStatus(rfq)).toEqual(['PENDING']);
+    });
   });
 });
