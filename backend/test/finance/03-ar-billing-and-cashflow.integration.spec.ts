@@ -294,6 +294,71 @@ describe('Phase 7 · AR billing lifecycle and cash flow forecast (real database)
   });
 
   // ---------------------------------------------------------------------------------------------
+  // Plan DA (product owner 2026-11-21): a receipt's customer is the tenant's, and the contract's when it names one.
+  describe("an AR receipt's customer (plan DA)", () => {
+    const customerOf = async (tenant?: string): Promise<string> => {
+      let req = http().post('/api/v1/finance/customers').set('x-test-role', 'FINANCE');
+      if (tenant) req = req.set('x-test-tenant', tenant);
+      const res = await req.send({ company_name: `Payer ${++seq}`, customer_type: 'DEVELOPER' });
+      expect([200, 201]).toContain(res.status);
+      return (res.body as { customer_id: string }).customer_id;
+    };
+    const issuedBilling = async (): Promise<{ projectId: string; billingId: string }> => {
+      const projectId = await newProject();
+      const billingId = await newBilling(projectId, '1000.0000'); // its contract names `customerId`
+      await approve(billingId, 'PM', 'PROJECT_MANAGER');
+      return { projectId, billingId };
+    };
+    const receipts = async (billingId: string): Promise<number> => {
+      const rows = await infra.prisma.$queryRawUnsafe<Array<{ n: bigint }>>(
+        `SELECT count(*) AS n FROM finance.ar_receipts WHERE billing_id = $1::uuid`,
+        billingId,
+      );
+      return Number(rows[0]!.n);
+    };
+    const receive = (projectId: string, billingId: string, customer: string) =>
+      http()
+        .post('/api/v1/finance/ar-receipts')
+        .set('x-test-role', 'FINANCE')
+        .send({
+          project_id: projectId,
+          billing_id: billingId,
+          customer_id: customer,
+          amount_received: '1000.0000',
+          received_date: isoDaysFromNow(0),
+          payment_method: 'BANK_TRANSFER',
+        });
+
+    it.each([
+      ["another tenant's customer", () => customerOf(OTHER_TENANT_ID)],
+      ['an unknown customer', async () => 'ee000003-9999-4000-8000-00000000da01'],
+    ])('%s: 404, no receipt, the billing still ISSUED', async (_n, customer) => {
+      const { projectId, billingId } = await issuedBilling();
+      const res = await receive(projectId, billingId, await customer());
+      expect(res.status).toBe(404);
+      expect((res.body as { message: string }).message).toMatch(/^Customer .* not found$/);
+      expect(await receipts(billingId)).toBe(0);
+      expect(await billingStatus(billingId)).toBe('ISSUED');
+    });
+
+    it("another of the tenant's customers than the contract's: 422 COS-FIN-422, no receipt", async () => {
+      const { projectId, billingId } = await issuedBilling();
+      const other = await customerOf();
+      const res = await receive(projectId, billingId, other);
+      expect(res.status).toBe(422);
+      expect(res.body).toMatchObject({
+        error: {
+          code: 'COS-FIN-422',
+          message: `Customer ${other} is not the contract's customer`,
+          messageKey: 'finance.receipt.customerNotContract',
+        },
+      });
+      expect(await receipts(billingId)).toBe(0);
+      expect(await billingStatus(billingId)).toBe('ISSUED');
+    });
+  });
+
+  // ---------------------------------------------------------------------------------------------
   describe('the PM approval limit (master:2965; §15; ADR-024 §4)', () => {
     it('a PM may approve at the limit', async () => {
       const billingId = await newBilling(await newProject(), '500000.0000');

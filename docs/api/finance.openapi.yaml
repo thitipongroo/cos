@@ -917,12 +917,15 @@ paths:
         '401':
           description: Unauthenticated — missing or invalid bearer token
         '404':
-          description: No such billing in this tenant; nothing is written
+          description: >-
+            No such billing in this tenant, or the customer is not this tenant's (absent or another tenant's — plan
+            DA); nothing is written
         '422':
           description: >-
             The billing is not ISSUED (a plain message, no `error.code`); or `COS-FIN-422`
-            (`finance.receipt.billingOtherProject`) — `project_id` is not the billing's project (plan CZ); nothing is
-            written
+            (`finance.receipt.billingOtherProject`) — `project_id` is not the billing's project (plan CZ); or
+            `COS-FIN-422` (`finance.receipt.customerNotContract`) — the billing's contract names another customer
+            (plan DA); nothing is written
   /finance/cashflow-forecast/{projectId}:
     get:
       description: |

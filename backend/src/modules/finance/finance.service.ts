@@ -837,8 +837,8 @@ export class FinanceService {
 
   // ── Client Billing (AR — §11, §15) ──────────────────────────────────────────
 
-  /** Plan CZ: an AR billing or receipt naming another project than its contract or billing — 422 `COS-FIN-422`. */
-  private otherProject(message: string, messageKey: string): UnprocessableEntityException {
+  /** Plans CZ, DA: an AR billing or receipt that does not match its contract or billing — 422 `COS-FIN-422`. */
+  private refuse(message: string, messageKey: string): UnprocessableEntityException {
     return new UnprocessableEntityException({
       error: { code: 'COS-FIN-422', message, messageKey },
     });
@@ -852,7 +852,7 @@ export class FinanceService {
     // The billing is its contract's project's (product owner, 2026-11-21; plan CZ) — the project's AR is read by
     // project_id, so one under another project misstates both.
     if (!sameUuid(contract.project_id, dto.project_id)) {
-      throw this.otherProject(
+      throw this.refuse(
         `Contract ${dto.contract_id} belongs to another project`,
         'finance.billing.contractOtherProject',
       );
@@ -927,9 +927,24 @@ export class FinanceService {
     const billing = await this.getBilling(dto.billing_id);
     // The receipt is its billing's project's (plan CZ), checked before the status: nothing written, no event.
     if (!sameUuid(billing.project_id, dto.project_id)) {
-      throw this.otherProject(
+      throw this.refuse(
         `Billing ${dto.billing_id} belongs to another project`,
         'finance.receipt.billingOtherProject',
+      );
+    }
+    // The payer is the tenant's customer, and the contract's when it names one (product owner, 2026-11-21; plan DA).
+    // customer_id's foreign key has no tenant column and is checked without RLS: another tenant's customer was
+    // written, an unknown one failed the INSERT unmapped (500). A contract with no customer takes any of them.
+    if (!(await this.repo.findCustomerById(dto.customer_id))) {
+      throw new NotFoundException(`Customer ${dto.customer_id} not found`);
+    }
+    // The billing's contract exists (foreign key; createBilling checked it in the tenant) — a null here would be
+    // corrupt data, read as a contract with no customer.
+    const contract = await this.repo.findContractById(billing.contract_id);
+    if (contract?.customer_id && !sameUuid(contract.customer_id, dto.customer_id)) {
+      throw this.refuse(
+        `Customer ${dto.customer_id} is not the contract's customer`,
+        'finance.receipt.customerNotContract',
       );
     }
     if (billing.status !== 'ISSUED') {

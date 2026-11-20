@@ -1602,6 +1602,20 @@ gate's isolated run) checks the hash was not tested either; it ran 12.18.0 with 
 
 ## Open
 
+- **Closed — an AR receipt took any customer id.** Fixed in plan DA (on the current branch; product-owner decision
+  2026-11-21: the receipt's customer is the tenant's, and the contract's when the contract names one; a contract
+  with no customer takes any of the tenant's). Closes the item parked by plan CZ. `recordArReceipt` inserted
+  `customer_id` unchecked; its foreign key has no tenant column and is checked without RLS. Measured on HEAD
+  (`test/finance/03`): another tenant's customer → 201, written; an unknown one → 500 (23503, unmapped); another of
+  the tenant's customers than the contract's → 201.
+  - Now, after the project check (plan CZ) and before the ISSUED check: `findCustomerById` (tenant-scoped) → else
+    404 `Customer <id> not found`; the billing's contract naming another customer (compared without regard to letter
+    case) → 422 `COS-FIN-422`, `finance.receipt.customerNotContract`. No receipt, no event, the billing left ISSUED.
+    The service's 422 helper is now `refuse` (it carries more than the project reason).
+  - Docs: `finance.openapi.yaml` (`postFinanceArReceipts` 404 and 422 text), `error-codes.md` COS-FIN row.
+  - Verified: finance unit (330: 404, 422, a contract with no customer written, the contract's customer in upper
+    case written); `test/finance/03` (28: the three cases, no receipt, the billing still ISSUED). HEAD's service
+    fails the three integration tests (201, 500, 201) and two unit cases.
 - **Closed — an AR billing or receipt could name another project than its contract or billing.** Fixed in plan CZ
   (on the current branch; product-owner decisions 2026-11-21: refuse 422 `COS-FIN-422`, as plan CU for procurement;
   the billing and the AR receipt; the contract's status is not checked in this round). Closes the item parked by
@@ -1621,8 +1635,9 @@ gate's isolated run) checks the hash was not tested either; it ran 12.18.0 with 
     the invoice's existence is not checked either); the contract's status for a billing (DRAFT or TERMINATED
     contracts still take billings); rows written before this change.
   - Parked (found by /doubt): a receipt's `customer_id` is neither compared with the contract's customer nor checked
-    in the tenant (its foreign key has no tenant column and is checked without RLS); a billing may be raised on a
-    vendor-side contract (SUBCONTRACT, SUPPLY_AGREEMENT); a receipt of any amount marks its billing PAID.
+    in the tenant (its foreign key has no tenant column and is checked without RLS — closed by plan DA, above); a
+    billing may be raised on a vendor-side contract (SUBCONTRACT, SUPPLY_AGREEMENT); a receipt of any amount marks its
+    billing PAID.
 - **Closed — a closed project still took new contracts.** Fixed in plan CY (on the current branch; product-owner
   decisions 2026-11-21: `createContract` on a CANCELLED or COMPLETED project → 422 `COS-FIN-422`; contracts already
   made carry on — signing, activation, termination, and their billings and receipts; budgets, budget lines and

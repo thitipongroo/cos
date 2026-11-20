@@ -1354,6 +1354,15 @@ describe('AR billing — customers, contracts, invoices and payments', () => {
       amount: '100000.0000',
       status: 'DRAFT' as const,
     };
+    // A receipt's customer is checked (plan DA): set here, not inherited from another test's mock (found by /doubt).
+    beforeEach(() => {
+      mockRepo.findCustomerById.mockResolvedValue({ customer_id: 'cust-1' });
+      mockRepo.findContractById.mockResolvedValue({
+        contract_id: 'con-1',
+        project_id: 'proj-uuid-001',
+        customer_id: 'cust-1',
+      });
+    });
 
     it('createBilling succeeds when contract exists', async () => {
       mockRepo.findContractById.mockResolvedValue({
@@ -1491,7 +1500,7 @@ describe('AR billing — customers, contracts, invoices and payments', () => {
           amount_received: '100000',
           received_date: '2026-07-14',
         }),
-      ).rejects.toBeInstanceOf(UnprocessableEntityException);
+      ).rejects.toThrow(/a receipt can only settle an ISSUED billing/);
     });
 
     // Plan CZ (product owner 2026-11-21): a billing is its contract's project's, a receipt its billing's.
@@ -1571,6 +1580,70 @@ describe('AR billing — customers, contracts, invoices and payments', () => {
         await service.recordArReceipt(receiptDto('PROJ-UUID-001'));
         expect(mockRepo.createArReceipt).toHaveBeenCalled();
       });
+    });
+  });
+
+  // Plan DA (product owner 2026-11-21): a receipt's customer is the tenant's, and the contract's when it names one.
+  describe('AR receipt — the customer (plan DA)', () => {
+    const issued = {
+      billing_id: 'bill-1',
+      project_id: 'proj-uuid-001',
+      contract_id: 'con-1',
+      amount: '100.0000',
+      status: 'ISSUED' as const,
+    };
+    const dto = (customer_id: string) => ({
+      project_id: 'proj-uuid-001',
+      billing_id: 'bill-1',
+      customer_id,
+      amount_received: '100',
+      received_date: '2026-07-14',
+    });
+    beforeEach(() => {
+      mockRepo.findBillingById.mockResolvedValue(issued);
+      mockRepo.findCustomerById.mockResolvedValue({ customer_id: 'cust-1' });
+      mockRepo.findContractById.mockResolvedValue({ contract_id: 'con-1', customer_id: 'cust-1' });
+      mockRepo.createArReceipt.mockResolvedValue({ ar_receipt_id: 'rcpt-1' });
+      mockRepo.updateBillingStatus.mockResolvedValue({ ...issued, status: 'PAID' });
+    });
+    const nothingWritten = () => {
+      expect(mockRepo.createArReceipt).not.toHaveBeenCalled();
+      expect(mockRepo.updateBillingStatus).not.toHaveBeenCalled();
+    };
+
+    it("404 when the customer is not the tenant's (absent or another tenant's)", async () => {
+      mockRepo.findCustomerById.mockResolvedValue(null);
+      await expect(service.recordArReceipt(dto('cust-x'))).rejects.toThrow(
+        new NotFoundException('Customer cust-x not found'),
+      );
+      nothingWritten();
+    });
+
+    it('422 COS-FIN-422 when the contract names another customer', async () => {
+      mockRepo.findCustomerById.mockResolvedValue({ customer_id: 'cust-2' });
+      const err = await service.recordArReceipt(dto('cust-2')).catch((e: unknown) => e);
+      expect(err).toMatchObject({
+        response: {
+          error: {
+            code: 'COS-FIN-422',
+            message: "Customer cust-2 is not the contract's customer",
+            messageKey: 'finance.receipt.customerNotContract',
+          },
+        },
+      });
+      expect(mockRepo.findContractById).toHaveBeenCalledWith('con-1');
+      nothingWritten();
+    });
+
+    it("a contract with no customer takes any of the tenant's customers", async () => {
+      mockRepo.findContractById.mockResolvedValue({ contract_id: 'con-1', customer_id: null });
+      await service.recordArReceipt(dto('cust-9'));
+      expect(mockRepo.createArReceipt).toHaveBeenCalled();
+    });
+
+    it("the contract's own customer is written, compared without regard to letter case", async () => {
+      await service.recordArReceipt(dto('CUST-1'));
+      expect(mockRepo.createArReceipt).toHaveBeenCalled();
     });
   });
 
