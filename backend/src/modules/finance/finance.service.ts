@@ -900,6 +900,21 @@ export class FinanceService {
         'finance.billing.contractOtherProject',
       );
     }
+    // Billed to the client only on the client-facing contract, and only while it is in force (product owner,
+    // 2026-11-21; plan DH): a SUBCONTRACT or SUPPLY_AGREEMENT is the vendor side; DRAFT and SIGNED are not yet in
+    // force, TERMINATED no longer. Billings already made are untouched.
+    if (contract.contract_type !== 'MAIN_CONTRACT') {
+      throw this.refuse(
+        `Contract ${dto.contract_id} is a ${contract.contract_type} — only a MAIN_CONTRACT is billed to the client`,
+        'finance.billing.contractNotReceivable',
+      );
+    }
+    if (contract.status !== 'ACTIVE') {
+      throw this.refuse(
+        `Contract ${dto.contract_id} is ${contract.status} — only an ACTIVE contract can be billed`,
+        'finance.billing.contractNotActive',
+      );
+    }
     return this.repo.createBilling({
       project_id: dto.project_id,
       contract_id: dto.contract_id,

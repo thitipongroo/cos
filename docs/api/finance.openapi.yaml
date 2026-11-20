@@ -793,8 +793,9 @@ paths:
           description: No such contract in this tenant; nothing is written
         '422':
           description: >-
-            `COS-FIN-422` (`finance.billing.contractOtherProject`) — `project_id` is not the contract's project (plan
-            CZ); nothing is written
+            `COS-FIN-422` — `finance.billing.contractOtherProject`: `project_id` is not the contract's project (plan
+            CZ); `finance.billing.contractNotReceivable`: the contract is not a MAIN_CONTRACT;
+            `finance.billing.contractNotActive`: the contract is not ACTIVE (plan DH). Nothing is written
     get:
       operationId: getFinanceBilling
       tags:

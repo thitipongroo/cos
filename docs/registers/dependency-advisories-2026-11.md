@@ -1602,6 +1602,20 @@ gate's isolated run) checks the hash was not tested either; it ran 12.18.0 with 
 
 ## Open
 
+- **Closed — an AR billing could be raised on a vendor-side or inactive contract.** Fixed in plan DH (on the current
+  branch; product-owner decisions 2026-11-21: only a `MAIN_CONTRACT`, only while ACTIVE; billings already made are
+  untouched). Closes the items plan CZ parked (vendor-side contracts) and left by decision (the contract's status).
+  `createBilling` checked the contract's tenant and project only. Measured on HEAD (`test/finance/03`): a DRAFT,
+  SIGNED or TERMINATED main contract, and an ACTIVE subcontract or supply agreement, each → 201.
+  - Now, after the project check: not a `MAIN_CONTRACT` → 422 `COS-FIN-422`, `finance.billing.contractNotReceivable`;
+    not ACTIVE → 422 `finance.billing.contractNotActive`. Nothing written. OpenAPI and `error-codes.md` list both.
+  - `test/finance/03`'s `newContract` sets its contract ACTIVE by SQL (a contract made through the API starts DRAFT;
+    signing and activation are specs 04 and 05's) and takes a type and status for the new cases.
+  - Not covered (found by /doubt; by the decision "billings already made untouched"): `approveBilling` does not
+    re-check the contract, so a DRAFT billing on a contract terminated since can still be issued.
+  - Verified: finance unit (359: each type and status refused with no INSERT), `test/finance/03` (54: the five cases
+    → 422 with no billing — HEAD's service writes all five; the 49 earlier tests pass on the new fixture). tsc,
+    eslint, prettier, conformance, OpenAPI validity and freshness, markdownlint.
 - **Closed — the cash-flow forecast and risk sweep counted a part-received billing at its full amount.** Fixed in
   plan DG (on the current branch; product-owner decision 2026-11-21: an ISSUED billing's expected inflow is its
   amount less its receipts, at its original due date, in both). Closes the note plan DF left. Measured on HEAD
@@ -1767,12 +1781,12 @@ gate's isolated run) checks the hash was not tested either; it ran 12.18.0 with 
     project in upper case written); `test/finance/03` (25: both → 422 with no row, the billing still ISSUED). HEAD's
     service fails the two integration and three unit tests.
   - Not covered (by decision): AP `recordPayment` (a procurement invoice's project is not compared — another module;
-    the invoice's existence is not checked either); the contract's status for a billing (DRAFT or TERMINATED
-    contracts still take billings); rows written before this change.
+    the invoice's existence is not checked either); the contract's status for a billing (DRAFT or TERMINATED contracts
+    still take billings) (closed by plan DH, above); rows written before this change.
   - Parked (found by /doubt): a receipt's `customer_id` is neither compared with the contract's customer nor checked
     in the tenant (its foreign key has no tenant column and is checked without RLS — closed by plan DA, above); a
-    billing may be raised on a vendor-side contract (SUBCONTRACT, SUPPLY_AGREEMENT); a receipt of any amount marks its
-    billing PAID.
+    billing may be raised on a vendor-side contract (SUBCONTRACT, SUPPLY_AGREEMENT) — closed by plan DH, above; a
+    receipt of any amount marks its billing PAID.
 - **Closed — a closed project still took new contracts.** Fixed in plan CY (on the current branch; product-owner
   decisions 2026-11-21: `createContract` on a CANCELLED or COMPLETED project → 422 `COS-FIN-422`; contracts already
   made carry on — signing, activation, termination, and their billings and receipts; budgets, budget lines and

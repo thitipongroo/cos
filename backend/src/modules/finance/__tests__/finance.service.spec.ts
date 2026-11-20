@@ -1481,6 +1481,8 @@ describe('AR billing — customers, contracts, invoices and payments', () => {
         contract_id: 'con-1',
         project_id: 'proj-uuid-001',
         customer_id: 'cust-1',
+        contract_type: 'MAIN_CONTRACT',
+        status: 'ACTIVE',
       });
     });
 
@@ -1488,6 +1490,8 @@ describe('AR billing — customers, contracts, invoices and payments', () => {
       mockRepo.findContractById.mockResolvedValue({
         contract_id: 'con-1',
         project_id: 'proj-uuid-001',
+        contract_type: 'MAIN_CONTRACT',
+        status: 'ACTIVE',
       });
       mockRepo.createBilling.mockResolvedValue(draftBilling);
       const r = await service.createBilling({
@@ -1502,6 +1506,65 @@ describe('AR billing — customers, contracts, invoices and payments', () => {
         expect.objectContaining({ amount: '100000.0000' }),
       );
     });
+
+    // Plan DH (product owner 2026-11-21): only an ACTIVE MAIN_CONTRACT is billed to the client.
+    it.each([
+      [
+        'SUBCONTRACT',
+        'ACTIVE',
+        'finance.billing.contractNotReceivable',
+        'is a SUBCONTRACT — only a MAIN_CONTRACT is billed to the client',
+      ],
+      [
+        'SUPPLY_AGREEMENT',
+        'ACTIVE',
+        'finance.billing.contractNotReceivable',
+        'is a SUPPLY_AGREEMENT — only a MAIN_CONTRACT is billed to the client',
+      ],
+      [
+        'MAIN_CONTRACT',
+        'DRAFT',
+        'finance.billing.contractNotActive',
+        'is DRAFT — only an ACTIVE contract can be billed',
+      ],
+      [
+        'MAIN_CONTRACT',
+        'SIGNED',
+        'finance.billing.contractNotActive',
+        'is SIGNED — only an ACTIVE contract can be billed',
+      ],
+      [
+        'MAIN_CONTRACT',
+        'TERMINATED',
+        'finance.billing.contractNotActive',
+        'is TERMINATED — only an ACTIVE contract can be billed',
+      ],
+    ])(
+      'createBilling on a %s that is %s: 422 COS-FIN-422, nothing written',
+      async (contract_type, status, messageKey, tail) => {
+        mockRepo.findContractById.mockResolvedValue({
+          contract_id: 'con-1',
+          project_id: 'proj-uuid-001',
+          contract_type,
+          status,
+        });
+        const err = await service
+          .createBilling({
+            project_id: 'proj-uuid-001',
+            contract_id: 'con-1',
+            billing_number: 'AR-DH',
+            amount: '100',
+            due_date: '2026-07-15',
+          })
+          .catch((e: unknown) => e);
+        expect(err).toMatchObject({
+          response: {
+            error: { code: 'COS-FIN-422', message: `Contract con-1 ${tail}`, messageKey },
+          },
+        });
+        expect(mockRepo.createBilling).not.toHaveBeenCalled();
+      },
+    );
 
     it('createBilling throws NotFound when contract missing', async () => {
       mockRepo.findContractById.mockResolvedValue(null);
@@ -1654,6 +1717,8 @@ describe('AR billing — customers, contracts, invoices and payments', () => {
         mockRepo.findContractById.mockResolvedValue({
           contract_id: 'con-1',
           project_id: 'proj-uuid-001',
+          contract_type: 'MAIN_CONTRACT',
+          status: 'ACTIVE',
         });
         mockRepo.findBillingById.mockResolvedValue({ ...draftBilling, status: 'ISSUED' });
         mockRepo.createBilling.mockResolvedValue(draftBilling);

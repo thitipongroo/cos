@@ -132,18 +132,31 @@ describe('Phase 7 · AR billing lifecycle and cash flow forecast (real database)
     return (res.body as { project_id: string }).project_id;
   };
 
-  const newContract = async (projectId: string): Promise<string> => {
+  /**
+   * A contract created through the API starts DRAFT; a billing needs an ACTIVE MAIN_CONTRACT (plan DH), so it is set
+   * ACTIVE by SQL here — signing and activation are specs 04 and 05's.
+   */
+  const newContract = async (
+    projectId: string,
+    opts: { type?: string; status?: string } = {},
+  ): Promise<string> => {
     const res = await http()
       .post('/api/v1/finance/contracts')
       .set('x-test-role', 'PROJECT_MANAGER')
       .send({
         project_id: projectId,
-        contract_type: 'MAIN_CONTRACT',
+        contract_type: opts.type ?? 'MAIN_CONTRACT',
         contract_value: '5000000.0000',
         customer_id: customerId,
       });
     expect([200, 201]).toContain(res.status);
-    return (res.body as { contract_id: string }).contract_id;
+    const contractId = (res.body as { contract_id: string }).contract_id;
+    await infra.prisma.$executeRawUnsafe(
+      `UPDATE finance.contracts SET status = $2 WHERE contract_id = $1::uuid`,
+      contractId,
+      opts.status ?? 'ACTIVE',
+    );
+    return contractId;
   };
 
   const newBilling = async (
@@ -275,6 +288,37 @@ describe('Phase 7 · AR billing lifecycle and cash flow forecast (real database)
       );
       return Number(rows[0]!.n);
     };
+
+    // Plan DH (product owner 2026-11-21): only an ACTIVE MAIN_CONTRACT is billed to the client.
+    it.each([
+      ['a DRAFT main contract', { status: 'DRAFT' }, 'finance.billing.contractNotActive'],
+      ['a SIGNED main contract', { status: 'SIGNED' }, 'finance.billing.contractNotActive'],
+      ['a TERMINATED main contract', { status: 'TERMINATED' }, 'finance.billing.contractNotActive'],
+      ['an ACTIVE subcontract', { type: 'SUBCONTRACT' }, 'finance.billing.contractNotReceivable'],
+      [
+        'an ACTIVE supply agreement',
+        { type: 'SUPPLY_AGREEMENT' },
+        'finance.billing.contractNotReceivable',
+      ],
+    ])('%s: 422 COS-FIN-422, no billing', async (_n, opts, messageKey) => {
+      const projectId = await newProject();
+      const contractId = await newContract(projectId, opts);
+      seq += 1;
+      const billingNumber = `BILL-DH-${seq}`;
+      const res = await http()
+        .post('/api/v1/finance/billing')
+        .set('x-test-role', 'FINANCE')
+        .send({
+          project_id: projectId,
+          contract_id: contractId,
+          billing_number: billingNumber,
+          amount: '1000.0000',
+          due_date: isoDaysFromNow(10),
+        });
+      expect(res.status).toBe(422);
+      expect(res.body).toMatchObject({ error: { code: 'COS-FIN-422', messageKey } });
+      expect(await count('billings', 'billing_number', billingNumber)).toBe(0);
+    });
 
     it("a billing under another project than its contract's: 422 COS-FIN-422, no row", async () => {
       const contractId = await newContract(await newProject());
