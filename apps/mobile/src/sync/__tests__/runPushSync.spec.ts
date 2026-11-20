@@ -7,7 +7,7 @@ const mockProcessQueue = jest
   .mockResolvedValue({ synced: 0, failed: 0, exhausted: 0, interrupted: false });
 const mockProcessAll = jest.fn().mockResolvedValue(undefined);
 let capturedManagerCallbacks: Record<string, unknown> = {};
-let capturedOnUploaded: ((l: string, s: string) => Promise<void>) | undefined;
+let capturedOnUploaded: ((l: string, s: string, o: string | null) => Promise<void>) | undefined;
 
 let capturedGetToken: (() => string | null) | undefined;
 jest.mock('../SyncManager', () => ({
@@ -30,7 +30,8 @@ jest.mock('../enqueueAnnotation', () => ({
 const mockAddConflict = jest.fn();
 const mockMarkSynced = jest.fn().mockResolvedValue(undefined);
 const mockFindLocal = jest.fn();
-jest.mock('../../db/sync-queue', () => ({ enqueue: jest.fn() }));
+const mockQueueEnqueue = jest.fn();
+jest.mock('../../db/sync-queue', () => ({ enqueue: (...a: unknown[]) => mockQueueEnqueue(...a) }));
 jest.mock('../../db/photoRepo', () => ({
   photoRepo: {},
   findLocalPhotoByServerFileId: (...a: unknown[]) => mockFindLocal(...a),
@@ -101,12 +102,30 @@ describe('runPushSync', () => {
 
   it('routes a photo upload into the annotation enqueue hook', async () => {
     await runPushSync();
-    await capturedOnUploaded!('local-1', 'server-9');
+    await capturedOnUploaded!('local-1', 'server-9', 'user-a');
 
     expect(mockEnqueueAnnotation).toHaveBeenCalledWith(
       'local-1',
       'server-9',
       expect.objectContaining({ getAnnotation: expect.anything(), enqueue: expect.anything() }),
+    );
+  });
+
+  // fix/mobile-queue-per-user: the annotation is queued for the photo's owner, not for whoever is signed in by the
+  // time the upload finished.
+  it("queues the annotation under the photo's owner", async () => {
+    await runPushSync();
+    await capturedOnUploaded!('local-1', 'server-9', 'user-a');
+    const deps = mockEnqueueAnnotation.mock.calls[0]![2] as {
+      enqueue: (t: string, i: string, o: string, p: unknown) => number;
+    };
+    deps.enqueue('photo_annotation', 'server-9', 'UPDATE', { strokes: [] });
+    expect(mockQueueEnqueue).toHaveBeenCalledWith(
+      'photo_annotation',
+      'server-9',
+      'UPDATE',
+      { strokes: [] },
+      'user-a',
     );
   });
 

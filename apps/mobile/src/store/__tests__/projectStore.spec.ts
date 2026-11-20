@@ -6,6 +6,7 @@ jest.mock('expo-secure-store', () => ({
 
 import * as SecureStore from 'expo-secure-store';
 import { useProjectStore, type ActiveProject } from '../projectStore';
+import { setOwnerSettled } from '../../db/owner';
 
 const SKYLINE: ActiveProject = {
   projectId: '11111111-1111-1111-1111-111111111111',
@@ -31,6 +32,20 @@ describe('projectStore (the site worker’s active project)', () => {
       'cos_active_project',
       JSON.stringify(SKYLINE),
     );
+  });
+
+  // fix/mobile-queue-per-user: a different user's sign-in drops the previous user's project; a read issued before
+  // that would bring it back, so hydrate waits for the device to be handed over.
+  it('hydrate() waits for the device owner to settle before reading', async () => {
+    let settle: (() => void) | undefined;
+    setOwnerSettled(() => new Promise<void>((resolve) => (settle = resolve)));
+    const pending = useProjectStore.getState().hydrate();
+    await Promise.resolve();
+    expect(SecureStore.getItemAsync).not.toHaveBeenCalled();
+    settle!();
+    await pending;
+    expect(SecureStore.getItemAsync).toHaveBeenCalled();
+    setOwnerSettled(() => Promise.resolve());
   });
 
   it('hydrate() restores what was remembered', async () => {

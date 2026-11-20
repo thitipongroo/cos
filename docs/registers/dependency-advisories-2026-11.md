@@ -1602,6 +1602,54 @@ gate's isolated run) checks the hash was not tested either; it ran 12.18.0 with 
 
 ## Open
 
+- **Closed — a shared phone sent one user's offline work as the next user, and showed them the last user's cache.**
+  Fixed on `fix/mobile-queue-per-user` (product-owner decisions 2026-11-20: queued work is kept per user; the read
+  caches are cleared when a different user signs in; that clear may delete the previous user's offline-created rows,
+  which return with their queue — recorded here). Found by /doubt on `fix/proc-rfq-pr-foreign-ids`. `logout()` cleared
+  the tokens only; the outbox (`sync_queue`) and the offline cache (`local_*`) are shared by every user of the device
+  and recorded no owner. So user A's unsent items were pushed with user B's token — the server recorded B as the
+  author and, B being in another tenant, wrote them there — and B's screens read A's cached data and A's active
+  project. (No in-app tenant switch exists; a user belongs to one tenant, so the user id identifies the owner.)
+  - Owners: each queued item and each photo taken carries its owner (`sync_queue.owner_user_id`, added to an
+    existing database; `local_photos.owner_user_id`, DDL v9). Only the signed-in user's items are fetched, counted,
+    retried, un-stranded and uploaded; another user's wait on the device. A write queued after a failure carries the
+    user who made the request (read before it was sent), and a photo's annotation its photo's owner — not whoever
+    is signed in by then. The rows that existed before the columns are marked at migration (`__legacy__`) and go to
+    the first user to sign in after the update, once; a row queued with no owner is never claimed and never sent
+    (found by /doubt: the first version claimed every ownerless row on every sign-in). For `sync_queue` the column
+    and the marking are one transaction, so a launch killed between them cannot leave the old rows unmarked.
+  - A batch stops, leaving the rest untouched, when the signed-in user changes mid-batch (queue and photo uploads):
+    they were read for the previous user and the token is now someone else's; and that cycle skips its pull, which
+    would run the new token on the previous user's cursor (found by /doubt).
+  - `sync/deviceOwner.ts` follows authStore: the owner is set at once on every change (nothing is sent while signed
+    out) and the pending count recomputed. A user who differs from the last one recorded on the device — or the
+    first sign-in after the update, when none is recorded — gets: the read caches cleared (what delta sync fills,
+    `local_projects`, `local_safety_checklists`; never the outbox or pending photos), the delta cursor reset (a full
+    pull), and the previous user's active project and unresolved conflicts dropped. The tenant (in memory) is
+    dropped at once on any change of user. Sync cycles, the projects-cache refresh and the active-project read at
+    start-up wait for that to finish, so none of them can bring the previous user's back (found by /doubt).
+  - What the clear removes beyond cache: the previous user's offline-created reports, issues and incidents (their
+    `local_*` rows). Nothing is lost on the server — their queued payloads stay and are sent when that user signs in
+    again, and the next full pull brings the rows back — but until then that user does not see them on screen. The
+    first launch after the update clears too, as no last user is recorded yet: usually that is the same person, who
+    then loses their active project and sees their own offline-created rows again only after their queue pushes.
+  - Not changed: the photo queue cap (§17.7) counts every user's pending photos; uploaded photos and annotations,
+    and the drawing cache, are not cleared (a same-tenant user may see another's photo of a shared record); the
+    Android headless background task was never defined (unchanged).
+  - Verified (apps/mobile jest, no simulator or device run): the queue and the photo repository against a real SQLite
+    (node:sqlite in memory standing in for expo-sqlite) — migration and legacy marking, owner on insert and given
+    explicitly, per-owner fetch/count/depth/requeue/un-strand, nothing while signed out, the one-time claim and no
+    claim of an ownerless row; SyncManager and the photo queue stop on a mid-batch user change; the API client queues
+    under the requesting user; the annotation under the photo's owner; the device-owner rules (same user, different
+    user, first sign-in after the update, sign-out then sign-in, a failed clear, the recount); a cycle waits for the
+    owner and skips its pull after a change; the root layout wires it; what the clear covers (`makeClearCaches`) and
+    the change-of-user step (`makeOnOwnerChanged`); the active-project read and the projects-cache refresh wait;
+    the sync_queue migration is all-or-nothing; `clearLastSyncAt`. Removing each of those (the filters, the claim's
+    legacy condition, the mid-batch guards, the pull skip, the owner capture, the annotation owner, the first-sign-in
+    clear, the waits, the transaction) fails its test. Not exercised by a test: the `local_photos` legacy marking in
+    `database.ts`'s v9 migration (the photo tests insert marked rows; `database.ts` opens expo-sqlite through
+    drizzle, which jest cannot load). apps/mobile jest (1187), render suite (1813), tsc, eslint and prettier pass.
+
 - **Closed — an RFQ and a purchase request took their parent ids unchecked.** Fixed on `fix/proc-rfq-pr-foreign-ids`
   (product-owner decision 2026-11-20: an RFQ's `pr_id` is checked to be the tenant's only — no APPROVED or
   same-project rule — as a PO's `rfq_id`). `createRfq` inserted `pr_id` (foreign key, checked without RLS) and

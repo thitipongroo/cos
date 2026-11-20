@@ -37,6 +37,11 @@ interface SyncState {
   setPendingCount: (count: number) => void;
   /** Advance the delta cursor and persist it. Fire-and-forget for callers that cannot await. */
   setLastSyncAt: (timestamp: string) => Promise<void>;
+  /**
+   * Forget the delta cursor, so the next pull is a full one — when a different user signs in and the read
+   * caches are cleared for them (fix/mobile-queue-per-user).
+   */
+  clearLastSyncAt: () => Promise<void>;
   setError: (message: string | null) => void;
 }
 
@@ -62,6 +67,11 @@ export const useSyncStore = create<SyncState>((set) => ({
   setLastSyncAt: async (timestamp) => {
     set({ lastSyncAt: timestamp });
     await SecureStore.setItemAsync(LAST_SYNC_AT_KEY, timestamp);
+  },
+
+  clearLastSyncAt: async () => {
+    set({ lastSyncAt: null });
+    await SecureStore.deleteItemAsync(LAST_SYNC_AT_KEY);
   },
 
   setError: (message) => set({ errorMessage: message }),

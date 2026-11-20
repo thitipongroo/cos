@@ -2,14 +2,21 @@
 // Lives in src/db (runtime DB wiring, coverage-excluded like database.ts); the queue logic that
 // consumes it lives in src/sync and is unit-tested against the PhotoRepository interface with a mock.
 
-import { eq } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 import { db } from './database';
 import { localPhotos, localPhotoAnnotations } from './schema';
+import { getOwner, LEGACY_OWNER } from './owner';
 import type { PendingPhoto, PhotoRepository } from '../sync/PhotoUploadQueue';
 
 export const photoRepo: PhotoRepository = {
+  // The signed-in user's only (fix/mobile-queue-per-user): another user's photos wait for that user.
   async getPendingPhotos(): Promise<PendingPhoto[]> {
-    const rows = await db.select().from(localPhotos).where(eq(localPhotos.uploadStatus, 'PENDING'));
+    const owner = getOwner();
+    if (!owner) return [];
+    const rows = await db
+      .select()
+      .from(localPhotos)
+      .where(and(eq(localPhotos.uploadStatus, 'PENDING'), eq(localPhotos.ownerUserId, owner)));
     return rows.map((r) => ({
       localId: r.id,
       localPath: r.localPath,
@@ -17,6 +24,7 @@ export const photoRepo: PhotoRepository = {
       entityId: r.entityId,
       // Null on rows written before DDL v8 added the column — those have simply not failed yet.
       retryCount: r.uploadRetryCount ?? 0,
+      ownerUserId: r.ownerUserId,
     }));
   },
 
@@ -109,4 +117,15 @@ export async function reassignPhotoEntity(fromEntityId: string, toEntityId: stri
     .update(localPhotos)
     .set({ entityId: toEntityId })
     .where(eq(localPhotos.entityId, fromEntityId));
+}
+
+/**
+ * Give photos taken before DDL v9 (marked LEGACY_OWNER by the migration) to `userId`, the first user to sign in
+ * after the update — the behaviour they had until now, applied once (fix/mobile-queue-per-user).
+ */
+export async function claimUnownedPhotos(userId: string): Promise<void> {
+  await db
+    .update(localPhotos)
+    .set({ ownerUserId: userId })
+    .where(eq(localPhotos.ownerUserId, LEGACY_OWNER));
 }

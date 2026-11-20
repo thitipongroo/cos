@@ -129,10 +129,12 @@ export async function runPushSync(): Promise<void> {
     photoRepo,
     API_BASE,
     getToken,
-    async (localPhotoId, serverFileId) => {
+    async (localPhotoId, serverFileId, ownerUserId) => {
       await enqueueAnnotationForUploadedPhoto(localPhotoId, serverFileId, {
         getAnnotation,
-        enqueue,
+        // The photo's owner, not whoever is signed in by the time its upload finished (fix/mobile-queue-per-user).
+        enqueue: (entityType, entityId, operation, payload) =>
+          enqueue(entityType, entityId, operation, payload, ownerUserId),
       });
     },
   );

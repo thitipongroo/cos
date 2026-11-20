@@ -6,6 +6,7 @@
 // Expo SDK 54+ moved the classic FileSystem API (uploadAsync / FileSystemUploadType) to the
 // `expo-file-system/legacy` subpath; the new `expo-file-system` root no longer exports them (ADR-046).
 import * as FileSystem from 'expo-file-system/legacy';
+import { getOwner } from '../db/owner';
 import { isPermanentFailure } from './httpFailure';
 
 const MAX_RETRIES = 3;
@@ -18,6 +19,8 @@ export interface PendingPhoto {
   entityId: string;
   /** Attempts already spent on this photo, read from the row rather than from memory — see below. */
   retryCount: number;
+  /** Who took it (fix/mobile-queue-per-user): uploaded only while that user is signed in. */
+  ownerUserId: string | null;
 }
 
 export interface PhotoRepository {
@@ -52,7 +55,11 @@ export class PhotoUploadQueue {
     // Fired after a photo's file is uploaded and its server file_id is known. The annotation flow
     // uses this to enqueue a pending photo_annotation now that the parent has a server id
     // (enqueue-after-parent; ADR-056). Best-effort — a throw here must not fail the upload.
-    private readonly onUploaded?: (localId: string, serverFileId: string) => Promise<void>,
+    private readonly onUploaded?: (
+      localId: string,
+      serverFileId: string,
+      ownerUserId: string | null,
+    ) => Promise<void>,
   ) {}
 
   async processNext(): Promise<void> {
@@ -66,6 +73,9 @@ export class PhotoUploadQueue {
   async processAll(): Promise<void> {
     const photos = await this.photoRepo.getPendingPhotos();
     for (const photo of photos) {
+      // The user changed mid-batch (fix/mobile-queue-per-user): the rest are theirs to send, not the next
+      // user's token's — they wait, untouched, for their owner.
+      if (getOwner() !== photo.ownerUserId) return;
       await this.uploadPhoto(photo);
     }
   }
@@ -119,7 +129,7 @@ export class PhotoUploadQueue {
         // A dirty annotation for this photo can now be addressed to its server file_id. Best-effort:
         // a failure here leaves the annotation dirty for the next cycle, it must not fail the upload.
         try {
-          await this.onUploaded(photo.localId, serverFileId);
+          await this.onUploaded(photo.localId, serverFileId, photo.ownerUserId);
         } catch {
           /* annotation stays dirty; retried next sync */
         }

@@ -132,6 +132,11 @@ const APPLY: Record<string, ApplySpec> = {
   },
 };
 
+/** The tables delta sync fills — read caches, safe to clear and pull again (fix/mobile-queue-per-user). */
+export function deltaCacheTables(): TableName[] {
+  return Object.values(APPLY).map((spec) => spec.table);
+}
+
 const DELTA_TYPES = Object.keys(APPLY);
 
 // Drizzle column TS name of each table's server-key column (for upsert/delete matching).

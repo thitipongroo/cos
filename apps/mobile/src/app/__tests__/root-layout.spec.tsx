@@ -80,9 +80,22 @@ jest.mock('../../db/sync-queue', () => ({
   initSyncQueue: jest.fn(),
   subscribeQueueChanged: jest.fn(() => jest.fn()),
   countPending: jest.fn(() => Promise.resolve(0)),
+  claimUnownedQueueItems: jest.fn(),
 }));
 jest.mock('../../sync/queueObserver', () => ({ startQueueObserver: jest.fn(() => jest.fn()) }));
-jest.mock('../../sync/syncRunner', () => ({ runSyncCycle: jest.fn() }));
+jest.mock('../../sync/syncRunner', () => ({ runSyncCycle: jest.fn(), setOwnerSettled: jest.fn() }));
+// fix/mobile-queue-per-user: the device-owner wiring and the stores it reads, inert here (sync/deviceOwner.spec).
+jest.mock('../../sync/deviceOwner', () => ({
+  startDeviceOwner: jest.fn(() => ({ stop: jest.fn(), settled: () => Promise.resolve() })),
+  makeClearCaches: jest.fn(() => jest.fn()),
+  makeOnOwnerChanged: jest.fn(() => jest.fn()),
+}));
+jest.mock('../../db/owner', () => ({ setOwner: jest.fn(), getOwner: jest.fn(() => null) }));
+jest.mock('../../db/photoRepo', () => ({ claimUnownedPhotos: jest.fn() }));
+jest.mock('../../sync/runDeltaSync', () => ({
+  deltaCacheTables: jest.fn(() => []),
+  runDeltaSync: jest.fn(),
+}));
 jest.mock('../../sync/BackgroundSyncTask', () => ({
   registerBackgroundSyncTask: jest.fn(),
   scheduleBackgroundSync: jest.fn(() => Promise.resolve()),
@@ -127,6 +140,23 @@ describe('RootLayout', () => {
 
     for (const open of release) open();
     await waitFor(() => expect(queryByTestId('app-tree')).toBeTruthy());
+  });
+
+  // fix/mobile-queue-per-user: the device follows the signed-in user (sync/deviceOwner.spec has the behaviour),
+  // and every sync cycle waits for it to settle.
+  it('starts the device owner and makes sync cycles wait for it', async () => {
+    const { startDeviceOwner } = jest.requireMock('../../sync/deviceOwner') as {
+      startDeviceOwner: jest.Mock;
+    };
+    const { setOwnerSettled } = jest.requireMock('../../sync/syncRunner') as {
+      setOwnerSettled: jest.Mock;
+    };
+    startDeviceOwner.mockClear();
+    setOwnerSettled.mockClear();
+    await renderApp();
+    expect(startDeviceOwner).toHaveBeenCalledTimes(1);
+    const handle = startDeviceOwner.mock.results[0]!.value as { settled: unknown };
+    expect(setOwnerSettled).toHaveBeenCalledWith(handle.settled);
   });
 
   it('opens the gate once the session is restored', async () => {

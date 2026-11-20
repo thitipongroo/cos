@@ -7,6 +7,7 @@
 // first entry; queued mutations live in sync_queue (cos_sync_queue.db) and are unaffected.
 
 import { openDatabaseSync } from 'expo-sqlite';
+import { LEGACY_OWNER } from './owner';
 import { drizzle } from 'drizzle-orm/expo-sqlite';
 import { and, eq, inArray, ne } from 'drizzle-orm';
 import { localDbStatus, type LocalDbStatus } from '../sync/localDbLimit';
@@ -25,7 +26,7 @@ import {
 export const sqlite = openDatabaseSync('cos_offline_v2.db', { enableChangeListener: true });
 sqlite.execSync('PRAGMA journal_mode = WAL');
 
-const DDL_VERSION = 8;
+const DDL_VERSION = 9;
 
 // ── Schema, expressed as it should END UP, not as a chain of upgrade steps ──────────────────────
 //
@@ -120,6 +121,8 @@ const ADDED_COLUMNS: ReadonlyArray<{ table: string; column: string; type: string
   // reconstructed every sync cycle, so the in-memory counter it used to keep reset to zero each time
   // and its retry ceiling was unreachable (see sync/PhotoUploadQueue.ts).
   { table: 'local_photos', column: 'upload_retry_count', type: 'INTEGER' },
+  // v8->v9: who took the photo (fix/mobile-queue-per-user) — uploaded only while that user is signed in.
+  { table: 'local_photos', column: 'owner_user_id', type: 'TEXT' },
 ];
 
 // None of the added columns are backfilled: a row already cached has no value for one until the next
@@ -143,6 +146,14 @@ function ddl(): void {
     if (!columnExists(table, column)) {
       sqlite.execSync(`ALTER TABLE ${table} ADD COLUMN ${column} ${type}`);
     }
+  }
+  // v9 (fix/mobile-queue-per-user): the photos that exist now were taken before owners were recorded — marked
+  // so, they are the only ones the first user to sign in after the update takes (photoRepo.claimUnownedPhotos).
+  if (current < 9) {
+    sqlite.runSync(
+      `UPDATE local_photos SET owner_user_id = ? WHERE owner_user_id IS NULL`,
+      LEGACY_OWNER,
+    );
   }
   // Stamped LAST and separately, so a failure part-way leaves the version behind and the next launch
   // retries from where it stopped rather than declaring a half-applied schema current.

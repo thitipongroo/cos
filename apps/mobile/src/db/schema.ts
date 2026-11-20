@@ -69,6 +69,9 @@ export const localPhotos = sqliteTable('local_photos', {
   // rebuilt every sync cycle, so an in-memory counter reset to zero each time and its retry ceiling
   // was never reached. Null on rows cached before DDL v8 — read as 0.
   uploadRetryCount: integer('upload_retry_count'),
+  // Who took it (fix/mobile-queue-per-user): uploaded only while that user is signed in. Null on rows from
+  // before DDL v9 — claimed by the first user to sign in after the update.
+  ownerUserId: text('owner_user_id'),
 });
 
 // ── local_photo_annotations — re-editable markup on a photo (ADR-056) ──

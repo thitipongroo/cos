@@ -10,6 +10,8 @@
 
 const mockEnqueue = jest.fn().mockReturnValue(42);
 jest.mock('../../db/sync-queue', () => ({ enqueue: (...a: unknown[]) => mockEnqueue(...a) }));
+// The user whose write it is (fix/mobile-queue-per-user): taken before the request, queued with the replay.
+jest.mock('../../db/owner', () => ({ getOwner: () => 'user-1' }));
 
 const authState = {
   accessToken: 'access-1' as string | null,
@@ -188,7 +190,13 @@ describe('mutate', () => {
     // than from a list edited here, so this passes without a change on this side.
     route('/procurement/deliveries', NETWORK);
     await mutate('POST', '/procurement/deliveries', { po_id: 'po-1' }, 'delivery', 'd-1');
-    expect(mockEnqueue).toHaveBeenCalledWith('delivery', 'd-1', 'CREATE', { po_id: 'po-1' });
+    expect(mockEnqueue).toHaveBeenCalledWith(
+      'delivery',
+      'd-1',
+      'CREATE',
+      { po_id: 'po-1' },
+      'user-1',
+    );
   });
 
   it('queues a POST as CREATE when the network is unreachable', async () => {
@@ -201,14 +209,38 @@ describe('mutate', () => {
       'c-1',
     )) as QueuedResult;
 
-    expect(mockEnqueue).toHaveBeenCalledWith('site_report', 'c-1', 'CREATE', { a: 1 });
+    expect(mockEnqueue).toHaveBeenCalledWith('site_report', 'c-1', 'CREATE', { a: 1 }, 'user-1');
     expect(result).toEqual({ queued: true, queueId: 42, afterTimeout: false });
+  });
+
+  // fix/mobile-queue-per-user: the replay belongs to whoever made the request, even if they sign out before it fails.
+  it('queues the replay under the user who made the request, read before it was sent', async () => {
+    const owner = jest.requireMock('../../db/owner') as { getOwner: () => string | null };
+    const original = owner.getOwner;
+    route('/site/reports', NETWORK);
+    const pending = mutate('POST', '/site/reports', { a: 2 }, 'site_report', 'c-2');
+    owner.getOwner = () => null; // signed out while the request was failing
+    await pending;
+    owner.getOwner = original;
+    expect(mockEnqueue).toHaveBeenLastCalledWith(
+      'site_report',
+      'c-2',
+      'CREATE',
+      { a: 2 },
+      'user-1',
+    );
   });
 
   it('queues a PATCH as UPDATE', async () => {
     route('/tasks/t1', NETWORK);
     await mutate('PATCH', '/tasks/t1', { progress_percent: 100 }, 'task', 't1');
-    expect(mockEnqueue).toHaveBeenCalledWith('task', 't1', 'UPDATE', { progress_percent: 100 });
+    expect(mockEnqueue).toHaveBeenCalledWith(
+      'task',
+      't1',
+      'UPDATE',
+      { progress_percent: 100 },
+      'user-1',
+    );
   });
 
   it('reports a timeout separately, while still queuing', async () => {
@@ -227,7 +259,13 @@ describe('mutate', () => {
     // `forbidNonWhitelisted` — an added field would be rejected by the very replay it annotates.
     route('/safety/incidents', TIMEOUT);
     await mutate('POST', '/safety/incidents', { project_id: 'p1' }, 'safety', 'i-1');
-    expect(mockEnqueue).toHaveBeenCalledWith('safety', 'i-1', 'CREATE', { project_id: 'p1' });
+    expect(mockEnqueue).toHaveBeenCalledWith(
+      'safety',
+      'i-1',
+      'CREATE',
+      { project_id: 'p1' },
+      'user-1',
+    );
   });
 
   it('throws rather than queueing an entity type /sync/push cannot replay', async () => {

@@ -11,6 +11,7 @@ import {
   resetStale,
 } from '../db/sync-queue';
 import type { SyncQueueItem } from '../db/sync-queue';
+import { getOwner } from '../db/owner';
 import { ConflictHandler } from './ConflictHandler';
 import type { ServerSyncStatus, LocalSyncStatus } from './ConflictHandler';
 import { isNetworkError, isPermanentFailure, isTrialReadOnly } from './httpFailure';
@@ -156,6 +157,12 @@ export class SyncManager {
     const items = fetchPending(BATCH_SIZE);
 
     for (const item of items) {
+      // The user changed mid-batch (fix/mobile-queue-per-user): the rest were fetched for the previous user,
+      // and the token now belongs to someone else (or no one). They wait, untouched, for their owner.
+      if (getOwner() !== item.owner_user_id) {
+        result.interrupted = true;
+        break;
+      }
       markSyncing(item.id);
       try {
         await this.processItem(item);

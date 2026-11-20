@@ -17,6 +17,7 @@ import type { PhotoEntityType } from '../db/database';
 import { localPhotos, localPhotoAnnotations, type Photo } from '../db/schema';
 import { getAnnotation, upsertAnnotation } from '../db/annotationRepo';
 import { deletePhotoLocal } from '../db/photoRepo';
+import { getOwner } from '../db/owner';
 import { photoQueueStatus } from '../sync/photoQueueLimit';
 import { canDeletePhoto, GALLERY_COLUMNS } from '../lib/photoGallery';
 import { PhotoAnnotation, type AnnotationStroke } from './PhotoAnnotation';
@@ -125,6 +126,8 @@ export function PhotoCapture({
       localPath: picture.uri,
       uploadStatus: 'PENDING',
       serverFileId: null,
+      // Uploaded only while this user is signed in (fix/mobile-queue-per-user).
+      ownerUserId: getOwner(),
     });
     const next = count + 1;
     setCount(next);

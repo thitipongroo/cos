@@ -2,6 +2,7 @@
 // Projects are a read-only offline cache (§17.4 stale-while-revalidate): GET /projects (paginated
 // { items, nextCursor }) refreshes local_projects when online; the pickers read local_projects.
 
+import { whenOwnerSettled } from '../db/owner';
 import { get } from './client';
 import { db, newLocalId } from '../db/database';
 import { localProjects } from '../db/schema';
@@ -130,6 +131,9 @@ export async function getProjectWorkHours(projectId: string): Promise<ProjectWor
 
 /** Best-effort refresh of the local project cache. Throws when offline — callers ignore. */
 export async function refreshProjectsCache(): Promise<void> {
+  // After the device is handed to the signed-in user (fix/mobile-queue-per-user): a different user's sign-in
+  // clears this cache, and a refresh written before that clear would be wiped with the previous user's rows.
+  await whenOwnerSettled();
   const res = await get<ListProjectsResponse>('/projects');
   await db.delete(localProjects);
   if (res.items.length > 0) {

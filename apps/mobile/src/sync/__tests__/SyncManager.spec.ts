@@ -3,6 +3,10 @@ import type { HttpClient, SyncManagerCallbacks } from '../SyncManager';
 import { SyncManager } from '../SyncManager';
 import { ConflictHandler } from '../ConflictHandler';
 
+// ── The signed-in user (fix/mobile-queue-per-user): the fixture items are user-1's ─────────────────
+const mockGetOwner = jest.fn<string | null, []>(() => 'user-1');
+jest.mock('../../db/owner', () => ({ getOwner: () => mockGetOwner() }));
+
 // ── Mock sync-queue ──────────────────────────────────────────────────────────
 const mockFetchPending = jest.fn<SyncQueueItem[], [number]>().mockReturnValue([]);
 const mockMarkSyncing = jest.fn();
@@ -35,6 +39,7 @@ const makeItem = (overrides: Partial<SyncQueueItem> = {}): SyncQueueItem => ({
   client_submitted_at: '2026-06-08T00:00:00Z',
   last_attempt_at: null,
   error_message: null,
+  owner_user_id: 'user-1',
   ...overrides,
 });
 
@@ -59,6 +64,26 @@ describe('SyncManager', () => {
   });
 
   describe('processQueue', () => {
+    // fix/mobile-queue-per-user: the batch was fetched for one user; if another signs in (or the user signs out)
+    // mid-batch, the rest are not sent with the new token — they wait, untouched, for their owner.
+    it('stops the batch, touching nothing, when the signed-in user changes mid-batch', async () => {
+      mockFetchPending.mockReturnValue([
+        makeItem({ id: 1 }),
+        makeItem({ id: 2 }),
+        makeItem({ id: 3 }),
+      ]);
+      const http = makeHttpClient();
+      (http.post as jest.Mock).mockImplementationOnce(async () => {
+        mockGetOwner.mockReturnValue('user-2'); // B signs in while item 1 is in flight
+        return { data: { status: 'ACCEPTED' } };
+      });
+      const result = await makeManager(http).processQueue();
+      expect(result).toEqual(expect.objectContaining({ synced: 1, interrupted: true }));
+      expect(http.post).toHaveBeenCalledTimes(1);
+      expect(mockMarkSyncing).toHaveBeenCalledTimes(1);
+      mockGetOwner.mockReturnValue('user-1');
+    });
+
     it('returns zeroed result when queue is empty', async () => {
       const manager = makeManager(makeHttpClient());
       const result = await manager.processQueue();

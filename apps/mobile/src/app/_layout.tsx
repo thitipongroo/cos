@@ -22,7 +22,17 @@ import { useBiometricStore } from '../store/biometricStore';
 import { I18nProvider } from '../i18n';
 import { initSyncQueue, subscribeQueueChanged, countPending } from '../db/sync-queue';
 import { startQueueObserver } from '../sync/queueObserver';
-import { runSyncCycle } from '../sync/syncRunner';
+import { startDeviceOwner, makeClearCaches, makeOnOwnerChanged } from '../sync/deviceOwner';
+import { setOwner } from '../db/owner';
+import { claimUnownedQueueItems, notifyQueueOwnerChanged } from '../db/sync-queue';
+import { useProjectStore } from '../store/projectStore';
+import { useOfflineStore } from '../store/offlineStore';
+import { useTenantStore } from '../store/tenantStore';
+import { claimUnownedPhotos } from '../db/photoRepo';
+import { clearTable } from '../db/database';
+import { deltaCacheTables } from '../sync/runDeltaSync';
+import { runSyncCycle, setOwnerSettled } from '../sync/syncRunner';
+import * as SecureStore from 'expo-secure-store';
 import { registerBackgroundSyncTask, scheduleBackgroundSync } from '../sync/BackgroundSyncTask';
 import { useSyncStore } from '../store/syncStore';
 import { isE2EEnabled, setForcedOnline } from '../lib/e2e/networkOverride';
@@ -49,6 +59,8 @@ const LAUNCH_TAGLINE = 'AI-NATIVE\nConstruction Platform';
 // same reason as the tagline — this renders before I18nProvider mounts (QM-3's English system default);
 // it mirrors the `common.loadingLabel` string the rest of the app resolves through i18n.
 const LAUNCH_LABEL = 'Loading…';
+// The last user signed in on this device — a different one gets the read caches cleared (fix/mobile-queue-per-user).
+const LAST_DEVICE_USER_KEY = 'cos_last_device_user';
 
 function AuthGate() {
   const router = useRouter();
@@ -104,6 +116,34 @@ export default function RootLayout() {
       setPendingCount: useSyncStore.getState().setPendingCount,
     });
 
+    // The device acts for the signed-in user only (fix/mobile-queue-per-user): their outbox and photos are
+    // sent, another user's wait; a different user signing in gets the read caches cleared and a full pull.
+    const deviceOwner = startDeviceOwner({
+      subscribe: (cb) =>
+        useAuthStore.subscribe((s, prev) => s.userId !== prev.userId && cb(s.userId)),
+      getUserId: () => useAuthStore.getState().userId,
+      setOwner,
+      claimUnowned: async (userId) => {
+        claimUnownedQueueItems(userId);
+        await claimUnownedPhotos(userId);
+      },
+      readLastUser: () => SecureStore.getItemAsync(LAST_DEVICE_USER_KEY),
+      writeLastUser: (userId) => SecureStore.setItemAsync(LAST_DEVICE_USER_KEY, userId),
+      // The previous user's active project (possibly another tenant's) and unresolved conflicts go with their cache.
+      clearCaches: makeClearCaches({
+        clearTable: (table) => clearTable(table as Parameters<typeof clearTable>[0]),
+        deltaTables: deltaCacheTables(),
+        clearLastSyncAt: () => useSyncStore.getState().clearLastSyncAt(),
+        clearProject: () => useProjectStore.getState().clear(),
+        clearConflicts: () => useOfflineStore.getState().clearConflicts(),
+      }),
+      onOwnerChanged: makeOnOwnerChanged({
+        recount: notifyQueueOwnerChanged,
+        clearTenant: () => useTenantStore.getState().setTenant(null),
+      }),
+    });
+    setOwnerSettled(deviceOwner.settled);
+
     // Define and schedule the OS background sync job (§Phase 10 Background Sync). Both halves were
     // written and neither was ever called, so the task was never registered with TaskManager and the
     // 15-minute job never existed. Scheduling can reject (the OS refuses in Background App Refresh
@@ -145,6 +185,7 @@ export default function RootLayout() {
 
     return () => {
       stopQueueObserver();
+      deviceOwner.stop();
       stopAppStateWatch();
     };
   }, []);

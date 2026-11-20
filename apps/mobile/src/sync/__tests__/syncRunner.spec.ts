@@ -9,7 +9,8 @@ jest.mock('../runPushSync', () => ({ runPushSync: () => mockRunPushSync() }));
 jest.mock('../runDeltaSync', () => ({ runDeltaSync: () => mockRunDeltaSync() }));
 jest.mock('../../store/syncStore', () => ({ useSyncStore: { getState: () => state } }));
 
-import { runSyncCycle, __resetSyncRunnerForTests } from '../syncRunner';
+import { runSyncCycle, setOwnerSettled, __resetSyncRunnerForTests } from '../syncRunner';
+import { setOwner } from '../../db/owner';
 
 const offline = { isAxiosError: true, code: 'ERR_NETWORK' };
 
@@ -102,9 +103,40 @@ describe('runSyncCycle', () => {
       const second = runSyncCycle();
       expect(second).toBe(first);
 
-      release!();
+      // The cycle first waits for the device owner to settle (fix/mobile-queue-per-user), so the push
+      // starts a few microtasks later.
+      while (!release) await Promise.resolve();
+      release();
       await first;
       expect(mockRunPushSync).toHaveBeenCalledTimes(1);
+    });
+
+    // fix/mobile-queue-per-user: a new user's cycle waits until the device has been handed to them — their
+    // unowned rows claimed, the previous user's caches cleared and the cursor reset — before pushing or pulling.
+    // fix/mobile-queue-per-user (/doubt cycle 2): a pull after the user changed mid-cycle would use the new token on
+    // the previous user's cursor — skipped; the next cycle is the new user's.
+    it('skips the pull when the signed-in user changed during the push', async () => {
+      setOwner('user-a');
+      mockRunPushSync.mockImplementation(async () => {
+        setOwner('user-b');
+      });
+      await runSyncCycle();
+      expect(mockRunDeltaSync).not.toHaveBeenCalled();
+      setOwner(null);
+    });
+
+    it('waits for the device owner to settle before pushing', async () => {
+      let settle: (() => void) | undefined;
+      setOwnerSettled(() => new Promise<void>((resolve) => (settle = resolve)));
+      mockRunPushSync.mockResolvedValue(undefined);
+      const cycle = runSyncCycle();
+      await Promise.resolve();
+      await Promise.resolve();
+      expect(mockRunPushSync).not.toHaveBeenCalled();
+      settle!();
+      await cycle;
+      expect(mockRunPushSync).toHaveBeenCalledTimes(1);
+      setOwnerSettled(() => Promise.resolve());
     });
 
     it('allows a new cycle once the previous one has settled', async () => {

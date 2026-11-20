@@ -84,9 +84,22 @@ jest.mock('../../db/sync-queue', () => ({
   initSyncQueue: jest.fn(),
   subscribeQueueChanged: jest.fn(() => jest.fn()),
   countPending: jest.fn(() => Promise.resolve(0)),
+  claimUnownedQueueItems: jest.fn(),
 }));
 jest.mock('../../sync/queueObserver', () => ({ startQueueObserver: jest.fn(() => jest.fn()) }));
-jest.mock('../../sync/syncRunner', () => ({ runSyncCycle: jest.fn() }));
+jest.mock('../../sync/syncRunner', () => ({ runSyncCycle: jest.fn(), setOwnerSettled: jest.fn() }));
+// fix/mobile-queue-per-user: the device-owner wiring and the stores it reads, inert here (sync/deviceOwner.spec).
+jest.mock('../../sync/deviceOwner', () => ({
+  startDeviceOwner: jest.fn(() => ({ stop: jest.fn(), settled: () => Promise.resolve() })),
+  makeClearCaches: jest.fn(() => jest.fn()),
+  makeOnOwnerChanged: jest.fn(() => jest.fn()),
+}));
+jest.mock('../../db/owner', () => ({ setOwner: jest.fn(), getOwner: jest.fn(() => null) }));
+jest.mock('../../db/photoRepo', () => ({ claimUnownedPhotos: jest.fn() }));
+jest.mock('../../sync/runDeltaSync', () => ({
+  deltaCacheTables: jest.fn(() => []),
+  runDeltaSync: jest.fn(),
+}));
 jest.mock('../../sync/BackgroundSyncTask', () => ({
   registerBackgroundSyncTask: jest.fn(),
   scheduleBackgroundSync: jest.fn(() => Promise.resolve()),

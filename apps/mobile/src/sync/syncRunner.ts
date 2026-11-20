@@ -20,11 +20,15 @@
 import { runPushSync } from './runPushSync';
 import { runDeltaSync } from './runDeltaSync';
 import { useSyncStore } from '../store/syncStore';
+import { getOwner, whenOwnerSettled } from '../db/owner';
 
 import { isNetworkError } from './httpFailure';
 
 /** In-flight guard. A cycle already running is joined rather than duplicated. */
 let inFlight: Promise<void> | null = null;
+
+// A cycle waits for the device to be handed to the signed-in user first (db/owner.ts, fix/mobile-queue-per-user).
+export { setOwnerSettled } from '../db/owner';
 
 /**
  * Push the outbox, then pull the delta, reporting status throughout.
@@ -47,6 +51,10 @@ export function runSyncCycle(): Promise<void> {
 
   inFlight = (async () => {
     let realFailure = false;
+    await whenOwnerSettled();
+    // The user this cycle runs for: if another signs in (or this one signs out) mid-cycle, the pull below would
+    // use the new token on this user's cursor — skipped; the next cycle is theirs (fix/mobile-queue-per-user).
+    const owner = getOwner();
 
     // Push first (§17.6): local work reaches the server before the server's view overwrites the
     // local cache. A push failure must not skip the pull — the two are independent, and a device
@@ -58,7 +66,7 @@ export function runSyncCycle(): Promise<void> {
     }
 
     try {
-      await runDeltaSync();
+      if (getOwner() === owner) await runDeltaSync();
     } catch (err) {
       realFailure = realFailure || !isNetworkError(err);
     }

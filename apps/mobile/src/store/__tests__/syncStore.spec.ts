@@ -58,6 +58,14 @@ describe('syncStore', () => {
       expect(SecureStore.setItemAsync).toHaveBeenCalledWith('cos_last_sync_at', ts);
     });
 
+    // fix/mobile-queue-per-user: a different user signing in gets a full pull.
+    it('clearLastSyncAt forgets the cursor, in memory and in storage', async () => {
+      await useSyncStore.getState().setLastSyncAt(ts);
+      await useSyncStore.getState().clearLastSyncAt();
+      expect(useSyncStore.getState().lastSyncAt).toBeNull();
+      expect(SecureStore.deleteItemAsync).toHaveBeenCalledWith('cos_last_sync_at');
+    });
+
     it('hydrate restores a stored cursor', async () => {
       (SecureStore.getItemAsync as jest.Mock).mockResolvedValueOnce(ts);
       await useSyncStore.getState().hydrate();

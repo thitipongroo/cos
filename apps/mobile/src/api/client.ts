@@ -8,6 +8,7 @@
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosError } from 'axios';
 import { useAuthStore } from '../store/authStore';
 import { enqueue, SyncOperation } from '../db/sync-queue';
+import { getOwner } from '../db/owner';
 import { isNetworkError, isTimeout } from '../sync/httpFailure';
 import { SYNC_PUSHABLE_ENTITY_TYPES } from '@cos/types';
 
@@ -230,6 +231,9 @@ export async function mutate<T>(
   entityType: string,
   entityId: string,
 ): Promise<T | QueuedResult> {
+  // Whose write this is, taken before the request: if it fails after that user has signed out, the queued
+  // replay is still theirs, not the next user's (fix/mobile-queue-per-user).
+  const owner = getOwner();
   try {
     const { data } = await http.request<T>({ method, url: path, data: payload });
     return data;
@@ -240,7 +244,7 @@ export async function mutate<T>(
         throw err;
       }
       const op: SyncOperation = method === 'POST' ? 'CREATE' : 'UPDATE';
-      const queueId = enqueue(entityType, entityId, op, payload);
+      const queueId = enqueue(entityType, entityId, op, payload, owner);
       return { queued: true, queueId, afterTimeout: isTimeout(err) };
     }
     throw err;

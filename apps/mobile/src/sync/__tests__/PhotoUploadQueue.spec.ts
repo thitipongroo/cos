@@ -6,12 +6,17 @@ import * as FileSystem from 'expo-file-system/legacy';
 
 const BASE_URL = 'https://api.example.com';
 
+// The signed-in user (fix/mobile-queue-per-user): the fixture photos are user-1's.
+const mockGetOwner = jest.fn<string | null, []>(() => 'user-1');
+jest.mock('../../db/owner', () => ({ getOwner: () => mockGetOwner() }));
+
 const makePhoto = (localId = 'photo-1', retryCount = 0): PendingPhoto => ({
   localId,
   localPath: '/cache/photo-1.jpg',
   entityType: 'site_report',
   entityId: 'entity-1',
   retryCount,
+  ownerUserId: 'user-1',
 });
 
 const makeRepo = (photos: PendingPhoto[] = []): jest.Mocked<PhotoRepository> => ({
@@ -49,7 +54,8 @@ describe('PhotoUploadQueue', () => {
       const onUploaded = jest.fn().mockResolvedValue(undefined);
       const queue = new PhotoUploadQueue(repo, BASE_URL, () => 'token', onUploaded);
       await queue.processNext();
-      expect(onUploaded).toHaveBeenCalledWith('photo-1', 'server-file-id');
+      // With the photo's owner, so its annotation is queued for that user (fix/mobile-queue-per-user).
+      expect(onUploaded).toHaveBeenCalledWith('photo-1', 'server-file-id', 'user-1');
     });
 
     it('swallows an onUploaded failure — the upload itself still succeeds', async () => {
@@ -94,6 +100,19 @@ describe('PhotoUploadQueue', () => {
       expect(FileSystem.uploadAsync).toHaveBeenCalledTimes(2);
       expect(repo.markUploaded).toHaveBeenCalledWith('p1', 'server-file-id');
       expect(repo.markUploaded).toHaveBeenCalledWith('p2', 'server-file-id');
+    });
+
+    // fix/mobile-queue-per-user: the batch was read for one user; a sign-in or sign-out mid-batch leaves the rest
+    // untouched, for their owner — never uploaded with the next user's token.
+    it('stops when the signed-in user changes mid-batch, touching the rest not at all', async () => {
+      const repo = makeRepo([makePhoto('p1'), makePhoto('p2')]);
+      repo.markUploaded.mockImplementationOnce(async () => {
+        mockGetOwner.mockReturnValue('user-2');
+      });
+      await new PhotoUploadQueue(repo, BASE_URL, () => 'token').processAll();
+      expect(FileSystem.uploadAsync).toHaveBeenCalledTimes(1);
+      expect(repo.markUploading).not.toHaveBeenCalledWith('p2');
+      mockGetOwner.mockReturnValue('user-1');
     });
   });
 

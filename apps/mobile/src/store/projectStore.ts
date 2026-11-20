@@ -18,6 +18,7 @@
 
 import { create } from 'zustand';
 import * as SecureStore from 'expo-secure-store';
+import { whenOwnerSettled } from '../db/owner';
 
 const PROJECT_KEY = 'cos_active_project';
 
@@ -100,6 +101,9 @@ export const useProjectStore = create<ProjectState>((set) => ({
   pickerOpen: false,
 
   hydrate: async () => {
+    // After the device is handed to the signed-in user (fix/mobile-queue-per-user): a different user's sign-in
+    // drops the previous user's project, and a read issued before that would bring it back.
+    await whenOwnerSettled();
     const parsed = parse(await SecureStore.getItemAsync(PROJECT_KEY));
     if (parsed !== null) set({ active: parsed });
   },
