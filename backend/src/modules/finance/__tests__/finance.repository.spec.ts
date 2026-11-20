@@ -328,20 +328,24 @@ describe('FinanceRepository', () => {
     expect(await repo.projectStatus('proj-2')).toBeNull();
   });
 
-  // Plan DB: an AP payment's invoice — its PO's project, in this tenant.
-  it("invoiceProject asks for the invoice's PO's project in this tenant, or null", async () => {
-    mockPrisma.$queryRaw.mockResolvedValueOnce([{ project_id: 'proj-9' }]);
-    expect(await repo.invoiceProject('inv-1')).toBe('proj-9');
+  // Plans DB, DD: an AP payment's invoice — its PO's project, its status and currency, in this tenant.
+  it("invoiceForPayment asks for the invoice's PO's project, status and currency in this tenant, or null", async () => {
+    const row = { project_id: 'proj-9', status: 'APPROVED', currency_code: 'THB' };
+    mockPrisma.$queryRaw.mockResolvedValueOnce([row]);
+    expect(await repo.invoiceForPayment('inv-1')).toEqual(row);
     const call = mockPrisma.$queryRaw.mock.calls.at(-1)!;
     const sql = (call[0] as string[]).join('?').replace(/\s+/g, ' ');
     expect(sql).toContain('FROM procurement.invoices i');
     expect(sql).toContain(
       'JOIN procurement.purchase_orders po ON po.po_id = i.po_id AND po.tenant_id = i.tenant_id',
     );
+    expect(sql).toContain(
+      'SELECT po.project_id::text AS project_id, i.status::text AS status, i.currency_code',
+    );
     expect(sql).toContain('WHERE i.invoice_id = ?::uuid AND i.tenant_id = ?::uuid');
     expect(call.slice(1)).toEqual(['inv-1', 'tenant-uuid-001']);
     mockPrisma.$queryRaw.mockResolvedValueOnce([]);
-    expect(await repo.invoiceProject('inv-2')).toBeNull();
+    expect(await repo.invoiceForPayment('inv-2')).toBeNull();
   });
 
   it('activeVendorExists asks for an ACTIVE vendor in this tenant', async () => {

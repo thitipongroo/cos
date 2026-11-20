@@ -426,6 +426,58 @@ describe('Phase 7 · AR billing lifecycle and cash flow forecast (real database)
       expect(await payments(invoiceId)).toBe(0);
     });
 
+    // Plan DD (product owner 2026-11-21): only an APPROVED invoice, in its own currency.
+    it.each(['RECEIVED', 'VERIFIED', 'DISPUTED'])(
+      'a %s invoice: 422 COS-FIN-422 (not approved), no payment',
+      async (status) => {
+        const projectId = await newProject();
+        const invoiceId = await vendorInvoice(projectId);
+        await infra.prisma.$executeRawUnsafe(
+          `UPDATE procurement.invoices SET status = $2 WHERE invoice_id = $1::uuid`,
+          invoiceId,
+          status,
+        );
+        const res = await pay(projectId, invoiceId);
+        expect(res.status).toBe(422);
+        expect(res.body).toMatchObject({
+          error: { code: 'COS-FIN-422', messageKey: 'finance.payment.invoiceNotApproved' },
+        });
+        expect(await payments(invoiceId)).toBe(0);
+      },
+    );
+
+    it("another currency than the invoice's: 422 COS-FIN-422, no payment", async () => {
+      const projectId = await newProject();
+      const invoiceId = await vendorInvoice(projectId); // THB
+      const res = await http()
+        .post('/api/v1/finance/payments')
+        .set('x-test-role', 'FINANCE')
+        .send({
+          project_id: projectId,
+          invoice_id: invoiceId,
+          amount: '1000.0000',
+          currency_code: 'USD',
+          payment_date: isoDaysFromNow(3),
+        });
+      expect(res.status).toBe(422);
+      expect(res.body).toMatchObject({
+        error: {
+          code: 'COS-FIN-422',
+          message: "Payment currency USD is not the invoice's (THB)",
+          messageKey: 'finance.payment.currencyMismatch',
+        },
+      });
+      expect(await payments(invoiceId)).toBe(0);
+    });
+
+    it('two instalments against one APPROVED invoice are both written', async () => {
+      const projectId = await newProject();
+      const invoiceId = await vendorInvoice(projectId);
+      expect([200, 201]).toContain((await pay(projectId, invoiceId)).status);
+      expect([200, 201]).toContain((await pay(projectId, invoiceId)).status);
+      expect(await payments(invoiceId)).toBe(2);
+    });
+
     it("an invoice of another project's PO: 422 COS-FIN-422, no payment", async () => {
       const invoiceId = await vendorInvoice(await newProject());
       const res = await pay(await newProject(), invoiceId);

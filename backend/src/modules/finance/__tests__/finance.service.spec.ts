@@ -63,7 +63,7 @@ const mockRepo = {
   listCustomers: jest.fn(),
   createContract: jest.fn(),
   projectStatus: jest.fn(),
-  invoiceProject: jest.fn(),
+  invoiceForPayment: jest.fn(),
   findCustomerById: jest.fn(),
   activeVendorExists: jest.fn(),
   findContractById: jest.fn(),
@@ -623,7 +623,8 @@ describe('variance alert', () => {
 // ── recordPayment ──────────────────────────────────────────────────────────
 
 describe('recordPayment', () => {
-  beforeEach(() => mockRepo.invoiceProject.mockResolvedValue('proj-uuid-001')); // plan DB
+  const approvedInvoice = { project_id: 'proj-uuid-001', status: 'APPROVED', currency_code: 'THB' };
+  beforeEach(() => mockRepo.invoiceForPayment.mockResolvedValue(approvedInvoice)); // plans DB, DD
 
   it('records payment and emits finance.payment.processed.v1', async () => {
     mockRepo.createPayment.mockResolvedValue(paymentRow);
@@ -643,7 +644,7 @@ describe('recordPayment', () => {
         payload: expect.objectContaining({ payment_id: 'pay-uuid-001' }),
       }),
     );
-    expect(mockRepo.invoiceProject).toHaveBeenCalledWith('inv-uuid-001');
+    expect(mockRepo.invoiceForPayment).toHaveBeenCalledWith('inv-uuid-001');
   });
 
   // Plan DB (product owner 2026-11-21): the invoice is the tenant's and the payment is under its PO's project.
@@ -656,7 +657,7 @@ describe('recordPayment', () => {
   });
 
   it("404 when the invoice is not the tenant's (absent or another tenant's), nothing written", async () => {
-    mockRepo.invoiceProject.mockResolvedValue(null);
+    mockRepo.invoiceForPayment.mockResolvedValue(null);
     await expect(service.recordPayment(payDto())).rejects.toThrow(
       new NotFoundException('Invoice inv-uuid-001 not found'),
     );
@@ -681,6 +682,47 @@ describe('recordPayment', () => {
     mockRepo.createPayment.mockResolvedValue(paymentRow);
     await service.recordPayment(payDto('PROJ-UUID-001'));
     expect(mockRepo.createPayment).toHaveBeenCalled();
+  });
+
+  // Plan DD (product owner 2026-11-21): only an APPROVED invoice, in its own currency.
+  it.each(['RECEIVED', 'VERIFIED', 'PAID', 'DISPUTED'])(
+    '422 COS-FIN-422 for a %s invoice, nothing written',
+    async (status) => {
+      mockRepo.invoiceForPayment.mockResolvedValue({ ...approvedInvoice, status });
+      const err = await service.recordPayment(payDto()).catch((e: unknown) => e);
+      expect(err).toMatchObject({
+        response: {
+          error: {
+            code: 'COS-FIN-422',
+            message: `Invoice inv-uuid-001 is ${status} — only an APPROVED invoice can be paid`,
+            messageKey: 'finance.payment.invoiceNotApproved',
+          },
+        },
+      });
+      expect(mockRepo.createPayment).not.toHaveBeenCalled();
+    },
+  );
+
+  it("the invoice's currency in another letter case is the same currency", async () => {
+    mockRepo.invoiceForPayment.mockResolvedValue({ ...approvedInvoice, currency_code: 'thb' });
+    mockRepo.createPayment.mockResolvedValue(paymentRow);
+    await service.recordPayment(payDto());
+    expect(mockRepo.createPayment).toHaveBeenCalled();
+  });
+
+  it("422 COS-FIN-422 when the currency is not the invoice's, nothing written", async () => {
+    mockRepo.invoiceForPayment.mockResolvedValue({ ...approvedInvoice, currency_code: 'USD' });
+    const err = await service.recordPayment(payDto()).catch((e: unknown) => e);
+    expect(err).toMatchObject({
+      response: {
+        error: {
+          code: 'COS-FIN-422',
+          message: "Payment currency THB is not the invoice's (USD)",
+          messageKey: 'finance.payment.currencyMismatch',
+        },
+      },
+    });
+    expect(mockRepo.createPayment).not.toHaveBeenCalled();
   });
 });
 

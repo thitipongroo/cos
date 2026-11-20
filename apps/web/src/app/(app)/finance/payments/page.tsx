@@ -54,10 +54,10 @@ export default function PaymentsPage() {
 
   const messageFor = (key?: string) => (key ? t(key) : undefined);
 
-  // Only the chosen project's invoices (plan DC): none is offered until a project is chosen, so an invoice of
-  // another project cannot be picked.
+  // Only the chosen project's payable invoices: none is offered until a project is chosen (plan DC), and only
+  // APPROVED ones are (plan DD — the server refuses any other).
   const projectId = watch('project_id');
-  const invoices = useFinanceInvoices('', { projectId, requireProject: true });
+  const invoices = useFinanceInvoices('APPROVED', { projectId, requireProject: true });
 
   // Why the last attempt was refused (plan DB) — the project and the invoice are picked separately; changing either clears it.
   const [recordError, setRecordError] = useState<string | null>(null);

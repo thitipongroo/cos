@@ -1602,6 +1602,26 @@ gate's isolated run) checks the hash was not tested either; it ran 12.18.0 with 
 
 ## Open
 
+- **Closed — an AP payment could be recorded against an unapproved or disputed invoice, in any currency.** Fixed in
+  plan DD (on the current branch; product-owner decisions 2026-11-21: only an APPROVED invoice — several payments
+  against one stay allowed, as instalments; the payment in the invoice's currency; the payments page lists only
+  payable invoices). Closes the item plans DB and DC left. Measured on HEAD (`test/finance/03`): a RECEIVED,
+  VERIFIED or DISPUTED invoice, and a USD payment of a THB invoice, each → 201, written.
+  - The procurement public helper is now `invoice-for-payment.ts` `invoiceForPaymentInTenant` (the PO's project,
+    the invoice's status and currency; it replaces `invoice-project.ts`); `FinanceRepository.invoiceForPayment`.
+    `recordPayment`, after plan DB's checks: not APPROVED → 422 `COS-FIN-422`, `finance.payment.invoiceNotApproved`;
+    another currency (compared without regard to letter case — a buyer-entered invoice may be stored `thb`; found by
+    /doubt) → 422 `finance.payment.currencyMismatch`. Nothing written, no event. No code sets an invoice
+    PAID today (the PO workflow sets the PO), so PAID is refused with the others.
+  - Web: the payments page asks for `status=APPROVED` with the project; `paymentErrorKey` maps both keys (TH/EN).
+  - Docs: `finance.openapi.yaml` (422 text), `error-codes.md` rows.
+  - Verified: finance unit (339: each status refused, APPROVED written, the currency), `test/finance/03` (38: three
+    statuses and the currency → 422 with no payment; two instalments both written — HEAD's service writes all four
+    refused cases), apps/web jest (500). tsc, eslint, prettier, conformance, OpenAPI validity and freshness,
+    markdownlint. The page's `status=APPROVED` has no test of its own (no component tests on the web).
+  - Parked (found by /doubt): the invoice is read and the payment written in separate transactions (an invoice
+    disputed in between is still paid — as plan DB's checks); nothing sets an invoice PAID or caps instalments, so an
+    APPROVED invoice can be paid beyond its amount, even after its PO is PAID — a product question.
 - **Closed — the payments page offered every invoice of the tenant, whatever project was chosen.** Fixed in plan DC
   (on the current branch; product-owner decisions 2026-11-21: the list takes `?project_id=` and each row carries its
   PO's project; the payments page asks for the chosen project's invoices, the invoice select disabled until a project

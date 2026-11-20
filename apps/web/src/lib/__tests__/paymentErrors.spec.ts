@@ -14,6 +14,16 @@ describe('paymentErrorKey', () => {
       apiError(422, 'finance.payment.invoiceOtherProject', 'COS-FIN-422'),
       'finance.err.invoiceOtherProject',
     ],
+    [
+      'an invoice not APPROVED',
+      apiError(422, 'finance.payment.invoiceNotApproved', 'COS-FIN-422'),
+      'finance.err.invoiceNotApproved',
+    ],
+    [
+      "another currency than the invoice's",
+      apiError(422, 'finance.payment.currencyMismatch', 'COS-FIN-422'),
+      'finance.err.currencyMismatch',
+    ],
     ['no such invoice in the tenant', apiError(404), 'finance.err.invoiceNotFound'],
     ['no permission', apiError(403, undefined, 'COS-PLAN-003'), 'finance.err.forbidden'],
     ['a ValidationPipe 400', apiError(400, 'general.error.validation'), 'finance.err.generic'],
@@ -25,7 +35,14 @@ describe('paymentErrorKey', () => {
 
   it('every key it can return exists in both languages', () => {
     for (const dict of [en, th] as Array<{ finance: { err: Record<string, string> } }>) {
-      for (const k of ['generic', 'forbidden', 'invoiceNotFound', 'invoiceOtherProject']) {
+      for (const k of [
+        'generic',
+        'forbidden',
+        'invoiceNotFound',
+        'invoiceOtherProject',
+        'invoiceNotApproved',
+        'currencyMismatch',
+      ]) {
         expect(dict.finance.err[k]).toEqual(expect.any(String));
       }
     }

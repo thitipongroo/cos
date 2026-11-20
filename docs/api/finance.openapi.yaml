@@ -632,8 +632,10 @@ paths:
           description: No such vendor invoice in this tenant (plan DB); nothing is written
         '422':
           description: >-
-            `COS-FIN-422` (`finance.payment.invoiceOtherProject`) — the invoice's purchase order is under another
-            project than `project_id` (plan DB); nothing is written
+            `COS-FIN-422` — `finance.payment.invoiceOtherProject`: the invoice's purchase order is under another
+            project than `project_id` (plan DB); `finance.payment.invoiceNotApproved`: the invoice is not APPROVED
+            (plan DD); `finance.payment.currencyMismatch`: `currency_code` is not the invoice's (plan DD). Nothing is
+            written
   /finance/reports/variance:
     get:
       operationId: getFinanceReportsVariance

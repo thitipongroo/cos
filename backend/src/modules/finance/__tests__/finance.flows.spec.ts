@@ -51,7 +51,7 @@ const mockRepo = {
   sumTransactionsByProject: jest.fn(),
   deleteTransactionBySource: jest.fn().mockResolvedValue(undefined),
   createPayment: jest.fn(),
-  invoiceProject: jest.fn(),
+  invoiceForPayment: jest.fn(),
   findPayments: jest.fn(),
   findAllBudgets: jest.fn(),
 };
@@ -294,7 +294,11 @@ describe('recordPayment', () => {
       created_at: new Date(),
     };
     mockRepo.createPayment.mockResolvedValue(payRow);
-    mockRepo.invoiceProject.mockResolvedValue('proj-int-001'); // plan DB: the invoice's PO's project
+    mockRepo.invoiceForPayment.mockResolvedValue({
+      project_id: 'proj-int-001',
+      status: 'APPROVED',
+      currency_code: 'THB',
+    }); // plans DB, DD
 
     const result = await svc.recordPayment({
       project_id: 'proj-int-001',

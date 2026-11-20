@@ -387,17 +387,31 @@ export class FinanceService {
   // Allowed on a closed project (plan CY, by design): open invoices are still paid after a project closes.
   async recordPayment(dto: RecordPaymentDto): Promise<PaymentRow> {
     const project_id = dto.project_id;
-    // The invoice is the tenant's, and the payment is under its PO's project (product owner, 2026-11-21; plan DB).
-    // invoice_id has no foreign key: an unknown or another tenant's invoice was written, and the web page picks the
-    // project and the invoice separately. The invoice's status and currency are not checked (by decision).
-    const invoiceProject = await this.repo.invoiceProject(dto.invoice_id);
-    if (invoiceProject === null) {
+    // The invoice is the tenant's, and the payment is under its PO's project (product owner, 2026-11-21; plan DB);
+    // it is APPROVED and paid in its own currency (plan DD) — several payments against one APPROVED invoice stay
+    // allowed (instalments). invoice_id has no foreign key: an unknown or another tenant's invoice was written.
+    const invoice = await this.repo.invoiceForPayment(dto.invoice_id);
+    if (invoice === null) {
       throw new NotFoundException(`Invoice ${dto.invoice_id} not found`);
     }
-    if (!sameUuid(invoiceProject, project_id)) {
+    if (!sameUuid(invoice.project_id, project_id)) {
       throw this.refuse(
         `Invoice ${dto.invoice_id} belongs to another project`,
         'finance.payment.invoiceOtherProject',
+      );
+    }
+    if (invoice.status !== 'APPROVED') {
+      throw this.refuse(
+        `Invoice ${dto.invoice_id} is ${invoice.status} — only an APPROVED invoice can be paid`,
+        'finance.payment.invoiceNotApproved',
+      );
+    }
+    // Without regard to letter case: a buyer-entered invoice may be stored `thb` (its DTO does not enforce upper
+    // case), while the web form insists on `THB` (found by /doubt).
+    if (invoice.currency_code.toUpperCase() !== dto.currency_code.toUpperCase()) {
+      throw this.refuse(
+        `Payment currency ${dto.currency_code} is not the invoice's (${invoice.currency_code})`,
+        'finance.payment.currencyMismatch',
       );
     }
     const payment = await this.repo.createPayment(
