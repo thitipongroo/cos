@@ -322,7 +322,7 @@ Verified on **2026-08-22** against this working tree (Rule 36 — commands run, 
 | WHT via `wht_rules`, no hardcoded rates     | ✅ present | `wht.service.ts` reads `finance.wht_rules` — but see OQ-30                               |
 | Multi-currency via Open Exchange Rates      | ✅ present | `exchange-rate.service.ts`; `CACHE_TTL_SECONDS = 86400`; stale-while-revalidate fallback |
 | Construction financing / factoring stub     | ✅ present | `ep/construction-financing.stub.ts`                                                      |
-| 13-week cash-flow forecast (ADR-024)        | ✅ present | `FORECAST_WEEKS = 13`; AR inflow from ISSUED billings − AP outflow                       |
+| 13-week cash-flow forecast (ADR-024)        | ✅ present | `FORECAST_WEEKS = 13`; AR inflow (remaining on ISSUED billings) − AP outflow             |
 
 ---
 

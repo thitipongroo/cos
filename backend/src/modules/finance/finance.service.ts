@@ -1051,7 +1051,7 @@ export class FinanceService {
 
   // ── Cash flow forecast (direct method, §09) ─────────────────────────────────
 
-  /** 13-week rolling direct-method forecast: AR inflow (ISSUED billings) − AP outflow
+  /** 13-week rolling direct-method forecast: AR inflow (what remains on ISSUED billings, plan DG) − AP outflow
    *  (PENDING payments), bucketed weekly by due date. Cumulative net is relative to 0
    *  (no opening cash-account balance is modeled — not in §11). */
   async getCashflowForecast(project_id: string): Promise<CashflowPeriod[]> {

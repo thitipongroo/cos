@@ -254,6 +254,10 @@ describe('CashflowRiskService sweep', () => {
       ]);
 
     await expect(svc.runRiskSweep()).resolves.toBe(1);
+    // Plan DG: the inflow is the forecast's own query — what remains on each billing, net of its receipts.
+    const inflowSql = String((mockQueryRaw.mock.calls[3] as unknown[])[0]).replace(/\s+/g, ' ');
+    expect(inflowSql).toContain('LEFT JOIN finance.ar_receipts r');
+    expect(inflowSql).toContain('(b.amount - COALESCE(SUM(r.amount_received), 0))');
     expect(mockError).toHaveBeenCalledWith(
       expect.objectContaining({ project_id: 'proj-1' }),
       'cashflow.risk.project_failed',

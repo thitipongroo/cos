@@ -714,6 +714,28 @@ describe('Phase 7 · AR billing lifecycle and cash flow forecast (real database)
       expect(periods[0].inflow).toBe('0.0000');
     });
 
+    // Plan DG (product owner 2026-11-21): a part-received billing forecasts only what remains, at its due date.
+    it('a part-received billing forecasts what remains', async () => {
+      const projectId = await newProject();
+      const billingId = await newBilling(projectId, '1000.0000', isoDaysFromNow(10));
+      await approve(billingId, 'PM', 'PROJECT_MANAGER');
+      const res = await http()
+        .post('/api/v1/finance/ar-receipts')
+        .set('x-test-role', 'FINANCE')
+        .send({
+          project_id: projectId,
+          billing_id: billingId,
+          customer_id: customerId,
+          amount_received: '400.0000',
+          received_date: isoDaysFromNow(0),
+          payment_method: 'BANK_TRANSFER',
+        });
+      expect([200, 201]).toContain(res.status);
+
+      const periods = await forecast(projectId);
+      expect(periods[1].inflow).toBe('600.0000');
+    });
+
     it('a DRAFT billing is not forecast — only ISSUED is receivable', async () => {
       // The control for the test above. An unapproved billing has not been sent to the client, so
       // forecasting it as incoming cash would be forecasting money nobody has been asked for.

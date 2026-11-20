@@ -1,6 +1,7 @@
 // CashflowRiskService — emits finance.cashflow_risk.detected.v1 (TDD OQ-50).
 //
-// WHY A SCHEDULED SWEEP RATHER THAN A WRITE HOOK. The forecast is built from ISSUED billings and
+// WHY A SCHEDULED SWEEP RATHER THAN A WRITE HOOK. The forecast is built from ISSUED billings (what remains on
+// them, plan DG) and
 // PENDING payments, so the obvious trigger is "recompute when one of those changes". That would miss
 // the case the whole signal exists for: nothing changes in the data, a week passes, and a shortfall
 // that was five weeks out is now one week out. Cash-flow risk moves on the calendar, not only on
@@ -46,6 +47,7 @@ import { EventOutboxService } from '../../shared/events/event-outbox.service';
 import { ScheduledJobLockService } from '../../shared/scheduling/scheduled-job-lock.service';
 import { buildForecast } from './finance.service';
 import type { CashflowDueRow } from './finance.rows';
+import { unpaidBillingsDue } from './cashflow-sources';
 
 const logger = createLogger('cashflow-risk');
 
@@ -165,13 +167,8 @@ export class CashflowRiskService implements OnModuleDestroy {
 
   private async gradeProject(db: PrismaClient, project: ProjectRow): Promise<boolean> {
     const [inflows, outflows] = await Promise.all([
-      db.$queryRaw<CashflowDueRow[]>`
-        SELECT due_date, amount FROM finance.billings
-         WHERE tenant_id = ${project.tenant_id}::uuid
-           AND project_id = ${project.project_id}::uuid
-           AND status = 'ISSUED'
-         ORDER BY due_date ASC
-      `,
+      // What remains on each ISSUED billing — the forecast's own query (plan DG).
+      unpaidBillingsDue(db, project.tenant_id, project.project_id),
       db.$queryRaw<CashflowDueRow[]>`
         SELECT payment_date AS due_date, amount FROM finance.payments
          WHERE tenant_id = ${project.tenant_id}::uuid

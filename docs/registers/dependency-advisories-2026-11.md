@@ -1602,6 +1602,18 @@ gate's isolated run) checks the hash was not tested either; it ran 12.18.0 with 
 
 ## Open
 
+- **Closed — the cash-flow forecast and risk sweep counted a part-received billing at its full amount.** Fixed in
+  plan DG (on the current branch; product-owner decision 2026-11-21: an ISSUED billing's expected inflow is its
+  amount less its receipts, at its original due date, in both). Closes the note plan DF left. Measured on HEAD
+  (`test/finance/03`): a 1,000 billing with 400 received forecast 1,000.
+  - One query for both readers: `finance/cashflow-sources.ts` `unpaidBillingsDue` (the billing LEFT-joined to its
+    receipts by billing and tenant; nothing-left rows out). `FinanceRepository.findUnpaidBillingsDue` (the forecast)
+    and `CashflowRiskService.gradeProject` (the daily sweep, on a client that is not tenant-scoped — the tenant is
+    filtered on both tables) call it instead of their own full-amount queries.
+  - Verified: finance unit (354, the shared query's SQL; the sweep spec asserts its inflow query is that one),
+    `test/finance/03` (49: the part-received billing forecasts 600 — HEAD 1,000),
+    `test/provisioning/08-dedicated-db-sweeps` (8, the sweep on dedicated databases). tsc, eslint, prettier,
+    conformance, markdownlint.
 - **Closed — any AR receipt, even 0.01 or negative, settled its billing.** Fixed in plan DF (on the current branch;
   product-owner decisions 2026-11-21: receipts in instalments, the billing PAID only when they reach its amount; a
   receipt beyond what remains → 422; zero or less → 400; no new billing status). Closes the item parked by plan CZ.
@@ -1627,10 +1639,10 @@ gate's isolated run) checks the hash was not tested either; it ran 12.18.0 with 
     note, §14, the phase-07 context and test design, the escalation register and the code comments now say one
     event per receipt, PAID at the amount.
   - Not covered: the cash-flow forecast (`findUnpaidBillingsDue`) and the cash-flow risk query
-    (`cashflow-risk.service.ts`) still count a part-received ISSUED billing at its full amount; the 201 returns the
-    receipt only (not whether the billing is now PAID); the concurrent test shows the cap holds under two requests
-    sent together but cannot force them to overlap (it did catch the snapshot bug once); receipts recorded before
-    this change are not re-checked.
+    (`cashflow-risk.service.ts`) still count a part-received ISSUED billing at its full amount (closed by plan DG,
+    above); the 201 returns the receipt only (not whether the billing is now PAID); the concurrent test shows the cap
+    holds under two requests sent together but cannot force them to overlap (it did catch the snapshot bug once);
+    receipts recorded before this change are not re-checked.
 - **Closed — an AP invoice could be paid beyond its amount.** Fixed in plan DE (on the current branch;
   product-owner decisions 2026-11-21: the invoice's PENDING and PROCESSED payments, with the new one, never exceed
   its amount — FAILED does not count; the invoice's status is not changed when fully paid). Closes the item plan DD

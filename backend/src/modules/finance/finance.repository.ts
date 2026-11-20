@@ -33,6 +33,7 @@ import type {
   ArReceiptRow,
   CashflowDueRow,
 } from './finance.rows';
+import { unpaidBillingsDue } from './cashflow-sources';
 
 export type * from './finance.rows';
 
@@ -957,18 +958,9 @@ export class FinanceRepository {
 
   // ── cash flow forecast sources (direct method) ──────────────────────────────
 
-  /** Unpaid AR inflow: ISSUED billings by due_date (project-scoped). */
+  /** Unpaid AR inflow: what remains on each ISSUED billing, by due date (project-scoped; plan DG). */
   async findUnpaidBillingsDue(project_id: string): Promise<CashflowDueRow[]> {
-    return this.db.run(
-      (tx) =>
-        tx.$queryRaw<CashflowDueRow[]>`
-        SELECT due_date, amount FROM finance.billings
-        WHERE tenant_id = ${this.tenantId}::uuid
-          AND project_id = ${project_id}::uuid
-          AND status = 'ISSUED'
-        ORDER BY due_date ASC
-      `,
-    );
+    return this.db.run((tx) => unpaidBillingsDue(tx, this.tenantId, project_id));
   }
 
   /** Pending AP outflow: PENDING payments by payment_date (project-scoped). */
