@@ -1602,6 +1602,34 @@ gate's isolated run) checks the hash was not tested either; it ran 12.18.0 with 
 
 ## Open
 
+- **Closed — an AP payment took any invoice id, under any project.** Fixed in plan DB (on the current branch;
+  product-owner decisions 2026-11-21: the invoice is the tenant's, the payment is under its PO's project; the
+  invoice's status and currency are not checked in this round; the web page shows the reason). Closes the item plans
+  CZ and DA left. `recordPayment` inserted `invoice_id` (no foreign key) and `project_id` unchecked and emitted
+  `finance.payment.processed.v1` with them; the web payments page picks the project and the invoice in separate
+  selects. Measured on HEAD (`test/finance/03`): another tenant's invoice, an unknown one and another project's each
+  → 201, written.
+  - New `procurement/public/invoice-project.ts` `invoiceProjectInTenant` (the invoice's PO's `project_id`, tenant
+    filtered explicitly; the module-boundary route, as `active-vendor.ts`); `FinanceRepository.invoiceProject`.
+    `recordPayment`: none → 404 `Invoice <id> not found`; another project (compared without regard to letter case)
+    → 422 `COS-FIN-422`, `finance.payment.invoiceOtherProject`. Nothing written, no event.
+  - Web: `lib/paymentErrors.ts` `paymentErrorKey` (the messageKey, 404, 403, else generic; `finance.err.*` TH/EN);
+    the payments page shows it (`role="alert"`), caught instead of left unhandled, cleared on a new attempt or when
+    the project or invoice changes, the form kept.
+  - `tests/e2e/specs/budget-exceeded.spec.ts` picked the first project and the first invoice with no link between
+    them (found by /doubt: now usually a 422). It keeps the first invoice and tries each project until the payment
+    lands, each wrong pick having to show the reason. Parsed by Playwright (`--list`); not run here (Keycloak and
+    the full stack).
+  - `test/finance/03`'s "a PENDING payment appears as outflow" named a made-up invoice id; it now seeds a real one
+    (vendor, PO under the project, invoice — by SQL, as a PO through the API starts a Temporal workflow).
+  - Verified: finance unit (334: 404, 422, upper case written; the helper's SQL), `test/finance/03` (31: the three
+    cases with no payment row — HEAD's service answers 201 to each), apps/web jest (496). Backend tsc, eslint,
+    prettier, conformance (module boundaries), OpenAPI validity and freshness, markdownlint.
+  - Not covered (by decision): the invoice's status (a DISPUTED or unapproved invoice can be paid) and currency;
+    rows written before this change.
+  - Parked (found by /doubt): the payments page's invoice select lists every invoice of the tenant whatever project
+    is chosen — the vendor-invoice rows carry no project, so it cannot filter; the alert reports a wrong pair, it
+    does not prevent one.
 - **Closed — an AR receipt took any customer id.** Fixed in plan DA (on the current branch; product-owner decision
   2026-11-21: the receipt's customer is the tenant's, and the contract's when the contract names one; a contract
   with no customer takes any of the tenant's). Closes the item parked by plan CZ. `recordArReceipt` inserted

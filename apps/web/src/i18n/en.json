@@ -1270,6 +1270,12 @@
         "RELEASED": "RELEASED",
         "FLAGGED": "FLAGGED"
       }
+    },
+    "err": {
+      "generic": "The payment could not be recorded. Refresh the page and try again.",
+      "forbidden": "You do not have permission to do this.",
+      "invoiceNotFound": "The invoice was not found. Refresh the page and choose it again.",
+      "invoiceOtherProject": "This invoice belongs to another project. Choose the invoice's project, or another invoice."
     }
   },
   "checkout": {

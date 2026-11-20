@@ -63,6 +63,7 @@ const mockRepo = {
   listCustomers: jest.fn(),
   createContract: jest.fn(),
   projectStatus: jest.fn(),
+  invoiceProject: jest.fn(),
   findCustomerById: jest.fn(),
   activeVendorExists: jest.fn(),
   findContractById: jest.fn(),
@@ -622,6 +623,8 @@ describe('variance alert', () => {
 // ── recordPayment ──────────────────────────────────────────────────────────
 
 describe('recordPayment', () => {
+  beforeEach(() => mockRepo.invoiceProject.mockResolvedValue('proj-uuid-001')); // plan DB
+
   it('records payment and emits finance.payment.processed.v1', async () => {
     mockRepo.createPayment.mockResolvedValue(paymentRow);
     const result = await service.recordPayment({
@@ -640,6 +643,44 @@ describe('recordPayment', () => {
         payload: expect.objectContaining({ payment_id: 'pay-uuid-001' }),
       }),
     );
+    expect(mockRepo.invoiceProject).toHaveBeenCalledWith('inv-uuid-001');
+  });
+
+  // Plan DB (product owner 2026-11-21): the invoice is the tenant's and the payment is under its PO's project.
+  const payDto = (project_id = 'proj-uuid-001') => ({
+    project_id,
+    invoice_id: 'inv-uuid-001',
+    amount: '1.0000',
+    currency_code: 'THB',
+    payment_date: '2026-06-05',
+  });
+
+  it("404 when the invoice is not the tenant's (absent or another tenant's), nothing written", async () => {
+    mockRepo.invoiceProject.mockResolvedValue(null);
+    await expect(service.recordPayment(payDto())).rejects.toThrow(
+      new NotFoundException('Invoice inv-uuid-001 not found'),
+    );
+    expect(mockRepo.createPayment).not.toHaveBeenCalled();
+  });
+
+  it("422 COS-FIN-422 when the payment's project is not the invoice's PO's, nothing written", async () => {
+    const err = await service.recordPayment(payDto('proj-uuid-002')).catch((e: unknown) => e);
+    expect(err).toMatchObject({
+      response: {
+        error: {
+          code: 'COS-FIN-422',
+          message: 'Invoice inv-uuid-001 belongs to another project',
+          messageKey: 'finance.payment.invoiceOtherProject',
+        },
+      },
+    });
+    expect(mockRepo.createPayment).not.toHaveBeenCalled();
+  });
+
+  it('the same project in upper case is written', async () => {
+    mockRepo.createPayment.mockResolvedValue(paymentRow);
+    await service.recordPayment(payDto('PROJ-UUID-001'));
+    expect(mockRepo.createPayment).toHaveBeenCalled();
   });
 });
 

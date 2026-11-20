@@ -1,6 +1,7 @@
 'use client';
 
 import { paymentRecordSchema } from '@cos/schemas';
+import { useState } from 'react';
 import { Controller } from 'react-hook-form';
 import { DateField } from '../../../../components/form/DateField';
 import { NativeSelectField } from '../../../../components/form/NativeSelectField';
@@ -18,6 +19,7 @@ import type { PaymentRow } from '../../../../lib/api/types';
 import { formatDate, formatMoney } from '../../../../lib/format';
 import { useReadOnly } from '../../../../lib/auth/useReadOnly';
 import { useValidatedForm } from '../../../../lib/forms';
+import { paymentErrorKey } from '../../../../lib/paymentErrors';
 
 /** Tenant-wide AP payment queue (§20.7.4 → GET /finance/payments; approve via
  *  PATCH /finance/payments/:id/approve). Records a payment against a vendor invoice
@@ -52,7 +54,11 @@ export default function PaymentsPage() {
 
   const messageFor = (key?: string) => (key ? t(key) : undefined);
 
+  // Why the last attempt was refused (plan DB) — the project and the invoice are picked separately; changing either clears it.
+  const [recordError, setRecordError] = useState<string | null>(null);
+
   const onSelectInvoice = (id: string) => {
+    setRecordError(null);
     setValue('invoice_id', id, { shouldValidate: true });
     // Pre-fill amount + currency from the chosen invoice (still editable so a partial or
     // over-budget amount can be recorded).
@@ -63,21 +69,32 @@ export default function PaymentsPage() {
     }
   };
 
-  const submit = handleSubmit(async (values) => {
-    await record.mutateAsync({
-      ...values,
-      payment_reference: values.payment_reference || undefined,
-    });
-    // Keep project and invoice: recording a second instalment against the same invoice is common.
-    reset({
-      project_id: getValues('project_id'),
-      invoice_id: getValues('invoice_id'),
-      amount: '',
-      currency_code: getValues('currency_code'),
-      payment_date: '',
-      payment_reference: '',
-    });
-  });
+  const submit = handleSubmit(
+    async (values) => {
+      setRecordError(null);
+      try {
+        await record.mutateAsync({
+          ...values,
+          payment_reference: values.payment_reference || undefined,
+        });
+      } catch (e) {
+        // Shown, not left unhandled; the form keeps what was entered so it can be corrected.
+        setRecordError(paymentErrorKey(e));
+        return;
+      }
+      // Keep project and invoice: recording a second instalment against the same invoice is common.
+      reset({
+        project_id: getValues('project_id'),
+        invoice_id: getValues('invoice_id'),
+        amount: '',
+        currency_code: getValues('currency_code'),
+        payment_date: '',
+        payment_reference: '',
+      });
+    },
+    // A new attempt the form refuses itself drops the last server reason.
+    () => setRecordError(null),
+  );
 
   const columns: Column<PaymentRow>[] = [
     { headerKey: 'pm.colNumber', cell: (p) => p.invoice_id },
@@ -107,6 +124,12 @@ export default function PaymentsPage() {
     <div>
       <h1 className="mb-6 text-2xl font-bold text-gray-800">{t('finance.paymentsTitle')}</h1>
 
+      {recordError && (
+        <p role="alert" className="mb-4 text-sm text-red-700">
+          {t(recordError)}
+        </p>
+      )}
+
       {!readOnly && (
         <form onSubmit={submit} noValidate className="mb-4 flex flex-wrap items-start gap-2">
           <Controller
@@ -115,6 +138,10 @@ export default function PaymentsPage() {
             render={({ field }) => (
               <NativeSelectField
                 {...field}
+                onChange={(value) => {
+                  setRecordError(null);
+                  field.onChange(value);
+                }}
                 label={t('finance.selectProject')}
                 placeholder={t('finance.selectProject')}
                 options={

@@ -328,6 +328,22 @@ describe('FinanceRepository', () => {
     expect(await repo.projectStatus('proj-2')).toBeNull();
   });
 
+  // Plan DB: an AP payment's invoice — its PO's project, in this tenant.
+  it("invoiceProject asks for the invoice's PO's project in this tenant, or null", async () => {
+    mockPrisma.$queryRaw.mockResolvedValueOnce([{ project_id: 'proj-9' }]);
+    expect(await repo.invoiceProject('inv-1')).toBe('proj-9');
+    const call = mockPrisma.$queryRaw.mock.calls.at(-1)!;
+    const sql = (call[0] as string[]).join('?').replace(/\s+/g, ' ');
+    expect(sql).toContain('FROM procurement.invoices i');
+    expect(sql).toContain(
+      'JOIN procurement.purchase_orders po ON po.po_id = i.po_id AND po.tenant_id = i.tenant_id',
+    );
+    expect(sql).toContain('WHERE i.invoice_id = ?::uuid AND i.tenant_id = ?::uuid');
+    expect(call.slice(1)).toEqual(['inv-1', 'tenant-uuid-001']);
+    mockPrisma.$queryRaw.mockResolvedValueOnce([]);
+    expect(await repo.invoiceProject('inv-2')).toBeNull();
+  });
+
   it('activeVendorExists asks for an ACTIVE vendor in this tenant', async () => {
     mockPrisma.$queryRaw.mockResolvedValueOnce([{ found: false }]);
     expect(await repo.activeVendorExists('ven-1')).toBe(false);

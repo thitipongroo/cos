@@ -166,6 +166,38 @@ describe('Phase 7 · AR billing lifecycle and cash flow forecast (real database)
     return (res.body as { billing_id: string }).billing_id;
   };
 
+  /**
+   * A vendor invoice of the tenant for a PO of `projectId` (plan DB: an AP payment names a real one). Seeded by SQL:
+   * creating a PO through the API starts a Temporal workflow this harness lacks.
+   */
+  const vendorInvoice = async (projectId: string, tenantId = TENANT_ID): Promise<string> => {
+    seq += 1;
+    const rows = await infra.prisma.$queryRawUnsafe<Array<{ invoice_id: string }>>(
+      `WITH v AS (
+         INSERT INTO procurement.vendors (vendor_id, tenant_id, vendor_code, vendor_name, is_active)
+         VALUES (gen_random_uuid(), $2::uuid, $3, $3, true) RETURNING vendor_id
+       ), po AS (
+         INSERT INTO procurement.purchase_orders
+           (po_id, vendor_id, project_id, tenant_id, po_number, status, total_amount, currency_code, delivery_date,
+            created_by)
+         SELECT gen_random_uuid(), v.vendor_id, $1::uuid, $2::uuid, $3, 'INVOICED', 40000, 'THB', current_date,
+                $4::uuid
+         FROM v RETURNING po_id, vendor_id
+       )
+       INSERT INTO procurement.invoices
+         (invoice_id, po_id, vendor_id, tenant_id, invoice_number, amount, currency_code, invoice_date, due_date,
+          status)
+       SELECT gen_random_uuid(), po.po_id, po.vendor_id, $2::uuid, $3, 40000, 'THB', current_date,
+              current_date + 30, 'APPROVED'
+       FROM po RETURNING invoice_id::text AS invoice_id`,
+      projectId,
+      tenantId,
+      `DB-${seq}`,
+      USER_ID,
+    );
+    return rows[0]!.invoice_id;
+  };
+
   const approve = (billingId: string, tier: string, role: string) =>
     http()
       .patch(`/api/v1/finance/billing/${billingId}/approve`)
@@ -359,6 +391,57 @@ describe('Phase 7 · AR billing lifecycle and cash flow forecast (real database)
   });
 
   // ---------------------------------------------------------------------------------------------
+  // Plan DB (product owner 2026-11-21): an AP payment's invoice is the tenant's and its PO is under the project.
+  describe("an AP payment's invoice (plan DB)", () => {
+    const payments = async (invoiceId: string): Promise<number> => {
+      const rows = await infra.prisma.$queryRawUnsafe<Array<{ n: bigint }>>(
+        `SELECT count(*) AS n FROM finance.payments WHERE invoice_id = $1::uuid`,
+        invoiceId,
+      );
+      return Number(rows[0]!.n);
+    };
+    const pay = (projectId: string, invoiceId: string) =>
+      http()
+        .post('/api/v1/finance/payments')
+        .set('x-test-role', 'FINANCE')
+        .send({
+          project_id: projectId,
+          invoice_id: invoiceId,
+          amount: '40000.0000',
+          currency_code: 'THB',
+          payment_date: isoDaysFromNow(3),
+        });
+
+    it.each([
+      [
+        "another tenant's invoice",
+        () => vendorInvoice('ee000003-9999-4000-8000-00000000db02', OTHER_TENANT_ID),
+      ],
+      ['an unknown invoice', async () => 'ee000003-9999-4000-8000-00000000db01'],
+    ])('%s: 404, no payment', async (_n, invoice) => {
+      const invoiceId = await invoice();
+      const res = await pay(await newProject(), invoiceId);
+      expect(res.status).toBe(404);
+      expect((res.body as { message: string }).message).toMatch(/^Invoice .* not found$/);
+      expect(await payments(invoiceId)).toBe(0);
+    });
+
+    it("an invoice of another project's PO: 422 COS-FIN-422, no payment", async () => {
+      const invoiceId = await vendorInvoice(await newProject());
+      const res = await pay(await newProject(), invoiceId);
+      expect(res.status).toBe(422);
+      expect(res.body).toMatchObject({
+        error: {
+          code: 'COS-FIN-422',
+          message: `Invoice ${invoiceId} belongs to another project`,
+          messageKey: 'finance.payment.invoiceOtherProject',
+        },
+      });
+      expect(await payments(invoiceId)).toBe(0);
+    });
+  });
+
+  // ---------------------------------------------------------------------------------------------
   describe('the PM approval limit (master:2965; §15; ADR-024 §4)', () => {
     it('a PM may approve at the limit', async () => {
       const billingId = await newBilling(await newProject(), '500000.0000');
@@ -448,7 +531,7 @@ describe('Phase 7 · AR billing lifecycle and cash flow forecast (real database)
         .set('x-test-role', 'FINANCE')
         .send({
           project_id: projectId,
-          invoice_id: '00000000-0000-4000-8000-0000000000aa',
+          invoice_id: await vendorInvoice(projectId), // a real one, its PO under this project (plan DB)
           amount: '40000.0000',
           currency_code: 'THB',
           payment_date: isoDaysFromNow(3),

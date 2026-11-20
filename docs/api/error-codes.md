@@ -292,10 +292,10 @@ Recorded 2026-11-13 from `vendor-portal.service.ts`, where they were thrown but 
 
 ## COS-FIN — Finance
 
-Added 2026-11-21 (plans CY, CZ, DA). Same shape as `COS-PROC-422`; the `messageKey` tells the cases apart. A closed
-project takes no new contract (contracts already made carry on; budgets and payments on a closed project stay allowed
-by design), an AR billing or receipt is its contract's or billing's project's, and a receipt's customer is its
-contract's when the contract names one.
+Added 2026-11-21 (plans CY, CZ, DA, DB). Same shape as `COS-PROC-422`; the `messageKey` tells the cases apart. A
+closed project takes no new contract (contracts already made carry on; budgets and payments on a closed project stay
+allowed by design), an AR billing or receipt is its contract's or billing's project's, a receipt's customer is its
+contract's when the contract names one, and an AP payment is its invoice's PO's project's.
 
 | Code        | HTTP | Message                                        | Trigger                                                                                                                   |
 | ----------- | ---- | ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
@@ -303,6 +303,7 @@ contract's when the contract names one.
 | COS-FIN-422 | 422  | Contract `<id>` belongs to another project     | `finance.billing.contractOtherProject` — `createBilling` whose `project_id` is not the contract's (plan CZ)               |
 | COS-FIN-422 | 422  | Billing `<id>` belongs to another project      | `finance.receipt.billingOtherProject` — `recordArReceipt` whose `project_id` is not the billing's (plan CZ)               |
 | COS-FIN-422 | 422  | Customer `<id>` is not the contract's customer | `finance.receipt.customerNotContract` — `recordArReceipt` naming another customer than the billing's contract's (plan DA) |
+| COS-FIN-422 | 422  | Invoice `<id>` belongs to another project      | `finance.payment.invoiceOtherProject` — `recordPayment` whose `project_id` is not the invoice's PO's project (plan DB)    |
 
 ## COS-PROC — Procurement
 

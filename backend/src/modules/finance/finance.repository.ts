@@ -12,6 +12,7 @@ import { applyCap, capLimit } from '../../shared/pagination/list-cap';
 import { clsTenantId } from '../../shared/context/cls-context';
 import { projectStatusInTenant } from '../project/public/parent-existence';
 import { activeVendorExistsInTenant } from '../procurement/public/active-vendor';
+import { invoiceProjectInTenant } from '../procurement/public/invoice-project';
 
 // Row types live in ./finance.rows; imported here for the method signatures below and re-exported so
 // existing `from './finance.repository'` type imports (service, consumer, util, specs) keep resolving.
@@ -418,6 +419,14 @@ export class FinanceRepository {
    */
   async projectStatus(projectId: string) {
     return projectStatusInTenant(this.db, projectId, this.tenantId);
+  }
+
+  /**
+   * The project of a vendor invoice of this tenant (its PO's), or null when there is none — an AP payment's
+   * invoice_id has no foreign key (plan DB).
+   */
+  invoiceProject(invoiceId: string): Promise<string | null> {
+    return invoiceProjectInTenant(this.db, invoiceId, this.tenantId);
   }
 
   /**

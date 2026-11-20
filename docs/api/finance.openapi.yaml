@@ -628,6 +628,12 @@ paths:
           description: Payment recorded
         '401':
           description: Unauthenticated — missing or invalid bearer token
+        '404':
+          description: No such vendor invoice in this tenant (plan DB); nothing is written
+        '422':
+          description: >-
+            `COS-FIN-422` (`finance.payment.invoiceOtherProject`) — the invoice's purchase order is under another
+            project than `project_id` (plan DB); nothing is written
   /finance/reports/variance:
     get:
       operationId: getFinanceReportsVariance
