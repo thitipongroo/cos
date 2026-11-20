@@ -10,6 +10,8 @@ import { TenantPrismaService } from '../tenant/prisma/tenant-prisma.service';
 import type { OutboxEventInput } from '../../shared/outbox/outbox.types';
 import { applyCap, capLimit } from '../../shared/pagination/list-cap';
 import { clsTenantId } from '../../shared/context/cls-context';
+import { projectExistsInTenant } from '../project/public/parent-existence';
+import { activeVendorExistsInTenant } from '../procurement/public/active-vendor';
 
 // Row types live in ./finance.rows; imported here for the method signatures below and re-exported so
 // existing `from './finance.repository'` type imports (service, consumer, util, specs) keep resolving.
@@ -408,6 +410,19 @@ export class FinanceRepository {
       `,
     );
     return rows[0]!;
+  }
+
+  /** A project of this tenant — a contract's project_id has no foreign key (fix/finance-contract-foreign-ids). */
+  projectExists(projectId: string): Promise<boolean> {
+    return projectExistsInTenant(this.db, projectId, this.tenantId);
+  }
+
+  /**
+   * One of this tenant's ACTIVE vendors (procurement's table, through its public API) — a contract's vendor_id has no
+   * foreign key at all (fix/finance-contract-foreign-ids).
+   */
+  activeVendorExists(vendorId: string): Promise<boolean> {
+    return activeVendorExistsInTenant(this.db, vendorId, this.tenantId);
   }
 
   async findCustomerById(customer_id: string): Promise<CustomerRow | null> {

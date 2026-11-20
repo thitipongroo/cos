@@ -78,9 +78,9 @@ describe('VendorAuthGuard', () => {
       expect(store.get(CLS_TENANT_ID)).toBe(TENANT);
       const sql = (db.queryRaw.mock.calls[0]![0] as string[]).join('?').replace(/\s+/g, ' ');
       expect(sql).toContain(
-        'FROM procurement.vendors WHERE vendor_id = ?::uuid AND is_active = true',
+        'FROM procurement.vendors WHERE vendor_id = ?::uuid AND tenant_id = ?::uuid AND is_active = true',
       );
-      expect(db.queryRaw.mock.calls[0]!.slice(1)).toEqual(['ven-1']);
+      expect(db.queryRaw.mock.calls[0]!.slice(1)).toEqual(['ven-1', TENANT]);
     });
 
     it('lets an ACTIVE vendor through', async () => {

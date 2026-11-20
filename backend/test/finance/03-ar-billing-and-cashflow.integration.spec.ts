@@ -31,6 +31,9 @@ import { JwtAuthGuard } from '../../src/shared/guards/jwt-auth.guard';
 
 const TENANT_ID = 'bbbb1111-1111-4000-8000-000000000072';
 const USER_ID = 'bbbb2222-2222-4000-8000-000000000072';
+// A second tenant, whose project / customer / vendor a contract of the first must not be able to name.
+const OTHER_TENANT_ID = 'bbbb1111-1111-4000-8000-000000000073';
+const OTHER_USER_ID = 'bbbb2222-2222-4000-8000-000000000073';
 
 /** ADR-024 §1 — thirteen weekly buckets, no more and no fewer. */
 const FORECAST_WEEKS = 13;
@@ -71,6 +74,11 @@ describe('Phase 7 · AR billing lifecycle and cash flow forecast (real database)
       USER_ID,
       TENANT_ID,
     );
+    await infra.prisma.$executeRawUnsafe(
+      `INSERT INTO platform.tenants (tenant_id, tenant_code, tenant_name, keycloak_realm, plan_type, is_active)
+       VALUES ($1::uuid, 'sd-p73', 'Spec Derived P7 Other', 'construction-os', 'STARTER'::platform."PlanType", true)`,
+      OTHER_TENANT_ID,
+    );
 
     const moduleRef: TestingModule = await Test.createTestingModule({ imports: [AppModule] })
       .overrideGuard(JwtAuthGuard)
@@ -81,11 +89,13 @@ describe('Phase 7 · AR billing lifecycle and cash flow forecast (real database)
     app.setGlobalPrefix('api/v1');
     app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
     app.use((req: Record<string, unknown>, _res: unknown, next: () => void) => {
+      const other =
+        ((req['headers'] ?? {}) as Record<string, string>)['x-test-tenant'] === OTHER_TENANT_ID;
       req['user'] = {
-        tenant_id: TENANT_ID,
-        user_id: USER_ID,
+        tenant_id: other ? OTHER_TENANT_ID : TENANT_ID,
+        user_id: other ? OTHER_USER_ID : USER_ID,
         role: roleOf(req),
-        tenantCode: 'sd-p72',
+        tenantCode: other ? 'sd-p73' : 'sd-p72',
       };
       next();
     });
@@ -353,6 +363,116 @@ describe('Phase 7 · AR billing lifecycle and cash flow forecast (real database)
 
       const periods = await forecast(projectB);
       expect(periods.every((p) => p.inflow === '0.0000')).toBe(true);
+    });
+  });
+
+  // fix/finance-contract-foreign-ids: a contract names the tenant's own project, customer and (ACTIVE) vendor. They
+  // went straight to the INSERT — project_id and vendor_id have no foreign key, customer_id's is checked without RLS.
+  describe("POST /finance/contracts — the ids are the tenant's own", () => {
+    const UNKNOWN = 'bbbb9999-9999-4000-8000-00000000abcd';
+    const ids = {
+      project: '',
+      vendor: '',
+      inactiveVendor: '',
+      otherProject: '',
+      otherCustomer: '',
+      otherVendor: '',
+    };
+
+    const vendorFor = async (tenantHeader: string | null): Promise<string> => {
+      seq += 1;
+      let req = http().post('/api/v1/procurement/vendors').set('x-test-role', 'TENANT_ADMIN');
+      if (tenantHeader) req = req.set('x-test-tenant', tenantHeader);
+      const res = await req.send({
+        vendor_code: `CV-${seq}`,
+        vendor_name: `Contract Vendor ${seq}`,
+      });
+      expect(res.status).toBe(201);
+      return (res.body as { vendor_id: string }).vendor_id;
+    };
+
+    beforeAll(async () => {
+      ids.project = await newProject();
+      ids.vendor = await vendorFor(null);
+      ids.inactiveVendor = await vendorFor(null);
+      await http()
+        .delete(`/api/v1/procurement/vendors/${ids.inactiveVendor}`)
+        .set('x-test-role', 'TENANT_ADMIN')
+        .expect(204);
+      seq += 1;
+      const proj = await http()
+        .post('/api/v1/projects')
+        .set('x-test-role', 'TENANT_ADMIN')
+        .set('x-test-tenant', OTHER_TENANT_ID)
+        .send({
+          project_code: `SD-P73-${seq}`,
+          project_name: `Other Host ${seq}`,
+          project_type: 'RESIDENTIAL',
+          start_date: '2019-01-01',
+          end_date: '2020-01-01',
+        });
+      expect([200, 201]).toContain(proj.status);
+      ids.otherProject = (proj.body as { project_id: string }).project_id;
+      const cust = await http()
+        .post('/api/v1/finance/customers')
+        .set('x-test-role', 'FINANCE')
+        .set('x-test-tenant', OTHER_TENANT_ID)
+        .send({ company_name: 'Other Client', customer_type: 'DEVELOPER' });
+      expect([200, 201]).toContain(cust.status);
+      ids.otherCustomer = (cust.body as { customer_id: string }).customer_id;
+      ids.otherVendor = await vendorFor(OTHER_TENANT_ID);
+    });
+
+    const contract = (over: Record<string, string>) =>
+      http()
+        .post('/api/v1/finance/contracts')
+        .set('x-test-role', 'PROJECT_MANAGER')
+        .send({
+          project_id: ids.project,
+          contract_type: 'SUBCONTRACT',
+          contract_value: '1000',
+          ...over,
+        });
+    const contractsOf = async (projectId: string): Promise<number> => {
+      const rows = await infra.prisma.$queryRawUnsafe<Array<{ n: bigint }>>(
+        `SELECT count(*) AS n FROM finance.contracts WHERE project_id = $1::uuid AND tenant_id = $2::uuid`,
+        projectId,
+        TENANT_ID,
+      );
+      return Number(rows[0]!.n);
+    };
+
+    it.each([
+      [
+        "another tenant's project",
+        () => ({ project_id: ids.otherProject }),
+        /^Project .* not found$/,
+      ],
+      ['an unknown project', () => ({ project_id: UNKNOWN }), /^Project .* not found$/],
+      [
+        "another tenant's customer",
+        () => ({ customer_id: ids.otherCustomer }),
+        /^Customer .* not found$/,
+      ],
+      ['an unknown customer', () => ({ customer_id: UNKNOWN }), /^Customer .* not found$/],
+      ["another tenant's vendor", () => ({ vendor_id: ids.otherVendor }), /^Vendor .* not found$/],
+      ['a deactivated vendor', () => ({ vendor_id: ids.inactiveVendor }), /^Vendor .* not found$/],
+      ['an unknown vendor', () => ({ vendor_id: UNKNOWN }), /^Vendor .* not found$/],
+    ])('%s: 404, no contract written', async (_n, over, message) => {
+      const body: Record<string, string> = over();
+      const before = await contractsOf(body.project_id ?? ids.project);
+      const res = await contract(body);
+      expect(res.status).toBe(404);
+      // Nest's default body (this spec mounts no GlobalExceptionFilter).
+      expect((res.body as { message: string }).message).toMatch(message);
+      expect(await contractsOf(body.project_id ?? ids.project)).toBe(before);
+    });
+
+    it("the tenant's own project, customer and active vendor: 201", async () => {
+      const before = await contractsOf(ids.project);
+      const res = await contract({ customer_id: customerId, vendor_id: ids.vendor });
+      expect(res.status).toBe(201);
+      expect(await contractsOf(ids.project)).toBe(before + 1);
     });
   });
 });

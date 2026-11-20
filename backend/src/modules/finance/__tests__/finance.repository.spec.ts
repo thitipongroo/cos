@@ -316,6 +316,25 @@ describe('FinanceRepository', () => {
     expect(r.customer_id).toBe('cust-1');
   });
 
+  // fix/finance-contract-foreign-ids: a contract's project and vendor are checked in the caller's own tenant.
+  it('projectExists asks for the project in this tenant', async () => {
+    mockPrisma.$queryRaw.mockResolvedValueOnce([{ exists: true }]);
+    expect(await repo.projectExists('proj-1')).toBe(true);
+    const call = mockPrisma.$queryRaw.mock.calls.at(-1)!;
+    expect((call[0] as string[]).join('?')).toContain('FROM projects.projects');
+    expect(call.slice(1)).toEqual(['proj-1', 'tenant-uuid-001']);
+  });
+
+  it('activeVendorExists asks for an ACTIVE vendor in this tenant', async () => {
+    mockPrisma.$queryRaw.mockResolvedValueOnce([{ found: false }]);
+    expect(await repo.activeVendorExists('ven-1')).toBe(false);
+    const call = mockPrisma.$queryRaw.mock.calls.at(-1)!;
+    const sql = (call[0] as string[]).join('?').replace(/\s+/g, ' ');
+    expect(sql).toContain('FROM procurement.vendors');
+    expect(sql).toContain('AND is_active = true');
+    expect(call.slice(1)).toEqual(['ven-1', 'tenant-uuid-001']);
+  });
+
   it('findCustomerById returns row then null', async () => {
     mockPrisma.$queryRaw.mockResolvedValueOnce([customerRow]);
     expect((await repo.findCustomerById('cust-1'))?.customer_id).toBe('cust-1');

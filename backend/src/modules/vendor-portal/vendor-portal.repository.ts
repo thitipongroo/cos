@@ -9,7 +9,7 @@
 
 import { Injectable, Scope, Inject } from '@nestjs/common';
 import { REQUEST } from '@nestjs/core';
-import { activeVendorExists } from './active-vendor';
+import { activeVendorExists } from '../procurement/public/active-vendor';
 import { TenantPrismaService } from '../tenant/prisma/tenant-prisma.service';
 import { clsTenantId } from '../../shared/context/cls-context';
 
@@ -146,7 +146,7 @@ export class VendorPortalRepository {
    * (fix/vendor-invite-inactive).
    */
   vendorExists(vendorId: string): Promise<boolean> {
-    return this.db.run((tx) => activeVendorExists(tx, vendorId));
+    return this.db.run((tx) => activeVendorExists(tx, vendorId, this.tenantId));
   }
 
   async findRfq(rfqId: string): Promise<RfqRow | null> {

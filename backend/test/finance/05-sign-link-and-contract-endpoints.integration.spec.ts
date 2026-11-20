@@ -32,7 +32,9 @@ import { AppModule } from '../../src/app.module';
 const TOKEN = 'Bearer test-contract-token';
 const TENANT_ID = 'ee000002-0001-4000-8000-000000000001';
 const USER_ID = 'ee000002-0002-4000-8000-000000000001';
-const PROJECT_ID = 'ee000002-0003-4000-8000-000000000001';
+// A real project of the tenant: a contract's project is checked since fix/finance-contract-foreign-ids (this spec used
+// to send a constant id no row had).
+let PROJECT_ID = '';
 const FILE_ID = 'ee000002-0004-4000-8000-000000000001';
 const DOC_SHA256 = 'a'.repeat(64);
 
@@ -104,6 +106,19 @@ describe('Contract signing integration', () => {
     app.setGlobalPrefix('api/v1');
     app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
     await app.init();
+
+    const proj = await request(app.getHttpServer())
+      .post('/api/v1/projects')
+      .set('Authorization', TOKEN)
+      .send({
+        project_code: 'CON-HOST',
+        project_name: 'Contract Host',
+        project_type: 'COMMERCIAL',
+        start_date: '2019-01-01',
+        end_date: '2020-01-01',
+      });
+    expect([200, 201]).toContain(proj.status);
+    PROJECT_ID = (proj.body as { project_id: string }).project_id;
   }, 180_000);
 
   afterAll(async () => {

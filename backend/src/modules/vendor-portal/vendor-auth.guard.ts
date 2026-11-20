@@ -57,7 +57,7 @@ import {
 } from '../../shared/interceptors/trial-read-only.interceptor';
 import { MagicLinkService } from './magic-link.service';
 import { VendorIdentityRepository } from './vendor-identity.repository';
-import { activeVendorExists } from './active-vendor';
+import { activeVendorExists } from '../procurement/public/active-vendor';
 import { TenantPrismaService } from '../tenant/prisma/tenant-prisma.service';
 
 /** The vendor context published onto the request (mirrored into CLS, which is the reliable copy). */
@@ -127,7 +127,7 @@ export class VendorAuthGuard implements CanActivate {
     // tenant, D56), so it is read here, after publish() has set the tenant context. A vendor deactivated (soft-deleted)
     // after the session was issued has no active relationship any more (fix/vendor-portal-inactive-vendor). Checked
     // BEFORE assertWritable, so a refused vendor learns nothing of the tenant's plan from the error it gets.
-    if (!(await this.db.run((tx) => activeVendorExists(tx, relationship.vendor_id)))) {
+    if (!(await this.db.run((tx) => activeVendorExists(tx, relationship.vendor_id, tenantId)))) {
       throw new ForbiddenException('No active trading relationship with this tenant');
     }
     await this.assertWritable(req, tenantId);

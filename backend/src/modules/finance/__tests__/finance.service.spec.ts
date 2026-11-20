@@ -62,6 +62,9 @@ const mockRepo = {
   createCustomer: jest.fn(),
   listCustomers: jest.fn(),
   createContract: jest.fn(),
+  projectExists: jest.fn(),
+  findCustomerById: jest.fn(),
+  activeVendorExists: jest.fn(),
   findContractById: jest.fn(),
   listContracts: jest.fn(),
   attachSignedDocument: jest.fn(),
@@ -719,6 +722,55 @@ describe('AR billing — customers, contracts, invoices and payments', () => {
   // ── AR Billing increment ────────────────────────────────────────────────────
 
   describe('Customers & Contracts', () => {
+    // fix/finance-contract-foreign-ids: the project, customer and vendor a contract names are the tenant's own.
+    beforeEach(() => {
+      mockRepo.projectExists.mockResolvedValue(true);
+      mockRepo.findCustomerById.mockResolvedValue({ customer_id: 'cust-1' });
+      mockRepo.activeVendorExists.mockResolvedValue(true);
+    });
+
+    it.each([
+      [
+        'project',
+        () => mockRepo.projectExists.mockResolvedValue(false),
+        {},
+        'Project proj-uuid-001 not found',
+      ],
+      [
+        'customer',
+        () => mockRepo.findCustomerById.mockResolvedValue(null),
+        { customer_id: 'cust-x' },
+        'Customer cust-x not found',
+      ],
+      [
+        "vendor (absent, another tenant's or deactivated)",
+        () => mockRepo.activeVendorExists.mockResolvedValue(false),
+        { vendor_id: 'ven-x' },
+        'Vendor ven-x not found',
+      ],
+    ])(
+      "createContract: 404 when the %s is not the tenant's, and nothing written",
+      async (_n, arrange, over, message) => {
+        arrange();
+        await expect(
+          service.createContract({
+            project_id: 'proj-uuid-001',
+            contract_type: 'SUBCONTRACT',
+            ...over,
+          }),
+        ).rejects.toThrow(new NotFoundException(message));
+        expect(mockRepo.createContract).not.toHaveBeenCalled();
+      },
+    );
+
+    it('createContract asks for the customer and the vendor only when named', async () => {
+      mockRepo.createContract.mockResolvedValue({ contract_id: 'con-1' });
+      await service.createContract({ project_id: 'proj-uuid-001', contract_type: 'SUBCONTRACT' });
+      expect(mockRepo.projectExists).toHaveBeenCalledWith('proj-uuid-001');
+      expect(mockRepo.findCustomerById).not.toHaveBeenCalled();
+      expect(mockRepo.activeVendorExists).not.toHaveBeenCalled();
+    });
+
     it('createCustomer passes through optional fields', async () => {
       mockRepo.createCustomer.mockResolvedValue({ customer_id: 'cust-1' });
       await service.createCustomer({

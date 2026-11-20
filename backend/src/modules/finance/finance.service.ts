@@ -542,6 +542,19 @@ export class FinanceService {
   // ── Contracts (§11) ─────────────────────────────────────────────────────────
 
   async createContract(dto: CreateContractDto): Promise<ContractRow> {
+    // The ids it names are the tenant's own (fix/finance-contract-foreign-ids). They went straight to the INSERT:
+    // project_id and vendor_id have no foreign key (any UUID was taken), and customer_id's is checked without RLS
+    // (another tenant's customer was accepted; an unknown one failed the INSERT unmapped, 500). A vendor must also be
+    // ACTIVE; customers have no deactivation, so existence is the check.
+    if (!(await this.repo.projectExists(dto.project_id))) {
+      throw new NotFoundException(`Project ${dto.project_id} not found`);
+    }
+    if (dto.customer_id && !(await this.repo.findCustomerById(dto.customer_id))) {
+      throw new NotFoundException(`Customer ${dto.customer_id} not found`);
+    }
+    if (dto.vendor_id && !(await this.repo.activeVendorExists(dto.vendor_id))) {
+      throw new NotFoundException(`Vendor ${dto.vendor_id} not found`);
+    }
     return this.repo.createContract({
       project_id: dto.project_id,
       contract_type: dto.contract_type,

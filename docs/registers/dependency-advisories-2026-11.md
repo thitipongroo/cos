@@ -1602,6 +1602,30 @@ gate's isolated run) checks the hash was not tested either; it ran 12.18.0 with 
 
 ## Open
 
+- **Closed — a finance contract took its project, customer and vendor ids unchecked.** Fixed on
+  `fix/finance-contract-foreign-ids`. `createContract` passed them to the INSERT: `project_id` and `vendor_id` have no
+  foreign key, `customer_id`'s is checked without RLS. Measured on HEAD (`POST /finance/contracts`): another tenant's
+  project, an unknown project, another tenant's customer, another tenant's vendor, a deactivated vendor and an unknown
+  vendor each → 201 with the contract written; an unknown customer → 500 on the foreign key, no row.
+  - Now, before the INSERT: the project (`projectExistsInTenant`) → else 404 `Project <id> not found`; `customer_id`
+    when given (`findCustomerById`) → else 404 `Customer <id> not found` (customers have a `status` column, but nothing
+    sets it other than ACTIVE, so existence is the check); `vendor_id`
+    when given, ACTIVE in the tenant → else 404 `Vendor <id> not found`. Listed as a 404 in `finance.openapi.yaml`.
+  - The ACTIVE-vendor query moved to `procurement/public/active-vendor.ts` (the vendors table is procurement's; finance
+    may use another module's `public/` only — `foundation/09-module-boundaries`), and vendor-portal imports it from
+    there. It now filters `tenant_id` explicitly as well as by RLS, as the other existence checks do: the integration
+    harness connects as a superuser, which bypasses RLS, and another tenant's vendor passed the first run of this
+    branch's test. In production the app role's RLS already filtered it, so the vendor-portal checks (CG, CH) were
+    not open there; the filter makes them independent of the connection.
+  - `test/finance/05` sent a constant project id no row had; it now creates its project.
+  - Verified: finance unit (314) — each refusal with no INSERT, customer and vendor looked up only when named;
+    vendor-portal unit (guard SQL now names the tenant); `test/finance/03` (23): the seven bad ids → 404 with no
+    contract written, the tenant's own project, customer and active vendor → 201; `test/finance/04` (9) and `05` (12),
+    `test/procurement/05-vendor-reinvite` (11) and `test/provisioning/08-dedicated-db-sweeps` (8) pass. HEAD's service
+    fails the seven and four unit cases. Unit cases added after /doubt pin the tenant as a bound value in
+    `vendorExists`, `projectExists` and `activeVendorExists`. Backend unit (4476), conformance (in full,
+    `foundation/09-module-boundaries` included), tsc, eslint, prettier, OpenAPI validation and markdownlint pass.
+
 - **Closed — a purchase order took its vendor, RFQ and project ids unchecked.** Fixed on `fix/proc-po-foreign-ids`
   (product-owner decision 2026-11-20: the RFQ is checked to be the tenant's only — no AWARDED or awarded-vendor rule).
   `createPurchaseOrder` passed them to the INSERT; `vendor_id` and `rfq_id` have foreign keys, checked without RLS,
@@ -1627,11 +1651,10 @@ gate's isolated run) checks the hash was not tested either; it ran 12.18.0 with 
     written before (HEAD wrote cross-tenant ids, measured there) were not re-checked, and a vendor deactivated after
     its PO still receives invoices on it.
   - `createRfq` (`procurement.service.ts:209-216`): `pr_id` (FK → `purchase_requests`).
-  - `FinanceService.createContract` (`finance.service.ts:544-553`): `customer_id` (FK → `finance.customers`) and
-    `vendor_id` (no FK at all, `20260619000001_ar_billing`) — any UUID.
+  - ~~`FinanceService.createContract`~~ — checked since `fix/finance-contract-foreign-ids` (Closed entry above):
+    project, customer and (ACTIVE) vendor must be the tenant's.
   An unknown id behind a foreign key answers 500 (23503 is not mapped). Medium: it needs a leaked id, and the reads
-  join under RLS, so no other tenant's data was found disclosed. Of what remains, a contract's `vendor_id` — no
-  foreign key, any UUID, a deactivated vendor included — is the likelier case.
+  join under RLS, so no other tenant's data was found disclosed. What remains is `createRfq`'s `pr_id`.
 - **A second quotation for the same RFQ and vendor answers 500.** `uq_quotation_rfq_vendor` raises 23505 and nothing
   maps it — on the buyer route and on the vendor portal's `createQuotation` (a vendor answering a second invitation to
   the same RFQ). Found by /doubt on `fix/proc-quotation-vendor-check`.

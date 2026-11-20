@@ -47,6 +47,9 @@ describe('VendorPortalRepository', () => {
     expect(sql).toContain('FROM procurement.vendors');
     // A deactivated (soft-deleted) vendor is not one to invite (fix/vendor-invite-inactive).
     expect(sql).toContain('AND is_active = true');
+    // The tenant is filtered explicitly too, not left to RLS (fix/finance-contract-foreign-ids).
+    expect(sql).toContain('AND tenant_id = ?::uuid');
+    expect(queryRaw.mock.calls[0]!.slice(1)).toEqual(['ven-1', 'ten-1']);
     queryRaw.mockResolvedValueOnce([{ found: false }]);
     expect(await repo.vendorExists('ven-2')).toBe(false);
     queryRaw.mockResolvedValueOnce([]);

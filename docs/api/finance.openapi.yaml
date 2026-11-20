@@ -715,6 +715,10 @@ paths:
           description: Contract created
         '401':
           description: Unauthenticated — missing or invalid bearer token
+        '404':
+          description: >-
+            The project, or the customer / vendor when named, is not this tenant's (absent or another tenant's; a
+            vendor must also be ACTIVE — fix/finance-contract-foreign-ids); nothing is written
     get:
       operationId: getFinanceContracts
       tags:
