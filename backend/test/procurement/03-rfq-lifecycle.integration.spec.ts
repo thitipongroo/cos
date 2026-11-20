@@ -674,6 +674,96 @@ describe('Phase 5 · RFQ lifecycle, quotation comparison and event emission', ()
       expect(await record(rfqId)).toEqual(recorded);
       expect(await selectedIds(rfqId)).toEqual([only]);
     });
+
+    // Plan DJ (product owner 2026-11-21): no cancel once an award is recorded; a CANCELLED RFQ keeps no award.
+    it('cancel after an award is recorded (still EVALUATED): 409 COS-PROC-409, the award kept', async () => {
+      const rfqId = await seedRfq('PUBLISHED');
+      const only = await quote(rfqId, '100.0000');
+      await infra.prisma.$executeRawUnsafe(
+        `UPDATE procurement.rfqs SET status = 'EVALUATED' WHERE rfq_id = $1::uuid`,
+        rfqId,
+      );
+      expect((await award(rfqId, only)).status).not.toBe(409); // recorded; its signal fails here (no Temporal)
+      const recorded = await record(rfqId);
+
+      const res = await http()
+        .post(`/api/v1/procurement/rfqs/${rfqId}/cancel`)
+        .set('x-test-role', PO_ROLE);
+      expect(res.status).toBe(409);
+      expect(res.body).toMatchObject({
+        error: {
+          code: 'COS-PROC-409',
+          message: `RFQ ${rfqId} has been awarded — it cannot be cancelled`,
+          messageKey: 'procurement.rfq.alreadyAwarded',
+        },
+      });
+      expect(await record(rfqId)).toEqual(recorded);
+    });
+
+    it('the CANCELLED transition clears an award that landed after the cancel was sent', async () => {
+      const rfqId = await seedRfq('PUBLISHED');
+      const only = await quote(rfqId, '100.0000');
+      await infra.prisma.$executeRawUnsafe(
+        `UPDATE procurement.rfqs SET status = 'EVALUATED' WHERE rfq_id = $1::uuid`,
+        rfqId,
+      );
+      expect((await award(rfqId, only)).status).not.toBe(409);
+      expect((await record(rfqId)).awarded_quotation_id).toBe(only);
+
+      // The workflow, having taken the cancel first, writes CANCELLED through its activity.
+      const acts = jest.requireActual('../../src/modules/procurement/workflows/rfq.activities') as {
+        updateRfqStatus: (
+          p: { rfq_id: string; tenant_id: string; correlation_id: string },
+          from: string,
+          to: string,
+        ) => Promise<void>;
+      };
+      await acts.updateRfqStatus(
+        {
+          rfq_id: rfqId,
+          tenant_id: TENANT_ID,
+          correlation_id: '00000000-0000-4000-8000-0000000000dd',
+        },
+        'EVALUATED',
+        'CANCELLED',
+      );
+      const rows = await infra.prisma.$queryRawUnsafe<Array<{ status: string }>>(
+        `SELECT status FROM procurement.rfqs WHERE rfq_id = $1::uuid`,
+        rfqId,
+      );
+      expect(rows[0]!.status).toBe('CANCELLED');
+      expect(await record(rfqId)).toEqual({ awarded_quotation_id: null, awarded_at: null });
+      expect(await selectedIds(rfqId)).toEqual([]);
+    });
+
+    it("an RFQ cancelled with no award keeps the evaluation's pick", async () => {
+      const rfqId = await seedRfq('PUBLISHED');
+      const cheap = await quote(rfqId, '100.0000');
+      await quote(rfqId, '200.0000');
+      await infra.prisma.$executeRawUnsafe(
+        `UPDATE procurement.rfqs SET status = 'CLOSED' WHERE rfq_id = $1::uuid`,
+        rfqId,
+      );
+      await evaluate(rfqId); // picks the cheapest
+      expect(await selectedIds(rfqId)).toEqual([cheap]);
+      const acts = jest.requireActual('../../src/modules/procurement/workflows/rfq.activities') as {
+        updateRfqStatus: (
+          p: { rfq_id: string; tenant_id: string; correlation_id: string },
+          from: string,
+          to: string,
+        ) => Promise<void>;
+      };
+      await acts.updateRfqStatus(
+        {
+          rfq_id: rfqId,
+          tenant_id: TENANT_ID,
+          correlation_id: '00000000-0000-4000-8000-0000000000de',
+        },
+        'EVALUATED',
+        'CANCELLED',
+      );
+      expect(await selectedIds(rfqId)).toEqual([cheap]);
+    });
   });
 
   // plan CS (product owner, 2026-11-20): a CANCELLED or COMPLETED project takes no new purchase request, RFQ or

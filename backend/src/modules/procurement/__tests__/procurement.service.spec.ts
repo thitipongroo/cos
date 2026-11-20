@@ -336,6 +336,27 @@ describe('RFQ state machine', () => {
       UnprocessableEntityException,
     );
   });
+
+  // Plan DJ (product owner 2026-11-21): an award once recorded is the decision — no cancel, nothing signalled.
+  it('cancelRfq — 409 COS-PROC-409 when an award is recorded though the RFQ is still EVALUATED', async () => {
+    mockRepo.findRfqById.mockResolvedValue({
+      ...rfqEvaluatedFixture,
+      awarded_quotation_id: 'quot-uuid-001',
+      awarded_at: new Date(),
+    });
+    const err = await service.cancelRfq('rfq-uuid-001').catch((e: unknown) => e);
+    expect(err).toBeInstanceOf(ConflictException);
+    expect(err).toMatchObject({
+      response: {
+        error: {
+          code: 'COS-PROC-409',
+          message: 'RFQ rfq-uuid-001 has been awarded — it cannot be cancelled',
+          messageKey: 'procurement.rfq.alreadyAwarded',
+        },
+      },
+    });
+    expect(mockWorkflowSignal).not.toHaveBeenCalled();
+  });
 });
 
 // ── Quotation comparison tests ────────────────────────────────────────────

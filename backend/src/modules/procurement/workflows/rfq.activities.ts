@@ -47,6 +47,22 @@ export async function updateRfqStatus(
       UPDATE procurement.rfqs SET status = ${to_status}, updated_at = now()
       WHERE rfq_id = ${params.rfq_id}::uuid AND tenant_id = ${params.tenant_id}::uuid`;
 
+    // A CANCELLED RFQ keeps no award (product owner, 2026-11-21; plan DJ): a cancel the workflow took first can meet
+    // an award recorded before this status landed — clear it in this transaction, and the selection with it (the
+    // award had replaced the evaluation's pick). An RFQ cancelled with no award keeps the evaluation's pick, for the
+    // record (decided on /doubt's question).
+    if (to_status === 'CANCELLED') {
+      const cleared = await prisma.$executeRaw`
+        UPDATE procurement.rfqs SET awarded_quotation_id = NULL, awarded_at = NULL
+        WHERE rfq_id = ${params.rfq_id}::uuid AND tenant_id = ${params.tenant_id}::uuid
+          AND awarded_quotation_id IS NOT NULL`;
+      if (cleared > 0) {
+        await prisma.$executeRaw`
+          UPDATE procurement.quotations SET is_selected = false
+          WHERE rfq_id = ${params.rfq_id}::uuid AND tenant_id = ${params.tenant_id}::uuid AND is_selected`;
+      }
+    }
+
     await OutboxPublisher.write(
       prisma,
       activityEvent(

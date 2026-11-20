@@ -109,6 +109,42 @@ describe('updateRfqStatus', () => {
     expect(mockPrismaDisconnect).not.toHaveBeenCalled();
   });
 
+  // Plan DJ (product owner 2026-11-21): a CANCELLED RFQ keeps no award — cleared, with the selection, in the same
+  // transaction; no other transition touches them.
+  it('on CANCELLED, clears the award columns and the selection in the same transaction', async () => {
+    await updateRfqStatus(baseParams, 'EVALUATED', 'CANCELLED');
+    expect(mockTransaction).toHaveBeenCalledTimes(1);
+    const sqls = mockExecuteRaw.mock.calls.map((c) =>
+      (c[0] as string[]).join('?').replace(/\s+/g, ' '),
+    );
+    expect(sqls).toContainEqual(
+      expect.stringContaining(
+        'UPDATE procurement.rfqs SET awarded_quotation_id = NULL, awarded_at = NULL',
+      ),
+    );
+    expect(sqls).toContainEqual(
+      expect.stringContaining('UPDATE procurement.quotations SET is_selected = false'),
+    );
+    expect(mockExecuteRaw).toHaveBeenCalledTimes(4); // status, award, selection, outbox
+  });
+
+  it('on CANCELLED with no award recorded, keeps the evaluation pick', async () => {
+    mockExecuteRaw
+      .mockResolvedValueOnce(1) // status
+      .mockResolvedValueOnce(0); // no award to clear
+    await updateRfqStatus(baseParams, 'EVALUATED', 'CANCELLED');
+    const sqls = mockExecuteRaw.mock.calls.map((c) => (c[0] as string[]).join('?'));
+    expect(sqls.some((q) => q.includes('is_selected = false'))).toBe(false);
+    expect(mockExecuteRaw).toHaveBeenCalledTimes(3); // status, award (none), outbox
+  });
+
+  it('touches no award on any other transition', async () => {
+    await updateRfqStatus(baseParams, 'EVALUATED', 'AWARDED');
+    const sqls = mockExecuteRaw.mock.calls.map((c) => (c[0] as string[]).join('?'));
+    expect(sqls.some((q) => q.includes('awarded_quotation_id'))).toBe(false);
+    expect(mockExecuteRaw).toHaveBeenCalledTimes(2);
+  });
+
   it('sets RLS tenant context with the exact SET LOCAL statement', async () => {
     await updateRfqStatus(baseParams, 'DRAFT', 'PUBLISHED');
     expect(mockExecuteRawUnsafe).toHaveBeenCalledWith(

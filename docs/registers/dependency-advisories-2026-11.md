@@ -1602,6 +1602,25 @@ gate's isolated run) checks the hash was not tested either; it ran 12.18.0 with 
 
 ## Open
 
+- **Closed — an awarded RFQ could still be cancelled, and a cancelled one kept its award.** Fixed in plan DJ (on the
+  current branch; product-owner decisions 2026-11-21: once an award is recorded the cancel is refused; an RFQ that
+  does end CANCELLED keeps no award). Closes the item plan CR parked. Measured on HEAD (`test/procurement/03`): a
+  cancel on an EVALUATED RFQ with its award recorded was not refused for the award (the seeded RFQ answered 422 for
+  its missing workflow), and the CANCELLED transition left `awarded_quotation_id`/`awarded_at` and `is_selected`.
+  - `cancelRfq`: `awarded_quotation_id` set → 409 `COS-PROC-409`, `procurement.rfq.alreadyAwarded` ("RFQ `<id>`
+    has been awarded — it cannot be cancelled"), nothing signalled.
+  - The `updateRfqStatus` activity, when the transition is to CANCELLED and an award is recorded, clears the award
+    columns and the quotations' `is_selected` in the status UPDATE's transaction — the race where the workflow took
+    a cancel first and an award landed before the status did. An RFQ cancelled with no award keeps the evaluation's
+    pick (product owner, on /doubt's question: the first version cleared it on every cancel). Activity code only:
+    the workflow is unchanged (replay-safe).
+  - Docs: OpenAPI `cancelRfq` 409, `error-codes.md` row (COS-PROC-409 now six conflicts).
+  - Verified: procurement unit (375: the 409 with no signal; the activity's two clearing statements on CANCELLED only),
+    workflow specs (37), `test/procurement/03` (29: the cancel 409 with the award kept; the activity clearing an award
+    — HEAD fails both; a plain cancel keeps the pick). tsc, eslint, prettier, conformance, OpenAPI validity and
+    freshness, markdownlint.
+  - Parked (found by /doubt): an award request that passes the EVALUATED check just as the CANCELLED activity commits
+    gets 409 "already awarded to another quotation" — the RFQ was cancelled, not awarded; the message misleads.
 - **Closed — the quotations page offered Award on a deactivated vendor's row, and named vendors by id.** Fixed in
   plan DI (on the current branch; product-owner decisions 2026-11-21: the rows carry the vendor's name and whether it
   is active; on a deactivated vendor's row no Award button but a "vendor deactivated" label, the row kept for the
@@ -1993,8 +2012,8 @@ gate's isolated run) checks the hash was not tested either; it ran 12.18.0 with 
     (`seed-realistic.ts`) clears the award columns before deleting quotations (the new FK would block it). OpenAPI
     `RfqRow` lists the two columns (`SELECT *` returns them).
   - Not decided (low, parked): an award recorded whose signal failed, then the RFQ cancelled — it ends CANCELLED still
-    carrying `awarded_quotation_id`/`awarded_at` and `is_selected`. The web page shows no award error (a 409 included)
-    and refetches only on success.
+    carrying `awarded_quotation_id`/`awarded_at` and `is_selected`. Closed by plan DJ. The web page shows no award error
+    (a 409 included) and refetches only on success.
   - Docs: `error-codes.md` row; OpenAPI `awardRfq` 409. Web: the quotations page shows no award error at all (none
     before either), so the new message is not surfaced there — noted, not built (see the parked item below).
   - Unit: `recordAward`'s guard and parameters, nothing selected when it records nothing; `awardRfq` 409 with nothing

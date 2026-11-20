@@ -994,6 +994,15 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: >-
+            `COS-PROC-409` (`procurement.rfq.alreadyAwarded`) — an award is recorded for this RFQ (still EVALUATED
+            while the workflow catches up, or its award signal failed); it cannot be cancelled (plan DJ). Nothing is
+            signalled
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /procurement/rfqs/{rfqId}/award:
     post:
       tags:
@@ -1081,8 +1090,9 @@ paths:
         Read only (product owner, 2026-11-20; plan CQ). Readable once quoting is over — CLOSED, EVALUATED, AWARDED or
         CANCELLED; sealed while DRAFT or PUBLISHED. Cheapest first; a tie on price in submission order. `is_selected`
         is as stored: the system selects when it evaluates the RFQ (CLOSED → EVALUATED) — the lowest quotation whose
-        vendor is still ACTIVE in the tenant, a tie going to the one submitted first, none when no vendor is active.
-        An RFQ with no quotations answers an empty list.
+        vendor is still ACTIVE in the tenant, a tie going to the one submitted first, none when no vendor is active;
+        an award moves it to the awarded quotation. An RFQ cancelled after an award was recorded has neither (plan DJ);
+        one cancelled with no award keeps the evaluation's pick. An RFQ with no quotations answers an empty list.
       operationId: compareQuotations
       parameters:
         - name: rfqId

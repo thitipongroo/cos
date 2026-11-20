@@ -350,6 +350,17 @@ export class ProcurementService {
         `RFQ ${rfq_id} is already in terminal state: ${rfq.status}`,
       );
     }
+    // An award once recorded is the decision (product owner, 2026-11-21; plan DJ): still EVALUATED while the workflow
+    // catches up, or its signal failed — the cancel is refused, nothing signalled.
+    if (rfq.awarded_quotation_id) {
+      throw new ConflictException({
+        error: {
+          code: 'COS-PROC-409',
+          message: `RFQ ${rfq_id} has been awarded — it cannot be cancelled`,
+          messageKey: 'procurement.rfq.alreadyAwarded',
+        },
+      });
+    }
     const handle = await this.getRfqWorkflowHandle(rfq);
     await handle.signal(cancelRfqSignal, { actor_id: this.userId });
     logger.info({ rfq_id, actor_id: this.userId }, 'rfq.cancelled');

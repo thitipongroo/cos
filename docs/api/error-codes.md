@@ -315,7 +315,7 @@ invoice's PO's project's, for an APPROVED invoice, in its currency.
 ## COS-PROC — Procurement
 
 Recorded 2026-11-20 from `procurement.service.ts`, where it was thrown but not listed here (fix/quotation-duplicate-and-closed-rfq).
-`COS-PROC-409` covers five conflicts; the `messageKey` tells them apart.
+`COS-PROC-409` covers six conflicts; the `messageKey` tells them apart (`procurement.rfq.alreadyAwarded` serves two).
 
 | Code         | HTTP | Message                                                  | Trigger                                                                                                                                    |
 | ------------ | ---- | -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -323,6 +323,7 @@ Recorded 2026-11-20 from `procurement.service.ts`, where it was thrown but not l
 | COS-PROC-409 | 409  | PR number `<n>` is already in use                        | `procurement.pr.duplicateNumber` — `createPurchaseRequest` with a `pr_number` the tenant already has (plan CX)                             |
 | COS-PROC-409 | 409  | A quotation from this vendor already exists for this RFQ | `procurement.quotation.duplicate` — `submitQuotation` (buyer) for an RFQ the vendor has already quoted for                                 |
 | COS-PROC-409 | 409  | This RFQ has already been awarded to another quotation   | `procurement.rfq.alreadyAwarded` — `awardRfq` for a quotation other than the one already awarded (plan CR)                                 |
+| COS-PROC-409 | 409  | RFQ `<id>` has been awarded — it cannot be cancelled     | `procurement.rfq.alreadyAwarded` — `cancelRfq` once an award is recorded (plan DJ)                                                         |
 | COS-PROC-422 | 422  | Project `<id>` is `<status>` — no new procurement        | `procurement.project.closed` — `createPurchaseRequest`, `createRfq` or `createPurchaseOrder` on a CANCELLED or COMPLETED project (plan CS) |
 | COS-PROC-422 | 422  | RFQ `<id>` belongs to another project                    | `procurement.po.rfqOtherProject` — `createPurchaseOrder` naming an RFQ of another project (plan CU)                                        |
 | COS-PROC-422 | 422  | Purchase request `<id>` belongs to another project       | `procurement.rfq.prOtherProject` — `createRfq` naming a purchase request of another project (plan CU)                                      |
