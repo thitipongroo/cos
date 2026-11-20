@@ -267,7 +267,94 @@ describe('ProcurementRepository', () => {
       pr_number: 'PR-001',
       requested_by: 'user-uuid-001',
     });
-    expect(result!.pr_id).toBe('pr-uuid-001');
+    expect((result as { pr_id: string }).pr_id).toBe('pr-uuid-001');
+  });
+
+  // Plan CX: the INSERT skips on any unique key; an empty result is then told apart.
+  describe('createPurchaseRequest — a conflicting insert (plan CX)', () => {
+    const sqlOf = (i: number) =>
+      (mockPrisma.$queryRaw.mock.calls[i]![0] as string[]).join('?').replace(/\s+/g, ' ');
+
+    it('skips on any unique key, not only the id', async () => {
+      mockPrisma.$queryRaw.mockResolvedValue([prRow]);
+      await repo.createPurchaseRequest({
+        project_id: 'proj-uuid-001',
+        pr_number: 'PR-001',
+        requested_by: 'user-uuid-001',
+      });
+      expect(sqlOf(0)).toContain('ON CONFLICT DO NOTHING');
+    });
+
+    it("the number is taken in the tenant → 'PR_NUMBER_TAKEN'", async () => {
+      mockPrisma.$queryRaw.mockResolvedValueOnce([]).mockResolvedValueOnce([{ found: true }]);
+      const result = await repo.createPurchaseRequest({
+        project_id: 'proj-uuid-001',
+        pr_number: 'PR-001',
+        requested_by: 'user-uuid-001',
+      });
+      expect(result).toBe('PR_NUMBER_TAKEN');
+      expect(sqlOf(1)).toContain('WHERE pr_number = ? AND tenant_id = ?::uuid');
+      expect(mockPrisma.$executeRaw).not.toHaveBeenCalled(); // no lines
+    });
+
+    it("the tenant's own id raced in → null (the replay), the number not asked", async () => {
+      mockPrisma.$queryRaw
+        .mockResolvedValueOnce([]) // the existence check before the insert
+        .mockResolvedValueOnce([]) // the insert
+        .mockResolvedValueOnce([{ found: true }]); // the id is now the tenant's
+      const result = await repo.createPurchaseRequest({
+        pr_id: 'pr-uuid-001',
+        project_id: 'proj-uuid-001',
+        pr_number: 'PR-001',
+        requested_by: 'user-uuid-001',
+      });
+      expect(result).toBeNull();
+      expect(mockPrisma.$queryRaw).toHaveBeenCalledTimes(3);
+    });
+
+    it('a number this transaction allocated, taken meanwhile → a retryable error, not a 409', async () => {
+      mockPrisma.$executeRaw.mockResolvedValue(1); // the advisory lock
+      mockPrisma.$queryRaw
+        .mockResolvedValueOnce([]) // the existence check (pr_id given)
+        .mockResolvedValueOnce([{ max_seq: 6 }]) // allocation → PR-<year>-0007
+        .mockResolvedValueOnce([]) // the insert conflicted
+        .mockResolvedValueOnce([]) // not the tenant's id
+        .mockResolvedValueOnce([{ found: true }]); // the number is taken
+      await expect(
+        repo.createPurchaseRequest({
+          pr_id: 'pr-uuid-001',
+          project_id: 'proj-uuid-001',
+          requested_by: 'user-uuid-001',
+          year: 2026,
+        }),
+      ).rejects.toThrow(/was taken concurrently; retry/);
+    });
+
+    it('no id given and nothing now conflicting (the row went away) → a retryable error', async () => {
+      mockPrisma.$queryRaw.mockResolvedValueOnce([]).mockResolvedValueOnce([]);
+      await expect(
+        repo.createPurchaseRequest({
+          project_id: 'proj-uuid-001',
+          pr_number: 'PR-001',
+          requested_by: 'user-uuid-001',
+        }),
+      ).rejects.toThrow(/a row that is gone; retry/);
+    });
+
+    it("neither (another tenant's id) → null", async () => {
+      mockPrisma.$queryRaw
+        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([]);
+      const result = await repo.createPurchaseRequest({
+        pr_id: 'pr-uuid-009',
+        project_id: 'proj-uuid-001',
+        pr_number: 'PR-001',
+        requested_by: 'user-uuid-001',
+      });
+      expect(result).toBeNull();
+    });
   });
 
   it('createPurchaseRequest defaults the allocation year to now when the caller omits it', async () => {

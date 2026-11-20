@@ -1481,6 +1481,15 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: >-
+            `COS-PROC-409` (`procurement.pr.duplicateNumber`) — the `pr_number` given is already used in the tenant
+            (plan CX); or (`procurement.pr.duplicateId`) — a `client_id` that belongs to another tenant; nothing is
+            written
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '422':
           description: >-
             `COS-PROC-422` (`procurement.project.closed`) — the project is CANCELLED or COMPLETED and takes no new

@@ -1690,7 +1690,8 @@
       "projectNotFound": "The project was not found. Refresh the page and choose it again.",
       "publishRefused": "Could not publish: the deadline has passed or the RFQ is no longer a draft. Cancel it and create a new one if the deadline has passed.",
       "stateChanged": "The RFQ's status has changed since this page loaded. Refresh the page.",
-      "quotationGone": "The quotation or its vendor is no longer available (the vendor may have been deactivated)."
+      "quotationGone": "The quotation or its vendor is no longer available (the vendor may have been deactivated).",
+      "prNumberTaken": "This PR number is already in use. Choose another number."
     }
   },
   "profile": {

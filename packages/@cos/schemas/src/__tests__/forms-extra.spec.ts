@@ -92,6 +92,22 @@ describe('purchaseRequestCreateSchema', () => {
   });
 });
 
+// Plan CX: the PR and RFQ numbers stop at 50, as the API (@MaxLength(50)) and the columns (VARCHAR(50)) do.
+describe('PR and RFQ numbers — 50 characters', () => {
+  const rfq = { project_id: UUID, rfq_number: '', deadline: '2099-09-15T17:00' };
+  const pr = { project_id: UUID, pr_number: '' };
+  it.each([
+    ['rfq_number', (n: string) => rfqCreateSchema.safeParse({ ...rfq, rfq_number: n })],
+    ['pr_number', (n: string) => purchaseRequestCreateSchema.safeParse({ ...pr, pr_number: n })],
+  ] as const)('%s: 50 accepted, 51 refused', (field, parse) => {
+    expect(parse('R'.repeat(50)).success).toBe(true);
+    expect(firstIssue(parse('R'.repeat(51)))).toMatchObject({
+      message: 'validation.tooLong',
+      path: [field],
+    });
+  });
+});
+
 describe('rfqCreateSchema', () => {
   // datetime-local, the value the RFQ form actually holds before it converts to ISO on submit.
   const base = { project_id: UUID, rfq_number: 'RFQ-001', deadline: '2099-09-15T17:00' };

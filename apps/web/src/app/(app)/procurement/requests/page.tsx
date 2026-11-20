@@ -17,6 +17,7 @@ import type { PurchaseRequestRow } from '../../../../lib/api/types';
 import { formatDate } from '../../../../lib/format';
 import { useReadOnly } from '../../../../lib/auth/useReadOnly';
 import { useValidatedForm } from '../../../../lib/forms';
+import { procurementActionErrorKey } from '../../../../lib/procurementErrors';
 
 const STATUSES = ['DRAFT', 'SUBMITTED', 'APPROVED', 'REJECTED', 'PO_CREATED'];
 
@@ -42,16 +43,20 @@ export default function PurchaseRequestsPage() {
 
   const messageFor = (key?: string) => (key ? t(key) : undefined);
 
-  const submitForm = handleSubmit((values) => {
-    create.mutate(
-      { ...values, required_date: values.required_date || undefined },
-      // Keep the project: a procurement officer raises several PRs against one project in a row.
-      {
-        onSuccess: () =>
-          reset({ project_id: getValues('project_id'), pr_number: '', required_date: '' }),
-      },
-    );
-  });
+  const submitForm = handleSubmit(
+    (values) => {
+      create.mutate(
+        { ...values, required_date: values.required_date || undefined },
+        // Keep the project: a procurement officer raises several PRs against one project in a row.
+        {
+          onSuccess: () =>
+            reset({ project_id: getValues('project_id'), pr_number: '', required_date: '' }),
+        },
+      );
+    },
+    // A new attempt the form refuses itself drops the last server reason (plan CX).
+    () => create.reset(),
+  );
 
   const columns: Column<PurchaseRequestRow>[] = [
     { headerKey: 'pm.colNumber', cell: (r) => r.pr_number },
@@ -62,6 +67,13 @@ export default function PurchaseRequestsPage() {
   return (
     <div>
       <h1 className="mb-6 text-2xl font-bold text-gray-800">{t('proc.requestsTitle')}</h1>
+
+      {/* Why a create was refused (plan CX); a new create clears it. The form keeps what was typed. */}
+      {create.isError && (
+        <p role="alert" className="mb-4 text-sm text-red-700">
+          {t(procurementActionErrorKey('createRequest', create.error))}
+        </p>
+      )}
 
       {!readOnly && (
         <form onSubmit={submitForm} noValidate className="mb-4 flex flex-wrap items-start gap-2">

@@ -794,6 +794,26 @@ describe('Purchase Requests', () => {
     expect(result.pr_id).toBe('pr-001');
   });
 
+  // Plan CX (product owner 2026-11-20): a number the tenant already has → 409, nothing written.
+  it('409 COS-PROC-409 when the PR number is already used in the tenant', async () => {
+    mockRepo.projectStatus.mockResolvedValue('ACTIVE');
+    mockRepo.createPurchaseRequest.mockResolvedValue('PR_NUMBER_TAKEN');
+    const err = await service
+      .createPurchaseRequest({ project_id: 'p-001', pr_number: 'PR-7' })
+      .catch((e: unknown) => e);
+    expect(err).toBeInstanceOf(ConflictException);
+    expect(err).toMatchObject({
+      response: {
+        error: {
+          code: 'COS-PROC-409',
+          message: 'PR number PR-7 is already in use',
+          messageKey: 'procurement.pr.duplicateNumber',
+        },
+      },
+    });
+    expect(mockRepo.findPurchaseRequestById).not.toHaveBeenCalled();
+  });
+
   it('keeps a caller-supplied pr_number instead of allocating one', async () => {
     mockRepo.createPurchaseRequest.mockResolvedValue({ pr_id: 'pr-001' });
 

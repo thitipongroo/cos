@@ -1602,6 +1602,33 @@ gate's isolated run) checks the hash was not tested either; it ran 12.18.0 with 
 
 ## Open
 
+- **Closed — a PR number already in use answered 500, and the web purchase request page showed no refusal.** Fixed
+  in plan CX (on the current branch; product-owner decisions 2026-11-20: a taken number → 409; the web forms stop
+  the PR and RFQ numbers at 50; the PR page shows a TH/EN reason as plan CW's pages do). Closes the two items plan
+  CW left: the purchase request page and the RFQ number's length.
+  - Measured on HEAD (`test/procurement/04-procurement`): a second PR with the same `pr_number` → 500 (the
+    `uq_pr_tenant_number` unique key, 23505, mapped by nothing). Only the web form supplies a number; the app's
+    offline create lets the server allocate one.
+  - `ProcurementRepository.createPurchaseRequest` now inserts with `ON CONFLICT DO NOTHING` (any unique key) and
+    tells an empty result apart: the tenant's own id → `null` (the replay, as before); a number the caller chose,
+    taken in the tenant → `'PR_NUMBER_TAKEN'`; a number this transaction allocated, taken meanwhile by a hand-typed
+    one → an error (a retryable 5xx, as the 23505 was — so the app's queued request is retried and allocates the
+    next number instead of being discarded as refused; found by /doubt); no id and nothing now conflicting (the row
+    rolled back) → an error, not a misleading `duplicateId` (found by /doubt); else `null` (another tenant's id →
+    409 `procurement.pr.duplicateId`, as before). The service answers the taken number with 409 `{ error: { code:
+    'COS-PROC-409', message: 'PR number <n> is already in use', messageKey: 'procurement.pr.duplicateNumber' } }`,
+    nothing written. OpenAPI and `error-codes.md` list it.
+  - Web: the mapper is `procurementActionErrorKey` now (`lib/procurementErrors.ts`) with a `createRequest` action
+    (the number taken, project closed, project not found; else generic). The PR page shows it (`role="alert"`),
+    cleared on a new attempt; a refused create keeps the form. `@cos/schemas`: `pr_number` and `rfq_number` →
+    `requiredText(50)`. Strings TH/EN.
+  - Verified: procurement and sync unit, repository cases (any key; number taken; own id raced; an allocated number
+    taken → error; the row gone → error; neither); backend unit in full (4545); integration `04-procurement` (30: 201
+    then 409 COS-PROC-409, one row), `03-rfq-lifecycle` (26), `site-ops/02-sync-push-offline-scope` (23); apps/web
+    jest (489); `@cos/schemas` jest (325: 50 accepted, 51 refused for both). Controls: HEAD's backend fails the
+    integration test (500) and three repository cases; HEAD's schema fails the two length tests; a 409 for an
+    allocated number fails its case. tsc, eslint, prettier, OpenAPI validity and freshness, conformance,
+    schema-contract and markdownlint pass. No browser run.
 - **Closed — the web RFQ and quotation pages showed nothing when the server refused.** Fixed in plan CW (on the
   current branch; product-owner decisions 2026-11-20: a TH/EN line for the case, else a generic one, never the
   server's English text; the RFQ form checks the deadline is in the future; every action on the two pages). Closes
@@ -1625,10 +1652,10 @@ gate's isolated run) checks the hash was not tested either; it ran 12.18.0 with 
     accepted). HEAD's client fails 4 web tests and HEAD's schema 2; without the field-errors guard, 1. apps/web jest
     (485), tsc, eslint, prettier; `@cos/schemas` jest (323), tsc, eslint; the schema-contract check; markdownlint. No
     browser run.
-  - Not covered: the web purchase request page still shows nothing on a refusal (its 422 project closed included);
-    the RFQ form allows an RFQ number of 64 characters where the API takes 50 (a longer one now gets the generic
-    line); an RFQ with no workflow (422, corrupted data only) shows the publish or "status changed" line; the
-    buttons are not re-checked against a status that changed (the line says to refresh).
+  - Not covered: the web purchase request page still showed nothing on a refusal, and the RFQ form allowed an RFQ
+    number of 64 characters where the API takes 50 — both closed by plan CX, above; an RFQ with no workflow (422,
+    corrupted data only) shows the publish or "status changed" line; the buttons are not re-checked against a status
+    that changed (the line says to refresh).
 - **Closed — signing out on the phone left the active project for the next sign-in.** Fixed in plan CV (on the
   current branch; product-owner decisions 2026-11-20: a sign-out the user chooses forgets the active project; a
   session that ends by itself keeps it; only the active project — the read caches and the per-user outbox keep the

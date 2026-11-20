@@ -205,6 +205,17 @@ export class ProcurementService {
       items: dto.items,
     });
 
+    if (pr === 'PR_NUMBER_TAKEN') {
+      // Plan CX (product owner 2026-11-20): a number the caller chose (the web form does) that the tenant already
+      // has — nothing written. The app's offline create sends none (the server allocates).
+      throw new ConflictException({
+        error: {
+          code: 'COS-PROC-409',
+          message: `PR number ${dto.pr_number} is already in use`,
+          messageKey: 'procurement.pr.duplicateNumber',
+        },
+      });
+    }
     if (!pr) {
       // Already raised. Read it back so a replay still answers with the row it asked for.
       const existing = dto.client_id

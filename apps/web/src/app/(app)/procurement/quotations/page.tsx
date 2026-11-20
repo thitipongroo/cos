@@ -8,7 +8,7 @@ import type { QuotationRow } from '../../../../lib/api/types';
 import { formatMoney } from '../../../../lib/format';
 import { useReadOnly } from '../../../../lib/auth/useReadOnly';
 import { canAwardQuotations } from '../../../../lib/quotationAward';
-import { rfqActionErrorKey } from '../../../../lib/procurementErrors';
+import { procurementActionErrorKey } from '../../../../lib/procurementErrors';
 
 /**
  * Quotation comparison (§20.7.3). Quotations are RFQ-scoped in the backend:
@@ -70,7 +70,7 @@ export default function QuotationsPage() {
       {/* Why an award was refused (plan CW); award.reset() on a new RFQ clears it. */}
       {award.isError && (
         <p role="alert" className="mb-4 text-sm text-red-700">
-          {t(rfqActionErrorKey('award', award.error))}
+          {t(procurementActionErrorKey('award', award.error))}
         </p>
       )}
 

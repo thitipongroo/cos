@@ -207,7 +207,7 @@ export class ProcurementRepository {
     required_date?: string;
     year?: number;
     items?: Array<{ description: string; quantity: number; unit: string; material_id?: string }>;
-  }): Promise<PurchaseRequestRow | null> {
+  }): Promise<PurchaseRequestRow | null | 'PR_NUMBER_TAKEN'> {
     // PR + its lines in one transaction: a request that records no materials is not a request, so
     // the two must not be able to land separately.
     return this.db.run(async (prisma) => {
@@ -239,10 +239,35 @@ export class ProcurementRepository {
         VALUES (COALESCE(${params.pr_id ?? null}::uuid, gen_random_uuid()),
                 ${params.project_id}::uuid, ${this.tenantId}::uuid, ${prNumber},
                 ${params.requested_by}::uuid, ${params.required_date ?? null}::date)
-        ON CONFLICT (pr_id) DO NOTHING
+        ON CONFLICT DO NOTHING
         RETURNING *`;
-      // Empty means a concurrent replay inserted it between the check above and this statement.
-      if (!rows[0]) return null;
+      // Empty: a unique key conflicted — any of them (plan CX), so a taken number no longer raises 23505 (a 500).
+      // The tenant's own id → a concurrent replay inserted it between the check above and this statement (null);
+      // else the number is taken in the tenant; else the id is another tenant's (null — the caller answers 409).
+      if (!rows[0]) {
+        if (params.pr_id) {
+          const replayed = await prisma.$queryRaw<Array<{ found: boolean }>>`
+            SELECT true AS found FROM procurement.purchase_requests
+            WHERE pr_id = ${params.pr_id}::uuid AND tenant_id = ${this.tenantId}::uuid`;
+          if (replayed[0]) return null;
+        }
+        const taken = await prisma.$queryRaw<Array<{ found: boolean }>>`
+          SELECT true AS found FROM procurement.purchase_requests
+          WHERE pr_number = ${prNumber} AND tenant_id = ${this.tenantId}::uuid`;
+        if (taken[0]) {
+          // Only a number the caller chose is theirs to change (409). One this transaction allocated collided with
+          // a hand-typed one committed meanwhile (found by /doubt): fail as before — a retryable 5xx, so the app's
+          // queued request is retried and allocates the next number, never discarded as refused.
+          if (params.pr_number) return 'PR_NUMBER_TAKEN';
+          throw new Error(`Allocated PR number ${prNumber} was taken concurrently; retry`);
+        }
+        if (!params.pr_id) {
+          // No id of the caller's and no number now taken: the conflicting row went away meanwhile (a rollback).
+          // Not the caller's fault and not a duplicate id — retryable (found by /doubt).
+          throw new Error('Purchase request insert conflicted with a row that is gone; retry');
+        }
+        return null;
+      }
       const pr = rows[0];
       const items = params.items ?? [];
       if (items.length > 0) {

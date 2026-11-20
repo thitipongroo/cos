@@ -19,7 +19,10 @@ import type { RfqRow } from '../../../../lib/api/types';
 import { formatDate } from '../../../../lib/format';
 import { useReadOnly } from '../../../../lib/auth/useReadOnly';
 import { useValidatedForm } from '../../../../lib/forms';
-import { rfqActionErrorKey, type RfqAction } from '../../../../lib/procurementErrors';
+import {
+  procurementActionErrorKey,
+  type ProcurementAction,
+} from '../../../../lib/procurementErrors';
 
 const STATUSES = ['DRAFT', 'PUBLISHED', 'CLOSED', 'EVALUATED', 'AWARDED', 'CANCELLED'];
 
@@ -51,10 +54,13 @@ export default function RfqsPage() {
   // The last refused action's reason (plan CW): one line, cleared when another action starts.
   const [actionError, setActionError] = useState<string | null>(null);
   const run =
-    (action: RfqAction, mutate: (rfqId: string, opts: { onError: (e: unknown) => void }) => void) =>
+    (
+      action: ProcurementAction,
+      mutate: (rfqId: string, opts: { onError: (e: unknown) => void }) => void,
+    ) =>
     (rfqId: string) => {
       setActionError(null);
-      mutate(rfqId, { onError: (e) => setActionError(rfqActionErrorKey(action, e)) });
+      mutate(rfqId, { onError: (e) => setActionError(procurementActionErrorKey(action, e)) });
     };
   const doPublish = run('publish', publish.mutate);
   const doClose = run('close', close.mutate);
@@ -72,7 +78,7 @@ export default function RfqsPage() {
         });
       } catch (e) {
         // Shown, not left unhandled; the form keeps what was typed so it can be corrected.
-        setActionError(rfqActionErrorKey('create', e));
+        setActionError(procurementActionErrorKey('create', e));
         return;
       }
       reset({ project_id: getValues('project_id'), rfq_number: '', deadline: '' });

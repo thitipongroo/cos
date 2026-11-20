@@ -555,5 +555,31 @@ describe('Procurement Integration (Phase 5)', () => {
       expect((res.body as { message: string }).message).toMatch(/^Project .* not found$/);
       expect(await count('purchase_requests', 'pr_number', prNumber)).toBe(0);
     });
+
+    // Plan CX (product owner 2026-11-20): a PR number already used in the tenant → 409, nothing written. It hit the
+    // unique key (uq_pr_tenant_number), which nothing mapped: 500.
+    it('a PR number already used in the tenant: 409 COS-PROC-409, one row', async () => {
+      seq += 1;
+      const prNumber = `PR-CX-DUP-${seq}`;
+      const send = () =>
+        request(app.getHttpServer())
+          .post('/api/v1/procurement/purchase-requests')
+          .set('Authorization', PROC_TOKEN)
+          .send({
+            ...buildCreatePurchaseRequestDto({ pr_number: prNumber }),
+            project_id: ids.project,
+          });
+      expect((await send()).status).toBe(201);
+      const again = await send();
+      expect(again.status).toBe(409);
+      expect(again.body).toEqual({
+        error: {
+          code: 'COS-PROC-409',
+          message: `PR number ${prNumber} is already in use`,
+          messageKey: 'procurement.pr.duplicateNumber',
+        },
+      });
+      expect(await count('purchase_requests', 'pr_number', prNumber)).toBe(1);
+    });
   });
 });

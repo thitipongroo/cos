@@ -147,7 +147,8 @@ export const projectCreateSchema = z.object({
 /** §20.7.3 purchase request → POST /procurement/requests (`CreatePurchaseRequestInput`). */
 export const purchaseRequestCreateSchema = z.object({
   project_id: requiredId,
-  pr_number: requiredText(64),
+  // 50: the API's @MaxLength and the column's VARCHAR(50) (plan CX; 64 let a longer one through to a 400).
+  pr_number: requiredText(50),
   required_date: optionalIsoDate,
 });
 
@@ -155,7 +156,7 @@ export const purchaseRequestCreateSchema = z.object({
 export const rfqCreateSchema = z.object({
   project_id: requiredId,
   pr_id: z.optional(z.union([z.literal(''), requiredId])),
-  rfq_number: requiredText(64),
+  rfq_number: requiredText(50), // as the API and the column (plan CX)
   // These schemas validate what the *form* holds, not what is POSTed. The RFQ page collects the
   // deadline with an <input type="datetime-local"> and converts it with `new Date(...).toISOString()`
   // on submit, so the value reaching validation is `YYYY-MM-DDTHH:mm`, not a full ISO timestamp.
