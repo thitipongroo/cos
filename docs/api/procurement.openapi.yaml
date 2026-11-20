@@ -202,6 +202,14 @@ components:
           format: date-time
         temporal_workflow_id:
           type: [string, 'null']
+        awarded_quotation_id:
+          type: [string, 'null']
+          format: uuid
+          description: The quotation this RFQ was awarded to — recorded by awardRfq, null until then (plan CR)
+        awarded_at:
+          type: [string, 'null']
+          format: date-time
+          description: When the award was first recorded; null until then (plan CR)
         created_by:
           type: string
           format: uuid
@@ -995,6 +1003,11 @@ paths:
           description: |
             Quotation not found in RFQ, or its vendor is deactivated or not the tenant's ("Vendor … not found", as
             for a purchase order). Nothing is selected or signalled; the RFQ stays EVALUATED (plan CP).
+        '409':
+          description: |
+            `COS-PROC-409` (`procurement.rfq.alreadyAwarded`) — the RFQ has already been awarded to another
+            quotation; the first award stands and nothing is signalled (plan CR). Awarding the same quotation again
+            is accepted and re-signals the workflow, so a retry after a failed signal goes through.
   /procurement/rfqs/{rfqId}/quotations:
     post:
       tags:

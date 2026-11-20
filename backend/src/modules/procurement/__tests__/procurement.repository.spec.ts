@@ -461,10 +461,34 @@ describe('ProcurementRepository', () => {
     expect(sql).toContain('ORDER BY total_amount ASC, submitted_at ASC, quotation_id ASC');
   });
 
-  it('markQuotationSelected calls $executeRaw twice (deselect + select)', async () => {
+  // plan CR: the award is recorded by a guarded UPDATE; the selection follows only when it recorded.
+  it('recordAward records the award and selects its quotation in one transaction', async () => {
     mockPrisma.$executeRaw.mockResolvedValue(1);
-    await repo.markQuotationSelected('quot-uuid-001', 'rfq-uuid-001');
+    expect(await repo.recordAward('rfq-uuid-001', 'quot-uuid-001')).toBe(true);
     expect(mockPrisma.$executeRaw).toHaveBeenCalledTimes(2);
+    const [guard, select] = mockPrisma.$executeRaw.mock.calls.map((c: unknown[]) =>
+      (c[0] as string[]).join('?').replace(/\s+/g, ' '),
+    );
+    expect(guard).toContain('UPDATE procurement.rfqs SET awarded_quotation_id = ?::uuid');
+    expect(guard).toContain('awarded_at = COALESCE(awarded_at, now())');
+    expect(guard).toContain("tenant_id = ?::uuid AND status = 'EVALUATED'");
+    expect(guard).toContain('AND (awarded_quotation_id IS NULL OR awarded_quotation_id = ?::uuid)');
+    expect(mockPrisma.$executeRaw.mock.calls[0]!.slice(1)).toEqual([
+      'quot-uuid-001',
+      'rfq-uuid-001',
+      'tenant-uuid-001',
+      'quot-uuid-001',
+    ]);
+    expect(select).toContain(
+      'UPDATE procurement.quotations SET is_selected = (quotation_id = ?::uuid)',
+    );
+    expect(select).toContain('WHERE rfq_id = ?::uuid AND tenant_id = ?::uuid');
+  });
+
+  it('recordAward: another quotation already awarded (no row) → false, nothing selected', async () => {
+    mockPrisma.$executeRaw.mockResolvedValue(0);
+    expect(await repo.recordAward('rfq-uuid-001', 'quot-uuid-002')).toBe(false);
+    expect(mockPrisma.$executeRaw).toHaveBeenCalledTimes(1);
   });
 
   // ── Purchase Orders ────────────────────────────────────────────────────────

@@ -551,4 +551,84 @@ describe('Phase 5 · RFQ lifecycle, quotation comparison and event emission', ()
       expect(res.body).toEqual([]);
     });
   });
+
+  // plan CR (product owner, 2026-11-20): one award per RFQ, recorded atomically. This harness has no Temporal, so
+  // each accepted award fails at its signal AFTER the record commits — which is the retry case itself.
+  describe('one award per RFQ', () => {
+    const quote = async (rfqId: string, amount: string): Promise<string> => {
+      const res = await http()
+        .post(`/api/v1/procurement/rfqs/${rfqId}/quotations`)
+        .set('x-test-role', PO_ROLE)
+        .send({
+          vendor_id: await createVendor(),
+          total_amount: amount,
+          currency_code: 'THB',
+          validity_days: 30,
+          submitted_at: '2026-01-01T00:00:00.000Z',
+        });
+      expect(res.status).toBe(201);
+      return (res.body as { quotation_id: string }).quotation_id;
+    };
+    const award = (rfqId: string, quotationId: string) =>
+      http()
+        .post(`/api/v1/procurement/rfqs/${rfqId}/award`)
+        .set('x-test-role', PO_ROLE)
+        .send({ quotation_id: quotationId });
+    const record = async (rfqId: string) =>
+      (
+        await infra.prisma.$queryRawUnsafe<
+          Array<{ awarded_quotation_id: string | null; awarded_at: Date | null }>
+        >(
+          `SELECT awarded_quotation_id::text, awarded_at FROM procurement.rfqs WHERE rfq_id = $1::uuid`,
+          rfqId,
+        )
+      )[0]!;
+    const selectedIds = async (rfqId: string) =>
+      (
+        await infra.prisma.$queryRawUnsafe<Array<{ quotation_id: string }>>(
+          `SELECT quotation_id::text FROM procurement.quotations WHERE rfq_id = $1::uuid AND is_selected`,
+          rfqId,
+        )
+      ).map((r) => r.quotation_id);
+
+    it('another quotation after an award: 409 COS-PROC-409, the first recorded and selected', async () => {
+      const rfqId = await seedRfq('PUBLISHED');
+      const first = await quote(rfqId, '100.0000');
+      const second = await quote(rfqId, '200.0000');
+      await infra.prisma.$executeRawUnsafe(
+        `UPDATE procurement.rfqs SET status = 'EVALUATED' WHERE rfq_id = $1::uuid`,
+        rfqId,
+      );
+
+      expect((await award(rfqId, first)).status).not.toBe(409);
+      const recorded = await record(rfqId);
+      expect(recorded.awarded_quotation_id).toBe(first);
+      expect(recorded.awarded_at).not.toBeNull();
+
+      const again = await award(rfqId, second);
+      expect(again.status).toBe(409);
+      expect(again.body).toMatchObject({ error: { code: 'COS-PROC-409' } });
+      expect(await record(rfqId)).toEqual(recorded);
+      expect(await selectedIds(rfqId)).toEqual([first]);
+    });
+
+    it('the same quotation again (a retry after a failed signal): accepted, recorded once', async () => {
+      const rfqId = await seedRfq('PUBLISHED');
+      const only = await quote(rfqId, '100.0000');
+      await infra.prisma.$executeRawUnsafe(
+        `UPDATE procurement.rfqs SET status = 'EVALUATED' WHERE rfq_id = $1::uuid`,
+        rfqId,
+      );
+
+      expect((await award(rfqId, only)).status).not.toBe(409);
+      const recorded = await record(rfqId);
+      expect(recorded.awarded_quotation_id).toBe(only);
+      const retry = await award(rfqId, only);
+      expect(retry.status).not.toBe(409);
+      expect(retry.status).not.toBe(404);
+      // awarded_at keeps the first award's time.
+      expect(await record(rfqId)).toEqual(recorded);
+      expect(await selectedIds(rfqId)).toEqual([only]);
+    });
+  });
 });

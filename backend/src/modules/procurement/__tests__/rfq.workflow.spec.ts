@@ -87,6 +87,38 @@ describe('RFQ Workflow — state transitions', () => {
     });
   });
 
+  // plan CR: awardRfq checks the DATABASE, which is EVALUATED as soon as the evaluation activity commits — before the
+  // activity's result reaches the workflow. An award signalled in that gap used to be dropped (the workflow still said
+  // CLOSED), leaving the RFQ EVALUATED forever with its award recorded.
+  it('an award signalled while the evaluation activity is still running is kept', async () => {
+    let entered!: () => void;
+    const inEvaluation = new Promise<void>((r) => (entered = r));
+    let release!: () => void;
+    const gate = new Promise<void>((r) => (release = r));
+    mockMarkQuotationsEvaluated.mockImplementationOnce(async () => {
+      entered();
+      await gate;
+    });
+
+    await worker.runUntil(async () => {
+      const handle = await testEnv.client.workflow.start(rfqWorkflow, {
+        taskQueue: 'test-rfq',
+        workflowId: 'rfq-test-award-during-evaluation',
+        args: [{ ...baseParams, deadline_ms: Date.now() + 1000 }],
+      });
+      await handle.signal(publishRfqSignal, { actor_id: 'user-001' });
+      await testEnv.sleep('2s');
+      await inEvaluation;
+
+      await handle.signal(awardRfqSignal, { actor_id: 'user-001', quotation_id: 'quot-001' });
+      release();
+
+      await testEnv.sleep('1s');
+      expect(mockUpdateRfqStatus).toHaveBeenCalledWith(expect.any(Object), 'EVALUATED', 'AWARDED');
+      await handle.terminate().catch(() => undefined);
+    });
+  });
+
   it('DRAFT → cancelled before publish', async () => {
     await worker.runUntil(async () => {
       const handle = await testEnv.client.workflow.start(rfqWorkflow, {

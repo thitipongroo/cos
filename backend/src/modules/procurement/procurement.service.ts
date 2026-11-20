@@ -326,7 +326,18 @@ export class ProcurementService {
       throw new NotFoundException(`Vendor ${selected.vendor_id} not found`);
     }
 
-    await this.repo.markQuotationSelected(quotation_id, rfq_id);
+    // One award per RFQ (product owner, 2026-11-20; plan CR): recorded and selected atomically. Another quotation
+    // already awarded → 409, the first standing, nothing signalled. The same quotation again → re-signalled, so a
+    // retry after a failed signal can move the RFQ on.
+    if (!(await this.repo.recordAward(rfq_id, quotation_id))) {
+      throw new ConflictException({
+        error: {
+          code: 'COS-PROC-409',
+          message: 'This RFQ has already been awarded to another quotation',
+          messageKey: 'procurement.rfq.alreadyAwarded',
+        },
+      });
+    }
 
     const handle = await this.getRfqWorkflowHandle(rfq);
     await handle.signal(awardRfqSignal, { actor_id: this.userId, quotation_id });

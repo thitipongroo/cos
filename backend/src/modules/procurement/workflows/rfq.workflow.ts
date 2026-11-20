@@ -17,6 +17,7 @@ import {
   defineSignal,
   defineQuery,
   log,
+  patched,
 } from '@temporalio/workflow';
 import type { updateRfqStatus, markQuotationsEvaluated } from './rfq.activities';
 
@@ -29,6 +30,9 @@ const acts = proxyActivities<{
   startToCloseTimeout: '2m',
   retry: { maximumAttempts: 3, initialInterval: '5s', backoffCoefficient: 2 },
 });
+
+// plan CR: accept an award signal that arrives between the evaluation activity's commit and its result.
+export const AWARD_DURING_EVALUATION_PATCH = 'award-during-evaluation';
 
 // ── Signals (PROCUREMENT_OFFICER / PROC_MANAGER trigger these) ────────────
 
@@ -84,7 +88,15 @@ export async function rfqWorkflow(params: RfqWorkflowParams): Promise<void> {
 
   // ── EVALUATED → AWARDED ─────────────────────────────────────────────────
   setHandler(awardRfqSignal, ({ actor_id, quotation_id }) => {
-    if (status !== 'EVALUATED') return;
+    // The first award stands (plan CR): a repeat — the same quotation re-signalled after a failed signal — or any
+    // later one changes nothing. awardRfq refuses a different quotation before signalling.
+    // An award can also arrive while this workflow still says CLOSED: awardRfq checks the DATABASE, which is
+    // EVALUATED as soon as markQuotationsEvaluated commits, before the activity's result reaches here. Dropping it
+    // left the RFQ EVALUATED with its award recorded and every other quotation refused. Accepted now — the wait
+    // after evaluation then sees `awarded` at once. Patched so a history that dropped one replays as it ran.
+    const acceptable =
+      status === 'EVALUATED' || (status === 'CLOSED' && patched(AWARD_DURING_EVALUATION_PATCH));
+    if (!acceptable || awarded) return;
     log.info('rfq.award.signal', { rfq_id: params.rfq_id, actor_id, quotation_id });
     selectedQuotationId = quotation_id;
     awarded = true;

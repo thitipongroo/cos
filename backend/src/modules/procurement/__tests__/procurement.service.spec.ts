@@ -104,7 +104,7 @@ const mockRepo = {
   createQuotation: jest.fn(),
   findQuotationsByRfq: jest.fn(),
   findQuotationsByVendor: jest.fn(),
-  markQuotationSelected: jest.fn(),
+  recordAward: jest.fn(),
   createPurchaseOrder: jest.fn(),
   createPurchaseOrderWithLineItems: jest.fn(),
   findPoById: jest.fn(),
@@ -366,7 +366,7 @@ describe('Quotation comparison', () => {
         .map((q) => [q.total_amount, q.is_selected]),
     );
     expect(result[0]!.total_amount).toBe('120000.0000');
-    expect(mockRepo.markQuotationSelected).not.toHaveBeenCalled();
+    expect(mockRepo.recordAward).not.toHaveBeenCalled();
   });
 
   it('compareQuotations — orders by VALUE, not by the string the amount is stored as', async () => {
@@ -431,7 +431,7 @@ describe('Quotation comparison', () => {
         new NotFoundException('Vendor vendor-uuid-001 not found'),
       );
       expect(mockRepo.findVendorById).toHaveBeenCalledWith('vendor-uuid-001');
-      expect(mockRepo.markQuotationSelected).not.toHaveBeenCalled();
+      expect(mockRepo.recordAward).not.toHaveBeenCalled();
       expect(mockWorkflowSignal).not.toHaveBeenCalled();
     },
   );
@@ -443,7 +443,7 @@ describe('Quotation comparison', () => {
       mockRepo.findRfqById.mockResolvedValue({ ...rfqDraftFixture, status });
       mockRepo.findQuotationsByRfq.mockResolvedValue(quotationFixtures);
       await expect(service.compareQuotations('rfq-uuid-001')).resolves.toHaveLength(2);
-      expect(mockRepo.markQuotationSelected).not.toHaveBeenCalled();
+      expect(mockRepo.recordAward).not.toHaveBeenCalled();
     },
   );
 
@@ -922,7 +922,7 @@ describe('RFQ — additional happy paths', () => {
     mockRepo.findRfqById.mockResolvedValue(rfqEvaluatedFixture);
     mockRepo.findQuotationsByRfq.mockResolvedValue(quotationFixtures);
     mockRepo.findVendorById.mockResolvedValue(vendorFixture);
-    mockRepo.markQuotationSelected.mockResolvedValue(undefined);
+    mockRepo.recordAward.mockResolvedValue(true);
     await expect(service.awardRfq('rfq-uuid-001', 'quot-uuid-001')).resolves.toBeUndefined();
   });
 });
@@ -1678,10 +1678,10 @@ describe('exact contracts — RFQ lifecycle signals and errors', () => {
     // Single quotation that IS the target: a negated find-predicate returns undefined here.
     mockRepo.findQuotationsByRfq.mockResolvedValue([quotationFixtures[1]!]);
     mockRepo.findVendorById.mockResolvedValue(vendorFixture);
-    mockRepo.markQuotationSelected.mockResolvedValue(undefined);
+    mockRepo.recordAward.mockResolvedValue(true);
     await service.awardRfq('rfq-uuid-001', 'quot-uuid-001');
     expect(mockRepo.findVendorById).toHaveBeenCalledWith('vendor-uuid-001');
-    expect(mockRepo.markQuotationSelected).toHaveBeenCalledWith('quot-uuid-001', 'rfq-uuid-001');
+    expect(mockRepo.recordAward).toHaveBeenCalledWith('rfq-uuid-001', 'quot-uuid-001');
     expect(mockWorkflowSignal).toHaveBeenCalledWith(awardRfqSignal, {
       actor_id: 'user-uuid-001',
       quotation_id: 'quot-uuid-001',
@@ -2443,6 +2443,37 @@ describe('replayed offline creates', () => {
     // The three things that must not happen twice: the workflow signal, the event, and (in the
     // repository) the line items.
     expect(mockWorkflowSignal).not.toHaveBeenCalled();
+  });
+
+  // plan CR (product owner, 2026-11-20): one award per RFQ — another quotation already awarded is refused, the
+  // first standing, nothing signalled.
+  it('awardRfq — another quotation already awarded: 409 COS-PROC-409, nothing signalled', async () => {
+    mockRepo.findRfqById.mockResolvedValue(rfqEvaluatedFixture);
+    mockRepo.findQuotationsByRfq.mockResolvedValue(quotationFixtures);
+    mockRepo.findVendorById.mockResolvedValue(vendorFixture);
+    mockRepo.recordAward.mockResolvedValue(false);
+    const err = await service.awardRfq('rfq-uuid-001', 'quot-uuid-001').catch((e: unknown) => e);
+    expect(err).toBeInstanceOf(ConflictException);
+    expect((err as ConflictException).getResponse()).toEqual({
+      error: {
+        code: 'COS-PROC-409',
+        message: 'This RFQ has already been awarded to another quotation',
+        messageKey: 'procurement.rfq.alreadyAwarded',
+      },
+    });
+    expect(mockRepo.recordAward).toHaveBeenCalledWith('rfq-uuid-001', 'quot-uuid-001');
+    expect(mockWorkflowSignal).not.toHaveBeenCalled();
+  });
+
+  // The same quotation again (a retry after a failed signal): recorded (the repository accepts it) and re-signalled.
+  it('awardRfq — the same quotation again is re-signalled', async () => {
+    mockRepo.findRfqById.mockResolvedValue(rfqEvaluatedFixture);
+    mockRepo.findQuotationsByRfq.mockResolvedValue(quotationFixtures);
+    mockRepo.findVendorById.mockResolvedValue(vendorFixture);
+    mockRepo.recordAward.mockResolvedValue(true);
+    await service.awardRfq('rfq-uuid-001', 'quot-uuid-001');
+    await service.awardRfq('rfq-uuid-001', 'quot-uuid-001');
+    expect(mockWorkflowSignal).toHaveBeenCalledTimes(2);
   });
 
   it('recordDelivery rejects a client_id it cannot see - it belongs to another tenant', async () => {

@@ -1602,6 +1602,43 @@ gate's isolated run) checks the hash was not tested either; it ran 12.18.0 with 
 
 ## Open
 
+- **Closed — a second award on the same RFQ was accepted until the workflow marked it AWARDED.** Fixed in plan CR (on
+  `docs/vendor-deactivated-invoices`, one commit; product-owner decisions 2026-11-20: another quotation is refused,
+  the first award standing; the same quotation again is accepted and re-signalled). Found by the second /doubt cycle
+  on plan CQ. Measured on HEAD: `awardRfq` checked the database's EVALUATED status, marked the quotation selected and
+  signalled; nothing recorded the award, and the workflow stays EVALUATED until its AWARDED activity completes, so a
+  second award in that window moved `is_selected` — the last one won, silently. The workflow kept the latest
+  `selectedQuotationId` too (used only in its log).
+  - Migration `20261120000001_add_rfq_award_record` (with its rollback): `procurement.rfqs.awarded_quotation_id`
+    (FK to `procurement.quotations`) and `awarded_at`, both set or both null (CHECK). Additive; existing AWARDED RFQs
+    are not backfilled — their award is the selected quotation.
+  - `ProcurementRepository.recordAward` replaces `markQuotationSelected`: one transaction, a guarded UPDATE (the
+    tenant's RFQ, EVALUATED, not yet awarded or awarded to this same quotation; `awarded_at` kept from the first),
+    then the selection only when it recorded. `awardRfq`: not recorded → 409 `COS-PROC-409`
+    (`procurement.rfq.alreadyAwarded`, "This RFQ has already been awarded to another quotation"), nothing signalled;
+    the same quotation again → re-signalled. The workflow's award handler ignores any award after its first.
+  - Found by /doubt: an award in the gap between the evaluation activity's commit (the database EVALUATED) and its
+    result reaching the workflow (still CLOSED there) was dropped by the workflow — the RFQ left EVALUATED with its
+    award recorded and every other quotation refused. The handler now accepts an award at CLOSED too, behind
+    `patched('award-during-evaluation')` so a history that dropped one replays as it ran. The demo seed
+    (`seed-realistic.ts`) clears the award columns before deleting quotations (the new FK would block it). OpenAPI
+    `RfqRow` lists the two columns (`SELECT *` returns them).
+  - Not decided (low, parked): an award recorded whose signal failed, then the RFQ cancelled — it ends CANCELLED still
+    carrying `awarded_quotation_id`/`awarded_at` and `is_selected`. The web page shows no award error (a 409 included)
+    and refetches only on success.
+  - Docs: `error-codes.md` row; OpenAPI `awardRfq` 409. Web: the quotations page shows no award error at all (none
+    before either), so the new message is not surfaced there — noted, not built (see the parked item below).
+  - Unit: `recordAward`'s guard and parameters, nothing selected when it records nothing; `awardRfq` 409 with nothing
+    signalled, the same quotation re-signalled. Workflow (`jest.workflows.config.js`, 37): an award signalled while the
+    evaluation activity is still running is kept (control: without the CLOSED acceptance it fails). Integration
+    (`03-rfq-lifecycle`, 20; the harness has no Temporal, so each accepted award fails at its signal after the record
+    commits — the retry case itself): another quotation after an award → 409, the first recorded and selected; the same
+    quotation twice → accepted, recorded once with the first `awarded_at`. Controls: HEAD's service, repository and row
+    type fail both; the guard without the same-or-unawarded condition fails the 409 test (integration and unit).
+    Rollback pairing gate, backend tsc, eslint, prettier, unit, workflow specs, OpenAPI validity and freshness,
+    conformance and markdownlint pass. The rollback's SQL was not run against a database (§9.7.1 asks a human to before
+    merge).
+
 - **Closed — the quotations GET answered 422 on every workflow-driven RFQ, and nothing made the automatic
   selection.** Fixed in plan CQ (on `docs/vendor-deactivated-invoices`, one commit; product-owner decisions
   2026-11-20). Found by /doubt on plan CP. Measured on HEAD: `rfq.workflow.ts` moves PUBLISHED → CLOSED and at once
@@ -1665,13 +1702,8 @@ gate's isolated run) checks the hash was not tested either; it ran 12.18.0 with 
     shows an Award button on a deactivated vendor's row (the row carries `vendor_id` only), which now answers 404 —
     UX, parked.
 
-- **Open — a second award on the same RFQ is accepted until the workflow marks it AWARDED.** Found by the second
-  /doubt cycle on plan CQ; measured from the code only, not run. Predates plan CQ. `awardRfq` checks the database's
-  EVALUATED status, writes the selection and signals; the workflow's award handler checks its own `status`, which
-  stays EVALUATED until the AWARDED activity completes. A second award in that window moves `is_selected` to another
-  quotation and its signal may overwrite `selectedQuotationId`. The web page no longer offers it after an accepted
-  award (plan CQ), but the API does. Needs a decision: refuse a second award (e.g. an `awarded_at` / status guard in
-  the same write) or let the last one win.
+- **Closed — a second award on the same RFQ is accepted until the workflow marks it AWARDED.** See the plan CR
+  entry above.
 - **Closed — the comparison is only reachable at CLOSED, which the RFQ workflow leaves at once.** See the plan CQ
   entry above.
 

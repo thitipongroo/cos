@@ -59,6 +59,9 @@ export interface RfqRow {
   status: 'DRAFT' | 'PUBLISHED' | 'CLOSED' | 'EVALUATED' | 'AWARDED' | 'CANCELLED';
   deadline: Date;
   temporal_workflow_id: string | null;
+  // The award, recorded where it is made (plan CR): both set or both null.
+  awarded_quotation_id?: string | null;
+  awarded_at?: Date | null;
   created_by: string;
   created_at: Date;
   updated_at: Date;

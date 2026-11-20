@@ -419,15 +419,25 @@ export class ProcurementRepository {
     );
   }
 
-  async markQuotationSelected(quotation_id: string, rfq_id: string): Promise<void> {
-    // Clear previous selection, then set new one — single transaction via db.run
-    await this.db.run(async (prisma) => {
+  /**
+   * Record an award and select its quotation, in one transaction (plan CR, product owner 2026-11-20). The UPDATE is
+   * the guard: the tenant's RFQ, EVALUATED, and not yet awarded — or awarded to this same quotation, so a retry after
+   * a failed signal goes through. Another quotation already awarded → no row → false, and nothing is selected.
+   */
+  async recordAward(rfq_id: string, quotation_id: string): Promise<boolean> {
+    return this.db.run(async (prisma) => {
+      const recorded = await prisma.$executeRaw`
+        UPDATE procurement.rfqs
+        SET awarded_quotation_id = ${quotation_id}::uuid,
+            awarded_at = COALESCE(awarded_at, now()),
+            updated_at = now()
+        WHERE rfq_id = ${rfq_id}::uuid AND tenant_id = ${this.tenantId}::uuid AND status = 'EVALUATED'
+          AND (awarded_quotation_id IS NULL OR awarded_quotation_id = ${quotation_id}::uuid)`;
+      if (recorded === 0) return false;
       await prisma.$executeRaw`
-        UPDATE procurement.quotations SET is_selected = false
+        UPDATE procurement.quotations SET is_selected = (quotation_id = ${quotation_id}::uuid)
         WHERE rfq_id = ${rfq_id}::uuid AND tenant_id = ${this.tenantId}::uuid`;
-      await prisma.$executeRaw`
-        UPDATE procurement.quotations SET is_selected = true
-        WHERE quotation_id = ${quotation_id}::uuid AND tenant_id = ${this.tenantId}::uuid`;
+      return true;
     });
   }
 

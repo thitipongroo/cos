@@ -903,6 +903,11 @@ async function seedProject(tx: Tx, p: SeedProject): Promise<void> {
   );
   await tx.$executeRawUnsafe(`DELETE FROM finance.cost_transactions WHERE project_id = '${pid}'`);
   await tx.$executeRawUnsafe(`DELETE FROM procurement.purchase_orders WHERE project_id = '${pid}'`);
+  // An RFQ's award record names one of its quotations (plan CR, rfqs_awarded_quotation_fk): clear it first, or an
+  // RFQ awarded through the app would block the quotations' delete.
+  await tx.$executeRawUnsafe(
+    `UPDATE procurement.rfqs SET awarded_quotation_id = NULL, awarded_at = NULL WHERE project_id = '${pid}'`,
+  );
   await tx.$executeRawUnsafe(
     `DELETE FROM procurement.quotations WHERE rfq_id IN (SELECT rfq_id FROM procurement.rfqs WHERE project_id = '${pid}')`,
   );
