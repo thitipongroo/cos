@@ -1602,6 +1602,27 @@ gate's isolated run) checks the hash was not tested either; it ran 12.18.0 with 
 
 ## Open
 
+- **Closed — signing out on the phone left the active project for the next sign-in.** Fixed in plan CV (on the
+  current branch; product-owner decisions 2026-11-20: a sign-out the user chooses forgets the active project; a
+  session that ends by itself keeps it; only the active project — the read caches and the per-user outbox keep the
+  rule of `fix/mobile-queue-per-user`). Mobile only: the web app stores no active project. `authStore.logout()`
+  cleared the tokens only, and `projectStore.clear` (documented "used on sign-out") was called only by
+  `sync/deviceOwner` when a different user signed in — so the project stayed in SecureStore after every sign-out.
+  - Now `store/signOut.ts` `signOutByChoice()` forgets the project in memory, calls `logout()`, then removes the
+    stored copy (a storage failure there does not undo the sign-out). In that order so the signed-in shell never
+    renders without a project while storage is written (found by /doubt). The drawer's Log out, the biometric
+    lock's Sign out and the e2e `reset` deep link use it. `api/client.ts` (no refresh token, a failed refresh) and
+    the stored session's expiry still call `logout()` alone and keep the project; a pin test in `authStore.spec`.
+  - `projectStore.hydrate` no longer restores a project cleared while its read was in flight — a sign-out right
+    after launch could bring it back in memory (found by /doubt; a counter bumped by `clear`).
+  - Verified (apps/mobile jest, no simulator or device run): `signOut.spec` (order; a failed removal still signs
+    out), `projectStore.spec` (the hydrate race), the drawer and biometric lock render specs (the project is gone
+    after the press), the `authStore` pin. Controls: with the clear removed, the two render tests and the order test
+    fail; with the old order, the order test; without the counter, the hydrate test. apps/mobile jest (unit 1191,
+    render 1815), tsc, eslint, prettier, conformance and markdownlint pass.
+  - Not covered: a sign-out from another route added later must use `signOutByChoice` to get this rule. The e2e
+    `reset` link now also forgets the project, so a Detox suite that relied on one left from an earlier run will see
+    the picker — not run here (needs a simulator).
 - **Closed — a purchase order or RFQ could name another project's RFQ or purchase request.** Fixed in plan CU (on
   the current branch; product-owner decision 2026-11-20, replacing the earlier "no same-project rule" for an RFQ's
   `pr_id` recorded under `fix/proc-rfq-pr-foreign-ids` below). `createPurchaseOrder` checked a named `rfq_id` and

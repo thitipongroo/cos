@@ -452,3 +452,15 @@ describe('authStore Path A OTP flow', () => {
     });
   });
 });
+
+// Plan CV: logout() alone is also how a session ends by itself (api/client.ts — no refresh token, a failed refresh),
+// and that keeps the active project so the same worker signing back in is not asked again. Only a sign-out the user
+// chooses (store/signOut.ts) forgets it.
+describe('logout keeps the active project', () => {
+  it('does not delete the stored project', async () => {
+    jest.mocked(SecureStore.deleteItemAsync).mockClear();
+    await useAuthStore.getState().logout();
+    expect(SecureStore.deleteItemAsync).toHaveBeenCalled();
+    expect(SecureStore.deleteItemAsync).not.toHaveBeenCalledWith('cos_active_project');
+  });
+});

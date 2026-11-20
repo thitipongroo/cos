@@ -26,6 +26,7 @@ import { startDeviceOwner, makeClearCaches, makeOnOwnerChanged } from '../sync/d
 import { setOwner } from '../db/owner';
 import { claimUnownedQueueItems, notifyQueueOwnerChanged } from '../db/sync-queue';
 import { useProjectStore } from '../store/projectStore';
+import { signOutByChoice } from '../store/signOut';
 import { useOfflineStore } from '../store/offlineStore';
 import { useTenantStore } from '../store/tenantStore';
 import { claimUnownedPhotos } from '../db/photoRepo';
@@ -206,7 +207,7 @@ export default function RootLayout() {
         // keychain survives app reinstall (`delete: true`), so without this the login tests would
         // launch already authenticated. See e2e/helpers.ts resetSession().
         setForcedOnline(null);
-        void useAuthStore.getState().logout();
+        void signOutByChoice(); // and no project remembered (plan CV)
       }
     };
     Linking.getInitialURL().then(handle);

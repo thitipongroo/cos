@@ -47,7 +47,11 @@ interface ProjectState {
   /** Choose a project and remember it. */
   select: (project: ActiveProject) => Promise<void>;
 
-  /** Forget it — used on sign-out, so the next person on this handset picks their own. */
+  /**
+   * Forget it, so the next person on this handset picks their own: on a sign-out the user chooses
+   * (store/signOut.ts, plan CV) and when a different user signs in (sync/deviceOwner.ts). A session that
+   * ends by itself keeps it.
+   */
   clear: () => Promise<void>;
 
   /**
@@ -96,6 +100,12 @@ function parse(stored: string | null): ActiveProject | null {
   }
 }
 
+/**
+ * Bumped by every `clear`: a `hydrate` whose read started before a clear must not bring the project back (found by
+ * /doubt on plan CV — a sign-out right after launch could otherwise restore it in memory).
+ */
+let clears = 0;
+
 export const useProjectStore = create<ProjectState>((set) => ({
   active: null,
   pickerOpen: false,
@@ -103,9 +113,10 @@ export const useProjectStore = create<ProjectState>((set) => ({
   hydrate: async () => {
     // After the device is handed to the signed-in user (fix/mobile-queue-per-user): a different user's sign-in
     // drops the previous user's project, and a read issued before that would bring it back.
+    const generation = clears;
     await whenOwnerSettled();
     const parsed = parse(await SecureStore.getItemAsync(PROJECT_KEY));
-    if (parsed !== null) set({ active: parsed });
+    if (parsed !== null && generation === clears) set({ active: parsed });
   },
 
   select: async (project) => {
@@ -115,6 +126,7 @@ export const useProjectStore = create<ProjectState>((set) => ({
   },
 
   clear: async () => {
+    clears += 1;
     set({ active: null, pickerOpen: false });
     await SecureStore.deleteItemAsync(PROJECT_KEY);
   },

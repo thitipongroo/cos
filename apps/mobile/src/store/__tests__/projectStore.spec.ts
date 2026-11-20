@@ -48,6 +48,22 @@ describe('projectStore (the site worker’s active project)', () => {
     setOwnerSettled(() => Promise.resolve());
   });
 
+  // Plan CV (/doubt): a sign-out while hydrate's read is in flight must not have the project brought back.
+  it('hydrate() does not restore a project cleared while it was reading', async () => {
+    let settle: (() => void) | undefined;
+    setOwnerSettled(() => new Promise<void>((resolve) => (settle = resolve)));
+    (SecureStore.getItemAsync as jest.Mock).mockResolvedValueOnce(JSON.stringify(SKYLINE));
+    try {
+      const pending = useProjectStore.getState().hydrate();
+      await useProjectStore.getState().clear();
+      settle!();
+      await pending;
+      expect(useProjectStore.getState().active).toBeNull();
+    } finally {
+      setOwnerSettled(() => Promise.resolve());
+    }
+  });
+
   it('hydrate() restores what was remembered', async () => {
     (SecureStore.getItemAsync as jest.Mock).mockResolvedValueOnce(JSON.stringify(SKYLINE));
     await useProjectStore.getState().hydrate();

@@ -11,7 +11,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { useBiometricStore } from '../store/biometricStore';
-import { useAuthStore } from '../store/authStore';
+import { signOutByChoice } from '../store/signOut';
 import { useT } from '../i18n';
 import { usePalette } from '../theme/usePalette';
 import { fontFamily, radius, spacing, typography } from '../theme/tokens';
@@ -19,7 +19,6 @@ import { fontFamily, radius, spacing, typography } from '../theme/tokens';
 export function BiometricLock() {
   const locked = useBiometricStore((s) => s.locked);
   const unlock = useBiometricStore((s) => s.unlock);
-  const logout = useAuthStore((s) => s.logout);
   const t = useT();
   const p = usePalette();
   const [busy, setBusy] = useState(false);
@@ -73,7 +72,7 @@ export function BiometricLock() {
       <TouchableOpacity
         testID="biometric-lock-signout"
         style={styles.secondary}
-        onPress={() => void logout()}
+        onPress={() => void signOutByChoice()}
         accessibilityRole="button"
         accessibilityLabel={t('profile.biometric.signOut')}
       >

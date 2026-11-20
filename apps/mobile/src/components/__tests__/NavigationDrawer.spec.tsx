@@ -19,6 +19,7 @@ import { CosRole } from '@cos/types';
 import { drawerSectionFor, SHARED_LINKS } from '../../lib/drawerLinks';
 import { useAuthStore } from '../../store/authStore';
 import { useUiStore } from '../../store/uiStore';
+import { useProjectStore } from '../../store/projectStore';
 import { NavigationDrawer } from '../NavigationDrawer';
 
 // `GET /users/me` gives the profile zone the two fields the session token does not carry — the
@@ -64,6 +65,7 @@ describe('NavigationDrawer', () => {
   let logout: jest.Mock;
 
   beforeEach(() => {
+    useProjectStore.setState({ active: null, pickerOpen: false });
     mockPush.mockReset();
     users.getMe.mockReset();
     crm.listLeads.mockReset();
@@ -171,6 +173,24 @@ describe('NavigationDrawer', () => {
 
     await waitFor(() => expect(logout).toHaveBeenCalledTimes(1));
     expect(closeDrawer).toHaveBeenCalledTimes(1);
+  });
+
+  // Plan CV: Log out is chosen by the user, so the active project is forgotten with the session.
+  it('forgets the active project as it signs out', async () => {
+    useProjectStore.setState({
+      active: {
+        projectId: 'p-1',
+        projectCode: 'SKV45',
+        projectName: 'Sukhumvit 45',
+        buildingName: null,
+      },
+    });
+    const { getByTestId } = await renderDrawer();
+
+    await fireEvent.press(getByTestId('drawer-logout'));
+
+    await waitFor(() => expect(logout).toHaveBeenCalledTimes(1));
+    expect(useProjectStore.getState().active).toBeNull();
   });
 
   it('still renders for a session whose role has not arrived', async () => {

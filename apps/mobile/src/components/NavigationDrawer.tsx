@@ -66,6 +66,7 @@ import { getMe } from '../api/users';
 import { useComingSoon } from './useComingSoon';
 import { useUiStore } from '../store/uiStore';
 import { useAuthStore } from '../store/authStore';
+import { signOutByChoice } from '../store/signOut';
 import { useI18n } from '../i18n';
 import { ProfileBlock } from './ProfileBlock';
 import { BrandLogo } from './BrandLogo';
@@ -101,7 +102,6 @@ export function NavigationDrawer(): React.JSX.Element | null {
   const displayName = useAuthStore((s) => s.displayName);
   const role = useAuthStore((s) => s.role);
   const userId = useAuthStore((s) => s.userId);
-  const logout = useAuthStore((s) => s.logout);
   const { visible, overflow } = drawerSectionFor(role);
   const soon = useComingSoon();
   // Collapsed on open, every time: the drawer is a fresh glance, not a place with remembered state.
@@ -189,7 +189,8 @@ export function NavigationDrawer(): React.JSX.Element | null {
 
   const onLogout = (): void => {
     closeDrawer();
-    void logout();
+    // Chosen by the user: the active project is forgotten too (plan CV).
+    void signOutByChoice();
   };
 
   /**

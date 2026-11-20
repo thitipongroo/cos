@@ -14,6 +14,7 @@ import { render, fireEvent, waitFor } from '@testing-library/react-native';
 import { I18nProvider } from '../../i18n';
 import { useAuthStore } from '../../store/authStore';
 import { useBiometricStore } from '../../store/biometricStore';
+import { useProjectStore } from '../../store/projectStore';
 import { BiometricLock } from '../BiometricLock';
 
 function renderLock() {
@@ -33,6 +34,7 @@ describe('BiometricLock', () => {
     logout = jest.fn().mockResolvedValue(undefined);
     useBiometricStore.setState({ locked: false, unlock } as never);
     useAuthStore.setState({ logout } as never);
+    useProjectStore.setState({ active: null, pickerOpen: false });
   });
 
   // It costs nothing for the users who never turn it on.
@@ -100,6 +102,26 @@ describe('BiometricLock', () => {
     await fireEvent.press(getByTestId('biometric-lock-signout'));
 
     await waitFor(() => expect(logout).toHaveBeenCalledTimes(1));
+  });
+
+  // Plan CV: a sign-out the user chooses forgets the active project — the next person picks their own.
+  it('forgets the active project as it signs out', async () => {
+    useBiometricStore.setState({ locked: true, unlock } as never);
+    useProjectStore.setState({
+      active: {
+        projectId: 'p-1',
+        projectCode: 'SKV45',
+        projectName: 'Sukhumvit 45',
+        buildingName: null,
+      },
+    });
+
+    const { getByTestId } = await renderLock();
+    await waitFor(() => expect(getByTestId('biometric-lock-signout')).toBeTruthy());
+    await fireEvent.press(getByTestId('biometric-lock-signout'));
+
+    await waitFor(() => expect(logout).toHaveBeenCalledTimes(1));
+    expect(useProjectStore.getState().active).toBeNull();
   });
 
   // A refused prompt resolves FALSE rather than throwing: lib/biometric.authenticate catches a
