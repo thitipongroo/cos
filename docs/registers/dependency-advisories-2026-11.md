@@ -1602,6 +1602,24 @@ gate's isolated run) checks the hash was not tested either; it ran 12.18.0 with 
 
 ## Open
 
+- **Closed — the vendor portal's other codes sat in the message text.** Fixed in plan DQ (on the current branch;
+  product-owner decision 2026-11-21: `COS-VND-001` … `004` become the envelope's `error.code` with a messageKey, as
+  plan DP did for `005`; the web vendor page unchanged — its own messages for these cases parked). Seven throws in
+  `vendor-portal.service.ts` read `'COS-VND-00n: …'`, so `error.code` was `COS-GENERAL-<status>`.
+  - Now `{ error: { code, message, messageKey } }` through a `vendorError` builder: 001 `vendor.rfq.notFound` (×3) /
+    `vendor.invitation.notFound`, 002 `vendor.invitation.tokenMismatch`, 003 `vendor.invitation.used`, 004
+    `vendor.invitation.expired`; the messages as before without the prefix. No client read these codes (the web's
+    `quotationErrorKey` maps 010 and 011 only).
+  - Docs: `error-codes.md` (each row's key; the section names which codes are the envelope's), `vendor.openapi.yaml`
+    `ErrorResponse` (its description and example still showed the code in the message — found by /doubt).
+  - Verified: vendor-portal unit (123: each refusal's code and key, `submitQuotation`'s RFQ-gone included — HEAD
+    fails the six first written), `test/procurement/05` and
+    `03` (portal paths), backend unit, tsc, eslint, prettier, conformance, OpenAPI validity and freshness,
+    markdownlint.
+  - Parked: the vendor's RFQ page shows its general message for an expired, used or mismatched invitation; it could
+    now say which by `error.code`.
+  - Parked (found by /doubt; outside the 001–004 decision): `COS-VND-006` ("Vendor not found", `issueInvitation`) is
+    still carried in the message text.
 - **Closed — the vendor portal's "no active relationship" 403 had no real code.** Fixed in plan DP (on the current
   branch; product-owner decision 2026-11-21: both tiers answer the envelope `{ error: { code: 'COS-VND-005', message,
   messageKey } }`). Tier 1 (`vendor-portal.service.ts` `resolveVendorId`) put `COS-VND-005: …` in the message text,
@@ -1619,7 +1637,7 @@ gate's isolated run) checks the hash was not tested either; it ran 12.18.0 with 
     COS-VND-005` and their key — HEAD's code fails three). tsc, eslint, prettier, conformance, OpenAPI validity and
     freshness, markdownlint.
   - Not covered: the other vendor-portal codes (`COS-VND-001` … `-004`) are still carried in the message text with
-    `error.code` `COS-GENERAL-<status>` (`-010` and `-011` already used the envelope).
+    `error.code` `COS-GENERAL-<status>` (`-010` and `-011` already used the envelope). Closed by plan DQ.
 - **Closed — the app's invoices screen missed a project's invoices beyond the tenant's first page, and counted the
   tenant's.** Fixed in plan DO (on the current branch; product-owner decision 2026-11-21: the list and the chip
   counts are the chosen project's, the tenant's with none — replacing D30, set when the endpoint had no project

@@ -30,6 +30,14 @@ import {
 } from './vendor-portal.repository';
 import { noActiveRelationship } from './vendor-auth.guard';
 
+/**
+ * The envelope a vendor-portal refusal carries (plan DQ, product owner 2026-11-21): its `COS-VND-*` code as
+ * `error.code`, with a messageKey — the codes sat in the message text before, `error.code` being `COS-GENERAL-<n>`.
+ */
+function vendorError(code: string, message: string, messageKey: string) {
+  return { error: { code, message, messageKey } };
+}
+
 @Injectable({ scope: Scope.REQUEST })
 export class VendorPortalService {
   // See VendorPortalRepository: CLS is the reliable carrier under Fastify, the request object is a
@@ -55,7 +63,9 @@ export class VendorPortalService {
   }): Promise<{ invitationId: string; magicLinkToken: string; expiresAt: Date }> {
     const rfq = await this.repo.findRfq(params.rfqId);
     if (!rfq) {
-      throw new NotFoundException('COS-VND-001: RFQ not found');
+      throw new NotFoundException(
+        vendorError('COS-VND-001', 'RFQ not found', 'vendor.rfq.notFound'),
+      );
     }
     // The trading relationship below is a platform row naming one of the tenant's vendors. Since D56 no
     // foreign key checks that name (it could not, for a tenant in a dedicated database), so it is checked
@@ -125,7 +135,9 @@ export class VendorPortalService {
     await this.resolveVendorId(invitation.vendor_identity_id);
     const rfq = await this.repo.findRfq(invitation.rfq_id);
     if (!rfq) {
-      throw new NotFoundException('COS-VND-001: RFQ not found');
+      throw new NotFoundException(
+        vendorError('COS-VND-001', 'RFQ not found', 'vendor.rfq.notFound'),
+      );
     }
     return rfq;
   }
@@ -141,7 +153,10 @@ export class VendorPortalService {
     // Quoting is open while the RFQ is PUBLISHED, as on the buyer side (fix/quotation-duplicate-and-closed-rfq):
     // the portal used to take a quotation for an RFQ already closed, evaluated, awarded or cancelled.
     const rfq = await this.repo.findRfq(invitation.rfq_id);
-    if (!rfq) throw new NotFoundException('COS-VND-001: RFQ not found');
+    if (!rfq)
+      throw new NotFoundException(
+        vendorError('COS-VND-001', 'RFQ not found', 'vendor.rfq.notFound'),
+      );
     // Past its deadline it is not open either, though the workflow may not have closed it yet (plan CT, product owner
     // 2026-11-20). The vendor's quotation is stamped now() by the database, so now is what is compared.
     if (rfq.status !== 'PUBLISHED' || Date.now() > new Date(rfq.deadline).getTime()) {
@@ -232,16 +247,24 @@ export class VendorPortalService {
   ): Promise<RfqInvitationRow> {
     const invitation = await this.repo.findInvitation(invitationId);
     if (!invitation) {
-      throw new NotFoundException('COS-VND-001: Invitation not found');
+      throw new NotFoundException(
+        vendorError('COS-VND-001', 'Invitation not found', 'vendor.invitation.notFound'),
+      );
     }
     if (this.magicLink.hashToken(token) !== invitation.token_hash) {
-      throw new UnauthorizedException('COS-VND-002: Invitation token mismatch');
+      throw new UnauthorizedException(
+        vendorError('COS-VND-002', 'Invitation token mismatch', 'vendor.invitation.tokenMismatch'),
+      );
     }
     if (invitation.status !== 'PENDING') {
-      throw new UnprocessableEntityException('COS-VND-003: Invitation already used');
+      throw new UnprocessableEntityException(
+        vendorError('COS-VND-003', 'Invitation already used', 'vendor.invitation.used'),
+      );
     }
     if (invitation.expires_at.getTime() < Date.now()) {
-      throw new UnauthorizedException('COS-VND-004: Invitation expired');
+      throw new UnauthorizedException(
+        vendorError('COS-VND-004', 'Invitation expired', 'vendor.invitation.expired'),
+      );
     }
     return invitation;
   }

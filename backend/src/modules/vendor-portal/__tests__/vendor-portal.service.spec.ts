@@ -208,6 +208,62 @@ describe('VendorPortalService', () => {
     });
   });
 
+  // Plan DQ (product owner 2026-11-21): each refusal carries its COS-VND code as the envelope's error.code.
+  describe('the COS-VND-001 … 004 envelope (plan DQ)', () => {
+    const env = (code: string, messageKey: string) => ({
+      response: { error: { code, messageKey } },
+    });
+
+    it.each([
+      [
+        'an invitation not found',
+        { invitation: null },
+        'COS-VND-001',
+        'vendor.invitation.notFound',
+      ],
+      ['a token mismatch', { hash: 'OTHER' }, 'COS-VND-002', 'vendor.invitation.tokenMismatch'],
+      [
+        'an invitation already used',
+        { invitation: { ...validInvitation, status: 'RESPONDED' } },
+        'COS-VND-003',
+        'vendor.invitation.used',
+      ],
+      [
+        'an expired invitation',
+        { invitation: { ...validInvitation, expires_at: new Date(Date.now() - 1) } },
+        'COS-VND-004',
+        'vendor.invitation.expired',
+      ],
+      ['the RFQ gone', { rfq: null }, 'COS-VND-001', 'vendor.rfq.notFound'],
+    ])('openRfq — %s → %s', async (_n, overrides, code, messageKey) => {
+      const { service } = build(overrides as never);
+      await expect(service.openRfq('TOK', 'inv-1')).rejects.toMatchObject(env(code, messageKey));
+    });
+
+    it('submitQuotation — the RFQ gone → COS-VND-001', async () => {
+      const { service } = build({ rfq: null });
+      await expect(
+        service.submitQuotation('TOK', 'inv-1', {
+          total_amount: '100.00',
+          currency_code: 'THB',
+          validity_days: 30,
+        }),
+      ).rejects.toMatchObject(env('COS-VND-001', 'vendor.rfq.notFound'));
+    });
+
+    it('issueInvitation — the RFQ not found → COS-VND-001', async () => {
+      const { service } = build({ rfq: null });
+      await expect(
+        service.issueInvitation({
+          rfqId: 'rfq-1',
+          vendorId: 'ven-1',
+          email: 'a@b.co',
+          displayName: 'ACME',
+        }),
+      ).rejects.toMatchObject(env('COS-VND-001', 'vendor.rfq.notFound'));
+    });
+  });
+
   describe('openRfq (invitation validation)', () => {
     it('404 when invitation not found', async () => {
       const { service } = build({ invitation: null });

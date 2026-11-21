@@ -376,9 +376,10 @@ components:
 
     ErrorResponse:
       description: |
-        The QM-10 envelope every error leaves the API in (GlobalExceptionFilter). COS-VND-007 to 011 carry
-        their own `code`; COS-VND-001…006 are thrown as text, so their `code` is `COS-GENERAL-<status>` and the COS-VND code
-        leads the `message` (fix/vendor-reinvite-refuse; this schema used to show NestJS's default body).
+        The QM-10 envelope every error leaves the API in (GlobalExceptionFilter). COS-VND-001 to 005 (plans DP, DQ)
+        and 007 to 011 carry their own `code` and a `messageKey`; COS-VND-006 is still thrown as text, so its `code` is
+        `COS-GENERAL-404` and the COS-VND code leads the `message` (fix/vendor-reinvite-refuse; this schema used to
+        show NestJS's default body).
       type: object
       required: [error]
       properties:
@@ -386,9 +387,9 @@ components:
           type: object
           required: [code, message]
           properties:
-            code: { type: string, example: COS-GENERAL-401 }
-            message: { type: string, example: 'COS-VND-004: Invitation expired' }
-            messageKey: { type: string }
+            code: { type: string, example: COS-VND-004 }
+            message: { type: string, example: Invitation expired }
+            messageKey: { type: string, example: vendor.invitation.expired }
             details: { type: object }
             traceId: { type: string }
             timestamp: { type: string, format: date-time }
