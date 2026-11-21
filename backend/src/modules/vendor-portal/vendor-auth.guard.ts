@@ -115,7 +115,7 @@ export class VendorAuthGuard implements CanActivate {
 
     const relationship = await this.identities.findActiveRelationship(vendorIdentityId, tenantId);
     if (!relationship) {
-      throw new ForbiddenException('No active trading relationship with this tenant');
+      throw noActiveRelationship();
     }
 
     await this.publish(req, {
@@ -128,7 +128,7 @@ export class VendorAuthGuard implements CanActivate {
     // after the session was issued has no active relationship any more (fix/vendor-portal-inactive-vendor). Checked
     // BEFORE assertWritable, so a refused vendor learns nothing of the tenant's plan from the error it gets.
     if (!(await this.db.run((tx) => activeVendorExists(tx, relationship.vendor_id, tenantId)))) {
-      throw new ForbiddenException('No active trading relationship with this tenant');
+      throw noActiveRelationship();
     }
     await this.assertWritable(req, tenantId);
     return true;
@@ -169,4 +169,18 @@ export class VendorAuthGuard implements CanActivate {
     req.vendorIdentityId = ctx.vendorIdentityId;
     req.vendorInvitationId = ctx.invitationId;
   }
+}
+
+/**
+ * 403 `COS-VND-005` as the envelope's code (plan DP, product owner 2026-11-21) — it was a bare message here (Tier 2)
+ * and an in-message prefix on Tier 1, so a client could not tell it from any other 403.
+ */
+export function noActiveRelationship(): ForbiddenException {
+  return new ForbiddenException({
+    error: {
+      code: 'COS-VND-005',
+      message: 'No active trading relationship with this tenant',
+      messageKey: 'vendor.relationship.inactive',
+    },
+  });
 }

@@ -331,9 +331,9 @@ describe('Vendor invitations: one e-mail, one vendor per tenant (real database)'
 
     const after = await open();
     expect(after.status).toBe(403);
-    expect((after.body as { error: { message: string } }).error.message).toBe(
-      'COS-VND-005: No active trading relationship',
-    );
+    expect(after.body).toMatchObject({
+      error: { code: 'COS-VND-005', messageKey: 'vendor.relationship.inactive' },
+    });
   });
 
   it('a vendor identity disabled network-wide can no longer open the RFQ either', async () => {
@@ -354,9 +354,9 @@ describe('Vendor invitations: one e-mail, one vendor per tenant (real database)'
     expect(await relationshipsOf(email)).toEqual([{ vendor_id: vendorA, status: 'ACTIVE' }]);
     const after = await open();
     expect(after.status).toBe(403);
-    expect((after.body as { error: { message: string } }).error.message).toBe(
-      'COS-VND-005: No active trading relationship',
-    );
+    expect(after.body).toMatchObject({
+      error: { code: 'COS-VND-005', messageKey: 'vendor.relationship.inactive' },
+    });
   });
 
   // fix/vendor-invite-inactive: a deactivated (soft-deleted) vendor is not one to invite, and an identity disabled
@@ -439,9 +439,9 @@ describe('Vendor invitations: one e-mail, one vendor per tenant (real database)'
 
     const opened = await http().get(`/api/v1/vendor/rfq/${encodeURIComponent(second)}`);
     expect(opened.status).toBe(403);
-    expect((opened.body as { error: { message: string } }).error.message).toBe(
-      'COS-VND-005: No active trading relationship',
-    );
+    expect(opened.body).toMatchObject({
+      error: { code: 'COS-VND-005', messageKey: 'vendor.relationship.inactive' },
+    });
     const again = await quote(second);
     expect(again.status).toBe(403);
     const quotations = await infra.prisma.$queryRawUnsafe<Array<{ n: bigint }>>(
@@ -451,9 +451,13 @@ describe('Vendor invitations: one e-mail, one vendor per tenant (real database)'
     expect(Number(quotations[0]!.n)).toBe(1); // the one quoted while ACTIVE
     const session403 = await tier2();
     expect(session403.status).toBe(403);
-    expect((session403.body as { error: { message: string } }).error.message).toBe(
-      'No active trading relationship with this tenant',
-    );
+    expect(session403.body).toMatchObject({
+      error: {
+        code: 'COS-VND-005',
+        message: 'No active trading relationship with this tenant',
+        messageKey: 'vendor.relationship.inactive',
+      },
+    });
   });
 
   // fix/quotation-duplicate-and-closed-rfq: through the portal, one quotation per vendor per RFQ (a second invitation

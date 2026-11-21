@@ -1602,6 +1602,24 @@ gate's isolated run) checks the hash was not tested either; it ran 12.18.0 with 
 
 ## Open
 
+- **Closed — the vendor portal's "no active relationship" 403 had no real code.** Fixed in plan DP (on the current
+  branch; product-owner decision 2026-11-21: both tiers answer the envelope `{ error: { code: 'COS-VND-005', message,
+  messageKey } }`). Tier 1 (`vendor-portal.service.ts` `resolveVendorId`) put `COS-VND-005: …` in the message text,
+  so `error.code` was `COS-GENERAL-403`; Tier 2 (`vendor-auth.guard.ts`, two refusals) carried no code at all.
+  - Now one helper, `noActiveRelationship()` (guard): `COS-VND-005`, "No active trading relationship with this
+    tenant", `vendor.relationship.inactive` — Tier 2's two refusals and Tier 1's (whose message gains "with this
+    tenant"); Tier 1's missing identity → `COS-VND-005`, "Invitation has no linked vendor identity",
+    `vendor.identity.missing`. No web or mobile code read the old text.
+  - Docs: `error-codes.md` (the row names both tiers and keys; the section notes which codes are still in-message),
+    `vendor.openapi.yaml` comment.
+  - The guard's unit tests assert the envelope (`toMatchObject` on `error.code` and `messageKey`): `toThrow(error)` on
+    an envelope exception compares only its message, "Forbidden Exception", so it would also pass for the trial
+    error (found by /doubt).
+  - Verified: vendor-portal unit (116), `test/procurement/05-vendor-reinvite` (14: the refusals carry `error.code:
+    COS-VND-005` and their key — HEAD's code fails three). tsc, eslint, prettier, conformance, OpenAPI validity and
+    freshness, markdownlint.
+  - Not covered: the other vendor-portal codes (`COS-VND-001` … `-004`) are still carried in the message text with
+    `error.code` `COS-GENERAL-<status>` (`-010` and `-011` already used the envelope).
 - **Closed — the app's invoices screen missed a project's invoices beyond the tenant's first page, and counted the
   tenant's.** Fixed in plan DO (on the current branch; product-owner decision 2026-11-21: the list and the chip
   counts are the chosen project's, the tenant's with none — replacing D30, set when the endpoint had no project
@@ -2368,13 +2386,13 @@ gate's isolated run) checks the hash was not tested either; it ran 12.18.0 with 
   relationship and the identity, which live in the platform database, while the vendor row lives in the tenant's (a
   separate database for a dedicated tenant, D56).
   - Tier 1: `resolveVendorId` (used by `openRfq` and `submitQuotation`) also requires the vendor ACTIVE through
-    `VendorPortalRepository.vendorExists` — 403 `COS-VND-005` "No active trading relationship" otherwise, before the
-    RFQ is read or a quotation written. Tier 2: `VendorAuthGuard`, after `publish()` has set the tenant context, reads
-    the vendor's `is_active` through `TenantPrismaService` (which resolves the tenant's database from CLS) — 403 "No
-    active trading relationship with this tenant" otherwise — and only then checks a trial's read-only state, so a
-    refused vendor learns nothing of the tenant's plan (found by /doubt). Both sides use one query,
-    `activeVendorExists` (`vendor-portal/active-vendor.ts`). No new error code; `COS-VND-005`'s trigger in
-    `docs/api/error-codes.md` names the case. The Tier-2 refusal still carries no code (as for a revoked relationship).
+    `VendorPortalRepository.vendorExists` — 403 `COS-VND-005` "No active trading relationship" otherwise, before the RFQ
+    is read or a quotation written. Tier 2: `VendorAuthGuard`, after `publish()` has set the tenant context, reads the
+    vendor's `is_active` through `TenantPrismaService` (which resolves the tenant's database from CLS) — 403 "No active
+    trading relationship with this tenant" otherwise — and only then checks a trial's read-only state, so a refused
+    vendor learns nothing of the tenant's plan (found by /doubt). Both sides use one query, `activeVendorExists`
+    (`vendor-portal/active-vendor.ts`). No new error code; `COS-VND-005`'s trigger in `docs/api/error-codes.md` names
+    the case. The Tier-2 refusal still carries no code (as for a revoked relationship). Closed by plan DP.
   - Verified: vendor-portal unit (109) — the guard refuses a deactivated vendor with the tenant already in CLS when
     its query runs, lets an ACTIVE one through, does not query on Tier 1, and answers a deactivated vendor's write into
     an EXPIRED tenant with 403, not the trial error (fails with the trial check moved back first); the service

@@ -70,9 +70,9 @@ describe('VendorAuthGuard', () => {
 
     it('refuses a deactivated vendor with 403, after the tenant context is published', async () => {
       const { guard, db, store } = build({ vendor_id: 'ven-1' }, true, /* vendorActive */ false);
-      await expect(guard.canActivate(ctxFor(tier2Req()))).rejects.toThrow(
-        new ForbiddenException('No active trading relationship with this tenant'),
-      );
+      await expect(guard.canActivate(ctxFor(tier2Req()))).rejects.toMatchObject({
+        response: { error: { code: 'COS-VND-005', messageKey: 'vendor.relationship.inactive' } },
+      });
       // Published first, so run() resolved the tenant's own database.
       expect(db.tenantAtCall).toEqual([TENANT]);
       expect(store.get(CLS_TENANT_ID)).toBe(TENANT);
@@ -183,13 +183,17 @@ describe('VendorAuthGuard', () => {
       expect(identities.findActiveRelationship).not.toHaveBeenCalled();
     });
 
-    it('rejects when there is no active trading relationship', async () => {
+    it('rejects when there is no active trading relationship — 403 COS-VND-005 (plan DP)', async () => {
       const { guard } = build(null);
       const req = {
         params: {},
         headers: { authorization: 'Bearer sess', 'x-vendor-tenant-id': TENANT },
       } as unknown as VendorRequest;
-      await expect(guard.canActivate(ctxFor(req))).rejects.toThrow(ForbiddenException);
+      const err = await guard.canActivate(ctxFor(req)).catch((e: unknown) => e);
+      expect(err).toBeInstanceOf(ForbiddenException);
+      expect(err).toMatchObject({
+        response: { error: { code: 'COS-VND-005', messageKey: 'vendor.relationship.inactive' } },
+      });
     });
 
     it('publishes tenant + vendor into CLS and the request on success', async () => {
@@ -258,9 +262,9 @@ describe('VendorAuthGuard — read-only trials (§7.10, ADR-109)', () => {
   // vendor gets the same 403 as a revoked one and learns nothing of the tenant's plan.
   it('Tier 2: a deactivated vendor writing into an EXPIRED tenant gets 403, not the trial error', async () => {
     const { guard, identities } = buildWith('EXPIRED', true, /* vendorActive */ false);
-    await expect(guard.canActivate(ctxFor(tier2('POST')))).rejects.toThrow(
-      new ForbiddenException('No active trading relationship with this tenant'),
-    );
+    await expect(guard.canActivate(ctxFor(tier2('POST')))).rejects.toMatchObject({
+      response: { error: { code: 'COS-VND-005', messageKey: 'vendor.relationship.inactive' } },
+    });
     expect(identities.tenantSubscriptionStatus).not.toHaveBeenCalled();
   });
 

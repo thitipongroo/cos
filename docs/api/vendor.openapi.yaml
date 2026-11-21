@@ -120,7 +120,8 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/Rfq' }
         '401': { $ref: '#/components/responses/Unauthorized' }
-        # COS-VND-005: no active trading relationship (revoked after the invitation, or the identity disabled).
+        # COS-VND-005 (`error.code`, plan DP): no active trading relationship (revoked after the invitation, or the
+        # identity disabled, or the vendor deactivated).
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
         '422': { $ref: '#/components/responses/UnprocessableEntity' }

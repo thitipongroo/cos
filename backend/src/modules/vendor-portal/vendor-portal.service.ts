@@ -28,6 +28,7 @@ import {
   InvoiceRow,
   InvitedRfqRow,
 } from './vendor-portal.repository';
+import { noActiveRelationship } from './vendor-auth.guard';
 
 @Injectable({ scope: Scope.REQUEST })
 export class VendorPortalService {
@@ -247,7 +248,13 @@ export class VendorPortalService {
 
   private async resolveVendorId(vendorIdentityId: string | null): Promise<string> {
     if (!vendorIdentityId) {
-      throw new ForbiddenException('COS-VND-005: Invitation has no linked vendor identity');
+      throw new ForbiddenException({
+        error: {
+          code: 'COS-VND-005',
+          message: 'Invitation has no linked vendor identity',
+          messageKey: 'vendor.identity.missing',
+        },
+      });
     }
     const relationship = await this.identities.findActiveRelationship(
       vendorIdentityId,
@@ -256,7 +263,7 @@ export class VendorPortalService {
     // A relationship to a vendor deactivated (soft-deleted) since the invitation is not an active one: the vendor
     // row is in the tenant's database, read here with the tenant context set (fix/vendor-portal-inactive-vendor).
     if (!relationship || !(await this.repo.vendorExists(relationship.vendor_id))) {
-      throw new ForbiddenException('COS-VND-005: No active trading relationship');
+      throw noActiveRelationship(); // COS-VND-005 (plan DP)
     }
     return relationship.vendor_id;
   }

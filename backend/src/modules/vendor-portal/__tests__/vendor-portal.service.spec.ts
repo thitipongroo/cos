@@ -250,9 +250,9 @@ describe('VendorPortalService', () => {
     // still read the RFQ.
     it('403 COS-VND-005 when the relationship is no longer active, before the RFQ is read', async () => {
       const { service, repo, identities } = build({ relationship: null });
-      await expect(service.openRfq('TOK', 'inv-1')).rejects.toThrow(
-        'COS-VND-005: No active trading relationship',
-      );
+      await expect(service.openRfq('TOK', 'inv-1')).rejects.toMatchObject({
+        response: { error: { code: 'COS-VND-005', messageKey: 'vendor.relationship.inactive' } },
+      });
       expect(identities.findActiveRelationship).toHaveBeenCalledWith(
         validInvitation.vendor_identity_id,
         'ten-1',
@@ -264,9 +264,9 @@ describe('VendorPortalService', () => {
       const { service, repo } = build({
         invitation: { ...validInvitation, vendor_identity_id: null },
       });
-      await expect(service.openRfq('TOK', 'inv-1')).rejects.toThrow(
-        'COS-VND-005: Invitation has no linked vendor identity',
-      );
+      await expect(service.openRfq('TOK', 'inv-1')).rejects.toMatchObject({
+        response: { error: { code: 'COS-VND-005', messageKey: 'vendor.identity.missing' } },
+      });
       expect(repo.findRfq).not.toHaveBeenCalled();
     });
   });
@@ -282,16 +282,18 @@ describe('VendorPortalService', () => {
           currency_code: 'THB',
           validity_days: 30,
         }),
-      ).rejects.toThrow('COS-VND-005: No active trading relationship');
+      ).rejects.toMatchObject({
+        response: { error: { code: 'COS-VND-005', messageKey: 'vendor.relationship.inactive' } },
+      });
       expect(repo.vendorExists).toHaveBeenCalledWith('ven-1');
       expect(repo.createQuotation).not.toHaveBeenCalled();
     });
 
     it('403 COS-VND-005 on opening the RFQ for a deactivated vendor, before the RFQ is read', async () => {
       const { service, repo } = build({ vendorExists: false });
-      await expect(service.openRfq('TOK', 'inv-1')).rejects.toThrow(
-        'COS-VND-005: No active trading relationship',
-      );
+      await expect(service.openRfq('TOK', 'inv-1')).rejects.toMatchObject({
+        response: { error: { code: 'COS-VND-005', messageKey: 'vendor.relationship.inactive' } },
+      });
       expect(repo.findRfq).not.toHaveBeenCalled();
     });
 
