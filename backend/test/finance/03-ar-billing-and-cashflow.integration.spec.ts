@@ -248,6 +248,29 @@ describe('Phase 7 · AR billing lifecycle and cash flow forecast (real database)
       expect(events).toHaveLength(1);
     });
 
+    // Plan DN (product owner 2026-11-21): approved only while its contract is ACTIVE.
+    it('a DRAFT billing whose contract was terminated since: 422 COS-FIN-422, still DRAFT, no event', async () => {
+      const billingId = await newBilling(await newProject(), '100000.0000');
+      await infra.prisma.$executeRawUnsafe(
+        `UPDATE finance.contracts SET status = 'TERMINATED'
+          WHERE contract_id = (SELECT contract_id FROM finance.billings WHERE billing_id = $1::uuid)`,
+        billingId,
+      );
+      const res = await approve(billingId, 'PM', 'PROJECT_MANAGER');
+      expect(res.status).toBe(422);
+      expect(res.body).toMatchObject({
+        error: { code: 'COS-FIN-422', messageKey: 'finance.billing.contractNotActive' },
+      });
+      expect(await billingStatus(billingId)).toBe('DRAFT');
+      const events = await infra.prisma.$queryRawUnsafe<Array<{ id: string }>>(
+        `SELECT id FROM platform.outbox_events
+          WHERE event_type = 'finance.billing.approved.v1'
+            AND payload->'payload'->>'billing_id' = $1`,
+        billingId,
+      );
+      expect(events).toHaveLength(0);
+    });
+
     it('an already-ISSUED billing cannot be approved twice', async () => {
       // Otherwise a second approval re-issues the document and re-fires the event to the client.
       const billingId = await newBilling(await newProject(), '100000.0000');

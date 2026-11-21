@@ -1602,6 +1602,21 @@ gate's isolated run) checks the hash was not tested either; it ran 12.18.0 with 
 
 ## Open
 
+- **Closed — a DRAFT billing could be issued after its contract was terminated.** Fixed in plan DN (on the current
+  branch; product-owner decision 2026-11-21: approval needs an ACTIVE contract, as creation does since plan DH; ISSUED
+  billings untouched). Closes the item plan DH's /doubt parked. Measured on HEAD (`test/finance/03`): a DRAFT billing
+  whose contract was then TERMINATED was approved (200, ISSUED, `finance.billing.approved.v1`).
+  - `approveBilling`, after the DRAFT check: the contract not ACTIVE → 422 `COS-FIN-422`,
+    `finance.billing.contractNotActive` ("Contract `<id>` is `<status>` — only an ACTIVE contract can be billed");
+    the billing stays DRAFT, no event. OpenAPI lists the 403 (role, or the PM limit), 404 and 422 the route already
+    had or now has (the not-DRAFT 422, and the receipt route's not-ISSUED one, described as `COS-GENERAL-422` — they
+    were said to carry no code; found by /doubt); `error-codes.md`'s row names both routes.
+  - Not covered (found by /doubt): approval does not re-check the contract's type (a DRAFT billing on a vendor-side
+    contract made before plan DH can still be issued); the contract is read, then the billing updated, in separate
+    transactions (a termination committing in between still lets it be issued, as `createBilling`).
+  - Verified: finance unit (362: TERMINATED, DRAFT, SIGNED → 422 with no update), `test/finance/03` (55: the
+    terminated contract → 422, still DRAFT, no event — HEAD 200). tsc, eslint, prettier, conformance, OpenAPI
+    validity and freshness, markdownlint.
 - **Closed — the web's first requests on a page load went out with no token.** Fixed in plan DM (on the current
   branch; product-owner decision 2026-11-21: the request waits for a loading session; no layout change). Closes the
   item plan DL parked. `SessionProvider` gets no session from the server, so on a hard load (F5, a bookmark, the
@@ -1700,7 +1715,7 @@ gate's isolated run) checks the hash was not tested either; it ran 12.18.0 with 
   - `test/finance/03`'s `newContract` sets its contract ACTIVE by SQL (a contract made through the API starts DRAFT;
     signing and activation are specs 04 and 05's) and takes a type and status for the new cases.
   - Not covered (found by /doubt; by the decision "billings already made untouched"): `approveBilling` does not
-    re-check the contract, so a DRAFT billing on a contract terminated since can still be issued.
+    re-check the contract, so a DRAFT billing on a contract terminated since can still be issued. Closed by plan DN.
   - Verified: finance unit (359: each type and status refused with no INSERT), `test/finance/03` (54: the five cases
     → 422 with no billing — HEAD's service writes all five; the 49 earlier tests pass on the new fixture). tsc,
     eslint, prettier, conformance, OpenAPI validity and freshness, markdownlint.

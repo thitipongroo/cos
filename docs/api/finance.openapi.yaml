@@ -885,6 +885,14 @@ paths:
           description: Billing approved (DRAFT → ISSUED)
         '401':
           description: Unauthenticated — missing or invalid bearer token
+        '403':
+          description: Insufficient role, or the amount is above the PM approval limit — an EXECUTIVE must approve it
+        '404':
+          description: No such billing in this tenant
+        '422':
+          description: >-
+            The billing is not DRAFT (`COS-GENERAL-422`); or `COS-FIN-422`
+            (`finance.billing.contractNotActive`) — its contract is no longer ACTIVE (plan DN). Nothing is written
   /finance/ar-receipts:
     post:
       operationId: postFinanceArReceipts
@@ -938,7 +946,7 @@ paths:
             DA); nothing is written
         '422':
           description: >-
-            The billing is not ISSUED (a plain message, no `error.code`); or `COS-FIN-422`
+            The billing is not ISSUED (`COS-GENERAL-422`); or `COS-FIN-422`
             (`finance.receipt.billingOtherProject`) — `project_id` is not the billing's project (plan CZ); or
             `COS-FIN-422` (`finance.receipt.customerNotContract`) — the billing's contract names another customer
             (plan DA); or `COS-FIN-422` (`finance.receipt.exceedsBilling`) — with the billing's receipts it would

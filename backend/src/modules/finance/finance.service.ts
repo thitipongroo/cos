@@ -953,6 +953,15 @@ export class FinanceService {
         `Billing ${billing_id} is ${billing.status}; only DRAFT can be approved`,
       );
     }
+    // Issued only while its contract is in force (product owner, 2026-11-21; plan DN) — as it was created (plan DH):
+    // a DRAFT made on an ACTIVE contract since terminated stays DRAFT. ISSUED billings stay collectable.
+    const contract = await this.repo.findContractById(billing.contract_id);
+    if (contract && contract.status !== 'ACTIVE') {
+      throw this.refuse(
+        `Contract ${billing.contract_id} is ${contract.status} — only an ACTIVE contract can be billed`,
+        'finance.billing.contractNotActive',
+      );
+    }
     if (tier === 'PM' && new Decimal(billing.amount).greaterThan(DEFAULT_BILLING_PM_APPROVAL_MAX)) {
       throw new ForbiddenException(
         'Billing amount exceeds PM approval limit; Executive approval required',

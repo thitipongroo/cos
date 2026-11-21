@@ -1507,6 +1507,31 @@ describe('AR billing — customers, contracts, invoices and payments', () => {
       );
     });
 
+    // Plan DN (product owner 2026-11-21): approved only while the contract is ACTIVE.
+    it.each(['TERMINATED', 'DRAFT', 'SIGNED'])(
+      'approveBilling on a contract now %s: 422 COS-FIN-422, nothing updated',
+      async (status) => {
+        mockRepo.findBillingById.mockResolvedValue(draftBilling);
+        mockRepo.findContractById.mockResolvedValue({
+          contract_id: 'con-1',
+          project_id: 'proj-uuid-001',
+          contract_type: 'MAIN_CONTRACT',
+          status,
+        });
+        const err = await service.approveBilling('bill-1', 'PM').catch((e: unknown) => e);
+        expect(err).toMatchObject({
+          response: {
+            error: {
+              code: 'COS-FIN-422',
+              message: `Contract con-1 is ${status} — only an ACTIVE contract can be billed`,
+              messageKey: 'finance.billing.contractNotActive',
+            },
+          },
+        });
+        expect(mockRepo.updateBillingStatus).not.toHaveBeenCalled();
+      },
+    );
+
     // Plan DH (product owner 2026-11-21): only an ACTIVE MAIN_CONTRACT is billed to the client.
     it.each([
       [
