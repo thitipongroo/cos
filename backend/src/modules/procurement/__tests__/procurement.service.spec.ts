@@ -2507,6 +2507,33 @@ describe('replayed offline creates', () => {
     expect(mockWorkflowSignal).not.toHaveBeenCalled();
   });
 
+  // Plan DK (product owner 2026-11-21): nothing recorded because the RFQ moved on (a cancel landed between the check
+  // and the write) answers with its status, not "already awarded".
+  it('awardRfq — the RFQ cancelled between the check and the write: 422 with its status, nothing signalled', async () => {
+    mockRepo.findRfqById
+      .mockResolvedValueOnce(rfqEvaluatedFixture) // the first check
+      .mockResolvedValueOnce({ ...rfqEvaluatedFixture, status: 'CANCELLED' }); // read again after nothing recorded
+    mockRepo.findQuotationsByRfq.mockResolvedValue(quotationFixtures);
+    mockRepo.findVendorById.mockResolvedValue(vendorFixture);
+    mockRepo.recordAward.mockResolvedValue(false);
+    await expect(service.awardRfq('rfq-uuid-001', 'quot-uuid-001')).rejects.toThrow(
+      new UnprocessableEntityException('RFQ rfq-uuid-001 must be EVALUATED (current: CANCELLED)'),
+    );
+    expect(mockWorkflowSignal).not.toHaveBeenCalled();
+  });
+
+  it('awardRfq — another award reached AWARDED meanwhile: still 409 already awarded', async () => {
+    mockRepo.findRfqById
+      .mockResolvedValueOnce(rfqEvaluatedFixture)
+      .mockResolvedValueOnce({ ...rfqEvaluatedFixture, status: 'AWARDED' });
+    mockRepo.findQuotationsByRfq.mockResolvedValue(quotationFixtures);
+    mockRepo.findVendorById.mockResolvedValue(vendorFixture);
+    mockRepo.recordAward.mockResolvedValue(false);
+    const err = await service.awardRfq('rfq-uuid-001', 'quot-uuid-001').catch((e: unknown) => e);
+    expect(err).toBeInstanceOf(ConflictException);
+    expect(mockWorkflowSignal).not.toHaveBeenCalled();
+  });
+
   // The same quotation again (a retry after a failed signal): recorded (the repository accepts it) and re-signalled.
   it('awardRfq — the same quotation again is re-signalled', async () => {
     mockRepo.findRfqById.mockResolvedValue(rfqEvaluatedFixture);

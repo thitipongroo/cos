@@ -381,9 +381,19 @@ export class ProcurementService {
     }
 
     // One award per RFQ (product owner, 2026-11-20; plan CR): recorded and selected atomically. Another quotation
-    // already awarded → 409, the first standing, nothing signalled. The same quotation again → re-signalled, so a
+    // already awarded → 409, the first standing, nothing signalled; the RFQ moved on otherwise → its status 422
+    // (plan DK). The same quotation again → re-signalled, so a
     // retry after a failed signal can move the RFQ on.
     if (!(await this.repo.recordAward(rfq_id, quotation_id))) {
+      // Nothing recorded because the RFQ moved on between the check above and the write (a cancel landed) answers
+      // with its status, as that check does — not "already awarded" (product owner, 2026-11-21; plan DK). AWARDED
+      // in the meantime is the other award's workflow catching up: still "already awarded" (found by /doubt).
+      const now = await this.repo.findRfqById(rfq_id);
+      if (now && now.status !== 'EVALUATED' && now.status !== 'AWARDED') {
+        throw new UnprocessableEntityException(
+          `RFQ ${rfq_id} must be EVALUATED (current: ${now.status})`, // assertRfqStatus's text
+        );
+      }
       throw new ConflictException({
         error: {
           code: 'COS-PROC-409',

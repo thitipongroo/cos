@@ -1602,6 +1602,17 @@ gate's isolated run) checks the hash was not tested either; it ran 12.18.0 with 
 
 ## Open
 
+- **Closed — an award refused by a status change answered "already awarded".** Fixed in plan DK (on the current
+  branch; product-owner decision 2026-11-21: the status 422 the first check gives). Closes the item plan DJ's /doubt
+  parked. `awardRfq` answered any "nothing recorded" from `recordAward` with 409 "This RFQ has already been awarded to
+  another quotation" — also when a cancel landed between its EVALUATED check and the guarded write.
+  - Now, when nothing is recorded, the RFQ is checked again: no longer EVALUATED → 422 `RFQ <id> must be EVALUATED
+    (current: <status>)` (the `assertRfqStatus` text); still EVALUATED → 409 `procurement.rfq.alreadyAwarded` as
+    before; AWARDED meanwhile (the other award's workflow catching up) → 409 too (found by /doubt). OpenAPI `awardRfq`
+    gains the 422 (missing before) and the RFQ-not-found 404. Nothing signalled either way.
+  - Verified: procurement unit (378: the RFQ CANCELLED on the second read → 422, nothing signalled — HEAD answers
+    409; another quotation awarded → still 409), `test/procurement/03` (30). tsc, eslint, prettier, conformance,
+    markdownlint.
 - **Closed — an awarded RFQ could still be cancelled, and a cancelled one kept its award.** Fixed in plan DJ (on the
   current branch; product-owner decisions 2026-11-21: once an award is recorded the cancel is refused; an RFQ that
   does end CANCELLED keeps no award). Closes the item plan CR parked. Measured on HEAD (`test/procurement/03`): a
@@ -1620,7 +1631,8 @@ gate's isolated run) checks the hash was not tested either; it ran 12.18.0 with 
     — HEAD fails both; a plain cancel keeps the pick). tsc, eslint, prettier, conformance, OpenAPI validity and
     freshness, markdownlint.
   - Parked (found by /doubt): an award request that passes the EVALUATED check just as the CANCELLED activity commits
-    gets 409 "already awarded to another quotation" — the RFQ was cancelled, not awarded; the message misleads.
+    gets 409 "already awarded to another quotation" — the RFQ was cancelled, not awarded; the message misleads. Closed
+    by plan DK.
 - **Closed — the quotations page offered Award on a deactivated vendor's row, and named vendors by id.** Fixed in
   plan DI (on the current branch; product-owner decisions 2026-11-21: the rows carry the vendor's name and whether it
   is active; on a deactivated vendor's row no Award button but a "vendor deactivated" label, the row kept for the
