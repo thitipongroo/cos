@@ -1602,6 +1602,22 @@ gate's isolated run) checks the hash was not tested either; it ran 12.18.0 with 
 
 ## Open
 
+- **Closed — the web retried every query the server refused.** Fixed in plan DL (on the current branch;
+  product-owner decision 2026-11-21: app-wide, a 4xx is not retried except 401, 408 and 429; a 5xx or a network
+  failure keeps one retry). A low item from an earlier /doubt (kept in the session's list, not in this register):
+  "the web RFQ page retries 403s" — the cause was the QueryClient's default `retry: 1`
+  (`apps/web/src/app/providers.tsx`), so every page asked a 403 or 404 twice and waited for both.
+  - New `apps/web/src/lib/queryRetry.ts` `shouldRetryQuery(failureCount, error)`, used as `queries.retry`: an
+    `ApiError` 400–499 other than 401 / 408 / 429 → no retry; otherwise one. Mutations were not retried and are
+    unchanged.
+  - 401 stays retried (product owner, on /doubt's finding): `SessionProvider` gets no session from the server, so on a
+    hard load (F5, a bookmark, the sign-in redirect) a query can go out with no token and answer 401; its retry
+    re-reads the query's current fetcher, which by then carries the token. With 401 not retried the page showed its
+    error after every reload (reproduced against query-core). Parked: that first unauthenticated request itself —
+    pass the server session to `SessionProvider`, or hold queries until `status === 'authenticated'`.
+  - Verified: `queryRetry.spec` (400, 403, 404, 409, 422 not retried; 401, 408, 429, 500, 503 and a network failure
+    retried once, not twice — the old always-once rule fails the five 4xx cases), apps/web jest, tsc, eslint,
+    markdownlint. No browser run.
 - **Closed — an award refused by a status change answered "already awarded".** Fixed in plan DK (on the current
   branch; product-owner decision 2026-11-21: the status 422 the first check gives). Closes the item plan DJ's /doubt
   parked. `awardRfq` answered any "nothing recorded" from `recordAward` with 409 "This RFQ has already been awarded to

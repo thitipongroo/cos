@@ -7,6 +7,7 @@ import { I18nProvider as AriaI18nProvider } from 'react-aria-components';
 import { I18nProvider, useI18n } from '../i18n';
 import { toBcp47 } from '../lib/locale';
 import { isTrialReadOnlyError, TRIAL_READ_ONLY_EVENT } from '../lib/trial';
+import { shouldRetryQuery } from '../lib/queryRetry';
 
 /**
  * Feeds the app's locale to React Aria as a BCP-47 tag.
@@ -34,7 +35,8 @@ export function Providers({ children }: { children: React.ReactNode }) {
     // in the app: the tenant is re-read so every page hides its write actions (useReadOnly) and the banner turns
     // read-only, and the banner is told a save just failed so it can say so in place of a generic error.
     const client: QueryClient = new QueryClient({
-      defaultOptions: { queries: { staleTime: 30_000, retry: 1 } },
+      // A refused query (4xx but 401/408/429) is not retried; else once (plan DL, lib/queryRetry).
+      defaultOptions: { queries: { staleTime: 30_000, retry: shouldRetryQuery } },
       mutationCache: new MutationCache({
         onError: (error) => {
           if (!isTrialReadOnlyError(error)) return;
