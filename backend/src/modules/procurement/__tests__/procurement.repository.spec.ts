@@ -1084,6 +1084,22 @@ describe('ProcurementRepository', () => {
       expect(mockPrisma.$executeRaw).toHaveBeenCalledTimes(1);
     });
 
+    // Plan DT: with `from`, only while still in one of those states; nothing written (no event) when it is not.
+    it('updateInvoiceStatus with from: conditional, false and no event when no row changed', async () => {
+      mockPrisma.$executeRaw.mockResolvedValueOnce(0);
+      const r = await repo.updateInvoiceStatus(
+        'inv-1',
+        'DISPUTED',
+        envelope('procurement.vendor_invoice.approved.v1') as never,
+        ['APPROVED'],
+      );
+      expect(r).toBe(false);
+      const call = mockPrisma.$executeRaw.mock.calls.at(-1)!;
+      expect((call[0] as string[]).join('?')).toContain('status = ANY(');
+      expect(call).toContainEqual(['APPROVED']);
+      expect(mockPrisma.$executeRaw).toHaveBeenCalledTimes(1);
+    });
+
     it('createInvoice writes the event from the inserted row', async () => {
       const row = { invoice_id: 'inv-1', amount: '10.0000', currency_code: 'THB' };
       mockPrisma.$queryRaw.mockResolvedValue([row]);

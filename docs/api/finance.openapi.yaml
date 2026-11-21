@@ -39,6 +39,10 @@ paths:
   /finance/payments/{paymentId}/approve:
     patch:
       summary: Approve a pending payment (PENDING → PROCESSED)
+      description: |
+        In the same transaction, the payment's vendor invoice becomes PAID once its PROCESSED payments reach the
+        invoice's amount (plan DT); PENDING payments do not count, and an invoice that is not APPROVED (DISPUTED,
+        say) is left as it is. Approvals on one invoice run one after the other. No event is sent for the invoice.
       operationId: approvePayment
       tags: [payments]
       parameters:

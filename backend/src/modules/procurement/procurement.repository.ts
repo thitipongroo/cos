@@ -987,17 +987,26 @@ export class ProcurementRepository {
     return { rows, total: Number(countRows[0]?.count ?? 0) };
   }
 
+  /**
+   * Sets the invoice's status; false when nothing changed. With `from`, only while the invoice is still in one of
+   * those states — the caller's guard read it earlier, and finance may have made it PAID since (plan DT: approving
+   * the last payment settles it), which a dispute must not overwrite.
+   */
   async updateInvoiceStatus(
     invoice_id: string,
     status: InvoiceRow['status'],
     outboxEvent?: OutboxEventInput,
-  ): Promise<void> {
-    await this.db.run(async (prisma) => {
-      await prisma.$executeRaw`
+    from?: ReadonlyArray<InvoiceRow['status']>,
+  ): Promise<boolean> {
+    return this.db.run(async (prisma) => {
+      const updated = await prisma.$executeRaw`
         UPDATE procurement.invoices SET status = ${status}
-        WHERE invoice_id = ${invoice_id}::uuid AND tenant_id = ${this.tenantId}::uuid`;
+        WHERE invoice_id = ${invoice_id}::uuid AND tenant_id = ${this.tenantId}::uuid
+          AND (${from ? [...from] : null}::text[] IS NULL OR status = ANY(${from ? [...from] : null}::text[]))`;
+      if (updated === 0) return false;
       // Outbox (§35.13 ESC-13) — e.g. procurement.vendor_invoice.approved.v1 on APPROVED.
       if (outboxEvent) await OutboxPublisher.write(prisma, outboxEvent);
+      return true;
     });
   }
 

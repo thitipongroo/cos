@@ -237,8 +237,9 @@ async function main(): Promise<void> {
           VALUES (${uid(`t2/poli/${p.key}/${po.key}`)}::uuid, ${poId}::uuid, ${TID}::uuid, ${po.desc}, ${po.qty}, ${po.unit}, ${po.price}, ${total}) ON CONFLICT (line_id) DO NOTHING`;
           const invId = uid(`t2/inv/${p.key}/${po.key}`);
           await tx.$executeRaw`INSERT INTO procurement.invoices (invoice_id, po_id, vendor_id, tenant_id, invoice_number, amount, currency_code, invoice_date, due_date, status)
-          VALUES (${invId}::uuid, ${poId}::uuid, ${uid(`t2/vendor/${po.vendor}`)}::uuid, ${TID}::uuid, ${`INV-${p.code}-${po.key.toUpperCase()}`}, ${total}, ${THB}, ${addDays(ordered, 14)}::date, ${addDays(ordered, 44)}::date, 'APPROVED')
-          ON CONFLICT (invoice_id) DO NOTHING`;
+          VALUES (${invId}::uuid, ${poId}::uuid, ${uid(`t2/vendor/${po.vendor}`)}::uuid, ${TID}::uuid, ${`INV-${p.code}-${po.key.toUpperCase()}`}, ${total}, ${THB}, ${addDays(ordered, 14)}::date, ${addDays(ordered, 44)}::date, 'PAID')
+          ON CONFLICT (invoice_id) DO UPDATE SET status = EXCLUDED.status`;
+          // PAID (plan DT): the PROCESSED payment below is its whole amount.
           await tx.$executeRaw`INSERT INTO finance.cost_transactions (transaction_id, project_id, tenant_id, source_type, source_id, amount, currency_code, transaction_date, description, recorded_by)
           VALUES (${uid(`t2/ct/${p.key}/${po.key}`)}::uuid, ${pid}::uuid, ${TID}::uuid, 'INVOICE'::finance."CostSourceType", ${invId}::uuid, ${total}, ${THB}, ${addDays(ordered, 14)}::date, ${`Actual: ${po.key}`}, ${U('fin')}::uuid)
           ON CONFLICT (transaction_id) DO NOTHING`;

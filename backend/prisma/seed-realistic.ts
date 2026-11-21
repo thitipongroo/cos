@@ -1078,12 +1078,15 @@ async function seedProject(tx: Tx, p: SeedProject): Promise<void> {
         VALUES (${uid(`del/${p.key}/${po.key}`)}::uuid, ${poId}::uuid, ${TENANT_ID}::uuid, ${`DN-${p.code}-${po.key.toUpperCase()}`}, ${ts(addDays(orderedAt, 12), '10:30')}::timestamptz, ${U(p.se)}::uuid, 'รับครบตามจำนวน ตรวจสอบปริมาณเรียบร้อย')
         ON CONFLICT (delivery_id) DO NOTHING`;
       await tx.$executeRaw`INSERT INTO procurement.invoices (invoice_id, po_id, vendor_id, tenant_id, invoice_number, amount, currency_code, invoice_date, due_date, status)
-        VALUES (${invId}::uuid, ${poId}::uuid, ${V(po.vendor)}::uuid, ${TENANT_ID}::uuid, ${`INV-${p.code}-${po.key.toUpperCase()}`}, ${total}, ${THB}, ${addDays(orderedAt, 14)}::date, ${addDays(orderedAt, 44)}::date, 'APPROVED')
-        ON CONFLICT (invoice_id) DO NOTHING`;
+        VALUES (${invId}::uuid, ${poId}::uuid, ${V(po.vendor)}::uuid, ${TENANT_ID}::uuid, ${`INV-${p.code}-${po.key.toUpperCase()}`}, ${total}, ${THB}, ${addDays(orderedAt, 14)}::date, ${addDays(orderedAt, 44)}::date, ${po.paid ? 'PAID' : 'APPROVED'})
+        ON CONFLICT (invoice_id) DO UPDATE SET status = EXCLUDED.status`;
       actual += total;
       await tx.$executeRaw`INSERT INTO finance.cost_transactions (transaction_id, project_id, tenant_id, source_type, source_id, amount, currency_code, transaction_date, description, recorded_by)
         VALUES (${uid(`ct-inv/${p.key}/${po.key}`)}::uuid, ${pid}::uuid, ${TENANT_ID}::uuid, 'INVOICE'::finance."CostSourceType", ${invId}::uuid, ${total}, ${THB}, ${addDays(orderedAt, 14)}::date, ${`Actual: ${po.key} delivered`}, ${U('fin')}::uuid)
         ON CONFLICT (transaction_id) DO NOTHING`;
+      // A paid order's invoice is PAID (plan DT): its one payment, PROCESSED below, is its whole amount — as approving
+      // it through the API would leave it. Re-seeded with the payment's status, so the two never disagree.
+      //
       // EVERY DELIVERED + INVOICED ORDER GETS A PAYMENT ROW; `po.paid` decides its STATUS, not
       // whether the row exists. A delivered order whose invoice is APPROVED has money owed on it, and
       // the way this platform records that is a `finance.payments` row awaiting the FINANCE approval

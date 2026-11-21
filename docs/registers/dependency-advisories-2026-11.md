@@ -1602,6 +1602,47 @@ gate's isolated run) checks the hash was not tested either; it ran 12.18.0 with 
 
 ## Open
 
+- **Closed — a fully paid vendor invoice stayed APPROVED.** Fixed in plan DT (on the current branch; product-owner
+  decisions 2026-11-21: the invoice becomes PAID when approving a payment brings its PROCESSED payments to the
+  invoice's amount — PENDING payments do not count; no new event). Closes the decision plan DE left open. Measured on
+  HEAD (`test/finance/03`): nothing set an invoice PAID — two approved 20,000 payments, or 30,000 + 10,000, on a
+  40,000 invoice left it APPROVED, still offered on the payments page.
+  - `procurement/public/invoice-settlement.ts` (new) `settleInvoiceIfPaid(tx, tenant, invoice, processed)`: APPROVED
+    → PAID when the amount is reached, in the caller's transaction; an invoice in any other state (DISPUTED, say) is
+    left as it is.
+  - `FinanceRepository.approvePayment`, in one transaction: the PENDING payment's invoice, the same per-invoice
+    advisory lock as `createPayment` (before the payment's row is touched), PENDING → PROCESSED (re-checked under the
+    lock), the PROCESSED sum in its own statement (plan DF), then the settlement. The response is the payment, as
+    before.
+  - Web: `useApprovePayment` also refreshes the invoice lists, so the payments page stops offering the invoice it
+    just settled.
+  - Found by /doubt and fixed here: (1) a dispute read APPROVED, then wrote DISPUTED blindly — after an approval had
+    made the invoice PAID in between it would overwrite PAID. `updateInvoiceStatus` takes an optional `from` (states
+    it may leave; returns whether a row changed, the event only then), and `disputeVendorInvoice` passes RECEIVED /
+    VERIFIED / APPROVED — none changed → 422 with the current status. (2) `createPayment`'s lock key took the DTO's
+    `invoice_id` as typed, so an upper-case UUID was another lock than `approvePayment`'s (read back from the row,
+    lower case) and than a lower-case payment's: now through `::uuid::text` (a plan DE defect).
+  - Seeds (product owner 2026-11-21: the seeds only, no backfill): `seed-realistic.ts` writes a paid order's invoice
+    PAID and `seed-tenant2.ts` all of its (each has one PROCESSED payment of its whole amount); both re-seed the
+    invoice's status as the payments' already was. Invoices already fully PROCESSED on an existing database are not
+    set PAID — only a later approval on them would (none can be recorded: the cap is full).
+  - Verified: backend unit (4609: the lock first, the PROCESSED sum, the settlement's binding; null with nothing
+    settled when the payment is not PENDING or another approval won; the lock key through `::uuid`; the conditional
+    dispute and its 422), `test/finance/03` (64: 30,000 + 10,000 approved in turn → APPROVED then PAID; recorded in
+    full but one approved → APPROVED; a FAILED payment not counted; disputed before the approval → stays DISPUTED;
+    two approvals together → PAID; approved twice → 422; a PAID invoice cannot be disputed; an upper-case invoice id
+    and a lower-case one together → one 201, one 422; approving a RECEIVED invoice still writes), apps/web jest (541:
+    the approval refreshes the invoice lists). On HEAD the three PAID tests fail (still APPROVED); the web test fails
+    on HEAD's `queries.ts`. tsc, eslint, prettier, conformance (2351), OpenAPI validity and freshness, markdownlint;
+    the seeds typecheck (not run).
+  - Not covered: no event for PAID (product owner) — analytics caches and notifications do not hear of it; the PO's
+    own PAID (`mark-paid`, the PO workflow) stays separate from the invoice's; a PROCESSED payment later FAILED does
+    not undo PAID (nothing sets FAILED today); a DISPUTED invoice has no way back to APPROVED, so its payments never
+    settle it; the PROCESSED sum does not filter by currency (payments before plan DD could differ);
+    `finance.payments` has no index on `invoice_id` for the lock-held sums; the concurrent tests show the outcome,
+    not that the lock is what orders them (requests may not overlap). The e2e `budget-exceeded` spec records
+    9,999,999 against a seeded invoice whose payments already fill it — refused by the plan DE cap since then, not by
+    this change; not run here.
 - **Closed — the vendor's RFQ page gave one message for every refused link.** Fixed in plan DS (on the current
   branch; product-owner decision 2026-11-21: four cases get their own TH/EN line, with the next step, on opening the
   RFQ and on submitting to it). `apps/web/src/app/vendor/rfq/[token]/page.tsx` showed "This RFQ link is invalid or
@@ -1856,11 +1897,11 @@ gate's isolated run) checks the hash was not tested either; it ran 12.18.0 with 
     above); the 201 returns the receipt only (not whether the billing is now PAID); the concurrent test shows the cap
     holds under two requests sent together but cannot force them to overlap (it did catch the snapshot bug once);
     receipts recorded before this change are not re-checked.
-- **Closed — an AP invoice could be paid beyond its amount.** Fixed in plan DE (on the current branch;
-  product-owner decisions 2026-11-21: the invoice's PENDING and PROCESSED payments, with the new one, never exceed
-  its amount — FAILED does not count; the invoice's status is not changed when fully paid). Closes the item plan DD
-  parked. Measured on HEAD (`test/finance/03`): a further 0.01 on a fully paid 40,000 invoice → 201, and two 30,000
-  payments sent together → both written.
+- **Closed — an AP invoice could be paid beyond its amount.** Fixed in plan DE (on the current branch; product-owner
+  decisions 2026-11-21: the invoice's PENDING and PROCESSED payments, with the new one, never exceed its amount —
+  FAILED does not count; the invoice's status is not changed when fully paid — since plan DT it is PAID once its
+  PROCESSED payments reach its amount). Closes the item plan DD parked. Measured on HEAD (`test/finance/03`): a
+  further 0.01 on a fully paid 40,000 invoice → 201, and two 30,000 payments sent together → both written.
   - `invoiceForPaymentInTenant` also returns the invoice's `amount`. `FinanceRepository.createPayment` takes it as
     `cap`: in the INSERT's transaction, a per-invoice advisory lock (`'payment:' || tenant || ':' || invoice`), the
     sum of PENDING + PROCESSED payments, and over the cap no INSERT — what remains is answered.

@@ -190,7 +190,10 @@ export class FinanceController {
   @Roles(...PAYMENT_APPROVE_ROLES)
   @RequirePermissions('finance:approve') // fine-grained least-privilege enforcement (spec §6.4)
   @FeatureFlag('s1.finance.payment-mutations') // QM-15 retrofit kill-switch (ADR-049)
-  @ApiOperation({ summary: 'Approve a pending payment (FINANCE) → PROCESSED' })
+  @ApiOperation({
+    summary: 'Approve a pending payment (FINANCE) → PROCESSED',
+    description: 'The invoice becomes PAID once its PROCESSED payments reach its amount (plan DT).',
+  })
   @ApiParam({ name: 'paymentId', type: 'string', format: 'uuid' })
   @HttpCode(HttpStatus.OK)
   approvePayment(@Param('paymentId', ParseUUIDPipe) paymentId: string) {

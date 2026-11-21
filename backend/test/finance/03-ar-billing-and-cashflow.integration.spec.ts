@@ -613,6 +613,145 @@ describe('Phase 7 · AR billing lifecycle and cash flow forecast (real database)
       });
       expect(await payments(invoiceId)).toBe(0);
     });
+
+    // Plan DT (product owner 2026-11-21): PAID once its PROCESSED payments reach its amount; PENDING ones do not count.
+    describe('the invoice turns PAID when approved payments reach its amount (plan DT)', () => {
+      const invoiceStatus = async (invoiceId: string): Promise<string> => {
+        const rows = await infra.prisma.$queryRawUnsafe<Array<{ status: string }>>(
+          `SELECT status::text FROM procurement.invoices WHERE invoice_id = $1::uuid`,
+          invoiceId,
+        );
+        return rows[0]?.status ?? '(missing)';
+      };
+      const paid = async (
+        projectId: string,
+        invoiceId: string,
+        amount: string,
+      ): Promise<string> => {
+        const res = await pay(projectId, invoiceId, amount);
+        expect(res.status).toBe(201);
+        return (res.body as { payment_id: string }).payment_id;
+      };
+      const approvePayment = (paymentId: string) =>
+        http()
+          .patch(`/api/v1/finance/payments/${paymentId}/approve`)
+          .set('x-test-role', 'FINANCE')
+          .send({});
+
+      it('two instalments: APPROVED after the first approval, PAID after the second', async () => {
+        const projectId = await newProject();
+        const invoiceId = await vendorInvoice(projectId); // 40,000
+        const first = await paid(projectId, invoiceId, '30000.0000');
+        const second = await paid(projectId, invoiceId, '10000.0000');
+        expect((await approvePayment(first)).status).toBe(200);
+        expect(await invoiceStatus(invoiceId)).toBe('APPROVED');
+        const res = await approvePayment(second);
+        expect(res.status).toBe(200);
+        expect(res.body).toMatchObject({ payment_id: second, status: 'PROCESSED' });
+        expect(await invoiceStatus(invoiceId)).toBe('PAID');
+      });
+
+      it('recorded in full but not approved: still APPROVED', async () => {
+        const projectId = await newProject();
+        const invoiceId = await vendorInvoice(projectId);
+        const first = await paid(projectId, invoiceId, '30000.0000');
+        await paid(projectId, invoiceId, '10000.0000'); // PENDING
+        expect((await approvePayment(first)).status).toBe(200);
+        expect(await invoiceStatus(invoiceId)).toBe('APPROVED');
+      });
+
+      it('a FAILED payment does not count towards PAID', async () => {
+        const projectId = await newProject();
+        const invoiceId = await vendorInvoice(projectId);
+        await paid(projectId, invoiceId, '40000.0000');
+        await infra.prisma.$executeRawUnsafe(
+          `UPDATE finance.payments SET status = 'PROCESSED' WHERE invoice_id = $1::uuid`,
+          invoiceId,
+        );
+        await infra.prisma.$executeRawUnsafe(
+          `UPDATE finance.payments SET status = 'FAILED' WHERE invoice_id = $1::uuid`,
+          invoiceId,
+        );
+        const second = await paid(projectId, invoiceId, '10000.0000');
+        expect((await approvePayment(second)).status).toBe(200);
+        expect(await invoiceStatus(invoiceId)).toBe('APPROVED');
+      });
+
+      it('an invoice disputed after payment stays DISPUTED', async () => {
+        const projectId = await newProject();
+        const invoiceId = await vendorInvoice(projectId);
+        const payment = await paid(projectId, invoiceId, '40000.0000');
+        await infra.prisma.$executeRawUnsafe(
+          `UPDATE procurement.invoices SET status = 'DISPUTED' WHERE invoice_id = $1::uuid`,
+          invoiceId,
+        );
+        expect((await approvePayment(payment)).status).toBe(200);
+        expect(await invoiceStatus(invoiceId)).toBe('DISPUTED');
+      });
+
+      it('two approvals sent together still end PAID', async () => {
+        const projectId = await newProject();
+        const invoiceId = await vendorInvoice(projectId);
+        const a = await paid(projectId, invoiceId, '20000.0000');
+        const b = await paid(projectId, invoiceId, '20000.0000');
+        const statuses = (await Promise.all([approvePayment(a), approvePayment(b)])).map(
+          (r) => r.status,
+        );
+        expect(statuses).toEqual([200, 200]);
+        expect(await invoiceStatus(invoiceId)).toBe('PAID');
+      });
+
+      it('a settled (PAID) invoice cannot then be disputed: 422, still PAID', async () => {
+        const projectId = await newProject();
+        const invoiceId = await vendorInvoice(projectId);
+        expect((await approvePayment(await paid(projectId, invoiceId, '40000.0000'))).status).toBe(
+          200,
+        );
+        const res = await http()
+          .post(`/api/v1/procurement/vendor-invoices/${invoiceId}/dispute`)
+          .set('x-test-role', 'FINANCE')
+          .send({});
+        expect(res.status).toBe(422);
+        expect(await invoiceStatus(invoiceId)).toBe('PAID');
+      });
+
+      it('approving a RECEIVED invoice still writes (updateInvoiceStatus without `from`)', async () => {
+        const invoiceId = await vendorInvoice(await newProject());
+        await infra.prisma.$executeRawUnsafe(
+          `UPDATE procurement.invoices SET status = 'RECEIVED' WHERE invoice_id = $1::uuid`,
+          invoiceId,
+        );
+        const res = await http()
+          .post(`/api/v1/procurement/vendor-invoices/${invoiceId}/approve`)
+          .set('x-test-role', 'FINANCE')
+          .send({});
+        expect(res.status).toBe(200);
+        expect(await invoiceStatus(invoiceId)).toBe('APPROVED');
+      });
+
+      it('an upper-case invoice id takes the same lock: two together, one written, one 422', async () => {
+        const projectId = await newProject();
+        const invoiceId = await vendorInvoice(projectId);
+        const statuses = (
+          await Promise.all([
+            pay(projectId, invoiceId, '30000.0000'),
+            pay(projectId, invoiceId.toUpperCase(), '30000.0000'),
+          ])
+        )
+          .map((r) => r.status)
+          .sort();
+        expect(statuses).toEqual([201, 422]);
+      });
+
+      it("approving a payment twice: the second 422, the invoice's status unchanged", async () => {
+        const projectId = await newProject();
+        const invoiceId = await vendorInvoice(projectId);
+        const payment = await paid(projectId, invoiceId, '40000.0000');
+        expect((await approvePayment(payment)).status).toBe(200);
+        expect((await approvePayment(payment)).status).toBe(422);
+        expect(await invoiceStatus(invoiceId)).toBe('PAID');
+      });
+    });
   });
 
   // ---------------------------------------------------------------------------------------------

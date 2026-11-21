@@ -13,6 +13,7 @@ import { clsTenantId } from '../../shared/context/cls-context';
 import { projectStatusInTenant } from '../project/public/parent-existence';
 import { activeVendorExistsInTenant } from '../procurement/public/active-vendor';
 import { invoiceForPaymentInTenant } from '../procurement/public/invoice-for-payment';
+import { settleInvoiceIfPaid } from '../procurement/public/invoice-settlement';
 
 // Row types live in ./finance.rows; imported here for the method signatures below and re-exported so
 // existing `from './finance.repository'` type imports (service, consumer, util, specs) keep resolving.
@@ -275,9 +276,11 @@ export class FinanceRepository {
   ): Promise<PaymentRow | { exceeds: true; remaining: string }> {
     const rows = await this.db.run(async (tx) => {
       if (params.cap !== undefined) {
+        // Through `::uuid` so the key is the lower-case text `approvePayment` reads back from the row (plan DT): the
+        // DTO takes an upper-case UUID, which would otherwise be another lock (found by /doubt).
         await tx.$executeRaw`
           SELECT pg_advisory_xact_lock(
-            hashtextextended('payment:' || ${this.tenantId}::text || ':' || ${params.invoice_id}::text, 0)
+            hashtextextended('payment:' || ${this.tenantId}::text || ':' || ${params.invoice_id}::uuid::text, 0)
           )`;
         const [paid] = await tx.$queryRaw<Array<{ remaining: string; over: boolean }>>`
           SELECT GREATEST(${params.cap}::decimal - COALESCE(SUM(amount), 0), 0)::decimal(19,4)::text AS remaining,
@@ -309,20 +312,43 @@ export class FinanceRepository {
     return rows[0]!;
   }
 
-  // Approve a PENDING payment → PROCESSED. Returns null if not found / not pending (tenant-scoped).
+  /**
+   * Approve a PENDING payment → PROCESSED. Returns null if not found / not pending (tenant-scoped).
+   *
+   * Plan DT: in the same transaction, the invoice becomes PAID once its PROCESSED payments reach its amount (PENDING
+   * ones do not count). Under `createPayment`'s per-invoice lock, taken before the payment's row is touched, so two
+   * approvals on one invoice run one after the other; the SUM is its own statement, so under READ COMMITTED it sees
+   * the approval committed before the lock was granted (plan DF).
+   */
   async approvePayment(paymentId: string): Promise<PaymentRow | null> {
-    const rows = await this.db.run(
-      (tx) =>
-        tx.$queryRaw<PaymentRow[]>`
+    return this.db.run(async (tx) => {
+      const [pending] = await tx.$queryRaw<Array<{ invoice_id: string }>>`
+        SELECT invoice_id::text AS invoice_id FROM finance.payments
+        WHERE payment_id = ${paymentId}::uuid
+          AND tenant_id = ${this.tenantId}::uuid
+          AND status = 'PENDING'::finance."PaymentStatus"`;
+      if (!pending) return null;
+      await tx.$executeRaw`
+        SELECT pg_advisory_xact_lock(
+          hashtextextended('payment:' || ${this.tenantId}::text || ':' || ${pending.invoice_id}::text, 0)
+        )`;
+      // Still PENDING is re-checked here: another approval of this payment may have committed while we waited.
+      const [approved] = await tx.$queryRaw<PaymentRow[]>`
         UPDATE finance.payments
         SET status = 'PROCESSED'::finance."PaymentStatus"
         WHERE payment_id = ${paymentId}::uuid
           AND tenant_id = ${this.tenantId}::uuid
           AND status = 'PENDING'::finance."PaymentStatus"
         RETURNING *
-      `,
-    );
-    return rows[0] ?? null;
+      `;
+      if (!approved) return null;
+      const [sum] = await tx.$queryRaw<Array<{ processed: string }>>`
+        SELECT COALESCE(SUM(amount), 0)::text AS processed FROM finance.payments
+        WHERE invoice_id = ${pending.invoice_id}::uuid AND tenant_id = ${this.tenantId}::uuid
+          AND status = 'PROCESSED'::finance."PaymentStatus"`;
+      await settleInvoiceIfPaid(tx, this.tenantId, pending.invoice_id, sum!.processed);
+      return approved;
+    });
   }
 
   // Tenant-wide payments (AIP-132 AP queue); optional project_id + status filters (spec §14).

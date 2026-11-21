@@ -1221,10 +1221,25 @@ describe('disputeVendorInvoice (G-W6)', () => {
 
   it('sets a verified invoice to DISPUTED', async () => {
     mockRepo.findInvoiceById.mockResolvedValue(inv);
-    mockRepo.updateInvoiceStatus.mockResolvedValue(undefined);
+    mockRepo.updateInvoiceStatus.mockResolvedValue(true);
     const result = await service.disputeVendorInvoice('inv-d-1');
     expect(result.status).toBe('DISPUTED');
-    expect(mockRepo.updateInvoiceStatus).toHaveBeenCalledWith('inv-d-1', 'DISPUTED');
+    expect(mockRepo.updateInvoiceStatus).toHaveBeenCalledWith('inv-d-1', 'DISPUTED', undefined, [
+      'RECEIVED',
+      'VERIFIED',
+      'APPROVED',
+    ]);
+  });
+
+  // Plan DT: finance may settle the invoice (PAID) between the guard's read and the UPDATE.
+  it('422 with the current status when the invoice became PAID after it was read', async () => {
+    mockRepo.findInvoiceById
+      .mockResolvedValueOnce({ ...inv, status: 'APPROVED' })
+      .mockResolvedValueOnce({ ...inv, status: 'PAID' });
+    mockRepo.updateInvoiceStatus.mockResolvedValue(false);
+    await expect(service.disputeVendorInvoice('inv-d-1')).rejects.toThrow(
+      new UnprocessableEntityException('Invoice inv-d-1 cannot be disputed (current: PAID)'),
+    );
   });
 
   it('throws NotFoundException when invoice not found', async () => {

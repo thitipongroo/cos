@@ -495,7 +495,12 @@ export function useApprovePayment() {
   return useMutation({
     mutationFn: (paymentId: string) =>
       api<PaymentRow>(`/finance/payments/${paymentId}/approve`, { method: 'PATCH' }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['payments'] }),
+    // The approval may make its invoice PAID (plan DT): the invoice lists, the payments page's picker among them.
+    onSuccess: () =>
+      Promise.all([
+        qc.invalidateQueries({ queryKey: ['payments'] }),
+        qc.invalidateQueries({ queryKey: ['finance', 'invoices'] }),
+      ]),
   });
 }
 

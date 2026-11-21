@@ -907,12 +907,21 @@ export class ProcurementService {
     if (!invoice) {
       throw new NotFoundException(`Invoice ${invoice_id} not found`);
     }
-    if (invoice.status === 'PAID' || invoice.status === 'DISPUTED') {
-      throw new UnprocessableEntityException(
-        `Invoice ${invoice_id} cannot be disputed (current: ${invoice.status})`,
+    const refuse = (status: string) =>
+      new UnprocessableEntityException(
+        `Invoice ${invoice_id} cannot be disputed (current: ${status})`,
       );
+    if (invoice.status === 'PAID' || invoice.status === 'DISPUTED') throw refuse(invoice.status);
+    // Only from a state that may be disputed: finance may have settled it (PAID, plan DT) since it was read.
+    const disputed = await this.repo.updateInvoiceStatus(invoice_id, 'DISPUTED', undefined, [
+      'RECEIVED',
+      'VERIFIED',
+      'APPROVED',
+    ]);
+    if (!disputed) {
+      const now = await this.repo.findInvoiceById(invoice_id);
+      throw refuse(now?.status ?? 'missing');
     }
-    await this.repo.updateInvoiceStatus(invoice_id, 'DISPUTED');
     logger.info({ invoice_id, actor_id: this.userId }, 'vendor-invoice.disputed');
     return { ...invoice, status: 'DISPUTED' };
   }

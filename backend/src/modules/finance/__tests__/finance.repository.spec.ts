@@ -281,6 +281,8 @@ describe('FinanceRepository', () => {
       const lock = mockPrisma.$executeRaw.mock.calls[0]!;
       expect(sqlOf(lock)).toContain('pg_advisory_xact_lock');
       expect(lock.slice(1)).toEqual(['tenant-uuid-001', 'inv-uuid-001']);
+      // The key through ::uuid, as approvePayment reads it back (plan DT): an upper-case id is the same lock.
+      expect(sqlOf(lock)).toContain("':' || ?::uuid::text, 0)");
       const sum = mockPrisma.$queryRaw.mock.calls[0]!;
       expect(sqlOf(sum)).toContain(
         `AND status IN ('PENDING'::finance."PaymentStatus", 'PROCESSED'::finance."PaymentStatus")`,
@@ -618,15 +620,41 @@ describe('FinanceRepository', () => {
     expect(r.status).toBe('PAID');
   });
 
-  it('approvePayment returns the updated row (PENDING → PROCESSED)', async () => {
-    mockPrisma.$queryRaw.mockResolvedValue([{ payment_id: 'pay-1', status: 'PROCESSED' }]);
-    const r = await repo.approvePayment('pay-1');
-    expect(r?.status).toBe('PROCESSED');
-  });
+  // Plan DT: lock the invoice, PENDING → PROCESSED, then the PROCESSED SUM settles the invoice, in one transaction.
+  describe('approvePayment (plan DT)', () => {
+    const sqlOf = (call: unknown[]) => (call[0] as TemplateStringsArray).join('?');
 
-  it('approvePayment returns null when not found / not pending', async () => {
-    mockPrisma.$queryRaw.mockResolvedValue([]);
-    expect(await repo.approvePayment('pay-x')).toBeNull();
+    it('returns the updated row, locks the invoice first and settles it from the PROCESSED sum', async () => {
+      mockPrisma.$queryRaw
+        .mockResolvedValueOnce([{ invoice_id: 'inv-1' }])
+        .mockResolvedValueOnce([{ payment_id: 'pay-1', status: 'PROCESSED' }])
+        .mockResolvedValueOnce([{ processed: '40000.0000' }]);
+      mockPrisma.$executeRaw.mockResolvedValue(1);
+      const r = await repo.approvePayment('pay-1');
+      expect(r?.status).toBe('PROCESSED');
+      const exec = mockPrisma.$executeRaw.mock.calls.map(sqlOf);
+      expect(exec[0]).toContain('pg_advisory_xact_lock');
+      expect(exec[1]).toMatch(
+        /UPDATE procurement\.invoices SET status = 'PAID'[\s\S]*status = 'APPROVED'/,
+      );
+      expect(mockPrisma.$executeRaw.mock.calls[1]).toContain('40000.0000');
+      expect(sqlOf(mockPrisma.$queryRaw.mock.calls[2]!)).toContain("status = 'PROCESSED'");
+    });
+
+    it('returns null, nothing locked or settled, when not found / not pending', async () => {
+      mockPrisma.$queryRaw.mockResolvedValueOnce([]);
+      expect(await repo.approvePayment('pay-x')).toBeNull();
+      expect(mockPrisma.$executeRaw).not.toHaveBeenCalled();
+    });
+
+    it('returns null without settling when another approval won while it waited for the lock', async () => {
+      mockPrisma.$queryRaw
+        .mockResolvedValueOnce([{ invoice_id: 'inv-1' }])
+        .mockResolvedValueOnce([]);
+      mockPrisma.$executeRaw.mockResolvedValue(1);
+      expect(await repo.approvePayment('pay-1')).toBeNull();
+      expect(mockPrisma.$executeRaw).toHaveBeenCalledTimes(1); // the lock only
+    });
   });
 
   // Plan DF: one transaction — the billing locked, still ISSUED, never beyond its amount; PAID when reached.
