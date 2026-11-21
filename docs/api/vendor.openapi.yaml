@@ -376,10 +376,10 @@ components:
 
     ErrorResponse:
       description: |
-        The QM-10 envelope every error leaves the API in (GlobalExceptionFilter). COS-VND-001 to 005 (plans DP, DQ)
-        and 007 to 011 carry their own `code` and a `messageKey`; COS-VND-006 is still thrown as text, so its `code` is
-        `COS-GENERAL-404` and the COS-VND code leads the `message` (fix/vendor-reinvite-refuse; this schema used to
-        show NestJS's default body).
+        The QM-10 envelope every error leaves the API in (GlobalExceptionFilter). Every COS-VND code (001 to 011)
+        is the envelope's own `code`; 001 to 006 also carry a `messageKey` (plans DP, DQ, DR — they used to lead the
+        `message` text, with `code` `COS-GENERAL-<status>`), 007 to 011 none. This schema used to show NestJS's
+        default body.
       type: object
       required: [error]
       properties:

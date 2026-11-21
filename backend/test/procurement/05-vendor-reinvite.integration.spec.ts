@@ -372,9 +372,13 @@ describe('Vendor invitations: one e-mail, one vendor per tenant (real database)'
     const email = 'ploy.reinvite@example.com';
     const res = await invite(rfq, vendor, email);
     expect(res.status).toBe(404);
-    expect((res.body as { error: { message: string } }).error.message).toBe(
-      'COS-VND-006: Vendor not found',
-    );
+    expect(res.body).toMatchObject({
+      error: {
+        code: 'COS-VND-006',
+        message: 'Vendor not found',
+        messageKey: 'vendor.vendor.notFound',
+      },
+    }); // plan DR
     expect(await relationshipsOf(email)).toEqual([]);
     expect(await invitationsFor(rfq)).toBe(0);
   });

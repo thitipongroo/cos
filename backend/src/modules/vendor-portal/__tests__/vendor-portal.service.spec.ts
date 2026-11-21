@@ -98,7 +98,9 @@ describe('VendorPortalService', () => {
           email: 'a@b.co',
           displayName: 'ACME',
         }),
-      ).rejects.toThrow('COS-VND-006: Vendor not found');
+      ).rejects.toMatchObject({
+        response: { error: { code: 'COS-VND-006', messageKey: 'vendor.vendor.notFound' } },
+      }); // plan DR
       expect(repo.vendorExists).toHaveBeenCalledWith('someone-elses');
       expect(identities.upsertIdentity).not.toHaveBeenCalled();
       expect(identities.createRelationship).not.toHaveBeenCalled();

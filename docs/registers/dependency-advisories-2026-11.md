@@ -1602,6 +1602,18 @@ gate's isolated run) checks the hash was not tested either; it ran 12.18.0 with 
 
 ## Open
 
+- **Closed — `COS-VND-006` was the last vendor-portal code in the message text.** Fixed in plan DR (on the current
+  branch; plan DQ's rule, product owner 2026-11-21). `issueInvitation`'s `NotFoundException('COS-VND-006: Vendor not
+  found')` → `{ error: { code: 'COS-VND-006', message: 'Vendor not found', messageKey: 'vendor.vendor.notFound' } }`.
+  No other `COS-*` code is left in a message across `backend/src`. `error-codes.md` and `vendor.openapi.yaml` now say
+  every COS-VND code is the envelope's — 001 … 006 with a messageKey, 007 … 011 without (the OpenAPI text had said
+  all carried one; found by /doubt).
+  - Parked (low, found by /doubt): the vendor portal's un-coded refusals (bare messages, `COS-GENERAL-<status>`) in
+    `vendor-auth.guard.ts`, `magic-link.service.ts`, `vendor-portal.controller.ts` and the vendor PO lookup; the AI
+    gateway (`services/ai-gateway/main.py`) still puts `COS-FLAG-001: …` in its `detail`.
+  - Verified: vendor-portal unit (123), `test/procurement/05-vendor-reinvite` (14: the deactivated vendor's invite
+    answers the envelope — HEAD answers the message prefix). tsc, eslint, prettier, conformance, OpenAPI validity
+    and freshness, markdownlint.
 - **Closed — the vendor portal's other codes sat in the message text.** Fixed in plan DQ (on the current branch;
   product-owner decision 2026-11-21: `COS-VND-001` … `004` become the envelope's `error.code` with a messageKey, as
   plan DP did for `005`; the web vendor page unchanged — its own messages for these cases parked). Seven throws in
@@ -1619,7 +1631,7 @@ gate's isolated run) checks the hash was not tested either; it ran 12.18.0 with 
   - Parked: the vendor's RFQ page shows its general message for an expired, used or mismatched invitation; it could
     now say which by `error.code`.
   - Parked (found by /doubt; outside the 001–004 decision): `COS-VND-006` ("Vendor not found", `issueInvitation`) is
-    still carried in the message text.
+    still carried in the message text. Closed by plan DR.
 - **Closed — the vendor portal's "no active relationship" 403 had no real code.** Fixed in plan DP (on the current
   branch; product-owner decision 2026-11-21: both tiers answer the envelope `{ error: { code: 'COS-VND-005', message,
   messageKey } }`). Tier 1 (`vendor-portal.service.ts` `resolveVendorId`) put `COS-VND-005: …` in the message text,

@@ -71,7 +71,9 @@ export class VendorPortalService {
     // foreign key checks that name (it could not, for a tenant in a dedicated database), so it is checked
     // here, before anything is written.
     if (!(await this.repo.vendorExists(params.vendorId))) {
-      throw new NotFoundException('COS-VND-006: Vendor not found');
+      throw new NotFoundException(
+        vendorError('COS-VND-006', 'Vendor not found', 'vendor.vendor.notFound'), // plan DR
+      );
     }
 
     // One spelling per address: an e-mail differing only in case or surrounding spaces is the same person.
