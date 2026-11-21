@@ -1,4 +1,11 @@
 /**
+ * The buyer's account is read-only — its free trial ended (403 COS-PLAN-003, raised by the vendor guard on every
+ * vendor write). Plan DU (product owner 2026-11-21): both vendor forms say the buyer cannot take documents now and to
+ * contact them, without naming the buyer's trial.
+ */
+const BUYER_READ_ONLY = 'COS-PLAN-003';
+
+/**
  * What a refused quotation says on the vendor's RFQ page (fix/quotation-duplicate-and-closed-rfq). Pure, so it sits
  * inside the QM-1 gate.
  *
@@ -9,7 +16,13 @@
 export function quotationErrorKey(error: { code?: string } | null | undefined): string {
   if (error?.code === 'COS-VND-010') return 'vendor.quotationExists';
   if (error?.code === 'COS-VND-011') return 'vendor.rfqClosed';
+  if (error?.code === BUYER_READ_ONLY) return 'vendor.buyerReadOnly';
   return linkReasonKey(error) ?? 'vendor.submitFailed';
+}
+
+/** What a refused invoice says on `/vendor/invoices` (plan DU); anything else is the general line. */
+export function vendorInvoiceErrorKey(error: { code?: string } | null | undefined): string {
+  return error?.code === BUYER_READ_ONLY ? 'vendor.buyerReadOnly' : 'vendor.submitFailed';
 }
 
 /**

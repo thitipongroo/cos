@@ -8,6 +8,8 @@ import { DataTable, type Column } from '../../../components/ui/DataTable';
 import { useI18n } from '../../../i18n';
 import { useValidatedForm } from '../../../lib/forms';
 import { useVendorInvoices, useSubmitInvoice, type VendorInvoice } from '../../../lib/api/vendor';
+import { ApiError } from '../../../lib/api/client';
+import { vendorInvoiceErrorKey } from '../../../lib/vendorQuotation';
 
 /** Tier-2: submit + list the vendor's own invoices (§20.7.12). */
 export default function VendorInvoicesPage() {
@@ -135,7 +137,7 @@ export default function VendorInvoicesPage() {
         />
         {submit.isError && (
           <p role="alert" className="col-span-2 text-sm text-red-600">
-            {t('vendor.submitFailed')}
+            {t(vendorInvoiceErrorKey(submit.error instanceof ApiError ? submit.error : null))}
           </p>
         )}
         <button

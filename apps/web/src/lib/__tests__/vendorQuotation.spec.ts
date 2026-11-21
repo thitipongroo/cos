@@ -1,6 +1,11 @@
 import en from '../../i18n/en.json';
 import th from '../../i18n/th.json';
-import { offersVendorDashboard, quotationErrorKey, vendorLinkErrorKey } from '../vendorQuotation';
+import {
+  offersVendorDashboard,
+  quotationErrorKey,
+  vendorInvoiceErrorKey,
+  vendorLinkErrorKey,
+} from '../vendorQuotation';
 
 type Messages = { [key: string]: string | Messages };
 const lookup = (m: Messages, key: string): string | undefined => {
@@ -61,5 +66,30 @@ describe('offersVendorDashboard (plan DS)', () => {
     'vendor.submitFailed',
   ])('offers nothing for %s', (key) => {
     expect(offersVendorDashboard(key)).toBe(false);
+  });
+});
+
+// Plan DU (product owner 2026-11-21): the buyer's read-only account (an ended trial) refuses a vendor's write with 403
+// COS-PLAN-003; both forms say the buyer cannot take documents now — without naming the trial.
+describe('COS-PLAN-003 on the vendor forms (plan DU)', () => {
+  const readOnly = { code: 'COS-PLAN-003' };
+
+  it('the quotation and the invoice forms both say the buyer cannot take documents', () => {
+    expect(quotationErrorKey(readOnly)).toBe('vendor.buyerReadOnly');
+    expect(vendorInvoiceErrorKey(readOnly)).toBe('vendor.buyerReadOnly');
+  });
+
+  it('anything else on the invoice form is the general line', () => {
+    expect(vendorInvoiceErrorKey({ code: 'COS-GENERAL-500' })).toBe('vendor.submitFailed');
+    expect(vendorInvoiceErrorKey(null)).toBe('vendor.submitFailed');
+  });
+
+  it.each([
+    ['en', en],
+    ['th', th],
+  ])('%s carries the line, and it names neither the trial nor the plan', (_lang, dict) => {
+    const line = lookup(dict as Messages, 'vendor.buyerReadOnly');
+    expect(line).toBeTruthy();
+    expect(line).not.toMatch(/trial|plan|subscription|ทดลอง|แพ็กเกจ|แผน|สมัครสมาชิก/i);
   });
 });

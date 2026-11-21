@@ -1602,6 +1602,26 @@ gate's isolated run) checks the hash was not tested either; it ran 12.18.0 with 
 
 ## Open
 
+- **Closed — a vendor's quotation or invoice refused by the buyer's read-only account said "check your input".**
+  Fixed in plan DU (on the current branch; product-owner decisions 2026-11-21: both vendor forms, one TH/EN line that
+  does not name the buyer's trial). Closes the item plan DS parked. Measured on HEAD: `vendor-auth.guard.ts` refuses
+  a vendor write into an EXPIRED / PENDING_DELETION tenant with 403 `COS-PLAN-003` (`trialReadOnlyError`, both
+  tiers); the RFQ page's `quotationErrorKey` had no case for it and `/vendor/invoices` always showed
+  `vendor.submitFailed`.
+  - `lib/vendorQuotation.ts`: `quotationErrorKey` maps `COS-PLAN-003` to `vendor.buyerReadOnly`; new
+    `vendorInvoiceErrorKey` (that, else `vendor.submitFailed`), used by `/vendor/invoices`. The line (EN "This
+    buyer's account can't accept documents right now. Please contact the buyer.", and TH) — no dashboard link:
+    nothing the vendor can do there.
+  - Verified: apps/web jest (545: `COS-PLAN-003` → `vendor.buyerReadOnly` on both forms; anything else on the invoice
+    form → the general line; EN and TH carry a non-empty line naming neither the trial nor the plan); on HEAD four of
+    them fail. tsc, eslint, prettier, markdownlint. Not opened in a browser. /doubt (no high or medium): the Thai
+    line reworded ("ไม่สามารถ…ได้ในขณะนี้", not "ยัง…ไม่ได้", which reads as pending), the language test tightened.
+  - Parked (low, backend ordering — not in this change): tier 1 checks the buyer's read-only state before the
+    service's single-use check, so an already-answered link submitted to a read-only buyer reads "cannot accept
+    documents" rather than "already answered"; and before any relationship check, so a vendor whose relationship
+    ended can learn the buyer's plan state (tier 2 checks the relationship first for that reason). The invoice form
+    still says "check your input" for its other refusals (`COS-VND-005`, no session). For a PENDING_DELETION tenant
+    "right now" suggests a pause.
 - **Closed — a fully paid vendor invoice stayed APPROVED.** Fixed in plan DT (on the current branch; product-owner
   decisions 2026-11-21: the invoice becomes PAID when approving a payment brings its PROCESSED payments to the
   invoice's amount — PENDING payments do not count; no new event). Closes the decision plan DE left open. Measured on
@@ -1671,9 +1691,9 @@ gate's isolated run) checks the hash was not tested either; it ran 12.18.0 with 
     reorder the checks): `vendor.linkExpired` now says "if you already answered, see your quotation on the vendor
     dashboard; if not, ask the buyer", and both "expired" and "already answered" link `/vendor`, on opening and on
     submitting (`offersVendorDashboard`, unit-tested).
-  - Parked (low): a trial-ended tenant's 403 `COS-PLAN-003` on submit still reads "check your input"; a 401 carrying a
-    COS-VND code is retried once by the web's query retry (plan DL keeps 401 retryable) — the reason shows a moment
-    later.
+  - Parked (low): a trial-ended tenant's 403 `COS-PLAN-003` on submit still reads "check your input" (closed by plan
+    DU); a 401 carrying a COS-VND code is retried once by the web's query retry (plan DL keeps 401 retryable) — the
+    reason shows a moment later.
 - **Closed — `COS-VND-006` was the last vendor-portal code in the message text.** Fixed in plan DR (on the current
   branch; plan DQ's rule, product owner 2026-11-21). `issueInvitation`'s `NotFoundException('COS-VND-006: Vendor not
   found')` → `{ error: { code: 'COS-VND-006', message: 'Vendor not found', messageKey: 'vendor.vendor.notFound' } }`.
