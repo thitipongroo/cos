@@ -18,7 +18,7 @@
 // the app through the project's own purchase orders (D30, D37), and everything the drawing draws
 // (D31) — the delivery state, the "PO"/"GRN" words, the drawn source line (D33).
 
-import { render, fireEvent, waitFor } from '@testing-library/react-native';
+import { act, render, fireEvent, waitFor } from '@testing-library/react-native';
 import { Alert } from 'react-native';
 import { I18nProvider } from '../../../i18n';
 import { useProjectStore } from '../../../store/projectStore';
@@ -452,23 +452,71 @@ describe('InvoicesScreen', () => {
       } as never);
     });
 
-    it("lists only the invoices on that project's purchase orders", async () => {
+    // Plan DO (product owner 2026-11-21): the server filters by project — the list and every chip count are asked
+    // with `project_id`, and its rows are shown as given (an invoice beyond the tenant's first page included).
+    it("asks the server for the project's invoices and counts, and shows its rows as given", async () => {
       client.get.mockImplementation((path: string, params?: Record<string, string>) => {
         if (path.startsWith('/procurement/purchase-orders')) {
-          // The server scopes by project: only `po-mine` comes back for proj-1.
-          return Promise.resolve({ items: [po('mine')], total: 1 });
+          return Promise.resolve({ items: [], total: 0 }); // no PO of this project on the first page
         }
-        return route([invoice('mine'), invoice('other')], [])(path, params);
+        if (path === '/procurement/vendor-invoices' && params?.limit !== '1') {
+          // The server scoped it: only proj-1's invoice comes back.
+          return Promise.resolve({ items: [invoice('mine')], total: 1 });
+        }
+        return route([invoice('mine')], [])(path, params);
+      });
+      const { getByTestId } = await renderScreen();
+
+      await waitFor(() => expect(getByTestId('invoice-item-mine')).toBeTruthy());
+      expect(getByTestId('invoices-screen')).toHaveTextContent(/Skybridge Central/);
+      const invoiceCalls = client.get.mock.calls.filter(
+        (c) => String(c[0]) === '/procurement/vendor-invoices',
+      );
+      const list = invoiceCalls.find((c) => (c[1] as Record<string, string>).limit !== '1');
+      expect(list?.[1]).toEqual({ page: '1', limit: '100', project_id: 'proj-1' });
+      const counts = invoiceCalls.filter((c) => (c[1] as Record<string, string>).limit === '1');
+      expect(counts).toHaveLength(5);
+      for (const c of counts) expect((c[1] as Record<string, string>).project_id).toBe('proj-1');
+    });
+
+    // Plan DO (found by /doubt): a project change clears the previous project's invoices, and an older project's
+    // answer landing after the newer one's is not drawn.
+    it("switching project clears the old project's invoices and ignores its late answer", async () => {
+      let releaseOld: (v: unknown) => void = () => {};
+      client.get.mockImplementation((path: string, params?: Record<string, string>) => {
+        if (path.startsWith('/procurement/purchase-orders'))
+          return Promise.resolve({ items: [], total: 0 });
+        if (path === '/procurement/vendor-invoices' && params?.limit !== '1') {
+          if (params?.project_id === 'proj-1') {
+            // proj-1's list answers only when released — after proj-2's.
+            return new Promise((r) => (releaseOld = r));
+          }
+          return Promise.resolve({ items: [invoice('theirs')], total: 1 });
+        }
+        return route([], [])(path, params);
       });
       const { getByTestId, queryByTestId } = await renderScreen();
 
-      await waitFor(() => expect(getByTestId('invoice-item-mine')).toBeTruthy());
-      expect(queryByTestId('invoice-item-other')).toBeNull();
-      expect(getByTestId('invoices-screen')).toHaveTextContent(/Skybridge Central/);
-      const asked = client.get.mock.calls.find((c) =>
-        String(c[0]).startsWith('/procurement/purchase-orders'),
+      await act(async () => {
+        useProjectStore.setState({
+          active: { projectId: 'proj-2', projectCode: 'HBR', projectName: 'Harbour Lane' },
+        } as never);
+      });
+      await waitFor(() => expect(getByTestId('invoice-item-theirs')).toBeTruthy());
+
+      // proj-1's answer arrives late: it must not replace proj-2's rows.
+      await act(async () => {
+        releaseOld({ items: [invoice('mine')], total: 1 });
+      });
+      expect(queryByTestId('invoice-item-mine')).toBeNull();
+      expect(getByTestId('invoice-item-theirs')).toBeTruthy();
+      const counts = client.get.mock.calls.filter(
+        (c) =>
+          String(c[0]) === '/procurement/vendor-invoices' &&
+          (c[1] as Record<string, string>).limit === '1' &&
+          (c[1] as Record<string, string>).project_id === 'proj-2',
       );
-      expect(asked?.[1]).toEqual({ project_id: 'proj-1', page: '1', limit: '100' });
+      expect(counts).toHaveLength(5);
     });
 
     it("walks every page of the project's orders", async () => {
@@ -508,16 +556,15 @@ describe('InvoicesScreen', () => {
       ).toHaveLength(1);
     });
 
-    it("shows no invoices, rather than the tenant's, when the orders cannot be read", async () => {
+    it("still shows the project's invoices when its orders cannot be read (the cards name no PO)", async () => {
       client.get.mockImplementation((path: string, params?: Record<string, string>) =>
         path.startsWith('/procurement/purchase-orders')
           ? Promise.reject(new Error('offline'))
           : route()(path, params),
       );
-      const { getByTestId, queryByTestId } = await renderScreen();
+      const { getByTestId } = await renderScreen();
 
-      await waitFor(() => expect(getByTestId('invoices-empty')).toBeTruthy());
-      expect(queryByTestId('invoice-item-941')).toBeNull();
+      await waitFor(() => expect(getByTestId('invoice-item-941')).toBeTruthy());
     });
   });
 

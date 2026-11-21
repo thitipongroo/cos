@@ -1602,6 +1602,23 @@ gate's isolated run) checks the hash was not tested either; it ran 12.18.0 with 
 
 ## Open
 
+- **Closed — the app's invoices screen missed a project's invoices beyond the tenant's first page, and counted the
+  tenant's.** Fixed in plan DO (on the current branch; product-owner decision 2026-11-21: the list and the chip
+  counts are the chosen project's, the tenant's with none — replacing D30, set when the endpoint had no project
+  filter). Closes the item plan DC parked. `apps/mobile/src/app/(app)/invoices.tsx` asked the tenant's first 100
+  invoices and kept those on the project's purchase orders; the five counts were tenant-wide.
+  - `listVendorInvoices` (`src/api/procurement.ts`) takes `projectId` → `project_id`. The screen passes the active
+    project to the list and to every count, shows the server's rows as given, and reloads the counts on a project
+    change; the project's PO index is still read to name each card's PO (a card names none if it fails, the list
+    still shows). Header comment and `docs/screens/android/README.md` updated.
+  - A project change clears the previous project's rows, total and counts, and only the latest list and counts
+    requests are drawn (a sequence per kind) — the first version left the old project's invoices under the new bar
+    while loading, when offline, and when an older answer landed last (found by /doubt; HEAD's PO-index filter had
+    hidden them).
+  - Verified: the screen's render spec (30: the list and all five counts asked with `project_id`, its rows shown as
+    given; the list still shown when the orders cannot be read — HEAD's screen fails both; a project switch with the
+    old project's answer released last shows only the new project's — fails without the sequence guard), apps/mobile
+    jest (unit and render), tsc, eslint, prettier, markdownlint. No device run.
 - **Closed — a DRAFT billing could be issued after its contract was terminated.** Fixed in plan DN (on the current
   branch; product-owner decision 2026-11-21: approval needs an ACTIVE contract, as creation does since plan DH; ISSUED
   billings untouched). Closes the item plan DH's /doubt parked. Measured on HEAD (`test/finance/03`): a DRAFT billing
@@ -1821,7 +1838,7 @@ gate's isolated run) checks the hash was not tested either; it ran 12.18.0 with 
     spec's, on a reused database — found by /doubt) is skipped for the next. Parsed by Playwright (`--list`), not
     run here.
   - Parked: the mobile invoices screen still filters by project on the client (all the project's POs, then a match)
-    and counts the tenant's; it could use `?project_id=` now (its header comment says so).
+    and counts the tenant's; it could use `?project_id=` now (its header comment says so). Closed by plan DO.
   - Verified: procurement unit (372: the SQL joins and filters rows and count; the controller passes `project_id`),
     `test/finance/03` (33: two projects' invoices, `?project_id=` returns only one's, each row carrying it; a
     non-UUID → 400 — HEAD fails both), apps/web jest (498). tsc, eslint, prettier, OpenAPI validity and freshness,

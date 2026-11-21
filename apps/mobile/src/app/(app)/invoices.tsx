@@ -15,18 +15,16 @@
 //   · the disputed card carries the drawing's two buttons — chat history and "เปิดข้อพิพาท" — and no
 //     telemetry strip, as drawn
 //
-// THE PROJECT FILTER IS THE APP'S, NOT THE SERVER'S (D30, D37). When this screen was written,
-// `GET /procurement/vendor-invoices` filtered by `po_id` or `status` only, so the screen fetches the
-// ACTIVE PROJECT's purchase orders (`GET /procurement/purchase-orders?project_id=`, every page, through
-// `projectPoIndex`) and keeps the invoices whose `po_id` is one of them. The chip counts stay the
-// TENANT's (D30). Since 2026-11-21 (plan DC) the endpoint takes `?project_id=` and each row carries it,
-// so both could move to the server; this screen has not been switched (recorded in the register). With no project
-// chosen the bar renders nothing and the list is the tenant's, as before.
+// THE PROJECT FILTER IS THE SERVER'S (plan DO, 2026-11-21; replacing D30's device-side filter and tenant-wide
+// counts, set when `GET /procurement/vendor-invoices` had no project filter). The list and the five chip counts
+// are asked with `?project_id=` (plan DC) — so an invoice of the project beyond the tenant's first page is no longer
+// missed, and the counts are the project's, as the list is. The ACTIVE PROJECT's purchase orders
+// (`projectPoIndex`) are still read, to name each card's PO. With no project chosen the bar renders nothing and
+// the list and counts are the tenant's, as before.
 // The 2026-09-08 header said "the drawing does not have a project bar"; the Stitch drawing does.
 //
 // WHAT IS REAL.
-//   The list           `GET /procurement/vendor-invoices?status=`. FILTERED BY THE SERVER, then
-//                      narrowed to the project on the app.
+//   The list           `GET /procurement/vendor-invoices?status=&project_id=`. FILTERED BY THE SERVER.
 //   The chip counts    the server's own `COUNT(*)`, one `limit=1` request per status reading
 //                      `total`. Counting the rows this screen received would count the page — the
 //                      endpoint caps at 100.
@@ -51,7 +49,7 @@
 // `/ai/transcribe` and no OCR), "ดูประวัติแชท" (an invoice carries a note, not a thread) and
 // "เปิดข้อพิพาท" on a card that is ALREADY disputed (the server refuses a second dispute).
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -122,8 +120,7 @@ export default function InvoicesScreen(): React.JSX.Element {
   const [rows, setRows] = useState<VendorInvoice[]>([]);
   const [total, setTotal] = useState(0);
   const [counts, setCounts] = useState<Record<string, number> | null>(null);
-  // Null until the index for the CURRENT project has landed — a list filtered through the previous
-  // project's orders would be the wrong project's list.
+  // The project's purchase orders, to name each card's PO — null until the CURRENT project's index has landed.
   const [pos, setPos] = useState<Map<string, PurchaseOrderRow> | null>(null);
   const [byDueDate, setByDueDate] = useState(true);
   const [loading, setLoading] = useState(true);
@@ -133,18 +130,36 @@ export default function InvoicesScreen(): React.JSX.Element {
   const [noteSaved, setNoteSaved] = useState(false);
 
   /** The visible list, for whichever chip is on. The status goes to the server. */
+  // Only the latest request's answer is drawn: switching project (or chip) quickly must not let an older answer —
+  // another project's rows — land last under the new project's bar (found by /doubt).
+  const listSeq = useRef(0);
+  const countSeq = useRef(0);
+
+  // A project change clears what the previous project showed, so its invoices never sit under the new bar while
+  // the new answer loads — or stay there if it fails (offline).
+  useEffect(() => {
+    setRows([]);
+    setTotal(0);
+    setCounts(null);
+  }, [projectId]);
+
   const load = useCallback(async (): Promise<void> => {
+    const seq = ++listSeq.current;
     setLoading(true);
     try {
-      const page = await listVendorInvoices(filter === '' ? {} : { status: filter });
+      const page = await listVendorInvoices({
+        ...(filter === '' ? {} : { status: filter }),
+        projectId: projectId || undefined,
+      });
+      if (seq !== listSeq.current) return;
       setRows(page.items);
       setTotal(page.total);
     } catch {
       /* offline — the rows already on screen are what it shows */
     } finally {
-      setLoading(false);
+      if (seq === listSeq.current) setLoading(false);
     }
-  }, [filter]);
+  }, [filter, projectId]);
 
   useEffect(() => {
     void load();
@@ -152,12 +167,13 @@ export default function InvoicesScreen(): React.JSX.Element {
 
   /**
    * The chip counts — five `limit=1` requests read for their `total`, the server's `COUNT(*)` over
-   * the whole status. Tenant-wide (D30): the endpoint has no project filter to count with.
+   * the whole status — for the chosen project, as the list (plan DO); the tenant's with none.
    */
   const loadCounts = useCallback(async (): Promise<void> => {
+    const seq = ++countSeq.current;
     const settled = await Promise.all(
       STATUSES.map((status) =>
-        listVendorInvoices({ status, limit: 1 })
+        listVendorInvoices({ status, limit: 1, projectId: projectId || undefined })
           .then((page) => [status, page.total] as const)
           .catch(() => [status, -1] as const),
       ),
@@ -165,8 +181,8 @@ export default function InvoicesScreen(): React.JSX.Element {
     // A status whose count could not be read carries no number rather than a zero it did not get.
     const next: Record<string, number> = {};
     for (const [status, count] of settled) if (count >= 0) next[status] = count;
-    setCounts(next);
-  }, []);
+    if (seq === countSeq.current) setCounts(next);
+  }, [projectId]);
 
   useEffect(() => {
     void loadCounts();
@@ -236,17 +252,13 @@ export default function InvoicesScreen(): React.JSX.Element {
   }, [detail, noteText]);
 
   /**
-   * The rows this screen shows: the project's, sorted for reading.
-   *
-   * With a project chosen and its index not yet in, NOTHING — see `pos`. Both sort keys are on the
-   * rows in hand, so sorting is a re-read, not a re-fetch.
+   * The rows this screen shows, sorted for reading — already the project's, as the server answered them (plan
+   * DO). Both sort keys are on the rows in hand, so sorting is a re-read, not a re-fetch.
    */
   const visible = useMemo(() => {
-    const mine =
-      projectId === '' ? rows : pos === null ? [] : rows.filter((row) => pos.has(row.po_id));
     const key = byDueDate ? 'due_date' : 'invoice_date';
-    return [...mine].sort((a, b) => a[key].localeCompare(b[key]));
-  }, [rows, pos, projectId, byDueDate]);
+    return [...rows].sort((a, b) => a[key].localeCompare(b[key]));
+  }, [rows, byDueDate]);
 
   /** How many of the visible rows are due today or already past it, and not yet paid. */
   const urgent = useMemo(() => {
@@ -294,7 +306,7 @@ export default function InvoicesScreen(): React.JSX.Element {
     );
   }
 
-  const waiting = loading || (projectId !== '' && pos === null);
+  const waiting = loading;
 
   return (
     <View testID="invoices-screen" style={styles.page}>

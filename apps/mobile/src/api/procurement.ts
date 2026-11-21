@@ -226,13 +226,15 @@ export interface VendorInvoicePage {
  * than counting the rows it happened to receive.
  */
 export async function listVendorInvoices(
-  opts: { status?: string; limit?: number } = {},
+  opts: { status?: string; limit?: number; projectId?: string } = {},
 ): Promise<VendorInvoicePage> {
   const query: Record<string, string> = {
     page: '1',
     limit: String(opts.limit ?? INVOICE_PAGE),
   };
   if (opts.status !== undefined) query.status = opts.status;
+  // The invoice's PO's project, filtered by the server (plan DC; the invoices screen since plan DO).
+  if (opts.projectId) query.project_id = opts.projectId;
   const res = await get<{ items?: VendorInvoice[]; total?: number } | VendorInvoice[]>(
     '/procurement/vendor-invoices',
     query,
