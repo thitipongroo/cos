@@ -59,9 +59,9 @@ export class MagicLinkService {
 
   /** Verify a Tier-1 token: checks signature + expiry, returns the tenant + invitation it carries. */
   verifyInvitationToken(token: string): InvitationClaims {
-    const payload = this.verify(token);
+    const payload = this.verify(token, 'invitation');
     if (typeof payload['t'] !== 'string' || typeof payload['i'] !== 'string') {
-      throw new UnauthorizedException('Malformed invitation token');
+      throw invitationRefused('invalid', 'Malformed invitation token');
     }
     return { tenantId: payload['t'], invitationId: payload['i'] };
   }
@@ -74,7 +74,7 @@ export class MagicLinkService {
 
   /** Verify a Tier-2 token: returns the vendor_identity_id it carries. */
   verifySessionToken(token: string): string {
-    const payload = this.verify(token);
+    const payload = this.verify(token, 'session');
     if (typeof payload['v'] !== 'string') {
       throw new UnauthorizedException('Malformed session token');
     }
@@ -94,28 +94,51 @@ export class MagicLinkService {
     return `${body}.${sig}`;
   }
 
-  private verify(token: string): Record<string, unknown> {
+  /**
+   * An invitation link refused here answers with its COS-VND code (plan DS, product owner 2026-11-21): this check runs
+   * in the guard before the service's own, so an expired link never reached `COS-VND-004` — the vendor's page could
+   * not say "expired". A session token's refusals stay bare 401s.
+   */
+  private verify(token: string, kind: 'invitation' | 'session'): Record<string, unknown> {
+    const refuse = (reason: 'expired' | 'invalid', message: string) =>
+      kind === 'invitation'
+        ? invitationRefused(reason, message)
+        : new UnauthorizedException(message);
     const parts = token.split('.');
     if (parts.length !== 2) {
-      throw new UnauthorizedException('Malformed token');
+      throw refuse('invalid', 'Malformed token');
     }
     const [body, sig] = parts;
     const expected = createHmac('sha256', this.secret).update(body).digest('base64url');
     const sigBuf = Buffer.from(sig);
     const expBuf = Buffer.from(expected);
     if (sigBuf.length !== expBuf.length || !timingSafeEqual(sigBuf, expBuf)) {
-      throw new UnauthorizedException('Invalid token signature');
+      throw refuse('invalid', 'Invalid token signature');
     }
     let payload: Record<string, unknown>;
     try {
       payload = JSON.parse(Buffer.from(body, 'base64url').toString('utf8'));
     } catch {
       /* istanbul ignore next -- defensive: a signature-valid token always carries JSON we wrote */
-      throw new UnauthorizedException('Malformed token payload');
+      throw refuse('invalid', 'Malformed token payload');
     }
     if (typeof payload['exp'] !== 'number' || payload['exp'] < Date.now()) {
-      throw new UnauthorizedException('Token expired');
+      throw refuse('expired', 'Token expired');
     }
     return payload;
   }
+}
+
+/** 401 for an invitation link: `COS-VND-004` when it has expired, `COS-VND-002` when it is not a valid link (plan DS). */
+function invitationRefused(reason: 'expired' | 'invalid', message: string): UnauthorizedException {
+  return new UnauthorizedException({
+    error:
+      reason === 'expired'
+        ? {
+            code: 'COS-VND-004',
+            message: 'Invitation expired',
+            messageKey: 'vendor.invitation.expired',
+          }
+        : { code: 'COS-VND-002', message, messageKey: 'vendor.invitation.tokenMismatch' },
+  });
 }

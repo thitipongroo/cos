@@ -29,6 +29,7 @@ import {
 import { AppModule } from '../../src/app.module';
 import { JwtAuthGuard } from '../../src/shared/guards/jwt-auth.guard';
 import { GlobalExceptionFilter } from '../../src/shared/filters/http-exception.filter';
+import { MagicLinkService } from '../../src/modules/vendor-portal/magic-link.service';
 
 const TENANT_ID = 'cccc1111-1111-4000-8000-000000000105';
 const USER_ID = 'cccc2222-2222-4000-8000-000000000105';
@@ -304,6 +305,37 @@ describe('Vendor invitations: one e-mail, one vendor per tenant (real database)'
       );
       expect(Number(identities[0]!.n)).toBe(1);
     }
+  });
+
+  // Plan DS (product owner 2026-11-21): the guard's own token check answers an invitation link with its code —
+  // COS-VND-004 expired, COS-VND-002 not a valid link — so the vendor's page can tell them apart.
+  it('an expired or tampered invitation link: 401 COS-VND-004 / COS-VND-002', async () => {
+    const rfq = await seedRfq();
+    const issued = await invite(rfq, await createVendor(), 'ken.expired@example.com');
+    expect(issued.status).toBe(201);
+    const token = (issued.body as { magicLinkToken: string }).magicLinkToken;
+    const [body, sig] = token.split('.');
+    const claims = JSON.parse(Buffer.from(body!, 'base64url').toString('utf8')) as Record<
+      string,
+      unknown
+    >;
+    // The same claims, expired, signed with the server's own key (MagicLinkService's private signer).
+    const magicLink = app.get(MagicLinkService) as unknown as {
+      sign(p: Record<string, unknown>): string;
+    };
+    const expired = magicLink.sign({ ...claims, exp: Date.now() - 1000 });
+    const tampered = `${body}.${sig![0] === 'A' ? 'B' : 'A'}${sig!.slice(1)}`;
+
+    const late = await http().get(`/api/v1/vendor/rfq/${encodeURIComponent(expired)}`);
+    expect(late.status).toBe(401);
+    expect(late.body).toMatchObject({
+      error: { code: 'COS-VND-004', messageKey: 'vendor.invitation.expired' },
+    });
+    const forged = await http().get(`/api/v1/vendor/rfq/${encodeURIComponent(tampered)}`);
+    expect(forged.status).toBe(401);
+    expect(forged.body).toMatchObject({
+      error: { code: 'COS-VND-002', messageKey: 'vendor.invitation.tokenMismatch' },
+    });
   });
 
   // fix/vendor-open-rfq-relationship: opening an RFQ through its magic link now needs the same standing as quoting.

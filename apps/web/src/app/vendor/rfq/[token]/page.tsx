@@ -8,7 +8,11 @@ import { TextInputField } from '../../../../components/form/TextInputField';
 import { useI18n } from '../../../../i18n';
 import { useVendorRfq, useSubmitQuotation } from '../../../../lib/api/vendor';
 import { useValidatedForm } from '../../../../lib/forms';
-import { quotationErrorKey } from '../../../../lib/vendorQuotation';
+import {
+  offersVendorDashboard,
+  quotationErrorKey,
+  vendorLinkErrorKey,
+} from '../../../../lib/vendorQuotation';
 import { ApiError } from '../../../../lib/api/client';
 
 /** Tier-1 magic-link page (§20.7.12): open an invited RFQ and submit a quotation — no account. */
@@ -36,7 +40,21 @@ export default function VendorRfqPage(props: { params: Promise<{ token: string }
   });
 
   if (rfq.isLoading) return <p>{t('common.loading')}</p>;
-  if (rfq.isError || !rfq.data) return <p className="text-red-600">{t('vendor.rfqUnavailable')}</p>;
+  if (rfq.isError || !rfq.data) {
+    // Why the link would not open — expired, already answered, not valid, or the relationship ended (plan DS).
+    const reason = vendorLinkErrorKey(rfq.error instanceof ApiError ? rfq.error : null);
+    return (
+      <div className="space-y-2">
+        <p className="text-red-600">{t(reason)}</p>
+        {offersVendorDashboard(reason) && (
+          // The way to the answer already given (found by /doubt: the line pointed to a dashboard it did not link).
+          <Link href="/vendor" className="text-sm text-blue-600 underline">
+            {t('vendor.goToDashboard')}
+          </Link>
+        )}
+      </div>
+    );
+  }
 
   if (submit.isSuccess) {
     return (
@@ -104,11 +122,24 @@ export default function VendorRfqPage(props: { params: Promise<{ token: string }
             />
           )}
         />
-        {submit.isError && (
-          <p role="alert" className="text-sm text-red-600">
-            {t(quotationErrorKey(submit.error instanceof ApiError ? submit.error : null))}
-          </p>
-        )}
+        {submit.isError &&
+          (() => {
+            const reason = quotationErrorKey(
+              submit.error instanceof ApiError ? submit.error : null,
+            );
+            return (
+              <div className="space-y-1">
+                <p role="alert" className="text-sm text-red-600">
+                  {t(reason)}
+                </p>
+                {offersVendorDashboard(reason) && (
+                  <Link href="/vendor" className="text-sm text-blue-600 underline">
+                    {t('vendor.goToDashboard')}
+                  </Link>
+                )}
+              </div>
+            );
+          })()}
         <button
           type="submit"
           disabled={isSubmitting || submit.isPending}

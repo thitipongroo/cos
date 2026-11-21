@@ -33,39 +33,65 @@ describe('MagicLinkService', () => {
       expect(() => svc.verifyInvitationToken('only-one-part')).toThrow(UnauthorizedException);
     });
 
-    it('rejects a signature of different length', () => {
-      const [body] = svc.issueInvitationToken('t', 'i').token.split('.');
-      expect(() => svc.verifyInvitationToken(`${body}.short`)).toThrow('Invalid token signature');
+    // Plan DS (product owner 2026-11-21): an invitation link's refusals carry their COS-VND code — 004 when expired,
+    // 002 when not a valid link — so the vendor's page can say which.
+    const refusal = (fn: () => unknown) => {
+      try {
+        fn();
+      } catch (e) {
+        expect(e).toBeInstanceOf(UnauthorizedException);
+        return (e as UnauthorizedException).getResponse();
+      }
+      throw new Error('expected a refusal');
+    };
+    const code = (c: string, messageKey: string) => ({
+      error: expect.objectContaining({ code: c, messageKey }),
     });
 
-    it('rejects a tampered signature of equal length', () => {
+    it('rejects a signature of different length — COS-VND-002', () => {
+      const [body] = svc.issueInvitationToken('t', 'i').token.split('.');
+      expect(refusal(() => svc.verifyInvitationToken(`${body}.short`))).toEqual(
+        code('COS-VND-002', 'vendor.invitation.tokenMismatch'),
+      );
+    });
+
+    it('rejects a tampered signature of equal length — COS-VND-002', () => {
       const [body, sig] = svc.issueInvitationToken('t', 'i').token.split('.');
       const tampered = sig[0] === 'A' ? `B${sig.slice(1)}` : `A${sig.slice(1)}`;
-      expect(() => svc.verifyInvitationToken(`${body}.${tampered}`)).toThrow(
-        'Invalid token signature',
+      expect(refusal(() => svc.verifyInvitationToken(`${body}.${tampered}`))).toEqual(
+        code('COS-VND-002', 'vendor.invitation.tokenMismatch'),
       );
     });
 
-    it('rejects when exp is missing/not a number', () => {
-      expect(() => svc.verifyInvitationToken(sign({ t: 'x', i: 'y' }))).toThrow('Token expired');
-    });
-
-    it('rejects an expired token', () => {
-      expect(() =>
-        svc.verifyInvitationToken(sign({ t: 'x', i: 'y', exp: Date.now() - 1 })),
-      ).toThrow('Token expired');
-    });
-
-    it('rejects when claims are the wrong type', () => {
-      expect(() => svc.verifyInvitationToken(sign({ t: 1, i: 2, exp: Date.now() + 1000 }))).toThrow(
-        'Malformed invitation token',
+    it('rejects when exp is missing/not a number — COS-VND-004', () => {
+      expect(refusal(() => svc.verifyInvitationToken(sign({ t: 'x', i: 'y' })))).toEqual(
+        code('COS-VND-004', 'vendor.invitation.expired'),
       );
+    });
+
+    it('rejects an expired token — COS-VND-004', () => {
+      expect(
+        refusal(() => svc.verifyInvitationToken(sign({ t: 'x', i: 'y', exp: Date.now() - 1 }))),
+      ).toEqual(code('COS-VND-004', 'vendor.invitation.expired'));
+    });
+
+    it('rejects when claims are the wrong type — COS-VND-002', () => {
+      expect(
+        refusal(() => svc.verifyInvitationToken(sign({ t: 1, i: 2, exp: Date.now() + 1000 }))),
+      ).toEqual(code('COS-VND-002', 'vendor.invitation.tokenMismatch'));
     });
   });
 
   describe('session token', () => {
     it('round-trips a vendor_identity_id', () => {
       expect(svc.verifySessionToken(svc.issueSessionToken('vid-1'))).toBe('vid-1');
+    });
+
+    // Plan DS: only invitation links carry COS-VND codes; a session token's refusals stay bare.
+    it('an expired session token is still a bare 401', () => {
+      expect(() => svc.verifySessionToken(sign({ v: 'vid', exp: Date.now() - 1 }))).toThrow(
+        'Token expired',
+      );
     });
 
     it('rejects a session token without v', () => {

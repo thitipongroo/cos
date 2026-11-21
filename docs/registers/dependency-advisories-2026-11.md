@@ -1602,6 +1602,37 @@ gate's isolated run) checks the hash was not tested either; it ran 12.18.0 with 
 
 ## Open
 
+- **Closed — the vendor's RFQ page gave one message for every refused link.** Fixed in plan DS (on the current
+  branch; product-owner decision 2026-11-21: four cases get their own TH/EN line, with the next step, on opening the
+  RFQ and on submitting to it). `apps/web/src/app/vendor/rfq/[token]/page.tsx` showed "This RFQ link is invalid or
+  expired" for any failed open, and "Submission failed. Please check your input." for any refused quotation but
+  010 / 011 — wrong for an expired or already-answered invitation.
+  - `lib/vendorQuotation.ts`: `vendorLinkErrorKey` (the open) and `quotationErrorKey` (the submit) map `COS-VND-004`
+    → `vendor.linkExpired`, `003` → `vendor.linkUsed`, `001` / `002` → `vendor.linkInvalid`, `005` →
+    `vendor.relationshipEnded`; anything else keeps its general line. Possible since plans DP–DR made every COS-VND
+    code the envelope's `error.code`.
+  - The guard checks the link's signed expiry and signature (`MagicLinkService.verifyInvitationToken`) before the
+    service's own checks, and answered a bare 401 (`COS-GENERAL-401`) — so an expired link never reached `COS-VND-004`
+    and the page could not say "expired" (found by /doubt; product owner: fix the backend in this round). An
+    invitation link's refusals there now carry `COS-VND-004` (expired) or `COS-VND-002` (bad signature, malformed);
+    a session token's stay bare 401s. `error-codes.md` rows and the vendor OpenAPI `Unauthorized` text say so.
+  - `vendor.linkUsed` pointed to a dashboard it did not link, and a vendor on another device has no session there:
+    the page now links `/vendor` under it and the line says "on the device you answered from, or ask the buyer"
+    (found by /doubt).
+  - Verified: `vendorQuotation.spec` (each code to its key in both languages, on both paths; anything else to the
+    general lines — with the mapping off, ten fail; the old case pinning 003 to the general line now uses 009);
+    `magic-link.service.spec` (expired → 004, bad or tampered signature and malformed claims → 002, an expired
+    session token still a bare 401); `test/procurement/05` (15: an expired and a tampered link opened through the API
+    → 401 `COS-VND-004` / `COS-VND-002` — HEAD's service answers `COS-GENERAL-401`); apps/web jest (540), backend
+    unit, tsc, eslint, prettier, OpenAPI validity and freshness, markdownlint. No browser run.
+  - An answered invitation opened after its expiry reads "expired" (the guard's expiry check runs before the
+    service knows it was answered — found by /doubt's second cycle; product owner: reword and link rather than
+    reorder the checks): `vendor.linkExpired` now says "if you already answered, see your quotation on the vendor
+    dashboard; if not, ask the buyer", and both "expired" and "already answered" link `/vendor`, on opening and on
+    submitting (`offersVendorDashboard`, unit-tested).
+  - Parked (low): a trial-ended tenant's 403 `COS-PLAN-003` on submit still reads "check your input"; a 401 carrying a
+    COS-VND code is retried once by the web's query retry (plan DL keeps 401 retryable) — the reason shows a moment
+    later.
 - **Closed — `COS-VND-006` was the last vendor-portal code in the message text.** Fixed in plan DR (on the current
   branch; plan DQ's rule, product owner 2026-11-21). `issueInvitation`'s `NotFoundException('COS-VND-006: Vendor not
   found')` → `{ error: { code: 'COS-VND-006', message: 'Vendor not found', messageKey: 'vendor.vendor.notFound' } }`.
@@ -1629,7 +1660,7 @@ gate's isolated run) checks the hash was not tested either; it ran 12.18.0 with 
     `03` (portal paths), backend unit, tsc, eslint, prettier, conformance, OpenAPI validity and freshness,
     markdownlint.
   - Parked: the vendor's RFQ page shows its general message for an expired, used or mismatched invitation; it could
-    now say which by `error.code`.
+    now say which by `error.code`. Closed by plan DS.
   - Parked (found by /doubt; outside the 001–004 decision): `COS-VND-006` ("Vendor not found", `issueInvitation`) is
     still carried in the message text. Closed by plan DR.
 - **Closed — the vendor portal's "no active relationship" 403 had no real code.** Fixed in plan DP (on the current

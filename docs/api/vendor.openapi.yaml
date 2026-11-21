@@ -262,7 +262,9 @@ components:
 
   responses:
     Unauthorized:
-      description: Missing/invalid token or expired invitation
+      description: >-
+        An invitation link expired (`COS-VND-004`) or not valid (`COS-VND-002` — bad signature, malformed, or not
+        the stored one), plan DS; a missing or invalid vendor session (no COS code)
       content:
         application/json:
           schema: { $ref: '#/components/schemas/ErrorResponse' }

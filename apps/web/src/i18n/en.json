@@ -1924,7 +1924,11 @@
     "submittedAt": "Submitted",
     "noQuotations": "No quotations yet.",
     "invitedRfqs": "Invited RFQs",
-    "noInvitedRfqs": "No invited RFQs yet."
+    "noInvitedRfqs": "No invited RFQs yet.",
+    "linkExpired": "This invitation has expired. If you already answered it, see your quotation on the vendor dashboard; if not, ask the buyer for a new link.",
+    "linkUsed": "This invitation has already been answered. See your quotation on the vendor dashboard, on the device you answered from, or ask the buyer.",
+    "linkInvalid": "This link is not valid. Use the link from the buyer's latest e-mail, or ask them for a new one.",
+    "relationshipEnded": "You no longer have an active trading relationship with this buyer. Contact the buyer if this is a mistake."
   },
   "voice": {
     "tapToSpeak": "Tap to speak",
