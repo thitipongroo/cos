@@ -1602,6 +1602,30 @@ gate's isolated run) checks the hash was not tested either; it ran 12.18.0 with 
 
 ## Open
 
+- **Closed — the web's first requests on a page load went out with no token.** Fixed in plan DM (on the current
+  branch; product-owner decision 2026-11-21: the request waits for a loading session; no layout change). Closes the
+  item plan DL parked. `SessionProvider` gets no session from the server, so on a hard load (F5, a bookmark, the
+  sign-in redirect) `useSession()` is `loading` and `useApi` / `useUpload` / `useOfflineApi` sent at once with no
+  Authorization header — a 401 per query, recovered only by the retry plan DL kept for 401.
+  - `lib/api/client.ts` `tokenFor(status, token, waitForSession)`: loading with no token → wait for the provider's
+    own session fetch to settle (`sessionSettled`, released by `SessionSettledReporter` in `providers.tsx` when
+    `useSession()` leaves `loading`) and use its token; otherwise the token in hand (none when signed out). The
+    three hooks resolve their token through it at call time. A wait gives up after 10 s (`SESSION_WAIT_MS`) and
+    sends with no token (a 401, which plan DL retries), so a stalled session fetch cannot hold requests forever.
+  - The first version read the session itself (`getSession()`): a second `/api/auth/session` request alongside the
+    provider's. With an expired access token both run the refresh, and the backend's refresh tokens are single-use
+    (Keycloak `revokeRefreshToken`) — the losing response's cookie could carry a revoked token and sign the user out
+    (found by /doubt, from the source; not reproduced). Waiting on the provider's own fetch makes no extra request.
+  - Verified: `tokenFor.spec` (loading waits and uses the token; signed in and signed out wait for nothing; every
+    waiter released with the settled token; at once after settling; the timeout) — sending the token in hand at once
+    fails the first case; a source test holds the wiring (the reporter mounted inside `SessionProvider`; the three
+    hooks waiting through `sessionSettled` — apps/web's jest has no component tests by design), and fails with the
+    reporter removed; apps/web jest (523), tsc, eslint, markdownlint. No browser run. A second /doubt cycle checked
+    the ordering (`loading` with no token only before the first fetch in next-auth 4.24; sign-in and sign-out
+    reload the page) and found nothing more.
+  - Parked (low): `useApi`'s identity changes when `loading` becomes `authenticated`, so the two pages whose effects
+    depend on it (file view, PM analytics) send their request twice on a hard load — as many as before, the first no
+    longer a 401.
 - **Closed — the web retried every query the server refused.** Fixed in plan DL (on the current branch;
   product-owner decision 2026-11-21: app-wide, a 4xx is not retried except 401, 408 and 429; a 5xx or a network
   failure keeps one retry). A low item from an earlier /doubt (kept in the session's list, not in this register):
@@ -1614,7 +1638,7 @@ gate's isolated run) checks the hash was not tested either; it ran 12.18.0 with 
     hard load (F5, a bookmark, the sign-in redirect) a query can go out with no token and answer 401; its retry
     re-reads the query's current fetcher, which by then carries the token. With 401 not retried the page showed its
     error after every reload (reproduced against query-core). Parked: that first unauthenticated request itself —
-    pass the server session to `SessionProvider`, or hold queries until `status === 'authenticated'`.
+    pass the server session to `SessionProvider`, or hold queries until `status === 'authenticated'`. Closed by plan DM.
   - Verified: `queryRetry.spec` (400, 403, 404, 409, 422 not retried; 401, 408, 429, 500, 503 and a network failure
     retried once, not twice — the old always-once rule fails the five 4xx cases), apps/web jest, tsc, eslint,
     markdownlint. No browser run.

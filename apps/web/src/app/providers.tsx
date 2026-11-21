@@ -1,13 +1,14 @@
 'use client';
 
 import { MutationCache, QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { SessionProvider } from 'next-auth/react';
-import { useState } from 'react';
+import { SessionProvider, useSession } from 'next-auth/react';
+import { useEffect, useState } from 'react';
 import { I18nProvider as AriaI18nProvider } from 'react-aria-components';
 import { I18nProvider, useI18n } from '../i18n';
 import { toBcp47 } from '../lib/locale';
 import { isTrialReadOnlyError, TRIAL_READ_ONLY_EVENT } from '../lib/trial';
 import { shouldRetryQuery } from '../lib/queryRetry';
+import { reportSessionSettled } from '../lib/api/client';
 
 /**
  * Feeds the app's locale to React Aria as a BCP-47 tag.
@@ -29,6 +30,18 @@ function AriaLocaleBridge({ children }: { children: React.ReactNode }) {
  *  - I18nProvider: th/en localization (QM-3)
  *  - AriaLocaleBridge: the same locale, in the form React Aria needs (spec §20.8)
  */
+/**
+ * Tells the requests waiting on a loading session (lib/api/client `sessionSettled`, plan DM) what the provider's own
+ * session fetch settled on — so they use its token instead of reading the session a second time.
+ */
+function SessionSettledReporter() {
+  const { data, status } = useSession();
+  useEffect(() => {
+    if (status !== 'loading') reportSessionSettled(data?.accessToken);
+  }, [status, data?.accessToken]);
+  return null;
+}
+
 export function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(() => {
     // §7.10: a save refused because the trial ended (403 COS-PLAN-003) is handled once, here, for every mutation
@@ -50,6 +63,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
 
   return (
     <SessionProvider>
+      <SessionSettledReporter />
       <QueryClientProvider client={queryClient}>
         <I18nProvider>
           <AriaLocaleBridge>{children}</AriaLocaleBridge>

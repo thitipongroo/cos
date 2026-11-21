@@ -87,30 +87,94 @@ export async function apiFetch<T>(
   return (await res.json()) as T;
 }
 
+/**
+ * The token a request is sent with (plan DM). `SessionProvider` gets no session from the server, so on a hard load
+ * the first renders see the session `loading` with no token, and a request sent then went out unauthenticated (401,
+ * recovered only by the retry plan DL kept for it). While loading, the request waits for the provider's OWN session
+ * fetch to settle (`sessionSettled`) and uses its token — never a second `/api/auth/session` request: the backend's
+ * refresh tokens are single-use, and two concurrent session reads with an expired access token would both refresh
+ * it, the loser's cookie able to sign the user out (found by /doubt). Signed in or signed out, the token in hand.
+ */
+export async function tokenFor(
+  status: 'loading' | 'authenticated' | 'unauthenticated',
+  token: string | undefined,
+  waitForSession: () => Promise<string | undefined>,
+): Promise<string | undefined> {
+  if (token || status !== 'loading') return token;
+  return waitForSession();
+}
+
+/** How long a request waits for the session before going out without a token (a 401, which plan DL retries). */
+export const SESSION_WAIT_MS = 10_000;
+
+let settledToken: string | undefined;
+let isSettled = false;
+let waiters: Array<(token: string | undefined) => void> = [];
+
+/**
+ * Called by `SessionSettledReporter` (app/providers.tsx) whenever the provider's session is no longer loading, with
+ * its token (none when signed out). Releases every request waiting in `sessionSettled`.
+ */
+export function reportSessionSettled(token: string | undefined): void {
+  settledToken = token;
+  isSettled = true;
+  const pending = waiters;
+  waiters = [];
+  for (const release of pending) release(token);
+}
+
+/**
+ * The provider's session token once its first fetch has settled — at once if it already has; else when it does, or
+ * `undefined` after `timeoutMs` so a stalled session fetch cannot hold requests forever.
+ */
+export function sessionSettled(timeoutMs: number = SESSION_WAIT_MS): Promise<string | undefined> {
+  if (isSettled) return Promise.resolve(settledToken);
+  return new Promise((resolve) => {
+    const timer = setTimeout(() => {
+      waiters = waiters.filter((w) => w !== release);
+      resolve(undefined);
+    }, timeoutMs);
+    const release = (token: string | undefined) => {
+      clearTimeout(timer);
+      resolve(token);
+    };
+    waiters.push(release);
+  });
+}
+
+/** Test seam: back to "not yet settled". */
+export function resetSessionSettled(): void {
+  settledToken = undefined;
+  isSettled = false;
+  waiters = [];
+}
+
 /** Hook returning a token-bound `apiFetch` for use inside client components. */
 export function useApi(): <T>(path: string, init?: RequestInit) => Promise<T> {
-  const { data } = useSession();
+  const { data, status } = useSession();
   const token = data?.accessToken;
   return useCallback(
-    <T>(path: string, init?: RequestInit) => apiFetch<T>(path, token, init),
-    [token],
+    async <T>(path: string, init?: RequestInit) =>
+      apiFetch<T>(path, await tokenFor(status, token, sessionSettled), init),
+    [token, status],
   );
 }
 
 /** Hook for multipart uploads (e.g. photos via the File Service). Does NOT set a JSON
  *  content-type so the browser can add the multipart boundary. */
 export function useUpload(): <T>(path: string, form: FormData) => Promise<T> {
-  const { data } = useSession();
+  const { data, status } = useSession();
   const token = data?.accessToken;
   return useCallback(
     async <T>(path: string, form: FormData): Promise<T> => {
       const headers = new Headers();
-      if (token) headers.set('authorization', `Bearer ${token}`);
+      const bearer = await tokenFor(status, token, sessionSettled);
+      if (bearer) headers.set('authorization', `Bearer ${bearer}`);
       const res = await fetch(`${API_BASE}${path}`, { method: 'POST', headers, body: form });
       if (!res.ok) throw new ApiError(res.status, `Upload failed: ${res.status}`);
       return (await res.json()) as T;
     },
-    [token],
+    [token, status],
   );
 }
 
@@ -141,7 +205,7 @@ export function useOfflineApi(): <T>(
   init: RequestInit,
   entity: { type: string; id: string },
 ) => Promise<T | QueuedResult> {
-  const { data } = useSession();
+  const { data, status } = useSession();
   const token = data?.accessToken;
   return useCallback(
     async <T>(
@@ -150,7 +214,7 @@ export function useOfflineApi(): <T>(
       entity: { type: string; id: string },
     ): Promise<T | QueuedResult> => {
       try {
-        return await apiFetch<T>(path, token, init);
+        return await apiFetch<T>(path, await tokenFor(status, token, sessionSettled), init);
       } catch (error) {
         // ApiError means the server answered. Only a transport failure gets queued.
         if (error instanceof ApiError) throw error;
@@ -166,6 +230,6 @@ export function useOfflineApi(): <T>(
         return { queued: true };
       }
     },
-    [token],
+    [token, status],
   );
 }
