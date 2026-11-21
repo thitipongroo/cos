@@ -30,6 +30,10 @@ import { AppModule } from '../../src/app.module';
 import { JwtAuthGuard } from '../../src/shared/guards/jwt-auth.guard';
 import { GlobalExceptionFilter } from '../../src/shared/filters/http-exception.filter';
 import { MagicLinkService } from '../../src/modules/vendor-portal/magic-link.service';
+import {
+  DEFAULT_FLAGS,
+  FeatureFlagService,
+} from '../../src/shared/feature-flags/feature-flag.service';
 
 const TENANT_ID = 'cccc1111-1111-4000-8000-000000000105';
 const USER_ID = 'cccc2222-2222-4000-8000-000000000105';
@@ -43,6 +47,7 @@ describe('Vendor invitations: one e-mail, one vendor per tenant (real database)'
   let app: INestApplication;
   const projectOf: Record<string, string> = {};
   let seq = 0;
+  let trialLifecycle = false;
 
   beforeAll(async () => {
     infra = await startIntegrationInfra();
@@ -68,6 +73,13 @@ describe('Vendor invitations: one e-mail, one vendor per tenant (real database)'
     }
 
     const moduleRef: TestingModule = await Test.createTestingModule({ imports: [AppModule] })
+      // The registry defaults, except the read-only-trial rule, which plan DV's tests turn on for themselves.
+      .overrideProvider(FeatureFlagService)
+      .useValue({
+        isEnabled: (name: string) =>
+          name === 's1.tenant.trial-lifecycle' ? trialLifecycle : (DEFAULT_FLAGS[name] ?? false),
+        allFlags: () => ({ ...DEFAULT_FLAGS, 's1.tenant.trial-lifecycle': trialLifecycle }),
+      })
       .overrideGuard(JwtAuthGuard)
       .useValue(clsAuthGuard((req) => (req['user'] ?? {}) as Record<string, string>))
       .compile();
@@ -572,6 +584,90 @@ describe('Vendor invitations: one e-mail, one vendor per tenant (real database)'
       expect((res.body as { error: { code: string } }).error.code).toBe('COS-VND-011');
       expect(await quotationsOn(rfq)).toBe(0);
       expect(await invitationStatus(rfq)).toEqual(['PENDING']);
+    });
+
+    // Plan DV (product owner 2026-11-21): on the invitation link the buyer's read-only state (an ended trial) is
+    // checked after the invitation's own checks and the relationship, before the RFQ's — an answered link reads
+    // "already answered", and a vendor whose relationship ended learns nothing of the buyer's plan.
+    describe("the buyer's read-only account on an invitation link (plan DV)", () => {
+      const expired = async (run: () => Promise<void>): Promise<void> => {
+        trialLifecycle = true;
+        await infra.prisma.$executeRawUnsafe(
+          `UPDATE platform.tenants SET subscription_status = 'EXPIRED', trial_started_at = now() - interval '31 days',
+                  trial_ends_at = now() - interval '1 day'
+            WHERE tenant_id = $1::uuid`,
+          TENANT_ID,
+        );
+        try {
+          await run();
+        } finally {
+          trialLifecycle = false;
+          await infra.prisma.$executeRawUnsafe(
+            `UPDATE platform.tenants SET subscription_status = 'ACTIVE', trial_started_at = NULL, trial_ends_at = NULL
+              WHERE tenant_id = $1::uuid`,
+            TENANT_ID,
+          );
+        }
+      };
+
+      it('an answered link: 422 COS-VND-003, not the read-only 403', async () => {
+        const rfq = await seedRfq();
+        const token = await tokenFor(rfq, await createVendor(), 'dv.answered@example.com');
+        expect((await quoteWith(token)).status).toBe(201);
+        await expired(async () => {
+          const res = await quoteWith(token);
+          expect(res.status).toBe(422);
+          expect((res.body as { error: { code: string } }).error.code).toBe('COS-VND-003');
+        });
+      });
+
+      it('an ended relationship: 403 COS-VND-005, not the read-only 403', async () => {
+        const rfq = await seedRfq();
+        const email = 'dv.revoked@example.com';
+        const token = await tokenFor(rfq, await createVendor(), email);
+        await infra.prisma.$executeRawUnsafe(
+          `UPDATE platform.vendor_trading_relationships r SET status = 'REVOKED'
+             FROM platform.vendor_identities i
+            WHERE i.vendor_identity_id = r.vendor_identity_id AND i.email = $1 AND r.tenant_id = $2::uuid`,
+          email,
+          TENANT_ID,
+        );
+        await expired(async () => {
+          const res = await quoteWith(token);
+          expect(res.status).toBe(403);
+          expect((res.body as { error: { code: string } }).error.code).toBe('COS-VND-005');
+        });
+      });
+
+      it('a valid link: 403 COS-PLAN-003, nothing written; the RFQ still opens', async () => {
+        const rfq = await seedRfq();
+        const token = await tokenFor(rfq, await createVendor(), 'dv.valid@example.com');
+        await expired(async () => {
+          const res = await quoteWith(token);
+          expect(res.status).toBe(403);
+          expect(res.body).toMatchObject({
+            error: { code: 'COS-PLAN-003', messageKey: 'trial.error.readOnly' },
+          });
+          expect(await quotationsOn(rfq)).toBe(0);
+          expect(await invitationStatus(rfq)).toEqual(['PENDING']);
+          const open = await http().get(`/api/v1/vendor/rfq/${encodeURIComponent(token)}`);
+          expect(open.status).toBe(200);
+        });
+      });
+
+      it('a closed RFQ on a valid link: the read-only 403 comes first', async () => {
+        const rfq = await seedRfq();
+        const token = await tokenFor(rfq, await createVendor(), 'dv.closed@example.com');
+        await infra.prisma.$executeRawUnsafe(
+          `UPDATE procurement.rfqs SET status = 'CLOSED' WHERE rfq_id = $1::uuid`,
+          rfq,
+        );
+        await expired(async () => {
+          const res = await quoteWith(token);
+          expect(res.status).toBe(403);
+          expect((res.body as { error: { code: string } }).error.code).toBe('COS-PLAN-003');
+        });
+      });
     });
   });
 });

@@ -601,7 +601,9 @@ every request that is not
   erase, close a request; PDPA §19, §30–§33) must never be blocked
 
 Exempt endpoints carry `@AllowWhileReadOnly()`; no other endpoint may. Vendor-portal requests authenticate on a
-separate path (`VendorAuthGuard`), which applies the same rule to vendor writes (product owner, 2026-11-01).
+separate path (`VendorAuthGuard`), which applies the same rule to vendor writes (product owner, 2026-11-01) — the
+invitation link's quotation in its service instead, after the invitation and the relationship are checked (plan DV,
+2026-11-21).
 
 ### Notifications
 

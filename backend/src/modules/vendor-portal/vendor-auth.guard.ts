@@ -21,9 +21,11 @@
 //     ACTIVE trading relationship for that vendor in that tenant; publish tenant + vendor.
 //
 // READ-ONLY TRIALS (§7.10, ADR-109). Vendors never pass KeycloakJwtStrategy, so TrialReadOnlyInterceptor cannot see
-// their tenant's status. This guard applies the same rule on both tiers: a write into an EXPIRED or
-// PENDING_DELETION tenant is refused with 403 COS-PLAN-003 while s1.tenant.trial-lifecycle is on. Reads cost
-// nothing; a write costs one primary-key lookup.
+// their tenant's status. The same rule holds on both tiers: a write into an EXPIRED or PENDING_DELETION tenant is
+// refused with 403 COS-PLAN-003 while s1.tenant.trial-lifecycle is on. Reads cost nothing; a write costs one
+// primary-key lookup. Tier 2 is checked here, after the relationship and the vendor. Tier 1 is checked here too —
+// unless the handler is marked `@TenantWritableCheckedInService()`, whose service checks it itself after the
+// invitation and the relationship (plan DV: the quotation). Fail closed: a new tier-1 write is refused here.
 //
 // Tier selection is driven by the presence of the `:token` ROUTE PARAM, not by matching the raw URL.
 // The route table decides which tier applies, so a caller can no longer choose its authentication
@@ -36,6 +38,7 @@ import {
   ForbiddenException,
   Injectable,
   Optional,
+  SetMetadata,
   UnauthorizedException,
 } from '@nestjs/common';
 import { ClsService } from 'nestjs-cls';
@@ -93,7 +96,10 @@ export class VendorAuthGuard implements CanActivate {
       // tenant_id reaches SET LOCAL via CLS; validate it here so a malformed token fails as 401 at the
       // edge rather than deeper in TenantPrismaService (QM-4 — same guard, applied earlier).
       assertSafeTenantId(claims.tenantId);
-      await this.assertWritable(req, claims.tenantId);
+      // A handler marked `@TenantWritableCheckedInService()` checks the buyer's read-only state itself, after the
+      // invitation and the relationship (plan DV): an answered link reads "already answered", and a vendor whose
+      // relationship ended learns nothing of the buyer's plan — the order tier 2 keeps below. Any other write here.
+      if (!checkedInService(context)) await this.assertWritable(req, claims.tenantId);
       await this.publish(req, { tenantId: claims.tenantId, invitationId: claims.invitationId });
       return true;
     }
@@ -136,10 +142,7 @@ export class VendorAuthGuard implements CanActivate {
 
   /** Refuses a vendor write into a tenant whose free trial has ended (§7.10). Reads never query. */
   private async assertWritable(req: VendorRequest, tenantId: string): Promise<void> {
-    if (!isWriteMethod(req.method)) return;
-    if (!this.flags?.isEnabled(TRIAL_LIFECYCLE_FLAG, { tenantId })) return;
-    const status = await this.identities.tenantSubscriptionStatus(tenantId);
-    if (isReadOnlyWrite(req.method, status)) throw trialReadOnlyError(status!);
+    await assertTenantWritable(req.method, tenantId, this.identities, this.flags);
   }
 
   /**
@@ -183,4 +186,35 @@ export function noActiveRelationship(): ForbiddenException {
       messageKey: 'vendor.relationship.inactive',
     },
   });
+}
+
+/**
+ * 403 COS-PLAN-003 for a vendor write into a tenant whose free trial has ended (§7.10, ADR-109) while
+ * s1.tenant.trial-lifecycle is on; reads never query. Tier 2 calls it from the guard, after the relationship; tier 1's
+ * one write, `submitQuotation`, after the invitation and the relationship (plan DV).
+ */
+export async function assertTenantWritable(
+  method: string | undefined,
+  tenantId: string,
+  identities: Pick<VendorIdentityRepository, 'tenantSubscriptionStatus'>,
+  flags?: Pick<FeatureFlagService, 'isEnabled'>,
+): Promise<void> {
+  if (!isWriteMethod(method)) return;
+  if (!flags?.isEnabled(TRIAL_LIFECYCLE_FLAG, { tenantId })) return;
+  const status = await identities.tenantSubscriptionStatus(tenantId);
+  if (isReadOnlyWrite(method, status)) throw trialReadOnlyError(status!);
+}
+
+const CHECKED_IN_SERVICE = 'cos:vendor-tenant-writable-checked-in-service';
+
+/**
+ * Marks a tier-1 handler whose service runs `assertTenantWritable` itself, in its own order (plan DV) — the guard
+ * then leaves the check to it. Unmarked tier-1 writes are checked by the guard.
+ */
+export const TenantWritableCheckedInService = (): MethodDecorator =>
+  SetMetadata(CHECKED_IN_SERVICE, true);
+
+function checkedInService(context: ExecutionContext): boolean {
+  const handler = context.getHandler?.();
+  return !!handler && Reflect.getMetadata(CHECKED_IN_SERVICE, handler) === true;
 }

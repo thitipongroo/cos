@@ -1602,6 +1602,33 @@ gate's isolated run) checks the hash was not tested either; it ran 12.18.0 with 
 
 ## Open
 
+- **Closed — an invitation link answered the buyer's read-only state before the invitation and the relationship.**
+  Fixed in plan DV (on the current branch; product-owner decision 2026-11-21: on tier 1 `COS-PLAN-003` comes after
+  the invitation's checks (`COS-VND-001`–`004`) and the relationship (`005`), before the RFQ's (`011`, `010`)).
+  Closes the ordering item plan DU parked. Measured on HEAD (`test/procurement/05`, the buyer EXPIRED with
+  `s1.tenant.trial-lifecycle` on): an answered link → 403 `COS-PLAN-003` (not "already answered"), and a revoked
+  relationship → `COS-PLAN-003` — so a vendor no longer trading with the buyer learned its plan state. Tier 2 already
+  checked the relationship first.
+  - `vendor-auth.guard.ts`: the check is the exported `assertTenantWritable(method, tenant, identities, flags)`. The
+    guard runs it on tier 2 as before, and on tier 1 unless the handler is marked `@TenantWritableCheckedInService()`
+    — fail closed, so a tier-1 write added later is refused at the guard (found by /doubt; product owner 2026-11-21).
+    Only `POST rfq/:token/quotation` is marked; `VendorPortalService.submitQuotation` calls it after
+    `assertValidInvitation` and `resolveVendorId` (the service takes an `@Optional()` `FeatureFlagService`, as the
+    guard; `FeatureFlagsModule` is global). Opening the RFQ (a read) never checks. `vendor.openapi.yaml` states the
+    order on the quotation's 403; ADR-109 and spec 07 say where tier 1's check lives.
+  - Verified: `test/procurement/05` (19; the spec now overrides `FeatureFlagService` with the registry defaults and
+    the trial flag off except in these tests): answered link → 422 `COS-VND-003`; revoked → 403 `COS-VND-005`; a
+    valid link → 403 `COS-PLAN-003`, no quotation, invitation still PENDING, the RFQ still opens; a closed RFQ →
+    `COS-PLAN-003` first. On HEAD the first two fail; with the route's marker made inert they fail too (the guard
+    refuses first). Backend unit (vendor-portal 135: an unmarked tier-1 write or an unknown handler refused at the
+    guard, a marked one left to the service with no lookup, the route carries the marker; the service's order,
+  - Accepted (product owner 2026-11-21): on the quotation the body is now validated before `COS-PLAN-003` — a
+    malformed body to a read-only buyer gets 400 first (the guard used to refuse first). A vendor with a valid link
+    and an active relationship learns the buyer is read-only before the RFQ's own state (`COS-PLAN-003` before
+    `011`), as decided. Parked (low): `assertTenantWritable` and `noActiveRelationship` are domain rules living in
+    the guard's file, which the service imports.
+    EXPIRED and PENDING_DELETION, the flag off and no flag service → written with no lookup), tsc, eslint, prettier,
+    conformance, OpenAPI validity and freshness, markdownlint.
 - **Closed — a vendor's quotation or invoice refused by the buyer's read-only account said "check your input".**
   Fixed in plan DU (on the current branch; product-owner decisions 2026-11-21: both vendor forms, one TH/EN line that
   does not name the buyer's trial). Closes the item plan DS parked. Measured on HEAD: `vendor-auth.guard.ts` refuses
@@ -1616,12 +1643,12 @@ gate's isolated run) checks the hash was not tested either; it ran 12.18.0 with 
     form → the general line; EN and TH carry a non-empty line naming neither the trial nor the plan); on HEAD four of
     them fail. tsc, eslint, prettier, markdownlint. Not opened in a browser. /doubt (no high or medium): the Thai
     line reworded ("ไม่สามารถ…ได้ในขณะนี้", not "ยัง…ไม่ได้", which reads as pending), the language test tightened.
-  - Parked (low, backend ordering — not in this change): tier 1 checks the buyer's read-only state before the
-    service's single-use check, so an already-answered link submitted to a read-only buyer reads "cannot accept
-    documents" rather than "already answered"; and before any relationship check, so a vendor whose relationship
-    ended can learn the buyer's plan state (tier 2 checks the relationship first for that reason). The invoice form
-    still says "check your input" for its other refusals (`COS-VND-005`, no session). For a PENDING_DELETION tenant
-    "right now" suggests a pause.
+  - Parked (low, backend ordering — not in this change; closed by plan DV): tier 1 checks the buyer's read-only state
+    before the service's single-use check, so an already-answered link submitted to a read-only buyer reads "cannot
+    accept documents" rather than "already answered"; and before any relationship check, so a vendor whose
+    relationship ended can learn the buyer's plan state (tier 2 checks the relationship first for that reason). The
+    invoice form still says "check your input" for its other refusals (`COS-VND-005`, no session). For a
+    PENDING_DELETION tenant "right now" suggests a pause.
 - **Closed — a fully paid vendor invoice stayed APPROVED.** Fixed in plan DT (on the current branch; product-owner
   decisions 2026-11-21: the invoice becomes PAID when approving a payment brings its PROCESSED payments to the
   invoice's amount — PENDING payments do not count; no new event). Closes the decision plan DE left open. Measured on

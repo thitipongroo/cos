@@ -25,6 +25,9 @@ function build(
     hash?: string;
     relationship?: unknown;
     vendorExists?: boolean;
+    /** The buyer's subscription_status (plan DV); with `flagOn` (default true) a flag service is given. */
+    subscription?: string;
+    flagOn?: boolean;
   } = {},
 ) {
   const repo = {
@@ -59,6 +62,7 @@ function build(
       .mockResolvedValue(
         overrides.relationship === undefined ? { vendor_id: 'ven-1' } : overrides.relationship,
       ),
+    tenantSubscriptionStatus: jest.fn().mockResolvedValue(overrides.subscription ?? 'ACTIVE'),
   };
   const magicLink = {
     hashToken: jest.fn().mockReturnValue(overrides.hash ?? 'HASH'),
@@ -67,10 +71,18 @@ function build(
       .mockReturnValue({ token: 'TOK', tokenHash: 'HASH', expiresAt: new Date(Date.now() + 1000) }),
     issueSessionToken: jest.fn().mockReturnValue('SESSION'),
   };
-  const service = new VendorPortalService(repo as never, identities as never, magicLink as never, {
-    tenantId: 'ten-1',
-  });
-  return { service, repo, identities, magicLink };
+  const flags =
+    overrides.subscription === undefined
+      ? undefined
+      : { isEnabled: jest.fn().mockReturnValue(overrides.flagOn ?? true) };
+  const service = new VendorPortalService(
+    repo as never,
+    identities as never,
+    magicLink as never,
+    { tenantId: 'ten-1' },
+    flags as never,
+  );
+  return { service, repo, identities, magicLink, flags };
 }
 
 describe('VendorPortalService', () => {
@@ -356,6 +368,70 @@ describe('VendorPortalService', () => {
     });
 
     const dto = { total_amount: '100.00', currency_code: 'THB', validity_days: 30 };
+
+    // Plan DV (product owner 2026-11-21): the buyer's read-only state after the invitation and the relationship,
+    // before the RFQ.
+    describe("the buyer's read-only account (plan DV)", () => {
+      it.each(['EXPIRED', 'PENDING_DELETION'])(
+        '%s: 403 COS-PLAN-003, the flag read for the tenant',
+        async (subscription) => {
+          const { service, flags } = build({ subscription });
+          await expect(service.submitQuotation('TOK', 'inv-1', dto)).rejects.toMatchObject({
+            response: { error: { code: 'COS-PLAN-003' } },
+          });
+          expect(flags!.isEnabled).toHaveBeenCalledWith('s1.tenant.trial-lifecycle', {
+            tenantId: 'ten-1',
+          });
+        },
+      );
+
+      it.each([
+        ['the flag off', { subscription: 'EXPIRED', flagOn: false }],
+        ['no flag service', {}],
+      ])('%s: written, the tenant not looked up', async (_n, o) => {
+        const { service, repo, identities } = build(o);
+        await service.submitQuotation('TOK', 'inv-1', dto);
+        expect(identities.tenantSubscriptionStatus).not.toHaveBeenCalled();
+        expect(repo.createQuotation).toHaveBeenCalled();
+      });
+
+      it('403 COS-PLAN-003 after the invitation and the relationship, before the RFQ is read', async () => {
+        const { service, repo, identities } = build({ subscription: 'EXPIRED' });
+        await expect(service.submitQuotation('TOK', 'inv-1', dto)).rejects.toMatchObject({
+          response: { error: { code: 'COS-PLAN-003', messageKey: 'trial.error.readOnly' } },
+        });
+        expect(repo.findInvitation).toHaveBeenCalled();
+        expect(identities.findActiveRelationship).toHaveBeenCalled();
+        expect(identities.tenantSubscriptionStatus).toHaveBeenCalledWith('ten-1');
+        expect(repo.findRfq).not.toHaveBeenCalled();
+        expect(repo.createQuotation).not.toHaveBeenCalled();
+      });
+
+      it('an answered invitation: COS-VND-003 first, the tenant not looked up', async () => {
+        const { service, identities } = build({
+          subscription: 'EXPIRED',
+          invitation: { ...validInvitation, status: 'RESPONDED' },
+        });
+        await expect(service.submitQuotation('TOK', 'inv-1', dto)).rejects.toMatchObject({
+          response: { error: { code: 'COS-VND-003' } },
+        });
+        expect(identities.tenantSubscriptionStatus).not.toHaveBeenCalled();
+      });
+
+      it('an ended relationship: COS-VND-005 first, the tenant not looked up', async () => {
+        const { service, identities } = build({ subscription: 'EXPIRED', relationship: null });
+        await expect(service.submitQuotation('TOK', 'inv-1', dto)).rejects.toMatchObject({
+          response: { error: { code: 'COS-VND-005' } },
+        });
+        expect(identities.tenantSubscriptionStatus).not.toHaveBeenCalled();
+      });
+
+      it('an ACTIVE tenant: written as before', async () => {
+        const { service, repo } = build({ subscription: 'ACTIVE' });
+        await service.submitQuotation('TOK', 'inv-1', dto);
+        expect(repo.createQuotation).toHaveBeenCalled();
+      });
+    });
 
     it('403 when invitation has no vendor identity', async () => {
       const { service } = build({ invitation: { ...validInvitation, vendor_identity_id: null } });

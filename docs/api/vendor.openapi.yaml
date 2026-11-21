@@ -153,7 +153,10 @@ paths:
           description: >-
             `COS-PLAN-003` — the buying tenant's free trial has ended and it is read-only (§7.10, ADR-109; writes
             are refused, reads still work; only while `s1.tenant.trial-lifecycle` is on), or `COS-VND-005` — no
-            active trading relationship (revoked, the identity disabled, or the vendor deactivated)
+            active trading relationship (revoked, the identity disabled, or the vendor deactivated). Order (plan DV):
+            the body is validated first (400), then the invitation (`COS-VND-001`–`004`) and the relationship
+            (`COS-VND-005`), then `COS-PLAN-003`, then the RFQ (`COS-VND-001` not found, `COS-VND-011`,
+            `COS-VND-010`)
           content:
             application/json:
               schema: { $ref: '#/components/schemas/ErrorResponse' }

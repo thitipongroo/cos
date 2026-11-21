@@ -8,6 +8,7 @@ import {
   Injectable,
   Scope,
   Inject,
+  Optional,
   NotFoundException,
   UnauthorizedException,
   ForbiddenException,
@@ -28,7 +29,8 @@ import {
   InvoiceRow,
   InvitedRfqRow,
 } from './vendor-portal.repository';
-import { noActiveRelationship } from './vendor-auth.guard';
+import { assertTenantWritable, noActiveRelationship } from './vendor-auth.guard';
+import { FeatureFlagService } from '../../shared/feature-flags/feature-flag.service';
 
 /**
  * The envelope a vendor-portal refusal carries (plan DQ, product owner 2026-11-21): its `COS-VND-*` code as
@@ -51,6 +53,8 @@ export class VendorPortalService {
     private readonly identities: VendorIdentityRepository,
     private readonly magicLink: MagicLinkService,
     @Inject(REQUEST) private readonly request: { tenantId?: string },
+    // @Optional: absent means the flag is off, as the registry default is (as in VendorAuthGuard).
+    @Optional() private readonly flags?: FeatureFlagService,
   ) {}
 
   // ── Buyer side: issue an RFQ invitation (internal PROCUREMENT_OFFICER) ───────
@@ -151,6 +155,9 @@ export class VendorPortalService {
   ): Promise<{ quotation: QuotationRow; vendorSession: string; tenantId: string }> {
     const invitation = await this.assertValidInvitation(token, invitationId);
     const vendorId = await this.resolveVendorId(invitation.vendor_identity_id);
+    // The buyer's read-only state (an ended trial: 403 COS-PLAN-003) after the invitation and the relationship, before
+    // the RFQ (plan DV, product owner 2026-11-21) — the guard leaves tier 1's write to this point.
+    await assertTenantWritable('POST', this.tenantId, this.identities, this.flags);
 
     // Quoting is open while the RFQ is PUBLISHED, as on the buyer side (fix/quotation-duplicate-and-closed-rfq):
     // the portal used to take a quotation for an RFQ already closed, evaluated, awarded or cancelled.

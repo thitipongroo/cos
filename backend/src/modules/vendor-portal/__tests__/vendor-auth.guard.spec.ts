@@ -7,7 +7,12 @@ beforeEach(() => tenantDbForRequest.mockReset().mockResolvedValue(null));
 const DEDICATED = 'postgresql://app_user:pw@tenant-db.internal:5432/cos';
 
 import { UnauthorizedException, ForbiddenException, ExecutionContext } from '@nestjs/common';
-import { VendorAuthGuard, VendorRequest } from '../vendor-auth.guard';
+import {
+  TenantWritableCheckedInService,
+  VendorAuthGuard,
+  VendorRequest,
+} from '../vendor-auth.guard';
+import { VendorPortalController } from '../vendor-portal.controller';
 import {
   CLS_DEDICATED_DB_URL,
   CLS_TENANT_ID,
@@ -245,17 +250,55 @@ describe('VendorAuthGuard — read-only trials (§7.10, ADR-109)', () => {
       headers: { authorization: 'Bearer s', 'x-vendor-tenant-id': TENANT },
     }) as unknown as VendorRequest;
 
-  it.each([
-    ['Tier 1', tier1],
-    ['Tier 2', tier2],
-  ])('%s: refuses a write into an EXPIRED tenant with 403 COS-PLAN-003', async (_n, req) => {
+  it('Tier 2: refuses a write into an EXPIRED tenant with 403 COS-PLAN-003', async () => {
     const { guard, flags } = buildWith('EXPIRED');
-    const err = await guard.canActivate(ctxFor(req('POST'))).catch((e: unknown) => e);
+    const err = await guard.canActivate(ctxFor(tier2('POST'))).catch((e: unknown) => e);
     expect(err).toBeInstanceOf(ForbiddenException);
     expect((err as ForbiddenException).getResponse()).toEqual({
       error: expect.objectContaining({ code: 'COS-PLAN-003', messageKey: 'trial.error.readOnly' }),
     });
     expect(flags.isEnabled).toHaveBeenCalledWith('s1.tenant.trial-lifecycle', { tenantId: TENANT });
+  });
+
+  // Plan DV (product owner 2026-11-21): a tier-1 handler marked @TenantWritableCheckedInService() (the quotation)
+  // checks in its service, after the invitation and the relationship; any other tier-1 write is refused here (fail
+  // closed, so a new one cannot slip through).
+  describe('Tier 1 and @TenantWritableCheckedInService (plan DV)', () => {
+    class Handlers {
+      @TenantWritableCheckedInService()
+      marked(): void {}
+      unmarked(): void {}
+    }
+    const withHandler = (req: VendorRequest, name: keyof Handlers): ExecutionContext =>
+      ({
+        switchToHttp: () => ({ getRequest: () => req }),
+        getHandler: () => Handlers.prototype[name],
+      }) as unknown as ExecutionContext;
+
+    it('a marked handler: the write into an EXPIRED tenant is left to the service, no lookup', async () => {
+      const { guard, identities } = buildWith('EXPIRED');
+      await expect(guard.canActivate(withHandler(tier1('POST'), 'marked'))).resolves.toBe(true);
+      expect(identities.tenantSubscriptionStatus).not.toHaveBeenCalled();
+    });
+
+    it.each([
+      ['an unmarked handler', (req: VendorRequest) => withHandler(req, 'unmarked')],
+      ['no handler known', ctxFor],
+    ])('%s: a write into an EXPIRED tenant is refused here with COS-PLAN-003', async (_n, ctx) => {
+      const { guard } = buildWith('EXPIRED');
+      await expect(guard.canActivate(ctx(tier1('POST')))).rejects.toMatchObject({
+        response: { error: { code: 'COS-PLAN-003' } },
+      });
+    });
+
+    it('the quotation route carries the marker', () => {
+      expect(
+        Reflect.getMetadata(
+          'cos:vendor-tenant-writable-checked-in-service',
+          VendorPortalController.prototype.submitQuotation,
+        ),
+      ).toBe(true);
+    });
   });
 
   // fix/vendor-portal-inactive-vendor (/doubt): the vendor check comes before the trial check, so a deactivated
@@ -275,8 +318,9 @@ describe('VendorAuthGuard — read-only trials (§7.10, ADR-109)', () => {
   });
 
   it.each(['ACTIVE', 'TRIAL', null])('lets a write through for status %s', async (status) => {
-    const { guard } = buildWith(status);
-    await expect(guard.canActivate(ctxFor(tier1('POST')))).resolves.toBe(true);
+    const { guard, identities } = buildWith(status);
+    await expect(guard.canActivate(ctxFor(tier2('POST')))).resolves.toBe(true);
+    expect(identities.tenantSubscriptionStatus).toHaveBeenCalledWith(TENANT);
   });
 
   it('lets a write through when the flag is off, without a lookup', async () => {
@@ -289,13 +333,12 @@ describe('VendorAuthGuard — read-only trials (§7.10, ADR-109)', () => {
     const { identities } = buildWith('EXPIRED');
     const guard = new VendorAuthGuard(
       { isActive: () => false, set: jest.fn() } as never,
-      {
-        verifyInvitationToken: () => ({ tenantId: TENANT, invitationId: 'i' }),
-      } as never,
+      { verifySessionToken: () => 'vid-1' } as never,
       identities as never,
       tenantDb() as never,
     );
-    await expect(guard.canActivate(ctxFor(tier1('POST')))).resolves.toBe(true);
+    await expect(guard.canActivate(ctxFor(tier2('POST')))).resolves.toBe(true);
+    expect(identities.tenantSubscriptionStatus).not.toHaveBeenCalled();
   });
 
   describe('VendorAuthGuard — routing (D50)', () => {

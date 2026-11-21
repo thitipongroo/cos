@@ -23,7 +23,11 @@ import { RolesGuard } from '../../shared/guards/roles.guard';
 import { Roles } from '@cos/rbac';
 import { CosRole } from '@cos/types';
 import { VendorPortalService } from './vendor-portal.service';
-import { VendorAuthGuard, VendorRequest } from './vendor-auth.guard';
+import {
+  TenantWritableCheckedInService,
+  VendorAuthGuard,
+  VendorRequest,
+} from './vendor-auth.guard';
 import {
   clsVendorId,
   clsVendorIdentityId,
@@ -74,6 +78,8 @@ export class VendorPortalController {
   }
 
   @Post('rfq/:token/quotation')
+  // The buyer's read-only state is checked by submitQuotation, after the invitation and the relationship (plan DV).
+  @TenantWritableCheckedInService()
   @ApiOperation({ summary: 'Submit a quotation for an invited RFQ (Tier-1 magic-link)' })
   @ApiParam({ name: 'token', description: 'Invitation magic-link token' })
   submitQuotation(
